@@ -8,7 +8,13 @@ import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { AssociationFilter, useFormActiveFields, useFormBlockContext, useTableBlockContext } from '../..';
+import {
+  AssociationFilter,
+  useDataSourceHeaders,
+  useFormActiveFields,
+  useFormBlockContext,
+  useTableBlockContext,
+} from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
@@ -212,14 +218,14 @@ export const useCreateActionProps = () => {
         __parent?.service?.refresh?.();
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
-          await form.reset();
+          await form.reset(undefined, { forceClear: true });
           return;
         }
         if (onSuccess?.manualClose) {
           modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
-              await form.reset();
+              await form.reset(undefined, { forceClear: true });
               if (onSuccess?.redirecting && onSuccess?.redirectTo) {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
@@ -231,7 +237,7 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
-          await form.reset();
+          await form.reset(undefined, { forceClear: true });
           if (onSuccess?.redirecting && onSuccess?.redirectTo) {
             if (isURL(onSuccess.redirectTo)) {
               window.location.href = onSuccess.redirectTo;
@@ -1004,10 +1010,12 @@ export const useAssociationFilterProps = () => {
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
   const field = useField();
   const collectionFieldName = collectionField.name;
+  const headers = useDataSourceHeaders(blockProps?.dataSource);
   const { data, params, run } = useRequest<{
     data: { [key: string]: any }[];
   }>(
     {
+      headers,
       resource: collectionField.target,
       action: 'list',
       params: {

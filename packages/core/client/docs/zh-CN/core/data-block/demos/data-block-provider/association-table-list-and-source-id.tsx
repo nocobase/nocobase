@@ -3,7 +3,7 @@ import { Select, Table, TableProps } from 'antd';
 import { SchemaComponent, UseDataBlockProps, useDataBlockRequestV2, withDynamicSchemaProps } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
 
-import { createApp } from '../../../collection/demos/createApp';
+import { createApp } from '../../../data-source/demos/createApp';
 import useUrlState from '@ahooksjs/use-url-state';
 
 const collection = 'users';

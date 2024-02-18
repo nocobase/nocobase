@@ -226,10 +226,10 @@ export class CollectionV2 {
    * Get fields
    * @param predicate https://www.lodashjs.com/docs/lodash.filter
    * @example
-   * getFields() // 获取所有字段
-   * getFields({ name: 'nickname' }) // 获取 name: 'nickname' 字段
-   * getFields('primaryKey') // 获取 primaryKey: true 字段
-   * getFields((field) => field.name === 'nickname') // 获取 name: 'nickname' 字段
+   * getFields() // get all fields
+   * getFields({ name: 'nickname' }) // Get the field with `name: 'nickname'`
+   * getFields('primaryKey') // Get the field with `primaryKey: true`
+   * getFields((field) => field.name === 'nickname') // Get the field with `name: 'nickname`'
    */
   getFields(predicate?: GetCollectionFieldPredicateV2) {
     return predicate ? filter(this.fields, predicate) : this.fields;

@@ -63,7 +63,11 @@ export default {
         });
       }
 
-      ctx.body = fieldRecord.toJSON();
+      const field = ctx.app.dataSourceManager.dataSources
+        .get(dataSourceKey)
+        .collectionManager.getCollection(collectionName)
+        .getField(name);
+      ctx.body = field.options;
 
       await next();
     },

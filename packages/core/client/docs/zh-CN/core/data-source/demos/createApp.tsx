@@ -76,7 +76,7 @@ export function createApp(
       DataBlockProviderV2,
       CardItem,
     },
-    plugins: [CollectionPlugin, MyPlugin],
+    plugins: [CollectionPlugin, MyPlugin, ...(options.plugins || [])],
     designable: true,
   });
 

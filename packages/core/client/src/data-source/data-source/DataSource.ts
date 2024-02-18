@@ -10,7 +10,7 @@ export interface DataSourceOptionsV2 {
   displayName: string;
   collections?: CollectionOptionsV2[];
   errorMessage?: string;
-  status?: 'loaded' | 'failed' | 'loading';
+  status?: 'loaded' | 'loading-failed' | 'loading';
 }
 
 export type DataSourceFactory = new (
@@ -20,7 +20,7 @@ export type DataSourceFactory = new (
 
 export abstract class DataSourceV2 {
   collectionManager: CollectionManagerV2;
-  reloadCallback?: LoadCallback;
+  protected reloadCallbacks: LoadCallback[] = [];
 
   constructor(
     protected options: DataSourceOptionsV2,
@@ -57,41 +57,40 @@ export abstract class DataSourceV2 {
     return this.options;
   }
 
-  setOptions(options: DataSourceOptionsV2) {
-    this.options = options;
+  setOptions(options: Partial<DataSourceOptionsV2>) {
+    Object.assign(this.options, options);
   }
 
   getOption<Key extends keyof DataSourceOptionsV2>(key: Key): DataSourceOptionsV2[Key] {
     return this.options[key];
   }
 
-  addCollections(collections: CollectionOptionsV2[]) {
-    this.collectionManager.addCollections(collections);
+  addReloadCallback(callback: LoadCallback) {
+    if (this.reloadCallbacks.includes(callback)) return;
+    this.reloadCallbacks.push(callback);
   }
 
-  setCollections(collections: CollectionOptionsV2[]) {
-    this.collectionManager.setCollections(collections);
+  removeReloadCallback(callback: LoadCallback) {
+    this.reloadCallbacks = this.reloadCallbacks.filter((cb) => cb !== callback);
   }
 
-  setReloadCallback(callback: LoadCallback) {
-    this.reloadCallback = callback;
-  }
+  abstract getDataSource():
+    | Promise<Omit<Partial<DataSourceOptionsV2>, 'key'>>
+    | Omit<Partial<DataSourceOptionsV2>, 'key'>;
 
-  abstract getRemoteCollections(): Promise<CollectionOptionsV2[]> | CollectionOptionsV2[];
-
-  // abstract load(callback?: LoadCallback): void | Promise<void>;
-
-  // abstract reload(callback?: LoadCallback): void | Promise<void>;
   async reload() {
-    const collections = await this.getRemoteCollections();
-    this.setCollections(collections);
-    this.reloadCallback && this.reloadCallback(collections);
-    return collections;
+    const dataSource = await this.getDataSource();
+    this.setOptions(dataSource);
+    this.collectionManager.setCollections(dataSource.collections || []);
+    this.reloadCallbacks.forEach((callback) => callback(dataSource.collections));
+    return this.options;
   }
 }
 
 export class LocalDataSource extends DataSourceV2 {
-  getRemoteCollections() {
-    return this.collections;
+  getDataSource() {
+    return {
+      collections: this.collections,
+    };
   }
 }

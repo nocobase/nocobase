@@ -10,7 +10,7 @@ import {
 } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
 
-import { createApp } from '../../../collection/demos/createApp';
+import { createApp } from '../../../data-source/demos/createApp';
 
 interface DemoFormFieldType {
   id: number;

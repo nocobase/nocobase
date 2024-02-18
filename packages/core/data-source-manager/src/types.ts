@@ -31,6 +31,7 @@ export interface ICollection {
   setField(name: string, options: any): IField;
   removeField(name: string): void;
   getFields(): Array<IField>;
+  getField(name: string): IField;
   [key: string]: any;
 }
 export interface IModel {

@@ -26,3 +26,4 @@ export * from './interfaces/properties';
 export * from './collectionPlugin';
 export * from './mixins/InheritanceCollectionMixin';
 export * from './sub-table';
+export * from './CollectionHistoryProvider';

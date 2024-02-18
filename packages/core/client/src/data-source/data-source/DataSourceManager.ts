@@ -4,7 +4,6 @@ import type { Application } from '../../application/Application';
 import { type DataSourceOptionsV2, DataSourceV2, LocalDataSource, DataSourceFactory } from './DataSource';
 import { type CollectionTemplateFactory, CollectionTemplateManagerV2 } from '../collection-template';
 import { type CollectionFieldInterfaceFactory, CollectionFieldInterfaceManager } from '../collection-field-interface';
-import type { SchemaKey } from '@formily/json-schema';
 
 export const DEFAULT_DATA_SOURCE_NAME = 'main';
 export const DEFAULT_DATA_SOURCE_TITLE = '{{t("main")}}';
@@ -77,32 +76,23 @@ export class DataSourceManagerV2 {
   }
 
   async addDataSources(request: () => Promise<DataSourceOptionsV2[]>, DataSource: DataSourceFactory) {
+    if (this.multiDataSources.some(([req, DS]) => req === request && DS === DataSource)) return;
     this.multiDataSources.push([request, DataSource]);
   }
 
-  getCollections(options?: { dataSource?: string; predicate?: (collection: CollectionV2) => boolean }) {
-    return this.getDataSource(options?.dataSource).collectionManager.getCollections(options?.predicate);
-  }
-
-  addCollections(collections: CollectionOptionsV2[], dataSource?: string) {
-    return this.getDataSource(dataSource).addCollections(collections);
-  }
-
-  getCollection<Mixins = {}>(
-    path: SchemaKey | CollectionOptionsV2,
-    dataSource?: string,
-  ): (Mixins & CollectionV2) | undefined {
-    return this.getDataSource(dataSource).collectionManager.getCollection(path);
-  }
-
-  getAllCollections(predicate?: (collection: CollectionV2) => boolean) {
-    return this.getDataSources().reduce((acc, dataSource) => {
-      acc.push({
-        ...dataSource.getOptions(),
-        collections: dataSource.collectionManager.getCollections(predicate),
-      });
-      return acc;
-    }, []);
+  getAllCollections(
+    predicate?: (collection: CollectionV2) => boolean,
+  ): (DataSourceOptionsV2 & { collections: CollectionV2[] })[] {
+    return this.getDataSources().reduce<(DataSourceOptionsV2 & { collections: CollectionV2[] })[]>(
+      (acc, dataSource) => {
+        acc.push({
+          ...dataSource.getOptions(),
+          collections: dataSource.collectionManager.getCollections(predicate),
+        });
+        return acc;
+      },
+      [],
+    );
   }
 
   addFieldInterfaceGroups(options: Record<string, { label: string; order?: number }>) {

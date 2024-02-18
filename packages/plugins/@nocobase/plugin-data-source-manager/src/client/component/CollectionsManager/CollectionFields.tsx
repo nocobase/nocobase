@@ -15,6 +15,7 @@ import {
   useCompile,
   Select,
   Collection,
+  useDataSourceManagerV2,
 } from '@nocobase/client';
 import { collection, fieldsTableSchema } from './schema/collectionFields';
 import { TitleField } from './components/TitleField';
@@ -81,12 +82,14 @@ export const CollectionFields = () => {
     },
   };
 
+  const dm = useDataSourceManagerV2();
   const handleFieldChange = async (value, filterByTk) => {
     await api.request({
       url: `dataSourcesCollections/${dataSourceKey}.${name}/fields:update?filterByTk=${filterByTk}`,
       method: 'post',
       data: value,
     });
+    dm.getDataSource(dataSourceKey).reload();
     message.success(t('Saved successfully'));
   };
   const useTitleFieldProps = () => {

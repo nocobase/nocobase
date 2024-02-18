@@ -1,5 +1,5 @@
 import React from 'react';
-import { CollectionProviderV2, CollectionV2, useCollectionV2 } from '@nocobase/client';
+import { CollectionProviderV2, CollectionV2, useCollectionV2, Plugin } from '@nocobase/client';
 import { createApp } from '../createApp';
 
 class TestMixin extends CollectionV2 {
@@ -35,8 +35,12 @@ const Root = () => {
   );
 };
 
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.dataSourceManager.addCollectionMixins([TestMixin, Test2Mixin]);
+  }
+}
+
 export default createApp(Root, {
-  collectionManager: {
-    collectionMixins: [TestMixin, Test2Mixin],
-  },
+  plugins: [MyPlugin],
 });

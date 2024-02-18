@@ -220,7 +220,7 @@ export class DatabaseIntrospector {
 
     // merge local association fields into remote collection
     const localAssociationFields = localData.fields?.filter((field) => {
-      return ['belongsTo', 'belongsToMany', 'hasMany'].includes(field.type);
+      return ['belongsTo', 'belongsToMany', 'hasMany', 'hasOne'].includes(field.type);
     });
 
     if (localAssociationFields) {

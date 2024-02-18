@@ -1,12 +1,6 @@
 import type { Field } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
-import {
-  CollectionFieldInterface,
-  IField,
-  interfacesProperties,
-  useCollectionManager,
-  useRecord,
-} from '@nocobase/client';
+import { CollectionFieldInterface, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
 import lodash from 'lodash';
 import { NAMESPACE } from './locale';
 
@@ -97,97 +91,6 @@ const recordPickerViewer = {
           },
         },
       },
-    },
-  },
-};
-
-export const snapshot: IField = {
-  name: 'snapshot',
-  type: 'object',
-  group: 'advanced',
-  title: `{{t('Snapshot', {ns: '${NAMESPACE}'})}}`,
-  description: `{{t('When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.', {ns: '${NAMESPACE}'})}}`,
-  default: {
-    type: 'snapshot',
-    // name,
-    uiSchema: {
-      // title,
-      'x-component': 'SnapshotRecordPicker',
-      'x-component-props': {
-        multiple: true,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
-      },
-    },
-  },
-  schemaInitialize(schema: ISchema, { field, readPretty, action, block }) {
-    schema['properties'] = {
-      viewer: lodash.cloneDeep(recordPickerViewer),
-    };
-  },
-  initialize: (values: any) => {},
-  usePathOptions(field) {
-    const { appends = [], targetCollection } = field;
-    // eslint-disable-next-line
-    const { getCollection } = useCollectionManager();
-    const { fields } = getCollection(targetCollection);
-
-    const result = MakeFieldsPathOptions(fields, appends);
-
-    return [
-      {
-        label: `{{t('Snapshot data', { ns: '${NAMESPACE}' })}}`,
-        value: 'data',
-        children: result,
-      },
-    ];
-  },
-  properties: {
-    ...defaultProps,
-    [TARGET_FIELD]: {
-      type: 'string',
-      title: `{{t('The association field to snapshot', {ns: '${NAMESPACE}'})}}`,
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'SnapshotOwnerCollectionFieldsSelect',
-      'x-disabled': '{{ !createOnly || isOverride }}',
-      'x-reactions': [
-        {
-          target: APPENDS,
-          when: '{{$self.value != undefined}}',
-          fulfill: {
-            state: {
-              visible: true,
-            },
-          },
-          otherwise: {
-            state: {
-              visible: false,
-            },
-          },
-        },
-      ],
-    },
-    [APPENDS]: {
-      type: 'string',
-      title: `{{t("Snapshot the snapshot's association fields", {ns: "${NAMESPACE}"})}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'AppendsTreeSelect',
-      'x-component-props': {
-        multiple: true,
-        useCollection: useRecordCollection,
-      },
-      'x-reactions': [
-        {
-          dependencies: [TARGET_FIELD],
-          when: '{{$deps[0]}}',
-          fulfill: {
-            run: '{{$self.setValue($self.value)}}',
-          },
-        },
-      ],
     },
   },
 };

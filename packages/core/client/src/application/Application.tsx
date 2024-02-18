@@ -157,6 +157,10 @@ export class Application {
     });
   }
 
+  getCollectionManager(dataSource?: string) {
+    return this.dataSourceManager.getDataSource(dataSource)?.collectionManager;
+  }
+
   getComposeProviders() {
     const Providers = compose(...this.providers)(BlankComponent);
     Providers.displayName = 'Providers';

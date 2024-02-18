@@ -4,7 +4,6 @@ import { ISchema, SchemaOptionsContext, useForm, useFormEffects } from '@formily
 import {
   CollectionFieldInterface,
   Cron,
-  IField,
   SchemaComponent,
   SchemaComponentOptions,
   css,
@@ -104,25 +103,12 @@ const RuleTypes = {
     title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       digits: function Digits({ value }) {
-        const { t } = useTranslation();
-        return <span>{t('{{value}} Digits', { ns: NAMESPACE, value })}</span>;
+        return <code>{value}</code>;
       },
       start: function Start({ value }) {
-        const { t } = useTranslation();
-        return <span>{t('Starts from {{value}}', { ns: NAMESPACE, value })}</span>;
+        return <code>{value}</code>;
       },
-      cycle: function Cycle({ value }) {
-        return (
-          <SchemaComponent
-            schema={{
-              type: 'string',
-              name: 'cycle',
-              'x-component': 'Cron',
-              'x-read-pretty': true,
-            }}
-          />
-        );
-      },
+      cycle: Cron.ReadPretty,
     },
     fieldset: {
       digits: {
@@ -270,160 +256,13 @@ export function RuleConfigForm() {
   ) : null;
 }
 
-export const sequence: IField = {
-  name: 'sequence',
-  type: 'object',
-  group: 'advanced',
-  order: 3,
-  title: `{{t("Sequence", { ns: "${NAMESPACE}" })}}`,
-  sortable: true,
-  default: {
-    type: 'sequence',
-    uiSchema: {
-      type: 'string',
-      'x-component': 'Input',
-      'x-component-props': {},
-    },
-  },
-  availableTypes: ['string'],
-  hasDefaultValue: false,
-  filterable: {
-    operators: interfacesProperties.operators.string,
-  },
-  titleUsable: true,
-  schemaInitialize(schema: ISchema, { block, field }) {
-    if (block === 'Form') {
-      Object.assign(schema['x-component-props'], {
-        disabled: !field.inputable,
-      });
-    }
-    return schema;
-  },
-  properties: {
-    ...interfacesProperties.defaultProps,
-    unique: interfacesProperties.unique,
-    patterns: {
-      type: 'array',
-      title: `{{t("Sequence rules", { ns: "${NAMESPACE}" })}}`,
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'ArrayTable',
-      items: {
-        type: 'object',
-        properties: {
-          sort: {
-            type: 'void',
-            'x-component': 'ArrayTable.Column',
-            'x-component-props': { width: 50, title: '', align: 'center' },
-            properties: {
-              sort: {
-                type: 'void',
-                'x-component': 'ArrayTable.SortHandle',
-              },
-            },
-          },
-          type: {
-            type: 'void',
-            'x-component': 'ArrayTable.Column',
-            'x-component-props': { title: `{{t("Type", { ns: "${NAMESPACE}" })}}` },
-            // 'x-hidden': true,
-            properties: {
-              type: {
-                type: 'string',
-                name: 'type',
-                required: true,
-                'x-decorator': 'FormItem',
-                'x-component': RuleTypeSelect,
-              },
-            },
-          },
-          options: {
-            type: 'void',
-            'x-component': 'ArrayTable.Column',
-            'x-component-props': { title: `{{t("Rule content", { ns: "${NAMESPACE}" })}}` },
-            properties: {
-              options: {
-                type: 'object',
-                name: 'options',
-                'x-component': RuleOptions,
-              },
-            },
-          },
-          operations: {
-            type: 'void',
-            'x-component': 'ArrayTable.Column',
-            'x-component-props': {
-              title: `{{t("Operations", { ns: "${NAMESPACE}" })}}`,
-              dataIndex: 'operations',
-              fixed: 'right',
-              className: css`
-                > *:not(:last-child) {
-                  margin-right: 0.5em;
-                }
-                button {
-                  padding: 0;
-                }
-              `,
-            },
-            properties: {
-              config: {
-                type: 'void',
-                properties: {
-                  options: {
-                    type: 'object',
-                    'x-component': RuleConfigForm,
-                  },
-                },
-              },
-              remove: {
-                type: 'void',
-                'x-component': 'ArrayTable.Remove',
-              },
-            },
-          },
-        },
-      },
-      properties: {
-        add: {
-          type: 'void',
-          'x-component': 'ArrayTable.Addition',
-          'x-component-props': {
-            defaultValue: { type: 'integer', options: { digits: 1, start: 0 } },
-          },
-          title: `{{t("Add rule", { ns: "${NAMESPACE}" })}}`,
-        },
-      },
-    },
-    inputable: {
-      type: 'boolean',
-      title: `{{t("Inputable", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-    },
-    match: {
-      type: 'boolean',
-      title: `{{t("Match rules", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-reactions': {
-        dependencies: ['inputable'],
-        fulfill: {
-          state: {
-            value: '{{$deps[0] && $self.value}}',
-            visible: '{{$deps[0] === true}}',
-          },
-        },
-      },
-    },
-  },
-};
-
 export class SequenceFieldInterface extends CollectionFieldInterface {
   name = 'sequence';
   type = 'object';
   group = 'advanced';
   order = 3;
   title = `{{t("Sequence", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.", { ns: "${NAMESPACE}" })}}`;
   sortable = true;
   default = {
     type: 'sequence',

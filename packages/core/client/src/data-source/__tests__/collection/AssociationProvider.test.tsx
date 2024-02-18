@@ -8,6 +8,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   DataSourceApplicationProvider,
+  useParentCollection,
 } from '@nocobase/client';
 import collections from '../collections.json';
 
@@ -48,10 +49,12 @@ describe('AssociationProvider', () => {
   test('should render', () => {
     const Demo = () => {
       const collection = useCollectionV2();
+      const parentCollection = useParentCollection();
       const collectionFiled = useCollectionFieldV2();
       return (
         <>
           <div data-testid="collection">{collection.name}</div>
+          <div data-testid="parent-collection">{parentCollection.name}</div>
           <div data-testid="field">{collectionFiled.name}</div>
         </>
       );
@@ -60,16 +63,19 @@ describe('AssociationProvider', () => {
     renderApp(Demo, { name: 'users.roles' });
 
     expect(screen.getByTestId('collection')).toHaveTextContent('roles');
+    expect(screen.getByTestId('parent-collection')).toHaveTextContent('users');
     expect(screen.getByTestId('field')).toHaveTextContent('roles');
   });
 
   test('should render with dataSource', () => {
     const Demo = () => {
       const collection = useCollectionV2();
+      const parentCollection = useParentCollection();
       const collectionFiled = useCollectionFieldV2();
       return (
         <>
           <div data-testid="collection">{collection.name}</div>
+          <div data-testid="parent-collection">{parentCollection.name}</div>
           <div data-testid="field">{collectionFiled.name}</div>
         </>
       );
@@ -78,6 +84,7 @@ describe('AssociationProvider', () => {
     renderApp(Demo, { name: 'users.roles', dataSource: 'a' });
 
     expect(screen.getByTestId('collection')).toHaveTextContent('roles');
+    expect(screen.getByTestId('parent-collection')).toHaveTextContent('users');
     expect(screen.getByTestId('field')).toHaveTextContent('roles');
   });
 

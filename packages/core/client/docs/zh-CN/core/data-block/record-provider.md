@@ -1,6 +1,6 @@
 # RecordProvider
 
-用于提供 [Record](/core/collection/record) 实例。
+用于提供 [Record](./record) 实例。
 
 ## 组件
 
@@ -20,9 +20,9 @@ interface RecordProviderProps<DataType = {}, ParentDataType = {}> {
 
 - 详解
 
-参数的具体说明参见 [Record](/core/collection/record)。
+参数的具体说明参见 [Record](./record)。
 
-需要说明的是 `record` 和 `parentRecord` 即可以是普通的对象，也可以是 [Record](/core/collection/record) 实例，但最终会转为 `RecordV2` 实例，并通过 context 传递给子组件。
+需要说明的是 `record` 和 `parentRecord` 即可以是普通的对象，也可以是 [Record](./record) 实例，但最终会转为 `RecordV2` 实例，并通过 context 传递给子组件。
 
 ## 示例
 

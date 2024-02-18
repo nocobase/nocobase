@@ -1,6 +1,6 @@
 # Collection
 
-Collection 数据表类。
+Collection 数据表类，其被 [CollectionManager](/core/data-source/collection-manager) 管理。
 
 ## 类型
 
@@ -111,11 +111,11 @@ export interface CollectionOptionsV2 {
 
 - title: Collection 的标题，用于显示。
 
-- fields: 字段列表，详细说明请查看 [CollectionField](/core/collection/collection-field)
+- fields: 字段列表，详细说明请查看 [CollectionField](/core/data-source/collection-field)
 
-- template: 模板标识，用于标识该 Collection 是由哪个模板创建的，详细说明请查看 [CollectionTemplate](/core/collection/collection-template)
+- template: 模板标识，用于标识该 Collection 是由哪个模板创建的，详细说明请查看 [CollectionTemplate](/core/data-source/collection-template)
 
-- dataSource: 数据源标识，用于标识该 Collection 是由哪个数据源创建的，详细说明请查看 [CollectionDataSource](/core/collection/collection-manager#datasource)
+- dataSource: 数据源标识，用于标识该 Collection 是由哪个数据源创建的，详细说明请查看 [CollectionDataSource](/core/data-source/collection-manager#datasource)
 
 - duplicator
 
@@ -138,7 +138,7 @@ export interface CollectionOptionsV2 {
 
 ### collection.collectionManager
 
-[CollectionManager](/core/collection/collection-manager) 的实例。
+[CollectionManager](/core/data-source/collection-manager) 的实例。
 
 ### collection.titleFieldName
 
@@ -146,7 +146,7 @@ export interface CollectionOptionsV2 {
 
 ### 其他属性
 
-其他属性同 [CollectionOptions](/core/collection/collection#collectionoptions)。
+其他属性同 [CollectionOptions](/core/data-source/collection#collectionoptions)。
 
 ## 实例方法
 

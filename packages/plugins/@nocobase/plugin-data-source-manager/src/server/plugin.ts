@@ -55,7 +55,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
 
       if (type === 'hasMany') {
-        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'target']);
+        validatePresents(['foreignKey', 'sourceKey', 'target']);
       }
 
       if (type == 'hasOne') {

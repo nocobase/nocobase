@@ -27,7 +27,10 @@ export const useCollectionManager = (dataSourceName?: string) => {
   );
   const templates = useMemo(() => dm?.collectionTemplateManager.getCollectionTemplates(), [dm, random]);
   const getCollections = useCallback(() => {
-    return dm?.getCollections({ dataSource: dataSourceNameValue }).map((item) => item.getOptions());
+    return dm
+      ?.getDataSource(dataSourceNameValue)
+      ?.collectionManager?.getCollections()
+      .map((item) => item.getOptions());
   }, [dm, dataSource]);
 
   const getCm = useCallback(
@@ -38,7 +41,10 @@ export const useCollectionManager = (dataSourceName?: string) => {
     [cm, dm, dataSourceNameValue],
   );
 
-  const collections = useMemo(() => dm?.getCollections(), [dm, random]);
+  const collections = useMemo(
+    () => dm?.getDataSource(DEFAULT_DATA_SOURCE_NAME)?.collectionManager?.getCollections(),
+    [dm, random],
+  );
   const service = useCallback(
     () =>
       dm

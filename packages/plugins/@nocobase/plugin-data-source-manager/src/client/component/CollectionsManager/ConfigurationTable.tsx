@@ -1,7 +1,7 @@
 import { useForm, useField } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
@@ -20,7 +20,6 @@ import {
   FieldSummary,
   TemplateSummary,
   ResourceActionContext,
-  useDataSourceManagerV2,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
@@ -90,12 +89,6 @@ export const ConfigurationTable = () => {
   const api = useAPIClient();
   const resource = api.resource('dbViews');
   const compile = useCompile();
-  const dm = useDataSourceManagerV2();
-  useEffect(() => {
-    return () => {
-      dm.getDataSource(name).reload();
-    };
-  }, []);
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
       label: compile(item.name),
