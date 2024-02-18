@@ -145,6 +145,64 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     const plugin = this;
+
+    const mapDataSourceWithCollection = (dataSourceModel, appendCollections = true) => {
+      const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
+
+      const item: any = {
+        key: dataSourceModel.get('key'),
+        displayName: dataSourceModel.get('displayName'),
+        status: dataSourceStatus,
+      };
+
+      if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
+        item['errorMessage'] = plugin.dataSourceErrors[dataSourceModel.get('key')].message;
+      }
+
+      const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
+
+      if (!dataSource) {
+        return item;
+      }
+      if (appendCollections) {
+        const collections = dataSource.collectionManager.getCollections();
+
+        item.collections = collections.map((collection) => {
+          const collectionOptions = collection.options;
+          const fields = [...collection.fields.values()].map((field) => field.options);
+
+          return {
+            ...collectionOptions,
+            fields,
+          };
+        });
+      }
+
+      return item;
+    };
+
+    this.app.use(async (ctx, next) => {
+      await next();
+      if (!ctx.action) {
+        return;
+      }
+
+      const { actionName, resourceName, params } = ctx.action;
+
+      if (resourceName === 'dataSources' && actionName == 'get') {
+        let appendCollections = false;
+        const appends = ctx.action.params.appends;
+        if (appends && appends.includes('collections')) {
+          appendCollections = true;
+        }
+        if (ctx.body.data) {
+          ctx.body.data = mapDataSourceWithCollection(ctx.body.data, appendCollections);
+        } else {
+          ctx.body = mapDataSourceWithCollection(ctx.body, appendCollections);
+        }
+      }
+    });
+
     this.app.actions({
       async ['dataSources:listEnabled'](ctx, next) {
         const dataSources = await ctx.db.getRepository('dataSources').find({
@@ -154,37 +212,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         });
 
         ctx.body = dataSources.map((dataSourceModel) => {
-          const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
-
-          const item: any = {
-            key: dataSourceModel.get('key'),
-            displayName: dataSourceModel.get('displayName'),
-            status: dataSourceStatus,
-          };
-
-          if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
-            item['errorMessage'] = plugin.dataSourceErrors[dataSourceModel.get('key')].message;
-          }
-
-          const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
-
-          if (!dataSource) {
-            return item;
-          }
-
-          const collections = dataSource.collectionManager.getCollections();
-
-          item.collections = collections.map((collection) => {
-            const collectionOptions = collection.options;
-            const fields = [...collection.fields.values()].map((field) => field.options);
-
-            return {
-              ...collectionOptions,
-              fields,
-            };
-          });
-
-          return item;
+          return mapDataSourceWithCollection(dataSourceModel);
         });
 
         await next();

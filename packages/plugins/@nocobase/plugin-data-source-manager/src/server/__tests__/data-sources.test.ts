@@ -68,6 +68,8 @@ describe('data source', async () => {
   });
 
   it('should load datasource async', async () => {
+    class MockCollectionManager extends CollectionManager {}
+
     class MockDataSource extends DataSource {
       static testConnection(options?: any): Promise<boolean> {
         return Promise.resolve(true);
@@ -78,7 +80,7 @@ describe('data source', async () => {
       }
 
       createCollectionManager(options?: any): any {
-        return undefined;
+        return new MockCollectionManager();
       }
     }
 
@@ -102,6 +104,18 @@ describe('data source', async () => {
 
     const listResp2 = await app.agent().resource('dataSources').list();
     expect(listResp2.body.data[0].status).toBe('loaded');
+
+    // get data source
+    const getResp = await app
+      .agent()
+      .resource('dataSources')
+      .get({
+        filterByTk: 'mockInstance1',
+        appends: ['collections'],
+      });
+
+    expect(getResp.status).toBe(200);
+    expect(getResp.body.data.status).toBe('loaded');
   });
 
   it('should not load connection after change enabled status', async () => {
