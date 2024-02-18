@@ -46,13 +46,13 @@ export class M2OFieldInterface extends CollectionFieldInterface {
   availableTypes = ['belongsTo'];
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
     // schema['type'] = 'object';
-    if (targetCollection?.titleField) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-        value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
-      };
-      schema['x-component-props'].fieldNames.label = field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
-    }
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+    };
+    schema['x-component-props'].fieldNames.label =
+      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
+
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;

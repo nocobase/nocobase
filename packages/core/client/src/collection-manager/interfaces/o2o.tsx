@@ -402,13 +402,12 @@ export class OBOFieldInterface extends CollectionFieldInterface {
       schema['x-component-props']['size'] = 'small';
     }
 
-    if (targetCollection?.titleField) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-        value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
-      };
-      schema['x-component-props'].fieldNames.label = field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
-    }
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+    };
+    schema['x-component-props'].fieldNames.label =
+      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
   }
   properties = {
     'uiSchema.title': {

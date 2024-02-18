@@ -46,13 +46,12 @@ export class O2MFieldInterface extends CollectionFieldInterface {
   availableTypes = ['hasMany'];
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
     // schema['type'] = 'array';
-    if (targetCollection?.titleField) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-        value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
-      };
-      schema['x-component-props'].fieldNames.label = field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
-    }
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+    };
+    schema['x-component-props'].fieldNames.label =
+      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
