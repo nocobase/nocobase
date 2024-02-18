@@ -10,7 +10,7 @@ export interface DataSourceOptionsV2 {
   displayName: string;
   collections?: CollectionOptionsV2[];
   errorMessage?: string;
-  status?: 'loaded' | 'loading-failed' | 'loading';
+  status?: 'loaded' | 'loading-failed' | 'loading' | 'reloading';
 }
 
 export type DataSourceFactory = new (

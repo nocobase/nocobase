@@ -30,18 +30,18 @@ export const DataSourceProviderV2: FC<DataSourceProviderPropsV2> = ({ children, 
     return (
       <CollectionDeletedPlaceholder
         type="DataSource"
-        name={dataSource}
+        name={dataSourceValue.displayName || dataSource}
         message={dataSourceValue.errorMessage || 'loading failed'}
       />
     );
   }
 
-  if (dataSourceValue.status === 'loading') {
+  if (dataSourceValue.status === 'loading' || dataSourceValue.status === 'reloading') {
     return (
       <CardItem>
         <Result
           icon={<LoadingOutlined />}
-          title={`${dataSource} ${t('data source')} ${t('loading')}...`}
+          title={`${dataSourceValue.displayName || dataSource} ${t('data source')} ${t('loading')}...`}
           extra={
             <Button
               type="primary"
