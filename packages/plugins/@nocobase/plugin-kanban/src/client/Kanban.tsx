@@ -19,7 +19,7 @@ const useCreateActionProps = () => {
   };
 };
 
-export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
+export const toColumns = (groupField: any, dataSource: Array<any> = [], primaryKey) => {
   const columns = {
     __unknown__: {
       id: '__unknown__',
@@ -39,7 +39,7 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
   dataSource.forEach((ds) => {
     const value = ds[groupField.name];
     if (value && columns[value]) {
-      columns[value].cards.push(ds);
+      columns[value].cards.push({ ...ds, id: ds[primaryKey] });
     } else {
       columns.__unknown__.cards.push(ds);
     }
