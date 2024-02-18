@@ -168,6 +168,16 @@ export const PresetFields = observer((props: any) => {
       }),
     );
   }, [form.values?.fields]);
+  useEffect(() => {
+    const config = {
+      autoGenId: false,
+      createdAt: false,
+      createdBy: false,
+      updatedAt: false,
+      updatedBy: false,
+    };
+    form.setValues({ ...form.values, ...config });
+  }, []);
   return (
     <Table
       rowKey="name"
