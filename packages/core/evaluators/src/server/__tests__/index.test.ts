@@ -43,7 +43,8 @@ describe('evaluate', () => {
         return now;
       },
     });
-    expect(result).toBe(now.toISOString());
+    expect(result).toBeInstanceOf(Date);
+    expect(result).toBe(now);
   });
 
   it('deep array', () => {

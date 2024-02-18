@@ -29,10 +29,6 @@ export function evaluate(this: Evaluator, expression: string, scope: Scope = {})
       item = item();
     }
 
-    if (item instanceof Date) {
-      item = item.toISOString();
-    }
-
     const randomKey = `$$${Math.random().toString(36).slice(2, 10).padEnd(8, '0')}`;
     if (item == null) {
       return 'null';
