@@ -19,10 +19,10 @@ export class O2OFieldInterface extends CollectionFieldInterface {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -36,10 +36,10 @@ export class O2OFieldInterface extends CollectionFieldInterface {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
@@ -197,10 +197,10 @@ export class OHOFieldInterface extends CollectionFieldInterface {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -214,10 +214,10 @@ export class OHOFieldInterface extends CollectionFieldInterface {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
@@ -368,10 +368,10 @@ export class OBOFieldInterface extends CollectionFieldInterface {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -384,10 +384,10 @@ export class OBOFieldInterface extends CollectionFieldInterface {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
@@ -404,8 +404,10 @@ export class OBOFieldInterface extends CollectionFieldInterface {
 
     if (targetCollection?.titleField) {
       schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
-      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+      };
+      schema['x-component-props'].fieldNames.label = field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
     }
   }
   properties = {
