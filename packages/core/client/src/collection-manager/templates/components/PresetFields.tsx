@@ -185,8 +185,6 @@ export const PresetFields = observer((props: any) => {
             updatedAt: !!fields.find((v) => v.name === 'updatedAt'),
             updatedBy: !!fields.find((v) => v.name === 'updatedBy'),
           };
-          console.log(fields, selectedRows);
-
           setSelectedRowKeys(
             fields?.map?.((v) => {
               return v.name;
