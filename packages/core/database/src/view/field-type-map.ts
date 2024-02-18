@@ -1,6 +1,7 @@
 const postgres = {
   'character varying': 'string',
   varchar: 'string',
+  character: 'string',
   text: 'text',
   char: 'string',
   oid: 'string',
@@ -9,22 +10,26 @@ const postgres = {
   smallint: 'integer',
   integer: 'integer',
   bigint: 'bigInt',
-  decimal: 'float',
+  decimal: 'decimal',
   numeric: 'float',
+  real: 'float',
   'double precision': 'float',
 
   'timestamp without time zone': 'date',
   'timestamp with time zone': 'date',
+  'time without time zone': 'time',
+
   date: 'date',
   boolean: 'boolean',
 
   json: ['json', 'array'],
   jsonb: ['json', 'array', 'jsonb'],
 
-  point: 'point',
-  path: 'lineString',
-  polygon: 'polygon',
-  circle: 'circle',
+  point: 'json',
+  path: 'json',
+  polygon: 'json',
+  circle: 'json',
+  uuid: 'string',
 };
 
 const mysql = {
@@ -39,6 +44,8 @@ const mysql = {
   boolean: 'boolean',
 
   tinyint: 'integer',
+  mediumint: 'integer',
+  decimal: 'decimal',
   datetime: 'date',
   timestamp: 'date',
   json: ['json', 'array'],
