@@ -1,4 +1,5 @@
 import { Schema } from '@formily/json-schema';
+import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useRecordV2 } from '../../../data-source/record/RecordProvider';
@@ -63,7 +64,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 变量值 */
     currentRecordCtx: record?.data,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord: !!record?.data,
+    shouldDisplayCurrentRecord: !_.isEmpty(record?.data),
     /** 当前记录对应的 collection name */
     collectionName,
   };
