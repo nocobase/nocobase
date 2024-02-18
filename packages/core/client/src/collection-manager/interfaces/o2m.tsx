@@ -19,10 +19,10 @@ export const o2m: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -35,10 +35,10 @@ export const o2m: IField = {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },

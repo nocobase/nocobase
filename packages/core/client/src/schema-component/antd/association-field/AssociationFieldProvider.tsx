@@ -1,16 +1,33 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
+import { merge } from '@formily/shared';
+import { useCollectionManager, useCollection } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
 
 export const AssociationFieldProvider = observer(
   (props) => {
     const field = useField<Field>();
     const { getCollectionJoinField, getCollection } = useCollectionManager();
+    const { getField } = useCollection();
     const fieldSchema = useFieldSchema();
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
+    useEffect(() => {
+      //处理关系字段 fieldNames
+      const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
+      const targetCollection = getCollection(collectionField?.target);
+      let fieldNames = {};
+      if (collectionField?.target && targetCollection) {
+        const initField = collectionField?.targetKey || targetCollection.getPrimaryKey();
+        fieldNames = {
+          label: field.componentProps.fieldNames?.label || initField,
+          value: initField,
+        };
+      }
+      const componentProps = merge(field.componentProps || {}, { fieldNames });
+      field.setComponentProps(componentProps);
+    }, []);
 
     const collectionField = useMemo(
       () => getCollectionJoinField(fieldSchema['x-collection-field']),

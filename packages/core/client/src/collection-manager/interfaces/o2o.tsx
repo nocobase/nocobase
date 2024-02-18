@@ -19,10 +19,10 @@ export const o2o: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -197,10 +197,10 @@ export const oho: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -214,10 +214,10 @@ export const oho: IField = {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
@@ -367,10 +367,10 @@ export const obo: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -383,10 +383,10 @@ export const obo: IField = {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },

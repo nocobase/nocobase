@@ -20,10 +20,10 @@ export const m2m: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -36,10 +36,10 @@ export const m2m: IField = {
         'x-component-props': {
           // mode: 'tags',
           multiple: true,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },

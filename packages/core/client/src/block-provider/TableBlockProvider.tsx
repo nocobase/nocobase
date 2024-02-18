@@ -37,7 +37,6 @@ interface Props {
 
 const InternalTableBlockProvider = (props: Props) => {
   const { params, showIndex, dragSort, rowKey, childrenColumnName, fieldNames, ...others } = props;
-  console.log(props);
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
