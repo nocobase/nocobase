@@ -17,49 +17,25 @@ export function appendArrayColumn(scope, key) {
   }
 }
 
-function replaceNumberIndex(path: string, scope: Scope): string {
-  const segments = path.split('.');
-  const paths: string[] = [];
-
-  for (let i = 0; i < segments.length; i++) {
-    const p = segments[i];
-    if (p[0] && '0123456789'.indexOf(p[0]) > -1) {
-      paths.push(Array.isArray(get(scope, segments.slice(0, i))) ? `[${p}]` : `["${p}"]`);
-    } else {
-      if (i) {
-        paths.push('.', p);
-      } else {
-        paths.push(p);
-      }
-    }
-  }
-
-  return paths.join('');
-}
-
 export function evaluate(this: Evaluator, expression: string, scope: Scope = {}) {
   const context = cloneDeep(scope);
+  const newContext = {};
   const exp = expression.trim().replace(/{{\s*([^{}]+)\s*}}/g, (_, v) => {
     appendArrayColumn(context, v);
 
-    const item = get(context, v);
+    let item = get(context, v);
 
-    let result;
+    if (typeof item === 'function') {
+      item = item();
+    }
 
+    const randomKey = `$$${Math.random().toString(36).slice(2, 10).padEnd(8, '0')}`;
     if (item == null) {
-      result = 'null';
-    } else if (typeof item === 'function') {
-      result = item();
-      result = typeof result === 'string' ? `'${result.replace(/'/g, "\\'")}'` : result;
-    } else {
-      result = replaceNumberIndex(v, context);
+      return 'null';
     }
-
-    if (result instanceof Date) {
-      result = `'${result.toISOString()}'`;
-    }
-
-    return ` ${result} `;
+    newContext[randomKey] = item;
+    return ` ${randomKey} `;
   });
-  return this(exp, context);
+
+  return this(exp, newContext);
 }
