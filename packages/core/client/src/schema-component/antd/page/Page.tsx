@@ -4,7 +4,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -30,25 +30,11 @@ export const Page = (props) => {
   const { children, ...others } = props;
   const { t } = useTranslation();
   const compile = useCompile();
-  const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
+  const { title = fieldSchema.title } = useDocumentTitle();
   const dn = useDesignable();
   const { theme } = useGlobalTheme();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
-
-  // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
-  const [hasMounted, setHasMounted] = useState(false);
-  useEffect(() => {
-    setTimeout(() => {
-      setHasMounted(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!title) {
-      setTitle(t(fieldSchema.title));
-    }
-  }, [fieldSchema.title, title]);
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
@@ -89,7 +75,6 @@ export const Page = (props) => {
                   <DndContext>
                     <Tabs
                       size={'small'}
-                      animated={hasMounted}
                       activeKey={activeKey}
                       onTabClick={(activeKey) => {
                         setLoading(true);
