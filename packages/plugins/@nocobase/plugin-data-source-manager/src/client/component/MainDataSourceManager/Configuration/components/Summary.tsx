@@ -2,7 +2,7 @@ import { observer } from '@formily/react';
 import { Tag } from 'antd';
 import { useAntdToken } from 'antd-style';
 import React, { useMemo } from 'react';
-import { useCompile } from '../../../schema-component';
+import { useCompile } from '@nocobase/client';
 
 const Summary = observer(
   (props: { schema: any; label: string }) => {

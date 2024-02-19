@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager } from '../../hooks';
+import { useCollectionManager } from '@nocobase/client';
 import Summary from './Summary';
 
 export const TemplateSummary = (props: { schemaKey: string }) => {

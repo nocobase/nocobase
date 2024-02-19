@@ -1,11 +1,18 @@
 import { useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
-import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext } from '../ResourceActionProvider';
-import { useCancelAction } from '../action-hooks';
+import {
+  useAPIClient,
+  useRequest,
+  RecordProvider,
+  useRecord,
+  ActionContextProvider,
+  SchemaComponent,
+  useActionContext,
+  useCompile,
+  useResourceActionContext,
+  useCancelAction,
+} from '@nocobase/client';
 import { CollectionCategroriesContext } from '../context';
 import * as components from './components';
 import { collectionCategoryEditSchema } from './schemas/collections';

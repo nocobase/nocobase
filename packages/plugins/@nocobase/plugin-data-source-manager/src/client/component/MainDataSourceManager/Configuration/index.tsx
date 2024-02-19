@@ -1,5 +1,4 @@
 import { registerValidateFormats } from '@formily/core';
-
 export * from './ConfigurationTable';
 export * from './components';
 export * from './CollectionFieldsTable';

@@ -41,7 +41,7 @@ const schema2: ISchema = {
   },
 };
 
-export const CollectionManagerPane = () => {
+export const MainDataSourceManager = () => {
   return (
     // <Card bordered={false}>
     <SchemaComponent

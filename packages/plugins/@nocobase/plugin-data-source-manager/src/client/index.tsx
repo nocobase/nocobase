@@ -5,6 +5,7 @@ import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionMan
 import { CollectionManager } from './component/CollectionsManager';
 import { PermissionManager } from './component/PermissionManager';
 import { BreadcumbTitle } from './component/BreadcumbTitle';
+import { MainDataSourceManager } from './component/MainDataSourceManager';
 import React from 'react';
 import { ThirdDataSource } from './ThridDataSource';
 
@@ -29,7 +30,24 @@ export class PluginDataSourceManagerClient extends Plugin {
       isTopLevel: false,
       sort: 100,
     });
-
+    this.app.pluginSettingsManager.add(`${NAMESPACE}/main`, {
+      title: <BreadcumbTitle />,
+      icon: 'ClusterOutlined',
+      isTopLevel: false,
+      sort: 100,
+    });
+    this.app.pluginSettingsManager.add(`${NAMESPACE}/main.collections`, {
+      title: `{{t("Collections", { ns: "${NAMESPACE}" })}}`,
+      Component: MainDataSourceManager,
+      topLevelName: `${NAMESPACE}/main`,
+      pluginKey: NAMESPACE,
+    });
+    this.app.pluginSettingsManager.add(`${NAMESPACE}/main.permissions`, {
+      title: `{{t("Permissions", { ns: "${NAMESPACE}" })}}`,
+      Component: PermissionManager,
+      topLevelName: `${NAMESPACE}/main`,
+      pluginKey: NAMESPACE,
+    });
     this.app.pluginSettingsManager.add(`${NAMESPACE}/:name.collections`, {
       title: `{{t("Collections", { ns: "${NAMESPACE}" })}}`,
       Component: CollectionManager,
