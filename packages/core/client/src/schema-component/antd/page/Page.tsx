@@ -4,7 +4,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -45,9 +45,14 @@ export const Page = (props) => {
     () => searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
     [fieldSchema.properties, searchParams],
   );
-  const [height, setHeight] = useState(0);
   const { wrapSSR, hashId, componentCls } = useStyles();
   const aclStyles = useAClStyles();
+  const headerRef = useRef(null);
+  const headerHeightRef = useRef(0);
+
+  useEffect(() => {
+    headerHeightRef.current = Math.floor(headerRef.current?.getBoundingClientRect().height || 0) + 1;
+  }, []);
 
   const handleErrors = (error) => {
     console.error(error);
@@ -58,11 +63,7 @@ export const Page = (props) => {
     <FilterBlockProvider>
       <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
         <PageDesigner title={fieldSchema.title || title} />
-        <div
-          ref={(ref) => {
-            setHeight(Math.floor(ref?.getBoundingClientRect().height || 0) + 1);
-          }}
-        >
+        <div ref={headerRef}>
           {!disablePageHeader && (
             <AntdPageHeader
               className={classNames('pageHeaderCss', pageHeaderTitle || enablePageTabs ? '' : 'height0')}
@@ -165,7 +166,15 @@ export const Page = (props) => {
         </div>
         <div className="nb-page-wrapper">
           <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
-            {PageContent(loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey, height, props)}
+            {PageContent(
+              loading,
+              disablePageHeader,
+              enablePageTabs,
+              fieldSchema,
+              activeKey,
+              headerHeightRef.current,
+              props,
+            )}
           </ErrorBoundary>
         </div>
       </div>
