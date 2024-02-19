@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { DataTypes } from 'sequelize';
+import { Model } from '../model';
 import { BaseColumnFieldOptions, Field } from './field';
 
 export interface PasswordFieldOptions extends BaseColumnFieldOptions {
@@ -46,7 +47,7 @@ export class PasswordField extends Field {
 
   init() {
     const { name } = this.options;
-    this.listener = async (model) => {
+    this.listener = async (model: Model) => {
       if (!model.changed(name as any)) {
         return;
       }
@@ -55,7 +56,7 @@ export class PasswordField extends Field {
         const hash = await this.hash(value);
         model.set(name, hash);
       } else {
-        model.set(name, null);
+        model.set(name, model.previous(name));
       }
     };
   }

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "SAML 认证 - SSO 登录",
   "description": "SAML authentication for NocoBase",
   "description.zh-CN": "NocoBase 的 SAML 身份验证",
-  "version": "0.19.0-alpha.5",
+  "version": "0.19.0-alpha.6",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/saml",
@@ -28,5 +28,7 @@
     "@nocobase/test": "0.x"
   },
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
-  "keywords":["security","users"]
+  "keywords": [
+    "Users & permissions"
+  ]
 }

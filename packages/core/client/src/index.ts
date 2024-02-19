@@ -10,6 +10,7 @@ import 'dayjs/plugin/weekday';
 
 // 重置浏览器样式
 import 'antd/dist/reset.css';
+import './global.less';
 
 export * from '@emotion/css';
 export * from './acl';

@@ -1,6 +1,7 @@
 const postgres = {
   'character varying': 'string',
   varchar: 'string',
+  character: 'string',
   text: 'text',
   char: 'string',
   oid: 'string',
@@ -9,36 +10,53 @@ const postgres = {
   smallint: 'integer',
   integer: 'integer',
   bigint: 'bigInt',
-  decimal: 'float',
+  decimal: 'decimal',
   numeric: 'float',
+  real: 'float',
   'double precision': 'float',
 
   'timestamp without time zone': 'date',
   'timestamp with time zone': 'date',
+  'time without time zone': 'time',
+
   date: 'date',
   boolean: 'boolean',
 
   json: ['json', 'array'],
   jsonb: ['json', 'array', 'jsonb'],
 
-  point: 'point',
-  path: 'lineString',
-  polygon: 'polygon',
-  circle: 'circle',
+  point: 'json',
+  path: 'json',
+  polygon: 'json',
+  circle: 'json',
+  uuid: 'string',
 };
 
 const mysql = {
+  smallint: ['integer', 'boolean'],
+  tinyint: ['integer', 'boolean'],
+  mediumint: ['integer', 'boolean'],
+
+  'smallint unsigned': ['integer', 'boolean'],
+  'tinyint unsigned': ['integer', 'boolean'],
+  'mediumint unsigned': ['integer', 'boolean'],
+
+  char: 'string',
+  date: 'date',
+  time: 'time',
   varchar: 'string',
   text: 'text',
   longtext: 'text',
   int: 'integer',
+  'int unsigned': 'integer',
   integer: 'integer',
   bigint: 'bigInt',
+  'bigint unsigned': 'bigInt',
   float: 'float',
   double: 'float',
   boolean: 'boolean',
+  decimal: 'decimal',
 
-  tinyint: 'integer',
   datetime: 'date',
   timestamp: 'date',
   json: ['json', 'array'],

@@ -1,7 +1,7 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
-import _, { cloneDeep } from 'lodash';
+import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
@@ -212,14 +212,14 @@ export const useCreateActionProps = () => {
         __parent?.service?.refresh?.();
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
-          await form.reset();
+          await form.reset(undefined, { forceClear: true });
           return;
         }
         if (onSuccess?.manualClose) {
           modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
-              await form.reset();
+              await form.reset(undefined, { forceClear: true });
               if (onSuccess?.redirecting && onSuccess?.redirectTo) {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
@@ -231,7 +231,7 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
-          await form.reset();
+          await form.reset(undefined, { forceClear: true });
           if (onSuccess?.redirecting && onSuccess?.redirectTo) {
             if (isURL(onSuccess.redirectTo)) {
               window.location.href = onSuccess.redirectTo;
@@ -985,6 +985,7 @@ export const useDetailsPaginationProps = () => {
     current: ctx.service?.data?.meta?.page || 1,
     total: count,
     pageSize: 1,
+    showSizeChanger: false,
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });

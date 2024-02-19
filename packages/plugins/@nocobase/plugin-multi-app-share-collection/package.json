@@ -4,7 +4,7 @@
   "displayName.zh-CN": "多应用数据表共享",
   "description": "",
   "description.zh-CN": "",
-  "version": "0.19.0-alpha.5",
+  "version": "0.19.0-alpha.6",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
@@ -24,5 +24,7 @@
     "@nocobase/utils": "0.x"
   },
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
-  "keywords":["system"]
+  "keywords": [
+    "System management"
+  ]
 }

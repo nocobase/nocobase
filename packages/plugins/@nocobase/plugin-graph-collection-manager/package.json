@@ -4,7 +4,7 @@
   "displayName.zh-CN": "可视化的数据表管理",
   "description": "An ER diagram-like tool",
   "description.zh-CN": "类似 ER 图的工具",
-  "version": "0.19.0-alpha.5",
+  "version": "0.19.0-alpha.6",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/graph-collection-manager",
@@ -36,5 +36,7 @@
     "@nocobase/utils": "0.x"
   },
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
-  "keywords":["data model"]
+  "keywords": [
+    "Data Model"
+  ]
 }

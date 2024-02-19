@@ -89,12 +89,20 @@ export const tableColumnInitializers = new SchemaInitializer({
     {
       name: 'divider',
       type: 'divider',
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return fieldSchema['x-component'] !== 'AssociationField.SubTable';
+      },
     },
     {
       type: 'item',
       name: 'add',
       title: '{{t("Action column")}}',
       Component: 'TableActionColumnInitializer',
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return fieldSchema['x-component'] !== 'AssociationField.SubTable';
+      },
     },
   ],
 });

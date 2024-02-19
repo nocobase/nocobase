@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "0.19.0-alpha.5",
+  "version": "0.19.0-alpha.6",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/auth",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/auth",
@@ -27,5 +27,7 @@
   "description": "Basic authentication and authenticator management",
   "description.zh-CN": "提供基础认证功能和扩展认证器管理功能",
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
-  "keywords":["security","users"]
+  "keywords": [
+    "Users & permissions"
+  ]
 }
