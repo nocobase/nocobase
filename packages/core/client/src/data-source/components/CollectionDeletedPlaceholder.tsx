@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { CardItem, useCompile, useDesignable } from '../../schema-component';
 import { useDataSource } from '../data-source/DataSourceProvider';
 import { useDataSourceManager } from '../data-source';
-import { useCollection_deprecated } from '../../collection-manager';
 import { DEFAULT_DATA_SOURCE_NAME } from '../../data-source/data-source/DataSourceManager';
+import { useCollection } from '../collection';
 
 export interface CollectionDeletedPlaceholderProps {
   type: 'Collection' | 'Field' | 'DataSource';
@@ -21,7 +21,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
   const { t } = useTranslation();
   const dataSource = useDataSource();
   const compile = useCompile();
-  const collection = useCollection_deprecated();
+  const collection = useCollection();
   const dataSourceManager = useDataSourceManager();
   const nameValue = useMemo(() => {
     if (type === 'DataSource') {
