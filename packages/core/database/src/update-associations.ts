@@ -444,20 +444,7 @@ export async function updateMultipleAssociation(
       accessorOptions['through'] = throughValue;
     }
 
-    let needCreate = false;
-
     if (isUndefinedOrNull(item[pk])) {
-      needCreate = true;
-    } else {
-      const instance = await association.target.findByPk<any>(item[pk], {
-        transaction,
-      });
-      if (!instance) {
-        needCreate = true;
-      }
-    }
-
-    if (needCreate) {
       // create new record
       const instance = await model[createAccessor](item, accessorOptions);
 
@@ -473,11 +460,9 @@ export async function updateMultipleAssociation(
       const instance = await association.target.findByPk<any>(item[pk], {
         transaction,
       });
-
       if (!instance) {
         continue;
       }
-
       const addAccessor = association.accessors.add;
 
       await model[addAccessor](item[pk], accessorOptions);
