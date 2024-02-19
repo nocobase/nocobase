@@ -25,7 +25,7 @@ import {
 } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { VariablesProvider } from '../../../variables';
 
 const filterByACL = (schema, options) => {
@@ -265,7 +265,7 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const result = useSystemSettings();
-  // const { service } = useCollectionManager();
+  // const { service } = useCollectionManager_deprecated();
   const params = useParams<any>();
   const { token } = useToken();
   const { render } = useAppSpin();

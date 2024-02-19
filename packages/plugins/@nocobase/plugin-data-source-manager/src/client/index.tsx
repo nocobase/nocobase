@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/client';
 import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
 import { NAMESPACE } from './locale';
 import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionManager';
-import { CollectionManager } from './component/CollectionsManager';
+import { CollectionManagerPage } from './component/CollectionsManager';
 import { PermissionManager } from './component/PermissionManager';
 import { BreadcumbTitle } from './component/BreadcumbTitle';
 import React from 'react';
@@ -32,7 +32,7 @@ export class PluginDataSourceManagerClient extends Plugin {
 
     this.app.pluginSettingsManager.add(`${NAMESPACE}/:name.collections`, {
       title: `{{t("Collections", { ns: "${NAMESPACE}" })}}`,
-      Component: CollectionManager,
+      Component: CollectionManagerPage,
       topLevelName: `${NAMESPACE}/:name`,
       pluginKey: NAMESPACE,
     });

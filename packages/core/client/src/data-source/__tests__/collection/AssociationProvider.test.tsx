@@ -1,9 +1,9 @@
 import React, { ComponentType } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
-  AssociationProviderV2,
-  useCollectionFieldV2,
-  useCollectionV2,
+  AssociationProvider,
+  useCollectionField,
+  useCollection,
   Application,
   SchemaComponent,
   SchemaComponentProvider,
@@ -30,7 +30,7 @@ function renderApp(Demo: ComponentType, props: any = {}) {
     name: 'root',
     type: 'void',
     'x-component': 'Demo',
-    'x-decorator': 'AssociationProviderV2',
+    'x-decorator': 'AssociationProvider',
     'x-decorator-props': props,
   };
 
@@ -38,7 +38,7 @@ function renderApp(Demo: ComponentType, props: any = {}) {
     <div data-testid="app">
       <SchemaComponentProvider designable={true}>
         <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
-          <SchemaComponent schema={schema} components={{ Demo, AssociationProviderV2 }} />
+          <SchemaComponent schema={schema} components={{ Demo, AssociationProvider }} />
         </DataSourceApplicationProvider>
       </SchemaComponentProvider>
     </div>,
@@ -48,9 +48,9 @@ function renderApp(Demo: ComponentType, props: any = {}) {
 describe('AssociationProvider', () => {
   test('should render', () => {
     const Demo = () => {
-      const collection = useCollectionV2();
+      const collection = useCollection();
       const parentCollection = useParentCollection();
-      const collectionFiled = useCollectionFieldV2();
+      const collectionFiled = useCollectionField();
       return (
         <>
           <div data-testid="collection">{collection.name}</div>
@@ -69,9 +69,9 @@ describe('AssociationProvider', () => {
 
   test('should render with dataSource', () => {
     const Demo = () => {
-      const collection = useCollectionV2();
+      const collection = useCollection();
       const parentCollection = useParentCollection();
-      const collectionFiled = useCollectionFieldV2();
+      const collectionFiled = useCollectionField();
       return (
         <>
           <div data-testid="collection">{collection.name}</div>

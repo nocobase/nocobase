@@ -1,31 +1,31 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import { DataSourceManagerProviderV2, useDataSourceManagerV2 } from '@nocobase/client';
+import { DataSourceManagerProvider, useDataSourceManager } from '@nocobase/client';
 
-describe('DataSourceManagerProviderV2', () => {
+describe('DataSourceManagerProvider', () => {
   test('should render children', () => {
     const dataSourceManager = {} as any; // Replace with your actual data source manager object
     const { getByText } = render(
-      <DataSourceManagerProviderV2 dataSourceManager={dataSourceManager}>
+      <DataSourceManagerProvider dataSourceManager={dataSourceManager}>
         <div>Test Children</div>
-      </DataSourceManagerProviderV2>,
+      </DataSourceManagerProvider>,
     );
     expect(getByText('Test Children')).toBeInTheDocument();
   });
 });
 
-describe('useDataSourceManagerV2', () => {
+describe('useDataSourceManager', () => {
   test('should return the data source manager', () => {
     const dataSourceManager = {} as any; // Replace with your actual data source manager object
     const TestComponent = () => {
-      const manager = useDataSourceManagerV2();
+      const manager = useDataSourceManager();
       expect(manager).toBe(dataSourceManager);
       return null;
     };
     render(
-      <DataSourceManagerProviderV2 dataSourceManager={dataSourceManager}>
+      <DataSourceManagerProvider dataSourceManager={dataSourceManager}>
         <TestComponent />
-      </DataSourceManagerProviderV2>,
+      </DataSourceManagerProvider>,
     );
   });
 });

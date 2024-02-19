@@ -1,25 +1,21 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
-import type { CollectionManagerV2 } from './CollectionManager';
-import type { CollectionOptionsV2, CollectionV2 } from './Collection';
-import { DataSourceProviderV2, useDataSourceV2 } from '../data-source/DataSourceProvider';
+import type { CollectionManager } from './CollectionManager';
+import type { CollectionOptions, Collection } from './Collection';
+import { DataSourceProvider, useDataSource } from '../data-source/DataSourceProvider';
 import { useExtendCollections } from './ExtendCollectionsProvider';
 
-export const CollectionManagerContextV2 = createContext<CollectionManagerV2>(null);
-CollectionManagerContextV2.displayName = 'CollectionManagerContextV2';
+export const CollectionManagerContext = createContext<CollectionManager>(null);
+CollectionManagerContext.displayName = 'CollectionManagerContext';
 
-export interface CollectionManagerProviderPropsV2 {
-  instance?: CollectionManagerV2;
+export interface CollectionManagerProviderProps {
+  instance?: CollectionManager;
   dataSource?: string;
-  collections?: CollectionOptionsV2[];
+  collections?: CollectionOptions[];
   children?: ReactNode;
 }
 
-const CollectionManagerProviderInnerV2: FC<CollectionManagerProviderPropsV2> = ({
-  instance,
-  children,
-  collections,
-}) => {
-  const dataSource = useDataSourceV2();
+const CollectionManagerProviderInner: FC<CollectionManagerProviderProps> = ({ instance, children, collections }) => {
+  const dataSource = useDataSource();
   const extendCollections = useExtendCollections();
 
   const cm = useMemo(() => {
@@ -30,31 +26,31 @@ const CollectionManagerProviderInnerV2: FC<CollectionManagerProviderPropsV2> = (
     }
     return res;
   }, [instance, collections, dataSource]);
-  return <CollectionManagerContextV2.Provider value={cm}>{children}</CollectionManagerContextV2.Provider>;
+  return <CollectionManagerContext.Provider value={cm}>{children}</CollectionManagerContext.Provider>;
 };
 
-export const CollectionManagerProviderV2: FC<CollectionManagerProviderPropsV2> = ({
+export const CollectionManagerProvider: FC<CollectionManagerProviderProps> = ({
   instance,
   dataSource,
   children,
   collections,
 }) => {
   return (
-    <DataSourceProviderV2 dataSource={dataSource}>
-      <CollectionManagerProviderInnerV2 instance={instance} collections={collections}>
+    <DataSourceProvider dataSource={dataSource}>
+      <CollectionManagerProviderInner instance={instance} collections={collections}>
         {children}
-      </CollectionManagerProviderInnerV2>
-    </DataSourceProviderV2>
+      </CollectionManagerProviderInner>
+    </DataSourceProvider>
   );
 };
 
-export function useCollectionManagerV2() {
-  const context = useContext<CollectionManagerV2>(CollectionManagerContextV2);
+export function useCollectionManager() {
+  const context = useContext<CollectionManager>(CollectionManagerContext);
   return context;
 }
 
-export const useCollectionsV2 = (predicate?: (collection: CollectionV2) => boolean) => {
-  const collectionManager = useCollectionManagerV2();
+export const useCollections = (predicate?: (collection: Collection) => boolean) => {
+  const collectionManager = useCollectionManager();
   const collections = useMemo(() => collectionManager.getCollections(predicate), [collectionManager, predicate]);
   return collections;
 };

@@ -1,13 +1,13 @@
 // import { CascaderProps } from 'antd';
 import _ from 'lodash';
 import { useMemo } from 'react';
-import { CollectionFieldOptionsV2 } from './collection';
-import { DEFAULT_DATA_SOURCE_NAME, DataSourceManagerV2 } from './data-source/DataSourceManager';
+import { CollectionFieldOptions } from './collection';
+import { DEFAULT_DATA_SOURCE_NAME, DataSourceManager } from './data-source/DataSourceManager';
 
 // 等把老的去掉后，再把这个函数的实现从那边移动过来
 // export function getCollectionFieldsOptions(){}
 
-export const isTitleField = (dm: DataSourceManagerV2, field: CollectionFieldOptionsV2) => {
+export const isTitleField = (dm: DataSourceManager, field: CollectionFieldOptions) => {
   return !field.isForeignKey && dm.collectionFieldInterfaceManager.getFieldInterface(field.interface)?.titleUsable;
 };
 

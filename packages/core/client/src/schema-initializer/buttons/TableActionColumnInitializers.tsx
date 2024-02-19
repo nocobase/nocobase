@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaInitializerActionModal, SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCollection } from '../../collection-manager';
+import { useCollection_deprecated } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
@@ -132,7 +132,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -147,7 +147,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -163,7 +163,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
           },
           useVisible() {
             const fieldSchema = useFieldSchema();
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
             return collection.tree && treeTable !== false;
           },
@@ -255,7 +255,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -267,7 +267,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             'x-action': 'customize:table:request',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },

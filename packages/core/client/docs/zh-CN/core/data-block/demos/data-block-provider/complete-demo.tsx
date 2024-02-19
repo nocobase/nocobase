@@ -4,12 +4,12 @@ import {
   SchemaInitializer,
   SchemaInitializerItem,
   SchemaSettings,
-  useDataBlockRequestV2,
-  useCollectionManagerV2,
-  useCollectionV2,
+  useDataBlockRequest,
+  useCollectionManager,
+  useCollection,
   useCompile,
-  useDataBlockPropsV2,
-  useDataBlockV2,
+  useDataBlockProps,
+  useDataBlock,
   useSchemaInitializer,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
@@ -30,10 +30,10 @@ const schema: ISchema = {
 const MyTable = withDynamicSchemaProps(Table);
 
 function useTableProps(): TableProps<any> {
-  const { tableProps } = useDataBlockPropsV2();
-  const { data, loading } = useDataBlockRequestV2<any[]>();
+  const { tableProps } = useDataBlockProps();
+  const { data, loading } = useDataBlockRequest<any[]>();
   const compile = useCompile();
-  const collection = useCollectionV2();
+  const collection = useCollection();
   const columns = useMemo(() => {
     return collection.getFields().map((field) => {
       return {
@@ -57,7 +57,7 @@ const MyTableSettings = new SchemaSettings({
       name: 'bordered',
       type: 'switch',
       useComponentProps() {
-        const { props: blockSettingsProps, dn } = useDataBlockV2();
+        const { props: blockSettingsProps, dn } = useDataBlock();
 
         return {
           title: 'Bordered',
@@ -77,7 +77,7 @@ const TableDataBlockInitializer = () => {
   const handleClick = ({ item }) => {
     insert({
       type: 'void',
-      'x-decorator': 'DataBlockProviderV2',
+      'x-decorator': 'DataBlockProvider',
       'x-decorator-props': {
         collection: item.value,
         action: 'list',
@@ -100,7 +100,7 @@ const TableDataBlockInitializer = () => {
     });
   };
   const compile = useCompile();
-  const collectionManager = useCollectionManagerV2();
+  const collectionManager = useCollectionManager();
   const collectionMenuItems = useMemo(
     () =>
       collectionManager.getCollections().map((collection) => {

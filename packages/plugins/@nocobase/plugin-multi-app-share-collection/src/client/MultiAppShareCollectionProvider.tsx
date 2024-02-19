@@ -1,5 +1,5 @@
 import { useForm } from '@formily/react';
-import { useActionContext, useAPIClient, useRecord } from '@nocobase/client';
+import { useActionContext, useAPIClient, useRecord_deprecated } from '@nocobase/client';
 import { tableActionColumnSchema } from '@nocobase/plugin-multi-app-manager/client';
 import { message } from 'antd';
 import React from 'react';
@@ -10,7 +10,7 @@ const useShareCollectionAction = () => {
   const form = useForm();
   const ctx = useActionContext();
   const api = useAPIClient();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return {
     async run() {
       console.log(form.values.names);

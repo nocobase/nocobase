@@ -7,9 +7,9 @@ import { cloneDeep } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { RecordProvider } from '../../record-provider';
+import { RecordProvider_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 import { useFieldInterfaceOptions } from './interfaces';
@@ -95,7 +95,7 @@ const useCreateSubField = () => {
 };
 
 export const AddSubFieldAction = () => {
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
@@ -135,13 +135,13 @@ export const AddSubFieldAction = () => {
           {t('Add field')}
         </Button>
       </Dropdown>
-      <RecordProvider record={{}}>
+      <RecordProvider_deprecated record={{}}>
         <SchemaComponent
           schema={schema}
           components={{ ...components, ArrayTable }}
           scope={{ createOnly: true, useCreateSubField }}
         />
-      </RecordProvider>
+      </RecordProvider_deprecated>
     </ActionContextProvider>
   );
 };

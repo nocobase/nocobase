@@ -12,9 +12,9 @@ interface CollectionOptions {
   // ....
 }
 
-class CollectionV2 {
+class Collection {
   app: Application;
-  collectionManager: CollectionManagerV2;
+  collectionManager: CollectionManager;
 
   constructor(options: CollectionOptions) {}
 
@@ -33,7 +33,7 @@ class CollectionV2 {
 ```
 
 ```tsx | pure
-const usersCollection = new CollectionV2({
+const usersCollection = new Collection({
   name: 'users',
   title: 'Users',
   fields: [
@@ -52,7 +52,7 @@ const usersCollection = new CollectionV2({
 ## CollectionOptions
 
 ```tsx | pure
-export interface CollectionOptionsV2 {
+export interface CollectionOptions {
   name: string;
   title?: string;
   dataSource?: string;
@@ -80,7 +80,7 @@ export interface CollectionOptionsV2 {
   writableView?: boolean;
 
   filterTargetKey?: string;
-  fields?: CollectionFieldOptionsV2[];
+  fields?: CollectionFieldOptions[];
   model?: any;
   repository?: any;
   sortable?: CollectionSortable;
@@ -157,7 +157,7 @@ export interface CollectionOptionsV2 {
 - 类型
 
 ```tsx | pure
-class CollectionV2 {
+class Collection {
   getOptions(): CollectionOptions;
 }
 ```
@@ -165,7 +165,7 @@ class CollectionV2 {
 - 示例
 
 ```tsx | pure
-const usersCollection = new CollectionV2({
+const usersCollection = new Collection({
   name: 'users',
   title: 'Users',
   fields: [
@@ -183,7 +183,7 @@ console.log(usersCollection.getOptions()); // { name: 'users', title: 'Users', f
 - 类型
 
 ```tsx | pure
-class CollectionV2 {
+class Collection {
   setOptions(options: CollectionOptions): void;
 }
 ```
@@ -207,7 +207,7 @@ collection.setOptions({
 - 类型
 
 ```tsx | pure
-class CollectionV2 {
+class Collection {
   getOption<K extends keyof CollectionOptions>(key: K): CollectionOptions[K];
 }
 ```
@@ -226,7 +226,7 @@ collection.getOption('title'); // 'Users'
 - 类型
 
 ```tsx | pure
-class CollectionV2 {
+class Collection {
   getFields(predicate?: CollectionFieldOptions | ((collection: CollectionFieldOptions) => boolean) | keyof CollectionFieldOptions): any[]
 }
 ```
@@ -262,7 +262,7 @@ collection.getFields(field => field.type === 'string'); // [{ name: 'name', type
 - 类型
 
 ```tsx | pure
-class CollectionV2 {
+class Collection {
   getField(name: SchemaKey): CollectionFieldOptions
 }
 ```
@@ -280,7 +280,7 @@ collection.getField('username'); // { name: 'username', type: 'string', primaryK
 - 类型
 
 ```tsx | pure
-class CollectionV2 {
+class Collection {
   hasField(name: SchemaKey): boolean;
 }
 ```

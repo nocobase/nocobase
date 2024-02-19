@@ -1,20 +1,20 @@
 import React, { FC, ReactNode, createContext, useContext } from 'react';
-import { CollectionFieldProviderV2 } from '../collection-field';
+import { CollectionFieldProvider } from '../collection-field';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
-import { CollectionV2 } from './Collection';
-import { useCollectionManagerV2 } from './CollectionManagerProvider';
-import { CollectionProviderV2, useCollectionV2 } from './CollectionProvider';
+import { Collection } from './Collection';
+import { useCollectionManager } from './CollectionManagerProvider';
+import { CollectionProvider, useCollection } from './CollectionProvider';
 
-export interface AssociationProviderPropsV2 {
+export interface AssociationProviderProps {
   dataSource?: string;
   name: string;
   children?: ReactNode;
 }
 
-const ParentCollectionContext = createContext<CollectionV2>(null);
+const ParentCollectionContext = createContext<Collection>(null);
 
 const ParentCollectionProvider = (props) => {
-  const collection = useCollectionV2();
+  const collection = useCollection();
   return <ParentCollectionContext.Provider value={collection}>{props.children}</ParentCollectionContext.Provider>;
 };
 
@@ -22,21 +22,21 @@ export const useParentCollection = () => {
   return useContext(ParentCollectionContext);
 };
 
-export const AssociationProviderV2: FC<AssociationProviderPropsV2> = (props) => {
+export const AssociationProvider: FC<AssociationProviderProps> = (props) => {
   const { name, children } = props;
 
-  const collectionManager = useCollectionManagerV2();
+  const collectionManager = useCollectionManager();
   const collectionName = collectionManager.getCollectionName(name);
 
   if (!collectionName) return <CollectionDeletedPlaceholder type="Collection" name={name} />;
 
   return (
-    <CollectionProviderV2 name={String(name).split('.')[0]}>
+    <CollectionProvider name={String(name).split('.')[0]}>
       <ParentCollectionProvider>
-        <CollectionFieldProviderV2 name={name}>
-          <CollectionProviderV2 name={collectionName}>{children}</CollectionProviderV2>
-        </CollectionFieldProviderV2>
+        <CollectionFieldProvider name={name}>
+          <CollectionProvider name={collectionName}>{children}</CollectionProvider>
+        </CollectionFieldProvider>
       </ParentCollectionProvider>
-    </CollectionProviderV2>
+    </CollectionProvider>
   );
 };

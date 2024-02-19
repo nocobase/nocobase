@@ -1,4 +1,4 @@
-import { Plugin, useCollection } from '@nocobase/client';
+import { Plugin, useCollection_deprecated } from '@nocobase/client';
 import { FileManagerProvider } from './FileManagerProvider';
 import { FileStoragePane } from './FileStorage';
 import { NAMESPACE } from './locale';
@@ -36,7 +36,7 @@ export class FileManagerPlugin extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return collection.template === 'file';
       },
     });

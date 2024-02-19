@@ -6,13 +6,13 @@ import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplateTag } from '../components/CollectionTemplateTag';
-import type { CollectionOptionsV2 } from '../../../data-source/collection/Collection';
+import type { CollectionOptions } from '../../../data-source/collection/Collection';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
 };
 
-export const collection: CollectionOptionsV2 = {
+export const collection: CollectionOptions = {
   name: 'collections',
   filterTargetKey: 'name',
   targetKey: 'name',

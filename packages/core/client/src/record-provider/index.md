@@ -16,7 +16,7 @@ group:
 <RecordProvider record={{}}></RecordProvider>
 ```
 
-## useRecord()
+## useRecord_deprecated ()
 
 ```ts
 interface User {
@@ -25,5 +25,5 @@ interface User {
   password: string;
 }
 
-const record = useRecord<User>();
+const record = useRecord_deprecated <User>();
 ```

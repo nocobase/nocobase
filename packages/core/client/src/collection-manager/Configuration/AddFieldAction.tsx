@@ -7,11 +7,11 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import * as components from './components';
@@ -140,7 +140,7 @@ export const useCollectionFieldFormValues = () => {
 
 const useCreateCollectionField = () => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -172,13 +172,13 @@ const useCreateCollectionField = () => {
 };
 
 export const AddCollectionField = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <AddFieldAction item={record} {...props} />;
 };
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align, database } = props;
-  const { getInterface, getTemplate, collections, interfaces } = useCollectionManager();
+  const { getInterface, getTemplate, collections, interfaces } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
@@ -307,7 +307,7 @@ export const AddFieldAction = (props) => {
   }, [getInterface, items, record]);
   return (
     record.template !== 'sql' && (
-      <RecordProvider record={record}>
+      <RecordProvider_deprecated record={record}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
             {children || (
@@ -336,7 +336,7 @@ export const AddFieldAction = (props) => {
             }}
           />
         </ActionContextProvider>
-      </RecordProvider>
+      </RecordProvider_deprecated>
     )
   );
 };

@@ -1,8 +1,8 @@
 import { Form } from '@formily/core';
 import { useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider';
-import { useCollection } from '../../collection-manager';
-import { useRecord } from '../../record-provider';
+import { useCollection_deprecated } from '../../collection-manager';
+import { useRecord_deprecated } from '../../record-provider';
 import { useSubFormValue } from '../../schema-component/antd/association-field/hooks';
 import { getDateRanges } from '../../schema-component/antd/date-picker/util';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
@@ -15,10 +15,10 @@ interface Props {
 }
 
 const useLocalVariables = (props?: Props) => {
-  const { name: currentCollectionName } = useCollection();
+  const { name: currentCollectionName } = useCollection_deprecated();
   const { formValue: subFormValue } = useSubFormValue();
   let { name } = useBlockCollection();
-  let currentRecord = useRecord();
+  let currentRecord = useRecord_deprecated();
   let { form } = useFormBlockContext();
 
   if (props?.currentForm) {

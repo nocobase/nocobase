@@ -2,12 +2,12 @@ import { SchemaKey } from '@formily/react';
 import { useAPIClient } from '../../api-client';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { useCallback, useMemo } from 'react';
-import { useCollectionV2 } from '../../data-source/collection/CollectionProvider';
+import { useCollection } from '../../data-source/collection/CollectionProvider';
 
-export type Collection = ReturnType<typeof useCollection>;
+export type Collection_deprecated = ReturnType<typeof useCollection_deprecated>;
 
-export const useCollection = () => {
-  const collection = useCollectionV2<InheritanceCollectionMixin>();
+export const useCollection_deprecated = () => {
+  const collection = useCollection<InheritanceCollectionMixin>();
   const api = useAPIClient();
   const resource = api?.resource(collection?.name);
   const currentFields = useMemo(() => collection?.fields || [], [collection]);

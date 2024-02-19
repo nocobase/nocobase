@@ -10,7 +10,7 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
 import { FlagProvider } from '../../../flag-provider';
-import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
+import { RecordIndexProvider, RecordProvider_deprecated } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
   DefaultValueProvider,
@@ -78,11 +78,11 @@ const ToOneNester = (props) => {
   return (
     <FormActiveFieldsProvider name="nester">
       <SubFormProvider value={field.value}>
-        <RecordProvider record={field.value}>
+        <RecordProvider_deprecated record={field.value}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
           </DefaultValueProvider>
-        </RecordProvider>
+        </RecordProvider_deprecated>
       </SubFormProvider>
     </FormActiveFieldsProvider>
   );
@@ -186,7 +186,7 @@ const ToManyNester = observer(
               </div>
               <FormActiveFieldsProvider name="nester">
                 <SubFormProvider value={value}>
-                  <RecordProvider record={value}>
+                  <RecordProvider_deprecated record={value}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
                         <RecursionField
@@ -196,7 +196,7 @@ const ToManyNester = observer(
                         />
                       </DefaultValueProvider>
                     </RecordIndexProvider>
-                  </RecordProvider>
+                  </RecordProvider_deprecated>
                 </SubFormProvider>
               </FormActiveFieldsProvider>
               <Divider />

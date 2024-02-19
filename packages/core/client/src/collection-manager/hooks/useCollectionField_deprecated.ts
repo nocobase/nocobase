@@ -1,15 +1,15 @@
 import { useAPIClient } from '../../api-client';
-import { useCollectionFieldV2 } from '../../data-source/collection-field/CollectionFieldProvider';
-import { useRecord } from '../../record-provider';
+import { useCollectionField } from '../../data-source/collection-field/CollectionFieldProvider';
+import { useRecord_deprecated } from '../../record-provider';
 import { useCompile } from '../../schema-component';
-import { useCollection } from './useCollection';
+import { useCollection_deprecated } from './useCollection_deprecated';
 
-export const useCollectionField = () => {
-  const collection = useCollection();
-  const record = useRecord();
+export const useCollectionField_deprecated = () => {
+  const collection = useCollection_deprecated();
+  const record = useRecord_deprecated();
   const api = useAPIClient();
   const compile = useCompile();
-  const ctx = useCollectionFieldV2();
+  const ctx = useCollectionField();
   if (!ctx) {
     return {} as any;
   }

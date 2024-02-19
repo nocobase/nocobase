@@ -25,10 +25,10 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
 
-import { type DataSourceManagerOptionsV2, DataSourceManagerV2 } from '../data-source/data-source/DataSourceManager';
+import { type DataSourceManagerOptions, DataSourceManager } from '../data-source/data-source/DataSourceManager';
 import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
-import { CollectionFieldV2 } from '../data-source/collection-field/CollectionField';
-import { DataBlockProviderV2 } from '../data-source/data-block/DataBlockProvider';
+import { CollectionField } from '../data-source/collection-field/CollectionField';
+import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
@@ -58,7 +58,7 @@ export interface ApplicationOptions {
   designable?: boolean;
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
-  dataSourceManager?: DataSourceManagerOptionsV2;
+  dataSourceManager?: DataSourceManagerOptions;
 }
 
 export class Application {
@@ -69,10 +69,10 @@ export class Application {
   public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, ComponentType<any> | any> = {
-    DataBlockProviderV2,
+    DataBlockProvider,
     ...defaultAppComponents,
     ...schemaInitializerComponents,
-    CollectionFieldV2,
+    CollectionField,
   };
   public pluginManager: PluginManager;
   public pluginSettingsManager: PluginSettingsManager;
@@ -81,7 +81,7 @@ export class Application {
   public notification;
   public schemaInitializerManager: SchemaInitializerManager;
   public schemaSettingsManager: SchemaSettingsManager;
-  public dataSourceManager: DataSourceManagerV2;
+  public dataSourceManager: DataSourceManager;
 
   public name: string;
 
@@ -111,7 +111,7 @@ export class Application {
     this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
-    this.dataSourceManager = new DataSourceManagerV2(options.dataSourceManager, this);
+    this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);

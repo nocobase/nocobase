@@ -38,24 +38,24 @@ Table 中的字段信息及列表数据，都是存储在数据库中的。
 - `DataBlockProvider`：封装了下面的所有组件，并提供了区块属性
   - [CollectionProvider](/core/data-source/collection-provider) / [AssociationProvider](/core/data-source/association-provider): 根据 `DataBlockProvider` 提供的上下文信息，查询对应数据表数据及关系字段信息并传递
   - [BlockResourceProvider](/core/data-block/data-block-resource-provider): 根据 `DataBlockProvider` 提供的上下文信息，构建区块 [Resource](https://docs.nocobase.com/api/sdk#resource-action) API，用于区块数据的增删改查
-  - [BlockRequestProvider](/core/data-block/data-block-request-provider): 根据 `DataBlockProvider` 提供的上下文信息，自动调用 `BlockResourceProvider` 提供的 `resource.get()` 或 `resource.list()` 发起请求，得到区块数据，并传递
+  - [BlockRequestProvider_deprecated](/core/data-block/data-block-request-provider): 根据 `DataBlockProvider` 提供的上下文信息，自动调用 `BlockResourceProvider` 提供的 `resource.get()` 或 `resource.list()` 发起请求，得到区块数据，并传递
     - [RecordProvider](/core/data-source/record-provider): 对于 `resource.get()` 场景，会自动嵌套 `RecordProvider` 并将 `resource.get()` 请求结果传递下去，`resource.list()` 场景则需要自行使用 `RecordProvider` 提供数据记录
 
 ```tsx | pure
 const DataBlockProvider = (props) => {
-  return <DataBlockContextV2.Provider>
+  return <DataBlockContext.Provider>
     <CollectionDataSourceProvider>
       <CollectionProvider> / <AssociationProvider>
         <BlockResourceProvider>
-          <BlockRequestProvider>
+          <BlockRequestProvider_deprecated>
             {action !== 'list' && <RecordProvider record={blocRequest.data}>
               {props.children}
             </Record>}
-          </BlockRequestProvider>
+          </BlockRequestProvider_deprecated>
         </BlockResourceProvider>  / </AssociationProvider>
       </CollectionProvider>
     </CollectionDataSourceProvider>
-  </DataBlockContextV2.Provider>
+  </DataBlockContext.Provider>
 }
 ```
 
@@ -103,11 +103,11 @@ interface AllDataBlockProps {
   collection?: string;
   association?: string;
   sourceId?: string | number;
-  record?: RecordV2;
+  record?: Record;
   action?: 'list' | 'get';
   filterByTk?: string;
   params?: Record<string, any>;
-  parentRecord?: RecordV2;
+  parentRecord?: Record;
   [index: string]: any;
 }
 ```
@@ -124,15 +124,15 @@ interface AllDataBlockProps {
 
 ```tsx | pure
 const DataBlockProvider = (props) => {
-  return <DataBlockContextV2.Provider value={props}>
+  return <DataBlockContext.Provider value={props}>
     <CollectionDataSourceProvider>
       <CollectionProvider name={props.collection}> / <CollectionProvider name={props.association}>
           <BlockResourceProvider {...props}>
-            <BlockRequestProvider resource={resource}>
+            <BlockRequestProvider_deprecated resource={resource}>
               {action !== 'list' && <RecordProvider record={blocRequest.data}>
                 {props.children}
               </Record>}
-            </BlockRequestProvider>
+            </BlockRequestProvider_deprecated>
           </BlockResourceProvider>
         </CollectionProvider>
     </CollectionDataSourceProvider>
@@ -163,7 +163,7 @@ const DataBlockProvider = (props) => {
 
 ### 属性获取和修改
 
-#### useDataBlockV2()
+#### useDataBlock()
 
 可用于获取和修改 `DataBlockProvider` 的属性。
 
@@ -174,7 +174,7 @@ interface Result<T extends {} = {}> {
   props: AllDataBlockProps & T;
   dn: Designable;
 }
-const useDataBlockV2: <T extends {}>() => Result<T>
+const useDataBlock: <T extends {}>() => Result<T>
 ```
 
 - 详解
@@ -185,7 +185,7 @@ const useDataBlockV2: <T extends {}>() => Result<T>
 - 示例
 
 ```tsx | pure
-const { props, dn } = useDataBlockV2<{ tableProps: { bordered?: boolean } }>();
+const { props, dn } = useDataBlock<{ tableProps: { bordered?: boolean } }>();
 
 // 获取
 const checked = props.tableProps.bordered;
@@ -200,12 +200,12 @@ dn.deepMerge({
 });
 ```
 
-#### useDataBlockPropsV2()
+#### useDataBlockProps()
 
-相当于 `useDataBlockV2().props`。
+相当于 `useDataBlock().props`。
 
 ```tsx | pure
-const props = useDataBlockPropsV2<{ tableProps: { bordered?: boolean } }>();
+const props = useDataBlockProps<{ tableProps: { bordered?: boolean } }>();
 
 const checked = props.tableProps.bordered;
 ```

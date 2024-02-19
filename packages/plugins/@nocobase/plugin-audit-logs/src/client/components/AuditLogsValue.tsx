@@ -1,11 +1,11 @@
-import { EllipsisWithTooltip, FormProvider, SchemaComponent, useRecord } from '@nocobase/client';
+import { EllipsisWithTooltip, FormProvider, SchemaComponent, useRecord_deprecated } from '@nocobase/client';
 import React from 'react';
 import { observer, useField } from '@formily/react';
 
 export const AuditLogsValue = observer(
   () => {
     const field = useField<any>();
-    const record = useRecord();
+    const record = useRecord_deprecated();
     if (record.field?.uiSchema) {
       return (
         <FormProvider>

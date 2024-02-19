@@ -2,12 +2,12 @@ import {
   AntdSchemaComponentProvider,
   Application,
   CollectionPlugin,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   Filter,
   Input,
   LocalDataSource,
   SchemaComponent,
-  useCollection,
+  useCollection_deprecated,
   Plugin,
   DEFAULT_DATA_SOURCE_NAME,
   DEFAULT_DATA_SOURCE_TITLE,
@@ -62,7 +62,7 @@ const schema: any = {
       'x-component': 'Filter',
       'x-component-props': {
         useProps: () => {
-          const { name } = useCollection();
+          const { name } = useCollection_deprecated();
           const options = useFilterOptions(name);
           return {
             options,
@@ -89,7 +89,7 @@ const SwitchCollection = (props) => {
       />
       <br />
       <br />
-      <CollectionProvider name={collection}>{props.children}</CollectionProvider>
+      <CollectionProvider_deprecated name={collection}>{props.children}</CollectionProvider_deprecated>
     </div>
   );
 };

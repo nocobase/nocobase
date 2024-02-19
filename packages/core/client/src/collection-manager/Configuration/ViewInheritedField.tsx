@@ -6,9 +6,9 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useCompile } from '../../schema-component';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 
@@ -68,13 +68,13 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 };
 
 export const ViewCollectionField = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <ViewFieldAction item={record} {...props} />;
 };
 
 export const ViewFieldAction = (props) => {
   const { scope, getContainer, item: record, children } = props;
-  const { getInterface, collections } = useCollectionManager();
+  const { getInterface, collections } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -90,7 +90,7 @@ export const ViewFieldAction = (props) => {
     });
   }, []);
   return (
-    <RecordProvider record={record}>
+    <RecordProvider_deprecated record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
@@ -134,6 +134,6 @@ export const ViewFieldAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

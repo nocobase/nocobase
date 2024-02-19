@@ -7,7 +7,7 @@
 - 类型
 
 ```tsx | pure
-interface DataSourceProviderPropsV2 {
+interface DataSourceProviderProps {
   dataSource?: string;
   children?: ReactNode;
 }
@@ -27,21 +27,21 @@ const MyComponent = () => {
 
 ## Hooks
 
-### useDataSourceV2()
+### useDataSource()
 
 获取 `DataSource` 实例。
 
 - 类型
 
 ```tsx | pure
-function useDataSourceV2(): DataSource;
+function useDataSource(): DataSource;
 ```
 
 - 示例
 
 ```tsx | pure
 const MyComponent = () => {
-  const dataSource = useDataSourceV2();
+  const dataSource = useDataSource();
   return <div>{dataSource.displayName}</div>
 }
 ```

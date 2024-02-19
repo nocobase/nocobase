@@ -3,11 +3,11 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect, useMemo } from 'react';
-import { CollectionFieldProviderV2, useCollectionFieldV2 } from './CollectionFieldProvider';
+import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 import { useCompile, useComponent } from '../../schema-component';
 import { useFormBlockContext } from '../../block-provider';
 import useIsAllowToSetDefaultValue from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { useCollectionManager, useCollection } from '../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 
 type Props = {
   component: any;
@@ -15,15 +15,15 @@ type Props = {
 };
 
 // TODO: 初步适配
-export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
+export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const { component } = props;
   const compile = useCompile();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionFieldV2();
+  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
-  const { getCollection, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollection, getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const setFieldProps = (key, value) => {
@@ -91,13 +91,13 @@ export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
   return <Component {...props} />;
 };
 
-export const CollectionFieldV2 = connect((props) => {
+export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProviderV2 name={fieldSchema.name}>
-      <CollectionFieldInternalFieldV2 {...props} />
-    </CollectionFieldProviderV2>
+    <CollectionFieldProvider name={fieldSchema.name}>
+      <CollectionFieldInternalField {...props} />
+    </CollectionFieldProvider>
   );
 });
 
-CollectionFieldV2.displayName = 'CollectionFieldV2';
+CollectionField.displayName = 'CollectionField';

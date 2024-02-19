@@ -2,7 +2,7 @@ import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import _ from 'lodash';
 import { useMemo } from 'react';
-import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useFlag } from '../../../flag-provider';
 import { useBlockCollection } from './useBlockCollection';
 import { useDateVariable } from './useDateVariable';
@@ -17,10 +17,10 @@ interface Props {
   /**
    * 消费该变量的字段
    */
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   form: Form;
   /**
-   * `useRecord` 返回的值
+   * `useRecord_deprecated ` 返回的值
    */
   record?: Record<string, any>;
   /**
@@ -56,7 +56,7 @@ export const useVariableOptions = ({
 }: Props) => {
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
   const { isInSubForm, isInSubTable } = useFlag() || {};
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const userVariable = useUserVariable({
     maxDepth: 3,

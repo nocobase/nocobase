@@ -9,16 +9,16 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
   useRequest,
-  RecordProvider,
+  RecordProvider_deprecated,
   IField,
-  useRecord,
+  useRecord_deprecated,
   ActionContextProvider,
   SchemaComponent,
   useActionContext,
   useCompile,
   useResourceActionContext,
   useCancelAction,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCurrentAppInfo,
   useAPIClient,
   useFieldInterfaceOptions,
@@ -155,7 +155,7 @@ const useCreateCollectionField = () => {
   const { refresh } = useResourceActionContext();
   const field = useField();
   const api = useAPIClient();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { name: dataSourceKey } = useParams();
   return {
     async run() {
@@ -187,13 +187,13 @@ const useCreateCollectionField = () => {
 };
 
 export const AddCollectionField = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <AddFieldAction item={record} {...props} />;
 };
 
 const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align, database } = props;
-  const { getInterface, getTemplate, collections } = useCollectionManager();
+  const { getInterface, getTemplate, collections } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
@@ -309,7 +309,7 @@ const AddFieldAction = (props) => {
   }, [getInterface, items, record]);
   return (
     record.template !== 'sql' && (
-      <RecordProvider record={record}>
+      <RecordProvider_deprecated record={record}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
             {children || (
@@ -338,7 +338,7 @@ const AddFieldAction = (props) => {
             }}
           />
         </ActionContextProvider>
-      </RecordProvider>
+      </RecordProvider_deprecated>
     )
   );
 };

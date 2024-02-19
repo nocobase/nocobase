@@ -1,10 +1,10 @@
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import {
-  BlockRequestContext,
-  CollectionProvider,
+  BlockRequestContext_deprecated,
+  CollectionProvider_deprecated,
   FormBlockContext,
-  RecordProvider,
+  RecordProvider_deprecated,
   useAPIClient,
   useAssociationNames,
 } from '@nocobase/client';
@@ -61,12 +61,12 @@ export function DetailsBlockProvider(props) {
   };
   const api = useAPIClient();
   const resource = api.resource(props.collection);
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useContext(BlockRequestContext_deprecated);
 
   return (
-    <CollectionProvider collection={props.collection}>
-      <RecordProvider record={values} parent={false}>
-        <BlockRequestContext.Provider value={{ block: 'form', field, service, resource, __parent }}>
+    <CollectionProvider_deprecated collection={props.collection}>
+      <RecordProvider_deprecated record={values} parent={false}>
+        <BlockRequestContext_deprecated.Provider value={{ block: 'form', field, service, resource, __parent }}>
           <FormBlockContext.Provider
             value={{
               params,
@@ -79,8 +79,8 @@ export function DetailsBlockProvider(props) {
           >
             {props.children}
           </FormBlockContext.Provider>
-        </BlockRequestContext.Provider>
-      </RecordProvider>
-    </CollectionProvider>
+        </BlockRequestContext_deprecated.Provider>
+      </RecordProvider_deprecated>
+    </CollectionProvider_deprecated>
   );
 }

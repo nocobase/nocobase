@@ -48,9 +48,9 @@ import {
   ViewCollectionTemplate,
 } from './templates';
 import { DEFAULT_DATA_SOURCE_NAME, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
-import { DataSourceV2 } from '../data-source/data-source/DataSource';
+import { DataSource } from '../data-source/data-source/DataSource';
 
-class MainDataSource extends DataSourceV2 {
+class MainDataSource extends DataSource {
   async getDataSource() {
     const service = await this.app.apiClient.request({
       resource: 'collections',

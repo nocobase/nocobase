@@ -1,12 +1,12 @@
 import type { ISchema } from '@formily/react';
 import type { ReactNode } from 'react';
-import type { CollectionManagerV2, CollectionOptionsV2 } from '../data-source';
+import type { CollectionManager, CollectionOptions } from '../data-source';
 
-export type CollectionOptions = CollectionOptionsV2;
+export type { CollectionOptions } from '../data-source';
 
 export interface CollectionManagerOptions {
   collections?: CollectionOptions[];
-  instance?: CollectionManagerV2;
+  instance?: CollectionManager;
   children?: ReactNode;
 }
 
@@ -17,7 +17,7 @@ export interface ICollectionProviderProps {
   fields?: any;
 }
 
-export interface CollectionFieldOptions {
+export interface CollectionFieldOptions_deprecated {
   name?: any;
   collectionName?: string;
   sourceKey?: string; // association field

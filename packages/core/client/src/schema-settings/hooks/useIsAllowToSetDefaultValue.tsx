@@ -1,11 +1,11 @@
 import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
 import React, { useContext, useMemo } from 'react';
-import { CollectionFieldOptions } from '../..';
+import { CollectionFieldOptions_deprecated } from '../..';
 import { isPatternDisabled, isSystemField } from '../SchemaSettings';
 import { useFormBlockContext, useFormBlockType } from '../../block-provider';
-import { useCollectionManager } from '../../collection-manager/hooks/useCollectionManager';
-import { useCollection } from '../../collection-manager/hooks/useCollection';
+import { useCollectionManager_deprecated } from '../../collection-manager/hooks/useCollectionManager_deprecated';
+import { useCollection_deprecated } from '../../collection-manager/hooks/useCollection_deprecated';
 
 interface DefaultValueProviderProps {
   isAllowToSetDefaultValue: (params: IsAllowToSetDefaultValueParams) => boolean;
@@ -13,7 +13,7 @@ interface DefaultValueProviderProps {
 }
 
 export interface IsAllowToSetDefaultValueParams {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   getInterface: (name: string) => any;
   formBlockType?: 'update' | 'create';
   form: Form;
@@ -24,7 +24,7 @@ export interface IsAllowToSetDefaultValueParams {
 interface Props {
   form?: Form;
   fieldSchema?: Schema<any, any, any, any, any, any, any, any, any>;
-  collectionField?: CollectionFieldOptions;
+  collectionField?: CollectionFieldOptions_deprecated;
 }
 
 const DefaultValueContext = React.createContext<Omit<DefaultValueProviderProps, 'children'>>(null);
@@ -40,8 +40,8 @@ export const DefaultValueProvider = (props: DefaultValueProviderProps) => {
 };
 
 const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Props = {}) => {
-  const { getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getInterface, getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form: innerForm } = useFormBlockContext();
   const innerFieldSchema = useFieldSchema();
   const { type } = useFormBlockType();

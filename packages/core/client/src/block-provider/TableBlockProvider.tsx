@@ -1,10 +1,10 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollectionManager } from '../collection-manager';
+import { useCollectionManager_deprecated } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { mergeFilter } from '../filter-provider/utils';
-import { useRecord } from '../record-provider';
+import { useRecord_deprecated } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
@@ -77,8 +77,8 @@ export const TableBlockProvider = (props) => {
   const resourceName = props.resource;
   const params = useMemo(() => ({ ...props.params }), [props.params]);
   const fieldSchema = useFieldSchema();
-  const { getCollection, getCollectionField } = useCollectionManager(props.dataSource);
-  const record = useRecord();
+  const { getCollection, getCollectionField } = useCollectionManager_deprecated(props.dataSource);
+  const record = useRecord_deprecated();
   const collection = getCollection(props.collection);
   const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort) {

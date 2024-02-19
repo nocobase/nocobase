@@ -6,10 +6,10 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
@@ -90,7 +90,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 const useOverridingCollectionField = () => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -122,7 +122,7 @@ const useOverridingCollectionField = () => {
 };
 
 export const OverridingCollectionField = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <OverridingFieldAction item={record} {...props} />;
 };
 
@@ -135,7 +135,8 @@ const getIsOverriding = (currentFields, record) => {
 export const OverridingFieldAction = (props) => {
   const { scope, getContainer, item: record, children, currentCollection } = props;
   const { target, through } = record;
-  const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } = useCollectionManager();
+  const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } =
+    useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -161,7 +162,7 @@ export const OverridingFieldAction = (props) => {
     });
   }, []);
   return (
-    <RecordProvider record={{ ...record, collectionName: record.__parent.name }}>
+    <RecordProvider_deprecated record={{ ...record, collectionName: record.__parent.name }}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           //@ts-ignore
@@ -215,6 +216,6 @@ export const OverridingFieldAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

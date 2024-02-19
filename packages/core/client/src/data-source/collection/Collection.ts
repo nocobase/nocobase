@@ -1,12 +1,12 @@
 import { SchemaKey } from '@formily/react';
 import { filter } from 'lodash';
 
-import type { CollectionManagerV2 } from './CollectionManager';
+import type { CollectionManager } from './CollectionManager';
 
 type dumpable = 'required' | 'optional' | 'skip';
 type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
-export interface CollectionFieldOptionsV2 {
+export interface CollectionFieldOptions {
   name?: any;
   collectionName?: string;
   sourceKey?: string; // association field
@@ -16,7 +16,7 @@ export interface CollectionFieldOptionsV2 {
   [key: string]: any;
 }
 
-export interface CollectionOptionsV2 {
+export interface CollectionOptions {
   name: string;
   title?: string;
   dataSource?: string;
@@ -44,7 +44,7 @@ export interface CollectionOptionsV2 {
   writableView?: boolean;
 
   filterTargetKey?: string;
-  fields?: CollectionFieldOptionsV2[];
+  fields?: CollectionFieldOptions[];
   model?: any;
   repository?: any;
   sortable?: CollectionSortable;
@@ -70,17 +70,17 @@ export interface CollectionOptionsV2 {
   [key: string]: any;
 }
 
-export type GetCollectionFieldPredicateV2 =
-  | ((collection: CollectionFieldOptionsV2) => boolean)
-  | CollectionFieldOptionsV2
-  | keyof CollectionFieldOptionsV2;
+export type GetCollectionFieldPredicate =
+  | ((collection: CollectionFieldOptions) => boolean)
+  | CollectionFieldOptions
+  | keyof CollectionFieldOptions;
 
-export class CollectionV2 {
-  protected fieldsMap: Record<string, CollectionFieldOptionsV2>;
+export class Collection {
+  protected fieldsMap: Record<string, CollectionFieldOptions>;
   protected primaryKey: string;
   constructor(
-    protected options: CollectionOptionsV2,
-    public collectionManager: CollectionManagerV2,
+    protected options: CollectionOptions,
+    public collectionManager: CollectionManager,
   ) {}
   get fields() {
     return this.options.fields || [];
@@ -219,7 +219,7 @@ export class CollectionV2 {
   getOptions() {
     return this.options;
   }
-  getOption<K extends keyof CollectionOptionsV2>(key: K): CollectionOptionsV2[K] {
+  getOption<K extends keyof CollectionOptions>(key: K): CollectionOptions[K] {
     return this.options[key];
   }
   /**
@@ -231,7 +231,7 @@ export class CollectionV2 {
    * getFields('primaryKey') // Get the field with `primaryKey: true`
    * getFields((field) => field.name === 'nickname') // Get the field with `name: 'nickname`'
    */
-  getFields(predicate?: GetCollectionFieldPredicateV2) {
+  getFields(predicate?: GetCollectionFieldPredicate) {
     return predicate ? filter(this.fields, predicate) : this.fields;
   }
   getFieldsMap() {

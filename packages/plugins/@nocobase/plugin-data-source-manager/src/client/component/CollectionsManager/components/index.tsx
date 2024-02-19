@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
 import { observer, useForm, useField } from '@formily/react';
 import { useParams } from 'react-router-dom';
-import { useRecord, useCompile, useAPIClient } from '@nocobase/client';
+import { useRecord_deprecated, useCompile, useAPIClient } from '@nocobase/client';
 import { useRemoteCollectionContext } from '../CollectionFields';
 
 export const SourceKey = observer(
   (props: any) => {
-    const { fields, sourceKey } = useRecord();
+    const { fields, sourceKey } = useRecord_deprecated();
     const field: any = useField();
     const compile = useCompile();
     const options = fields
@@ -44,7 +44,7 @@ export const ForeignKey = observer(
     const api = useAPIClient();
     const [options, setOptions] = useState([]);
     const { name: dataSourceKey } = useParams();
-    const { name: collectionName, fields } = useRecord();
+    const { name: collectionName, fields } = useRecord_deprecated();
     const compile = useCompile();
     const form = useForm();
     const { target, type, through } = form.values;
@@ -124,7 +124,7 @@ export const ForeignKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { targetKey } = useRecord();
+    const { targetKey } = useRecord_deprecated();
     const { name: dataSourceKey } = useParams();
     const api = useAPIClient();
     const [options, setOptions] = useState([]);

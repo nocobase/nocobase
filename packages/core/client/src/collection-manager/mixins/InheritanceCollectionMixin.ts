@@ -1,19 +1,19 @@
-import type { CollectionFieldOptionsV2, GetCollectionFieldPredicateV2 } from '../../data-source';
-import { CollectionV2 } from '../../data-source/collection/Collection';
+import type { CollectionFieldOptions, GetCollectionFieldPredicate } from '../../data-source';
+import { Collection } from '../../data-source/collection/Collection';
 import _, { filter, unionBy, uniq } from 'lodash';
 
-export class InheritanceCollectionMixin extends CollectionV2 {
+export class InheritanceCollectionMixin extends Collection {
   protected parentCollectionsName: string[];
-  protected parentCollections: CollectionV2[];
-  protected childrenCollections: { supportView?: CollectionV2[]; notSupportView?: CollectionV2[] } = {};
+  protected parentCollections: Collection[];
+  protected childrenCollections: { supportView?: Collection[]; notSupportView?: Collection[] } = {};
   protected childrenCollectionsName: { supportView?: string[]; notSupportView?: string[] } = {};
-  protected inheritsFields: CollectionFieldOptionsV2[];
-  protected currentFields: CollectionFieldOptionsV2[];
-  protected allFields: CollectionFieldOptionsV2[];
-  protected parentCollectionFields: Record<string, CollectionFieldOptionsV2[]> = {};
+  protected inheritsFields: CollectionFieldOptions[];
+  protected currentFields: CollectionFieldOptions[];
+  protected allFields: CollectionFieldOptions[];
+  protected parentCollectionFields: Record<string, CollectionFieldOptions[]> = {};
   protected allCollectionsInheritChain: string[];
   protected inheritCollectionsChain: string[];
-  protected foreignKeyFields: CollectionFieldOptionsV2[];
+  protected foreignKeyFields: CollectionFieldOptions[];
 
   getParentCollectionsName() {
     if (this.parentCollectionsName?.length) {
@@ -109,7 +109,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.inheritsFields;
   }
 
-  // override CollectionV2
+  // override Collection
   getFieldsMap() {
     if (this.fieldsMap) {
       return this.fieldsMap;
@@ -120,7 +120,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     }, {});
     return this.fieldsMap;
   }
-  getCurrentFields(predicate?: GetCollectionFieldPredicateV2) {
+  getCurrentFields(predicate?: GetCollectionFieldPredicate) {
     return super.getFields(predicate);
   }
 
@@ -224,7 +224,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.inheritCollectionsChain;
   }
 
-  getAllFields(predicate?: GetCollectionFieldPredicateV2) {
+  getAllFields(predicate?: GetCollectionFieldPredicate) {
     if (this.allFields?.length) {
       return this.allFields;
     }

@@ -5,7 +5,7 @@ import { FormContext, useField } from '@formily/react';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
-import { useRecord } from '../../../record-provider';
+import { useRecord_deprecated } from '../../../record-provider';
 
 export const ListBlockContext = createContext<any>({});
 
@@ -54,7 +54,7 @@ const InternalListBlockProvider = (props) => {
 
 export const ListBlockProvider = (props) => {
   const { params } = props;
-  const record = useRecord();
+  const record = useRecord_deprecated();
 
   const { filter: parsedFilter } = useParsedFilter({
     filterOption: params?.filter,

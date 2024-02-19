@@ -15,7 +15,7 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useContext, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
-import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializerRender } from '../../../';
+import { RecordIndexProvider, RecordProvider_deprecated, useRequest, useSchemaInitializerRender } from '../../../';
 import { useToken } from '../__builtins__';
 
 const isColumnComponent = (schema: Schema) => {
@@ -45,9 +45,9 @@ const useTableColumns = () => {
           // console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
-              <RecordProvider record={record}>
+              <RecordProvider_deprecated record={record}>
                 <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
-              </RecordProvider>
+              </RecordProvider_deprecated>
             </RecordIndexProvider>
           );
         },

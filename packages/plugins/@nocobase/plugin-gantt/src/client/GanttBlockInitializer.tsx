@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   useSchemaInitializer,
   useSchemaInitializerItem,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useGlobalTheme,
   FormDialog,
   SchemaComponent,
@@ -19,7 +19,7 @@ import { createGanttBlockSchema } from './utils';
 export const GanttBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();

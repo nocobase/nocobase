@@ -5,9 +5,9 @@ import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '.';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '.';
 import { useRequest } from '../api-client';
-import { useRecord } from '../record-provider';
+import { useRecord_deprecated } from '../record-provider';
 import { useActionContext } from '../schema-component';
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
@@ -24,7 +24,7 @@ export const useCancelAction = () => {
 };
 
 export const useValuesFromRecord = (options) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const result = useRequest(
     () => Promise.resolve({ data: omit(cloneDeep(record), ['__parent', '__collectionName']) }),
     {
@@ -56,7 +56,7 @@ export const useResetFilterAction = () => {
 };
 
 export const useKanbanEvents = () => {
-  const { resource } = useCollection();
+  const { resource } = useCollection_deprecated();
   return {
     async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
       const sourceColumn = columns.find((column) => column.id === fromColumnId);
@@ -80,7 +80,7 @@ export const useKanbanEvents = () => {
 };
 
 export const useSortFields = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
   return fields
     .filter((field: any) => {
@@ -102,7 +102,7 @@ export const useSortFields = (collectionName: string) => {
 };
 
 export const useChildrenCollections = (collectionName: string) => {
-  const { getChildrenCollections } = useCollectionManager();
+  const { getChildrenCollections } = useCollectionManager_deprecated();
   const childrenCollections = getChildrenCollections(collectionName);
   return childrenCollections.map((collection: any) => {
     return {
@@ -113,7 +113,7 @@ export const useChildrenCollections = (collectionName: string) => {
 };
 
 export const useSelfAndChildrenCollections = (collectionName: string) => {
-  const { getChildrenCollections, getCollection } = useCollectionManager();
+  const { getChildrenCollections, getCollection } = useCollectionManager_deprecated();
   const childrenCollections = getChildrenCollections(collectionName);
   const self = getCollection(collectionName);
   if (!collectionName) {
@@ -133,7 +133,7 @@ export const useSelfAndChildrenCollections = (collectionName: string) => {
 };
 
 export const useCollectionFilterOptions = (collection: any) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   return useMemo(() => {
     const fields = getCollectionFields(collection);
     const field2option = (field, depth) => {
@@ -188,7 +188,7 @@ export const useCollectionFilterOptions = (collection: any) => {
 };
 
 export const useCollectionFilterOptionsV2 = (collection: any) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
 
   const getFields = useCallback(() => {
     const fields = getCollectionFields(collection);
@@ -246,7 +246,7 @@ export const useCollectionFilterOptionsV2 = (collection: any) => {
 };
 
 export const useLinkageCollectionFilterOptions = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
     if (!field.interface) {
@@ -304,7 +304,7 @@ export const useLinkageCollectionFilterOptions = (collectionName: string) => {
 };
 // 通用
 export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2, excludes = []) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName).filter((v) => !excludes.includes(v.interface));
 
   const field2option = (field, depth, prefix?) => {
@@ -361,7 +361,7 @@ export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2,
 };
 
 export const useFilterDataSource = (options) => {
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const data = useCollectionFilterOptions(name);
   return useRequest(
     () =>
@@ -432,7 +432,7 @@ export const useUpdateViewAction = (actionCallback?: (filterByTk: string, values
   const ctx = useActionContext();
   // const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   return {
     async run() {
       await form.submit();
@@ -464,7 +464,7 @@ export const useUpdateAction = (actionCallback?: (key: string, values: any) => v
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   return {
     async run() {
       await form.submit();
@@ -488,7 +488,7 @@ export const useUpdateAction = (actionCallback?: (key: string, values: any) => v
 export const useDestroyAction = (actionCallback?: (key: string) => void) => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   return {
     async run() {
       await resource.destroy({ filterByTk });
@@ -527,7 +527,7 @@ export const useValuesFromRA = (options) => {
 
 export const useCreateActionAndRefreshCM = () => {
   const { run } = useCreateAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();
@@ -538,7 +538,7 @@ export const useCreateActionAndRefreshCM = () => {
 
 export const useUpdateActionAndRefreshCM = () => {
   const { run } = useUpdateAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();
@@ -549,7 +549,7 @@ export const useUpdateActionAndRefreshCM = () => {
 
 export const useDestroyActionAndRefreshCM = () => {
   const { run } = useDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();
@@ -559,7 +559,7 @@ export const useDestroyActionAndRefreshCM = () => {
 };
 
 export const useDeleteButtonDisabled = (record?: any) => {
-  const recordFromProvider = useRecord();
+  const recordFromProvider = useRecord_deprecated();
   return isDeleteButtonDisabled(record || recordFromProvider);
 };
 
@@ -571,7 +571,7 @@ export const isDeleteButtonDisabled = (record?: any) => {
 
 export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();

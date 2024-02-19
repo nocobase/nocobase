@@ -2,10 +2,10 @@ import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  RecordProvider,
+  RecordProvider_deprecated,
   css,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useCompile,
   useFilterAPI,
   useProps,
@@ -21,8 +21,8 @@ import { getSource } from '../../utils';
 export const AMapBlock = (props) => {
   const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
     useProps(props);
-  const { name, getPrimaryKey } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name, getPrimaryKey } = useCollection_deprecated();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const primaryKey = getPrimaryKey();
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
@@ -325,9 +325,9 @@ const MapBlockDrawer = (props) => {
   return (
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
-        <RecordProvider record={record}>
+        <RecordProvider_deprecated record={record}>
           <RecursionField schema={schema} name={schema.name} />
-        </RecordProvider>
+        </RecordProvider_deprecated>
       </ActionContextProvider>
     )
   );

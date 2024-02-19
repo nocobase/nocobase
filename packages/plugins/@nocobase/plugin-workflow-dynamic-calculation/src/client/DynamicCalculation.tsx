@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { SchemaInitializerItemType, Variable, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemType, Variable, useCollectionManager_deprecated } from '@nocobase/client';
 import {
   BaseTypeSets,
   Instruction,
@@ -25,7 +25,7 @@ function useDynamicExpressionCollectionFieldMatcher(field): boolean {
 }
 
 function DynamicExpression({ value, onChange }) {
-  const { getCollectionFields, getCollection } = useCollectionManager();
+  const { getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const scope = useWorkflowVariableOptions({
     types: [useDynamicExpressionCollectionFieldMatcher.bind({ getCollectionFields, getCollection })],
   });

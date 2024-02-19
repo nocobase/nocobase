@@ -8,17 +8,21 @@ import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  CollectionManagerProviderV2,
+  CollectionManagerProvider,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
   useDataSourceHeaders,
   useDesignable,
-  useRecord,
+  useRecord_deprecated,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
+import {
+  CollectionProvider_deprecated,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+} from '../collection-manager';
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
@@ -26,7 +30,7 @@ import { useAssociationNames } from './hooks';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-export const BlockRequestContext = createContext<{
+export const BlockRequestContext_deprecated = createContext<{
   block?: string;
   props?: any;
   field?: GeneralField;
@@ -52,7 +56,7 @@ interface UseResourceProps {
 
 export const useAssociation = (props) => {
   const { association } = props;
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField } = useCollectionManager_deprecated();
   if (typeof association === 'string') {
     return getCollectionField(association);
   } else if (association?.collectionName && association?.name) {
@@ -62,7 +66,7 @@ export const useAssociation = (props) => {
 
 const useResource = (props: UseResourceProps) => {
   const { block, collection, dataSource, resource, useSourceId } = props;
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const api = useAPIClient();
   const { fieldSchema } = useActionContext();
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
@@ -70,7 +74,7 @@ const useResource = (props: UseResourceProps) => {
   const sourceId = useSourceId?.();
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useContext(BlockRequestContext_deprecated);
   const headers = useDataSourceHeaders(dataSource);
 
   if (block === 'TableField') {
@@ -118,13 +122,13 @@ const useResourceAction = (props, opts = {}) => {
    * fieldName: 来自 TableFieldProvider
    */
   const { resource, action, fieldName: tableFieldName, runWhenParamsChanged = false } = props;
-  const { fields } = useCollection();
+  const { fields } = useCollection_deprecated();
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
   const { snapshot } = useActionContext();
   const { templateFinshed } = useTemplateBlockContext();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const isTemplate = fieldSchema['x-template-key'];
   if (!Reflect.has(params, 'appends')) {
     const appends = fields?.filter((field) => field.target).map((field) => field.name);
@@ -177,15 +181,15 @@ const useResourceAction = (props, opts = {}) => {
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
-    <CollectionProvider collection={collection}>
+    <CollectionProvider_deprecated collection={collection}>
       <ACLCollectionProvider>{props.children}</ACLCollectionProvider>
-    </CollectionProvider>
+    </CollectionProvider_deprecated>
   ) : (
     props.children
   );
 };
 
-export const BlockRequestProvider = (props) => {
+export const BlockRequestProvider_deprecated = (props) => {
   const field = useField<Field>();
   const resource = useBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
@@ -205,9 +209,9 @@ export const BlockRequestProvider = (props) => {
     });
   }, [serviceAllowedActions]);
 
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useContext(BlockRequestContext_deprecated);
   return (
-    <BlockRequestContext.Provider
+    <BlockRequestContext_deprecated.Provider
       value={{
         allowedActions,
         block: props.block,
@@ -220,12 +224,12 @@ export const BlockRequestProvider = (props) => {
       }}
     >
       {props.children}
-    </BlockRequestContext.Provider>
+    </BlockRequestContext_deprecated.Provider>
   );
 };
 
 export const useBlockRequestContext = () => {
-  return useContext(BlockRequestContext);
+  return useContext(BlockRequestContext_deprecated);
 };
 
 export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
@@ -322,19 +326,23 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <CollectionManagerProviderV2 dataSource={dataSource}>
+      <CollectionManagerProvider dataSource={dataSource}>
         <MaybeCollectionProvider collection={collection}>
           <BlockAssociationContext.Provider value={association}>
             <BlockResourceContext.Provider value={resource}>
-              <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
+              <BlockRequestProvider_deprecated
+                {...props}
+                updateAssociationValues={updateAssociationValues}
+                params={params}
+              >
                 <FilterBlockRecord {...props} params={params}>
                   {props.children}
                 </FilterBlockRecord>
-              </BlockRequestProvider>
+              </BlockRequestProvider_deprecated>
             </BlockResourceContext.Provider>
           </BlockAssociationContext.Provider>
         </MaybeCollectionProvider>
-      </CollectionManagerProviderV2>
+      </CollectionManagerProvider>
     </BlockContext.Provider>
   );
 };
@@ -344,11 +352,11 @@ export const useBlockAssociationContext = () => {
 };
 
 export const useFilterByTk = () => {
-  const { resource, __parent } = useContext(BlockRequestContext);
+  const { resource, __parent } = useContext(BlockRequestContext_deprecated);
   const recordIndex = useRecordIndex();
-  const record = useRecord();
-  const collection = useCollection();
-  const { getCollectionField } = useCollectionManager();
+  const record = useRecord_deprecated();
+  const collection = useCollection_deprecated();
+  const { getCollectionField } = useCollectionManager_deprecated();
   const assoc = useBlockAssociationContext();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   if (!withoutTableFieldResource) {
@@ -365,8 +373,8 @@ export const useFilterByTk = () => {
 };
 
 export const useSourceIdFromRecord = () => {
-  const record = useRecord();
-  const { getCollectionField } = useCollectionManager();
+  const record = useRecord_deprecated();
+  const { getCollectionField } = useCollectionManager_deprecated();
   const assoc = useBlockAssociationContext();
   if (assoc) {
     const association = getCollectionField(assoc);
@@ -375,8 +383,8 @@ export const useSourceIdFromRecord = () => {
 };
 
 export const useSourceIdFromParentRecord = () => {
-  const record = useRecord();
-  const { getCollectionField } = useCollectionManager();
+  const record = useRecord_deprecated();
+  const { getCollectionField } = useCollectionManager_deprecated();
   const assoc = useBlockAssociationContext();
   if (assoc) {
     const association = getCollectionField(assoc);
@@ -386,10 +394,10 @@ export const useSourceIdFromParentRecord = () => {
 
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
-  const record = useRecord();
-  const { fields } = useCollection();
+  const record = useRecord_deprecated();
+  const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
   const filterFields = fields
     .filter((v) => {
@@ -417,7 +425,7 @@ export const useParamsFromRecord = () => {
 
 export const RecordLink = (props) => {
   const field = useField();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { title, to, ...others } = props;
   const compiled = template(to || '');
   return (

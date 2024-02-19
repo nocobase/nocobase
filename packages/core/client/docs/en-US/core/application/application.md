@@ -19,7 +19,7 @@ export interface ApplicationOptions {
   schemaSettings?: SchemaSetting[];
   schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;
-  collectionManager?: CollectionManagerOptionsV2;
+  dataSourceManager?: DataSourceManagerOptions;
 }
 ```
 
@@ -34,8 +34,7 @@ export interface ApplicationOptions {
   - schemaSettings：Schema 设置工具，具体参考：[SchemaSettingsManager](/core/ui-schema/schema-initializer-manager)
   - schemaInitializers：Schema 添加工具，具体参考：[SchemaInitializerManager](/core/ui-schema/schema-initializer-manager)
   - loadRemotePlugins：用于控制是否加载远程插件，默认为 `false`，即不加载远程插件（方便单测和 DEMO 环境）。
-  - collectionManager：数据表管理器，具体参考：[CollectionManagerV2](/core/data-source/collection-manager)
-
+  - dataSourceManager：数据源管理器，具体参考：[DataSourceManager](/core/data-source/data-source-manager)
 - 示例
 
 ```tsx
@@ -110,9 +109,9 @@ class Application {
 
 详细介绍，请参考：[SchemaInitializerManager](/core/ui-schema/schema-initializer-manager)
 
-### app.collectionManager
+### app.dataSourceManager
 
-详细介绍，请参考：[CollectionManager](/core/data-source/collection-manager)
+详细介绍，请参考：[dataSourceManager](/core/data-source/data-source-manager)
 
 ## 实例方法
 

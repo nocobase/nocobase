@@ -4,11 +4,11 @@ import {
   SchemaComponent,
   useCompile,
   usePlugin,
-  useRecord,
+  useRecord_deprecated,
   useActionContext,
   useResourceActionContext,
   useResourceContext,
-  useDataSourceManagerV2,
+  useDataSourceManager,
 } from '@nocobase/client';
 import _ from 'lodash';
 import React, { useState } from 'react';
@@ -18,13 +18,13 @@ import PluginDatabaseConnectionsClient from '../';
 import { NAMESPACE } from '../locale';
 
 export const EditDatabaseConnectionAction = () => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const [schema, setSchema] = useState({});
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const compile = useCompile();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
 
   const useUpdateAction = () => {
     const field = useField();
@@ -32,7 +32,7 @@ export const EditDatabaseConnectionAction = () => {
     const ctx = useActionContext();
     const { refresh } = useResourceActionContext();
     const { resource } = useResourceContext();
-    const { key: filterByTk } = useRecord();
+    const { key: filterByTk } = useRecord_deprecated();
     return {
       async run() {
         await form.submit();

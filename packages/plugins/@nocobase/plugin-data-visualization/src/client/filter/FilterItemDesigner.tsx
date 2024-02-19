@@ -7,12 +7,12 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   VariablesContext,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useCompile,
   useDesignable,
   SchemaSettingsSelectItem,
-  CollectionFieldOptions,
+  CollectionFieldOptions_deprecated,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
@@ -77,9 +77,9 @@ const EditOperator = () => {
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
   const { setField } = useContext(ChartFilterContext);
-  const { getInterface, getCollectionJoinField } = useCollectionManager();
+  const { getInterface, getCollectionJoinField } = useCollectionManager_deprecated();
 
-  const getOperators = (props: CollectionFieldOptions) => {
+  const getOperators = (props: CollectionFieldOptions_deprecated) => {
     let fieldInterface = props?.interface;
     if (fieldInterface === 'formula') {
       fieldInterface = getFormulaInterface(props.dataType) || props.dataType;
@@ -243,7 +243,7 @@ const EditDefaultValue = () => {
 };
 
 const EditTitleField = () => {
-  const { getCollectionFields, getCollectionJoinField, getInterface } = useCollectionManager();
+  const { getCollectionFields, getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useChartsTranslation();
@@ -295,8 +295,8 @@ const EditTitleField = () => {
 };
 
 export const ChartFilterItemDesigner: React.FC = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { t } = useChartsTranslation();
   const fieldSchema = useFieldSchema();
   const fieldName = fieldSchema.name as string;

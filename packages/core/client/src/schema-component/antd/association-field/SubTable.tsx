@@ -21,7 +21,7 @@ import {
   RecordPickerContext,
 } from '../..';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
-import { CollectionProvider } from '../../../collection-manager';
+import { CollectionProvider_deprecated } from '../../../collection-manager';
 import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
 import { useCompile } from '../../hooks';
 import { useTableSelectorProps } from './InternalPicker';
@@ -208,7 +208,7 @@ export const SubTable: any = observer(
           }}
         >
           <RecordPickerProvider {...pickerProps}>
-            <CollectionProvider name={collectionField?.target}>
+            <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                   <SchemaComponentOptions
@@ -229,7 +229,7 @@ export const SubTable: any = observer(
                   </SchemaComponentOptions>
                 </TableSelectorParamsProvider>
               </FormProvider>
-            </CollectionProvider>
+            </CollectionProvider_deprecated>
           </RecordPickerProvider>
         </ActionContextProvider>
       </div>

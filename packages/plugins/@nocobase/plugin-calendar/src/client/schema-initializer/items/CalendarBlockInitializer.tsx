@@ -6,7 +6,7 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useGlobalTheme,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -18,7 +18,7 @@ import { useTranslation } from '../../../locale';
 export const CalendarBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getCollectionField, getCollectionFieldsOptions } = useCollectionManager();
+  const { getCollectionField, getCollectionFieldsOptions } = useCollectionManager_deprecated();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();

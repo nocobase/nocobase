@@ -1,4 +1,4 @@
-import type { DataSourceManagerV2 } from '../data-source';
+import type { DataSourceManager } from '../data-source';
 import type { CollectionFieldInterface, CollectionFieldInterfaceFactory } from './CollectionFieldInterface';
 
 export class CollectionFieldInterfaceManager {
@@ -8,7 +8,7 @@ export class CollectionFieldInterfaceManager {
   constructor(
     fieldInterfaceClasses: CollectionFieldInterfaceFactory[],
     fieldInterfaceGroups: Record<string, { label: string; order?: number }>,
-    public dataSourceManager: DataSourceManagerV2,
+    public dataSourceManager: DataSourceManager,
   ) {
     this.addFieldInterfaces(fieldInterfaceClasses);
     this.addFieldInterfaceGroups(fieldInterfaceGroups);

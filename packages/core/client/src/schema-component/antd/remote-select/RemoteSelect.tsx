@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
@@ -49,9 +49,9 @@ const InternalRemoteSelect = connect(
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
-    const { getField } = useCollection();
+    const { getField } = useCollection_deprecated();
     const searchData = useRef(null);
-    const { getCollectionJoinField, getInterface } = useCollectionManager();
+    const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
     const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
     const targetField =
       _targetField ||

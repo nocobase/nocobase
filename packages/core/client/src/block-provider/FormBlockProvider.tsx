@@ -3,8 +3,8 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { useCollection } from '../collection-manager';
-import { RecordProvider, useRecord } from '../record-provider';
+import { useCollection_deprecated } from '../collection-manager';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -26,7 +26,7 @@ const InternalFormBlockProvider = (props) => {
   );
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const formBlockValue = useMemo(() => {
     return {
       ...ctx,
@@ -54,9 +54,12 @@ const InternalFormBlockProvider = (props) => {
   );
   if (readPretty) {
     content = (
-      <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
+      <RecordProvider_deprecated
+        parent={isEmpty(record?.__parent) ? record : record?.__parent}
+        record={service?.data?.data}
+      >
         {content}
-      </RecordProvider>
+      </RecordProvider_deprecated>
     );
   } else if (
     formBlockValue.type === 'create' &&
@@ -66,9 +69,9 @@ const InternalFormBlockProvider = (props) => {
     association
   ) {
     content = (
-      <RecordProvider parent={record} record={{}}>
+      <RecordProvider_deprecated parent={record} record={{}}>
         {content}
-      </RecordProvider>
+      </RecordProvider_deprecated>
     );
   }
 
@@ -91,10 +94,10 @@ export const useIsDetailBlock = () => {
 };
 
 export const FormBlockProvider = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { collection, isCusomeizeCreate } = props;
   const { __collection } = record;
-  const currentCollection = useCollection();
+  const currentCollection = useCollection_deprecated();
   const { designable } = useDesignable();
   const isDetailBlock = useIsDetailBlock();
   let detailFlag = false;
@@ -128,7 +131,7 @@ export const useFormBlockContext = () => {
 
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { fieldSchema } = useActionContext();
   const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {

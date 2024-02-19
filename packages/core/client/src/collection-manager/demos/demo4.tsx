@@ -12,7 +12,7 @@ const schema: ISchema = {
   properties: {
     block1: {
       type: 'void',
-      'x-decorator': 'CollectionProvider',
+      'x-decorator': 'CollectionProvider_deprecated',
       'x-decorator-props': {
         name: 'posts',
       },

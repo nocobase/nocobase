@@ -3,7 +3,7 @@ import { FormItem } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useMemo, useRef } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { StablePopover } from '../popover';
 
 export const Editable = observer((props) => {
@@ -69,7 +69,7 @@ export const Editable = observer((props) => {
 
 export const QuickEdit = observer((props) => {
   const field = useField<Field>();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
   const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
   if (!collectionField) {

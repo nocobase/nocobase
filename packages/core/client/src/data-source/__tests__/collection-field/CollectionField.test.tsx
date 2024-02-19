@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
-  CollectionFieldV2,
-  CollectionProviderV2,
+  CollectionField,
+  CollectionProvider,
   Application,
   FormItem,
   Input,
@@ -48,9 +48,9 @@ function renderApp(fieldName: string) {
     <div data-testid="app">
       <SchemaComponentProvider designable={true}>
         <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
-          <CollectionProviderV2 name="users">
-            <SchemaComponent schema={schema} components={{ CollectionField: CollectionFieldV2, FormItem, Input }} />
-          </CollectionProviderV2>
+          <CollectionProvider name="users">
+            <SchemaComponent schema={schema} components={{ CollectionField: CollectionField, FormItem, Input }} />
+          </CollectionProvider>
         </DataSourceApplicationProvider>
       </SchemaComponentProvider>
     </div>,

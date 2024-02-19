@@ -4,20 +4,25 @@ import { useTranslation } from 'react-i18next';
 import { Button, message } from 'antd';
 import { useForm } from '@formily/react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent } from '../../schema-component';
 import * as components from './components';
-import { useCollectionManager, useResourceActionContext, useResourceContext, useActionContext } from '../../';
+import {
+  useCollectionManager_deprecated,
+  useResourceActionContext,
+  useResourceContext,
+  useActionContext,
+} from '../../';
 import { useCancelAction } from '../action-hooks';
 
 export const DeleteCollection = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <DeleteCollectionAction item={record} {...props} />;
 };
 
 export const useDestroyActionAndRefreshCM = () => {
   const { run } = useDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();
@@ -27,7 +32,7 @@ export const useDestroyActionAndRefreshCM = () => {
 };
 export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();
@@ -38,7 +43,7 @@ export const useBulkDestroyActionAndRefreshCM = () => {
 export const useDestroyAction = () => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   const ctx = useActionContext();
   const form = useForm();
   const { cascade } = form?.values || {};
@@ -98,7 +103,7 @@ export const DeleteCollectionAction = (props) => {
   };
 
   return (
-    <RecordProvider record={record}>
+    <RecordProvider_deprecated record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         {isBulk ? (
           <Button icon={<DeleteOutlined />} onClick={() => setVisible(true)}>
@@ -180,7 +185,7 @@ export const DeleteCollectionAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };
 DeleteCollectionAction.displayName = 'DeleteCollectionAction';

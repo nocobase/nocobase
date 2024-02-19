@@ -1,7 +1,7 @@
 import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import { useBlockAssociationContext, useBlockRequestContext } from '../../block-provider';
-import { useCollection } from '../../collection-manager';
+import { useCollection_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
@@ -18,7 +18,7 @@ export const RecordReadPrettyFormBlockInitializer = () => {
   } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const currentCollection = useCollection();
+  const currentCollection = useCollection_deprecated();
   const collection = targetCollection || currentCollection;
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();

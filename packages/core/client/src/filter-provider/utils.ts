@@ -4,11 +4,11 @@ import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
 import {
-  Collection,
-  CollectionFieldOptions,
+  Collection_deprecated,
+  CollectionFieldOptions_deprecated,
   FieldOptions,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
 } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
@@ -43,7 +43,7 @@ export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[],
 };
 
 export const getSupportFieldsByForeignKey = (
-  filterBlockCollection: ReturnType<typeof useCollection>,
+  filterBlockCollection: ReturnType<typeof useCollection_deprecated>,
   block: DataBlock,
 ) => {
   return block.foreignKeyFields?.filter((foreignKeyField) => {
@@ -61,8 +61,8 @@ export const getSupportFieldsByForeignKey = (
 export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   const { getDataBlocks } = useFilterBlock();
   const fieldSchema = useFieldSchema();
-  const collection = useCollection();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const collection = useCollection_deprecated();
+  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
 
   // Form 和 Collapse 仅支持同表的数据区块
   if (filterBlockType === FilterBlockType.FORM || filterBlockType === FilterBlockType.COLLAPSE) {
@@ -91,7 +91,7 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
 export const transformToFilter = (
   values: Record<string, any>,
   fieldSchema: Schema,
-  getCollectionJoinField: (name: string) => CollectionFieldOptions,
+  getCollectionJoinField: (name: string) => CollectionFieldOptions_deprecated,
   collectionName: string,
 ) => {
   const { operators } = findFilterOperators(fieldSchema);
@@ -157,7 +157,7 @@ export const transformToFilter = (
 };
 
 export const useAssociatedFields = () => {
-  const { fields } = useCollection();
+  const { fields } = useCollection_deprecated();
 
   return fields.filter((field) => isAssocField(field)) || [];
 };
@@ -168,7 +168,7 @@ export const isAssocField = (field?: FieldOptions) => {
   );
 };
 
-export const isSameCollection = (c1: Collection, c2: Collection) => {
+export const isSameCollection = (c1: Collection_deprecated, c2: Collection_deprecated) => {
   return c1.name === c2.name && c1.dataSource === c2.dataSource;
 };
 

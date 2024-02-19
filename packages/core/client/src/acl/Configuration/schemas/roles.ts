@@ -3,7 +3,7 @@ import { uid } from '@formily/shared';
 import pick from 'lodash/pick';
 import { useEffect } from 'react';
 import { useRequest } from '../../../api-client';
-import { useRecord } from '../../../record-provider';
+import { useRecord_deprecated } from '../../../record-provider';
 import { useActionContext } from '../../../schema-component';
 import { roleCollectionsSchema } from './roleCollections';
 
@@ -69,7 +69,7 @@ export const roleSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider',
+      'x-component': 'CollectionProvider_deprecated',
       'x-component-props': {
         collection,
       },
@@ -313,7 +313,7 @@ export const roleSchema: ISchema = {
                           'x-decorator': 'Form',
                           'x-decorator-props': {
                             useValues: (options) => {
-                              const record = useRecord();
+                              const record = useRecord_deprecated();
                               const result = useRequest(
                                 () => Promise.resolve({ data: pick(record, ['title', 'name', 'default']) }),
                                 {

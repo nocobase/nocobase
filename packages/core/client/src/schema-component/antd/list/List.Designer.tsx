@@ -4,8 +4,8 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useSortFields } from '../../../collection-manager';
-import { RecordProvider, useRecord } from '../../../record-provider';
+import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsBlockTitleItem,
@@ -21,7 +21,7 @@ import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 
 export const ListDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -29,7 +29,7 @@ export const ListDesigner = () => {
   const field = useField();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const sort = defaultSort?.map((item: string) => {
@@ -45,7 +45,7 @@ export const ListDesigner = () => {
   });
   return (
     // fix https://nocobase.height.app/T-2259
-    <RecordProvider parent={record} record={{}}>
+    <RecordProvider_deprecated parent={record} record={{}}>
       <GeneralSchemaDesigner template={template} title={title || name}>
         <SchemaSettingsBlockTitleItem />
         <SchemaSettingsDataScope
@@ -183,6 +183,6 @@ export const ListDesigner = () => {
           }}
         />
       </GeneralSchemaDesigner>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

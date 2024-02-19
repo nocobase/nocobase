@@ -1,24 +1,24 @@
 import { createForm } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
-  BlockRequestContext,
-  CollectionProvider,
+  BlockRequestContext_deprecated,
+  CollectionProvider_deprecated,
   DEFAULT_DATA_SOURCE_NAME,
-  CollectionManagerProviderV2,
+  CollectionManagerProvider,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
-  RecordProvider,
+  RecordProvider_deprecated,
   useAPIClient,
   useAssociationNames,
   useDesignable,
-  useRecord,
+  useRecord_deprecated,
   useDataSourceHeaders,
 } from '@nocobase/client';
 import React, { useContext, useMemo, useRef } from 'react';
 
 export function FormBlockProvider(props) {
-  const userJob = useRecord();
+  const userJob = useRecord_deprecated();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
@@ -58,7 +58,7 @@ export function FormBlockProvider(props) {
   const headers = useDataSourceHeaders(dataSource);
 
   const resource = api.resource(props.collection, undefined, headers);
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useContext(BlockRequestContext_deprecated);
 
   const formBlockValue = useMemo(() => {
     return {
@@ -72,11 +72,13 @@ export function FormBlockProvider(props) {
   }, [field, form, params, service, updateAssociationValues]);
 
   return !userJob.status || values ? (
-    <CollectionManagerProviderV2 dataSource={dataSource}>
-      <CollectionProvider collection={props.collection}>
-        <RecordProvider record={values} parent={false}>
+    <CollectionManagerProvider dataSource={dataSource}>
+      <CollectionProvider_deprecated collection={props.collection}>
+        <RecordProvider_deprecated record={values} parent={false}>
           <FormActiveFieldsProvider name="form">
-            <BlockRequestContext.Provider value={{ block: 'form', props, field, service, resource, __parent }}>
+            <BlockRequestContext_deprecated.Provider
+              value={{ block: 'form', props, field, service, resource, __parent }}
+            >
               <FormBlockContext.Provider value={formBlockValue}>
                 <Component {...field.componentProps}>
                   <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
@@ -85,10 +87,10 @@ export function FormBlockProvider(props) {
                   </div>
                 </Component>
               </FormBlockContext.Provider>
-            </BlockRequestContext.Provider>
+            </BlockRequestContext_deprecated.Provider>
           </FormActiveFieldsProvider>
-        </RecordProvider>
-      </CollectionProvider>
-    </CollectionManagerProviderV2>
+        </RecordProvider_deprecated>
+      </CollectionProvider_deprecated>
+    </CollectionManagerProvider>
   ) : null;
 }

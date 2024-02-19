@@ -1,7 +1,7 @@
 import { ISchema, observer } from '@formily/react';
 import {
   Application,
-  CollectionProviderV2,
+  CollectionProvider,
   Form,
   FormItem,
   InheritanceCollectionMixin,
@@ -38,7 +38,7 @@ const Root = observer(() => {
         'x-component': 'Form',
         properties: {
           title1: {
-            'x-component': 'CollectionFieldV2',
+            'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-settings': 'FormItemSettings',
           },
@@ -48,9 +48,9 @@ const Root = observer(() => {
   };
 
   return (
-    <CollectionProviderV2 name="tests">
+    <CollectionProvider name="tests">
       <SchemaComponent schema={schema} />
-    </CollectionProviderV2>
+    </CollectionProvider>
   );
 });
 
@@ -61,7 +61,7 @@ const formSettings = new SchemaSettings({
       name: 'required',
       type: 'switch',
       useComponentProps() {
-        // const { uiSchema } = useCollectionFieldV2(); // 报错
+        // const { uiSchema } = useCollectionField(); // 报错
         return {
           checked: true,
           // checked: !!uiSchema?.required,

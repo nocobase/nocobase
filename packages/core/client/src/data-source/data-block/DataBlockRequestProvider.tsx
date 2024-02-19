@@ -2,15 +2,15 @@ import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
 import React, { FC, createContext, useContext } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { RecordProviderV2, RecordV2 } from '../record';
-import { AllDataBlockPropsV2, useDataBlockPropsV2 } from './DataBlockProvider';
-import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
+import { RecordProvider, Record } from '../record';
+import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
+import { useDataBlockResource } from './DataBlockResourceProvider';
 
-export const BlockRequestContextV2 = createContext<UseRequestResult<any>>(null);
-BlockRequestContextV2.displayName = 'BlockRequestContextV2';
+export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
+BlockRequestContext.displayName = 'BlockRequestContext';
 
-function useCurrentRequest<T>(options: Omit<AllDataBlockPropsV2, 'type'>) {
-  const resource = useDataBlockResourceV2();
+function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
+  const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
   if (params.filterByTk === undefined) {
     delete params.filterByTk;
@@ -49,7 +49,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockPropsV2, 'type'>) {
   return request;
 }
 
-function useParentRequest<T>(options: Omit<AllDataBlockPropsV2, 'type'>) {
+function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const { sourceId, association, parentRecord } = options;
   const api = useAPIClient();
   return useRequest<T>(
@@ -69,8 +69,8 @@ function useParentRequest<T>(options: Omit<AllDataBlockPropsV2, 'type'>) {
   );
 }
 
-export const BlockRequestProviderV2: FC = ({ children }) => {
-  const props = useDataBlockPropsV2();
+export const BlockRequestProvider: FC = ({ children }) => {
+  const props = useDataBlockProps();
   const {
     action,
     filterByTk,
@@ -104,32 +104,32 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
   });
 
   return (
-    <BlockRequestContextV2.Provider value={currentRequest}>
+    <BlockRequestContext.Provider value={currentRequest}>
       {action !== 'list' ? (
-        <RecordProviderV2
+        <RecordProvider
           isNew={action === undefined}
           record={currentRequest.data?.data}
-          parentRecord={parentRequest.data?.data && new RecordV2({ isNew: false, data: parentRequest.data?.data })}
+          parentRecord={parentRequest.data?.data && new Record({ isNew: false, data: parentRequest.data?.data })}
         >
           {children}
-        </RecordProviderV2>
+        </RecordProvider>
       ) : (
-        <RecordProviderV2
+        <RecordProvider
           isNew={false}
           record={null}
-          parentRecord={parentRequest.data?.data && new RecordV2({ isNew: false, data: parentRequest.data?.data })}
+          parentRecord={parentRequest.data?.data && new Record({ isNew: false, data: parentRequest.data?.data })}
         >
           {children}
-        </RecordProviderV2>
+        </RecordProvider>
       )}
-    </BlockRequestContextV2.Provider>
+    </BlockRequestContext.Provider>
   );
 };
 
-export const useDataBlockRequestV2 = <T extends {}>(): UseRequestResult<{ data: T }> => {
-  const context = useContext(BlockRequestContextV2);
+export const useDataBlockRequest = <T extends {}>(): UseRequestResult<{ data: T }> => {
+  const context = useContext(BlockRequestContext);
   if (!context) {
-    throw new Error('useBlockRequest() must be used within a DataBlockRequestProvider');
+    throw new Error('useDataBlockRequest() must be used within a DataBlockRequestProvider');
   }
 
   return context;

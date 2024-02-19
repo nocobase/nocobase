@@ -3,8 +3,8 @@ import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
-import { CollectionProvider, useCollectionManager } from '../../../collection-manager';
-import { RecordProvider, useRecord } from '../../../record-provider';
+import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
@@ -30,8 +30,8 @@ function isObject(value) {
 export const ReadPrettyInternalViewer: React.FC = observer(
   (props: any) => {
     const fieldSchema = useFieldSchema();
-    const recordCtx = useRecord();
-    const { getCollection } = useCollectionManager();
+    const recordCtx = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
     const { enableLink } = fieldSchema['x-component-props'] || {};
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     const field = useField();
@@ -110,18 +110,22 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       const collectionFieldNames = fieldSchema?.['x-collection-field']?.split('.');
 
       return collectionFieldNames && collectionFieldNames.length > 2 ? (
-        <RecordProvider record={recordCtx[collectionFieldNames[1]]}>
-          <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
-        </RecordProvider>
+        <RecordProvider_deprecated record={recordCtx[collectionFieldNames[1]]}>
+          <RecordProvider_deprecated record={record}>
+            {renderWithoutTableFieldResourceProvider()}
+          </RecordProvider_deprecated>
+        </RecordProvider_deprecated>
       ) : (
-        <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+        <RecordProvider_deprecated record={record}>
+          {renderWithoutTableFieldResourceProvider()}
+        </RecordProvider_deprecated>
       );
     };
 
     return (
       <div>
         <BlockAssociationContext.Provider value={`${collectionField?.collectionName}.${collectionField?.name}`}>
-          <CollectionProvider name={collectionField?.target ?? collectionField?.targetCollection}>
+          <CollectionProvider_deprecated name={collectionField?.target ?? collectionField?.targetCollection}>
             <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
               {renderRecords()}
             </EllipsisWithTooltip>
@@ -136,7 +140,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             >
               {renderRecordProvider()}
             </ActionContextProvider>
-          </CollectionProvider>
+          </CollectionProvider_deprecated>
         </BlockAssociationContext.Provider>
       </div>
     );

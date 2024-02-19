@@ -1,7 +1,7 @@
 import { useField, useFieldSchema } from '@formily/react';
 import {
   useFormBlockContext,
-  useCollection,
+  useCollection_deprecated,
   SchemaSettings,
   useDesignable,
   removeNullCondition,
@@ -195,7 +195,7 @@ export const ganttSettings = new SchemaSettings({
       name: 'dataScope',
       Component: SchemaSettingsDataScope,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
@@ -230,7 +230,7 @@ export const ganttSettings = new SchemaSettings({
       name: 'template',
       Component: SchemaSettingsTemplate,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollection_deprecated();
         return {
           componentName: 'Gantt',
           collectionName: name,

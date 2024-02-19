@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 import {
   useAPIClient,
   SchemaComponentOptions,
-  useRecord,
+  useRecord_deprecated,
   useAttach,
   ResourceActionContext,
   ResourceActionProvider,
@@ -15,7 +15,7 @@ import {
   useCompile,
   Select,
   Collection,
-  useDataSourceManagerV2,
+  useDataSourceManager,
 } from '@nocobase/client';
 import { collection, fieldsTableSchema } from './schema/collectionFields';
 import { TitleField } from './components/TitleField';
@@ -48,7 +48,7 @@ export const CollectionFields = () => {
   const service = useContext(ResourceActionContext);
   const collectionResource = useResourceContext();
   const { targetKey } = collectionResource || {};
-  const targetCollection = useRecord();
+  const targetCollection = useRecord_deprecated();
   const { [targetKey]: filterByTk, titleField: targetField, name } = targetCollection;
   const [titleField, setTitleField] = useState(targetField);
   const useDataSource = (options) => {
@@ -82,7 +82,7 @@ export const CollectionFields = () => {
     },
   };
 
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
   const handleFieldChange = async (value, filterByTk) => {
     await api.request({
       url: `dataSourcesCollections/${dataSourceKey}.${name}/fields:update?filterByTk=${filterByTk}`,
