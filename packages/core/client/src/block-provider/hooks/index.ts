@@ -991,6 +991,7 @@ export const useDetailsPaginationProps = () => {
     current: ctx.service?.data?.meta?.page || 1,
     total: count,
     pageSize: 1,
+    showSizeChanger: false,
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });
@@ -1088,6 +1089,8 @@ export const useAssociationFilterBlockProps = () => {
   const { getDataBlocks } = useFilterBlock();
   const collectionFieldName = collectionField?.name;
   const field = useField();
+  const { props: blockProps } = useBlockRequestContext();
+  const headers = useDataSourceHeaders(blockProps?.dataSource);
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
@@ -1099,6 +1102,7 @@ export const useAssociationFilterBlockProps = () => {
     data: { [key: string]: any }[];
   }>(
     {
+      headers,
       resource: collectionField?.target,
       action: 'list',
       params: {

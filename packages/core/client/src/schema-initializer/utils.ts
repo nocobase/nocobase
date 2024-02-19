@@ -303,10 +303,19 @@ export const useFormItemInitializerFields = (options?: any) => {
                 value: 'id',
               },
             }
-          : {},
+          : {
+              fieldNames: {
+                label:
+                  targetCollection?.titleField ||
+                  field?.targetKey ||
+                  field?.foreignKey ||
+                  targetCollection?.getPrimaryKey() ||
+                  'id',
+                value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+              },
+            },
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
-      // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       const resultItem = {
         type: 'item',
         name: field.name,

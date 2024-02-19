@@ -7,7 +7,6 @@ import { CollectionFieldProvider, useCollectionField } from './CollectionFieldPr
 import { useCompile, useComponent } from '../../schema-component';
 import { useFormBlockContext } from '../../block-provider';
 import useIsAllowToSetDefaultValue from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 
 type Props = {
   component: any;
@@ -22,8 +21,6 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const fieldSchema = useFieldSchema();
   const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
-  const { getCollection, getCollectionJoinField } = useCollectionManager_deprecated();
-  const { getField } = useCollection_deprecated();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const setFieldProps = (key, value) => {
@@ -69,20 +66,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
-    //处理关系字段 fieldNames
-    const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
-    const targetCollection = getCollection(collectionField?.target);
-    let fieldNames = {};
-    if (collectionField?.target && targetCollection) {
-      const initField = collectionField?.targetKey || targetCollection.getPrimaryKey();
-      fieldNames = {
-        label: targetCollection.getFields()?.find((v) => v.name === field.componentProps.fieldNames?.label)
-          ? field.componentProps.fieldNames?.label
-          : initField,
-        value: initField,
-      };
-    }
-    const componentProps = merge(originalProps, { ...(field.componentProps || {}), fieldNames });
+    const componentProps = merge(originalProps, field.componentProps || {});
     field.component = [Component, componentProps];
   }, [JSON.stringify(uiSchema)]);
   if (!uiSchema) {
