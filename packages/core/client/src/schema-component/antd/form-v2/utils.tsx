@@ -162,7 +162,7 @@ async function replaceVariables(
 
   return {
     exp: value.replace(REGEX_OF_VARIABLE, (match) => {
-      return store[match] || match;
+      return `{{${store[match] || match}}}`;
     }),
     scope,
   };
