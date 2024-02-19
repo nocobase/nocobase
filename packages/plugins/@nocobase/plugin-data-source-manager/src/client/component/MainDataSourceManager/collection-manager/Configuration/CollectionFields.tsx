@@ -4,29 +4,32 @@ import { FieldContext, FormContext, useField } from '@formily/react';
 import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCurrentAppInfo } from '../../appInfo';
-import { RecordProvider, useRecord } from '../../record-provider';
-import { Action, useAttach, useCompile, SchemaComponent } from '../../schema-component';
-import { Input } from '../../schema-component/antd/input';
 import {
-  isDeleteButtonDisabled,
-  useBulkDestroyActionAndRefreshCM,
-  useDestroyActionAndRefreshCM,
-} from '../action-hooks';
-import { useCollectionManager } from '../hooks/useCollectionManager';
-import {
+  useCurrentAppInfo,
+  RecordProvider,
+  useRecord,
+  Action,
+  useAttach,
+  useCompile,
+  SchemaComponent,
+  Input,
+  useCollectionManager,
+  AddCollectionField,
+  EditCollectionField,
+  OverridingCollectionField,
+  SyncFieldsAction,
+  SyncSQLFieldsAction,
+  ViewCollectionField,
   ResourceActionContext,
   ResourceActionProvider,
   useResourceActionContext,
   useResourceContext,
-} from '../ResourceActionProvider';
-import { AddCollectionField } from './AddFieldAction';
-import { EditCollectionField } from './EditFieldAction';
-import { OverridingCollectionField } from './OverridingCollectionField';
+  isDeleteButtonDisabled,
+  useBulkDestroyActionAndRefreshCM,
+  useDestroyActionAndRefreshCM,
+} from '@nocobase/client';
+
 import { collection } from './schemas/collectionFields';
-import { SyncFieldsAction } from './SyncFieldsAction';
-import { SyncSQLFieldsAction } from './SyncSQLFieldsAction';
-import { ViewCollectionField } from './ViewInheritedField';
 
 const indentStyle = css`
   .ant-table {

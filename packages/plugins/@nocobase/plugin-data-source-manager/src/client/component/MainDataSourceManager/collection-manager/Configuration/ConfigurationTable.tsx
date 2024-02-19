@@ -1,20 +1,24 @@
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useRef, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldsTable } from '.';
-import { useAPIClient } from '../../api-client';
-import { useCurrentAppInfo } from '../../appInfo';
-import { useRecord } from '../../record-provider';
-import { SchemaComponent, SchemaComponentContext, useCompile } from '../../schema-component';
-import { useCancelAction } from '../action-hooks';
+import {
+  useAPIClient,
+  useCurrentAppInfo,
+  useRecord,
+  SchemaComponent,
+  SchemaComponentContext,
+  useCompile,
+  useCancelAction,
+  useCollectionManager,
+  AddSubFieldAction,
+  EditSubFieldAction,
+} from '@nocobase/client';
 import { CollectionCategroriesContext } from '../context';
-import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
-import { AddSubFieldAction } from './AddSubFieldAction';
 import { CollectionFields } from './CollectionFields';
-import { EditSubFieldAction } from './EditSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { TemplateSummary } from './components/TemplateSummary';
 import { collectionSchema } from './schemas/collections';

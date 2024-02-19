@@ -2,11 +2,10 @@ import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../../api-client';
-import { i18n } from '../../../i18n';
+import { useAPIClient, i18n } from '@nocobase/client';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplateTag } from '../components/CollectionTemplateTag';
-import type { CollectionOptionsV2 } from '../../../data-source/collection/Collection';
+import type { CollectionOptionsV2 } from '@nocobase/client';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });

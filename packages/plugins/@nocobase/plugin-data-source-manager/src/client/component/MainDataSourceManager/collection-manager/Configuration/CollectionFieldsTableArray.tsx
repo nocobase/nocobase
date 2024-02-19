@@ -15,7 +15,7 @@ import {
   useRecord,
   useRequest,
   useSchemaInitializerRender,
-} from '../..';
+} from '@nocobase/client';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
 const isColumnComponent = (schema: Schema) => {

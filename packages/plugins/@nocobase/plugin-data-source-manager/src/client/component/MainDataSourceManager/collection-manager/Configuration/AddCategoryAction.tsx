@@ -3,9 +3,13 @@ import { useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../api-client';
-import { ActionContextProvider, SchemaComponent, useActionContext } from '../../schema-component';
-import { useCancelAction } from '../action-hooks';
+import {
+  useAPIClient,
+  ActionContextProvider,
+  SchemaComponent,
+  useActionContext,
+  useCancelAction,
+} from '@nocobase/client';
 import { CollectionCategroriesContext } from '../context';
 import * as components from './components';
 import { collectionCategorySchema } from './schemas/collections';

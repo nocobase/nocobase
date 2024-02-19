@@ -4,7 +4,7 @@ import { useAttach } from '@formily/react/esm/hooks/useAttach';
 import { Options, Result } from 'ahooks/es/useRequest/src/types';
 import { TableProps } from 'antd';
 import React, { useMemo } from 'react';
-import { AsyncDataProvider, useAsyncData, useRequest } from '../..';
+import { AsyncDataProvider, useAsyncData, useRequest } from '@nocobase/client';
 import { CollectionFieldsTableArray } from './CollectionFieldsTableArray';
 
 type TableVoidProps = TableProps<any> & {

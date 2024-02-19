@@ -10,7 +10,6 @@ export * from './CollectionField';
 export * from './CollectionFieldProvider';
 export * from './CollectionManagerProvider';
 export * from './CollectionManagerSchemaComponentProvider';
-export * from './CollectionManagerShortcut';
 export * from './CollectionProvider';
 export * from './Configuration';
 export { useFieldInterfaceOptions } from './Configuration/interfaces';
