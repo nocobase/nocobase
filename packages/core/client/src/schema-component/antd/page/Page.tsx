@@ -58,7 +58,11 @@ export const Page = (props) => {
     console.error(error);
   };
 
-  const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
+  const pageHeaderTitle = useMemo(
+    () => (hidePageTitle ? undefined : fieldSchema.title || compile(title)),
+    [compile, fieldSchema.title, hidePageTitle, title],
+  );
+
   return wrapSSR(
     <FilterBlockProvider>
       <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
