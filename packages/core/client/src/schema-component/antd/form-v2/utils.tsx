@@ -91,14 +91,13 @@ export const collectFieldStateOfLinkageRules = ({
               return;
             }
 
-            // 1. 解析如 `{{$user.name}}` 之类的变量
+            // 解析如 `{{$user.name}}` 之类的变量
             const { exp, scope: expScope } = await replaceVariables(value.value || value.result, {
               variables,
               localVariables,
             });
 
             try {
-              // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
               const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
               return result;
             } catch (error) {
