@@ -4,6 +4,62 @@ import { updateAssociations } from '../update-associations';
 import { mockDatabase } from './';
 
 describe('update associations', () => {
+  describe('with none id table', () => {
+    let db: Database;
+    let User: Collection;
+    let Post: Collection;
+
+    beforeEach(async () => {
+      db = mockDatabase();
+      await db.clean({ drop: true });
+      User = db.collection({
+        name: 'users',
+        autoGenId: false,
+        timestamps: false,
+        fields: [
+          { type: 'string', name: 'name', primaryKey: true },
+          {
+            type: 'hasMany',
+            name: 'posts',
+            target: 'posts',
+            foreignKey: 'userName',
+            sourceKey: 'name',
+          },
+        ],
+      });
+
+      Post = db.collection({
+        name: 'posts',
+        autoGenId: false,
+        timestamps: false,
+        fields: [
+          { type: 'string', name: 'title', primaryKey: true },
+          { type: 'belongsTo', name: 'user', target: 'users', foreignKey: 'userName', targetKey: 'name' },
+        ],
+      });
+      await db.sync();
+    });
+
+    afterEach(async () => {
+      await db.close();
+    });
+
+    it('should create user with posts', async () => {
+      await User.repository.create({
+        values: {
+          name: 'user1',
+          posts: [
+            {
+              title: 'post1',
+            },
+          ],
+        },
+      });
+
+      expect(await Post.repository.count()).toBe(1);
+    });
+  });
+
   describe('belongsTo', () => {
     let db: Database;
     beforeEach(async () => {
