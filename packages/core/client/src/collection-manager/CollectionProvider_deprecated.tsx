@@ -4,6 +4,9 @@ import { CollectionManagerProvider } from '../data-source/collection/CollectionM
 import { CollectionOptions } from '../data-source/collection/Collection';
 import React from 'react';
 
+/**
+ * @deprecated use `CollectionProvider` instead
+ */
 export const CollectionProvider_deprecated: FC<{
   name?: string;
   collection?: CollectionOptions | string;

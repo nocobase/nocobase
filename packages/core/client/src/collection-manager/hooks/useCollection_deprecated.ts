@@ -6,6 +6,9 @@ import { useCollection } from '../../data-source/collection/CollectionProvider';
 
 export type Collection_deprecated = ReturnType<typeof useCollection_deprecated>;
 
+/**
+ * @deprecated use `useCollection` instead
+ */
 export const useCollection_deprecated = () => {
   const collection = useCollection<InheritanceCollectionMixin>();
   const api = useAPIClient();

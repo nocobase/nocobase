@@ -5,6 +5,9 @@ import { useCurrentUserContext } from '../user';
 export const RecordContext_deprecated = createContext({});
 export const RecordIndexContext = createContext(null);
 
+/**
+ * @deprecated use `RecordProvider` instead
+ */
 export const RecordProvider_deprecated: React.FC<{ record: any; parent?: any; collectionName?: string }> = (props) => {
   const { record, children, collectionName, parent = false } = props;
   const { name: __collectionName } = useCollection_deprecated();
@@ -24,6 +27,9 @@ export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
   return <RecordIndexContext.Provider value={index}>{children}</RecordIndexContext.Provider>;
 };
 
+/**
+ * @deprecated use `useRecord` instead
+ */
 export function useRecord_deprecated<D = any>() {
   return useContext(RecordContext_deprecated) as D;
 }

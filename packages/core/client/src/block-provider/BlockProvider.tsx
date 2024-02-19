@@ -303,6 +303,9 @@ export const useBlockContext = () => {
   return useContext(BlockContext);
 };
 
+/**
+ * @deprecated use `DataBlockProvider` instead
+ */
 export const BlockProvider = (props: {
   name: string;
   resource: any;

@@ -8,6 +8,9 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { useCollectionHistory } from './CollectionHistoryProvider';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 
+/**
+ * @deprecated use `CollectionManagerProvider` instead
+ */
 export const CollectionManagerProvider_deprecated: React.FC<CollectionManagerOptions> = (props) => {
   const { collections = [] } = props;
   return (

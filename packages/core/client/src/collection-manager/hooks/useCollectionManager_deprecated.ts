@@ -10,6 +10,9 @@ import { useDataSource } from '../../data-source/data-source/DataSourceProvider'
 import { DEFAULT_DATA_SOURCE_NAME } from '../../data-source/data-source/DataSourceManager';
 import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
 
+/**
+ * @deprecated use `useCollectionManager` instead
+ */
 export const useCollectionManager_deprecated = (dataSourceName?: string) => {
   const dm = useDataSourceManager();
   const dataSource = useDataSource();
