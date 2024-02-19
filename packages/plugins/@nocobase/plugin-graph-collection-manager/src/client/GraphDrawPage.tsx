@@ -17,7 +17,6 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   Select,
-  collection,
   useAPIClient,
   useApp,
   useCollectionManager,
@@ -51,6 +50,7 @@ import {
   getInheritCollections,
   getPopupContainer,
   useGCMTranslation,
+  collection,
 } from './utils';
 const { drop, groupBy, last, maxBy, minBy, take, uniq } = lodash;
 

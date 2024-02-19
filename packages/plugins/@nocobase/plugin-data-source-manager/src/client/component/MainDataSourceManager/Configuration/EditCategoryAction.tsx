@@ -12,8 +12,8 @@ import {
   useCompile,
   useResourceActionContext,
   useCancelAction,
+  CollectionCategroriesContext,
 } from '@nocobase/client';
-import { CollectionCategroriesContext } from '../context';
 import * as components from './components';
 import { collectionCategoryEditSchema } from './schemas/collections';
 

@@ -424,6 +424,9 @@ export const collectionCategoryEditSchema: ISchema = {
               'x-component-props': {
                 type: 'primary',
                 useAction: '{{ useEditCategry }}',
+                style: {
+                  marginLeft: '8px',
+                },
               },
             },
           },

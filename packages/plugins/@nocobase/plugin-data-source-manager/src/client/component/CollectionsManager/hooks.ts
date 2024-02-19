@@ -1,8 +1,7 @@
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useForm, useField } from '@formily/react';
 import { useParams } from 'react-router-dom';
-import { useAPIClient, useRecord, useResourceActionContext, useActionContext } from '@nocobase/client';
+import { useAPIClient, useRecord, useResourceActionContext } from '@nocobase/client';
 
 export const useDestroyAction = () => {
   const { refresh } = useResourceActionContext();

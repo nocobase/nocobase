@@ -9,8 +9,8 @@ import {
   SchemaComponent,
   useActionContext,
   useCancelAction,
+  CollectionCategroriesContext,
 } from '@nocobase/client';
-import { CollectionCategroriesContext } from '../context';
 import * as components from './components';
 import { collectionCategorySchema } from './schemas/collections';
 

@@ -21,8 +21,8 @@ import {
   SchemaComponentOptions,
   useCompile,
   useResourceActionContext,
+  CollectionCategroriesContext,
 } from '@nocobase/client';
-import { CollectionCategroriesContext } from '../context';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
 import useUrlState from '@ahooksjs/use-url-state';

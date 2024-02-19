@@ -15,8 +15,8 @@ import {
   useCollectionManager,
   AddSubFieldAction,
   EditSubFieldAction,
+  CollectionCategroriesContext,
 } from '@nocobase/client';
-import { CollectionCategroriesContext } from '../context';
 import { DataSourceContext } from '../sub-table';
 import { CollectionFields } from './CollectionFields';
 import { FieldSummary } from './components/FieldSummary';

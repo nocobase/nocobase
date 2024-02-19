@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
   useAPIClient,
-  CollectionFieldsTable,
   useCurrentAppInfo,
   useRecord,
   SchemaComponent,
@@ -164,7 +163,6 @@ export const ConfigurationTable = () => {
           EditSubFieldAction,
           FieldSummary,
           TemplateSummay: TemplateSummary,
-          CollectionFieldsTable,
           CollectionFields,
         }}
         scope={{

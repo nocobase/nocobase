@@ -9,7 +9,6 @@ import {
   SchemaComponentProvider,
   Select,
   StablePopover,
-  collection,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
@@ -27,7 +26,7 @@ import {
   useValuesFromRecord,
 } from '../action-hooks';
 import useStyles from '../style';
-import { getPopupContainer, useGCMTranslation } from '../utils';
+import { getPopupContainer, useGCMTranslation, collection } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
 import { ConnectAssociationAction } from './ConnectAssociationAction';

@@ -20,6 +20,7 @@ import {
   SyncSQLFieldsAction,
   DeleteCollection,
   DeleteCollectionAction,
+  CollectionCategroriesProvider,
 } from '@nocobase/client';
 import {
   AddCategory,
@@ -29,8 +30,6 @@ import {
   EditCategory,
   EditCategoryAction,
 } from './Configuration';
-
-import { CollectionCategroriesProvider } from './CollectionManagerProvider';
 
 const schema2: ISchema = {
   type: 'object',
