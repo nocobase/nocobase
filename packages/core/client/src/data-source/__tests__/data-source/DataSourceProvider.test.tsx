@@ -27,7 +27,7 @@ describe('DataSourceProviderV2', () => {
     };
     const dataSourceOptions: DataSourceOptionsV2 = {
       key: 'test',
-      displayName: 'Test Data Source',
+      displayName: 'Test',
       status: status,
     };
     class TestDataSource extends DataSourceV2 {
@@ -67,17 +67,16 @@ describe('DataSourceProviderV2', () => {
 
   it('should render error state when data source is not found', () => {
     renderComponent('non-existent');
-    screen.debug();
     expect(document.querySelector('.ant-result')).toBeInTheDocument();
   });
 
   it('should render loading state when data source is loading', () => {
     renderComponent('test', 'loading');
-    expect(screen.getByText('test data source loading...')).toBeInTheDocument();
+    expect(screen.getByText('Test data source loading...')).toBeInTheDocument();
   });
 
   it('should render error state when data source loading fails', () => {
     renderComponent('test', 'loading-failed');
-    expect(screen.getByText('DataSource "test" loading failed')).toBeInTheDocument();
+    expect(screen.getByText('DataSource "Test" loading failed')).toBeInTheDocument();
   });
 });

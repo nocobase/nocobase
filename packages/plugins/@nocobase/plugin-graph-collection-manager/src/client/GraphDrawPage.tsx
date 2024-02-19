@@ -413,7 +413,7 @@ export const GraphDrawPage = React.memo(() => {
       refreshPositions();
     }
   };
-  const reloadCallback = async () => {
+  const reloadCallback = async (reloadFlag?) => {
     const collections = getCollections();
     if (!targetGraph) return;
     targetGraph.collections = collections;
@@ -422,7 +422,7 @@ export const GraphDrawPage = React.memo(() => {
     const currentNodes = targetGraph.getNodes();
     setCollectionData(collections);
     setCollectionList(collections);
-    if (!currentNodes.length) {
+    if (!currentNodes.length || reloadFlag) {
       if (!selectedCollections) {
         renderInitGraphCollection(collections);
       }
@@ -1102,7 +1102,7 @@ export const GraphDrawPage = React.memo(() => {
       handelResetLayout(true);
       targetGraph.selectedCollections = selectedCollections;
     } else {
-      !selectedCollections && renderInitGraphCollection(collections, false);
+      !selectedCollections && reloadCallback(true);
     }
     return () => {
       cleanGraphContainer();

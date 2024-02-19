@@ -1,20 +1,15 @@
-import { DataSourceV2 } from '@nocobase/client';
+import { DataSourceOptionsV2, DataSourceV2 } from '@nocobase/client';
 
 export class ThirdDataSource extends DataSourceV2 {
   async getDataSource() {
     const service = await this.app.apiClient.request<{
-      data: any;
+      data: DataSourceOptionsV2;
     }>({
-      url: `dataSources/${this.key}/collections:list`,
+      url: `dataSources:get/${this.key}`,
       params: {
-        paginate: false,
-        appends: ['fields'],
+        appends: ['collections'],
       },
     });
-
-    const collections = service?.data?.data;
-    return {
-      collections,
-    };
+    return service.data.data;
   }
 }

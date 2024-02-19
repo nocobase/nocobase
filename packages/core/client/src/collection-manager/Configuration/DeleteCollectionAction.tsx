@@ -92,7 +92,7 @@ export const DeleteCollectionAction = (props) => {
     return (
       <span>
         <ExclamationCircleFilled style={{ color: '#faad14', marginRight: '12px', fontSize: '22px' }} />
-        <span style={{ fontSize: '19px' }}>{t('Delete record')}</span>
+        <span style={{ fontSize: '19px' }}>{t('Delete collection')}</span>
       </span>
     );
   };
@@ -119,7 +119,7 @@ export const DeleteCollectionAction = (props) => {
                 'x-component': 'Action.Modal',
                 title: <Title />,
                 'x-component-props': {
-                  width: 500,
+                  width: 520,
                   getContainer: '{{ getContainer }}',
                   className: css`
                     .ant-modal-body {
@@ -163,6 +163,9 @@ export const DeleteCollectionAction = (props) => {
                         'x-component-props': {
                           type: 'primary',
                           useAction: '{{ useDestroyCollectionAction }}',
+                          style: {
+                            marginLeft: '8px',
+                          },
                         },
                       },
                     },

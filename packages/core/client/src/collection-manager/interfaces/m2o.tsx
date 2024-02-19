@@ -19,10 +19,10 @@ export class M2OFieldInterface extends CollectionFieldInterface {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -35,24 +35,24 @@ export class M2OFieldInterface extends CollectionFieldInterface {
         'x-component-props': {
           // mode: 'tags',
           multiple: true,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
   };
   availableTypes = ['belongsTo'];
-  schemaInitialize(schema: ISchema, { block, readPretty, targetCollection }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
     // schema['type'] = 'object';
-    if (targetCollection?.titleField) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-        value: targetCollection.filterTargetKey || 'id',
-      };
-      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
-    }
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+    };
+    schema['x-component-props'].fieldNames.label =
+      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
+
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;

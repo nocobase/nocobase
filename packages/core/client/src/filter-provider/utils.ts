@@ -80,7 +80,8 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
       return (
         fieldSchema['x-uid'] !== block.uid &&
         (isSameCollection(block.collection, collection) ||
-          getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block)?.length ||
+          getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name, collection.dataSource), block)
+            ?.length ||
           getSupportFieldsByForeignKey(collection, block)?.length)
       );
     });
@@ -168,7 +169,7 @@ export const isAssocField = (field?: FieldOptions) => {
 };
 
 export const isSameCollection = (c1: Collection, c2: Collection) => {
-  return c1.name === c2.name;
+  return c1.name === c2.name && c1.dataSource === c2.dataSource;
 };
 
 export const useFilterAPI = () => {

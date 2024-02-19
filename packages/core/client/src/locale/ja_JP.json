@@ -171,6 +171,7 @@
   "Before change": "変更前",
   "After change": "変更後",
   "Delete record": "レコード削除",
+  "Delete collection":"データテーブルの削除",
   "Create collection": "コレクションの作成",
   "Collection display name": "コレクション名",
   "Collection name": "コレクション識別子",
