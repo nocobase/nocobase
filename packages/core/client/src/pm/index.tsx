@@ -41,15 +41,15 @@ export class PMPlugin extends Plugin {
       aclSnippet: 'pm.system-settings.system-settings',
     });
 
-    this.app.pluginSettingsManager.add('collection-manager', {
-      icon: 'DatabaseOutlined',
-      title: '{{t("Collection manager")}}',
-    });
+    // this.app.pluginSettingsManager.add('collection-manager', {
+    //   icon: 'DatabaseOutlined',
+    //   title: '{{t("Collection manager")}}',
+    // });
 
-    this.app.pluginSettingsManager.add('collection-manager.collections', {
-      title: '{{t("Collections & Fields")}}',
-      Component: CollectionManagerPane,
-    });
+    // this.app.pluginSettingsManager.add('collection-manager.collections', {
+    //   title: '{{t("Collections & Fields")}}',
+    //   Component: CollectionManagerPane,
+    // });
   }
 
   addComponents() {

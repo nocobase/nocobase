@@ -10,6 +10,7 @@ import {
 } from '@nocobase/client';
 import { Card } from 'antd';
 import _ from 'lodash';
+import { useField } from '@formily/react';
 import React, { useCallback, useEffect } from 'react';
 import PluginDatabaseConnectionsClient from '../';
 import { databaseConnectionSchema } from '../schema';
@@ -75,6 +76,10 @@ export const DatabaseConnectionManagerPane = () => {
       },
     };
   };
+  const useIsAbleDelete = ($self) => {
+    const { key } = useRecord();
+    $self.visible = key !== 'main';
+  };
   return (
     <Card bordered={false}>
       <SchemaComponent
@@ -90,6 +95,7 @@ export const DatabaseConnectionManagerPane = () => {
           useDestroyAction,
           dataSourceDeleteCallback,
           dataSourceCreateCallback,
+          useIsAbleDelete,
         }}
         schema={databaseConnectionSchema}
       />

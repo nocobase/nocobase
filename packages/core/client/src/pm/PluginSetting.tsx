@@ -148,7 +148,10 @@ export const AdminSettingsLayout = () => {
             <PageHeader
               className={styles.pageHeader}
               style={{
-                paddingBottom: currentTopLevelSetting.children?.length > 0 ? 0 : theme.paddingSM,
+                paddingBottom:
+                  currentTopLevelSetting.children?.length > 0 && currentTopLevelSetting.showTabs !== false
+                    ? 0
+                    : theme.paddingSM,
               }}
               ghost={false}
               title={currentTopLevelSetting.title}
