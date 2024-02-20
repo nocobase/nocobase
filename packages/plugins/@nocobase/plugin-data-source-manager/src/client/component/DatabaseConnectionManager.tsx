@@ -77,7 +77,7 @@ export const DatabaseConnectionManagerPane = () => {
     };
   };
   const useIsAbleDelete = ($self) => {
-    const { key } = useRecord();
+    const { key } = useRecord_deprecated();
     $self.visible = key !== 'main';
   };
   return (
