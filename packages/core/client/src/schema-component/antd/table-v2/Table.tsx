@@ -235,7 +235,7 @@ export const Table: any = (props: {
   const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
   const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(() => field?.data?.selectedRowKeys || []);
   const [selectedRow, setSelectedRow] = useState([]);
-  const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
+  const dataSource = useMemo(() => field?.value?.slice?.()?.filter?.(Boolean) || [], [field?.value]);
   const isRowSelect = rowSelection?.type !== 'none';
   const defaultRowKeyMap = useRef(new Map());
   let onRow = null,
