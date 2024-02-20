@@ -24,7 +24,9 @@ function getMenuItems(list: PluginSettingsPageType[]) {
 
 function matchRoute(data, url) {
   const keys = Object.keys(data);
-
+  if (data[url]) {
+    return data[url];
+  }
   for (const pattern of keys) {
     const regexPattern = pattern.replace(/:[^/]+/g, '([^/]+)');
     const match = url.match(new RegExp(`^${regexPattern}$`));
@@ -90,7 +92,6 @@ export const AdminSettingsLayout = () => {
     traverse(settings);
     return map;
   }, [settings]);
-
   const currentSetting = useMemo(
     () => matchRoute(settingsMapByPath, location.pathname),
     [location.pathname, settingsMapByPath],
@@ -148,7 +149,10 @@ export const AdminSettingsLayout = () => {
             <PageHeader
               className={styles.pageHeader}
               style={{
-                paddingBottom: currentTopLevelSetting.children?.length > 0 ? 0 : theme.paddingSM,
+                paddingBottom:
+                  currentTopLevelSetting.children?.length > 0 && currentTopLevelSetting.showTabs !== false
+                    ? 0
+                    : theme.paddingSM,
               }}
               ghost={false}
               title={currentTopLevelSetting.title}

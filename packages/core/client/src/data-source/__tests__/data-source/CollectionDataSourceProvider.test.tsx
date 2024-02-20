@@ -3,7 +3,7 @@ import { render, screen } from '@nocobase/test/client';
 
 import { Application } from '@nocobase/client';
 import { DataSourceApplicationProvider } from '../../components/DataSourceApplicationProvider';
-import { DataSourceProviderV2, useDataSourceKey } from '../../data-source/DataSourceProvider';
+import { DataSourceProvider, useDataSourceKey } from '../../data-source/DataSourceProvider';
 
 describe('CollectionDataSourceProvider', () => {
   test('should work', () => {
@@ -24,9 +24,9 @@ describe('CollectionDataSourceProvider', () => {
 
     render(
       <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
-        <DataSourceProviderV2 dataSource={'a'}>
+        <DataSourceProvider dataSource={'a'}>
           <Demo />
-        </DataSourceProviderV2>
+        </DataSourceProvider>
       </DataSourceApplicationProvider>,
     );
 

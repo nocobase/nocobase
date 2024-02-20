@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ResourceActionContext, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
 import { useFieldInterfaceOptions } from '../../Configuration/interfaces';
-import { useCollectionManager } from '../../hooks/useCollectionManager';
+import { useCollectionManager_deprecated } from '../../hooks/useCollectionManager_deprecated';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -32,7 +32,7 @@ const PreviewCom = (props) => {
   const field: any = useField();
   const form = useForm();
   const { getCollection, getInterface, getCollectionFields, getInheritCollections, getParentCollectionFields } =
-    useCollectionManager();
+    useCollectionManager_deprecated();
   const compile = useCompile();
   const options = useFieldInterfaceOptions();
   const initOptions = options.filter((v) => !['relation', 'systemInfo'].includes(v.key));

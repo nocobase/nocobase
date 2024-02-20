@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, TableProps } from 'antd';
-import { SchemaComponent, useDataBlockRequestV2, withDynamicSchemaProps } from '@nocobase/client';
+import { SchemaComponent, useDataBlockRequest, withDynamicSchemaProps } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
 
 import { createApp } from '../../../data-source/demos/createApp';
@@ -8,7 +8,7 @@ import { createApp } from '../../../data-source/demos/createApp';
 const schema: ISchema = {
   type: 'void',
   name: 'root',
-  'x-decorator': 'DataBlockProviderV2',
+  'x-decorator': 'DataBlockProvider',
   'x-decorator-props': {
     collection: 'users',
     action: 'list',
@@ -26,7 +26,7 @@ const schema: ISchema = {
 const MyTable = withDynamicSchemaProps(Table);
 
 function useTableProps(): TableProps<any> {
-  const { data, loading } = useDataBlockRequestV2<any[]>();
+  const { data, loading } = useDataBlockRequest<any[]>();
   return {
     loading,
     dataSource: data?.data || [],

@@ -2,7 +2,7 @@ import { ISchema, observer, useForm } from '@formily/react';
 import {
   Action,
   Application,
-  CollectionProviderV2,
+  CollectionProvider,
   Form,
   SchemaComponent,
   FormItem,
@@ -56,7 +56,7 @@ const Root = observer(() => {
         properties: {
           // 字段 title1 直接使用全局提供的 uiSchema
           title1: {
-            'x-component': 'CollectionFieldV2',
+            'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             default: '111',
           },
@@ -69,7 +69,7 @@ const Root = observer(() => {
           //   'x-decorator': 'FormItem',
           // },
           title2: {
-            'x-component': 'CollectionFieldV2',
+            'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             title: 'Title4', // 覆盖全局已定义的 Title2
             required: true, // 扩展的配置参数
@@ -117,9 +117,9 @@ const Root = observer(() => {
 
   return (
     <SchemaComponentOptions scope={{ useSubmit }}>
-      <CollectionProviderV2 name="tests">
+      <CollectionProvider name="tests">
         <SchemaComponent schema={schema} />
-      </CollectionProviderV2>
+      </CollectionProvider>
     </SchemaComponentOptions>
   );
 });

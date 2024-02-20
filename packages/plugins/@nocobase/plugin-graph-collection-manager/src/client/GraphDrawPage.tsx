@@ -17,14 +17,13 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   Select,
-  collection,
   useAPIClient,
   useApp,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCompile,
   useCurrentAppInfo,
-  useDataSourceManagerV2,
-  useDataSourceV2,
+  useDataSourceManager,
+  useDataSource,
   useGlobalTheme,
 } from '@nocobase/client';
 import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
@@ -51,6 +50,7 @@ import {
   getInheritCollections,
   getPopupContainer,
   useGCMTranslation,
+  collection,
 } from './utils';
 const { drop, groupBy, last, maxBy, minBy, take, uniq } = lodash;
 
@@ -373,8 +373,8 @@ export const GraphDrawPage = React.memo(() => {
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   const [loading, setLoading] = useState(false);
-  const { collections, getCollections } = useCollectionManager();
-  const dm = useDataSourceManagerV2();
+  const { collections, getCollections } = useCollectionManager_deprecated();
+  const dm = useDataSourceManager();
   const currentAppInfo = useCurrentAppInfo();
   const app = useApp();
   const {
@@ -431,7 +431,7 @@ export const GraphDrawPage = React.memo(() => {
     }
   };
 
-  const dataSource = useDataSourceV2();
+  const dataSource = useDataSource();
   useEffect(() => {
     dataSource.addReloadCallback(reloadCallback);
 

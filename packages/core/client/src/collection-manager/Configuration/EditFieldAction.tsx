@@ -7,12 +7,12 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useParentRecordDataV2 } from '../../data-source/record/RecordProvider';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { useParentRecordData } from '../../data-source/record/RecordProvider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
-import { useCancelAction, useUpdateAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCancelAction } from '../action-hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import * as components from './components';
@@ -118,12 +118,11 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 const useUpdateCollectionField = () => {
   const form = useForm();
-  const { run } = useUpdateAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   return {
     async run() {
       await form.submit();
@@ -144,14 +143,14 @@ const useUpdateCollectionField = () => {
 };
 
 export const EditCollectionField = (props) => {
-  const record = useRecord();
-  const parentRecordData = useParentRecordDataV2();
+  const record = useRecord_deprecated();
+  const parentRecordData = useParentRecordData();
   return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
 export const EditFieldAction = (props) => {
   const { scope, getContainer, item: record, parentItem: parentRecord, children, ...otherProps } = props;
-  const { getInterface, collections } = useCollectionManager();
+  const { getInterface, collections } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -170,7 +169,7 @@ export const EditFieldAction = (props) => {
   }, []);
 
   return (
-    <RecordProvider record={record} parent={parentRecord}>
+    <RecordProvider_deprecated record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -218,6 +217,6 @@ export const EditFieldAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

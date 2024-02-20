@@ -1,9 +1,9 @@
-import { DataSourceOptionsV2, DataSourceV2 } from '@nocobase/client';
+import { DataSourceOptions, DataSource } from '@nocobase/client';
 
-export class ThirdDataSource extends DataSourceV2 {
+export class ThirdDataSource extends DataSource {
   async getDataSource() {
     const service = await this.app.apiClient.request<{
-      data: DataSourceOptionsV2;
+      data: DataSourceOptions;
     }>({
       url: `dataSources:get/${this.key}`,
       params: {

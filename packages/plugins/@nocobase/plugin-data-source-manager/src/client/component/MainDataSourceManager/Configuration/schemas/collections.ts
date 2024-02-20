@@ -2,17 +2,15 @@ import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../../api-client';
-import { i18n } from '../../../i18n';
-import { CollectionCategory } from '../components/CollectionCategory';
-import { CollectionTemplateTag } from '../components/CollectionTemplateTag';
-import type { CollectionOptionsV2 } from '../../../data-source/collection/Collection';
+import { useAPIClient, i18n } from '@nocobase/client';
+import { CollectionCategory, CollectionTemplateTag } from '@nocobase/client';
+import type { CollectionOptions } from '@nocobase/client';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
 };
 
-export const collection: CollectionOptionsV2 = {
+export const collection: CollectionOptions = {
   name: 'collections',
   filterTargetKey: 'name',
   targetKey: 'name',
@@ -368,6 +366,9 @@ export const collectionCategorySchema: ISchema = {
               'x-component-props': {
                 type: 'primary',
                 useAction: '{{ useCreateCategry }}',
+                style: {
+                  marginLeft: '8px',
+                },
               },
             },
           },
@@ -425,6 +426,9 @@ export const collectionCategoryEditSchema: ISchema = {
               'x-component-props': {
                 type: 'primary',
                 useAction: '{{ useEditCategry }}',
+                style: {
+                  marginLeft: '8px',
+                },
               },
             },
           },

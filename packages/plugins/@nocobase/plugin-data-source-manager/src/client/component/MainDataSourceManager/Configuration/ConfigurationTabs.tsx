@@ -15,10 +15,14 @@ import { App, Badge, Card, Dropdown, Space, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../api-client';
-import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
-import { useResourceActionContext } from '../ResourceActionProvider';
-import { CollectionCategroriesContext } from '../context';
+import {
+  useAPIClient,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useCompile,
+  useResourceActionContext,
+  CollectionCategroriesContext,
+} from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
 import useUrlState from '@ahooksjs/use-url-state';

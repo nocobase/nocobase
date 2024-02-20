@@ -1,6 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
 import { useFlag } from '../../../flag-provider';
 import { useSubFormValue } from '../../../schema-component/antd/association-field/hooks';
 import { useBaseVariable } from './useBaseVariable';
@@ -21,7 +22,7 @@ export const useIterationVariable = ({
   targetFieldSchema,
 }: {
   currentCollection: string;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   schema?: any;
   noDisabled?: boolean;
   /** 消费变量值的字段 */

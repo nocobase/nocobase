@@ -1,32 +1,35 @@
 import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
+import {
+  Action,
+  AddCollectionField,
+  EditCollectionField,
+  Input,
+  isDeleteButtonDisabled,
+  OverridingCollectionField,
+  RecordProvider_deprecated,
+  ResourceActionContext,
+  ResourceActionProvider,
+  SchemaComponent,
+  SyncFieldsAction,
+  SyncSQLFieldsAction,
+  useAttach,
+  useBulkDestroyActionAndRefreshCM,
+  useCollectionManager_deprecated,
+  useCompile,
+  useCurrentAppInfo,
+  useDestroyActionAndRefreshCM,
+  useRecord_deprecated,
+  useResourceActionContext,
+  useResourceContext,
+  ViewCollectionField,
+} from '@nocobase/client';
 import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCurrentAppInfo } from '../../appInfo';
-import { RecordProvider, useRecord } from '../../record-provider';
-import { Action, SchemaComponent, useAttach, useCompile } from '../../schema-component';
-import { Input } from '../../schema-component/antd/input';
-import {
-  isDeleteButtonDisabled,
-  useBulkDestroyActionAndRefreshCM,
-  useDestroyActionAndRefreshCM,
-} from '../action-hooks';
-import { useCollectionManager } from '../hooks/useCollectionManager';
-import {
-  ResourceActionContext,
-  ResourceActionProvider,
-  useResourceActionContext,
-  useResourceContext,
-} from '../ResourceActionProvider';
-import { AddCollectionField } from './AddFieldAction';
-import { EditCollectionField } from './EditFieldAction';
-import { OverridingCollectionField } from './OverridingCollectionField';
+
 import { collection } from './schemas/collectionFields';
-import { SyncFieldsAction } from './SyncFieldsAction';
-import { SyncSQLFieldsAction } from './SyncSQLFieldsAction';
-import { ViewCollectionField } from './ViewInheritedField';
 
 const indentStyle = css`
   .ant-table {
@@ -60,14 +63,13 @@ const titlePrompt = 'Default title for each record';
 
 const CurrentFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { resource, targetKey } = props.collectionResource || {};
-  const record = useRecord();
-  const { [targetKey]: filterByTk, titleField, template } = record;
+  const { [targetKey]: filterByTk, titleField, template } = useRecord_deprecated();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { refreshCM, isTitleField, getTemplate } = useCollectionManager();
+  const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
   const targetTemplate = getTemplate(template);
   const columns: TableColumnProps<any>[] = [
     {
@@ -124,24 +126,24 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'actions',
       title: t('Actions'),
-      render: (_, item) => {
+      render: (_, record) => {
         const deleteProps = {
           confirm: {
             title: t('Delete record'),
             content: t('Are you sure you want to delete it?'),
           },
           useAction: useDestroyActionAndRefreshCM,
-          disabled: isDeleteButtonDisabled(item) || targetTemplate?.forbidDeletion,
+          disabled: isDeleteButtonDisabled(record) || targetTemplate?.forbidDeletion,
           title: t('Delete'),
         };
 
         return (
-          <RecordProvider record={item} parent={record}>
+          <RecordProvider_deprecated record={record}>
             <Space>
-              <EditCollectionField role="button" aria-label={`edit-button-${item.name}`} type="primary" />
+              <EditCollectionField role="button" aria-label={`edit-button-${record.name}`} type="primary" />
               <Action.Link {...deleteProps} />
             </Space>
-          </RecordProvider>
+          </RecordProvider_deprecated>
         );
       },
     },
@@ -177,13 +179,12 @@ const CurrentFields = (props) => {
 
 const InheritFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const { resource, targetKey } = props.collectionResource || {};
-  const record = useRecord();
-  const { [targetKey]: filterByTk, titleField, name } = record;
+  const { [targetKey]: filterByTk, titleField, name } = useRecord_deprecated();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { refreshCM, isTitleField } = useCollectionManager();
+  const { refreshCM, isTitleField } = useCollectionManager_deprecated();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -234,7 +235,7 @@ const InheritFields = (props) => {
     {
       dataIndex: 'actions',
       title: t('Actions'),
-      render: function Render(_, item) {
+      render: function Render(_, record) {
         const overrideProps = {
           type: 'primary',
           currentCollection: name,
@@ -244,12 +245,12 @@ const InheritFields = (props) => {
         };
 
         return (
-          <RecordProvider record={item} parent={record}>
+          <RecordProvider_deprecated record={record}>
             <Space>
               <OverridingCollectionField {...overrideProps} />
               <ViewCollectionField {...viewCollectionProps} />
             </Space>
-          </RecordProvider>
+          </RecordProvider_deprecated>
         );
       },
     },
@@ -268,12 +269,12 @@ const InheritFields = (props) => {
 export const CollectionFields = () => {
   const compile = useCompile();
   const field = useField<Field>();
-  const { name, template } = useRecord();
+  const { name, template } = useRecord_deprecated();
   const {
     data: { database },
   } = useCurrentAppInfo();
   const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getTemplate } =
-    useCollectionManager();
+    useCollectionManager_deprecated();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();

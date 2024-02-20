@@ -2,18 +2,18 @@ import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { Select, Input } from 'antd';
 import React from 'react';
-import { useRecord } from '../../../record-provider';
+import { useRecord_deprecated } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
-import { useCollectionManager } from '../../hooks';
+import { useCollectionManager_deprecated } from '../../hooks';
 
 export const SourceForeignKey = observer(
   () => {
-    const record = useRecord();
-    const { getCollection } = useCollectionManager();
+    const record = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
     const collection = record?.collectionName ? getCollection(record.collectionName) : record;
     const field = useField<Field>();
     const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     return (
       <div>
         <Select
@@ -40,7 +40,7 @@ export const ThroughForeignKey = observer(
   () => {
     const field = useField<Field>();
     const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     return (
       <div>
         <Select
@@ -68,7 +68,7 @@ export const TargetForeignKey = observer(
   () => {
     const field = useField<Field>();
     const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     return (
       <div>
         <Select
@@ -94,8 +94,8 @@ export const TargetForeignKey = observer(
 
 export const SourceCollection = observer(
   () => {
-    const record = useRecord();
-    const { getCollection } = useCollectionManager();
+    const record = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
     const collection = record?.collectionName ? getCollection(record.collectionName) : record;
     const compile = useCompile();
     return (

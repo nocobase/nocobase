@@ -1,10 +1,10 @@
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import {
-  BlockRequestContext,
-  CollectionProvider,
+  BlockRequestContext_deprecated,
+  CollectionProvider_deprecated,
   FormBlockContext,
-  RecordProvider,
+  RecordProvider_deprecated,
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
@@ -65,9 +65,9 @@ export function DetailsBlockProvider(props) {
   const __parent = useBlockRequestContext();
 
   return (
-    <CollectionProvider collection={props.collection}>
-      <RecordProvider record={values} parent={null}>
-        <BlockRequestContext.Provider value={{ block: 'form', field, service, resource, __parent }}>
+    <CollectionProvider_deprecated collection={props.collection}>
+      <RecordProvider_deprecated record={values} parent={null}>
+        <BlockRequestContext_deprecated.Provider value={{ block: 'form', field, service, resource, __parent }}>
           <FormBlockContext.Provider
             value={{
               params,
@@ -80,8 +80,8 @@ export function DetailsBlockProvider(props) {
           >
             {props.children}
           </FormBlockContext.Provider>
-        </BlockRequestContext.Provider>
-      </RecordProvider>
-    </CollectionProvider>
+        </BlockRequestContext_deprecated.Provider>
+      </RecordProvider_deprecated>
+    </CollectionProvider_deprecated>
   );
 }

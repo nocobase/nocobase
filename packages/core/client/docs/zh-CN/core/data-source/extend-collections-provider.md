@@ -7,8 +7,8 @@
 - 类型
 
 ```tsx | pure
-interface ExtendCollectionsProviderPropsV2 {
-  collections: CollectionOptionsV2[];
+interface ExtendCollectionsProviderProps {
+  collections: CollectionOptions[];
   children?: ReactNode;
 }
 ```
@@ -16,9 +16,9 @@ interface ExtendCollectionsProviderPropsV2 {
 - 示例
 
 ```tsx | pure
-import { ExtendCollectionsProvider, CollectionOptionsV2 } from '@nocobase/client';
+import { ExtendCollectionsProvider, CollectionOptions } from '@nocobase/client';
 
-const userCollection: CollectionOptionsV2 = {
+const userCollection: CollectionOptions = {
   name: 'users',
   title: '{{t("Users")}}',
   fields: [
@@ -38,15 +38,15 @@ const userCollection: CollectionOptionsV2 = {
 const MyPlugin = () => {
   return (
     <ExtendCollectionsProvider collections={[ userCollection ]}>
-      <CollectionProviderV2 name="users">
+      <CollectionProvider name="users">
         <ChildComponent />
-      </CollectionProviderV2>
+      </CollectionProvider>
     </ExtendCollectionsProvider>
   );
 }
 
 const ChildComponent = () => {
-  const collection = useCollectionV2();
+  const collection = useCollection();
 
   return (
     <div>

@@ -1,21 +1,21 @@
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import {
+  RecordIndexProvider,
+  RecordProvider_deprecated,
+  SchemaComponent,
+  useCollectionManager_deprecated,
+  useCompile,
+  useRecord_deprecated,
+  useRequest,
+  useSchemaInitializerRender,
+} from '@nocobase/client';
 import { Table, TableColumnProps } from 'antd';
 import { default as classNames } from 'classnames';
 import { findIndex } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  RecordIndexProvider,
-  RecordProvider,
-  SchemaComponent,
-  useCollectionManager,
-  useCompile,
-  useRecord,
-  useRequest,
-  useSchemaInitializerRender,
-} from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
 const isColumnComponent = (schema: Schema) => {
@@ -83,12 +83,11 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
   (props) => {
     const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
     const field = useField<ArrayField>();
-    const record = useRecord();
-    const { name } = record;
+    const { name } = useRecord_deprecated();
     const { t } = useTranslation();
     const compile = useCompile();
     const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
-      useCollectionManager();
+      useCollectionManager_deprecated();
     const {
       showIndex = true,
       useSelectedRowKeys = useDef,
@@ -171,13 +170,13 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
             title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
             dataIndex: s.name,
             key: s.name,
-            render: (v, item) => {
-              const index = findIndex(field.value, item);
+            render: (v, record) => {
+              const index = findIndex(field.value, record);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider record={item} parent={record}>
+                  <RecordProvider_deprecated record={record}>
                     <RecursionField schema={s} name={index} onlyRenderProperties />
-                  </RecordProvider>
+                  </RecordProvider_deprecated>
                 </RecordIndexProvider>
               );
             },
@@ -193,27 +192,27 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
       });
     };
 
-    const ExpandedRowRender = (item: CategorizeDataItem, index, indent, expanded) => {
+    const ExpandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
       const columns = useTableColumns();
       if (!props.loading) {
-        if (inherits.includes(item.key)) {
+        if (inherits.includes(record.key)) {
           columns.pop();
           columns.push({
             title: <RecursionField name={'column4'} schema={overridingSchema as Schema} onlyRenderSelf />,
             dataIndex: 'column4',
             key: 'column4',
-            render: (v, item) => {
-              const index = findIndex(field.value, item);
+            render: (v, record) => {
+              const index = findIndex(field.value, record);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider record={item} parent={record}>
+                  <RecordProvider_deprecated record={record}>
                     <SchemaComponent
                       scope={{ currentCollection: name }}
                       schema={overridingSchema as Schema}
                       name={index}
                       onlyRenderProperties
                     />
-                  </RecordProvider>
+                  </RecordProvider_deprecated>
                 </RecordIndexProvider>
               );
             },
@@ -221,7 +220,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
         }
         const restProps = {
           rowSelection:
-            props.rowSelection && !inherits.includes(item.key)
+            props.rowSelection && !inherits.includes(record.key)
               ? {
                   type: 'checkbox',
                   selectedRowKeys,
@@ -239,7 +238,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
             components={components}
             showHeader={true}
             columns={columns}
-            dataSource={item.data}
+            dataSource={record.data}
             pagination={false}
           />
         );

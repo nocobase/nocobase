@@ -7,9 +7,9 @@ import {
   AntdSchemaComponentProvider,
   Application,
   CardItem,
+  CollectionManagerProvider_deprecated,
   CollectionManagerProvider,
-  CollectionManagerProviderV2,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   FormItem,
   Grid,
   Input,
@@ -20,8 +20,8 @@ import {
   SchemaComponentOptions,
   SchemaInitializer,
   SchemaInitializerItem,
+  useCollectionManager_deprecated,
   useCollectionManager,
-  useCollectionManagerV2,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
@@ -70,9 +70,9 @@ const form = createForm({
 
 const FormItemInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const schemaOptions = useContext(SchemaOptionsContext);
-  const cm = useCollectionManagerV2();
+  const cm = useCollectionManager();
   const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
@@ -91,7 +91,7 @@ const FormItemInitializer = () => {
 
         await FormDrawer('Add field', () => {
           return (
-            <CollectionManagerProviderV2 collectionManager={cm}>
+            <CollectionManagerProvider collectionManager={cm}>
               <AntdSchemaComponentProvider>
                 <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
                   <FormLayout layout={'vertical'}>
@@ -103,7 +103,7 @@ const FormItemInitializer = () => {
                   </FormLayout>
                 </SchemaComponentOptions>
               </AntdSchemaComponentProvider>
-            </CollectionManagerProviderV2>
+            </CollectionManagerProvider>
           );
         }).open({
           initialValues: {},
@@ -150,15 +150,15 @@ const addFieldButton = new SchemaInitializer({
 
 const Root = () => {
   return (
-    <CollectionManagerProvider>
-      <CollectionProvider collection={collection}>
+    <CollectionManagerProvider_deprecated>
+      <CollectionProvider_deprecated collection={collection}>
         <FormContext.Provider value={form}>
           <FormLayout layout={'vertical'}>
             <SchemaComponent schema={schema} />
           </FormLayout>
         </FormContext.Provider>
-      </CollectionProvider>
-    </CollectionManagerProvider>
+      </CollectionProvider_deprecated>
+    </CollectionManagerProvider_deprecated>
   );
 };
 

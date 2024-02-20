@@ -41,13 +41,13 @@ import {
   APIClientProvider,
   ActionContextProvider,
   AssociationOrCollectionProvider,
-  CollectionFieldOptions,
+  CollectionFieldOptions_deprecated,
   DataSourceApplicationProvider,
   DatePickerProvider,
   Designable,
   FormDialog,
   FormProvider,
-  RecordProviderV2,
+  RecordProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
@@ -57,20 +57,25 @@ import {
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCompile,
-  useDataBlockPropsV2,
+  useDataBlockProps,
   useDesignable,
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
-  useRecordV2,
+  useRecord_deprecated,
   useSchemaSettingsItem,
   useSortFields,
 } from '..';
-import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
+import {
+  BlockRequestContext_deprecated,
+  useFormBlockContext,
+  useFormBlockType,
+  useTableBlockContext,
+} from '../block-provider';
 import {
   FormActiveFieldsProvider,
   findFilterTargets,
@@ -79,7 +84,7 @@ import {
 } from '../block-provider/hooks';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
-import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import {
   FilterBlockType,
@@ -148,7 +153,7 @@ interface SchemaSettingsProviderProps {
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
   const { children, fieldSchema, ...others } = props;
   const { getTemplateBySchema } = useSchemaTemplateManager();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const template = getTemplateBySchema(fieldSchema);
   return (
     <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
@@ -203,7 +208,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
 export const SchemaSettingsTemplate = function Template(props) {
   const { componentName, collectionName, resourceName, needRender } = props;
   const { t } = useTranslation();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const compile = useCompile();
   const api = useAPIClient();
@@ -334,7 +339,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
   const compile = useCompile();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -609,13 +614,13 @@ export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocks
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
   // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
 
   if (!inProvider) {
     return null;
@@ -965,16 +970,16 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
   const ctx = useBlockRequestContext();
   const upLevelActiveFields = useFormActiveFields();
   const { locale } = useContext(ConfigProvider.ConfigContext);
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
   const dataSourceKey = useDataSourceKey();
-  const record = useRecordV2();
-  const { association } = useDataBlockPropsV2() || {};
+  const record = useRecord();
+  const { association } = useDataBlockProps() || {};
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue } = useSubFormValue();
@@ -993,11 +998,11 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           { title: schema.title || title, width },
           () => {
             return (
-              <RecordProviderV2 record={record}>
+              <RecordProvider record={record}>
                 <SubFormProvider value={subFormValue}>
                   <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                     <Router location={location} navigator={null}>
-                      <BlockRequestContext.Provider value={ctx}>
+                      <BlockRequestContext_deprecated.Provider value={ctx}>
                         <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
                           <AssociationOrCollectionProvider
                             allowNull
@@ -1028,11 +1033,11 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                             </SchemaComponentOptions>
                           </AssociationOrCollectionProvider>
                         </DataSourceApplicationProvider>
-                      </BlockRequestContext.Provider>
+                      </BlockRequestContext_deprecated.Provider>
                     </Router>
                   </FormActiveFieldsProvider>
                 </SubFormProvider>
-              </RecordProviderV2>
+              </RecordProvider>
             );
           },
           theme,
@@ -1104,7 +1109,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
   const fieldSchema = useFieldSchema();
   const field = useField();
   const title = props.title || t('Set default sorting rules');
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const defaultSort = get(fieldSchema, path) || [];
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
@@ -1229,7 +1234,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const { getTemplateById } = useSchemaTemplateManager();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { type: formBlockType } = useFormBlockType();
   const type = props?.type || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
@@ -1374,7 +1379,7 @@ export const SchemaSettingsEnableChildCollections = function EnableChildCollecti
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const ctx = useBlockRequestContext();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
   const isAssocationAdd = fieldSchema?.parent?.['x-component'] === 'CollectionField';
@@ -1459,7 +1464,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
   const field = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
   const isShowTime = fieldSchema?.['x-component-props']?.showTime;
   const dateFormatDefaultValue =
@@ -1627,12 +1632,13 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const actionCtx = useActionContext();
   let targetField;
 
-  const { getField } = useCollection();
-  const { getCollectionJoinField, getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
+  const { getField } = useCollection_deprecated();
+  const { getCollectionJoinField, getCollectionFields, getAllCollectionsInheritChain } =
+    useCollectionManager_deprecated();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const collection = useCollection();
-  const record = useRecord();
+  const collection = useCollection_deprecated();
+  const record = useRecord_deprecated();
   const { form } = useFormBlockContext();
   const { getFields } = useCollectionFilterOptionsV2(collection);
   const { isInSubForm, isInSubTable } = useFlag() || {};
@@ -1816,8 +1822,8 @@ export const SchemaSettingsSortingRule = function SortRuleConfigure(props) {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const currentSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getField } = useCollection_deprecated();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const sortFields = useSortFields(collectionField?.target);
@@ -1930,11 +1936,11 @@ export const SchemaSettingsSortingRule = function SortRuleConfigure(props) {
 export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeConfigure(props) {
   const { t } = useTranslation();
   const { getFields } = useCollectionFilterOptionsV2(props.collectionName);
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { form } = useFormBlockContext();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const dynamicComponent = useCallback(
@@ -1996,7 +2002,7 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
 };
 
 // 是否是系统字段
-export const isSystemField = (collectionField: CollectionFieldOptions, getInterface) => {
+export const isSystemField = (collectionField: CollectionFieldOptions_deprecated, getInterface) => {
   const i = getInterface?.(collectionField?.interface);
   return i?.group === 'systemInfo';
 };
@@ -2005,7 +2011,7 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
 
-function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
+function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions_deprecated) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
   return result;
 }

@@ -34,13 +34,13 @@ const useDynamicDataBlockProps: UseDataBlockProps<'CollectionList'>  = () => {
 
 ## Hooks
 
-### useDataBlockRequestV2()
+### useDataBlockRequest()
 
 用于获取请求对象，一般用区块组件中。
 
 ```tsx | pure
 const MyTable = () => {
-  const { data, loading } = useDataBlockRequestV2();
+  const { data, loading } = useDataBlockRequest();
 
   return (
     <Table
@@ -85,8 +85,8 @@ const useDynamicDataBlockProps: UseDataBlockProps<'CollectionGet'>  = () => {
 会自动调用 `resource.get()` 获取数据，发起 `GET /api/users:get/1` 的请求，并通过 `RecordProvider` 提供上下文。
 
 ```tsx | pure
-const { data } = useDataBlockRequestV2();
-const record = useRecordV2(); // record 上下文数据
+const { data } = useDataBlockRequest();
+const record = useRecord(); // record 上下文数据
 
 // 相等
 record.data === data;
@@ -98,7 +98,7 @@ record.data === data;
 
 ```tsx | pure
 const MyTable = () => {
-  const { data } = useDataBlockRequestV2();
+  const { data } = useDataBlockRequest();
 
   return (
     <Table
@@ -129,7 +129,7 @@ const MyTable = () => {
 }
 
 const MyAction = () => {
-  const record = useRecordV2();
+  const record = useRecord();
   return (
     <Button onClick={() => {
       console.log(record.data);

@@ -5,11 +5,12 @@ import {
   usePlugin,
   useResourceActionContext,
   useResourceContext,
-  useRecord,
-  useDataSourceManagerV2,
+  useRecord_deprecated,
+  useDataSourceManager,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import _ from 'lodash';
+import { useField } from '@formily/react';
 import React, { useCallback, useEffect } from 'react';
 import PluginDatabaseConnectionsClient from '../';
 import { databaseConnectionSchema } from '../schema';
@@ -29,7 +30,7 @@ export const DatabaseConnectionManagerPane = () => {
     };
   });
 
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
 
   const reloadKeys = React.useRef<string[]>([]);
 
@@ -66,7 +67,7 @@ export const DatabaseConnectionManagerPane = () => {
   const useDestroyAction = () => {
     const { refresh } = useResourceActionContext();
     const { resource } = useResourceContext();
-    const { key: filterByTk } = useRecord();
+    const { key: filterByTk } = useRecord_deprecated();
     return {
       async run() {
         await resource.destroy({ filterByTk });
@@ -74,6 +75,10 @@ export const DatabaseConnectionManagerPane = () => {
         refresh();
       },
     };
+  };
+  const useIsAbleDelete = ($self) => {
+    const { key } = useRecord_deprecated();
+    $self.visible = key !== 'main';
   };
   return (
     <Card bordered={false}>
@@ -90,6 +95,7 @@ export const DatabaseConnectionManagerPane = () => {
           useDestroyAction,
           dataSourceDeleteCallback,
           dataSourceCreateCallback,
+          useIsAbleDelete,
         }}
         schema={databaseConnectionSchema}
       />

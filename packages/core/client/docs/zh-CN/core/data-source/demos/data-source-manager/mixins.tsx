@@ -1,15 +1,15 @@
 import React from 'react';
-import { CollectionProviderV2, CollectionV2, useCollectionV2, Plugin } from '@nocobase/client';
+import { CollectionProvider, Collection, useCollection, Plugin } from '@nocobase/client';
 import { createApp } from '../createApp';
 
-class TestMixin extends CollectionV2 {
+class TestMixin extends Collection {
   test() {
     const { name } = this.options;
     return 'test ' + name;
   }
 }
 
-class Test2Mixin extends CollectionV2 {
+class Test2Mixin extends Collection {
   test2() {
     const { name } = this.options;
     return 'test2 ' + name;
@@ -17,7 +17,7 @@ class Test2Mixin extends CollectionV2 {
 }
 
 const Demo = () => {
-  const collection = useCollectionV2<TestMixin & Test2Mixin>();
+  const collection = useCollection<TestMixin & Test2Mixin>();
   return (
     <div>
       <div>test: {collection.test()}</div>
@@ -29,9 +29,9 @@ const Demo = () => {
 
 const Root = () => {
   return (
-    <CollectionProviderV2 name="users">
+    <CollectionProvider name="users">
       <Demo />
-    </CollectionProviderV2>
+    </CollectionProvider>
   );
 };
 

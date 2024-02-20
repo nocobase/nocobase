@@ -17,9 +17,9 @@ import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
-  RecordProvider,
-  useCollection,
-  useParentRecordDataV2,
+  RecordProvider_deprecated,
+  useCollection_deprecated,
+  useParentRecordData,
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
@@ -41,7 +41,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const parentRecordData = useParentRecordDataV2();
+  const parentRecordData = useParentRecordData();
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
@@ -68,7 +68,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           return (
             <SubFormProvider value={record}>
               <RecordIndexProvider index={record.__index || index}>
-                <RecordProvider isNew={_.isEmpty(record)} record={record} parent={parentRecordData}>
+                <RecordProvider_deprecated isNew={_.isEmpty(record)} record={record} parent={parentRecordData}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
                     <span role="button">
                       <RecursionField
@@ -78,7 +78,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
                       />
                     </span>
                   </ColumnFieldProvider>
-                </RecordProvider>
+                </RecordProvider_deprecated>
               </RecordIndexProvider>
             </SubFormProvider>
           );
@@ -230,7 +230,7 @@ export const Table: any = observer(
     const field = useArrayField(others);
     const columns = useTableColumns(others);
     const schema = useFieldSchema();
-    const collection = useCollection();
+    const collection = useCollection_deprecated();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
     const { expandFlag, allIncludesChildren } = ctx;

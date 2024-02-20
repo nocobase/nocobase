@@ -6,7 +6,7 @@ import { Space, message } from 'antd';
 import { isFunction } from 'mathjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RecordProvider, useAPIClient, useRecordDataV2 } from '../../../';
+import { RecordProvider_deprecated, useAPIClient, useRecordData } from '../../../';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -58,7 +58,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const api = useAPIClient();
   const resource = api.resource(collectionField.target);
   const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter);
-  const recordData = useRecordDataV2();
+  const recordData = useRecordData();
   useEffect(() => {
     const initValue = isVariable(field.value) ? undefined : field.value;
     const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
@@ -135,7 +135,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
         ></RemoteSelect>
 
         {(addMode === 'modalAdd' || isAllowAddNew) && (
-          <RecordProvider isNew={true} record={null} parent={recordData}>
+          <RecordProvider_deprecated isNew={true} record={null} parent={recordData}>
             <RecursionField
               onlyRenderProperties
               basePath={field.address}
@@ -144,7 +144,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
                 return s['x-component'] === 'Action';
               }}
             />
-          </RecordProvider>
+          </RecordProvider_deprecated>
         )}
       </Space.Compact>
     </div>

@@ -1,13 +1,13 @@
 import { TableOutlined } from '@ant-design/icons';
 import React from 'react';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 import { createDetailsBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const DetailsBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const itemConfig = useSchemaInitializerItem();
   return (
     <DataBlockInitializer

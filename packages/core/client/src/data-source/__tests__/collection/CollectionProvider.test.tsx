@@ -1,9 +1,9 @@
 import React, { ComponentType } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
-  CollectionProviderV2,
-  useCollectionFieldsV2,
-  useCollectionV2,
+  CollectionProvider,
+  useCollectionFields,
+  useCollection,
   Application,
   SchemaComponent,
   SchemaComponentProvider,
@@ -21,7 +21,7 @@ function renderApp(Demo: ComponentType, props: any = {}) {
     name: 'root',
     type: 'void',
     'x-component': 'Demo',
-    'x-decorator': 'CollectionProviderV2',
+    'x-decorator': 'CollectionProvider',
     'x-decorator-props': props,
   };
 
@@ -29,7 +29,7 @@ function renderApp(Demo: ComponentType, props: any = {}) {
     <div data-testid="app">
       <SchemaComponentProvider designable={true}>
         <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
-          <SchemaComponent schema={schema} components={{ Demo, CollectionProviderV2 }} />
+          <SchemaComponent schema={schema} components={{ Demo, CollectionProvider }} />
         </DataSourceApplicationProvider>
       </SchemaComponentProvider>
     </div>,
@@ -39,8 +39,8 @@ function renderApp(Demo: ComponentType, props: any = {}) {
 describe('CollectionProvider', () => {
   test('should render', () => {
     const Demo = () => {
-      const collection = useCollectionV2();
-      const collectionFields = useCollectionFieldsV2();
+      const collection = useCollection();
+      const collectionFields = useCollectionFields();
       return (
         <>
           <div data-testid="name">{collection.name}</div>
@@ -59,7 +59,7 @@ describe('CollectionProvider', () => {
 
   test('collection not exists and { allowNull: true }, should render children', () => {
     const Demo = () => {
-      const collection = useCollectionV2();
+      const collection = useCollection();
       expect(collection).toBeFalsy();
 
       return <div data-testid="children">children</div>;
@@ -72,7 +72,7 @@ describe('CollectionProvider', () => {
 
   test('collection not exists and { allowNull: false }, should render `CollectionDeletedPlaceholder` content', () => {
     const Demo = () => {
-      const collection = useCollectionV2();
+      const collection = useCollection();
       expect(collection).toBeFalsy();
 
       return <div>children</div>;
@@ -83,9 +83,9 @@ describe('CollectionProvider', () => {
     expect(document.body.innerHTML).toContain('ant-result');
   });
 
-  test('useCollectionFieldsV2() support predicate', () => {
+  test('useCollectionFields() support predicate', () => {
     const Demo = () => {
-      const fields = useCollectionFieldsV2({ name: 'id' });
+      const fields = useCollectionFields({ name: 'id' });
       return <div data-testid="fields">{fields.length}</div>;
     };
 

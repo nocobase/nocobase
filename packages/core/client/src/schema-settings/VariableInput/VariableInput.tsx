@@ -4,7 +4,7 @@ import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../collection-manager';
 import { Variable, useVariableScope } from '../../schema-component';
 import { useValues } from '../../schema-component/antd/filter/useValues';
 import { VariableOption, VariablesContextType } from '../../variables/types';
@@ -17,10 +17,10 @@ import { useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
 
 interface GetShouldChangeProps {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   variables: VariablesContextType;
   localVariables: VariableOption | VariableOption[];
-  /** `useCollectionManager` 返回的 */
+  /** `useCollectionManager_deprecated` 返回的 */
   getAllCollectionsInheritChain: (collectionName: string) => string[];
 }
 
@@ -39,7 +39,7 @@ type Props = {
   children?: any;
   className?: string;
   style?: React.CSSProperties;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   contextCollectionName?: string;
   /**指定当前表单数据表 */
   currentFormCollectionName?: string;
@@ -229,7 +229,7 @@ export interface FormatVariableScopeReturn {
  */
 export function useCompatOldVariables(props: {
   uiSchema: any;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   blockCollectionName: string;
   noDisabled?: boolean;
   targetFieldSchema?: Schema;

@@ -1,15 +1,15 @@
 import React, { FC, ReactNode, createContext, useContext } from 'react';
-import { CollectionOptionsV2 } from './Collection';
+import { CollectionOptions } from './Collection';
 
-export const ExtendCollectionsContext = createContext<CollectionOptionsV2[]>(null);
+export const ExtendCollectionsContext = createContext<CollectionOptions[]>(null);
 ExtendCollectionsContext.displayName = 'ExtendCollectionsContext';
 
-export interface ExtendCollectionsProviderPropsV2 {
-  collections: CollectionOptionsV2[];
+export interface ExtendCollectionsProviderProps {
+  collections: CollectionOptions[];
   children?: ReactNode;
 }
 
-export const ExtendCollectionsProvider: FC<ExtendCollectionsProviderPropsV2> = ({ children, collections }) => {
+export const ExtendCollectionsProvider: FC<ExtendCollectionsProviderProps> = ({ children, collections }) => {
   return <ExtendCollectionsContext.Provider value={collections}>{children}</ExtendCollectionsContext.Provider>;
 };
 

@@ -1,10 +1,10 @@
 import React from 'react';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
 export const FormDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
 
   return (
@@ -17,7 +17,7 @@ export const FormDesigner = () => {
 };
 
 export const ReadPrettyFormDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner
@@ -29,7 +29,7 @@ export const ReadPrettyFormDesigner = () => {
 };
 
 export const DetailsDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner

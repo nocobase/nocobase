@@ -4,11 +4,11 @@ import {
   SchemaComponent,
   useCompile,
   usePlugin,
-  useRecord,
+  useRecord_deprecated,
   useActionContext,
   useResourceActionContext,
   useResourceContext,
-  useDataSourceManagerV2,
+  useDataSourceManager,
 } from '@nocobase/client';
 import _ from 'lodash';
 import React, { useState } from 'react';
@@ -18,13 +18,13 @@ import PluginDatabaseConnectionsClient from '../';
 import { NAMESPACE } from '../locale';
 
 export const EditDatabaseConnectionAction = () => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const [schema, setSchema] = useState({});
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const compile = useCompile();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
 
   const useUpdateAction = () => {
     const field = useField();
@@ -32,7 +32,7 @@ export const EditDatabaseConnectionAction = () => {
     const ctx = useActionContext();
     const { refresh } = useResourceActionContext();
     const { resource } = useResourceContext();
-    const { key: filterByTk } = useRecord();
+    const { key: filterByTk } = useRecord_deprecated();
     return {
       async run() {
         await form.submit();
@@ -56,62 +56,64 @@ export const EditDatabaseConnectionAction = () => {
   return (
     <div>
       <ActionContext.Provider value={{ visible, setVisible }}>
-        <a
-          onClick={() => {
-            setVisible(true);
-            const type = plugin.types.get(record.type);
-            setSchema({
-              type: 'object',
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    initialValue: record,
-                  },
-                  title: compile("{{t('Edit')}}") + ' - ' + compile(record.displayName),
-                  properties: {
-                    body: {
-                      type: 'void',
-                      'x-component': type.DataSourceSettingsForm,
+        {record.key !== 'main' && (
+          <a
+            onClick={() => {
+              setVisible(true);
+              const type = plugin.types.get(record.type);
+              setSchema({
+                type: 'object',
+                properties: {
+                  [uid()]: {
+                    type: 'void',
+                    'x-component': 'Action.Drawer',
+                    'x-decorator': 'Form',
+                    'x-decorator-props': {
+                      initialValue: record,
                     },
-                    footer: {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
+                    title: compile("{{t('Edit')}}") + ' - ' + compile(record.displayName),
+                    properties: {
+                      body: {
+                        type: 'void',
+                        'x-component': type.DataSourceSettingsForm,
+                      },
+                      footer: {
+                        type: 'void',
+                        'x-component': 'Action.Drawer.Footer',
+                        properties: {
+                          cancel: {
+                            title: '{{t("Cancel")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ cm.useCancelAction }}',
+                            },
                           },
-                        },
-                        testConnectiion: {
-                          title: `{{ t("Test Connection",{ ns: "${NAMESPACE}" }) }}`,
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ useTestConnectionAction }}',
+                          testConnectiion: {
+                            title: `{{ t("Test Connection",{ ns: "${NAMESPACE}" }) }}`,
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ useTestConnectionAction }}',
+                            },
                           },
-                        },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: '{{ useUpdateAction }}',
+                          submit: {
+                            title: '{{t("Submit")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              type: 'primary',
+                              useAction: '{{ useUpdateAction }}',
+                            },
                           },
                         },
                       },
                     },
                   },
                 },
-              },
-            });
-          }}
-        >
-          {t('Edit')}
-        </a>
+              });
+            }}
+          >
+            {t('Edit')}
+          </a>
+        )}
         <SchemaComponent scope={{ createOnly: true, useUpdateAction }} schema={schema} />
       </ActionContext.Provider>
     </div>

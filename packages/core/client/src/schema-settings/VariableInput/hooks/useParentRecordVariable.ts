@@ -1,13 +1,13 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useParentCollection } from '../../../data-source/collection/AssociationProvider';
-import { useRecordV2 } from '../../../data-source/record/RecordProvider';
+import { useRecord } from '../../../data-source/record/RecordProvider';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
-  collectionField?: CollectionFieldOptions;
+  collectionField?: CollectionFieldOptions_deprecated;
   schema?: any;
   /** @deprecated */
   collectionName?: string;
@@ -46,7 +46,7 @@ export const useParentRecordVariable = (props: Props) => {
  */
 export const useCurrentParentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
-  const record = useRecordV2();
+  const record = useRecord();
   const { name: parentCollectionName } = useParentCollection() || {};
   const { isInSubForm, isInSubTable } = useFlag() || {};
 

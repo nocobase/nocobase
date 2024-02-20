@@ -5,10 +5,10 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord } from '../../record-provider';
+import { useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent } from '../../schema-component';
 import { useUpdateAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 
@@ -70,7 +70,7 @@ const getSchema = (schema: IField): ISchema => {
 const useUpdateCollectionField = () => {
   const form = useForm();
   const { run } = useUpdateAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await form.submit();
@@ -91,8 +91,8 @@ const useUpdateCollectionField = () => {
 };
 
 export const EditSubFieldAction = (props) => {
-  const record = useRecord();
-  const { getInterface } = useCollectionManager();
+  const record = useRecord_deprecated();
+  const { getInterface } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();

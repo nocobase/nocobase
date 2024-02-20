@@ -15,11 +15,11 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
-import { FormActiveFieldsProvider } from '../../../block-provider';
 import { useCreateActionProps } from '../../../block-provider/hooks';
+import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
 import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider } from '../../../collection-manager';
-import { RecordProviderV2, useRecordV2 } from '../../../data-source';
+import { CollectionProvider_deprecated } from '../../../collection-manager';
+import { RecordProvider, useRecord } from '../../../data-source';
 import { FlagProvider } from '../../../flag-provider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
@@ -39,7 +39,7 @@ export const SubTable: any = observer(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-    const recordV2 = useRecordV2();
+    const recordV2 = useRecord();
 
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
@@ -137,7 +137,7 @@ export const SubTable: any = observer(
         `}
       >
         <FlagProvider isInSubTable>
-          <RecordProviderV2 record={null} parentRecord={recordV2}>
+          <RecordProvider record={null} parentRecord={recordV2}>
             <FormActiveFieldsProvider name="nester">
               <Table
                 className={css`
@@ -201,7 +201,7 @@ export const SubTable: any = observer(
                 isSubTable={true}
               />
             </FormActiveFieldsProvider>
-          </RecordProviderV2>
+          </RecordProvider>
         </FlagProvider>
         <ActionContextProvider
           value={{
@@ -212,7 +212,7 @@ export const SubTable: any = observer(
           }}
         >
           <RecordPickerProvider {...pickerProps}>
-            <CollectionProvider name={collectionField?.target}>
+            <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                   <SchemaComponentOptions
@@ -233,7 +233,7 @@ export const SubTable: any = observer(
                   </SchemaComponentOptions>
                 </TableSelectorParamsProvider>
               </FormProvider>
-            </CollectionProvider>
+            </CollectionProvider_deprecated>
           </RecordPickerProvider>
         </ActionContextProvider>
       </div>

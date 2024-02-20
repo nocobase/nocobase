@@ -4,13 +4,13 @@ import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
-import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
+import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { CollectionV2 } from '../data-source/collection/Collection';
-import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
-import { DataSourceManagerV2 } from '../data-source/data-source/DataSourceManager';
+import { Collection } from '../data-source/collection/Collection';
+import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
+import { DataSourceManager } from '../data-source/data-source/DataSourceManager';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -88,8 +88,8 @@ const quickEditField = [
 ];
 
 export const useTableColumnInitializerFields = () => {
-  const { name, currentFields = [] } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const { name, currentFields = [] } = useCollection_deprecated();
+  const { getInterface, getCollection } = useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const form = useForm();
@@ -149,8 +149,8 @@ export const useTableColumnInitializerFields = () => {
 };
 
 export const useAssociatedTableColumnInitializerFields = () => {
-  const { name, fields } = useCollection();
-  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
+  const { name, fields } = useCollection_deprecated();
+  const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const groups = fields
     ?.filter((field) => {
       return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
@@ -206,8 +206,9 @@ export const useAssociatedTableColumnInitializerFields = () => {
 };
 
 export const useInheritsTableColumnInitializerFields = () => {
-  const { name } = useCollection();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const { name } = useCollection_deprecated();
+  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } =
+    useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const form = useForm();
@@ -272,8 +273,8 @@ export const useInheritsTableColumnInitializerFields = () => {
 };
 
 export const useFormItemInitializerFields = (options?: any) => {
-  const { name, currentFields, template } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const { name, currentFields, template } = useCollection_deprecated();
+  const { getInterface, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
@@ -345,8 +346,8 @@ export const useFormItemInitializerFields = (options?: any) => {
 
 // 筛选表单相关
 export const useFilterFormItemInitializerFields = (options?: any) => {
-  const { name, currentFields } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const { name, currentFields } = useCollection_deprecated();
+  const { getInterface, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'FilterForm' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
@@ -406,8 +407,8 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
 };
 
 export const useAssociatedFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection();
-  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
+  const { name, fields } = useCollection_deprecated();
+  const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
@@ -527,8 +528,8 @@ const getItem = (
 
 // 筛选表单相关
 export const useFilterAssociatedFormItemInitializerFields = () => {
-  const { name, fields } = useCollection();
-  const { getCollectionFields } = useCollectionManager();
+  const { name, fields } = useCollection_deprecated();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const interfaces = ['m2o'];
   const groups = fields
     ?.filter((field) => {
@@ -539,8 +540,9 @@ export const useFilterAssociatedFormItemInitializerFields = () => {
 };
 
 export const useInheritsFormItemInitializerFields = (options?) => {
-  const { name } = useCollection();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const { name } = useCollection_deprecated();
+  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } =
+    useCollectionManager_deprecated();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
   const form = useForm();
@@ -593,8 +595,9 @@ export const useInheritsFormItemInitializerFields = (options?) => {
 
 // 筛选表单相关
 export const useFilterInheritsFormItemInitializerFields = (options?) => {
-  const { name } = useCollection();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const { name } = useCollection_deprecated();
+  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } =
+    useCollectionManager_deprecated();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
   const form = useForm();
@@ -646,8 +649,8 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
   });
 };
 export const useCustomFormItemInitializerFields = (options?: any) => {
-  const { name, currentFields } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const { name, currentFields } = useCollection_deprecated();
+  const { getInterface, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
@@ -691,8 +694,8 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
 };
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const { name, fields } = useCollection_deprecated();
+  const { getInterface, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
@@ -804,7 +807,7 @@ export const useRecordCollectionDataSourceItems = (
   resourceName = null,
 ) => {
   const { t } = useTranslation();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const templates = getTemplatesByCollection(collectionName || collection.name)
     .filter((template) => {
@@ -871,10 +874,10 @@ export const useRecordCollectionDataSourceItems = (
 
 export const useCollectionDataSourceItems = (
   componentName,
-  filter: (collection: CollectionV2) => boolean = () => true,
+  filter: (collection: Collection) => boolean = () => true,
 ) => {
   const { t } = useTranslation();
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
   const allCollections = dm.getAllCollections(filter);
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const res = useMemo(() => {
@@ -1522,7 +1525,7 @@ const getChildren = ({
   t,
 }: {
   collections: any[];
-  dataSourceManager: DataSourceManagerV2;
+  dataSourceManager: DataSourceManager;
   componentName: string;
   searchValue: string;
   dataSource: string;

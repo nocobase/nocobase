@@ -1,13 +1,19 @@
 import { useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
-import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext } from '../ResourceActionProvider';
-import { useCancelAction } from '../action-hooks';
-import { CollectionCategroriesContext } from '../context';
-import * as components from './components';
+import {
+  useAPIClient,
+  useRequest,
+  RecordProvider_deprecated,
+  useRecord_deprecated,
+  ActionContextProvider,
+  SchemaComponent,
+  useActionContext,
+  useCompile,
+  useResourceActionContext,
+  useCancelAction,
+  CollectionCategroriesContext,
+} from '@nocobase/client';
 import { collectionCategoryEditSchema } from './schemas/collections';
 
 const useEditCategry = () => {
@@ -17,7 +23,7 @@ const useEditCategry = () => {
   const { refresh: refreshCM } = useResourceActionContext();
 
   const api = useAPIClient();
-  const { id } = useRecord();
+  const { id } = useRecord_deprecated();
   return {
     async run() {
       await form.submit();
@@ -37,7 +43,7 @@ const useEditCategry = () => {
 };
 
 const useValuesFromRecord = (options) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const result = useRequest(() => Promise.resolve({ data: cloneDeep(record) }), {
     ...options,
     manual: true,
@@ -60,12 +66,11 @@ export const EditCategoryAction = (props) => {
   const [visible, setVisible] = useState(false);
   const compile = useCompile();
   return (
-    <RecordProvider record={item}>
+    <RecordProvider_deprecated record={item}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <>{children || <span onClick={() => setVisible(true)}>{compile('{{ t("Edit category") }}')}</span>}</>
         <SchemaComponent
           schema={collectionCategoryEditSchema}
-          components={{ ...components }}
           scope={{
             getContainer,
             useCancelAction,
@@ -76,6 +81,6 @@ export const EditCategoryAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

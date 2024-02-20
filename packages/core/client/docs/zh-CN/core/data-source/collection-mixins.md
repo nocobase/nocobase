@@ -6,9 +6,9 @@ Collection Mixins 是为扩展 Collection 类提供的一种机制，可以通�
 ### 定义和注册
 
 ```tsx | pure
-import { CollectionV2, Plugin } from '@nocobase/client';
+import { Collection, Plugin } from '@nocobase/client';
 
-class TestMixin extends CollectionV2 {
+class TestMixin extends Collection {
   test() {
     const { name } = this.options;
     return 'test '+ name;

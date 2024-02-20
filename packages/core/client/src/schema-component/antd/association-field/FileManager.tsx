@@ -12,7 +12,11 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
+import {
+  CollectionProvider_deprecated,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+} from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { EllipsisWithTooltip } from '../input';
@@ -69,7 +73,7 @@ const InternalFileManager = (props) => {
   const fieldNames = useFieldNames(props);
   const field: any = useField();
   const [options, setOptions] = useState([]);
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const collectionField = getField(field.props.name);
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
@@ -169,7 +173,7 @@ const InternalFileManager = (props) => {
         }}
       >
         <RecordPickerProvider {...pickerProps}>
-          <CollectionProvider name={collectionField?.target}>
+          <CollectionProvider_deprecated name={collectionField?.target}>
             <FormProvider>
               <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
@@ -184,7 +188,7 @@ const InternalFileManager = (props) => {
                 </SchemaComponentOptions>
               </TableSelectorParamsProvider>
             </FormProvider>
-          </CollectionProvider>
+          </CollectionProvider_deprecated>
         </RecordPickerProvider>
       </ActionContextProvider>
     </div>
@@ -194,8 +198,8 @@ const InternalFileManager = (props) => {
 const FileManageReadPretty = connect((props) => {
   const fieldNames = useFieldNames(props);
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getField } = useCollection_deprecated();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const showFilePicker = isShowFilePicker(labelUiSchema);

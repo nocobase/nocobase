@@ -1,9 +1,10 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
+import { DEFAULT_DATA_SOURCE_NAME } from '../../../data-source/data-source/DataSourceManager';
 import { useCurrentUserContext } from '../../../user';
 import { useBaseVariable } from './useBaseVariable';
-import { DEFAULT_DATA_SOURCE_NAME } from '../../../data-source/data-source/DataSourceManager';
 
 /**
  * @deprecated
@@ -20,7 +21,7 @@ export const useUserVariable = ({
   targetFieldSchema,
   maxDepth = 3,
 }: {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   uiSchema: any;
   maxDepth?: number;
   noDisabled?: boolean;

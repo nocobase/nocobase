@@ -4,10 +4,10 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { FilterBlockType, mergeFilter } from '../../../filter-provider/utils';
-import { useRecord } from '../../../record-provider';
+import { useRecord_deprecated } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsBlockTitleItem,
@@ -26,8 +26,8 @@ import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
 
 export const TableBlockDesigner = () => {
-  const { name, title, sortable } = useCollection();
-  const { getCollectionField, getCollection } = useCollectionManager();
+  const { name, title, sortable } = useCollection_deprecated();
+  const { getCollectionField, getCollection } = useCollectionManager_deprecated();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
@@ -35,7 +35,7 @@ export const TableBlockDesigner = () => {
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const record = useRecord();
+  const record = useRecord_deprecated();
 
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
@@ -52,7 +52,7 @@ export const TableBlockDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { dragSort, resource } = field.decoratorProps;
   const collectionField = resource && getCollectionField(resource);
   const treeCollection = resource?.includes('.') ? getCollection(collectionField?.target)?.tree : !!collection?.tree;

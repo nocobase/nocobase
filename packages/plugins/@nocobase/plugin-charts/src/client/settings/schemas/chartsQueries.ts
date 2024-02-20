@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   useActionContext,
-  useRecord,
+  useRecord_deprecated,
   useRequest,
   useResourceActionContext,
   useResourceContext,
@@ -46,7 +46,7 @@ export const useDestroyQueryItemAction = () => {
   const ctx = useChartQueryMetadataContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   return {
     async run() {
       await resource.destroy({ filterByTk });
@@ -91,7 +91,7 @@ export const chartsQueriesSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider',
+      'x-component': 'CollectionProvider_deprecated',
       'x-component-props': {
         collection,
       },

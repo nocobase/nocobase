@@ -5,8 +5,8 @@ import {
   useSchemaToolbar,
   useDesignable,
   SchemaSettingOpenModeSchemaItems,
-  useCollection,
-  useRecord,
+  useCollection_deprecated,
+  useRecord_deprecated,
   SchemaSettingsModalItem,
   SchemaSettingsLinkageRules,
   useCollectionState,
@@ -81,10 +81,10 @@ function DuplicationMode() {
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const syncCallBack = useCallback((treeData, selectFields, form) => {
     form.query('duplicateFields').take((f) => {
       f.componentProps.treeData = treeData;
@@ -328,7 +328,7 @@ const duplicateActionSettings = new SchemaSettings({
           name: 'linkageRules',
           Component: SchemaSettingsLinkageRules,
           useComponentProps() {
-            const { name } = useCollection();
+            const { name } = useCollection_deprecated();
             const { linkageRulesProps } = useSchemaToolbar();
             return {
               ...linkageRulesProps,

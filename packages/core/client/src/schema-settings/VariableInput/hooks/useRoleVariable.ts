@@ -1,7 +1,8 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
@@ -19,7 +20,7 @@ export const useRoleVariable = ({
   targetFieldSchema,
   maxDepth = 0,
 }: {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   uiSchema: any;
   maxDepth?: number;
   noDisabled?: boolean;

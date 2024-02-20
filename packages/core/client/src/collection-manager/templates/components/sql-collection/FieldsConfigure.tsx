@@ -6,7 +6,7 @@ import { observer, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
 import { useFieldInterfaceOptions } from '../../../Configuration/interfaces';
 import { useCompile } from '../../../../schema-component';
-import { useCollectionManager } from '../../../hooks';
+import { useCollectionManager_deprecated } from '../../../hooks';
 import dayjs from 'dayjs';
 import { FieldOptions } from '@nocobase/database';
 import { ResourceActionContext } from '../../../ResourceActionProvider';
@@ -34,7 +34,7 @@ const useSourceFieldsOptions = () => {
   const form = useForm();
   const { sources = [] } = form.values;
   const { t } = useTranslation();
-  const { getCollection, getInheritCollections, getParentCollectionFields } = useCollectionManager();
+  const { getCollection, getInheritCollections, getParentCollectionFields } = useCollectionManager_deprecated();
   const data = [];
   sources.forEach((item: string) => {
     const collection = getCollection(item);
@@ -81,7 +81,7 @@ export const FieldsConfigure = observer(() => {
   const field: ArrayField = useField();
   const { data: curFields } = useContext(ResourceActionContext);
   const compile = useCompile();
-  const { getInterface, getCollectionField } = useCollectionManager();
+  const { getInterface, getCollectionField } = useCollectionManager_deprecated();
   const options = useFieldInterfaceOptions();
 
   const interfaceOptions = useMemo(

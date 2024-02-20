@@ -1,12 +1,12 @@
 import React, { ComponentType, useEffect } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
-  CollectionManagerV2,
-  useCollectionManagerV2,
-  useCollectionsV2,
+  CollectionManager,
+  useCollectionManager,
+  useCollections,
   Application,
   DataSourceApplicationProvider,
-  CollectionManagerProviderV2,
+  CollectionManagerProvider,
   ExtendCollectionsProvider,
 } from '@nocobase/client';
 import collections from '../collections.json';
@@ -34,9 +34,9 @@ function renderApp(Demo: ComponentType, dataSource?: string) {
 describe('CollectionManagerProvider', () => {
   test('should render', () => {
     const Demo = () => {
-      const cm = useCollectionManagerV2();
+      const cm = useCollectionManager();
       useEffect(() => {
-        expect(cm instanceof CollectionManagerV2).toBeTruthy();
+        expect(cm instanceof CollectionManager).toBeTruthy();
       }, [cm]);
       const users = cm.getCollection('users');
       return <div data-testid="demo">{users.name}</div>;
@@ -46,9 +46,9 @@ describe('CollectionManagerProvider', () => {
     expect(screen.getByTestId('demo')).toHaveTextContent('users');
   });
 
-  test('useCollectionsV2()', () => {
+  test('useCollections()', () => {
     const Demo = () => {
-      const collections = useCollectionsV2();
+      const collections = useCollections();
       return <div data-testid="demo">{collections.length}</div>;
     };
     renderApp(Demo);
@@ -56,9 +56,9 @@ describe('CollectionManagerProvider', () => {
     expect(screen.getByTestId('demo')).toHaveTextContent('2');
   });
 
-  test('useCollectionsV2({ predicate })', () => {
+  test('useCollections({ predicate })', () => {
     const Demo = () => {
-      const collections = useCollectionsV2((collection) => collection.name === 'users');
+      const collections = useCollections((collection) => collection.name === 'users');
       return <div data-testid="demo">{collections.length}</div>;
     };
     renderApp(Demo);
@@ -66,9 +66,9 @@ describe('CollectionManagerProvider', () => {
     expect(screen.getByTestId('demo')).toHaveTextContent('1');
   });
 
-  test('useCollectionsV2() with dataSource', () => {
+  test('useCollections() with dataSource', () => {
     const Demo = () => {
-      const collections = useCollectionsV2();
+      const collections = useCollections();
       return <div data-testid="demo">{collections.length}</div>;
     };
     renderApp(Demo, 'a');
@@ -78,15 +78,15 @@ describe('CollectionManagerProvider', () => {
 
   test('extend collections by props', () => {
     const Demo = () => {
-      const collections = useCollectionsV2();
+      const collections = useCollections();
       return <div data-testid="demo">{collections.length}</div>;
     };
 
     const Wrapper = () => {
       return (
-        <CollectionManagerProviderV2 collections={[collections[1] as any]}>
+        <CollectionManagerProvider collections={[collections[1] as any]}>
           <Demo></Demo>
-        </CollectionManagerProviderV2>
+        </CollectionManagerProvider>
       );
     };
 
@@ -97,16 +97,16 @@ describe('CollectionManagerProvider', () => {
 
   test('extend collections by ExtendCollectionsProvider', () => {
     const Demo = () => {
-      const collections = useCollectionsV2();
+      const collections = useCollections();
       return <div data-testid="demo">{collections.length}</div>;
     };
 
     const Wrapper = () => {
       return (
         <ExtendCollectionsProvider collections={[collections[1] as any]}>
-          <CollectionManagerProviderV2>
+          <CollectionManagerProvider>
             <Demo></Demo>
-          </CollectionManagerProviderV2>
+          </CollectionManagerProvider>
         </ExtendCollectionsProvider>
       );
     };

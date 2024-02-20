@@ -11,11 +11,11 @@ import {
   SchemaSettingsSwitchItem,
   SchemaSettingsTemplate,
   removeNullCondition,
-  useCollection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useDesignable,
   useFormBlockContext,
-  useRecord,
+  useRecord_deprecated,
   useSchemaTemplate,
 } from '@nocobase/client';
 import React from 'react';
@@ -26,13 +26,13 @@ export const CalendarDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
-  const { name, title } = useCollection();
-  const { getCollectionFieldsOptions } = useCollectionManager();
+  const { name, title } = useCollection_deprecated();
+  const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
   const { service } = useCalendarBlockContext();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const template = useSchemaTemplate();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
 

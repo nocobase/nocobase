@@ -1,7 +1,7 @@
 import type { Application } from '../../application/Application';
-import type { CollectionOptionsV2 } from './Collection';
+import type { CollectionOptions } from './Collection';
 
-export const collectionTransform = (collection: CollectionOptionsV2, app: Application) => {
+export const collectionTransform = (collection: CollectionOptions, app: Application) => {
   const { rawTitle, title, fields = [], ...rest } = collection;
   return {
     ...rest,

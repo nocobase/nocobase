@@ -84,7 +84,7 @@ export const databaseConnectionSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider',
+      'x-component': 'CollectionProvider_deprecated',
       'x-component-props': {
         collection,
       },
@@ -212,7 +212,7 @@ export const databaseConnectionSchema: ISchema = {
                   type: 'void',
                   'x-component': 'Space',
                   'x-component-props': {
-                    split: '|',
+                    // split: '|',
                   },
                   properties: {
                     view: {
@@ -230,6 +230,7 @@ export const databaseConnectionSchema: ISchema = {
                       'x-component-props': {
                         type: 'primary',
                       },
+                      'x-reactions': ['{{useIsAbleDelete($self)}}'],
                     },
                     delete: {
                       type: 'void',
@@ -242,6 +243,7 @@ export const databaseConnectionSchema: ISchema = {
                         },
                         useAction: '{{useDestroyAction}}',
                       },
+                      'x-reactions': ['{{useIsAbleDelete($self)}}'],
                     },
                   },
                 },

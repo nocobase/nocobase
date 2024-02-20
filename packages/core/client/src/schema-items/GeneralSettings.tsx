@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../schema-component';
 import { SchemaSettingOptions } from '../application';
 import { useSchemaToolbar } from '../application/schema-toolbar';
-import { useCollection, useCollectionManager } from '../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 
 export const generalSettingsItems: SchemaSettingOptions['items'] = [
   {
@@ -15,8 +15,8 @@ export const generalSettingsItems: SchemaSettingOptions['items'] = [
       const { dn } = useDesignable();
       const field = useField<Field>();
       const fieldSchema = useFieldSchema();
-      const { getCollectionJoinField } = useCollectionManager();
-      const { getField } = useCollection();
+      const { getCollectionJoinField } = useCollectionManager_deprecated();
+      const { getField } = useCollection_deprecated();
       const collectionField =
         getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
 
@@ -53,8 +53,8 @@ export const generalSettingsItems: SchemaSettingOptions['items'] = [
     },
     useVisible() {
       const fieldSchema = useFieldSchema();
-      const { getCollectionJoinField } = useCollectionManager();
-      const { getField } = useCollection();
+      const { getCollectionJoinField } = useCollectionManager_deprecated();
+      const { getField } = useCollection_deprecated();
       const collectionField =
         getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
       return !!collectionField;

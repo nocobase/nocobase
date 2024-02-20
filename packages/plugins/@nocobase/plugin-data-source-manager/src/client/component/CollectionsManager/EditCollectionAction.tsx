@@ -10,9 +10,9 @@ import {
   useAPIClient,
   useRequest,
   IField,
-  RecordProvider,
-  useCollectionManager,
-  useRecord,
+  RecordProvider_deprecated,
+  useCollectionManager_deprecated,
+  useRecord_deprecated,
   ActionContextProvider,
   SchemaComponent,
   useActionContext,
@@ -84,7 +84,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 };
 
 export const useValuesFromRecord = (options) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const result = useRequest(
     () =>
       Promise.resolve({
@@ -108,13 +108,13 @@ export const useValuesFromRecord = (options) => {
 };
 
 export const useUpdateCollectionActionAndRefreshCM = (options) => {
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const form = useForm();
   const ctx = useActionContext();
   const { name } = useParams();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   const api = useAPIClient();
   return {
     async run() {
@@ -135,20 +135,20 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
 };
 
 export const EditCollection = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <EditCollectionAction item={record} {...props} />;
 };
 
 const EditCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, ...otherProps } = props;
-  const { getTemplate } = useCollectionManager();
+  const { getTemplate } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const { t } = useTranslation();
   const compile = useCompile();
 
   return (
-    <RecordProvider record={record}>
+    <RecordProvider_deprecated record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -181,6 +181,6 @@ const EditCollectionAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

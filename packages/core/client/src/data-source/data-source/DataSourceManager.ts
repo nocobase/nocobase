@@ -1,34 +1,34 @@
-import type { CollectionOptionsV2, CollectionV2 } from '../collection';
+import type { CollectionOptions, Collection } from '../collection';
 import type { Application } from '../../application/Application';
 
-import { type DataSourceOptionsV2, DataSourceV2, LocalDataSource, DataSourceFactory } from './DataSource';
-import { type CollectionTemplateFactory, CollectionTemplateManagerV2 } from '../collection-template';
+import { type DataSourceOptions, DataSource, LocalDataSource, DataSourceFactory } from './DataSource';
+import { type CollectionTemplateFactory, CollectionTemplateManager } from '../collection-template';
 import { type CollectionFieldInterfaceFactory, CollectionFieldInterfaceManager } from '../collection-field-interface';
 
 export const DEFAULT_DATA_SOURCE_NAME = 'main';
 export const DEFAULT_DATA_SOURCE_TITLE = '{{t("main")}}';
 
-export interface DataSourceManagerOptionsV2 {
+export interface DataSourceManagerOptions {
   collectionTemplates?: CollectionTemplateFactory[];
   fieldInterfaces?: CollectionFieldInterfaceFactory[];
   fieldInterfaceGroups?: Record<string, { label: string; order?: number }>;
-  collectionMixins?: (typeof CollectionV2)[];
-  dataSources?: DataSourceOptionsV2[];
-  collections?: CollectionOptionsV2[];
+  collectionMixins?: (typeof Collection)[];
+  dataSources?: DataSourceOptions[];
+  collections?: CollectionOptions[];
 }
 
-export class DataSourceManagerV2 {
-  protected dataSourceInstancesMap: Record<string, DataSourceV2> = {};
-  protected multiDataSources: [() => Promise<DataSourceOptionsV2[]>, DataSourceFactory][] = [];
-  public collectionMixins: (typeof CollectionV2)[] = [];
-  public collectionTemplateManager: CollectionTemplateManagerV2;
+export class DataSourceManager {
+  protected dataSourceInstancesMap: Record<string, DataSource> = {};
+  protected multiDataSources: [() => Promise<DataSourceOptions[]>, DataSourceFactory][] = [];
+  public collectionMixins: (typeof Collection)[] = [];
+  public collectionTemplateManager: CollectionTemplateManager;
   public collectionFieldInterfaceManager: CollectionFieldInterfaceManager;
 
   constructor(
-    protected options: DataSourceManagerOptionsV2 = {},
+    protected options: DataSourceManagerOptions = {},
     public app: Application,
   ) {
-    this.collectionTemplateManager = new CollectionTemplateManagerV2(options.collectionTemplates, this);
+    this.collectionTemplateManager = new CollectionTemplateManager(options.collectionTemplates, this);
     this.collectionFieldInterfaceManager = new CollectionFieldInterfaceManager(
       options.fieldInterfaces,
       options.fieldInterfaceGroups,
@@ -46,7 +46,7 @@ export class DataSourceManagerV2 {
     });
   }
 
-  addCollectionMixins(mixins: (typeof CollectionV2)[] = []) {
+  addCollectionMixins(mixins: (typeof Collection)[] = []) {
     const newMixins = mixins.filter((mixin) => !this.collectionMixins.includes(mixin));
     if (!newMixins.length) return;
     this.collectionMixins.push(...newMixins);
@@ -69,30 +69,27 @@ export class DataSourceManagerV2 {
     });
   }
 
-  addDataSource(DataSource: DataSourceFactory, options: DataSourceOptionsV2) {
+  addDataSource(DataSource: DataSourceFactory, options: DataSourceOptions) {
     const dataSourceInstance = new DataSource(options, this);
     this.dataSourceInstancesMap[dataSourceInstance.key] = dataSourceInstance;
     return dataSourceInstance;
   }
 
-  async addDataSources(request: () => Promise<DataSourceOptionsV2[]>, DataSource: DataSourceFactory) {
+  async addDataSources(request: () => Promise<DataSourceOptions[]>, DataSource: DataSourceFactory) {
     if (this.multiDataSources.some(([req, DS]) => req === request && DS === DataSource)) return;
     this.multiDataSources.push([request, DataSource]);
   }
 
   getAllCollections(
-    predicate?: (collection: CollectionV2) => boolean,
-  ): (DataSourceOptionsV2 & { collections: CollectionV2[] })[] {
-    return this.getDataSources().reduce<(DataSourceOptionsV2 & { collections: CollectionV2[] })[]>(
-      (acc, dataSource) => {
-        acc.push({
-          ...dataSource.getOptions(),
-          collections: dataSource.collectionManager.getCollections(predicate),
-        });
-        return acc;
-      },
-      [],
-    );
+    predicate?: (collection: Collection) => boolean,
+  ): (DataSourceOptions & { collections: Collection[] })[] {
+    return this.getDataSources().reduce<(DataSourceOptions & { collections: Collection[] })[]>((acc, dataSource) => {
+      acc.push({
+        ...dataSource.getOptions(),
+        collections: dataSource.collectionManager.getCollections(predicate),
+      });
+      return acc;
+    }, []);
   }
 
   addFieldInterfaceGroups(options: Record<string, { label: string; order?: number }>) {

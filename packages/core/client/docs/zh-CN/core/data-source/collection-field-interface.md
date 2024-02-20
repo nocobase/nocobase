@@ -7,7 +7,7 @@
 ```ts
 class CollectionFieldInterface {
   app: Application;
-  collectionManager: CollectionManagerV2;
+  collectionManager: CollectionManager;
 
   name: string;
   group: string;
@@ -32,7 +32,7 @@ class CollectionFieldInterface {
   titleUsable?: boolean;
 
   validateSchema(fieldSchema: ISchema): Record<string, ISchema>
-  usePathOptions(field: CollectionFieldOptionsV2): any
+  usePathOptions(field: CollectionFieldOptions): any
   schemaInitialize(schema: ISchema, data: any): void
 
   getOption<K extends keyof IField>(key: K): CollectionFieldInterfaceOptions[K]
@@ -87,7 +87,7 @@ class MyPlugin extends Plugin {
 ### collectionFieldInterface.validateSchema(fieldSchema)
 
 
-### collectionFieldInterface.usePathOptions(field: CollectionFieldOptionsV2)
+### collectionFieldInterface.usePathOptions(field: CollectionFieldOptions)
 
 
 ### collectionFieldInterface.schemaInitialize(schema: ISchema, data: any)

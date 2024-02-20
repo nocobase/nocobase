@@ -4,8 +4,8 @@ import { autorun } from '@formily/reactive';
 import { forEach } from '@nocobase/utils/client';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { useParentRecordDataV2 } from '../data-source/record/RecordProvider';
-import { RecordProvider } from '../record-provider';
+import { useParentRecordData } from '../data-source/record/RecordProvider';
+import { RecordProvider_deprecated } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
@@ -14,7 +14,7 @@ export const FormFieldContext = createContext<any>({});
 const InternalFormFieldProvider = (props) => {
   const { action, readPretty, fieldName } = props;
   const formBlockCtx = useFormBlockContext();
-  const parentRecordData = useParentRecordDataV2();
+  const parentRecordData = useParentRecordData();
 
   if (!formBlockCtx?.updateAssociationValues?.includes(fieldName)) {
     formBlockCtx?.updateAssociationValues?.push(fieldName);
@@ -57,7 +57,7 @@ const InternalFormFieldProvider = (props) => {
   }
 
   return (
-    <RecordProvider record={service?.data?.data} parent={parentRecordData}>
+    <RecordProvider_deprecated record={service?.data?.data} parent={parentRecordData}>
       <FormFieldContext.Provider
         value={{
           action,
@@ -70,7 +70,7 @@ const InternalFormFieldProvider = (props) => {
       >
         {props.children}
       </FormFieldContext.Provider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };
 

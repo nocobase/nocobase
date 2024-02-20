@@ -2,11 +2,11 @@ import { observer } from '@formily/react';
 import { Input } from 'antd';
 import { debounce } from 'lodash';
 import React, { useState, useMemo, useEffect } from 'react';
-import { useRecord } from '@nocobase/client';
+import { useRecord_deprecated } from '@nocobase/client';
 
 export const FieldTitleInput = observer((props: any) => {
   const { value, handleFieldChange } = props;
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const [titleValue, setTitleValue] = useState(value);
   // 实时更新
   const handleRealTimeChange = (newValue: string) => {

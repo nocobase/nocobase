@@ -245,20 +245,7 @@ export class CollectionManagerPlugin extends Plugin {
       });
     };
 
-    // this.app.on('loadCollections', loadCollections);
     this.app.on('beforeStart', loadCollections);
-    // this.app.on('beforeUpgrade', async () => {
-    //   const syncOptions = {
-    //     alter: {
-    //       drop: false,
-    //     },
-    //     force: false,
-    //   };
-    //   await this.db.getCollection('collections').sync(syncOptions);
-    //   await this.db.getCollection('fields').sync(syncOptions);
-    //   await this.db.getCollection('collectionCategories').sync(syncOptions);
-    //   await loadCollections();
-    // });
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
@@ -363,6 +350,18 @@ export class CollectionManagerPlugin extends Plugin {
       name: 'collectionCategory',
       dumpRules: 'required',
       origin: this.options.packageName,
+    });
+  }
+  async install() {
+    const dataSourcesCollection = this.app.db.getCollection('dataSources');
+
+    await dataSourcesCollection.repository.create({
+      values: {
+        key: 'main',
+        type: 'main',
+        displayName: 'Main',
+        options: {},
+      },
     });
   }
 }

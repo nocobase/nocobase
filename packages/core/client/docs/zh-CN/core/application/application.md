@@ -19,7 +19,7 @@ export interface ApplicationOptions {
   schemaSettings?: SchemaSetting[];
   schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;
-  dataSourceManager?: DataSourceManagerOptionsV2;
+  dataSourceManager?: DataSourceManagerOptions;
 }
 ```
 

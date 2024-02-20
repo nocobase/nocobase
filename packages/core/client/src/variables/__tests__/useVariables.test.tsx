@@ -9,7 +9,7 @@ import useVariables from '../hooks/useVariables';
 
 vi.mock('../../collection-manager', async () => {
   return {
-    useCollectionManager: () => {
+    useCollectionManager_deprecated: () => {
       return {
         getCollectionJoinField: (path: string) => {
           if (path === 'users.belongsToField') {

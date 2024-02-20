@@ -2,13 +2,13 @@ import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  RecordProvider,
+  RecordProvider_deprecated,
   css,
-  useCollection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCompile,
   useFilterAPI,
-  useParentRecordDataV2,
+  useParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -40,7 +40,7 @@ const pointClass = css`
 export const GoogleMapsBlock = (props) => {
   const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
     useProps(props);
-  const { getPrimaryKey } = useCollection();
+  const { getPrimaryKey } = useCollection_deprecated();
   const primaryKey = getPrimaryKey();
   const { marker: markerName = 'id' } = fieldNames;
   const [isMapInitialization, setIsMapInitialization] = useState(false);
@@ -56,7 +56,7 @@ export const GoogleMapsBlock = (props) => {
   const overlaysRef = useRef<google.maps.MVCObject[]>([]);
   selectingModeRef.current = selectingMode;
 
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
 
   const setOverlayOptions = (overlay: google.maps.MVCObject, state?: boolean) => {
     const selected = typeof state !== 'undefined' ? !state : overlay.get(OVERLAY_SELECtED);
@@ -360,7 +360,7 @@ export const GoogleMapsBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
-  const parentRecordData = useParentRecordDataV2();
+  const parentRecordData = useParentRecordData();
   const fieldSchema = useFieldSchema();
   const schema: Schema = useMemo(
     () =>
@@ -376,9 +376,9 @@ const MapBlockDrawer = (props) => {
   return (
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
-        <RecordProvider record={record} parent={parentRecordData}>
+        <RecordProvider_deprecated record={record} parent={parentRecordData}>
           <RecursionField schema={schema} name={schema.name} />
-        </RecordProvider>
+        </RecordProvider_deprecated>
       </ActionContextProvider>
     )
   );

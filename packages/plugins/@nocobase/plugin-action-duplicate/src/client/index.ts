@@ -1,4 +1,4 @@
-import { Plugin, useCollection } from '@nocobase/client';
+import { Plugin, useCollection_deprecated } from '@nocobase/client';
 import { DuplicatePluginProvider } from './DuplicatePluginProvider';
 import { duplicateActionSettings } from './DuplicateAction.Settings';
 
@@ -19,7 +19,7 @@ export class DuplicatePlugin extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return (
           (collection.template !== 'view' || collection?.writableView) &&
           collection.template !== 'file' &&
@@ -42,7 +42,7 @@ export class DuplicatePlugin extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return (
           (collection.template !== 'view' || collection?.writableView) &&
           collection.template !== 'file' &&

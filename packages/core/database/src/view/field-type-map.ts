@@ -45,7 +45,6 @@ const mysql = {
   date: 'date',
   time: 'time',
   varchar: 'string',
-  decimal: 'decimal',
   text: 'text',
   longtext: 'text',
   int: 'integer',
@@ -56,6 +55,7 @@ const mysql = {
   float: 'float',
   double: 'float',
   boolean: 'boolean',
+  decimal: 'decimal',
 
   datetime: 'date',
   timestamp: 'date',

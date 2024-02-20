@@ -3,11 +3,16 @@ import { useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../api-client';
-import { ActionContextProvider, SchemaComponent, useActionContext } from '../../schema-component';
-import { useCancelAction } from '../action-hooks';
-import { CollectionCategroriesContext } from '../context';
-import * as components from './components';
+import {
+  useAPIClient,
+  ActionContextProvider,
+  SchemaComponent,
+  useActionContext,
+  useCancelAction,
+  CollectionCategroriesContext,
+  CollectionCategory,
+  CollectionTemplateTag,
+} from '@nocobase/client';
 import { collectionCategorySchema } from './schemas/collections';
 
 const useCreateCategry = () => {
@@ -46,7 +51,7 @@ export const AddCategoryAction = (props) => {
       </div>
       <SchemaComponent
         schema={collectionCategorySchema}
-        components={{ ...components }}
+        components={{ CollectionCategory, CollectionTemplateTag }}
         scope={{
           getContainer,
           useCancelAction,

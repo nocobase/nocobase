@@ -1,6 +1,6 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
-import { ActionContextProvider, RecordProvider, useParentRecordDataV2, useProps } from '@nocobase/client';
+import { ActionContextProvider, RecordProvider_deprecated, useParentRecordData, useProps } from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -141,7 +141,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
 
 const CalendarRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  const parentRecordData = useParentRecordDataV2();
+  const parentRecordData = useParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = useMemo(
     () =>
@@ -162,9 +162,9 @@ const CalendarRecordViewer = (props) => {
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <RecordProvider record={record} parent={parentRecordData}>
+          <RecordProvider_deprecated record={record} parent={parentRecordData}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
-          </RecordProvider>
+          </RecordProvider_deprecated>
         </ActionContextProvider>
       </DeleteEventContext.Provider>
     )

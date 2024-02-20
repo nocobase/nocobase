@@ -5,7 +5,7 @@ import {
   SchemaSettingsDivider,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
-  useCollection,
+  useCollection_deprecated,
   useDesignable,
   useFormBlockContext,
   useTableBlockContext,
@@ -14,7 +14,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const AuditLogsDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();

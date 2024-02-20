@@ -1,10 +1,10 @@
-import { Application, CollectionV2, DEFAULT_DATA_SOURCE_NAME, LocalDataSource, Plugin } from '@nocobase/client';
+import { Application, Collection, DEFAULT_DATA_SOURCE_NAME, LocalDataSource, Plugin } from '@nocobase/client';
 import collections from '../collections.json';
 
 describe('DataSourceManager', () => {
   describe('mixins', () => {
     test('init should work', () => {
-      class DemoCollectionMixin extends CollectionV2 {
+      class DemoCollectionMixin extends Collection {
         a() {
           return 'test-' + this.name;
         }
@@ -22,7 +22,7 @@ describe('DataSourceManager', () => {
     });
 
     test('plugin should work', async () => {
-      class DemoCollectionMixin extends CollectionV2 {
+      class DemoCollectionMixin extends Collection {
         b() {
           return 'test-' + this.name;
         }
@@ -46,13 +46,13 @@ describe('DataSourceManager', () => {
     });
 
     test('multiple mixins should work', () => {
-      class DemoCollectionMixin1 extends CollectionV2 {
+      class DemoCollectionMixin1 extends Collection {
         c() {
           return 'test1-' + this.name;
         }
       }
 
-      class DemoCollectionMixin2 extends CollectionV2 {
+      class DemoCollectionMixin2 extends Collection {
         d() {
           return 'test2-' + this.name;
         }
@@ -71,7 +71,7 @@ describe('DataSourceManager', () => {
     });
 
     test('after add mixins, collection should be re-instantiated', () => {
-      class DemoCollectionMixin extends CollectionV2 {
+      class DemoCollectionMixin extends Collection {
         e() {
           return 'test-' + this.name;
         }

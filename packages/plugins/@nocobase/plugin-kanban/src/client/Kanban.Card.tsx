@@ -4,9 +4,9 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   DndContext,
-  RecordProvider,
+  RecordProvider_deprecated,
   SchemaComponentOptions,
-  useParentRecordDataV2,
+  useParentRecordData,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import cls from 'classnames';
@@ -17,7 +17,7 @@ export const KanbanCard: any = observer(
   (props: any) => {
     const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
       useContext(KanbanCardContext);
-    const parentRecordData = useParentRecordDataV2();
+    const parentRecordData = useParentRecordData();
     const fieldSchema = useFieldSchema();
     const [visible, setVisible] = useState(false);
     const labelDisabled = fieldSchema['x-label-disabled'];
@@ -102,13 +102,13 @@ export const KanbanCard: any = observer(
               setVisible,
             }}
           >
-            <RecordProvider record={card} parent={parentRecordData}>
+            <RecordProvider_deprecated record={card} parent={parentRecordData}>
               <RecursionField
                 basePath={cardField.address.concat(`${columnIndex}.cardViewer.${cardIndex}`)}
                 schema={cardViewerSchema}
                 onlyRenderProperties
               />
-            </RecordProvider>
+            </RecordProvider_deprecated>
           </ActionContextProvider>
         )}
       </SchemaComponentOptions>

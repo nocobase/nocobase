@@ -7,10 +7,9 @@
 - 类型
 
 ```tsx | pure
-interface CollectionManagerProviderPropsV2 {
-  instance?: CollectionManagerV2;
+interface CollectionManagerProviderProps {
+  instance?: CollectionManager;
   dataSource?: string;
-  collections?: CollectionOptionsV2[];
   children?: ReactNode;
 }
 ```
@@ -18,12 +17,11 @@ interface CollectionManagerProviderPropsV2 {
 - 参数详解
   - `dataSource` - 数据源名称，如果为空，则会取默认数据源。
   - `instance` - CollectionManager 实例，如果没有，则会取 `dataSource` 对应的 collectionManager。
-  - `collections` - 用于扩展 CollectionManager 的数据表。
 
 - 示例
 
 ```tsx | pure
-const  collectionManager = new CollectionManagerV2();
+const  collectionManager = new CollectionManager();
 
 const Demo = () => {
   return (
@@ -36,7 +34,7 @@ const Demo = () => {
 
 ## Hooks
 
-### useCollectionManagerV2()
+### useCollectionManager()
 
 用于获取 `CollectionManagerProvider` 传递的实例。
 
@@ -44,7 +42,7 @@ const Demo = () => {
 
 ```tsx | pure
 const Demo = () => {
-  const collectionManager = useCollectionManagerV2();
+  const collectionManager = useCollectionManager();
   const collections = collectionManager.getCollections()
 
   return <div>

@@ -1,13 +1,13 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
 
 export const AssociationFieldProvider = observer(
   (props) => {
     const field = useField<Field>();
-    const { getCollectionJoinField, getCollection } = useCollectionManager();
+    const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
     const fieldSchema = useFieldSchema();
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;

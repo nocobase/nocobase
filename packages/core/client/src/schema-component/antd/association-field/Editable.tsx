@@ -3,7 +3,7 @@ import { observer, useField, useForm } from '@formily/react';
 import React from 'react';
 import { SchemaComponentOptions } from '../../';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { AssociationSelect } from './AssociationSelect';
 import { InternalFileManager } from './FileManager';
@@ -25,7 +25,7 @@ const EditableAssociationField = observer(
     const useCreateActionProps = () => {
       const { onClick } = useCAP();
       const actionField: any = useField();
-      const { getPrimaryKey } = useCollection();
+      const { getPrimaryKey } = useCollection_deprecated();
       const primaryKey = getPrimaryKey();
       return {
         async onClick() {

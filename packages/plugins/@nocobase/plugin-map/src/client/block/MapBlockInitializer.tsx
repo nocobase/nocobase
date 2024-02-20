@@ -6,7 +6,7 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useGlobalTheme,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -19,7 +19,7 @@ export const MapBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
-  const { getCollectionFieldsOptions } = useCollectionManager();
+  const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
   const { t } = useMapTranslation();
   const { theme } = useGlobalTheme();
   return (

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   useAPIClient,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useGlobalTheme,
   FormDialog,
   SchemaComponent,
@@ -20,7 +20,7 @@ import { createKanbanBlockSchema } from './utils';
 export const KanbanBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   const { theme } = useGlobalTheme();

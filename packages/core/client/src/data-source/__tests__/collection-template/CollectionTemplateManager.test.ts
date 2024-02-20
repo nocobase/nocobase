@@ -1,7 +1,7 @@
-import { Application, CollectionTemplate, CollectionTemplateManagerV2, CollectionV2 } from '@nocobase/client';
+import { Application, CollectionTemplate, CollectionTemplateManager, Collection } from '@nocobase/client';
 
-describe('CollectionTemplateManagerV2', () => {
-  let collectionTemplateManager: CollectionTemplateManagerV2;
+describe('CollectionTemplateManager', () => {
+  let collectionTemplateManager: CollectionTemplateManager;
 
   beforeEach(() => {
     const app = new Application();
@@ -40,7 +40,7 @@ describe('CollectionTemplateManagerV2', () => {
   });
 
   it('should re-add collections', () => {
-    class CollectionTest extends CollectionV2 {}
+    class CollectionTest extends Collection {}
 
     class A extends CollectionTemplate {
       name = 'a';
@@ -54,7 +54,7 @@ describe('CollectionTemplateManagerV2', () => {
     collectionTemplateManager.dataSourceManager.getDataSource().collectionManager.addCollections([collectionA]);
     expect(
       collectionTemplateManager.dataSourceManager.getDataSource().collectionManager.getCollection('collectionA'),
-    ).instanceOf(CollectionV2);
+    ).instanceOf(Collection);
     collectionTemplateManager.addCollectionTemplates([A]);
     expect(
       collectionTemplateManager.dataSourceManager.getDataSource().collectionManager.getCollection('collectionA'),

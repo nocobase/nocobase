@@ -17,8 +17,8 @@ import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
 import {
   RecordIndexProvider,
-  RecordProvider,
-  useParentRecordDataV2,
+  RecordProvider_deprecated,
+  useParentRecordData,
   useRequest,
   useSchemaInitializerRender,
 } from '../../../';
@@ -33,7 +33,7 @@ const useTableColumns = () => {
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const scope = useContext(SchemaExpressionScopeContext);
-  const parentRecordData = useParentRecordDataV2();
+  const parentRecordData = useParentRecordData();
 
   const columns = schema
     .reduceProperties((buf, s) => {
@@ -52,9 +52,9 @@ const useTableColumns = () => {
           // console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
-              <RecordProvider record={record} parent={parentRecordData}>
+              <RecordProvider_deprecated record={record} parent={parentRecordData}>
                 <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
-              </RecordProvider>
+              </RecordProvider_deprecated>
             </RecordIndexProvider>
           );
         },

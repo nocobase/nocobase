@@ -39,22 +39,22 @@ const MyComponent = () => {
 
 ## Hooks
 
-### useCollectionV2()
+### useCollection()
 
 用于获取 `CollectionProvider` 传递的 `Collection` 实例。
 
 ```tsx | pure
-const collection = useCollectionV2()
+const collection = useCollection()
 
-console.log(collection instanceof CollectionV2) // true
+console.log(collection instanceof Collection) // true
 console.log(collection);
 ```
 
 结合 Mixin 使用：
 
 ```tsx | pure
-const collection = useCollectionV2<TestMixin>()
-const collection = useCollectionV2<TestMixin & TestMixin2>()
+const collection = useCollection<TestMixin>()
+const collection = useCollection<TestMixin & TestMixin2>()
 ```
 
 ## 示例

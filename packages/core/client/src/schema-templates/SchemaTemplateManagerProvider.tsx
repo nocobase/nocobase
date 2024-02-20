@@ -6,7 +6,7 @@ import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application/Plugin';
 import { useAppSpin } from '../application/hooks/useAppSpin';
-import { useCollectionManager } from '../collection-manager';
+import { useCollectionManager_deprecated } from '../collection-manager';
 import { BlockTemplate } from './BlockTemplate';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
@@ -37,7 +37,7 @@ export const useSchemaTemplate = () => {
 };
 
 export const useSchemaTemplateManager = () => {
-  const { getInheritCollections } = useCollectionManager();
+  const { getInheritCollections } = useCollectionManager_deprecated();
   const { refresh, templates = [] } = useContext(SchemaTemplateManagerContext);
   const api = useAPIClient();
   return {

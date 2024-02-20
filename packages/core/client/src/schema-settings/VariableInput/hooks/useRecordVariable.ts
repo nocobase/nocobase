@@ -1,13 +1,14 @@
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
-import { useRecordV2 } from '../../../data-source/record/RecordProvider';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
+import { useRecord } from '../../../data-source/record/RecordProvider';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
-  collectionField?: CollectionFieldOptions;
+  collectionField?: CollectionFieldOptions_deprecated;
   schema?: any;
   collectionName?: string;
   noDisabled?: boolean;
@@ -47,7 +48,7 @@ export const useRecordVariable = (props: Props) => {
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const { isInSubForm, isInSubTable } = useFlag() || {};
-  const record = useRecordV2();
+  const record = useRecord();
   const recordData = isInSubForm || isInSubTable ? record?.parentRecord?.data : record?.data;
   const { name: collectionName } = useCollection() || {};
   const currentRecordSettings = useBaseVariable({

@@ -10,7 +10,7 @@ import {
   SchemaSettingsDivider,
   SchemaSettingsLinkageRules,
   SchemaSettingsRemove,
-  useCollection,
+  useCollection_deprecated,
   useCollectionFilterOptions,
   useDesignable,
   useMenuSearch,
@@ -23,7 +23,7 @@ import { ManualFormType } from '../SchemaConfig';
 import { findSchema } from '../utils';
 
 function UpdateFormDesigner() {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();

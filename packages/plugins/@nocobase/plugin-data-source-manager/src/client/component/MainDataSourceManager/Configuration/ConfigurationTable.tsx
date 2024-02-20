@@ -1,22 +1,26 @@
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useRef, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldsTable } from '.';
-import { useAPIClient } from '../../api-client';
-import { useCurrentAppInfo } from '../../appInfo';
-import { useRecord } from '../../record-provider';
-import { SchemaComponent, SchemaComponentContext, useCompile } from '../../schema-component';
-import { useCancelAction } from '../action-hooks';
-import { CollectionCategroriesContext } from '../context';
-import { useCollectionManager } from '../hooks/useCollectionManager';
-import { DataSourceContext } from '../sub-table';
-import { AddSubFieldAction } from './AddSubFieldAction';
+import {
+  useAPIClient,
+  useCurrentAppInfo,
+  useRecord_deprecated,
+  SchemaComponent,
+  SchemaComponentContext,
+  useCompile,
+  useCancelAction,
+  useCollectionManager_deprecated,
+  DataSourceContext_deprecated,
+  AddSubFieldAction,
+  EditSubFieldAction,
+  CollectionCategroriesContext,
+  FieldSummary,
+  TemplateSummary,
+} from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
-import { EditSubFieldAction } from './EditSubFieldAction';
-import { FieldSummary } from './components/FieldSummary';
-import { TemplateSummary } from './components/TemplateSummary';
 import { collectionSchema } from './schemas/collections';
 
 /**
@@ -44,7 +48,7 @@ const useSelectedRowKeys = () => {
 };
 
 const useDestroySubField = () => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const form = useForm();
   return {
     async run() {
@@ -67,13 +71,13 @@ const useBulkDestroySubField = () => {
 
 // 获取当前字段列表
 const useCurrentFields = () => {
-  const record = useRecord();
-  const { getCollectionFields } = useCollectionManager();
+  const record = useRecord_deprecated();
+  const { getCollectionFields } = useCollectionManager_deprecated();
 
   // 仅当当前字段为子表单时，从DataSourceContext中获取已配置的字段列表
   if (record.__parent && record.__parent.interface === 'subTable') {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const ctx = useContext(DataSourceContext);
+    const ctx = useContext(DataSourceContext_deprecated);
     return ctx.dataSource;
   }
 
@@ -87,7 +91,7 @@ const useNewId = (prefix) => {
 
 export const ConfigurationTable = () => {
   const { t } = useTranslation();
-  const { interfaces, getCollections } = useCollectionManager();
+  const { interfaces, getCollections } = useCollectionManager_deprecated();
   const {
     data: { database },
   } = useCurrentAppInfo();

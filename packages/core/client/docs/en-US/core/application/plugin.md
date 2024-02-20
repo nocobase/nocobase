@@ -34,7 +34,7 @@ class Plugin<T = any> {
     return this.app.schemaSettingsManager;
   }
 
-  get collectionManager() {
+  get dataSourceManager() {
     return this.app.dataSourceManager;
   }
 

@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { useActionContext, useRecord, useRequest } from '@nocobase/client';
+import { useActionContext, useRecord_deprecated, useRequest } from '@nocobase/client';
 import { useParams } from 'react-router-dom';
 
 export const useRoleResourceValues = (options) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { visible } = useActionContext();
   const { name } = useParams();
 

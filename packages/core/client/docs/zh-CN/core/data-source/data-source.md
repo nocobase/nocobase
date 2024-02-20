@@ -26,7 +26,7 @@ class MyDataSource extends DataSource {
 初始化添加的时候 `collections` 可以为空，当调用 `reload` 方法时，会调用 `getDataSource` 方法获取数据表结构。
 
 ```tsx | pure
-import { Plugin, DataSource, DataSourceOptionsV2 } from '@nocobase/client';
+import { Plugin, DataSource, DataSourceOptions } from '@nocobase/client';
 
 class MyPlugin extends Plugin {
   async load() {
@@ -69,7 +69,7 @@ class MyPlugin extends Plugin {
 - 类型
 
 ```tsx | pure
-type LoadCallback = (collections: CollectionOptionsV2[]) => void;
+type LoadCallback = (collections: CollectionOptions[]) => void;
 
 class DataSource {
   addReloadCallback(callback: LoadCallback): void;
@@ -83,7 +83,7 @@ class DataSource {
 - 类型
 
 ```tsx | pure
-type LoadCallback = (collections: CollectionOptionsV2[]) => void;
+type LoadCallback = (collections: CollectionOptions[]) => void;
 class DataSource {
   removeReloadCallback(callback: LoadCallback): void;
 }
@@ -93,7 +93,7 @@ class DataSource {
 
 ```tsx | pure
 const MyComponent = () => {
-  const dataSource = useDataSourceV2();
+  const dataSource = useDataSource();
 
   useEffect(() => {
     const callback = (collections) => {
@@ -123,7 +123,7 @@ class DataSource {
 
 ```tsx | pure
 const MyComponent = () => {
-  const dataSource = useDataSourceV2();
+  const dataSource = useDataSource();
 
   const handleClick = async () => {
     await dataSource.reload();
@@ -138,16 +138,16 @@ const MyComponent = () => {
 - 类型
 
 ```tsx | pure
-interface DataSourceOptionsV2 {
+interface DataSourceOptions {
   key: string;
   displayName: string;
-  collections?: CollectionOptionsV2[];
+  collections?: CollectionOptions[];
   errorMessage?: string;
   status?: 'loaded' | 'loading-failed' | 'loading';
 }
 
 class DataSource {
-  getOptions(): DataSourceOptionsV2;
+  getOptions(): DataSourceOptions;
 }
 ```
 
@@ -167,7 +167,7 @@ class DataSource {
 
 ```tsx | pure
 const MyComponent = () => {
-  const dataSource = useDataSourceV2();
+  const dataSource = useDataSource();
 
   const handleClick = async () => {
     console.log(dataSource.getOption('key'));

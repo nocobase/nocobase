@@ -2,11 +2,11 @@ import { css, cx } from '@emotion/css';
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  RecordProvider,
+  RecordProvider_deprecated,
   useAPIClient,
   useBlockRequestContext,
   useCurrentAppInfo,
-  useParentRecordDataV2,
+  useParentRecordData,
   useTableBlockContext,
   useToken,
 } from '@nocobase/client';
@@ -40,7 +40,7 @@ export const DeleteEventContext = React.createContext({
 });
 const GanttRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  const parentRecordData = useParentRecordDataV2();
+  const parentRecordData = useParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.properties.detail;
   const close = useCallback(() => {
@@ -51,9 +51,9 @@ const GanttRecordViewer = (props) => {
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <RecordProvider record={record} parent={parentRecordData}>
+          <RecordProvider_deprecated record={record} parent={parentRecordData}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
-          </RecordProvider>
+          </RecordProvider_deprecated>
         </ActionContextProvider>
       </DeleteEventContext.Provider>
     )

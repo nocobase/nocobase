@@ -1,16 +1,16 @@
 import React from 'react';
 import { Switch, Tooltip, message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager, useRecord, useAPIClient } from '@nocobase/client';
+import { useCollectionManager_deprecated, useRecord_deprecated, useAPIClient } from '@nocobase/client';
 import { useRemoteCollectionContext } from '../CollectionFields';
 
 export const TitleField = (props) => {
   const { useProps } = props;
   const { t } = useTranslation();
-  const { isTitleField } = useCollectionManager();
+  const { isTitleField } = useCollectionManager_deprecated();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { setTitleField, filterByTk, dataSourceKey } = useProps();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const api = useAPIClient();
   const { refreshRM, titleField } = useRemoteCollectionContext();
   const handleChange = async (checked) => {

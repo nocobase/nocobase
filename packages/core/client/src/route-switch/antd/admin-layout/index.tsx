@@ -264,7 +264,7 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const result = useSystemSettings();
-  // const { service } = useCollectionManager();
+  // const { service } = useCollectionManager_deprecated();
   const params = useParams<any>();
   const { token } = useToken();
   return (

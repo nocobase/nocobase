@@ -5,8 +5,8 @@ import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useSortFields } from '../../../collection-manager';
-import { useRecord } from '../../../record-provider';
+import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
+import { useRecord_deprecated } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDataScope,
@@ -28,7 +28,7 @@ const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
 }, {});
 
 export const GridCardDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -36,7 +36,7 @@ export const GridCardDesigner = () => {
   const field = useField();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
