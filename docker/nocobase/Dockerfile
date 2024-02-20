@@ -39,4 +39,6 @@ COPY docker-entrypoint.sh /app/
 # COPY docker-entrypoint.sh /usr/local/bin/
 # ENTRYPOINT ["docker-entrypoint.sh"]
 
+EXPOSE 80/tcp
+
 CMD ["/app/docker-entrypoint.sh"]
