@@ -230,7 +230,7 @@ export const databaseConnectionSchema: ISchema = {
                       'x-component-props': {
                         type: 'primary',
                       },
-                      'x-reactions': ['{{useIsableDelete($self)}}'],
+                      'x-reactions': ['{{useIsAbleDelete($self)}}'],
                     },
                     delete: {
                       type: 'void',
@@ -243,7 +243,7 @@ export const databaseConnectionSchema: ISchema = {
                         },
                         useAction: '{{useDestroyAction}}',
                       },
-                      'x-reactions': ['{{useIsableDelete($self)}}'],
+                      'x-reactions': ['{{useIsAbleDelete($self)}}'],
                     },
                   },
                 },
