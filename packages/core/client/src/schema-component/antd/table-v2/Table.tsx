@@ -11,7 +11,7 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
@@ -26,6 +26,23 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+
+const SortableWrapper = memo<{
+  children: any;
+  dragSort: boolean;
+  value: any[];
+  getRowKey: (record: any) => string;
+}>(({ children, dragSort, value, getRowKey }) => {
+  return dragSort
+    ? React.createElement<Omit<SortableContextProps, 'children'>>(
+        SortableContext,
+        {
+          items: value?.map?.(getRowKey) || [],
+        },
+        children,
+      )
+    : React.createElement(React.Fragment, {}, children);
+});
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -192,6 +209,8 @@ const usePaginationProps = (pagination1, pagination2) => {
   };
   return result.total <= result.pageSize ? false : result;
 };
+
+const count = 0;
 
 export const Table: any = (props: {
   useProps?: () => any;
@@ -363,13 +382,16 @@ export const Table: any = (props: {
     return key;
   };
 
-  const getRowKey = (record: any) => {
-    if (typeof rowKey === 'string') {
-      return record[rowKey]?.toString();
-    } else {
-      return (rowKey ?? defaultRowKey)(record)?.toString();
-    }
-  };
+  const getRowKey = useCallback(
+    (record: any) => {
+      if (typeof rowKey === 'string') {
+        return record[rowKey]?.toString();
+      } else {
+        return (rowKey ?? defaultRowKey)(record)?.toString();
+      }
+    },
+    [rowKey],
+  );
 
   const restProps = {
     rowSelection: rowSelection
@@ -476,20 +498,6 @@ export const Table: any = (props: {
         }
       : undefined,
   };
-  const SortableWrapper = useCallback<React.FC>(
-    ({ children }) => {
-      return dragSort
-        ? React.createElement<Omit<SortableContextProps, 'children'>>(
-            SortableContext,
-            {
-              items: field.value?.map?.(getRowKey) || [],
-            },
-            children,
-          )
-        : React.createElement(React.Fragment, {}, children);
-    },
-    [field, dragSort],
-  );
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
@@ -526,7 +534,7 @@ export const Table: any = (props: {
         }
       `}
     >
-      <SortableWrapper>
+      <SortableWrapper dragSort={dragSort} value={field.value} getRowKey={getRowKey}>
         <AntdTable
           ref={tableSizeRefCallback}
           rowKey={rowKey ?? defaultRowKey}
