@@ -7,6 +7,7 @@ import { useRecord } from '../../record-provider';
 import { useStyles } from '../style';
 import { useApp } from '../../application';
 import { useCompile } from '../../schema-component';
+import { omit } from 'lodash';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -131,9 +132,16 @@ export const SettingsCenterConfigure = () => {
           },
         },
       ]}
-      dataSource={settings.filter((v) => {
-        return v.isTopLevel !== false;
-      })}
+      dataSource={settings
+        .filter((v) => {
+          return v.isTopLevel !== false;
+        })
+        .map((v) => {
+          if (v.showTabs !== false) {
+            return v;
+          }
+          return omit(v, 'children');
+        })}
     />
   );
 };
