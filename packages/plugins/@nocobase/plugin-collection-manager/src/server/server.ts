@@ -353,7 +353,9 @@ export class CollectionManagerPlugin extends Plugin {
     });
   }
   async install() {
-    await this.db.getRepository('dataSources').create({
+    const dataSourcesCollection = this.app.db.getCollection('dataSources');
+
+    await dataSourcesCollection.repository.create({
       values: {
         key: 'main',
         type: 'main',

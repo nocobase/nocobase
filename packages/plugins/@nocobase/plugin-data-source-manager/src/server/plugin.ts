@@ -304,6 +304,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find({
         filter: {
           enabled: true,
+          'type.$ne': 'main',
         },
       });
 
