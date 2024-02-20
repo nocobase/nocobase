@@ -1,7 +1,7 @@
-import { Application, CollectionOptionsV2, DEFAULT_DATA_SOURCE_NAME } from '@nocobase/client';
+import { Application, CollectionOptions, DEFAULT_DATA_SOURCE_NAME } from '@nocobase/client';
 import collections from '../collections.json';
 
-function getCollection(collection: CollectionOptionsV2) {
+function getCollection(collection: CollectionOptions) {
   const app = new Application({
     dataSourceManager: {
       collections: [collection],

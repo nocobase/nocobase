@@ -1,11 +1,11 @@
-import { Application, DataSourceOptionsV2, DataSourceV2 } from '@nocobase/client';
+import { Application, DataSourceOptions, DataSource } from '@nocobase/client';
 
-describe('DataSourceV2', () => {
-  let dataSource: DataSourceV2;
+describe('DataSource', () => {
+  let dataSource: DataSource;
   let app: Application;
   const collections = [{ name: 'a' }];
   const newDisplayName = 'new display name';
-  const dataSourceOptions: DataSourceOptionsV2 = {
+  const dataSourceOptions: DataSourceOptions = {
     key: 'test',
     displayName: 'Test Data Source',
     status: 'loading',
@@ -13,7 +13,7 @@ describe('DataSourceV2', () => {
 
   beforeEach(() => {
     app = new Application({});
-    class TestDataSource extends DataSourceV2 {
+    class TestDataSource extends DataSource {
       async getDataSource() {
         return {
           displayName: newDisplayName,

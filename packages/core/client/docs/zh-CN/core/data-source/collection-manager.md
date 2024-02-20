@@ -11,8 +11,8 @@
 - 类型
 
 ```tsx | pure
-class CollectionManagerV2 {
-  addCollections(collections: CollectionOptionsV2[]): void
+class CollectionManager {
+  addCollections(collections: CollectionOptions[]): void
 }
 ```
 
@@ -37,8 +37,8 @@ collectionManager.addCollections([userCollectionOptions]);
 - 类型
 
 ```tsx | pure
-class CollectionManagerV2 {
-  setCollections(collections: CollectionOptionsV2[]): void
+class CollectionManager {
+  setCollections(collections: CollectionOptions[]): void
 }
 ```
 
@@ -49,8 +49,8 @@ class CollectionManagerV2 {
 - 类型
 
 ```tsx | pure
-class CollectionManagerV2 {
-  reAddCollections(collectionInstances: CollectionV2[]): void
+class CollectionManager {
+  reAddCollections(collectionInstances: Collection[]): void
 }
 ```
 
@@ -68,8 +68,8 @@ collectionManager.reAddCollections([userCollectionInstance]);
 - 类型
 
 ```tsx | pure
-class CollectionManagerV2 {
-  getCollections(predicate?: (collection: CollectionV2) => boolean)
+class CollectionManager {
+  getCollections(predicate?: (collection: Collection) => boolean)
 }
 ```
 
@@ -89,8 +89,8 @@ collectionManager.getCollections(collection => collection.name === 'posts'); // 
 - 类型
 
 ```tsx | pure
-class CollectionManagerV2 {
-  getCollection<Mixins = {}>(path: string): (Mixins & CollectionV2) | undefined
+class CollectionManager {
+  getCollection<Mixins = {}>(path: string): (Mixins & Collection) | undefined
 }
 ```
 
@@ -122,8 +122,8 @@ const collection = collectionManager.getCollection<TestMixin & TestMixin2>('user
 - 类型
 
 ```tsx | pure
-class CollectionManagerV2 {
-  getCollectionFields(collectionName: string): CollectionFieldOptionsV2[];
+class CollectionManager {
+  getCollectionFields(collectionName: string): CollectionFieldOptions[];
 }
 ```
 
@@ -140,7 +140,7 @@ collectionManager.getCollectionFields('users'); // [ { name: 'username', type: '
 - 类型
 
 ```tsx | pure
-class CollectionManagerV2 {
+class CollectionManager {
   getCollectionName(path: string: GetCollectionOptions): string | undefined;
 }
 ```
@@ -161,7 +161,7 @@ collectionManager.getCollectionName('users.profiles'); // 'profiles'
 - 类型
 
 ```tsx | pure
-class CollectionManagerV2 {
+class CollectionManager {
   getCollectionField(path: string: GetCollectionOptions): CollectionFieldOptions | undefined;
 }
 ```

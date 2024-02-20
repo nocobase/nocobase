@@ -2,18 +2,21 @@ import { CascaderProps } from 'antd';
 import _ from 'lodash';
 import { useCallback, useMemo, useState } from 'react';
 import { useCompile, useSchemaComponentContext } from '../../schema-component';
-import { CollectionFieldOptions, CollectionOptions } from '../types';
+import { CollectionFieldOptions_deprecated, CollectionOptions } from '../types';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
-import { useDataSourceManagerV2 } from '../../data-source/data-source/DataSourceManagerProvider';
-import { useDataSourceV2 } from '../../data-source/data-source/DataSourceProvider';
+import { useDataSourceManager } from '../../data-source/data-source/DataSourceManagerProvider';
+import { useDataSource } from '../../data-source/data-source/DataSourceProvider';
 import { DEFAULT_DATA_SOURCE_NAME } from '../../data-source/data-source/DataSourceManager';
-import { useCollectionManagerV2 } from '../../data-source/collection/CollectionManagerProvider';
+import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
 
-export const useCollectionManager = (dataSourceName?: string) => {
-  const dm = useDataSourceManagerV2();
-  const dataSource = useDataSourceV2();
-  const cm = useCollectionManagerV2();
+/**
+ * @deprecated use `useCollectionManager` instead
+ */
+export const useCollectionManager_deprecated = (dataSourceName?: string) => {
+  const dm = useDataSourceManager();
+  const dataSource = useDataSource();
+  const cm = useCollectionManager();
   const dataSourceNameValue = dataSourceName || dataSource?.key || undefined;
   const [random, setRandom] = useState(uid());
   const { refresh } = useSchemaComponentContext();
@@ -77,7 +80,7 @@ export const useCollectionManager = (dataSourceName?: string) => {
   );
 
   const getCollectionFields = useCallback(
-    (name: any, customDataSource?: string): CollectionFieldOptions[] => {
+    (name: any, customDataSource?: string): CollectionFieldOptions_deprecated[] => {
       if (!name) return [];
       const collection = getCm(customDataSource)?.getCollection<InheritanceCollectionMixin>(name);
 

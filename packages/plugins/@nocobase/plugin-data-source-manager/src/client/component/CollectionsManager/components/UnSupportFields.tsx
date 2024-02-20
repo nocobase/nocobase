@@ -1,12 +1,12 @@
 import React from 'react';
 import { Table, Divider } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useRecord } from '@nocobase/client';
+import { useRecord_deprecated } from '@nocobase/client';
 import { NAMESPACE } from '../../../locale';
 
 export const UnSupportFields = () => {
   const { t } = useTranslation();
-  const { unsupportedFields } = useRecord();
+  const { unsupportedFields } = useRecord_deprecated();
   const columns = [
     {
       title: t('Field name'),

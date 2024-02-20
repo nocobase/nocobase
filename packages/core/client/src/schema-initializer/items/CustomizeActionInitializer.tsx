@@ -1,11 +1,11 @@
 import React from 'react';
 
 import { BlockInitializer } from '.';
-import { useCollection } from '../../collection-manager';
+import { useCollection_deprecated } from '../../collection-manager';
 import { useSchemaInitializerItem } from '../../application';
 
 export const CustomizeActionInitializer = () => {
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const itemConfig = useSchemaInitializerItem();
 
   const schema = {};

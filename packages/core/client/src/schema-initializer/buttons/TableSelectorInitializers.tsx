@@ -1,4 +1,4 @@
-import { useCollection } from '../..';
+import { useCollection_deprecated } from '../..';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
 
@@ -25,7 +25,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
       title: '{{t("Filter blocks")}}',
       name: 'filterBlocks',
       useChildren() {
-        const { name, dataSource } = useCollection();
+        const { name, dataSource } = useCollection_deprecated();
         return [
           {
             name: 'filterFormBlockInTableSelector',

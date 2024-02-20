@@ -2,10 +2,10 @@ import { App, Button, Result, Typography } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CardItem, useCompile, useDesignable } from '../../schema-component';
-import { useDataSourceV2 } from '../data-source/DataSourceProvider';
-import { useDataSourceManagerV2 } from '../data-source';
-import { useCollection } from '../../collection-manager';
+import { useDataSource } from '../data-source/DataSourceProvider';
+import { useDataSourceManager } from '../data-source';
 import { DEFAULT_DATA_SOURCE_NAME } from '../../data-source/data-source/DataSourceManager';
+import { useCollection } from '../collection';
 
 export interface CollectionDeletedPlaceholderProps {
   type: 'Collection' | 'Field' | 'DataSource';
@@ -19,10 +19,10 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
   const { designable, dn } = useDesignable();
   const { modal } = App.useApp();
   const { t } = useTranslation();
-  const dataSource = useDataSourceV2();
+  const dataSource = useDataSource();
   const compile = useCompile();
   const collection = useCollection();
-  const dataSourceManager = useDataSourceManagerV2();
+  const dataSourceManager = useDataSourceManager();
   const nameValue = useMemo(() => {
     if (type === 'DataSource') {
       return name;

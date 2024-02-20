@@ -43,7 +43,7 @@ Table 中的字段信息及列表数据，都是存储在数据库中的。
 
 ```tsx | pure
 const DataBlockProvider = (props) => {
-  return <DataBlockContextV2.Provider>
+  return <DataBlockContext.Provider>
     <CollectionDataSourceProvider>
       <CollectionProvider> / <AssociationProvider>
         <BlockResourceProvider>
@@ -55,7 +55,7 @@ const DataBlockProvider = (props) => {
         </BlockResourceProvider>  / </AssociationProvider>
       </CollectionProvider>
     </CollectionDataSourceProvider>
-  </DataBlockContextV2.Provider>
+  </DataBlockContext.Provider>
 }
 ```
 
@@ -103,11 +103,11 @@ interface AllDataBlockProps {
   collection?: string;
   association?: string;
   sourceId?: string | number;
-  record?: RecordV2;
+  record?: Record;
   action?: 'list' | 'get';
   filterByTk?: string;
   params?: Record<string, any>;
-  parentRecord?: RecordV2;
+  parentRecord?: Record;
   [index: string]: any;
 }
 ```
@@ -124,7 +124,7 @@ interface AllDataBlockProps {
 
 ```tsx | pure
 const DataBlockProvider = (props) => {
-  return <DataBlockContextV2.Provider value={props}>
+  return <DataBlockContext.Provider value={props}>
     <CollectionDataSourceProvider>
       <CollectionProvider name={props.collection}> / <CollectionProvider name={props.association}>
           <BlockResourceProvider {...props}>
@@ -163,7 +163,7 @@ const DataBlockProvider = (props) => {
 
 ### 属性获取和修改
 
-#### useDataBlockV2()
+#### useDataBlock()
 
 可用于获取和修改 `DataBlockProvider` 的属性。
 
@@ -174,7 +174,7 @@ interface Result<T extends {} = {}> {
   props: AllDataBlockProps & T;
   dn: Designable;
 }
-const useDataBlockV2: <T extends {}>() => Result<T>
+const useDataBlock: <T extends {}>() => Result<T>
 ```
 
 - 详解
@@ -185,7 +185,7 @@ const useDataBlockV2: <T extends {}>() => Result<T>
 - 示例
 
 ```tsx | pure
-const { props, dn } = useDataBlockV2<{ tableProps: { bordered?: boolean } }>();
+const { props, dn } = useDataBlock<{ tableProps: { bordered?: boolean } }>();
 
 // 获取
 const checked = props.tableProps.bordered;
@@ -200,12 +200,12 @@ dn.deepMerge({
 });
 ```
 
-#### useDataBlockPropsV2()
+#### useDataBlockProps()
 
-相当于 `useDataBlockV2().props`。
+相当于 `useDataBlock().props`。
 
 ```tsx | pure
-const props = useDataBlockPropsV2<{ tableProps: { bordered?: boolean } }>();
+const props = useDataBlockProps<{ tableProps: { bordered?: boolean } }>();
 
 const checked = props.tableProps.bordered;
 ```

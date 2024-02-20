@@ -1,21 +1,19 @@
 import React, { FC, ReactNode, createContext, useContext } from 'react';
-import type { DataSourceManagerV2 } from './DataSourceManager';
+import type { DataSourceManager } from './DataSourceManager';
 
-export const DataSourceManagerContextV2 = createContext<DataSourceManagerV2>(null);
-DataSourceManagerContextV2.displayName = 'DataSourceManagerContextV2';
+export const DataSourceManagerContext = createContext<DataSourceManager>(null);
+DataSourceManagerContext.displayName = 'DataSourceManagerContext';
 
-export interface DataSourceManagerProviderPropsV2 {
-  dataSourceManager: DataSourceManagerV2;
+export interface DataSourceManagerProviderProps {
+  dataSourceManager: DataSourceManager;
   children?: ReactNode;
 }
 
-export const DataSourceManagerProviderV2: FC<DataSourceManagerProviderPropsV2> = ({ children, dataSourceManager }) => {
-  return (
-    <DataSourceManagerContextV2.Provider value={dataSourceManager}>{children}</DataSourceManagerContextV2.Provider>
-  );
+export const DataSourceManagerProvider: FC<DataSourceManagerProviderProps> = ({ children, dataSourceManager }) => {
+  return <DataSourceManagerContext.Provider value={dataSourceManager}>{children}</DataSourceManagerContext.Provider>;
 };
 
-export function useDataSourceManagerV2() {
-  const context = useContext<DataSourceManagerV2>(DataSourceManagerContextV2);
+export function useDataSourceManager() {
+  const context = useContext<DataSourceManager>(DataSourceManagerContext);
   return context;
 }

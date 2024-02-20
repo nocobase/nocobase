@@ -45,6 +45,10 @@ const availableActions: {
 };
 
 export class DataSourceModel extends Model {
+  isMainRecord() {
+    return this.get('type') === 'main';
+  }
+
   async loadIntoApplication(options: { app: Application; transaction?: Transaction; loadAtAfterStart?: boolean }) {
     const { app, loadAtAfterStart } = options;
 

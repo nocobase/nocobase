@@ -126,16 +126,16 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class DataSourceManager {
-  addCollectionMixins(mixins: (typeof CollectionV2)[]): void;
+  addCollectionMixins(mixins: (typeof Collection)[]): void;
 }
 ```
 
 - 示例
 
 ```tsx | pure
-import { Plugin, CollectionV2 } from '@nocobase/client';
+import { Plugin, Collection } from '@nocobase/client';
 
-class MyCollectionMixin extends CollectionV2 {
+class MyCollectionMixin extends Collection {
   otherMethod() {
     console.log('otherMethod');
   }
@@ -163,14 +163,14 @@ const MyComponent = () => {
 
 ```tsx | pure
 class DataSourceManager {
-  addDataSource(DataSource: DataSource, options: DataSourceOptionsV2): void;
+  addDataSource(DataSource: DataSource, options: DataSourceOptions): void;
 }
 ```
 
 - 示例
 
 ```tsx | pure
-import { Plugin, DataSource, DataSourceOptionsV2 } from '@nocobase/client';
+import { Plugin, DataSource, DataSourceOptions } from '@nocobase/client';
 
 class MyDataSource extends DataSource {
   async getDataSource() {
@@ -280,7 +280,7 @@ const MyComponent = () => {
 ```tsx | pure
 
 class DataSourceManager {
-  getAllCollections(predicate?: (collection: CollectionV2) => boolean): (DataSourceOptionsV2 & { collections: CollectionV2[] })[];
+  getAllCollections(predicate?: (collection: Collection) => boolean): (DataSourceOptions & { collections: Collection[] })[];
 }
 ```
 

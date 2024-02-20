@@ -72,7 +72,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.db.on('dataSources.beforeSave', async (model: DataSourceModel) => {
-      if (model.changed('options')) {
+      if (model.changed('options') && !model.isMainRecord()) {
         const dataSourceOptions = model.get('options');
         const type = model.get('type');
 
@@ -87,7 +87,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
-      if (model.changed('options')) {
+      if (model.changed('options') && !model.isMainRecord()) {
         model.loadIntoApplication({
           app: this.app,
         });
@@ -131,6 +131,11 @@ export class PluginDataSourceManagerServer extends Plugin {
           dataPath,
           items.map((item) => {
             const data = item.toJSON();
+            if (item.isMainRecord()) {
+              data['status'] = 'loaded';
+              return data;
+            }
+
             const dataSourceStatus = this.dataSourceStatus[item.get('key')];
             data['status'] = dataSourceStatus;
 
@@ -209,6 +214,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         const dataSources = await ctx.db.getRepository('dataSources').find({
           filter: {
             enabled: true,
+            'type.$ne': 'main',
           },
         });
 
@@ -298,6 +304,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find({
         filter: {
           enabled: true,
+          'type.$ne': 'main',
         },
       });
 

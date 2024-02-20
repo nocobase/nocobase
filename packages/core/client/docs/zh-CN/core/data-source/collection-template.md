@@ -36,16 +36,16 @@ interface CollectionTemplateDefaultOptions {
   /** 继承 */
   inherits?: string | string[];
   /* 字段列表 */
-  fields?: CollectionOptionsV2['fields'];
+  fields?: CollectionOptions['fields'];
 }
 
 class CollectionTemplate {
   app: Application;
-  collectionManager: CollectionManagerV2;
+  collectionManager: CollectionManager;
 
   name: string;
-  Collection?: typeof CollectionV2;
-  transform?: (collection: CollectionOptionsV2, app: Application) => CollectionOptionsV2;
+  Collection?: typeof Collection;
+  transform?: (collection: CollectionOptions, app: Application) => CollectionOptions;
   title?: string;
   color?: string;
   /** 排序 */
@@ -71,9 +71,9 @@ class CollectionTemplate {
 其需要结合 [CollectionManager](./collection-template-manager.md) 使用。
 
 ```ts
-import { Plugin, CollectionV2, CollectionTemplate } from '@nocobase/client';
+import { Plugin, Collection, CollectionTemplate } from '@nocobase/client';
 
-class SqlCollection extends CollectionV2 {
+class SqlCollection extends Collection {
   otherMethods() {
     // ...
   }
@@ -120,10 +120,10 @@ class MyPlugin extends Plugin {
 
 读取 `collectionTemplate.Collection` 字段，并通过 `new collectionTemplate.Collection(collection)` 创建对应的实例。
 
-如果不传递 `Collection`，则会通过 `new CollectionV2(collection)` 创建对应的实例。
+如果不传递 `Collection`，则会通过 `new Collection(collection)` 创建对应的实例。
 
 ```ts
-class SqlCollection extends CollectionV2 {
+class SqlCollection extends Collection {
   otherMethods() {
     // ...
   }

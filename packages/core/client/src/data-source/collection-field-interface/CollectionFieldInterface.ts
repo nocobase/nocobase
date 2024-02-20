@@ -1,5 +1,5 @@
 import type { ISchema } from '@formily/react';
-import type { CollectionFieldOptionsV2 } from '../collection';
+import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 
 export type CollectionFieldInterfaceFactory = new (
@@ -42,6 +42,6 @@ export abstract class CollectionFieldInterface {
   };
   titleUsable?: boolean;
   validateSchema?(fieldSchema: ISchema): Record<string, ISchema>;
-  usePathOptions?(field: CollectionFieldOptionsV2): any;
+  usePathOptions?(field: CollectionFieldOptions): any;
   schemaInitialize?(schema: ISchema, data: any): void;
 }

@@ -10,7 +10,7 @@ import {
   useCurrentAppInfo,
   useTableBlockContext,
   useBlockRequestContext,
-  RecordProvider,
+  RecordProvider_deprecated,
   useToken,
   ActionContextProvider,
 } from '@nocobase/client';
@@ -51,9 +51,9 @@ const GanttRecordViewer = (props) => {
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <RecordProvider record={record}>
+          <RecordProvider_deprecated record={record}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
-          </RecordProvider>
+          </RecordProvider_deprecated>
         </ActionContextProvider>
       </DeleteEventContext.Provider>
     )

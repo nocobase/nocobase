@@ -1,11 +1,11 @@
 import { useForm } from '@formily/react';
-import { useActionContext, useAPIClient, useRecord, useResourceActionContext } from '@nocobase/client';
+import { useActionContext, useAPIClient, useRecord_deprecated, useResourceActionContext } from '@nocobase/client';
 import { useParams } from 'react-router-dom';
 
 export const useSaveRoleResourceAction = () => {
   const form = useForm();
   const api = useAPIClient();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { name } = useParams();

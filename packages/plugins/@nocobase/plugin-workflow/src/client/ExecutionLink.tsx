@@ -2,12 +2,12 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-import { useActionContext, useRecord } from '@nocobase/client';
+import { useActionContext, useRecord_deprecated } from '@nocobase/client';
 import { getWorkflowExecutionsPath } from './constant';
 
 export const ExecutionLink = () => {
   const { t } = useTranslation();
-  const { id } = useRecord();
+  const { id } = useRecord_deprecated();
   const { setVisible } = useActionContext();
   return (
     <Link to={getWorkflowExecutionsPath(id)} onClick={() => setVisible(false)}>

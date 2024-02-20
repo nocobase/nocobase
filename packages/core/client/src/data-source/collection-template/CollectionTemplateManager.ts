@@ -1,12 +1,12 @@
-import type { DataSourceManagerV2 } from '../data-source';
+import type { DataSourceManager } from '../data-source';
 import type { CollectionTemplate, CollectionTemplateFactory } from './CollectionTemplate';
 
-export class CollectionTemplateManagerV2 {
+export class CollectionTemplateManager {
   protected collectionTemplateInstances: Record<string, CollectionTemplate> = {};
 
   constructor(
     templateClasses: CollectionTemplateFactory[],
-    public dataSourceManager: DataSourceManagerV2,
+    public dataSourceManager: DataSourceManager,
   ) {
     this.addCollectionTemplates(templateClasses);
   }

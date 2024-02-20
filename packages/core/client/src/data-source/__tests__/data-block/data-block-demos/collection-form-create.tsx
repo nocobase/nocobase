@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
 import { Button, Form, FormProps, Input, InputNumber, notification } from 'antd';
-import { SchemaComponent, useDataBlockResourceV2, withDynamicSchemaProps } from '@nocobase/client';
+import { SchemaComponent, useDataBlockResource, withDynamicSchemaProps } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
 import { createApp } from './createApp';
 
@@ -37,7 +37,7 @@ const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const resource = useDataBlockResourceV2();
+  const resource = useDataBlockResource();
   const onFinish = async (values: DemoFormFieldType) => {
     console.log('values', values);
     await resource.create({
@@ -58,7 +58,7 @@ const collection = 'users';
 const schema: ISchema = {
   type: 'void',
   name: 'root',
-  'x-decorator': 'DataBlockProviderV2',
+  'x-decorator': 'DataBlockProvider',
   'x-decorator-props': {
     collection: collection,
   },

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
-import { RecordProvider, useRecord } from '../../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -57,7 +57,7 @@ export const Action: ComposedAction = observer(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
-    const record = useRecord();
+    const record = useRecord_deprecated();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
@@ -175,9 +175,9 @@ export const Action: ComposedAction = observer(
 
     return wrapSSR(
       shouldResetRecord ? (
-        <RecordProvider parent={record} record={{}}>
+        <RecordProvider_deprecated parent={record} record={{}}>
           {result}
-        </RecordProvider>
+        </RecordProvider_deprecated>
       ) : (
         result
       ),

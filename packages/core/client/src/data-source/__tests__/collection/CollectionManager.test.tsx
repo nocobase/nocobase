@@ -1,9 +1,9 @@
-import { Application, CollectionManagerV2, CollectionTemplate, CollectionV2 } from '@nocobase/client';
+import { Application, CollectionManager, CollectionTemplate, Collection } from '@nocobase/client';
 import collections from '../collections.json';
 import { app } from '../../../application/demos/demo3';
 
 describe('CollectionManager', () => {
-  let collectionManager: CollectionManagerV2;
+  let collectionManager: CollectionManager;
 
   beforeEach(() => {
     const app = new Application({});
@@ -21,7 +21,7 @@ describe('CollectionManager', () => {
       const collections = [{ name: 'test' }];
       collectionManager.addCollections(collections as any[]);
       expect(collectionManager.collectionInstancesArr.length).toBe(1);
-      expect(collectionManager.collectionInstancesMap['test']).instanceOf(CollectionV2);
+      expect(collectionManager.collectionInstancesMap['test']).instanceOf(Collection);
     });
 
     it('should merge with existing collections', () => {
@@ -39,7 +39,7 @@ describe('CollectionManager', () => {
     });
 
     it('custom Collection class', () => {
-      class CustomCollection extends CollectionV2 {}
+      class CustomCollection extends Collection {}
 
       class CustomTemplate extends CollectionTemplate {
         name = 'custom';
@@ -139,7 +139,7 @@ describe('CollectionManager', () => {
 
     it('if collection is object, should return the collection instance', () => {
       const collection = collectionManager.getCollection({ name: 'test' });
-      expect(collection).instanceOf(CollectionV2);
+      expect(collection).instanceOf(Collection);
       expect(collection.name).toBe('test');
     });
   });

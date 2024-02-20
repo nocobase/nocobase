@@ -8,7 +8,7 @@ import {
   useGetSchemaInitializerMenuItems,
   useSchemaInitializer,
 } from '../../application';
-import { CollectionV2 } from '../../data-source/collection/Collection';
+import { Collection } from '../../data-source/collection/Collection';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
@@ -256,7 +256,7 @@ export interface DataBlockInitializerProps {
   icon?: string | React.ReactNode;
   name: string;
   title: string;
-  filter?: (collection: CollectionV2) => boolean;
+  filter?: (collection: Collection) => boolean;
   filterMenuItemChildren?: (item: any, index: number, items: any[]) => boolean;
   /** 如果为 true 则会渲染成 item 的形式，而非 menu */
   isItem?: boolean;

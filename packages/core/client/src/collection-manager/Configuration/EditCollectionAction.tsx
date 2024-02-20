@@ -6,11 +6,11 @@ import omit from 'lodash/omit';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 
@@ -77,7 +77,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 };
 
 export const useValuesFromRecord = (options) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const result = useRequest(
     () =>
       Promise.resolve({
@@ -101,12 +101,12 @@ export const useValuesFromRecord = (options) => {
 };
 
 export const useUpdateCollectionActionAndRefreshCM = (options) => {
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const form = useForm();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk, template } = useRecord();
+  const { [targetKey]: filterByTk, template } = useRecord_deprecated();
   const api = useAPIClient();
   const collectionResource = template === 'sql' ? api.resource('sqlCollection') : resource;
   return {
@@ -125,20 +125,20 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
 };
 
 export const EditCollection = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <EditCollectionAction item={record} {...props} />;
 };
 
 export const EditCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, ...otherProps } = props;
-  const { getTemplate } = useCollectionManager();
+  const { getTemplate } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const { t } = useTranslation();
   const compile = useCompile();
 
   return (
-    <RecordProvider record={record}>
+    <RecordProvider_deprecated record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -171,6 +171,6 @@ export const EditCollectionAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

@@ -1,19 +1,19 @@
 import {
   Application,
   DEFAULT_DATA_SOURCE_NAME,
-  DataSourceManagerProviderV2,
-  DataSourceOptionsV2,
-  DataSourceV2,
+  DataSourceManagerProvider,
+  DataSourceOptions,
+  DataSource,
   SchemaComponent,
   SchemaComponentProvider,
 } from '@nocobase/client';
-import { DataSourceProviderV2, useDataSourceKey } from '../../data-source/DataSourceProvider';
+import { DataSourceProvider, useDataSourceKey } from '../../data-source/DataSourceProvider';
 import { render, screen } from '@nocobase/test/client';
 import React from 'react';
 import { AppSchemaComponentProvider } from '../../../application/AppSchemaComponentProvider';
 
-describe('DataSourceProviderV2', () => {
-  function renderComponent(dataSource?: string, status?: DataSourceOptionsV2['status']) {
+describe('DataSourceProvider', () => {
+  function renderComponent(dataSource?: string, status?: DataSourceOptions['status']) {
     const app = new Application({
       dataSourceManager: {
         collections: [{ name: 'a' }],
@@ -25,12 +25,12 @@ describe('DataSourceProviderV2', () => {
 
       return <div data-testid="demo">{dataSourceKey}</div>;
     };
-    const dataSourceOptions: DataSourceOptionsV2 = {
+    const dataSourceOptions: DataSourceOptions = {
       key: 'test',
       displayName: 'Test',
       status: status,
     };
-    class TestDataSource extends DataSourceV2 {
+    class TestDataSource extends DataSource {
       async getDataSource() {
         return dataSourceOptions;
       }
@@ -40,7 +40,7 @@ describe('DataSourceProviderV2', () => {
     const schema = {
       name: 'root',
       type: 'void',
-      'x-decorator': 'DataSourceProviderV2',
+      'x-decorator': 'DataSourceProvider',
       'x-decorator-props': {
         dataSource,
       },
@@ -49,9 +49,9 @@ describe('DataSourceProviderV2', () => {
 
     render(
       <AppSchemaComponentProvider designable={true}>
-        <DataSourceManagerProviderV2 dataSourceManager={app.dataSourceManager}>
-          <SchemaComponent schema={schema} components={{ Demo, DataSourceProviderV2 }} />
-        </DataSourceManagerProviderV2>
+        <DataSourceManagerProvider dataSourceManager={app.dataSourceManager}>
+          <SchemaComponent schema={schema} components={{ Demo, DataSourceProvider }} />
+        </DataSourceManagerProvider>
       </AppSchemaComponentProvider>,
     );
   }

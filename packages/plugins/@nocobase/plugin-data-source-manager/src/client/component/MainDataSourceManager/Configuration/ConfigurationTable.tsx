@@ -7,12 +7,12 @@ import { CollectionFieldsTable } from '.';
 import {
   useAPIClient,
   useCurrentAppInfo,
-  useRecord,
+  useRecord_deprecated,
   SchemaComponent,
   SchemaComponentContext,
   useCompile,
   useCancelAction,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   AddSubFieldAction,
   EditSubFieldAction,
   CollectionCategroriesContext,
@@ -48,7 +48,7 @@ const useSelectedRowKeys = () => {
 };
 
 const useDestroySubField = () => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const form = useForm();
   return {
     async run() {
@@ -71,13 +71,13 @@ const useBulkDestroySubField = () => {
 
 // 获取当前字段列表
 const useCurrentFields = () => {
-  const record = useRecord();
-  const { getCollectionFields } = useCollectionManager();
+  const record = useRecord_deprecated();
+  const { getCollectionFields } = useCollectionManager_deprecated();
 
   // 仅当当前字段为子表单时，从DataSourceContext中获取已配置的字段列表
   if (record.__parent && record.__parent.interface === 'subTable') {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const ctx = useContext(DataSourceContext);
+    const ctx = useContext(DataSourceContext_deprecated);
     return ctx.dataSource;
   }
 
@@ -91,7 +91,7 @@ const useNewId = (prefix) => {
 
 export const ConfigurationTable = () => {
   const { t } = useTranslation();
-  const { interfaces, getCollections } = useCollectionManager();
+  const { interfaces, getCollections } = useCollectionManager_deprecated();
   const {
     data: { database },
   } = useCurrentAppInfo();

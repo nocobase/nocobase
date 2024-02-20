@@ -8,11 +8,11 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   RecordIndexProvider,
-  RecordProvider,
+  RecordProvider_deprecated,
   SchemaComponent,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCompile,
-  useRecord,
+  useRecord_deprecated,
   useRequest,
   useSchemaInitializerRender,
 } from '@nocobase/client';
@@ -83,11 +83,11 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
   (props) => {
     const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
     const field = useField<ArrayField>();
-    const { name } = useRecord();
+    const { name } = useRecord_deprecated();
     const { t } = useTranslation();
     const compile = useCompile();
     const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
-      useCollectionManager();
+      useCollectionManager_deprecated();
     const {
       showIndex = true,
       useSelectedRowKeys = useDef,
@@ -174,9 +174,9 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
               const index = findIndex(field.value, record);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider record={record}>
+                  <RecordProvider_deprecated record={record}>
                     <RecursionField schema={s} name={index} onlyRenderProperties />
-                  </RecordProvider>
+                  </RecordProvider_deprecated>
                 </RecordIndexProvider>
               );
             },
@@ -205,14 +205,14 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
               const index = findIndex(field.value, record);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider record={record}>
+                  <RecordProvider_deprecated record={record}>
                     <SchemaComponent
                       scope={{ currentCollection: name }}
                       schema={overridingSchema as Schema}
                       name={index}
                       onlyRenderProperties
                     />
-                  </RecordProvider>
+                  </RecordProvider_deprecated>
                 </RecordIndexProvider>
               );
             },

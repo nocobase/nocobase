@@ -1,7 +1,7 @@
 import React from 'react';
-import { useCollection, GeneralSchemaDesigner, useSchemaTemplate } from '@nocobase/client';
+import { useCollection_deprecated, GeneralSchemaDesigner, useSchemaTemplate } from '@nocobase/client';
 export const GanttDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
 
   return (

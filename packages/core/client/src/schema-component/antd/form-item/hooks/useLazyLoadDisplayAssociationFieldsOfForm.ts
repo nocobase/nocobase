@@ -4,9 +4,9 @@ import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useMemo, useRef } from 'react';
 import { useAssociationNames } from '../../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
-import { useRecord } from '../../../../record-provider';
+import { useRecord_deprecated } from '../../../../record-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
@@ -19,10 +19,10 @@ import { isDisplayField } from '../utils';
  * - 这里就是加载这些字段值的地方
  */
 const useLazyLoadDisplayAssociationFieldsOfForm = () => {
-  const { name } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name } = useCollection_deprecated();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const form = useForm();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();

@@ -1,6 +1,6 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
-import { useCollection, useCollectionManager } from '../..';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../..';
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
@@ -17,8 +17,8 @@ const recursiveParent = (schema: Schema) => {
 
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
-  const { getCollectionFields } = useCollectionManager();
-  const collection = useCollection();
+  const { getCollectionFields } = useCollectionManager_deprecated();
+  const collection = useCollection_deprecated();
   let fields = [];
 
   if (fieldSchema['x-initializer']) {
@@ -182,8 +182,8 @@ const useFormCollections = (props) => {
 function useRecordBlocks() {
   const { options } = useSchemaInitializer();
   const { actionInitializers } = options;
-  const collection = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
+  const collection = useCollection_deprecated();
+  const { getChildrenCollections } = useCollectionManager_deprecated();
   const formChildrenCollections = getChildrenCollections(collection.name);
   const hasFormChildCollection = formChildrenCollections?.length > 0;
   const detailChildrenCollections = getChildrenCollections(collection.name, true);
@@ -258,7 +258,7 @@ export const recordBlockInitializers = new SchemaInitializer({
           title: '{{t("Form")}}',
           Component: 'FilterFormBlockInitializer',
           useComponentProps() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             const toManyField = useMemo(
               () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
               [collection.fields],
@@ -276,7 +276,7 @@ export const recordBlockInitializers = new SchemaInitializer({
           title: '{{t("Collapse")}}',
           Component: 'FilterCollapseBlockInitializer',
           useComponentProps() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             const toManyField = useMemo(
               () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
               [collection.fields],

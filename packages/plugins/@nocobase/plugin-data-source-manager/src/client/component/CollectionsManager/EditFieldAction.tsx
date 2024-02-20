@@ -11,15 +11,15 @@ import {
   useAPIClient,
   IField,
   useRequest,
-  RecordProvider,
-  useRecord,
+  RecordProvider_deprecated,
+  useRecord_deprecated,
   ActionContextProvider,
   SchemaComponent,
   useActionContext,
   useCompile,
   useResourceActionContext,
   useCancelAction,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCurrentAppInfo,
 } from '@nocobase/client';
 import { useRemoteCollectionContext } from './CollectionFields';
@@ -129,7 +129,7 @@ const useUpdateCollectionField = () => {
   const { refresh } = useResourceActionContext();
   const { targetCollection } = useRemoteCollectionContext();
   const { name: dataSourceKey } = useParams();
-  const { name: filterByTk } = useRecord();
+  const { name: filterByTk } = useRecord_deprecated();
   return {
     async run() {
       await form.submit();
@@ -153,13 +153,13 @@ const useUpdateCollectionField = () => {
 };
 
 export const EditCollectionField = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <EditFieldAction item={record} {...props} />;
 };
 
 const EditFieldAction = (props) => {
   const { scope, getContainer, item: record, children, ...otherProps } = props;
-  const { getInterface, collections } = useCollectionManager();
+  const { getInterface, collections } = useCollectionManager_deprecated();
   const {
     data: { database: currentDatabase },
   } = useCurrentAppInfo();
@@ -181,7 +181,7 @@ const EditFieldAction = (props) => {
   }, []);
 
   return (
-    <RecordProvider record={record}>
+    <RecordProvider_deprecated record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -230,6 +230,6 @@ const EditFieldAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

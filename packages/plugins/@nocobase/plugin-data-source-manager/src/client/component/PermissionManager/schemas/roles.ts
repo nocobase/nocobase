@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import pick from 'lodash/pick';
 import { useEffect } from 'react';
-import { useRequest, useRecord, useActionContext } from '@nocobase/client';
+import { useRequest, useRecord_deprecated, useActionContext } from '@nocobase/client';
 import { roleCollectionsSchema } from './roleCollections';
 
 const collection = {
@@ -67,7 +67,7 @@ export const roleSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider',
+      'x-component': 'CollectionProvider_deprecated',
       'x-component-props': {
         collection,
       },
@@ -203,7 +203,7 @@ export const roleSchema: ISchema = {
                           'x-decorator': 'Form',
                           'x-decorator-props': {
                             useValues: (options) => {
-                              const record = useRecord();
+                              const record = useRecord_deprecated();
                               const result = useRequest(
                                 () => Promise.resolve({ data: pick(record, ['title', 'name', 'default']) }),
                                 {

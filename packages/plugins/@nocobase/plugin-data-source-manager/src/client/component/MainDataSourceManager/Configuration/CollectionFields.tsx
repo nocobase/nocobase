@@ -5,15 +5,15 @@ import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  RecordProvider_deprecated,
+  useRecord_deprecated,
   useCurrentAppInfo,
-  RecordProvider,
-  useRecord,
   Action,
   useAttach,
   useCompile,
   SchemaComponent,
   Input,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   AddCollectionField,
   EditCollectionField,
   OverridingCollectionField,
@@ -63,13 +63,13 @@ const titlePrompt = 'Default title for each record';
 
 const CurrentFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { resource, targetKey } = props.collectionResource || {};
-  const { [targetKey]: filterByTk, titleField, template } = useRecord();
+  const { [targetKey]: filterByTk, titleField, template } = useRecord_deprecated();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { refreshCM, isTitleField, getTemplate } = useCollectionManager();
+  const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
   const targetTemplate = getTemplate(template);
   const columns: TableColumnProps<any>[] = [
     {
@@ -138,12 +138,12 @@ const CurrentFields = (props) => {
         };
 
         return (
-          <RecordProvider record={record}>
+          <RecordProvider_deprecated record={record}>
             <Space>
               <EditCollectionField role="button" aria-label={`edit-button-${record.name}`} type="primary" />
               <Action.Link {...deleteProps} />
             </Space>
-          </RecordProvider>
+          </RecordProvider_deprecated>
         );
       },
     },
@@ -179,12 +179,12 @@ const CurrentFields = (props) => {
 
 const InheritFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const { resource, targetKey } = props.collectionResource || {};
-  const { [targetKey]: filterByTk, titleField, name } = useRecord();
+  const { [targetKey]: filterByTk, titleField, name } = useRecord_deprecated();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { refreshCM, isTitleField } = useCollectionManager();
+  const { refreshCM, isTitleField } = useCollectionManager_deprecated();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -245,12 +245,12 @@ const InheritFields = (props) => {
         };
 
         return (
-          <RecordProvider record={record}>
+          <RecordProvider_deprecated record={record}>
             <Space>
               <OverridingCollectionField {...overrideProps} />
               <ViewCollectionField {...viewCollectionProps} />
             </Space>
-          </RecordProvider>
+          </RecordProvider_deprecated>
         );
       },
     },
@@ -269,12 +269,12 @@ const InheritFields = (props) => {
 export const CollectionFields = () => {
   const compile = useCompile();
   const field = useField<Field>();
-  const { name, template } = useRecord();
+  const { name, template } = useRecord_deprecated();
   const {
     data: { database },
   } = useCurrentAppInfo();
   const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getTemplate } =
-    useCollectionManager();
+    useCollectionManager_deprecated();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();

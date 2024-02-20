@@ -6,8 +6,8 @@ import classNames from 'classnames';
 import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
-import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
-import { useDataSourceV2 } from '../data-source/data-source/DataSourceProvider';
+import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSource } from '../data-source/data-source/DataSourceProvider';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
@@ -77,9 +77,9 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   );
   const rowCtx = useGridRowContext();
   const ctx = useGridContext();
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
   const dataSources = dm.getDataSources();
-  const dataSourceContext = useDataSourceV2();
+  const dataSourceContext = useDataSource();
   const dataSource = dataSources.length > 1 && dataSourceContext;
 
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)

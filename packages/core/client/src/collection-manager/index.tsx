@@ -6,11 +6,9 @@ export {
   useCollectionFieldsOptions,
   isDeleteButtonDisabled,
 } from './action-hooks';
-export * from './CollectionField';
-export * from './CollectionFieldProvider';
 export * from './CollectionManagerProvider';
 export * from './CollectionManagerSchemaComponentProvider';
-export * from './CollectionProvider';
+export * from './CollectionProvider_deprecated';
 export * from './Configuration';
 export { useFieldInterfaceOptions } from './Configuration/interfaces';
 export * from './context';

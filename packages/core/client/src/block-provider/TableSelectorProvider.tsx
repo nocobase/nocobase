@@ -3,10 +3,10 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useCollectionManager } from '../collection-manager';
+import { useCollectionManager_deprecated } from '../collection-manager';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
-import { RecordProvider, useRecord } from '../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
@@ -53,7 +53,7 @@ const InternalTableSelectorProvider = (props) => {
   //   return <Spin />;
   // }
   return (
-    <RecordProvider record={{}}>
+    <RecordProvider_deprecated record={{}}>
       <TableSelectorContext.Provider
         value={{
           field,
@@ -70,12 +70,12 @@ const InternalTableSelectorProvider = (props) => {
       >
         <RenderChildrenWithAssociationFilter {...props} />
       </TableSelectorContext.Provider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };
 
 const useAssociationNames2 = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const names = getCollectionFields(collection)
     ?.filter((field) => field.target)
     .map((field) => field.name);
@@ -91,7 +91,7 @@ export const recursiveParent = (schema: Schema, component) => {
 };
 
 const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
@@ -140,9 +140,9 @@ const useAssociationNames = (collection) => {
 export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
-  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
-  const record = useRecord();
-  const { getCollection } = useCollectionManager();
+  const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
+  const record = useRecord_deprecated();
+  const { getCollection } = useCollectionManager_deprecated();
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
@@ -270,7 +270,7 @@ export const useTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const ctx = useTableSelectorContext();
   const fieldSchema = useFieldSchema();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
   useEffect(() => {

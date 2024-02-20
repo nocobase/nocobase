@@ -16,10 +16,10 @@ import {
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useCollection, useCollectionManager } from '../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
-import { useRecord } from '../../record-provider';
+import { useRecord_deprecated } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
@@ -105,14 +105,14 @@ export function useCollectValuesToSubmit() {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource } = useBlockRequestContext();
-  const { fields, getField, getTreeParentField, name } = useCollection();
+  const { fields, getField, getTreeParentField, name } = useCollection_deprecated();
   const fieldNames = fields.map((field) => field.name);
   const { fieldSchema } = useActionContext();
   const { getActiveFieldsName } = useFormActiveFields() || {};
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord();
+  const currentRecord = useRecord_deprecated();
 
   return useCallback(async () => {
     const { assignedValues: originalAssignedValues = {}, overwriteValues } = actionSchema?.['x-action-settings'] ?? {};
@@ -259,10 +259,10 @@ export const useAssociationCreateActionProps = () => {
   const { setVisible, fieldSchema } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField, name } = useCollection();
+  const { fields, getField, getTreeParentField, name } = useCollection_deprecated();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
-  const currentRecord = useRecord();
+  const currentRecord = useRecord_deprecated();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { getActiveFieldsName } = useFormActiveFields() || {};
@@ -389,8 +389,8 @@ export const useFilterBlockActionProps = () => {
   const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
-  const { name } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name } = useCollection_deprecated();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
 
   actionField.data = actionField.data || {};
 
@@ -494,7 +494,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { modal } = App.useApp();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
-  const { name, getField } = useCollection();
+  const { name, getField } = useCollection_deprecated();
 
   return {
     async onClick() {
@@ -581,8 +581,8 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionField = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const record = useRecord();
-  const { name, getField } = useCollection();
+  const record = useRecord_deprecated();
+  const { name, getField } = useCollection_deprecated();
   const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
 
   return {
@@ -691,9 +691,9 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { fields, getField } = useCollection();
+  const { fields, getField } = useCollection_deprecated();
   const { field, resource, __parent, service } = useBlockRequestContext();
-  const currentRecord = useRecord();
+  const currentRecord = useRecord_deprecated();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
@@ -783,7 +783,7 @@ export const useUpdateActionProps = () => {
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
-  const { fields, getField, name } = useCollection();
+  const { fields, getField, name } = useCollection_deprecated();
   const compile = useCompile();
   const actionField = useField();
   const { updateAssociationValues } = useFormBlockContext();
@@ -1072,7 +1072,7 @@ export const useAssociationFilterProps = () => {
 };
 
 export const useOptionalFieldList = () => {
-  const { currentFields = [] } = useCollection();
+  const { currentFields = [] } = useCollection_deprecated();
 
   return currentFields.filter((field) => isOptionalField(field) && field.uiSchema.enum);
 };
@@ -1221,7 +1221,7 @@ export function getAssociationPath(str) {
 export const useAssociationNames = (dataSource?: string) => {
   let updateAssociationValues = new Set([]);
   let appends = new Set([]);
-  const { getCollectionJoinField, getCollection } = useCollectionManager(dataSource);
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
   const fieldSchema = useFieldSchema();
   const _getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {

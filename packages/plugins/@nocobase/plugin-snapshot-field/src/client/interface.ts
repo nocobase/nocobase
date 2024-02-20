@@ -1,6 +1,11 @@
 import type { Field } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
-import { CollectionFieldInterface, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
+import {
+  CollectionFieldInterface,
+  interfacesProperties,
+  useCollectionManager_deprecated,
+  useRecord_deprecated,
+} from '@nocobase/client';
 import lodash from 'lodash';
 import { NAMESPACE } from './locale';
 
@@ -10,7 +15,7 @@ const APPENDS = 'appends';
 const TARGET_FIELD = 'targetField';
 
 export const useTopRecord = () => {
-  let record = useRecord();
+  let record = useRecord_deprecated();
 
   while (record && Object.keys(record.__parent).length > 0) {
     record = record.__parent;
@@ -19,7 +24,7 @@ export const useTopRecord = () => {
 };
 
 function useRecordCollection() {
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField } = useCollectionManager_deprecated();
   const record = useTopRecord();
   const formValues = useForm().values;
   return getCollectionField(`${record.name}.${formValues.targetField}`)?.target;
@@ -34,7 +39,7 @@ const onTargetFieldChange = (field: Field) => {
 };
 
 function MakeFieldsPathOptions(fields, appends = []) {
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const options = [];
   fields.forEach((field) => {
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)) {
@@ -125,7 +130,7 @@ export class SnapshotFieldInterface extends CollectionFieldInterface {
   usePathOptions(field) {
     const { appends = [], targetCollection } = field;
     // eslint-disable-next-line
-    const { getCollection } = useCollectionManager();
+    const { getCollection } = useCollectionManager_deprecated();
     const { fields } = getCollection(targetCollection);
 
     const result = MakeFieldsPathOptions(fields, appends);
@@ -171,7 +176,7 @@ export class SnapshotFieldInterface extends CollectionFieldInterface {
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
         multiple: true,
-        useCollection: useRecordCollection,
+        useCollection_deprecated: useRecordCollection,
       },
       'x-reactions': [
         {

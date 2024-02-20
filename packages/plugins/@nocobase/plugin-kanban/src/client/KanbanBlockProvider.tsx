@@ -5,8 +5,8 @@ import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   FixedBlockWrapper,
   BlockProvider,
   useBlockRequestContext,
@@ -16,7 +16,7 @@ import { toColumns } from './Kanban';
 export const KanbanBlockContext = createContext<any>({});
 
 const useGroupField = (props) => {
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const { groupField } = props;
   if (typeof groupField === 'string') {
     return getField(groupField);
@@ -75,7 +75,7 @@ const recursiveProperties = (schema: Schema, component = 'CollectionField', asso
 };
 
 const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager(collection.dataSource);
+  const { getCollectionFields } = useCollectionManager_deprecated(collection.dataSource);
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {

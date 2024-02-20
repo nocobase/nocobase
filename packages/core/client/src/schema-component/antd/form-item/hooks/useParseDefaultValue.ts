@@ -4,9 +4,9 @@ import { reaction } from '@formily/reactive';
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
-import { useRecord, useRecordIndex } from '../../../../../src/record-provider';
+import { useRecord_deprecated, useRecordIndex } from '../../../../../src/record-provider';
 import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
-import { useCollection } from '../../../../collection-manager';
+import { useCollection_deprecated } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/utils/getPath';
@@ -24,10 +24,10 @@ const useParseDefaultValue = () => {
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable, isInSubForm } =
     useFlag() || {};
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
   const { type: formBlockType } = useFormBlockType();

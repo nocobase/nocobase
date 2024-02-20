@@ -4,7 +4,7 @@ import {
   CardItem,
   Plugin,
   CollectionPlugin,
-  DataBlockProviderV2,
+  DataBlockProvider,
   DEFAULT_DATA_SOURCE_NAME,
   DEFAULT_DATA_SOURCE_TITLE,
   LocalDataSource,
@@ -73,7 +73,7 @@ export function createApp(
     ...options,
     components: {
       ...options.components,
-      DataBlockProviderV2,
+      DataBlockProvider,
       CardItem,
     },
     plugins: [CollectionPlugin, MyPlugin, ...(options.plugins || [])],

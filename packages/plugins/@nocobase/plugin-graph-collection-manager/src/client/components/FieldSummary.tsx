@@ -1,5 +1,5 @@
 import { observer } from '@formily/react';
-import { css, useCollectionManager, useCompile } from '@nocobase/client';
+import { css, useCollectionManager_deprecated, useCompile } from '@nocobase/client';
 import { Tag } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 export const FieldSummary = observer(
   (props: any) => {
     const { schemaKey } = props;
-    const { getInterface } = useCollectionManager();
+    const { getInterface } = useCollectionManager_deprecated();
     const compile = useCompile();
     const { t } = useTranslation();
     const schema = getInterface(schemaKey);

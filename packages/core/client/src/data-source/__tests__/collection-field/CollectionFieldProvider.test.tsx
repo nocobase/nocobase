@@ -1,9 +1,9 @@
 import React, { ComponentType } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
-  CollectionFieldProviderV2,
-  CollectionProviderV2,
-  useCollectionFieldV2,
+  CollectionFieldProvider,
+  CollectionProvider,
+  useCollectionField,
   Application,
   SchemaComponentProvider,
   DataSourceApplicationProvider,
@@ -20,11 +20,11 @@ function renderApp(Demo: ComponentType, name?: string) {
     <div data-testid="app">
       <SchemaComponentProvider designable={true}>
         <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
-          <CollectionProviderV2 name="users">
-            <CollectionFieldProviderV2 name={name}>
+          <CollectionProvider name="users">
+            <CollectionFieldProvider name={name}>
               <Demo></Demo>
-            </CollectionFieldProviderV2>
-          </CollectionProviderV2>
+            </CollectionFieldProvider>
+          </CollectionProvider>
         </DataSourceApplicationProvider>
       </SchemaComponentProvider>
     </div>,
@@ -32,9 +32,9 @@ function renderApp(Demo: ComponentType, name?: string) {
 }
 
 describe('CollectionFieldProvider', () => {
-  test('useCollectionFieldV2() should get current field', () => {
+  test('useCollectionField() should get current field', () => {
     const Demo = () => {
-      const field = useCollectionFieldV2();
+      const field = useCollectionField();
       return (
         <>
           <div data-testid="demo">{field.name}</div>

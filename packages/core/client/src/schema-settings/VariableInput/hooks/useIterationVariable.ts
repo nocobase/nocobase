@@ -1,6 +1,6 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
@@ -16,7 +16,7 @@ export const useIterationVariable = ({
   targetFieldSchema,
 }: {
   currentCollection: string;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   schema?: any;
   noDisabled?: boolean;
   /** 消费变量值的字段 */

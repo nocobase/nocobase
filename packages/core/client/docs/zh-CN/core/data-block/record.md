@@ -8,17 +8,17 @@
 interface RecordOptions<DataType = {}, ParentDataType = {}> {
   isNew?: boolean;
   data?: DataType;
-  parentRecord?: RecordV2<ParentDataType>;
+  parentRecord?: Record<ParentDataType>;
   /**
    * 当前记录所属的 collection name
    */
   collectionName?: string;
 }
 
-class RecordV2<DataType = {}, ParentDataType = {}> {
+class Record<DataType = {}, ParentDataType = {}> {
   public isNew?: boolean;
   public data?: DataType;
-  public parentRecord?: RecordV2<ParentDataType>;
+  public parentRecord?: Record<ParentDataType>;
   public collectionName?: string;
   constructor(options: RecordOptions<DataType, ParentDataType>) {}
 
@@ -26,7 +26,7 @@ class RecordV2<DataType = {}, ParentDataType = {}> {
     this.data = data;
   }
 
-  setParentRecord(parentRecord: RecordV2<ParentDataType>) {
+  setParentRecord(parentRecord: Record<ParentDataType>) {
     this.parentRecord = parentRecord;
   }
 }
@@ -39,7 +39,7 @@ class RecordV2<DataType = {}, ParentDataType = {}> {
 Record 类用于提供数据记录，通常情况下对应着后端数据表中的一条记录。以用户表为例，其一条数据对应的 Record 类如下：
 
 ```tsx | pure
-const useRecord = new RecordV2({
+const useRecord = new Record({
   data: {
     "id": 1,
     "roleId": 10,
@@ -137,9 +137,9 @@ const record = new Record({
 ### 基本使用
 
 ```tsx | pure
-import { RecordV2 } from '@nocobase/client';
+import { Record } from '@nocobase/client';
 
-const record = new RecordV2({
+const record = new Record({
   data: {
     name: 'foo',
   }
@@ -149,9 +149,9 @@ const record = new RecordV2({
 ### 创建空记录
 
 ```tsx | pure
-import { RecordV2 } from '@nocobase/client';
+import { Record } from '@nocobase/client';
 
-const record = new RecordV2({
+const record = new Record({
   isNew: true,
 });
 ```
@@ -161,13 +161,13 @@ const record = new RecordV2({
 方式1: 通过构造函数设置
 
 ```tsx | pure
-const parentRecord = new RecordV2({
+const parentRecord = new Record({
   data: {
     foo: 'foo',
   }
 });
 
-const record = new RecordV2({
+const record = new Record({
   data: {
     name: 'bar',
   },
@@ -178,13 +178,13 @@ const record = new RecordV2({
 方式2: 通过 `setParentRecord` 方法设置
 
 ```tsx | pure
-const parentRecord = new RecordV2({
+const parentRecord = new Record({
   data: {
     foo: 'foo',
   }
 });
 
-const record = new RecordV2({
+const record = new Record({
   data: {
     name: 'bar',
   }

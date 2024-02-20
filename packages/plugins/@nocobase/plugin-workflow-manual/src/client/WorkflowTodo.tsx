@@ -13,7 +13,7 @@ import {
   useActionContext,
   useCurrentUserContext,
   useFormBlockContext,
-  useRecord,
+  useRecord_deprecated,
   useTableBlockContext,
   ExtendCollectionsProvider,
 } from '@nocobase/client';
@@ -210,7 +210,7 @@ const UserColumn = observer(
 );
 
 function UserJobStatusColumn(props) {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const labelUnprocessed = useLang('Unprocessed');
   if (record.execution.status && !record.status) {
     return <Tag>{labelUnprocessed}</Tag>;
@@ -454,7 +454,7 @@ function useSubmit() {
 function FlowContextProvider(props) {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const api = useAPIClient();
-  const { id } = useRecord();
+  const { id } = useRecord_deprecated();
   const [flowContext, setFlowContext] = useState<any>(null);
   const [node, setNode] = useState<any>(null);
 
@@ -528,7 +528,7 @@ function FlowContextProvider(props) {
 
 function useFormBlockProps() {
   const { userJob, execution } = useFlowContext();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { data: user } = useCurrentUserContext();
   const { form } = useFormBlockContext();
 
@@ -555,7 +555,7 @@ function useDetailsBlockProps() {
 
 function FooterStatus() {
   const compile = useCompile();
-  const { status, updatedAt } = useRecord();
+  const { status, updatedAt } = useRecord_deprecated();
   const statusOption = JobStatusOptionsMap[status];
   return status ? (
     <Space>
@@ -575,7 +575,7 @@ function FooterStatus() {
 
 function Drawer() {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status } = useRecord();
+  const { id, node, workflow, status } = useRecord_deprecated();
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>

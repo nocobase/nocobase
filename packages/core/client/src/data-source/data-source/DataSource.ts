@@ -1,32 +1,29 @@
-import type { CollectionOptionsV2 } from '../collection';
-import type { DataSourceManagerV2 } from './DataSourceManager';
+import type { CollectionOptions } from '../collection';
+import type { DataSourceManager } from './DataSourceManager';
 
-import { CollectionManagerV2 } from '../collection';
+import { CollectionManager } from '../collection';
 
-type LoadCallback = (collections: CollectionOptionsV2[]) => void;
+type LoadCallback = (collections: CollectionOptions[]) => void;
 
-export interface DataSourceOptionsV2 {
+export interface DataSourceOptions {
   key: string;
   displayName: string;
-  collections?: CollectionOptionsV2[];
+  collections?: CollectionOptions[];
   errorMessage?: string;
   status?: 'loaded' | 'loading-failed' | 'loading' | 'reloading';
 }
 
-export type DataSourceFactory = new (
-  options: DataSourceOptionsV2,
-  dataSourceManager: DataSourceManagerV2,
-) => DataSourceV2;
+export type DataSourceFactory = new (options: DataSourceOptions, dataSourceManager: DataSourceManager) => DataSource;
 
-export abstract class DataSourceV2 {
-  collectionManager: CollectionManagerV2;
+export abstract class DataSource {
+  collectionManager: CollectionManager;
   protected reloadCallbacks: LoadCallback[] = [];
 
   constructor(
-    protected options: DataSourceOptionsV2,
-    public dataSourceManager: DataSourceManagerV2,
+    protected options: DataSourceOptions,
+    public dataSourceManager: DataSourceManager,
   ) {
-    this.collectionManager = new CollectionManagerV2(options.collections, this);
+    this.collectionManager = new CollectionManager(options.collections, this);
   }
 
   get app() {
@@ -57,11 +54,11 @@ export abstract class DataSourceV2 {
     return this.options;
   }
 
-  setOptions(options: Partial<DataSourceOptionsV2>) {
+  setOptions(options: Partial<DataSourceOptions>) {
     Object.assign(this.options, options);
   }
 
-  getOption<Key extends keyof DataSourceOptionsV2>(key: Key): DataSourceOptionsV2[Key] {
+  getOption<Key extends keyof DataSourceOptions>(key: Key): DataSourceOptions[Key] {
     return this.options[key];
   }
 
@@ -74,9 +71,7 @@ export abstract class DataSourceV2 {
     this.reloadCallbacks = this.reloadCallbacks.filter((cb) => cb !== callback);
   }
 
-  abstract getDataSource():
-    | Promise<Omit<Partial<DataSourceOptionsV2>, 'key'>>
-    | Omit<Partial<DataSourceOptionsV2>, 'key'>;
+  abstract getDataSource(): Promise<Omit<Partial<DataSourceOptions>, 'key'>> | Omit<Partial<DataSourceOptions>, 'key'>;
 
   async reload() {
     const dataSource = await this.getDataSource();
@@ -87,7 +82,7 @@ export abstract class DataSourceV2 {
   }
 }
 
-export class LocalDataSource extends DataSourceV2 {
+export class LocalDataSource extends DataSource {
   getDataSource() {
     return {
       collections: this.collections,

@@ -5,21 +5,21 @@
 
 ## Hooks
 
-### useDataSourceManagerV2()
+### useDataSourceManager()
 
 获取 `DataSourceManager` 实例。
 
 - 类型
 
 ```tsx | pure
-function useDataSourceManagerV2(): DataSourceManager;
+function useDataSourceManager(): DataSourceManager;
 ```
 
 - 示例
 
 ```tsx | pure
 const MyComponent = () => {
-  const dataSourceManager = useDataSourceManagerV2();
+  const dataSourceManager = useDataSourceManager();
   dataSourceManager.removeDataSources(['my-data-source']);
 }
 ```

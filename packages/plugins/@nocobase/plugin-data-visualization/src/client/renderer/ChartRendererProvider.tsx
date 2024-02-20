@@ -1,9 +1,9 @@
 import { useFieldSchema } from '@formily/react';
 import {
-  CollectionManagerProviderV2,
+  CollectionManagerProvider,
   MaybeCollectionProvider,
   useAPIClient,
-  useDataSourceManagerV2,
+  useDataSourceManager,
   useRequest,
 } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
@@ -129,7 +129,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   );
 
   return (
-    <CollectionManagerProviderV2 dataSource={dataSource}>
+    <CollectionManagerProvider dataSource={dataSource}>
       <MaybeCollectionProvider collection={collection} dataSource={dataSource}>
         <ConfigProvider card={{ style: { boxShadow: 'none' } }}>
           <ChartRendererContext.Provider value={{ collection, config, transform, service, query }}>
@@ -137,6 +137,6 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
           </ChartRendererContext.Provider>
         </ConfigProvider>
       </MaybeCollectionProvider>
-    </CollectionManagerProviderV2>
+    </CollectionManagerProvider>
   );
 };

@@ -6,8 +6,12 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
-import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
-import { useRecord } from '../../../record-provider';
+import {
+  Collection_deprecated,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+} from '../../../collection-manager';
+import { useRecord_deprecated } from '../../../record-provider';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import {
   SchemaSettingsDataScope,
@@ -171,8 +175,8 @@ export const formItemSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { dn, refresh } = useDesignable();
         const validateSchema = useValidateSchema();
-        const { getCollectionJoinField } = useCollectionManager();
-        const { getField } = useCollection();
+        const { getCollectionJoinField } = useCollectionManager_deprecated();
+        const { getField } = useCollection_deprecated();
         const collectionField =
           getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
         return {
@@ -314,10 +318,10 @@ export const formItemSettings = new SchemaSettings({
         return isSelectFieldMode && !isFormReadPretty;
       },
       useComponentProps() {
-        const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager();
-        const { getField } = useCollection();
+        const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
+        const { getField } = useCollection_deprecated();
         const { form } = useFormBlockContext();
-        const record = useRecord();
+        const record = useRecord_deprecated();
         const field = useField();
         const fieldSchema = useFieldSchema();
         const collectionField =
@@ -769,7 +773,7 @@ export const formItemSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { dn } = useDesignable();
         const options = useOptions();
-        const collectionField = useCollectionField();
+        const collectionField = useFormItemCollectionField();
         return {
           title: t('Title field'),
           options,
@@ -799,7 +803,7 @@ export const formItemSettings = new SchemaSettings({
       name: 'dateFormat',
       Component: SchemaSettingsDateFormat,
       useVisible() {
-        const collectionField = useCollectionField();
+        const collectionField = useFormItemCollectionField();
         const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
         return isDateField;
       },
@@ -815,8 +819,8 @@ export const formItemSettings = new SchemaSettings({
       type: 'select',
       useVisible() {
         const readPretty = useIsFieldReadPretty();
-        const collectionField = useCollectionField();
-        const { getCollection } = useCollectionManager();
+        const collectionField = useFormItemCollectionField();
+        const { getCollection } = useCollectionManager_deprecated();
         const targetCollection = getCollection(collectionField?.target);
         const isAttachmentField =
           ['attachment'].includes(collectionField?.interface) || targetCollection?.template === 'file';
@@ -865,7 +869,7 @@ export const formItemSettings = new SchemaSettings({
         const field = useField<Field>();
         const fieldSchema = useFieldSchema();
         const { dn } = useDesignable();
-        const collectionField = useCollectionField();
+        const collectionField = useFormItemCollectionField();
         const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
         return {
           title: t('Tag color field'),
@@ -892,7 +896,7 @@ export const formItemSettings = new SchemaSettings({
       name: 'divider',
       type: 'divider',
       useVisible() {
-        const collectionField = useCollectionField();
+        const collectionField = useFormItemCollectionField();
         return !!collectionField;
       },
     },
@@ -917,13 +921,13 @@ export const formItemSettings = new SchemaSettings({
 });
 
 function useIsAddNewForm() {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const isAddNewForm = _.isEmpty(_.omit(record, ['__parent', '__collectionName']));
 
   return isAddNewForm;
 }
 
-function isFileCollection(collection: Collection) {
+function isFileCollection(collection: Collection_deprecated) {
   return collection?.template === 'file';
 }
 
@@ -937,23 +941,23 @@ function useIsFieldReadPretty() {
   return field.readPretty;
 }
 
-function useCollectionField() {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+function useFormItemCollectionField() {
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   return collectionField;
 }
 
 function useIsAssociationField() {
-  const collectionField = useCollectionField();
+  const collectionField = useFormItemCollectionField();
   const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
   return isAssociationField;
 }
 
 function useIsFileField() {
-  const { getCollection } = useCollectionManager();
-  const collectionField = useCollectionField();
+  const { getCollection } = useCollectionManager_deprecated();
+  const collectionField = useFormItemCollectionField();
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection as any);
   return isFileField;
@@ -974,9 +978,9 @@ export function useIsSelectFieldMode() {
 }
 
 function useValidateSchema() {
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
-  const collectionField = useCollectionField();
+  const collectionField = useFormItemCollectionField();
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   return validateSchema;
@@ -992,9 +996,9 @@ function useShowFieldMode() {
 }
 
 function useOptions() {
-  const { getCollectionFields, isTitleField } = useCollectionManager();
+  const { getCollectionFields, isTitleField } = useCollectionManager_deprecated();
   const compile = useCompile();
-  const collectionField = useCollectionField();
+  const collectionField = useFormItemCollectionField();
   const targetFields = collectionField?.target
     ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];

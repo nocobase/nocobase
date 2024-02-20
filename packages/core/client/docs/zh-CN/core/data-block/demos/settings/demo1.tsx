@@ -2,8 +2,8 @@ import React from 'react';
 import {
   SchemaComponent,
   SchemaSettings,
-  useDataBlockRequestV2,
-  useDataBlockV2,
+  useDataBlockRequest,
+  useDataBlock,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 
@@ -14,7 +14,7 @@ import { ISchema } from '@formily/json-schema';
 const schema: ISchema = {
   type: 'void',
   name: 'root',
-  'x-decorator': 'DataBlockProviderV2',
+  'x-decorator': 'DataBlockProvider',
   'x-decorator-props': {
     collection: 'users',
     action: 'list',
@@ -38,9 +38,9 @@ const MyTable = withDynamicSchemaProps(Table);
 
 function useTableProps(): TableProps<any> {
   // 获取
-  const { props } = useDataBlockV2();
+  const { props } = useDataBlock();
   const { bordered } = props;
-  const { data, loading } = useDataBlockRequestV2<any[]>();
+  const { data, loading } = useDataBlockRequest<any[]>();
   return {
     bordered,
     loading,
@@ -70,7 +70,7 @@ const MyTableSettings = new SchemaSettings({
       type: 'switch',
       useComponentProps() {
         // 获取
-        const { props: blockSettingsProps, dn } = useDataBlockV2();
+        const { props: blockSettingsProps, dn } = useDataBlock();
         const { bordered } = blockSettingsProps;
 
         return {

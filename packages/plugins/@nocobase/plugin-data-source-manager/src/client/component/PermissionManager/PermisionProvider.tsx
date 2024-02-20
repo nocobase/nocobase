@@ -2,7 +2,7 @@ import { message } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useRecord } from '@nocobase/client';
+import { useAPIClient, useRecord_deprecated } from '@nocobase/client';
 
 export const SettingCenterPermissionProvider = (props) => {
   const { currentRecord } = useContext(PermissionContext);
@@ -16,7 +16,7 @@ export const PermissionContext = createContext<any>(null);
 
 export const PermissionProvider = (props) => {
   const api = useAPIClient();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { t } = useTranslation();
   const { snippets } = record;
   const { name: dataSourceKey } = useParams();

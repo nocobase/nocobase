@@ -2,7 +2,12 @@ import { ArrayField } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Spin, Tag } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
-import { SchemaComponentOptions, RecordProvider, useCreateActionProps as useCAP, useProps } from '@nocobase/client';
+import {
+  SchemaComponentOptions,
+  RecordProvider_deprecated,
+  useCreateActionProps as useCAP,
+  useProps,
+} from '@nocobase/client';
 import { Board } from './board';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 import { useStyles } from './style';
@@ -105,7 +110,7 @@ export const Kanban: any = observer(
             const cardIndex = column?.cards?.indexOf(card);
             return (
               schemas.card && (
-                <RecordProvider record={card}>
+                <RecordProvider_deprecated record={card}>
                   <KanbanCardContext.Provider
                     value={{
                       setDisableCardDrag,
@@ -120,7 +125,7 @@ export const Kanban: any = observer(
                   >
                     <RecursionField name={schemas.card.name} schema={schemas.card} />
                   </KanbanCardContext.Provider>
-                </RecordProvider>
+                </RecordProvider_deprecated>
               )
             );
           }}

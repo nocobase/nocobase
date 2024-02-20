@@ -4,15 +4,15 @@ import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   CollectionCategroriesContext,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
   StablePopover,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCompile,
   useCurrentAppInfo,
-  useRecord,
+  useRecord_deprecated,
 } from '@nocobase/client';
 import { Badge, Tag } from 'antd';
 import lodash from 'lodash';
@@ -56,8 +56,8 @@ const OperationButton: any = React.memo((props: any) => {
   };
   // 获取当前字段列表
   const useCurrentFields = () => {
-    const record = useRecord();
-    const { getCollectionFields } = useCollectionManager();
+    const record = useRecord_deprecated();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     const fields = getCollectionFields(record.collectionName || record.name) as any[];
     return fields;
   };
@@ -206,7 +206,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
   } = node;
   const compile = useCompile();
   const { styles } = useStyles();
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const [isHovered, setIsHovered] = useState(false);
   const CollectionConten = React.useCallback((data) => {
     const { type, name, primaryKey, allowNull, autoIncrement } = data;
@@ -422,7 +422,7 @@ const Entity: React.FC<{
         <div className={styles.tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
-              <CollectionProvider collection={collection}>
+              <CollectionProvider_deprecated collection={collection}>
                 <SchemaComponent
                   scope={{
                     useUpdateCollectionActionAndRefreshCM,
@@ -489,7 +489,7 @@ const Entity: React.FC<{
                     },
                   }}
                 />
-              </CollectionProvider>
+              </CollectionProvider_deprecated>
             </CollectionNodeProvder>
           </SchemaComponentProvider>
         </div>

@@ -2,9 +2,9 @@ import {
   useBlockRequestContext,
   useTableBlockContext,
   useCompile,
-  useRecord,
+  useRecord_deprecated,
   useVariables,
-  useCollection,
+  useCollection_deprecated,
   useLocalVariables,
   isVariable,
   transformVariableValue,
@@ -31,8 +31,8 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionField: any = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const record = useRecord();
-  const { name, getField } = useCollection();
+  const record = useRecord_deprecated();
+  const { name, getField } = useCollection_deprecated();
   const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
 
   return {

@@ -1,7 +1,7 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useRequest } from '../../../api-client';
-import { useRecord } from '../../../record-provider';
+import { useRecord_deprecated } from '../../../record-provider';
 import { useActionContext } from '../action';
 import { Select, defaultFieldNames } from '../select';
 import { getValues } from './shared';
@@ -11,7 +11,7 @@ export const ReadPretty = observer(
     const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const field = useField<any>();
     const fieldSchema = useFieldSchema();
-    const record = useRecord();
+    const record = useRecord_deprecated();
     const { snapshot } = useActionContext();
 
     const { data } = useRequest<{

@@ -5,8 +5,12 @@ import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
-import { useRecord } from '../../record-provider';
+import {
+  CollectionProvider_deprecated,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+} from '../../collection-manager';
+import { useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
@@ -60,7 +64,7 @@ export function useAclCheck(actionPath) {
 function useAclCheckFn() {
   const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   function actionAclCheck(actionPath: string) {
     const resource = collection.resource;
     const parseAction = (actionPath: string, options: any = {}) => {
@@ -95,13 +99,13 @@ function useAclCheckFn() {
 export const CreateRecordAction = observer(
   (props: any) => {
     const [visible, setVisible] = useState(false);
-    const collection = useCollection();
+    const collection = useCollection_deprecated();
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const [currentCollection, setCurrentCollection] = useState(collection.name);
     const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
-    const values = useRecord();
+    const values = useRecord_deprecated();
     const ctx = useActionContext();
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values } as any });
@@ -132,9 +136,9 @@ export const CreateRecordAction = observer(
               setCurrentCollectionDataSource(collectionData.dataSource);
             }}
           />
-          <CollectionProvider name={currentCollection} dataSource={currentCollectionDataSource}>
+          <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-          </CollectionProvider>
+          </CollectionProvider_deprecated>
         </ActionContextProvider>
       </div>
     );
@@ -158,7 +162,7 @@ function getLinkageCollection(str, form, field) {
 export const CreateAction = observer(
   (props: any) => {
     const { onClick } = props;
-    const collection = useCollection();
+    const collection = useCollection_deprecated();
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const form = useForm();
@@ -170,7 +174,7 @@ export const CreateAction = observer(
     const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
     // antd v5 danger type is deprecated
     const componentType = field.componentProps.type === 'danger' ? undefined : field.componentProps.type || 'primary';
-    const { getChildrenCollections } = useCollectionManager();
+    const { getChildrenCollections } = useCollectionManager_deprecated();
     const totalChildCollections = getChildrenCollections(collection.name);
     const inheritsCollections = useMemo(() => {
       return enableChildren
@@ -192,7 +196,7 @@ export const CreateAction = observer(
         });
     }, [enableChildren, totalChildCollections]);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
-    const values = useRecord();
+    const values = useRecord_deprecated();
     const localVariables = useLocalVariables({ currentForm: { values } as any });
     const compile = useCompile();
     const { designable } = useDesignable();
@@ -278,7 +282,7 @@ function FinallyButton({
   form;
   designable: boolean;
 }) {
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (

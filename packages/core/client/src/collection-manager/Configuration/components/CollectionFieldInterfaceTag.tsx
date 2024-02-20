@@ -2,12 +2,12 @@ import { observer } from '@formily/react';
 import { Tag } from 'antd';
 import React from 'react';
 import { useCompile } from '../../../schema-component';
-import { useCollectionManager } from '../../hooks';
+import { useCollectionManager_deprecated } from '../../hooks';
 
 export const CollectionFieldInterfaceTag = observer(
   (props: any) => {
     const { value } = props;
-    const { getInterface } = useCollectionManager();
+    const { getInterface } = useCollectionManager_deprecated();
     const compile = useCompile();
     const schema = getInterface(value);
 

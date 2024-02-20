@@ -1,6 +1,6 @@
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { useMemo } from 'react';
-import { useDataSourceManagerV2 } from '../../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceManager } from '../../data-source/data-source/DataSourceManagerProvider';
 
 export const getOptions = (
   fieldInterfaces: Record<string, CollectionFieldInterface[]>,
@@ -29,7 +29,7 @@ export const getOptions = (
 };
 
 export const useFieldInterfaceOptions = () => {
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
 
   return useMemo(() => {
     const fieldInterfaceInstances = dm.collectionFieldInterfaceManager.getFieldInterfaces();

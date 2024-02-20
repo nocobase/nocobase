@@ -34,7 +34,7 @@ const schema2: ISchema = {
   },
 };
 
-export const CollectionManager = () => {
+export const CollectionManagerPage = () => {
   return (
     <SchemaComponent
       schema={schema2}

@@ -3,12 +3,12 @@ import React from 'react';
 import { useCalendarBlockContext } from '../schema-initializer/CalendarBlockProvider';
 import {
   useFormBlockContext,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useDesignable,
   useSchemaTemplate,
-  useRecord,
-  RecordProvider,
+  useRecord_deprecated,
+  RecordProvider_deprecated,
   GeneralSchemaDesigner,
   FixedBlockDesignerItem,
   removeNullCondition,
@@ -27,18 +27,18 @@ export const CalendarDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
-  const { name, title } = useCollection();
-  const { getCollectionFieldsOptions } = useCollectionManager();
+  const { name, title } = useCollection_deprecated();
+  const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
   const { service } = useCalendarBlockContext();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const template = useSchemaTemplate();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
 
   return (
-    <RecordProvider parent={record} record={{}}>
+    <RecordProvider_deprecated parent={record} record={{}}>
       <GeneralSchemaDesigner template={template} title={title || name}>
         <SchemaSettingsBlockTitleItem />
         <SchemaSettingsSelectItem
@@ -149,6 +149,6 @@ export const CalendarDesigner = () => {
           }}
         />
       </GeneralSchemaDesigner>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

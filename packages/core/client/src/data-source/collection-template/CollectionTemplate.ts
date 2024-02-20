@@ -1,6 +1,6 @@
-import type { CollectionOptionsV2, CollectionV2 } from '../collection';
+import type { CollectionOptions, Collection } from '../collection';
 import type { ISchema } from '@formily/react';
-import type { CollectionTemplateManagerV2 } from './CollectionTemplateManager';
+import type { CollectionTemplateManager } from './CollectionTemplateManager';
 import type { Application } from '../../application/Application';
 
 interface AvailableFieldInterfacesInclude {
@@ -34,17 +34,17 @@ interface CollectionTemplateDefaultOptions {
   /** 继承 */
   inherits?: string | string[];
   /* 字段列表 */
-  fields?: CollectionOptionsV2['fields'];
+  fields?: CollectionOptions['fields'];
   [key: string]: any;
 }
 
 export type CollectionTemplateFactory = new (
-  collectionTemplateManager: CollectionTemplateManagerV2,
+  collectionTemplateManager: CollectionTemplateManager,
 ) => CollectionTemplate;
 export abstract class CollectionTemplate {
-  constructor(public collectionTemplateManager: CollectionTemplateManagerV2) {}
+  constructor(public collectionTemplateManager: CollectionTemplateManager) {}
   name: string;
-  Collection?: typeof CollectionV2;
+  Collection?: typeof Collection;
   title?: string;
   color?: string;
   /** 排序 */
@@ -68,5 +68,5 @@ export abstract class CollectionTemplate {
   supportDataSourceType?: string[];
   notSupportDataSourceType?: string[];
 
-  transform?(collection: CollectionOptionsV2, app: Application): CollectionOptionsV2;
+  transform?(collection: CollectionOptions, app: Application): CollectionOptions;
 }

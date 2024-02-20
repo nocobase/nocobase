@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 import {
   useFormBlockContext,
   CollectionFieldProvider,
-  useCollection,
-  useCollectionField,
+  useCollection_deprecated,
+  useCollectionField_deprecated,
   useCompile,
   useComponent,
 } from '@nocobase/client';
@@ -21,7 +21,7 @@ export const DeletedField = () => {
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { name, interface: interfaceType, uiSchema } = useCollectionField();
+  const { name, interface: interfaceType, uiSchema } = useCollectionField_deprecated();
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -74,7 +74,7 @@ const InternalField: React.FC = (props) => {
 const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
+    <CollectionFieldProvider name={fieldSchema.name}>
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
@@ -93,7 +93,7 @@ export const BulkEditField = (props: any) => {
   const field = useField<Field>();
   const [type, setType] = useState<number>(BulkEditFormItemValueType.ChangedTo);
   const [value, setValue] = useState(null);
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const collectionField = getField(fieldSchema.name) || {};
 
   useEffect(() => {

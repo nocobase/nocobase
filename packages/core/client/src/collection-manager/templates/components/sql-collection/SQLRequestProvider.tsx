@@ -2,14 +2,14 @@ import { useAPIClient, useRequest } from '../../../../api-client';
 import { AsyncDataProvider } from '../../../../async-data-provider';
 import React, { useEffect, useRef } from 'react';
 import { useForm } from '@formily/react';
-import { useRecord } from '../../../../record-provider';
+import { useRecord_deprecated } from '../../../../record-provider';
 
 export const SQLRequestProvider: React.FC<{
   manual?: boolean;
 }> = (props) => {
   const api = useAPIClient();
   const form = useForm();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   let { manual } = props;
   manual = manual === undefined ? true : manual;
 

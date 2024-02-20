@@ -1,11 +1,11 @@
 import React, { FC, useEffect } from 'react';
 import { Button, Form, FormProps, Input, InputNumber, notification } from 'antd';
 import {
-  RecordProviderV2,
+  RecordProvider,
   SchemaComponent,
   UseDataBlockProps,
-  useDataBlockResourceV2,
-  useRecordDataV2,
+  useDataBlockResource,
+  useRecordData,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
@@ -44,8 +44,8 @@ const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const data = useRecordDataV2<DemoFormFieldType>();
-  const resource = useDataBlockResourceV2();
+  const data = useRecordData<DemoFormFieldType>();
+  const resource = useDataBlockResource();
 
   const [form] = Form.useForm();
 
@@ -72,7 +72,7 @@ function useDemoFormProps(): DemoFormProps {
   };
 }
 const useFormBlockDecoratorProps: UseDataBlockProps<'CollectionRecord'> = () => {
-  const record = useRecordDataV2();
+  const record = useRecordData();
   return {
     record,
   };
@@ -84,7 +84,7 @@ const action = 'get';
 const schema: ISchema = {
   type: 'void',
   name: 'root',
-  'x-decorator': 'DataBlockProviderV2',
+  'x-decorator': 'DataBlockProvider',
   'x-use-decorator-props': 'useFormBlockDecoratorProps',
   'x-decorator-props': {
     collection: collection,
@@ -109,9 +109,9 @@ const recordData = {
 const Demo = () => {
   return (
     <>
-      <RecordProviderV2 record={recordData}>
+      <RecordProvider record={recordData}>
         <SchemaComponent schema={schema}></SchemaComponent>
-      </RecordProviderV2>
+      </RecordProvider>
     </>
   );
 };

@@ -14,7 +14,7 @@ import GlobalStyle from './global.style';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { ActionContextProvider, RecordProvider, useProps, i18n } from '@nocobase/client';
+import { ActionContextProvider, RecordProvider_deprecated, useProps, i18n } from '@nocobase/client';
 import { i18nt, useTranslation } from '../../locale';
 
 const Weeks = ['month', 'week', 'day'] as View[];
@@ -163,9 +163,9 @@ const CalendarRecordViewer = (props) => {
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <RecordProvider record={record}>
+          <RecordProvider_deprecated record={record}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
-          </RecordProvider>
+          </RecordProvider_deprecated>
         </ActionContextProvider>
       </DeleteEventContext.Provider>
     )

@@ -6,7 +6,7 @@ import React, { useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
 import { useFormActiveFields } from '../../../block-provider';
-import { Collection } from '../../../collection-manager';
+import { Collection_deprecated } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { useVariables } from '../../../variables';
 import useContextVariable from '../../../variables/hooks/useContextVariable';
@@ -89,7 +89,7 @@ FormItem.Designer = function Designer() {
   );
 };
 
-export function isFileCollection(collection: Collection) {
+export function isFileCollection(collection: Collection_deprecated) {
   return collection?.template === 'file';
 }
 

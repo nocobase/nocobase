@@ -7,12 +7,12 @@ import { useParams } from 'react-router-dom';
 import {
   useAPIClient,
   useCurrentAppInfo,
-  useRecord,
+  useRecord_deprecated,
   SchemaComponent,
   SchemaComponentContext,
   useCompile,
   CollectionCategroriesContext,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCancelAction,
   AddSubFieldAction,
   EditSubFieldAction,
@@ -51,7 +51,7 @@ const useSelectedRowKeys = () => {
 };
 
 const useDestroySubField = () => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const form = useForm();
   return {
     async run() {
@@ -78,7 +78,7 @@ const useNewId = (prefix) => {
 
 export const ConfigurationTable = () => {
   const { t } = useTranslation();
-  const { interfaces } = useCollectionManager();
+  const { interfaces } = useCollectionManager_deprecated();
   const {
     data: { database },
   } = useCurrentAppInfo();

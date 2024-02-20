@@ -1,9 +1,14 @@
-import { CollectionManagerProvider, useCollectionManager, useHistoryCollectionsByNames } from '@nocobase/client';
+import {
+  CollectionManagerProvider_deprecated,
+  ExtendCollectionsProvider,
+  useCollectionManager_deprecated,
+  useHistoryCollectionsByNames,
+} from '@nocobase/client';
 import React from 'react';
 
 export const SnapshotHistoryCollectionProvider: React.FC<{ collectionName: string }> = (props) => {
   const { collectionName } = props;
-  const { collections: allCollections } = useCollectionManager();
+  const { collections: allCollections } = useCollectionManager_deprecated();
 
   // 目标表
   const snapshotTargetCollection = useHistoryCollectionsByNames([collectionName])?.[0];
@@ -29,5 +34,9 @@ export const SnapshotHistoryCollectionProvider: React.FC<{ collectionName: strin
   // 最终替换后的表
   const overridedCollections = [...filterdAllCollection, ...finallyHistoryCollecionts];
 
-  return <CollectionManagerProvider collections={overridedCollections}>{props.children}</CollectionManagerProvider>;
+  return (
+    <ExtendCollectionsProvider collections={overridedCollections}>
+      <CollectionManagerProvider_deprecated>{props.children}</CollectionManagerProvider_deprecated>
+    </ExtendCollectionsProvider>
+  );
 };

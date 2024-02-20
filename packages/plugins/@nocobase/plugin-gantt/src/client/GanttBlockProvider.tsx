@@ -2,7 +2,7 @@ import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
-  useCollection,
+  useCollection_deprecated,
   BlockProvider,
   useBlockRequestContext,
   TableBlockProvider,
@@ -94,7 +94,7 @@ export const useGanttBlockContext = () => {
 export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
   const [tasks, setTasks] = useState<any>([]);
-  const { getPrimaryKey, name, template, writableView } = useCollection();
+  const { getPrimaryKey, name, template, writableView } = useCollection_deprecated();
   const { parseAction } = useACLRoleContext();
   const primaryKey = getPrimaryKey();
   const checkPermission = (record) => {

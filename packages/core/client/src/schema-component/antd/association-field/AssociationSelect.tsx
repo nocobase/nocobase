@@ -6,7 +6,7 @@ import { Space, message } from 'antd';
 import { isFunction } from 'mathjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RecordProvider, useAPIClient } from '../../../';
+import { RecordProvider_deprecated, useAPIClient } from '../../../';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -134,7 +134,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
         ></RemoteSelect>
 
         {(addMode === 'modalAdd' || isAllowAddNew) && (
-          <RecordProvider record={null}>
+          <RecordProvider_deprecated record={null}>
             <RecursionField
               onlyRenderProperties
               basePath={field.address}
@@ -143,7 +143,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
                 return s['x-component'] === 'Action';
               }}
             />
-          </RecordProvider>
+          </RecordProvider_deprecated>
         )}
       </Space.Compact>
     </div>

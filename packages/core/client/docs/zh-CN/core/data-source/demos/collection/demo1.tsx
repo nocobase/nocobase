@@ -1,17 +1,17 @@
 import React from 'react';
-import { CollectionProviderV2, useCollectionV2 } from '@nocobase/client';
+import { CollectionProvider, useCollection } from '@nocobase/client';
 import { createApp } from '../createApp';
 
 const Demo = () => {
-  const collection = useCollectionV2();
+  const collection = useCollection();
   return <pre>{JSON.stringify(collection.getField('username'), null, 2)}</pre>;
 };
 
 const Root = () => {
   return (
-    <CollectionProviderV2 name="users">
+    <CollectionProvider name="users">
       <Demo />
-    </CollectionProviderV2>
+    </CollectionProvider>
   );
 };
 

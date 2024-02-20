@@ -13,7 +13,7 @@ import {
   SchemaInitializer,
   SchemaInitializerItem,
   gridRowColWrap,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useDesignable,
   useGlobalTheme,
   useSchemaInitializerItem,
@@ -99,7 +99,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   const { theme } = useGlobalTheme();
   const { insert } = props;
   const itemConfig = useSchemaInitializerItem();
-  const { getCollectionJoinField, getInterface } = useCollectionManager();
+  const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
   const sourceFields = useChartFilterSourceFields();
   const { options: fieldComponents, values: fieldComponentValues } = useFieldComponents();
   const handleClick = useCallback(async () => {
@@ -227,7 +227,7 @@ export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitiali
       name: 'displayFields',
       title: '{{ t("Display fields") }}',
       useChildren: () => {
-        const { getCollection } = useCollectionManager();
+        const { getCollection } = useCollectionManager_deprecated();
         const { getChartCollections } = useChartData();
         const { getChartFilterFields } = useChartFilter();
         const collections = getChartCollections();

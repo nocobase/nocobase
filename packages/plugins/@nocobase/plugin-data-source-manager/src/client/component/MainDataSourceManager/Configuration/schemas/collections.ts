@@ -4,13 +4,13 @@ import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, i18n } from '@nocobase/client';
 import { CollectionCategory, CollectionTemplateTag } from '@nocobase/client';
-import type { CollectionOptionsV2 } from '@nocobase/client';
+import type { CollectionOptions } from '@nocobase/client';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
 };
 
-export const collection: CollectionOptionsV2 = {
+export const collection: CollectionOptions = {
   name: 'collections',
   filterTargetKey: 'name',
   targetKey: 'name',

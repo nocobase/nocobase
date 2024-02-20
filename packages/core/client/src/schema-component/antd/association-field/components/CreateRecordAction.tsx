@@ -1,6 +1,6 @@
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useState } from 'react';
-import { CollectionProvider, useCollectionManager } from '../../../../collection-manager';
+import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../../collection-manager';
 import { CreateAction } from '../../../../schema-initializer/components';
 import { ActionContextProvider, useActionContext } from '../../action';
 import { useAssociationFieldContext, useInsertSchema } from '../hooks';
@@ -11,7 +11,7 @@ export const CreateRecordAction = observer(
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const ctx = useActionContext();
-    const { getCollection } = useCollectionManager();
+    const { getCollection } = useCollectionManager_deprecated();
     const insertAddNewer = useInsertSchema('AddNewer');
     const { options: collectionField } = useAssociationFieldContext();
     const [visibleAddNewer, setVisibleAddNewer] = useState(false);
@@ -25,10 +25,10 @@ export const CreateRecordAction = observer(
       setCurrentDataSource(collectionData.dataSource);
     };
     return (
-      <CollectionProvider name={collectionField?.target}>
+      <CollectionProvider_deprecated name={collectionField?.target}>
         <CreateAction {...props} onClick={(arg) => addbuttonClick(arg)} />
         <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
-          <CollectionProvider name={currentCollection} dataSource={currentDataSource}>
+          <CollectionProvider_deprecated name={currentCollection} dataSource={currentDataSource}>
             <RecursionField
               onlyRenderProperties
               basePath={field.address}
@@ -37,9 +37,9 @@ export const CreateRecordAction = observer(
                 return s['x-component'] === 'AssociationField.AddNewer';
               }}
             />
-          </CollectionProvider>
+          </CollectionProvider_deprecated>
         </ActionContextProvider>
-      </CollectionProvider>
+      </CollectionProvider_deprecated>
     );
   },
   { displayName: 'CreateRecordAction' },

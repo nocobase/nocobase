@@ -5,13 +5,13 @@ import { useBlockRequestContext } from '../../block-provider';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 
 export const RecordReadPrettyAssociationFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
 
   const field = itemConfig.field;

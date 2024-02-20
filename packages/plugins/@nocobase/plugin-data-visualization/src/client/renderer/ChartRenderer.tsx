@@ -7,7 +7,7 @@ import {
   SchemaSettingsRemove,
   gridRowColWrap,
   useAPIClient,
-  useCollection,
+  useCollection_deprecated,
   useDesignable,
 } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
@@ -84,7 +84,7 @@ ChartRenderer.Designer = function Designer() {
   const field = useField();
   const schema = useFieldSchema();
   const { insertAdjacent } = useDesignable();
-  const { name, title, dataSource } = useCollection();
+  const { name, title, dataSource } = useCollection_deprecated();
   return (
     <GeneralSchemaDesigner disableInitializer title={title || name}>
       <SchemaSettingsItem

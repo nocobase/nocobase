@@ -3,8 +3,8 @@ import { Button, Form, FormProps, Input, InputNumber, Select, notification } fro
 import {
   SchemaComponent,
   UseDataBlockProps,
-  useDataBlockResourceV2,
-  useRecordDataV2,
+  useDataBlockResource,
+  useRecordData,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
@@ -45,8 +45,8 @@ const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const data = useRecordDataV2<DemoFormFieldType>();
-  const resource = useDataBlockResourceV2();
+  const data = useRecordData<DemoFormFieldType>();
+  const resource = useDataBlockResource();
 
   const [form] = Form.useForm();
 
@@ -85,7 +85,7 @@ const action = 'get';
 const schema: ISchema = {
   type: 'void',
   name: 'root',
-  'x-decorator': 'DataBlockProviderV2',
+  'x-decorator': 'DataBlockProvider',
   'x-use-decorator-props': 'useBlockDecoratorProps',
   'x-decorator-props': {
     collection: collection,

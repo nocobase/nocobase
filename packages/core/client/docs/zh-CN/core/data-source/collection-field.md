@@ -6,7 +6,7 @@ NocoBase 将字段的 schema 分为 2 部分，一部分在 schema 中，一部�
 const schema = {
   properties: {
     username: {
-      'x-component': 'CollectionFieldV2',
+      'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
     },
   }
@@ -30,7 +30,7 @@ const collection = {
 }
 ```
 
-两者通过 `name: username` 联系起来，`CollectionFieldV2` 会自动读取 schema `name` 属性，并根据 `name` 属性查找 collection 中对应的 `uiSchema` 属性，然后拼接到 schema 中，进行渲染。
+两者通过 `name: username` 联系起来，`CollectionField` 会自动读取 schema `name` 属性，并根据 `name` 属性查找 collection 中对应的 `uiSchema` 属性，然后拼接到 schema 中，进行渲染。
 
 这样做的好处是，对于同一个字段创建的内容，可以在不同的地方共享同一个 schema，当 schema 变化时，只需要修改一处即可。比如通过上面的 `title:  "UserName"` 假设变化 `title: "Name"` 则所有使用到此字段的地方都会变化。
 
@@ -130,7 +130,7 @@ TODO：补全
 
 ## Hooks
 
-### useCollectionFieldV2()
+### useCollectionField()
 
 用于获取字段信息。
 
@@ -152,7 +152,7 @@ const collection = {
   ],
 }
 
-const { uiSchema } = useCollectionFieldV2()
+const { uiSchema } = useCollectionField()
 const required = uiSchema?.required
 ```
 
