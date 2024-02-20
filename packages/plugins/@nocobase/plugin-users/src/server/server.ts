@@ -3,29 +3,10 @@ import { Plugin } from '@nocobase/server';
 import { parse } from '@nocobase/utils';
 import { resolve } from 'path';
 
-import { namespace } from './';
 import * as actions from './actions/users';
-import { enUS, zhCN } from './locale';
 
-export interface UserPluginConfig {
-  name?: string;
-}
-
-export default class UsersPlugin extends Plugin<UserPluginConfig> {
-  constructor(app, options) {
-    super(app, options);
-  }
-
+export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
-    this.app.i18n.addResources('zh-CN', namespace, zhCN);
-    this.app.i18n.addResources('en-US', namespace, enUS);
-    const cmd = this.app.findCommand('install');
-    if (cmd) {
-      cmd.requiredOption('-u, --root-username <rootUsername>', '', process.env.INIT_ROOT_USERNAME);
-      cmd.requiredOption('-e, --root-email <rootEmail>', '', process.env.INIT_ROOT_EMAIL);
-      cmd.requiredOption('-p, --root-password <rootPassword>', '', process.env.INIT_ROOT_PASSWORD);
-      cmd.option('-n, --root-nickname <rootNickname>');
-    }
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
         return {
@@ -120,8 +101,8 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   getInstallingData(options: any = {}) {
     const { INIT_ROOT_NICKNAME, INIT_ROOT_PASSWORD, INIT_ROOT_EMAIL, INIT_ROOT_USERNAME } = process.env;
     const {
-      rootEmail = INIT_ROOT_EMAIL,
-      rootPassword = INIT_ROOT_PASSWORD,
+      rootEmail = INIT_ROOT_EMAIL || 'admin@nocobase.com',
+      rootPassword = INIT_ROOT_PASSWORD || 'admin123',
       rootNickname = INIT_ROOT_NICKNAME || 'Super Admin',
       rootUsername = INIT_ROOT_USERNAME || 'nocobase',
     } = options.users || options?.cliArgs?.[0] || {};
