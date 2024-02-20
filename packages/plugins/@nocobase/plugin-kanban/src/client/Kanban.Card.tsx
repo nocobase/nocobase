@@ -13,7 +13,6 @@ export const KanbanCard: any = observer(
       useContext(KanbanCardContext);
     const fieldSchema = useFieldSchema();
     const [visible, setVisible] = useState(false);
-    const labelDisabled = fieldSchema['x-label-disabled'];
     return (
       <SchemaComponentOptions components={{}} scope={{}}>
         <Card
@@ -65,7 +64,6 @@ export const KanbanCard: any = observer(
             .ant-formily-item-label {
               color: #8c8c8c;
               fontweight: normal;
-              display: ${labelDisabled ? 'none' : 'flex'};
             }
           `)}
         >
