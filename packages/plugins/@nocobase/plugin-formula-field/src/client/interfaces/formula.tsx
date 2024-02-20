@@ -60,7 +60,7 @@ export default {
   group: 'advanced',
   order: 1,
   title: `{{t("Formula", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("Compute a value based on the other fields", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.", { ns: "${NAMESPACE}" })}}`,
   sortable: true,
   default: {
     type: 'formula',

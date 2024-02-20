@@ -13,6 +13,16 @@ type InferredFieldResult = {
 };
 
 export class ViewFieldInference {
+  static extractTypeFromDefinition(typeDefinition) {
+    const leftParenIndex = typeDefinition.indexOf('(');
+
+    if (leftParenIndex === -1) {
+      return typeDefinition.toLowerCase();
+    }
+
+    return typeDefinition.substring(0, leftParenIndex).toLowerCase().trim();
+  }
+
   static async inferFields(options: {
     db: Database;
     viewName: string;
@@ -128,7 +138,7 @@ export class ViewFieldInference {
       };
     }
 
-    const queryType = options.type.toLowerCase().replace(/\(\d+\)/, '');
+    const queryType = this.extractTypeFromDefinition(options.type);
     const mappedType = fieldTypeMap[queryType];
 
     if (isArray(mappedType)) {

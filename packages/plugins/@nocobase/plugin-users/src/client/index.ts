@@ -24,4 +24,4 @@ class UsersPlugin extends Plugin {
   }
 }
 
-export default UsersPlugin;
+export default PluginUsersClient;
