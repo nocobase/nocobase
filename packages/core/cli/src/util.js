@@ -272,11 +272,15 @@ exports.initEnv = function initEnv() {
     PLUGIN_STORAGE_PATH: resolve(process.cwd(), 'storage/plugins'),
     MFSU_AD: 'none',
     WS_PATH: '/ws',
+    SOCKET_PATH: 'storage/gateway.sock',
     NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
     PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
     PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
     SERVER_TSCONFIG_PATH: './tsconfig.server.json',
     PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
+    CACHE_DEFAULT_STORE: 'memory',
+    CACHE_MEMORY_MAX: 2000,
+    LOGGER_BASE_PATH: 'storage/logs',
   };
 
   if (

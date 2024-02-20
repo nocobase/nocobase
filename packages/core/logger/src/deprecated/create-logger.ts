@@ -69,4 +69,4 @@ function createLogger(options: LoggerOptions = {}) {
   return logger;
 }
 
-export { Logger, LoggerOptions, Transports, createLogger };
+export { createLogger, Logger, LoggerOptions, Transports };
