@@ -22,7 +22,7 @@ export const RoleConfigure = () => {
             return useRequest(
               () =>
                 api
-                  .resource(`dataSources/${dataSourceKey}/roles`)
+                  .resource(`dataSources/${dataSourceKey || 'main'}/roles`)
                   .get({
                     filterByTk: currentRecord.name,
                   })

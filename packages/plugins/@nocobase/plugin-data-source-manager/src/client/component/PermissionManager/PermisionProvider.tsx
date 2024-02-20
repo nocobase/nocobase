@@ -31,7 +31,7 @@ export const PermissionProvider = (props) => {
         currentRecord,
         update: async (field, form) => {
           await api.request({
-            url: `dataSources/${dataSourceKey}/roles:update`,
+            url: `dataSources/${dataSourceKey || 'main'}/roles:update`,
             data: form.values,
             method: 'post',
             params: { filterByTk: record.name },

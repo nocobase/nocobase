@@ -16,7 +16,7 @@ export const useRoleResourceValues = (options) => {
         appends: ['actions', 'actions.scope'],
         filterByTk: record.name,
         filter: {
-          dataSourceKey: name,
+          dataSourceKey: name || 'main',
           name: record.name,
         },
       },

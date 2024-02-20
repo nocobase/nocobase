@@ -14,13 +14,13 @@ export const useSaveRoleResourceAction = () => {
       await api.resource('roles.dataSourceResources', record.roleName)[record.exists ? 'update' : 'create']({
         filterByTk: record.name,
         filter: {
-          dataSourceKey: name,
+          dataSourceKey: name || 'main',
           name: record.name,
         },
         values: {
           ...form.values,
           name: record.name,
-          dataSourceKey: name,
+          dataSourceKey: name || 'main',
         },
       });
       ctx.setVisible(false);
