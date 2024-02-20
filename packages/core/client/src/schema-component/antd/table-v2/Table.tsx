@@ -11,7 +11,7 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
@@ -193,6 +193,8 @@ const usePaginationProps = (pagination1, pagination2) => {
   return result.total <= result.pageSize ? false : result;
 };
 
+let count = 0;
+
 export const Table: any = observer(
   (props: {
     useProps?: () => any;
@@ -209,6 +211,8 @@ export const Table: any = observer(
     onExpand?: (flag: boolean, record: any) => void;
     isSubTable?: boolean;
   }) => {
+    console.log('Table', count++);
+    // return null;
     const { token } = useToken();
     const { pagination: pagination1, useProps, onChange, ...others1 } = props;
     const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
@@ -231,7 +235,7 @@ export const Table: any = observer(
     const { expandFlag, allIncludesChildren } = ctx;
     const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
     const paginationProps = usePaginationProps(pagination1, pagination2);
-    const [expandedKeys, setExpandesKeys] = useState([]);
+    const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
     const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
     const [selectedRow, setSelectedRow] = useState([]);
     const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
@@ -260,14 +264,6 @@ export const Table: any = observer(
         }
       `;
     }
-
-    useEffect(() => {
-      if (expandFlag) {
-        setExpandesKeys(allIncludesChildren);
-      } else {
-        setExpandesKeys([]);
-      }
-    }, [expandFlag, allIncludesChildren]);
 
     const components = useMemo(() => {
       return {
