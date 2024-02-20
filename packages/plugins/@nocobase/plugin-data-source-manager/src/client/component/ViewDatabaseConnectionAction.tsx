@@ -25,6 +25,7 @@ export const ViewDatabaseConnectionAction = () => {
     >
       <Button
         type="link"
+        style={{ padding: '0px' }}
         disabled={!record.enabled}
         onClick={() => {
           navigate(getConnectionCollectionPath(record.key));
