@@ -8,7 +8,7 @@ export { default as storageTypes } from './storages';
 
 export default class PluginFileManager extends Plugin {
   storageType() {
-    return process.env.DEFAULT_STORAGE_TYPE ?? 'local';
+    return 'local';
   }
 
   async loadStorages(options?: { transaction: any }) {

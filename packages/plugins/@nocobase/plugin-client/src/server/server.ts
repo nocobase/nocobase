@@ -13,25 +13,14 @@ async function getLang(ctx) {
   if (enabledLanguages.includes(currentUser?.appLang)) {
     lang = currentUser?.appLang;
   }
-  if (ctx.request.query.locale) {
+  if (ctx.request.query.locale && enabledLanguages.includes(ctx.request.query.locale)) {
     lang = ctx.request.query.locale;
   }
   return lang;
 }
 
 export class ClientPlugin extends Plugin {
-  async beforeLoad() {
-    // const cmd = this.app.findCommand('install');
-    // if (cmd) {
-    //   cmd.option('--import-demo');
-    // }
-    this.app.on('afterInstall', async (app, options) => {
-      const [opts] = options?.cliArgs || [{}];
-      if (opts?.importDemo) {
-        //
-      }
-    });
-  }
+  async beforeLoad() {}
 
   async install() {
     const uiSchemas = this.db.getRepository<any>('uiSchemas');
