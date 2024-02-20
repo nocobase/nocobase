@@ -1,8 +1,9 @@
 import { useRecord } from '@nocobase/client';
 import React from 'react';
+import { Button } from 'antd';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { css } from '@emotion/css';
 import { getConnectionCollectionPath } from '../constant';
 
 export const ViewDatabaseConnectionAction = () => {
@@ -10,22 +11,27 @@ export const ViewDatabaseConnectionAction = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   return (
-    <div>
-      <a
-        className={
-          !record.enabled &&
-          css`
-            color: gray;
-            text-decoration: none;
-            cursor: not-allowed;
-          `
-        }
+    <div
+      className={
+        !record.enabled &&
+        css`
+          .ant-btn-link {
+            &:hover {
+              color: rgba(0, 0, 0, 0.25) !important;
+            }
+          }
+        `
+      }
+    >
+      <Button
+        type="link"
+        disabled={!record.enabled}
         onClick={() => {
-          !record.enabled && navigate(getConnectionCollectionPath(record.key));
+          navigate(getConnectionCollectionPath(record.key));
         }}
       >
         {t('Configure')}
-      </a>
+      </Button>
     </div>
   );
 };
