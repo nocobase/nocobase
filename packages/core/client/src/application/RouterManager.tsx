@@ -1,4 +1,4 @@
-import set from 'lodash/set';
+import { set, get } from 'lodash';
 import React, { ComponentType } from 'react';
 import {
   BrowserRouter,
@@ -51,7 +51,7 @@ export class RouterManager {
      * { a: { name: '1', children: { b: { name: '2' }, c: {name: '3'} } } }
      */
     for (const [name, route] of Object.entries(this.routes)) {
-      set(routes, name.split('.').join('.children.'), route);
+      set(routes, name.split('.').join('.children.'), { ...get(routes, name.split('.').join('.children.')), ...route });
     }
 
     /**
