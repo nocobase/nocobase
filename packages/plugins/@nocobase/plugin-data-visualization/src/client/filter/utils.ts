@@ -154,7 +154,7 @@ export const transformValue = (value: any, props: any) => {
       start = start.startOf('day');
       end = end.endOf('day');
     }
-    return [moment2str(start, props), moment2str(end, props)];
+    return [start.toISOString(), end.toISOString()];
   }
   return value;
 };
