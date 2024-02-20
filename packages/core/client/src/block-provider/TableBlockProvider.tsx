@@ -137,7 +137,6 @@ export const useTableBlockProps = () => {
 
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      field.value = [];
       field.value = ctx?.service?.data?.data;
       field?.setInitialValue(ctx?.service?.data?.data);
       field.data = field.data || {};
