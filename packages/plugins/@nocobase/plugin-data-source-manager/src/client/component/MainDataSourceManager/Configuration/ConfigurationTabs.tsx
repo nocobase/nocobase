@@ -25,7 +25,6 @@ import {
 } from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
-import useUrlState from '@ahooksjs/use-url-state';
 
 function Draggable(props) {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -128,7 +127,7 @@ export const ConfigurationTabs = () => {
   const { t } = useTranslation();
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
-  const [activeKey, setActiveKey] = useUrlState({ tab: 'all' });
+  const [activeKey, setActiveKey] = useState({ tab: 'all' });
   const [key, setKey] = useState(activeKey.tab);
   const compile = useCompile();
   const api = useAPIClient();
