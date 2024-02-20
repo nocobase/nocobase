@@ -14,6 +14,14 @@ describe('data source', async () => {
     await app.destroy();
   });
 
+  it('should list main datasource in api', async () => {
+    const listResp = await app.agent().resource('dataSources').list();
+    expect(listResp.status).toBe(200);
+
+    const body = listResp.body;
+    expect(body.meta.count).toBe(1);
+  });
+
   it('should refresh status', async () => {
     class MockDataSource extends DataSource {
       static testConnection(options?: any): Promise<boolean> {
