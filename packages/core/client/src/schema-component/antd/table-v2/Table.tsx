@@ -176,22 +176,26 @@ const SortableRow = (props) => {
   );
 };
 
-const SortHandle = (props) => {
+const SortHandle = memo<{
+  id: string;
+}>((props) => {
   const { id, ...otherProps } = props;
   const { listeners } = useSortable({
     id,
   });
   return <MenuOutlined {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
-};
+});
 
-const TableIndex = (props) => {
+const TableIndex = memo<{
+  index: number;
+}>((props) => {
   const { index, ...otherProps } = props;
   return (
     <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }} {...otherProps}>
       {index}
     </div>
   );
-};
+});
 
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
@@ -210,7 +214,7 @@ const usePaginationProps = (pagination1, pagination2) => {
   return result.total <= result.pageSize ? false : result;
 };
 
-const count = 0;
+let count = 0;
 
 export const Table: any = (props: {
   useProps?: () => any;
@@ -227,6 +231,7 @@ export const Table: any = (props: {
   onExpand?: (flag: boolean, record: any) => void;
   isSubTable?: boolean;
 }) => {
+  console.log('Table', count++);
   const { token } = useToken();
   const { pagination: pagination1, useProps, onChange, ...others1 } = props;
   const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
@@ -423,6 +428,7 @@ export const Table: any = (props: {
             if (record.__index) {
               index = extractIndex(record.__index);
             }
+
             return (
               <div
                 role="button"
