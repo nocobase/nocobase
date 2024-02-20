@@ -452,7 +452,8 @@ export async function updateMultipleAssociation(
       const instance = await association.target.findByPk<any>(item[pk], {
         transaction,
       });
-      if (!instance) {
+
+      if (!instance && !association.target.rawAttributes[pk].autoIncrement) {
         needCreate = true;
       }
     }
