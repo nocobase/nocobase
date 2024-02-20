@@ -164,6 +164,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (!dataSource) {
         return item;
       }
+
       if (appendCollections) {
         const collections = dataSource.collectionManager.getCollections();
 
