@@ -2,6 +2,7 @@ import { useRecord } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { css } from '@emotion/css';
 import { getConnectionCollectionPath } from '../constant';
 
 export const ViewDatabaseConnectionAction = () => {
@@ -11,8 +12,16 @@ export const ViewDatabaseConnectionAction = () => {
   return (
     <div>
       <a
+        className={
+          !record.enabled &&
+          css`
+            color: gray;
+            text-decoration: none;
+            cursor: not-allowed;
+          `
+        }
         onClick={() => {
-          navigate(getConnectionCollectionPath(record.key));
+          !record.enabled && navigate(getConnectionCollectionPath(record.key));
         }}
       >
         {t('Configure')}
