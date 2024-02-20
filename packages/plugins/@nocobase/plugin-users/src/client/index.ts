@@ -3,7 +3,7 @@ import { UsersManagement } from './UsersManagement';
 import ACLPlugin from '@nocobase/plugin-acl/client';
 import { RoleUsersManager } from './RoleUsersManager';
 
-class UsersPlugin extends Plugin {
+class PluginUsersClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('organization', {
       title: tval('Organization', { ns: 'users' }),
