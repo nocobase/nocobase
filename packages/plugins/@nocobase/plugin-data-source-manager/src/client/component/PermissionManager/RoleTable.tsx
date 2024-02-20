@@ -25,7 +25,7 @@ export const useAvailableActions = () => {
 };
 
 export const RoleTable = () => {
-  const { name: dataSourceKey } = useParams();
+  const { name } = useParams();
   return (
     <div>
       <SchemaComponentContext.Provider value={{ designable: false }}>
@@ -33,7 +33,7 @@ export const RoleTable = () => {
           <SchemaComponent
             schema={roleSchema}
             components={{ SettingCenterPermissionProvider, PermissionProvider }}
-            scope={{ dataSourceKey }}
+            scope={{ dataSourceKey: name || 'main' }}
           />
         </AvailableActionsProver>
       </SchemaComponentContext.Provider>

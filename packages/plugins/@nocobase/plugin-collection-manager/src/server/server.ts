@@ -360,6 +360,7 @@ export class CollectionManagerPlugin extends Plugin {
         key: 'main',
         type: 'main',
         displayName: 'Main',
+        fixed: true,
         options: {},
       },
     });
