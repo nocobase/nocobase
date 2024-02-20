@@ -1,4 +1,4 @@
-import { CollectionFieldInterface, useDataSourceManagerV2 } from '@nocobase/client';
+import { CollectionFieldInterface, useDataSourceManager } from '@nocobase/client';
 import { useMemo } from 'react';
 
 export const getOptions = (
@@ -28,7 +28,7 @@ export const getOptions = (
 };
 
 export const useFieldInterfaceOptions = () => {
-  const dm = useDataSourceManagerV2();
+  const dm = useDataSourceManager();
 
   return useMemo(() => {
     const fieldInterfaceInstances = dm.collectionFieldInterfaceManager.getFieldInterfaces();
