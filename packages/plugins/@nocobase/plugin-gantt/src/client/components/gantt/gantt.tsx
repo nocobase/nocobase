@@ -1,19 +1,19 @@
 import { css, cx } from '@emotion/css';
-import { createForm } from '@formily/core';
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import {
+  ActionContextProvider,
+  RecordProvider_deprecated,
+  useAPIClient,
+  useBlockRequestContext,
+  useCurrentAppInfo,
+  useParentRecordData,
+  useTableBlockContext,
+  useToken,
+} from '@nocobase/client';
 import { message } from 'antd';
-import { debounce, throttle } from 'lodash';
+import { debounce } from 'lodash';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useAPIClient,
-  useCurrentAppInfo,
-  useTableBlockContext,
-  useBlockRequestContext,
-  RecordProvider_deprecated,
-  useToken,
-  ActionContextProvider,
-} from '@nocobase/client';
 import { useGanttBlockContext } from '../../GanttBlockProvider';
 import { convertToBarTasks } from '../../helpers/bar-helper';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -40,7 +40,7 @@ export const DeleteEventContext = React.createContext({
 });
 const GanttRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  const form = useMemo(() => createForm(), [record]);
+  const parentRecordData = useParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.properties.detail;
   const close = useCallback(() => {
@@ -51,7 +51,7 @@ const GanttRecordViewer = (props) => {
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <RecordProvider_deprecated record={record}>
+          <RecordProvider_deprecated record={record} parent={parentRecordData}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
           </RecordProvider_deprecated>
         </ActionContextProvider>

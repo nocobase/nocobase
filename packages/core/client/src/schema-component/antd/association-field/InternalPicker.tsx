@@ -9,18 +9,21 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
-import { RecordProvider_deprecated } from '../../../';
+import {
+  CollectionProvider_deprecated,
+  RecordProvider_deprecated,
+  useFormBlockContext,
+  useRecordData,
+} from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
-import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -75,6 +78,7 @@ export const InternalPicker = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const isAllowAddNew = fieldSchema['x-add-new'];
     const [selectedRows, setSelectedRows] = useState([]);
+    const recordData = useRecordData();
     const options = useMemo(() => {
       if (value && Object.keys(value).length > 0) {
         const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
@@ -172,7 +176,7 @@ export const InternalPicker = observer(
             />
           </div>
           {isAllowAddNew && (
-            <RecordProvider_deprecated record={null}>
+            <RecordProvider_deprecated isNew record={null} parent={recordData}>
               <RecursionField
                 onlyRenderProperties
                 basePath={field.address}

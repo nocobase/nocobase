@@ -1,7 +1,7 @@
-import React from 'react';
 import { observer } from '@formily/react';
 import { useRecord_deprecated } from '@nocobase/client';
-import { Tag, Select } from 'antd';
+import { Select, Tag } from 'antd';
+import React from 'react';
 
 export const FieldType = observer(
   (props: any) => {

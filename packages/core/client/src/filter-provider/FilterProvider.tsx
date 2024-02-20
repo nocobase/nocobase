@@ -70,11 +70,11 @@ export const FilterBlockProvider: React.FC = ({ children }) => {
 };
 
 /**
- * 用于收集记录当前页面中的数据区块的信息
+ * 用于收集当前页面中的数据区块的信息，用于在过滤区块中使用
  * @param param0
  * @returns
  */
-export const FilterBlockRecord = ({
+export const DataBlockCollector = ({
   children,
   params,
 }: {

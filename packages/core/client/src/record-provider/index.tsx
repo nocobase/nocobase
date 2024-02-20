@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
+import { RecordProvider } from '../data-source';
 import { useCurrentUserContext } from '../user';
 
 export const RecordContext_deprecated = createContext({});
@@ -8,14 +9,23 @@ export const RecordIndexContext = createContext(null);
 /**
  * @deprecated use `RecordProvider` instead
  */
-export const RecordProvider_deprecated: React.FC<{ record: any; parent?: any; collectionName?: string }> = (props) => {
-  const { record, children, collectionName, parent = false } = props;
+export const RecordProvider_deprecated: React.FC<{
+  record: any;
+  parent?: any;
+  isNew?: boolean;
+}> = (props) => {
+  const { record, children, parent, isNew } = props;
   const { name: __collectionName } = useCollection_deprecated();
-  const __parent = useContext(RecordContext_deprecated);
   const value = { ...record };
-  value['__parent'] = parent ? parent : __parent;
-  value['__collectionName'] = collectionName || __collectionName;
-  return <RecordContext_deprecated.Provider value={value}>{children}</RecordContext_deprecated.Provider>;
+  value['__parent'] = parent;
+  value['__collectionName'] = __collectionName;
+  return (
+    <RecordContext_deprecated.Provider value={value}>
+      <RecordProvider isNew={isNew} record={record} parentRecord={parent}>
+        {children}
+      </RecordProvider>
+    </RecordContext_deprecated.Provider>
+  );
 };
 
 export const RecordSimpleProvider: React.FC<{ value: Record<string, any>; children: React.ReactNode }> = (props) => {

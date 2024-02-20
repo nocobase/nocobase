@@ -16,7 +16,7 @@ import {
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useRecord_deprecated } from '../../record-provider';
@@ -583,7 +583,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const variables = useVariables();
   const record = useRecord_deprecated();
   const { name, getField } = useCollection_deprecated();
-  const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
+  const localVariables = useLocalVariables();
 
   return {
     async onClick() {

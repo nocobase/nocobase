@@ -1,33 +1,33 @@
 import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
+import {
+  Action,
+  AddCollectionField,
+  EditCollectionField,
+  Input,
+  isDeleteButtonDisabled,
+  OverridingCollectionField,
+  RecordProvider_deprecated,
+  ResourceActionContext,
+  ResourceActionProvider,
+  SchemaComponent,
+  SyncFieldsAction,
+  SyncSQLFieldsAction,
+  useAttach,
+  useBulkDestroyActionAndRefreshCM,
+  useCollectionManager_deprecated,
+  useCompile,
+  useCurrentAppInfo,
+  useDestroyActionAndRefreshCM,
+  useRecord_deprecated,
+  useResourceActionContext,
+  useResourceContext,
+  ViewCollectionField,
+} from '@nocobase/client';
 import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  RecordProvider_deprecated,
-  useRecord_deprecated,
-  useCurrentAppInfo,
-  Action,
-  useAttach,
-  useCompile,
-  SchemaComponent,
-  Input,
-  useCollectionManager_deprecated,
-  AddCollectionField,
-  EditCollectionField,
-  OverridingCollectionField,
-  SyncFieldsAction,
-  SyncSQLFieldsAction,
-  ViewCollectionField,
-  ResourceActionContext,
-  ResourceActionProvider,
-  useResourceActionContext,
-  useResourceContext,
-  isDeleteButtonDisabled,
-  useBulkDestroyActionAndRefreshCM,
-  useDestroyActionAndRefreshCM,
-} from '@nocobase/client';
 
 import { collection } from './schemas/collectionFields';
 

@@ -3,7 +3,8 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../record-provider';
+import { useParentRecord } from '../data-source/record/RecordProvider';
+import { RecordProvider_deprecated } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
@@ -20,7 +21,7 @@ const InternalDetailsBlockProvider = (props) => {
     [],
   );
   const { resource, service } = useBlockRequestContext();
-  const record = useRecord_deprecated();
+  const parentRecord = useParentRecord();
   const currentRecord = service?.data?.data?.[0] || {};
   const detailsBLockValue = useMemo(() => {
     return {
@@ -34,7 +35,6 @@ const InternalDetailsBlockProvider = (props) => {
 
   const { filter } = useParsedFilter({
     filterOption: service?.params?.[0]?.filter,
-    currentRecord: { ...currentRecord, __parent: record, __collectionName: props.collection },
   });
   useEffect(() => {
     if (!_.isEmpty(filter)) {
@@ -49,7 +49,9 @@ const InternalDetailsBlockProvider = (props) => {
 
   return (
     <DetailsBlockContext.Provider value={detailsBLockValue}>
-      <RecordProvider_deprecated record={currentRecord}>{props.children}</RecordProvider_deprecated>
+      <RecordProvider_deprecated isNew={false} record={currentRecord} parent={parentRecord?.data}>
+        {props.children}
+      </RecordProvider_deprecated>
     </DetailsBlockContext.Provider>
   );
 };

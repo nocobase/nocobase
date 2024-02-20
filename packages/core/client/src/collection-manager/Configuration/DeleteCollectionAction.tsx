@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
-import { Button, message } from 'antd';
-import { useForm } from '@formily/react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
-import { ActionContextProvider, SchemaComponent } from '../../schema-component';
-import * as components from './components';
+import { css } from '@emotion/css';
+import { useForm } from '@formily/react';
+import { Button, message } from 'antd';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
+  useActionContext,
   useCollectionManager_deprecated,
   useResourceActionContext,
   useResourceContext,
-  useActionContext,
 } from '../../';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { ActionContextProvider, SchemaComponent } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
+import * as components from './components';
 
 export const DeleteCollection = (props) => {
   const record = useRecord_deprecated();

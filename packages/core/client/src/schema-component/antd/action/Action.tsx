@@ -7,8 +7,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
+import { useACLActionParamsContext } from '../../../acl';
 import { Icon } from '../../../icon';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../../record-provider';
+import { useRecord_deprecated } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -25,7 +26,6 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
-import { useACLActionParamsContext } from '../../../acl';
 
 export const Action: ComposedAction = observer(
   (props: any) => {
@@ -70,11 +70,6 @@ export const Action: ComposedAction = observer(
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
-
-    // fix https://nocobase.height.app/T-2259
-    const shouldResetRecord = ['create', 'customize:bulkUpdate', 'customize:bulkEdit', 'customize:create'].includes(
-      fieldSchema['x-action'],
-    );
 
     useEffect(() => {
       field.stateOfLinkageRules = {};
@@ -173,15 +168,7 @@ export const Action: ComposedAction = observer(
       </ActionContextProvider>
     );
 
-    return wrapSSR(
-      shouldResetRecord ? (
-        <RecordProvider_deprecated parent={record} record={{}}>
-          {result}
-        </RecordProvider_deprecated>
-      ) : (
-        result
-      ),
-    );
+    return wrapSSR(result);
   },
   { displayName: 'Action' },
 );

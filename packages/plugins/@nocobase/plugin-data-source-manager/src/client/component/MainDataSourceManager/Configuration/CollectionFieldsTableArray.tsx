@@ -1,11 +1,6 @@
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { Table, TableColumnProps } from 'antd';
-import { default as classNames } from 'classnames';
-import { findIndex } from 'lodash';
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   RecordIndexProvider,
   RecordProvider_deprecated,
@@ -16,6 +11,11 @@ import {
   useRequest,
   useSchemaInitializerRender,
 } from '@nocobase/client';
+import { Table, TableColumnProps } from 'antd';
+import { default as classNames } from 'classnames';
+import { findIndex } from 'lodash';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
 const isColumnComponent = (schema: Schema) => {

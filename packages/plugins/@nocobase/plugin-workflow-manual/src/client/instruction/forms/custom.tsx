@@ -16,8 +16,8 @@ import {
   SchemaInitializerItemType,
   SchemaInitializerItems,
   gridRowColWrap,
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
   useRecord_deprecated,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -52,7 +52,7 @@ function CustomFormBlockProvider(props) {
         fields,
       }}
     >
-      <RecordProvider_deprecated record={values} parent={false}>
+      <RecordProvider_deprecated record={values} parent={null}>
         <FormBlockContext.Provider
           value={{
             form,

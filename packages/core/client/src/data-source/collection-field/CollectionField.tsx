@@ -3,10 +3,10 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect, useMemo } from 'react';
-import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
+import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCompile, useComponent } from '../../schema-component';
-import { useFormBlockContext } from '../../block-provider';
 import useIsAllowToSetDefaultValue from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 type Props = {
   component: any;

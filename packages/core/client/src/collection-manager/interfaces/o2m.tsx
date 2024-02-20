@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
-import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 
 export class O2MFieldInterface extends CollectionFieldInterface {
   name = 'o2m';

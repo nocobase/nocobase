@@ -4,6 +4,7 @@ import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
+import { useParentRecordData } from '../data-source/record/RecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider_deprecated, useRecord_deprecated } from '../record-provider';
@@ -49,11 +50,12 @@ const InternalTableSelectorProvider = (props) => {
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
+  const parentRecordData = useParentRecordData();
   // if (service.loading) {
   //   return <Spin />;
   // }
   return (
-    <RecordProvider_deprecated record={{}}>
+    <RecordProvider_deprecated record={{}} parent={parentRecordData}>
       <TableSelectorContext.Provider
         value={{
           field,
@@ -242,7 +244,6 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
 
   const { filter: parsedFilter } = useParsedFilter({
     filterOption: params?.filter,
-    currentRecord: { __parent: record, __collectionName: props.collection },
   });
 
   if (!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) {

@@ -1,13 +1,14 @@
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   RecordProvider_deprecated,
   css,
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCompile,
   useFilterAPI,
+  useParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -15,8 +16,8 @@ import { Button, Space } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
-import { AMapComponent, AMapForwardedRefProps } from './Map';
 import { getSource } from '../../utils';
+import { AMapComponent, AMapForwardedRefProps } from './Map';
 
 export const AMapBlock = (props) => {
   const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
@@ -310,6 +311,7 @@ export const AMapBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
+  const parentRecordData = useParentRecordData();
   const fieldSchema = useFieldSchema();
   const schema = useMemo(
     () =>
@@ -325,7 +327,7 @@ const MapBlockDrawer = (props) => {
   return (
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
-        <RecordProvider_deprecated record={record}>
+        <RecordProvider_deprecated record={record} parent={parentRecordData}>
           <RecursionField schema={schema} name={schema.name} />
         </RecordProvider_deprecated>
       </ActionContextProvider>

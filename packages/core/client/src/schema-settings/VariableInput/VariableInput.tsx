@@ -11,8 +11,8 @@ import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
 import { useBlockCollection } from './hooks/useBlockCollection';
 import { useContextAssociationFields } from './hooks/useContextAssociationFields';
-import { useRecordVariable } from './hooks/useRecordVariable';
-import { useUserVariable } from './hooks/useUserVariable';
+import { useCurrentRecordVariable } from './hooks/useRecordVariable';
+import { useCurrentUserVariable } from './hooks/useUserVariable';
 import { useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
 
@@ -236,14 +236,14 @@ export function useCompatOldVariables(props: {
 }) {
   const { uiSchema, collectionField, noDisabled, targetFieldSchema, blockCollectionName } = props;
   const { t } = useTranslation();
-  const lowLevelUserVariable = useUserVariable({
+  const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 1,
     uiSchema: uiSchema,
     collectionField,
     noDisabled,
     targetFieldSchema,
   });
-  const currentRecordVariable = useRecordVariable({
+  const { currentRecordSettings } = useCurrentRecordVariable({
     schema: uiSchema,
     collectionName: blockCollectionName,
     collectionField,
@@ -304,7 +304,7 @@ export function useCompatOldVariables(props: {
         if (userVariable) {
           userVariable.value = 'currentUser';
         } else {
-          variables.unshift({ ...lowLevelUserVariable, value: 'currentUser' });
+          variables.unshift({ ...currentUserSettings, value: 'currentUser' });
         }
       }
 
@@ -313,7 +313,7 @@ export function useCompatOldVariables(props: {
         if (formVariable) {
           formVariable.value = 'currentRecord';
         } else {
-          variables.unshift({ ...currentRecordVariable, value: 'currentRecord' });
+          variables.unshift({ ...currentRecordSettings, value: 'currentRecord' });
         }
       }
 

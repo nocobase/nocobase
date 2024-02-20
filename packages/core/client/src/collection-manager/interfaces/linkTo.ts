@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { defaultProps } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import { defaultProps } from './properties';
 
 export class LinkToFieldInterface extends CollectionFieldInterface {
   name = 'linkTo';
@@ -41,7 +41,9 @@ export class LinkToFieldInterface extends CollectionFieldInterface {
   // availableTypes = ['belongsToMany'];
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
     if (targetCollection?.titleField && schema['x-component-props']) {
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {

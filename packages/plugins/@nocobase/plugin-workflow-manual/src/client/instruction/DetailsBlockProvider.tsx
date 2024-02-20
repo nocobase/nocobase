@@ -7,10 +7,11 @@ import {
   RecordProvider_deprecated,
   useAPIClient,
   useAssociationNames,
+  useBlockRequestContext,
 } from '@nocobase/client';
 import { useFlowContext } from '@nocobase/plugin-workflow/client';
 import { parse } from '@nocobase/utils/client';
-import React, { useContext, useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 
 function useFlowContextData(dataSource) {
   const { execution, nodes } = useFlowContext();
@@ -61,11 +62,11 @@ export function DetailsBlockProvider(props) {
   };
   const api = useAPIClient();
   const resource = api.resource(props.collection);
-  const __parent = useContext(BlockRequestContext_deprecated);
+  const __parent = useBlockRequestContext();
 
   return (
     <CollectionProvider_deprecated collection={props.collection}>
-      <RecordProvider_deprecated record={values} parent={false}>
+      <RecordProvider_deprecated record={values} parent={null}>
         <BlockRequestContext_deprecated.Provider value={{ block: 'form', field, service, resource, __parent }}>
           <FormBlockContext.Provider
             value={{

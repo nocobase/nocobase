@@ -1,17 +1,15 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
-import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../../../collection-manager';
-import { useFlag } from '../../../flag-provider';
 import { useBlockCollection } from './useBlockCollection';
-import { useDateVariable } from './useDateVariable';
-import { useFormVariable } from './useFormVariable';
-import { useIterationVariable } from './useIterationVariable';
-import { useParentRecordVariable } from './useParentRecordVariable';
-import { useRecordVariable } from './useRecordVariable';
-import { useRoleVariable } from './useRoleVariable';
-import { useUserVariable } from './useUserVariable';
+import { useDatetimeVariable } from './useDateVariable';
+import { useCurrentFormVariable } from './useFormVariable';
+import { useCurrentObjectVariable } from './useIterationVariable';
+import { useCurrentParentRecordVariable } from './useParentRecordVariable';
+import { useCurrentRecordVariable } from './useRecordVariable';
+import { useCurrentRoleVariable } from './useRoleVariable';
+import { useCurrentUserVariable } from './useUserVariable';
 
 interface Props {
   /**
@@ -55,45 +53,45 @@ export const useVariableOptions = ({
   currentIterationCollectionName,
 }: Props) => {
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
-  const { isInSubForm, isInSubTable } = useFlag() || {};
   const { name } = useCollection_deprecated();
   const blockParentCollectionName = record?.__parent?.__collectionName;
-  const userVariable = useUserVariable({
+  const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,
     uiSchema: uiSchema,
     collectionField,
     noDisabled,
     targetFieldSchema,
   });
-  const roleVariable = useRoleVariable({
+  const { currentRoleSettings } = useCurrentRoleVariable({
     uiSchema: uiSchema,
     collectionField,
     noDisabled,
     targetFieldSchema,
   });
-  const dateVariable = useDateVariable({ operator, schema: uiSchema, noDisabled });
-  const formVariable = useFormVariable({
+  const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled });
+  const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
     collectionName: currentFormCollectionName || blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
+    form,
   });
-  const iterationVariable = useIterationVariable({
+  const { currentObjectSettings, shouldDisplayCurrentObject } = useCurrentObjectVariable({
     currentCollection: currentIterationCollectionName || name,
     collectionField,
     schema: uiSchema,
     noDisabled,
     targetFieldSchema,
   });
-  const currentRecordVariable = useRecordVariable({
+  const { currentRecordSettings, shouldDisplayCurrentRecord } = useCurrentRecordVariable({
     schema: uiSchema,
     collectionName: blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
   });
-  const currentParentRecordVariable = useParentRecordVariable({
+  const { currentParentRecordSettings, shouldDisplayCurrentParentRecord } = useCurrentParentRecordVariable({
     schema: uiSchema,
     collectionName: blockParentCollectionName,
     collectionField,
@@ -103,29 +101,25 @@ export const useVariableOptions = ({
 
   return useMemo(() => {
     return [
-      userVariable,
-      roleVariable,
-      dateVariable,
-      form && !form.readPretty && formVariable,
-      (isInSubForm || isInSubTable) && iterationVariable,
-      blockCollectionName && !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) && currentRecordVariable,
-      blockParentCollectionName &&
-        !_.isEmpty(_.omit(record?.__parent, ['__parent', '__collectionName'])) &&
-        currentParentRecordVariable,
+      currentUserSettings,
+      currentRoleSettings,
+      datetimeSettings,
+      shouldDisplayCurrentForm && currentFormSettings,
+      shouldDisplayCurrentObject && currentObjectSettings,
+      shouldDisplayCurrentRecord && currentRecordSettings,
+      shouldDisplayCurrentParentRecord && currentParentRecordSettings,
     ].filter(Boolean);
   }, [
-    userVariable,
-    roleVariable,
-    dateVariable,
-    form,
-    formVariable,
-    isInSubForm,
-    isInSubTable,
-    iterationVariable,
-    blockCollectionName,
-    record,
-    currentRecordVariable,
-    blockParentCollectionName,
-    currentParentRecordVariable,
+    currentUserSettings,
+    currentRoleSettings,
+    datetimeSettings,
+    shouldDisplayCurrentForm,
+    currentFormSettings,
+    shouldDisplayCurrentObject,
+    currentObjectSettings,
+    shouldDisplayCurrentRecord,
+    currentRecordSettings,
+    shouldDisplayCurrentParentRecord,
+    currentParentRecordSettings,
   ]);
 };

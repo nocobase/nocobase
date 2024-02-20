@@ -1,3 +1,5 @@
+export * from './AntdSchemaComponentProvider';
+export { genStyleHook } from './__builtins__';
 export * from './action';
 export * from './appends-tree-select';
 export * from './association-field';
@@ -48,6 +50,5 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
-export { genStyleHook } from './__builtins__';
 
 import './index.less';

@@ -40,13 +40,14 @@ import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
+  AssociationOrCollectionProvider,
   CollectionFieldOptions_deprecated,
-  CollectionProvider_deprecated,
   DataSourceApplicationProvider,
   DatePickerProvider,
   Designable,
   FormDialog,
   FormProvider,
+  RecordProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
@@ -56,13 +57,15 @@ import {
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCompile,
+  useDataBlockProps,
   useDesignable,
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
+  useRecord,
   useRecord_deprecated,
   useSchemaSettingsItem,
   useSortFields,
@@ -92,6 +95,7 @@ import {
 } from '../filter-provider/utils';
 import { FlagProvider, useFlag } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
+import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -969,11 +973,16 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const collection = useCollection_deprecated();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
-  const ctx = useContext(BlockRequestContext_deprecated);
+  const ctx = useBlockRequestContext();
   const upLevelActiveFields = useFormActiveFields();
   const { locale } = useContext(ConfigProvider.ConfigContext);
   const dm = useDataSourceManager();
   const dataSourceKey = useDataSourceKey();
+  const record = useRecord();
+  const { association } = useDataBlockProps() || {};
+
+  // 解决变量`当前对象`值在弹窗中丢失的问题
+  const { formValue: subFormValue } = useSubFormValue();
 
   if (hidden) {
     return null;
@@ -989,38 +998,46 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           { title: schema.title || title, width },
           () => {
             return (
-              <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
-                <Router location={location} navigator={null}>
-                  <BlockRequestContext_deprecated.Provider value={ctx}>
-                    <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
-                      <CollectionProvider_deprecated allowNull name={collection.name}>
-                        <SchemaComponentOptions scope={options.scope} components={options.components}>
-                          <FormLayout
-                            layout={'vertical'}
-                            className={css`
-                              // screen > 576px
-                              @media (min-width: 576px) {
-                                min-width: 520px;
-                              }
-
-                              // screen <= 576px
-                              @media (max-width: 576px) {
-                                min-width: 320px;
-                              }
-                            `}
+              <RecordProvider record={record}>
+                <SubFormProvider value={subFormValue}>
+                  <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
+                    <Router location={location} navigator={null}>
+                      <BlockRequestContext_deprecated.Provider value={ctx}>
+                        <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                          <AssociationOrCollectionProvider
+                            allowNull
+                            collection={collection.name}
+                            association={association}
                           >
-                            <APIClientProvider apiClient={apiClient}>
-                              <ConfigProvider locale={locale}>
-                                <SchemaComponent components={components} scope={scope} schema={schema} />
-                              </ConfigProvider>
-                            </APIClientProvider>
-                          </FormLayout>
-                        </SchemaComponentOptions>
-                      </CollectionProvider_deprecated>
-                    </DataSourceApplicationProvider>
-                  </BlockRequestContext_deprecated.Provider>
-                </Router>
-              </FormActiveFieldsProvider>
+                            <SchemaComponentOptions scope={options.scope} components={options.components}>
+                              <FormLayout
+                                layout={'vertical'}
+                                className={css`
+                                  // screen > 576px
+                                  @media (min-width: 576px) {
+                                    min-width: 520px;
+                                  }
+
+                                  // screen <= 576px
+                                  @media (max-width: 576px) {
+                                    min-width: 320px;
+                                  }
+                                `}
+                              >
+                                <APIClientProvider apiClient={apiClient}>
+                                  <ConfigProvider locale={locale}>
+                                    <SchemaComponent components={components} scope={scope} schema={schema} />
+                                  </ConfigProvider>
+                                </APIClientProvider>
+                              </FormLayout>
+                            </SchemaComponentOptions>
+                          </AssociationOrCollectionProvider>
+                        </DataSourceApplicationProvider>
+                      </BlockRequestContext_deprecated.Provider>
+                    </Router>
+                  </FormActiveFieldsProvider>
+                </SubFormProvider>
+              </RecordProvider>
             );
           },
           theme,

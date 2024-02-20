@@ -8,11 +8,14 @@ import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  CollectionManagerProvider,
+  DataBlockProvider,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
+  useDataBlockProps,
+  useDataBlockRequest,
+  useDataBlockResource,
   useDataSourceHeaders,
   useDesignable,
   useRecord_deprecated,
@@ -20,16 +23,24 @@ import {
 import { ACLCollectionProvider } from '../acl/ACLProvider';
 import {
   CollectionProvider_deprecated,
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
 } from '../collection-manager';
-import { FilterBlockRecord } from '../filter-provider/FilterProvider';
+import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
+import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
 
+/**
+ * @deprecated
+ */
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
+
+/**
+ * @deprecated
+ */
 export const BlockRequestContext_deprecated = createContext<{
   block?: string;
   props?: any;
@@ -42,7 +53,8 @@ export const BlockRequestContext_deprecated = createContext<{
 }>({});
 
 export const useBlockResource = () => {
-  return useContext(BlockResourceContext);
+  const resource = useDataBlockResource();
+  return useContext(BlockResourceContext) || resource;
 };
 
 interface UseResourceProps {
@@ -54,7 +66,7 @@ interface UseResourceProps {
   block?: any;
 }
 
-export const useAssociation = (props) => {
+const useAssociation = (props) => {
   const { association } = props;
   const { getCollectionField } = useCollectionManager_deprecated();
   if (typeof association === 'string') {
@@ -74,7 +86,7 @@ const useResource = (props: UseResourceProps) => {
   const sourceId = useSourceId?.();
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const __parent = useContext(BlockRequestContext_deprecated);
+  const __parent = useBlockRequestContext();
   const headers = useDataSourceHeaders(dataSource);
 
   if (block === 'TableField') {
@@ -189,16 +201,16 @@ export const MaybeCollectionProvider = (props) => {
   );
 };
 
+/**
+ * @deprecated
+ * @param props
+ * @returns
+ */
 export const BlockRequestProvider_deprecated = (props) => {
   const field = useField<Field>();
-  const resource = useBlockResource();
+  const resource = useDataBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
-  const service = useResourceAction(
-    { ...props, resource },
-    {
-      ...props.requestOptions,
-    },
-  );
+  const service = useDataBlockRequest();
 
   // Infinite scroll support
   const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
@@ -209,7 +221,7 @@ export const BlockRequestProvider_deprecated = (props) => {
     });
   }, [serviceAllowedActions]);
 
-  const __parent = useContext(BlockRequestContext_deprecated);
+  const __parent = useBlockRequestContext();
   return (
     <BlockRequestContext_deprecated.Provider
       value={{
@@ -228,6 +240,9 @@ export const BlockRequestProvider_deprecated = (props) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const useBlockRequestContext = () => {
   return useContext(BlockRequestContext_deprecated);
 };
@@ -314,48 +329,44 @@ export const BlockProvider = (props: {
   dataSource?: string;
   params?: any;
   children?: any;
+  /** @deprecated */
+  useSourceId?: any;
+  /** @deprecated */
+  useParams?: any;
 }) => {
-  const { collection, association, name, dataSource } = props;
-  const resource = useResource(props);
+  const { name, dataSource, association, useSourceId, useParams } = props;
+  const sourceId = useDataBlockSourceId({ association, useSourceId });
+  const paramsFromHook = useParams?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
     if (!props.params?.['appends']) {
-      return { ...props.params, appends };
+      return { ...props.params, appends, ...paramsFromHook };
     }
-    return { ...props.params };
-  }, [appends, props.params]);
+    return { ...props.params, ...paramsFromHook };
+  }, [appends, paramsFromHook, props.params]);
   const blockValue = useMemo(() => ({ name }), [name]);
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <CollectionManagerProvider dataSource={dataSource}>
-        <MaybeCollectionProvider collection={collection}>
-          <BlockAssociationContext.Provider value={association}>
-            <BlockResourceContext.Provider value={resource}>
-              <BlockRequestProvider_deprecated
-                {...props}
-                updateAssociationValues={updateAssociationValues}
-                params={params}
-              >
-                <FilterBlockRecord {...props} params={params}>
-                  {props.children}
-                </FilterBlockRecord>
-              </BlockRequestProvider_deprecated>
-            </BlockResourceContext.Provider>
-          </BlockAssociationContext.Provider>
-        </MaybeCollectionProvider>
-      </CollectionManagerProvider>
+      <DataBlockProvider {...(props as any)} params={params} sourceId={sourceId}>
+        <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
+          <DataBlockCollector {...props} params={params}>
+            {props.children}
+          </DataBlockCollector>
+        </BlockRequestProvider_deprecated>
+      </DataBlockProvider>
     </BlockContext.Provider>
   );
 };
 
 export const useBlockAssociationContext = () => {
-  return useContext(BlockAssociationContext);
+  const { association } = useDataBlockProps();
+  return useContext(BlockAssociationContext) || association;
 };
 
 export const useFilterByTk = () => {
-  const { resource, __parent } = useContext(BlockRequestContext_deprecated);
+  const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
   const record = useRecord_deprecated();
   const collection = useCollection_deprecated();
@@ -378,20 +389,20 @@ export const useFilterByTk = () => {
 export const useSourceIdFromRecord = () => {
   const record = useRecord_deprecated();
   const { getCollectionField } = useCollectionManager_deprecated();
-  const assoc = useBlockAssociationContext();
-  if (assoc) {
-    const association = getCollectionField(assoc);
-    return record?.[association.sourceKey || 'id'];
+  const association = useBlockAssociationContext();
+  if (association) {
+    const collectionField = getCollectionField(association);
+    return record?.[collectionField.sourceKey || 'id'];
   }
 };
 
 export const useSourceIdFromParentRecord = () => {
   const record = useRecord_deprecated();
   const { getCollectionField } = useCollectionManager_deprecated();
-  const assoc = useBlockAssociationContext();
-  if (assoc) {
-    const association = getCollectionField(assoc);
-    return record?.__parent?.[association.sourceKey || 'id'];
+  const association = useBlockAssociationContext();
+  if (association) {
+    const collectionField = getCollectionField(association);
+    return record?.__parent?.[collectionField.sourceKey || 'id'];
   }
 };
 

@@ -1,4 +1,3 @@
-import React, { useContext, useMemo, useRef } from 'react';
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import {
@@ -17,6 +16,7 @@ import {
   useResource,
 } from '@nocobase/client';
 import { Spin } from 'antd';
+import React, { useMemo, useRef } from 'react';
 
 const InternalFormBlockProvider = (props) => {
   const { action, readPretty } = props;
@@ -65,7 +65,7 @@ const BlockRequestProvider_deprecated = (props) => {
       data: useRecord_deprecated(),
     },
   };
-  const __parent = useContext(BlockRequestContext_deprecated);
+  const __parent = useBlockRequestContext();
   return (
     <BlockRequestContext_deprecated.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
       {props.children}

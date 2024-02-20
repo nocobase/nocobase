@@ -110,13 +110,11 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       const collectionFieldNames = fieldSchema?.['x-collection-field']?.split('.');
 
       return collectionFieldNames && collectionFieldNames.length > 2 ? (
-        <RecordProvider_deprecated record={recordCtx[collectionFieldNames[1]]}>
-          <RecordProvider_deprecated record={record}>
-            {renderWithoutTableFieldResourceProvider()}
-          </RecordProvider_deprecated>
+        <RecordProvider_deprecated record={record} parent={recordCtx[collectionFieldNames[1]]}>
+          {renderWithoutTableFieldResourceProvider()}
         </RecordProvider_deprecated>
       ) : (
-        <RecordProvider_deprecated record={record}>
+        <RecordProvider_deprecated record={record} parent={recordCtx}>
           {renderWithoutTableFieldResourceProvider()}
         </RecordProvider_deprecated>
       );

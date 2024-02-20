@@ -7,10 +7,11 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useParentRecordData } from '../../data-source/record/RecordProvider';
 import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
-import { useCancelAction, useUpdateAction } from '../action-hooks';
+import { useCancelAction } from '../action-hooks';
 import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
@@ -117,7 +118,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 const useUpdateCollectionField = () => {
   const form = useForm();
-  const { run } = useUpdateAction();
   const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
@@ -144,11 +144,12 @@ const useUpdateCollectionField = () => {
 
 export const EditCollectionField = (props) => {
   const record = useRecord_deprecated();
-  return <EditFieldAction item={record} {...props} />;
+  const parentRecordData = useParentRecordData();
+  return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
 export const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, ...otherProps } = props;
+  const { scope, getContainer, item: record, parentItem: parentRecord, children, ...otherProps } = props;
   const { getInterface, collections } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -168,7 +169,7 @@ export const EditFieldAction = (props) => {
   }, []);
 
   return (
-    <RecordProvider_deprecated record={record}>
+    <RecordProvider_deprecated record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}

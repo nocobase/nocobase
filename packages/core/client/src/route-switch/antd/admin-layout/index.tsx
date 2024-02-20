@@ -3,7 +3,7 @@ import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet, useMatch, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -25,7 +25,6 @@ import {
 } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
-import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { VariablesProvider } from '../../../variables';
 
 const filterByACL = (schema, options) => {
@@ -268,7 +267,6 @@ export const InternalAdminLayout = (props: any) => {
   // const { service } = useCollectionManager_deprecated();
   const params = useParams<any>();
   const { token } = useToken();
-  const { render } = useAppSpin();
   return (
     <Layout>
       <GlobalStyleForAdminLayout />

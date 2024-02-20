@@ -236,8 +236,8 @@ const useCreateCollection = (schema?: any) => {
 };
 
 export const AddCollection = (props) => {
-  const record = useRecord_deprecated();
-  return <AddCollectionAction item={record} {...props} />;
+  const recordData = useRecord_deprecated();
+  return <AddCollectionAction item={recordData} {...props} />;
 };
 
 export const AddCollectionAction = (props) => {

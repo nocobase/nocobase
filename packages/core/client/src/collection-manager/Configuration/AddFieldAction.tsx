@@ -178,7 +178,7 @@ export const AddCollectionField = (props) => {
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align, database } = props;
-  const { getInterface, getTemplate, collections, interfaces } = useCollectionManager_deprecated();
+  const { getInterface, getTemplate, collections } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});

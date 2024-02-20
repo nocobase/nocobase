@@ -2,20 +2,21 @@ import { createForm } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
   BlockRequestContext_deprecated,
+  CollectionManagerProvider,
   CollectionProvider_deprecated,
   DEFAULT_DATA_SOURCE_NAME,
-  CollectionManagerProvider,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
   RecordProvider_deprecated,
   useAPIClient,
   useAssociationNames,
+  useBlockRequestContext,
+  useDataSourceHeaders,
   useDesignable,
   useRecord_deprecated,
-  useDataSourceHeaders,
 } from '@nocobase/client';
-import React, { useContext, useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 
 export function FormBlockProvider(props) {
   const userJob = useRecord_deprecated();
@@ -58,7 +59,7 @@ export function FormBlockProvider(props) {
   const headers = useDataSourceHeaders(dataSource);
 
   const resource = api.resource(props.collection, undefined, headers);
-  const __parent = useContext(BlockRequestContext_deprecated);
+  const __parent = useBlockRequestContext();
 
   const formBlockValue = useMemo(() => {
     return {
@@ -74,7 +75,7 @@ export function FormBlockProvider(props) {
   return !userJob.status || values ? (
     <CollectionManagerProvider dataSource={dataSource}>
       <CollectionProvider_deprecated collection={props.collection}>
-        <RecordProvider_deprecated record={values} parent={false}>
+        <RecordProvider_deprecated record={values} parent={null}>
           <FormActiveFieldsProvider name="form">
             <BlockRequestContext_deprecated.Provider
               value={{ block: 'form', props, field, service, resource, __parent }}

@@ -1,23 +1,24 @@
 import { css, cx } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import { App, Button } from 'antd';
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
+  FormBlockContext,
   RecordProvider_deprecated,
+  fetchTemplateData,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
   useDesignable,
-  useRecord_deprecated,
-  fetchTemplateData,
-  FormBlockContext,
   useFormBlockContext,
+  useParentRecordData,
+  useRecord_deprecated,
 } from '@nocobase/client';
+import { App, Button } from 'antd';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -73,6 +74,7 @@ export const DuplicateAction = observer(
     const { service, __parent, block } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord_deprecated();
+    const parentRecordData = useParentRecordData();
     const { id, __collection } = record;
     const ctx = useActionContext();
     const { name } = useCollection_deprecated();
@@ -179,7 +181,10 @@ export const DuplicateAction = observer(
               </Button>
             )}
             <CollectionProvider_deprecated name={duplicateCollection || name}>
-              <RecordProvider_deprecated record={{ ...record, __collection: duplicateCollection || __collection }}>
+              <RecordProvider_deprecated
+                record={{ ...record, __collection: duplicateCollection || __collection }}
+                parent={parentRecordData}
+              >
                 <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
                   <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
                 </ActionContextProvider>
