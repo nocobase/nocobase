@@ -43,6 +43,7 @@ export const SettingsCenterConfigure = () => {
   const api = useAPIClient();
   const compile = useCompile();
   const settings = app.pluginSettingsManager.getList(false);
+  console.log(settings);
   const allAclSnippets = app.pluginSettingsManager.getAclSnippets();
   const [snippets, setSnippets] = useState<string[]>([]);
   const allChecked = useMemo(
@@ -130,7 +131,9 @@ export const SettingsCenterConfigure = () => {
           },
         },
       ]}
-      dataSource={settings}
+      dataSource={settings.filter((v) => {
+        return v.isTopLevel !== false;
+      })}
     />
   );
 };
