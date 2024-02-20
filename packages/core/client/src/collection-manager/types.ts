@@ -5,7 +5,6 @@ import type { CollectionManager, CollectionOptions } from '../data-source';
 export type { CollectionOptions } from '../data-source';
 
 export interface CollectionManagerOptions {
-  collections?: CollectionOptions[];
   instance?: CollectionManager;
   children?: ReactNode;
 }

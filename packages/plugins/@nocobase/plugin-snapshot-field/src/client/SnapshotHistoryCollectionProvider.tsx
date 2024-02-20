@@ -1,5 +1,6 @@
 import {
   CollectionManagerProvider_deprecated,
+  ExtendCollectionsProvider,
   useCollectionManager_deprecated,
   useHistoryCollectionsByNames,
 } from '@nocobase/client';
@@ -34,8 +35,8 @@ export const SnapshotHistoryCollectionProvider: React.FC<{ collectionName: strin
   const overridedCollections = [...filterdAllCollection, ...finallyHistoryCollecionts];
 
   return (
-    <CollectionManagerProvider_deprecated collections={overridedCollections}>
-      {props.children}
-    </CollectionManagerProvider_deprecated>
+    <ExtendCollectionsProvider collections={overridedCollections}>
+      <CollectionManagerProvider_deprecated>{props.children}</CollectionManagerProvider_deprecated>
+    </ExtendCollectionsProvider>
   );
 };

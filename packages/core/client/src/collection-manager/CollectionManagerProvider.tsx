@@ -12,9 +12,8 @@ import { useAppSpin } from '../application/hooks/useAppSpin';
  * @deprecated use `CollectionManagerProvider` instead
  */
 export const CollectionManagerProvider_deprecated: React.FC<CollectionManagerOptions> = (props) => {
-  const { collections = [] } = props;
   return (
-    <CollectionManagerProvider collections={collections}>
+    <CollectionManagerProvider>
       <CollectionManagerSchemaComponentProvider>{props.children}</CollectionManagerSchemaComponentProvider>
     </CollectionManagerProvider>
   );
