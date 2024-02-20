@@ -187,8 +187,26 @@ export class PluginDataSourceManagerServer extends Plugin {
       return item;
     };
 
+    this.app.resourcer.use(async (ctx, next) => {
+      if (!ctx.action) {
+        await next();
+        return;
+      }
+
+      const { actionName, resourceName, params } = ctx.action;
+
+      if (resourceName === 'dataSources' && actionName == 'list') {
+        if (!params.sort) {
+          params.sort = ['-fixed', 'createdAt'];
+        }
+      }
+
+      await next();
+    });
+
     this.app.use(async (ctx, next) => {
       await next();
+
       if (!ctx.action) {
         return;
       }
