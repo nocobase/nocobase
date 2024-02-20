@@ -64,10 +64,6 @@ export const ForeignKey = observer(
             };
           });
         setOptions(sourceOptions);
-        if (sourceOptions?.[0]?.value) {
-          setInitialValue(sourceOptions[0].value);
-          field.initialValue = sourceOptions?.[0]?.value;
-        }
       }
     }, [type]);
     useEffect(() => {
