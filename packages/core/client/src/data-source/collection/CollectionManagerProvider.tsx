@@ -19,7 +19,7 @@ const CollectionManagerProviderInner: FC<CollectionManagerProviderProps> = ({ in
 
   const cm = useMemo(() => {
     const res = instance || dataSource?.collectionManager;
-    if (extendCollections.length) {
+    if (extendCollections?.length) {
       return res.clone(extendCollections);
     }
     return res;
