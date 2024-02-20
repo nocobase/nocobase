@@ -3,8 +3,7 @@ import { uid } from '@formily/shared';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, i18n } from '@nocobase/client';
-import { CollectionCategory } from '../components/CollectionCategory';
-import { CollectionTemplateTag } from '../components/CollectionTemplateTag';
+import { CollectionCategory, CollectionTemplateTag } from '@nocobase/client';
 import type { CollectionOptionsV2 } from '@nocobase/client';
 
 const compile = (source) => {
@@ -367,6 +366,9 @@ export const collectionCategorySchema: ISchema = {
               'x-component-props': {
                 type: 'primary',
                 useAction: '{{ useCreateCategry }}',
+                style: {
+                  marginLeft: '8px',
+                },
               },
             },
           },

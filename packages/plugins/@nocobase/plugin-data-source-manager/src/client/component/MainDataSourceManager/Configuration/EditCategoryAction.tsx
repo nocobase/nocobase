@@ -14,7 +14,6 @@ import {
   useCancelAction,
   CollectionCategroriesContext,
 } from '@nocobase/client';
-import * as components from './components';
 import { collectionCategoryEditSchema } from './schemas/collections';
 
 const useEditCategry = () => {
@@ -72,7 +71,6 @@ export const EditCategoryAction = (props) => {
         <>{children || <span onClick={() => setVisible(true)}>{compile('{{ t("Edit category") }}')}</span>}</>
         <SchemaComponent
           schema={collectionCategoryEditSchema}
-          components={{ ...components }}
           scope={{
             getContainer,
             useCancelAction,

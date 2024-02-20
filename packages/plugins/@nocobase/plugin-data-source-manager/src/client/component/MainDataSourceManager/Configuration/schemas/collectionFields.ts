@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { CollectionOptions } from '../../types';
-import { CollectionFieldInterfaceTag } from '../components/CollectionFieldInterfaceTag';
+import { CollectionFieldInterfaceTag } from '@nocobase/client';
 
 export const collection: CollectionOptions = {
   name: 'fields',

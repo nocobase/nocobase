@@ -16,11 +16,11 @@ import {
   AddSubFieldAction,
   EditSubFieldAction,
   CollectionCategroriesContext,
+  FieldSummary,
+  TemplateSummary,
 } from '@nocobase/client';
 import { DataSourceContext } from '../sub-table';
 import { CollectionFields } from './CollectionFields';
-import { FieldSummary } from './components/FieldSummary';
-import { TemplateSummary } from './components/TemplateSummary';
 import { collectionSchema } from './schemas/collections';
 
 /**

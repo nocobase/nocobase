@@ -10,8 +10,9 @@ import {
   useActionContext,
   useCancelAction,
   CollectionCategroriesContext,
+  CollectionCategory,
+  CollectionTemplateTag,
 } from '@nocobase/client';
-import * as components from './components';
 import { collectionCategorySchema } from './schemas/collections';
 
 const useCreateCategry = () => {
@@ -50,7 +51,7 @@ export const AddCategoryAction = (props) => {
       </div>
       <SchemaComponent
         schema={collectionCategorySchema}
-        components={{ ...components }}
+        components={{ CollectionCategory, CollectionTemplateTag }}
         scope={{
           getContainer,
           useCancelAction,
