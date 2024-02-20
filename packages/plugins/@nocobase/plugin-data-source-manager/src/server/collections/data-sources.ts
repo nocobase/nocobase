@@ -28,6 +28,11 @@ export default defineCollection({
       defaultValue: true,
     },
     {
+      type: 'boolean',
+      name: 'fixed',
+      defaultValue: false,
+    },
+    {
       type: 'hasMany',
       name: 'collections',
       target: 'dataSourcesCollections',

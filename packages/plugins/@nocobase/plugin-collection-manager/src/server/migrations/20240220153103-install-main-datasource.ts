@@ -7,11 +7,13 @@ export default class extends Migration {
   async up() {
     const dataSourcesCollection = this.app.db.getCollection('dataSources');
 
-    await dataSourcesCollection.repository.create({
+    await dataSourcesCollection.repository.firstOrCreate({
+      filterKeys: ['key'],
       values: {
         key: 'main',
         type: 'main',
         displayName: 'Main',
+        fixed: true,
         options: {},
       },
     });
