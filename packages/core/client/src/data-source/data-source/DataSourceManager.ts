@@ -6,7 +6,7 @@ import { type CollectionTemplateFactory, CollectionTemplateManager } from '../co
 import { type CollectionFieldInterfaceFactory, CollectionFieldInterfaceManager } from '../collection-field-interface';
 
 export const DEFAULT_DATA_SOURCE_NAME = 'main';
-export const DEFAULT_DATA_SOURCE_TITLE = '{{t("main")}}';
+export const DEFAULT_DATA_SOURCE_TITLE = '{{t("Main")}}';
 
 export interface DataSourceManagerOptions {
   collectionTemplates?: CollectionTemplateFactory[];
