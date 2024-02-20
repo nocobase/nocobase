@@ -10,7 +10,6 @@
 interface CollectionManagerProviderProps {
   instance?: CollectionManager;
   dataSource?: string;
-  collections?: CollectionOptions[];
   children?: ReactNode;
 }
 ```
@@ -18,7 +17,6 @@ interface CollectionManagerProviderProps {
 - 参数详解
   - `dataSource` - 数据源名称，如果为空，则会取默认数据源。
   - `instance` - CollectionManager 实例，如果没有，则会取 `dataSource` 对应的 collectionManager。
-  - `collections` - 用于扩展 CollectionManager 的数据表。
 
 - 示例
 

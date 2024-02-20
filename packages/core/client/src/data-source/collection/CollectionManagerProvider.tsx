@@ -1,6 +1,6 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import type { CollectionManager } from './CollectionManager';
-import type { CollectionOptions, Collection } from './Collection';
+import type { Collection } from './Collection';
 import { DataSourceProvider, useDataSource } from '../data-source/DataSourceProvider';
 import { useExtendCollections } from './ExtendCollectionsProvider';
 
@@ -10,36 +10,27 @@ CollectionManagerContext.displayName = 'CollectionManagerContext';
 export interface CollectionManagerProviderProps {
   instance?: CollectionManager;
   dataSource?: string;
-  collections?: CollectionOptions[];
   children?: ReactNode;
 }
 
-const CollectionManagerProviderInner: FC<CollectionManagerProviderProps> = ({ instance, children, collections }) => {
+const CollectionManagerProviderInner: FC<CollectionManagerProviderProps> = ({ instance, children }) => {
   const dataSource = useDataSource();
   const extendCollections = useExtendCollections();
 
   const cm = useMemo(() => {
     const res = instance || dataSource?.collectionManager;
-    const extendsCollectionsValue = [...(collections || []), ...(extendCollections || [])];
-    if (extendsCollectionsValue.length) {
-      return res.clone(extendsCollectionsValue);
+    if (extendCollections.length) {
+      return res.clone(extendCollections);
     }
     return res;
-  }, [instance, collections, dataSource]);
+  }, [instance, extendCollections, dataSource]);
   return <CollectionManagerContext.Provider value={cm}>{children}</CollectionManagerContext.Provider>;
 };
 
-export const CollectionManagerProvider: FC<CollectionManagerProviderProps> = ({
-  instance,
-  dataSource,
-  children,
-  collections,
-}) => {
+export const CollectionManagerProvider: FC<CollectionManagerProviderProps> = ({ instance, dataSource, children }) => {
   return (
     <DataSourceProvider dataSource={dataSource}>
-      <CollectionManagerProviderInner instance={instance} collections={collections}>
-        {children}
-      </CollectionManagerProviderInner>
+      <CollectionManagerProviderInner instance={instance}>{children}</CollectionManagerProviderInner>
     </DataSourceProvider>
   );
 };
