@@ -92,11 +92,19 @@ export abstract class Plugin<O = any> implements PluginInterface {
     return this.app.createLogger(options);
   }
 
-  get _sourceDir() {
-    if (basename(__dirname) === 'src') {
-      return 'src';
+  protected _sourceDir: string;
+
+  protected async getSourceDir() {
+    if (this._sourceDir) {
+      return this._sourceDir;
     }
-    return this.isPreset ? 'lib' : 'dist';
+    if (await this.isDev()) {
+      return (this._sourceDir = 'src');
+    }
+    if (basename(__dirname) === 'src') {
+      return (this._sourceDir = 'src');
+    }
+    return (this._sourceDir = this.isPreset ? 'lib' : 'dist');
   }
 
   async loadCommands() {
@@ -104,7 +112,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     const directory = resolve(
       process.env.NODE_MODULES_PATH,
       this.options.packageName,
-      this._sourceDir,
+      await this.getSourceDir(),
       'server/commands',
     );
     const patten = `${directory}/*.{${extensions.join(',')}}`;
@@ -130,7 +138,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     const directory = resolve(
       process.env.NODE_MODULES_PATH,
       this.options.packageName,
-      this._sourceDir,
+      await this.getSourceDir(),
       'server/migrations',
     );
     return await this.app.loadMigrations({
@@ -178,7 +186,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     const directory = resolve(
       process.env.NODE_MODULES_PATH,
       this.options.packageName,
-      this._sourceDir,
+      await this.getSourceDir(),
       'server/collections',
     );
     if (await fsExists(directory)) {
@@ -195,6 +203,19 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   t(text: TFuncKey | TFuncKey[], options: TOptions = {}) {
     return this.app.i18n.t(text, { ns: this.options['packageName'], ...(options as any) });
+  }
+
+  protected async isDev() {
+    if (!this.options.packageName) {
+      return false;
+    }
+    const file = await fs.promises.realpath(
+      resolve(process.env.NODE_MODULES_PATH || resolve(process.cwd(), 'node_modules'), this.options.packageName),
+    );
+    if (file.startsWith(resolve(process.cwd(), 'packages'))) {
+      return !!process.env.IS_DEV_CMD;
+    }
+    return false;
   }
 
   async toJSON(options: any = {}) {

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "OIDC 认证 - SSO 登录",
   "description": "OIDC (OpenID Connect) authentication for NocoBase",
   "description.zh-CN": "OIDC (OpenID Connect) authentication for NocoBase",
-  "version": "0.19.0-alpha.5",
+  "version": "0.19.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/oidc",
@@ -30,5 +30,7 @@
     "@nocobase/test": "0.x"
   },
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
-  "keywords":["security","users"]
+  "keywords": [
+    "Users & permissions"
+  ]
 }

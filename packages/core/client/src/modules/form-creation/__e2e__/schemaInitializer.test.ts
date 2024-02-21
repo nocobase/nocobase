@@ -1,4 +1,5 @@
 import { createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
+import { T3106 } from './templatesOfBug';
 
 test.describe('where creation form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -76,6 +77,28 @@ test.describe('configure actions', () => {
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Submit' })).not.toBeVisible();
+  });
+
+  // https://nocobase.height.app/T-3106
+  test('subTable: should clear form value after submit', async ({ page, mockPage }) => {
+    await mockPage(T3106).goto();
+
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
+    ).toHaveValue('test name');
+
+    // 点击提交后，应该清空子表格中的值
+    await page.getByLabel('action-Action-Submit-submit-').click();
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
+    ).toBeHidden();
+
+    // 再次点击添加按钮，默认值应该正常显示出来
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
+    ).toHaveValue('test name');
   });
 
   test('customize: save record', async ({ page, mockPage }) => {

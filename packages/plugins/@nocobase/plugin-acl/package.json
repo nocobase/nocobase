@@ -4,12 +4,14 @@
   "displayName.zh-CN": "权限控制",
   "description": "A simple access control based on roles, resources and actions",
   "description.zh-CN": "基于角色、资源和操作的权限控制。",
-  "version": "0.19.0-alpha.5",
+  "version": "0.19.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/acl",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/acl",
-  "keywords":["security","users"],
+  "keywords": [
+    "Users & permissions"
+  ],
   "devDependencies": {
     "@types/jsonwebtoken": "^8.5.8",
     "async-mutex": "^0.3.2",
