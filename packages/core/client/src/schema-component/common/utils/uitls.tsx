@@ -66,24 +66,23 @@ function getAllKeys(obj) {
 }
 
 export const conditionAnalyses = async ({
-  rules,
+  ruleGroup,
   variables,
   localVariables,
 }: {
-  rules;
+  ruleGroup;
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }) => {
-  if (process.env.NODE_ENV !== 'production') {
-    if (!variables) {
-      throw new Error(`conditionAnalyses: variables cannot be ${variables}`);
-    }
-  }
-
-  const type = Object.keys(rules)[0] || '$and';
-  const conditions = rules[type];
+  const type = Object.keys(ruleGroup)[0] || '$and';
+  const conditions = ruleGroup[type];
 
   let results = conditions.map(async (condition) => {
+    // fix https://nocobase.height.app/T-3152
+    if ('$and' in condition || '$or' in condition) {
+      return await conditionAnalyses({ ruleGroup: condition, variables, localVariables });
+    }
+
     const jsonlogic = getInnermostKeyAndValue(condition);
     const operator = jsonlogic?.key;
 

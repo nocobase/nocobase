@@ -48,14 +48,18 @@ export const collectFieldStateOfLinkageRules = ({
 
   switch (operator) {
     case ActionType.Required:
-      requiredResult.push(getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), true));
+      requiredResult.push(
+        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), true),
+      );
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         required: requiredResult,
       };
       break;
     case ActionType.InRequired:
-      requiredResult.push(getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), false));
+      requiredResult.push(
+        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), false),
+      );
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         required: requiredResult,
@@ -65,7 +69,7 @@ export const collectFieldStateOfLinkageRules = ({
     case ActionType.None:
     case ActionType.Hidden:
       displayResult.push(
-        getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), operator),
+        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), operator),
       );
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
@@ -76,7 +80,7 @@ export const collectFieldStateOfLinkageRules = ({
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
       patternResult.push(
-        getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), operator),
+        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), operator),
       );
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
@@ -113,7 +117,7 @@ export const collectFieldStateOfLinkageRules = ({
           valueResult.push(getTempFieldState(true, getValue()));
         } else {
           valueResult.push(
-            getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), getValue()),
+            getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), getValue()),
           );
         }
         field.stateOfLinkageRules = {
