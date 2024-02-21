@@ -1,4 +1,3 @@
-import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
@@ -18,7 +17,7 @@ import { applyMixins, AsyncEmitter, importModule, Toposort, ToposortOptions } fr
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
-import { IncomingMessage, Server, ServerResponse } from 'http';
+import { IncomingMessage, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
@@ -46,10 +45,9 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
-import { DataSourceManager } from '@nocobase/data-source-manager';
+import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
-import { MultipleInstanceManager } from './helpers/multiple-instance-manager';
-import { AclSelectorMiddleware } from './middlewares/acl-selector';
+import { MainDataSource } from './main-data-source';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -141,7 +139,6 @@ export type MaintainingCommandStatus = {
 };
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  public listenServer: Server;
   declare middleware: any;
   stopped = false;
   ready = false;
@@ -160,8 +157,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
-  private _databases: Map<string, Database> = new Map();
-  private _resourcers: MultipleInstanceManager<Resourcer>;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -170,12 +165,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.init();
 
     this._appSupervisor.addApp(this);
-  }
-
-  private _acls = new Map<string, ACL>();
-
-  get acls() {
-    return this._acls;
   }
 
   protected _loaded: boolean;
@@ -196,8 +185,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cronJobManager;
   }
 
-  get db() {
-    return this.getDb();
+  get mainDataSource() {
+    return this.dataSourceManager.dataSources.get('main') as SequelizeDataSource;
+  }
+
+  get db(): Database {
+    if (!this.mainDataSource) {
+      return null;
+    }
+
+    // @ts-ignore
+    return this.mainDataSource.collectionManager.db;
   }
 
   protected _logger: SystemLogger;
@@ -206,10 +204,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._logger;
   }
 
-  protected _resourcer: Resourcer;
-
   get resourcer() {
-    return this._resourcer;
+    return this.mainDataSource.resourceManager;
   }
 
   protected _cacheManager: CacheManager;
@@ -246,10 +242,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._pm;
   }
 
-  protected _acl: ACL;
-
   get acl() {
-    return this._acl;
+    return this.mainDataSource.acl;
   }
 
   protected _authManager: AuthManager;
@@ -292,15 +286,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get dataSourceManager() {
     return this._dataSourceManager;
-  }
-
-  createNewACL(name: string) {
-    this._acls.set(name, createACL());
-    return this._acls.get(name);
-  }
-
-  isMaintaining() {
-    return this._maintaining;
   }
 
   getMaintaining() {
@@ -403,7 +388,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.telemetry.shutdown();
     }
 
-    const oldDb = this.getDb();
+    const oldDb = this.db;
 
     this.init();
     if (!oldDb.closed()) {
@@ -430,7 +415,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         await this.telemetry.shutdown();
       }
 
-      const oldDb = this.getDb();
+      const oldDb = this.db;
 
       this.init();
 
@@ -509,6 +494,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async runCommand(command: string, ...args: any[]) {
     return await this.runAsCLI([command, ...args], { from: 'user' });
+  }
+
+  async runCommandThrowError(command: string, ...args: any[]) {
+    return await this.runAsCLI([command, ...args], { from: 'user', throwError: true });
   }
 
   createCli() {
@@ -920,18 +909,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
   }
 
-  getDb(name = 'main') {
-    if (!name) {
-      name = 'main';
-    }
-
-    return this._databases.get(name);
-  }
-
-  setDb(db: Database, name = 'main') {
-    this._databases.set(name, db);
-  }
-
   protected init() {
     const options = this.options;
 
@@ -950,25 +927,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
-    this._acl = createACL();
+
+    this._dataSourceManager = new DataSourceManager();
+    this.createMainDataSource(options);
 
     this._cronJobManager = new CronJobManager(this);
 
-    if (this.getDb()) {
-      // MaxListenersExceededWarning
-      this.getDb().removeAllListeners();
-    }
-
-    this.setDb(this.createDatabase(options));
-
-    this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this.context.db = this.getDb();
-    this.context.getDb = this.getDb;
+    this.context.db = this.db;
 
-    // this.context.logger = this._logger;
-    this.context.resourcer = this._resourcer;
+    this.context.resourcer = this.resourcer;
     this.context.cacheManager = this._cacheManager;
     this.context.cache = this._cache;
 
@@ -996,12 +965,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       actions: authActions,
     });
 
-    this._dataSourceManager = new DataSourceManager();
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
-    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
+    this.resourcer.use(this._authManager.middleware(), { tag: 'auth' });
 
     if (this.options.acl !== false) {
-      this._resourcer.use(AclSelectorMiddleware(), { tag: 'acl', after: ['auth'] });
+      this.resourcer.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
 
     this._locales = new Locale(createAppProxy(this));
@@ -1019,6 +987,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     registerCli(this);
 
     this._version = new ApplicationVersion(this);
+  }
+
+  protected createMainDataSource(options: ApplicationOptions) {
+    this.dataSourceManager.dataSources.set(
+      'main',
+      new MainDataSource({
+        name: 'main',
+        database: this.createDatabase(options),
+        acl: createACL(),
+        resourceManager: createResourcer(options),
+      }),
+    );
   }
 
   protected createDatabase(options: ApplicationOptions) {

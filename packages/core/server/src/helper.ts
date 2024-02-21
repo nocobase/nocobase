@@ -1,5 +1,4 @@
 import cors from '@koa/cors';
-import Database from '@nocobase/database';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
 import { uid } from '@nocobase/utils';
@@ -27,14 +26,6 @@ export function createI18n(options: ApplicationOptions) {
     ...options.i18n,
   });
   return instance;
-}
-
-export function createDatabase(options: ApplicationOptions) {
-  if (options.database instanceof Database) {
-    return options.database;
-  } else {
-    return new Database(options.database);
-  }
 }
 
 export function createResourcer(options: ApplicationOptions) {

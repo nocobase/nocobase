@@ -4,7 +4,7 @@ export default {
     async create(ctx, next) {
       const { associatedIndex: roleName } = ctx.action.params;
 
-      const db = ctx.app.getDb();
+      const db = ctx.db;
 
       const transaction = await db.sequelize.transaction();
 

@@ -9,7 +9,7 @@ export default (app: Application) => {
     .option('--quickstart')
     .action(async (...cliArgs) => {
       const [options] = cliArgs;
-      console.log('options', options);
+      console.log('start options', options);
       if (options.quickstart) {
         if (await app.isInstalled()) {
           await app.upgrade();

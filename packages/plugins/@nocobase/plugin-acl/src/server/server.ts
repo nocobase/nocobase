@@ -656,6 +656,7 @@ export class PluginACL extends Plugin {
 
   async install() {
     const repo = this.db.getRepository<any>('collections');
+
     if (repo) {
       await repo.db2cm('roles');
     }

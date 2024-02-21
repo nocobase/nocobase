@@ -7,3 +7,5 @@ export * from './sequelize-data-source';
 
 export * from './load-default-actions';
 export * from './types';
+
+export * from './data-source-with-database';

@@ -179,7 +179,7 @@ export class MockServer extends Application {
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const oldDatabase = this.getDb('main');
+    const oldDatabase = this.db;
 
     const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
     const database = mockDatabase(databaseOptions);
@@ -243,13 +243,13 @@ export async function createMockServer(
     if (beforeInstall) {
       await beforeInstall(app);
     }
-    await app.runCommand('install', '-f');
+    await app.runCommandThrowError('install', '-f');
   }
   if (version) {
     await app.version.update(version);
   }
   if (!skipStart) {
-    await app.runCommand('start');
+    await app.runCommandThrowError('start');
   }
   return app;
 }

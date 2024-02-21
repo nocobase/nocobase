@@ -6,14 +6,27 @@ import { loadDefaultActions } from './load-default-actions';
 import { ICollectionManager } from './types';
 import EventEmitter from 'events';
 
+export type DataSourceOptions = any;
+
 export abstract class DataSource extends EventEmitter {
   public collectionManager: ICollectionManager;
   public resourceManager: ResourceManager;
   public acl: ACL;
 
-  constructor(protected options: any) {
+  constructor(protected options: DataSourceOptions) {
     super();
+    this.init(options);
+  }
 
+  get name() {
+    return this.options.name;
+  }
+
+  static testConnection(options?: any): Promise<boolean> {
+    return Promise.resolve(true);
+  }
+
+  init(options: DataSourceOptions = {}) {
     this.acl = this.createACL();
 
     this.resourceManager = this.createResourceManager({
@@ -27,14 +40,6 @@ export abstract class DataSource extends EventEmitter {
     if (options.acl !== false) {
       this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
-  }
-
-  get name() {
-    return this.options.name;
-  }
-
-  static testConnection(options?: any): Promise<boolean> {
-    return Promise.resolve(true);
   }
 
   collectionToResourceMiddleware() {

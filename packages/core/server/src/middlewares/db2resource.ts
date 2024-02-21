@@ -7,14 +7,12 @@ export async function db2resource(ctx: ResourcerContext & { db: Database }, next
     return next();
   }
   const resourcer = ctx.resourcer;
-  const connectionName = ctx.get('x-connection');
-  const database = ctx.app.getDb(connectionName);
+  const database = ctx.db;
 
   const params = parseRequest(
     {
       path: ctx.request.path,
       method: ctx.request.method,
-      namespace: connectionName,
     },
     {
       prefix: resourcer.options.prefix,

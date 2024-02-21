@@ -77,6 +77,7 @@ export default defineCollection({
       target: 'rolesResources',
       sourceKey: 'name',
       targetKey: 'name',
+      foreignKey: 'roleName',
     },
     {
       type: 'set',
