@@ -185,7 +185,7 @@ export const EditFieldAction = (props) => {
               defaultValues.autoCreateReverseField = false;
               defaultValues.reverseField = interfaceConf?.default?.reverseField;
               set(defaultValues.reverseField, 'name', `f_${uid()}`);
-              set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
+              set(defaultValues.reverseField, 'uiSchema.title', record.__parent?.title);
             }
             const schema = getSchema(
               {
