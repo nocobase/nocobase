@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-saml",
-  "displayName": "Auth: SAML",
+  "displayName": "Auth: SAML 2.0",
   "displayName.zh-CN": "认证：SAML 2.0",
   "description": "SAML 2.0 authentication.",
   "description.zh-CN": "通过 SAML 2.0 协议认证身份。",
