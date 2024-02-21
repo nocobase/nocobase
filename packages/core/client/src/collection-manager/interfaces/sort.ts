@@ -3,7 +3,7 @@ import { CollectionFieldInterface } from '../../data-source/collection-field-int
 
 export class SortFieldInterface extends CollectionFieldInterface {
   name = 'sort';
-  type = 'object';
+  type = 'string';
   group = 'advanced';
   order = 1;
   title = '{{t("Sort")}}';
@@ -20,9 +20,11 @@ export class SortFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['string'];
   hasDefaultValue = false;
+
   properties = {
     ...defaultProps,
   };
+
   filterable = {
     operators: operators.string,
   };

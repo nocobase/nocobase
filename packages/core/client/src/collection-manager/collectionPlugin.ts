@@ -39,6 +39,7 @@ import {
   UpdatedAtFieldInterface,
   UpdatedByFieldInterface,
   UrlFieldInterface,
+  SortFieldInterface,
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
@@ -153,6 +154,7 @@ export class CollectionPlugin extends Plugin {
       UpdatedAtFieldInterface,
       UpdatedByFieldInterface,
       UrlFieldInterface,
+      SortFieldInterface,
     ]);
   }
 
