@@ -1,10 +1,10 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const RecordFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -31,6 +31,7 @@ export const RecordFormBlockInitializer = () => {
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers: 'UpdateFormActionInitializers',
               template: s,
+              settings: 'blockSettings:editForm',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -49,6 +50,7 @@ export const RecordFormBlockInitializer = () => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers: 'UpdateFormActionInitializers',
+              settings: 'blockSettings:editForm',
             }),
           );
         }

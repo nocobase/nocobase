@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { css, useCompile, usePlugin } from '@nocobase/client';
 
@@ -18,18 +18,18 @@ import {
   ExtendCollectionsProvider,
 } from '@nocobase/client';
 import WorkflowPlugin, {
-  useAvailableUpstreams,
   FlowContext,
-  useFlowContext,
   JobStatusOptions,
   JobStatusOptionsMap,
   linkNodes,
+  useAvailableUpstreams,
+  useFlowContext,
 } from '@nocobase/plugin-workflow/client';
 
+import { NAMESPACE, useLang } from '../locale';
 import { DetailsBlockProvider } from './instruction/DetailsBlockProvider';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { NAMESPACE, useLang } from '../locale';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -256,7 +256,9 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 title: '{{ t("Refresh") }}',
                 'x-action': 'refresh',
                 'x-component': 'Action',
-                'x-designer': 'Action.Designer',
+                // 'x-designer': 'Action.Designer',
+                'x-toolbar': 'ActionSchemaToolbar',
+                'x-settings': 'actionSettings:refresh',
                 'x-component-props': {
                   icon: 'ReloadOutlined',
                   useProps: '{{ useRefreshActionProps }}',

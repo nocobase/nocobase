@@ -39,7 +39,7 @@ export const DefaultValueProvider = (props: DefaultValueProviderProps) => {
   return <DefaultValueContext.Provider value={value}>{props.children}</DefaultValueContext.Provider>;
 };
 
-const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Props = {}) => {
+export const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Props = {}) => {
   const { getInterface, getCollectionJoinField } = useCollectionManager_deprecated();
   const { getField } = useCollection_deprecated();
   const { form: innerForm } = useFormBlockContext();
@@ -62,8 +62,6 @@ const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Pro
     },
   };
 };
-
-export default useIsAllowToSetDefaultValue;
 
 export const interfacesOfUnsupportedDefaultValue = [
   'o2o',

@@ -90,6 +90,7 @@ export const MapBlockInitializer = () => {
             fieldNames: {
               ...values,
             },
+            settings: 'blockSettings:map',
           }),
         );
       }}

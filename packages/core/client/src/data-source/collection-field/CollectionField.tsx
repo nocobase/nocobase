@@ -5,7 +5,7 @@ import { concat } from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCompile, useComponent } from '../../schema-component';
-import useIsAllowToSetDefaultValue from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 type Props = {

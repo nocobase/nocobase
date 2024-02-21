@@ -183,7 +183,9 @@ export const AuditLogs: any = () => {
                       o80rypwmeeg: {
                         type: 'void',
                         title: '{{ t("View") }}',
-                        'x-designer': 'Action.Designer',
+                        // 'x-designer': 'Action.Designer',
+                        'x-toolbar': 'ActionSchemaToolbar',
+                        'x-settings': 'actionSettings:view',
                         'x-component': 'Action.Link',
                         'x-component-props': {
                           openMode: 'drawer',

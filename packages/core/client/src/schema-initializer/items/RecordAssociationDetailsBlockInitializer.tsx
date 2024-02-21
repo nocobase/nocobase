@@ -1,10 +1,10 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const RecordAssociationDetailsBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -31,6 +31,7 @@ export const RecordAssociationDetailsBlockInitializer = () => {
               dataSource: collection.dataSource,
               association: resource,
               rowKey: collection.filterTargetKey || 'id',
+              settings: 'blockSettings:multiDataDetails',
             }),
           );
         }

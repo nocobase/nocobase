@@ -91,7 +91,7 @@ const FormItemInitializer = () => {
 
         await FormDrawer('Add field', () => {
           return (
-            <CollectionManagerProvider collectionManager={cm}>
+            <CollectionManagerProvider instance={cm}>
               <AntdSchemaComponentProvider>
                 <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
                   <FormLayout layout={'vertical'}>

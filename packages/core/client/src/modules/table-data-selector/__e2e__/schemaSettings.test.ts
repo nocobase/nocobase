@@ -15,5 +15,5 @@ test.describe('table data selector schema settings', () => {
 
 async function showSettingsMenu(page) {
   await page.getByLabel('block-item-CardItem-users-table-selector').hover();
-  await page.getByLabel('designer-schema-settings-CardItem-TableSelectorDesigner-users').hover();
+  await page.getByLabel('designer-schema-settings-CardItem-blockSettings:tableSelector-users').hover();
 }

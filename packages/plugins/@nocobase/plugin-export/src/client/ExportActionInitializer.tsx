@@ -57,7 +57,8 @@ export const ExportActionInitializer = () => {
     'x-action-settings': {
       exportSettings: [],
     },
-    'x-designer': 'ExportDesigner',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:export',
     'x-decorator': 'ACLActionProvider',
     'x-component': 'Action',
     'x-component-props': {

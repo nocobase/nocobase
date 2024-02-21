@@ -12,7 +12,7 @@ import {
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 export const kanbanSettings = new SchemaSettings({
-  name: 'KanbanSettings',
+  name: 'blockSettings:kanban',
   items: [
     {
       name: 'title',

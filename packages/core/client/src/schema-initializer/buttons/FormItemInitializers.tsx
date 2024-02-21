@@ -76,17 +76,7 @@ export const formItemInitializers = new SchemaInitializer({
     {
       name: 'addText',
       title: '{{t("Add text")}}',
-      Component: 'BlockItemInitializer',
-      schema: {
-        type: 'void',
-        'x-editable': false,
-        'x-decorator': 'FormItem',
-        'x-designer': 'Markdown.Void.Designer',
-        'x-component': 'Markdown.Void',
-        'x-component-props': {
-          content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
-        },
-      },
+      Component: 'MarkdownFormItemInitializer',
     },
   ],
 });
@@ -150,18 +140,8 @@ export const filterFormItemInitializers = new SchemaInitializer({
     },
     {
       title: '{{t("Add text")}}',
-      Component: 'BlockItemInitializer',
+      Component: 'MarkdownFormItemInitializer',
       name: 'addText',
-      schema: {
-        type: 'void',
-        'x-editable': false,
-        'x-decorator': 'FormItem',
-        'x-designer': 'Markdown.Void.Designer',
-        'x-component': 'Markdown.Void',
-        'x-component-props': {
-          content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
-        },
-      },
     },
   ],
 });

@@ -9,6 +9,7 @@ import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   Collection_deprecated,
   useCollection_deprecated,
+  useCollectionField_deprecated,
   useCollectionManager_deprecated,
 } from '../../../collection-manager';
 import { useRecord_deprecated } from '../../../record-provider';
@@ -19,10 +20,10 @@ import {
   SchemaSettingsDefaultValue,
   SchemaSettingsSortingRule,
   isPatternDisabled,
-} from '../../../schema-settings';
+} from '../../../schema-settings/SchemaSettings';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
-import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -31,6 +32,7 @@ import { removeNullCondition } from '../filter';
 import { DynamicComponentProps } from '../filter/DynamicComponent';
 import { getTempFieldState } from '../form-v2/utils';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
+import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 
 export const formItemSettings = new SchemaSettings({
   name: 'FormItemSettings',
@@ -485,7 +487,9 @@ export const formItemSettings = new SchemaSettings({
                 'x-action': 'create',
                 'x-acl-action': 'create',
                 title: "{{t('Add new')}}",
-                'x-designer': 'Action.Designer',
+                // 'x-designer': 'Action.Designer',
+                'x-toolbar': 'ActionSchemaToolbar',
+                'x-settings': 'actonSettings:addNew',
                 'x-component': 'Action',
                 'x-decorator': 'ACLActionProvider',
                 'x-component-props': {
@@ -546,7 +550,9 @@ export const formItemSettings = new SchemaSettings({
                   'x-action': 'create',
                   'x-acl-action': 'create',
                   title: "{{t('Add new')}}",
-                  'x-designer': 'Action.Designer',
+                  // 'x-designer': 'Action.Designer',
+                  'x-toolbar': 'ActionSchemaToolbar',
+                  'x-settings': 'actonSettings:addNew',
                   'x-component': 'Action',
                   'x-decorator': 'ACLActionProvider',
                   'x-component-props': {
@@ -650,7 +656,7 @@ export const formItemSettings = new SchemaSettings({
       name: 'enableLink',
       type: 'switch',
       useVisible() {
-        const options = useOptions();
+        const options = useTitleFieldOptions();
         const readPretty = useIsFieldReadPretty();
         const isFileField = useIsFileField();
 
@@ -762,7 +768,7 @@ export const formItemSettings = new SchemaSettings({
       name: 'titleField',
       type: 'select',
       useVisible() {
-        const options = useOptions();
+        const options = useTitleFieldOptions();
         const isAssociationField = useIsAssociationField();
         const fieldMode = useFieldMode();
         return options.length > 0 && isAssociationField && fieldMode !== 'SubTable';
@@ -772,8 +778,8 @@ export const formItemSettings = new SchemaSettings({
         const field = useField<Field>();
         const fieldSchema = useFieldSchema();
         const { dn } = useDesignable();
-        const options = useOptions();
-        const collectionField = useFormItemCollectionField();
+        const options = useTitleFieldOptions();
+        const collectionField = useCollectionField_deprecated();
         return {
           title: t('Title field'),
           options,
@@ -920,7 +926,7 @@ export const formItemSettings = new SchemaSettings({
   ],
 });
 
-function useIsAddNewForm() {
+export function useIsAddNewForm() {
   const record = useRecord_deprecated();
   const isAddNewForm = _.isEmpty(_.omit(record, ['__parent', '__collectionName']));
 
@@ -936,26 +942,34 @@ export function useIsFormReadPretty() {
   return !!form?.readPretty;
 }
 
-function useIsFieldReadPretty() {
+export function useIsFieldReadPretty() {
+  const { fieldSchema: tableColumnSchema } = useColumnSchema();
   const field = useField<Field>();
-  return field.readPretty;
+  return field.readPretty || tableColumnSchema?.['x-read-pretty'];
 }
 
+/**
+ * 获取字段相关的配置信息
+ * @returns
+ */
 function useFormItemCollectionField() {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getField } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  return collectionField;
+  const { collectionField: columnCollectionField } = useColumnSchema();
+  return collectionField || columnCollectionField;
 }
 
-function useIsAssociationField() {
-  const collectionField = useFormItemCollectionField();
-  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
+export function useIsAssociationField() {
+  const collectionField = useCollectionField_deprecated();
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'updatedBy', 'createdBy'].includes(
+    collectionField?.interface,
+  );
   return isAssociationField;
 }
 
-function useIsFileField() {
+export function useIsFileField() {
   const { getCollection } = useCollectionManager_deprecated();
   const collectionField = useFormItemCollectionField();
   const targetCollection = getCollection(collectionField?.target);
@@ -963,7 +977,7 @@ function useIsFileField() {
   return isFileField;
 }
 
-function useFieldMode() {
+export function useFieldMode() {
   const field = useField<Field>();
   const isFileField = useIsFileField();
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
@@ -977,7 +991,7 @@ export function useIsSelectFieldMode() {
   return isSelectFieldMode;
 }
 
-function useValidateSchema() {
+export function useValidateSchema() {
   const { getInterface } = useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
   const collectionField = useFormItemCollectionField();
@@ -995,7 +1009,7 @@ function useShowFieldMode() {
   return showFieldMode;
 }
 
-function useOptions() {
+export function useTitleFieldOptions() {
   const { getCollectionFields, isTitleField } = useCollectionManager_deprecated();
   const compile = useCompile();
   const collectionField = useFormItemCollectionField();

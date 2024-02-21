@@ -1,10 +1,10 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useBlockAssociationContext, useBlockRequestContext } from '../../block-provider';
 import { useCollection_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -42,6 +42,7 @@ export const RecordReadPrettyFormBlockInitializer = () => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               template: s,
+              settings: 'blockSettings:singleDataDetails',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -60,6 +61,7 @@ export const RecordReadPrettyFormBlockInitializer = () => {
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
+              settings: 'blockSettings:singleDataDetails',
             }),
           );
         }

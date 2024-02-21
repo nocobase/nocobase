@@ -1,9 +1,9 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { Field, onFieldValueChange } from '@formily/core';
-import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
+import { ISchema, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree, Flex, ModalProps, Tag } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Flex, ModalProps, Tag } from 'antd';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { useApp } from '../../../application';
@@ -14,7 +14,6 @@ import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
-import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
   SchemaSettingsActionModalItem,
@@ -30,25 +29,6 @@ import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowT
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 
-const Tree = connect(
-  AntdTree,
-  mapProps((props, field: any) => {
-    useEffect(() => {
-      field.value = props.defaultCheckedKeys || [];
-    }, []);
-    const [checkedKeys, setCheckedKeys] = useState(props.defaultCheckedKeys || []);
-    const onCheck = (checkedKeys) => {
-      setCheckedKeys(checkedKeys);
-      field.value = checkedKeys;
-    };
-    field.onCheck = onCheck;
-    return {
-      ...props,
-      checkedKeys,
-      onCheck,
-    };
-  }),
-);
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -63,7 +43,7 @@ const MenuGroup = (props) => {
   );
 };
 
-function ButtonEditor(props) {
+export function ButtonEditor(props) {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -128,95 +108,6 @@ function ButtonEditor(props) {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
             title,
-            'x-component-props': {
-              ...fieldSchema['x-component-props'],
-            },
-          },
-        });
-        dn.refresh();
-      }}
-    />
-  );
-}
-
-function SaveMode() {
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const field = useField();
-  const fieldSchema = useFieldSchema();
-  const { name } = useCollection_deprecated();
-  const { getEnableFieldTree, getOnLoadData } = useCollectionState(name);
-
-  return (
-    <SchemaSettingsModalItem
-      title={t('Save mode')}
-      components={{ Tree }}
-      scope={{ getEnableFieldTree, name, getOnLoadData }}
-      schema={
-        {
-          type: 'object',
-          title: t('Save mode'),
-          properties: {
-            saveMode: {
-              'x-decorator': 'FormItem',
-              'x-component': 'Radio.Group',
-              // title: t('Save mode'),
-              default: field.componentProps.saveMode || 'create',
-              enum: [
-                { value: 'create', label: '{{t("Insert")}}' },
-                { value: 'firstOrCreate', label: '{{t("Insert if not exists")}}' },
-                { value: 'updateOrCreate', label: '{{t("Insert if not exists, or update")}}' },
-              ],
-            },
-            filterKeys: {
-              type: 'array',
-              title: '{{ t("Determine whether a record exists by the following fields") }}',
-              required: true,
-              default: field.componentProps.filterKeys,
-              'x-decorator': 'FormItem',
-              'x-component': 'Tree',
-              'x-component-props': {
-                treeData: [],
-                checkable: true,
-                checkStrictly: true,
-                selectable: false,
-                loadData: '{{ getOnLoadData($self) }}',
-                defaultCheckedKeys: field.componentProps.filterKeys,
-                rootStyle: {
-                  padding: '8px 0',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '2px',
-                  maxHeight: '30vh',
-                  overflow: 'auto',
-                  margin: '2px 0',
-                },
-              },
-              'x-reactions': [
-                {
-                  dependencies: ['.saveMode'],
-                  fulfill: {
-                    state: {
-                      hidden: '{{ $deps[0]==="create"}}',
-                      componentProps: {
-                        treeData: '{{ getEnableFieldTree(name, $self) }}',
-                      },
-                    },
-                  },
-                },
-              ],
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={({ saveMode, filterKeys }) => {
-        field.componentProps.saveMode = saveMode;
-        field.componentProps.filterKeys = filterKeys;
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props'].saveMode = saveMode;
-        fieldSchema['x-component-props'].filterKeys = filterKeys;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
             'x-component-props': {
               ...fieldSchema['x-component-props'],
             },
@@ -298,7 +189,7 @@ export function AssignedFieldValues() {
   );
 }
 
-function RequestSettings() {
+export function RequestSettings() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -322,7 +213,7 @@ function RequestSettings() {
   );
 }
 
-function SkipValidation() {
+export function SkipValidation() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -345,7 +236,7 @@ function SkipValidation() {
     />
   );
 }
-function AfterSuccess() {
+export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -413,7 +304,7 @@ function AfterSuccess() {
     />
   );
 }
-function RemoveButton(
+export function RemoveButton(
   props: {
     onConfirmOk?: ModalProps['onOk'];
   } = {},
@@ -529,7 +420,7 @@ function WorkflowSelect({ actionType, direct = false, ...props }) {
   );
 }
 
-function WorkflowConfig() {
+export function WorkflowConfig() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -689,17 +580,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
-        name: 'saveMode',
-        Component: SaveMode,
-        useVisible() {
-          const fieldSchema = useFieldSchema();
-          return (
-            fieldSchema['x-action'] === 'submit' &&
-            fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
-          );
-        },
-      },
-      {
         name: 'linkageRules',
         Component: (props) => {
           return <SchemaSettingsLinkageRules {...props} />;
@@ -828,7 +708,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
     ],
   },
 ];
-function SecondConFirm() {
+export function SecondConFirm() {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();

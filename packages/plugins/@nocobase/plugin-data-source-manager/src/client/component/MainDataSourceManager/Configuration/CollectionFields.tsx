@@ -1,6 +1,9 @@
 import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
+import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import React, { useContext, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Action,
   AddCollectionField,
@@ -25,9 +28,6 @@ import {
   useResourceContext,
   ViewCollectionField,
 } from '@nocobase/client';
-import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
-import React, { useContext, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import { collection } from './schemas/collectionFields';
 

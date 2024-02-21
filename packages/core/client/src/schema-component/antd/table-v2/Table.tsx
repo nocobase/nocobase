@@ -36,6 +36,7 @@ const useArrayField = (props) => {
 };
 
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
+  const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
   const { schemaInWhitelist } = useACLFieldWhitelist();
@@ -70,7 +71,16 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
               <RecordIndexProvider index={record.__index || index}>
                 <RecordProvider_deprecated isNew={_.isEmpty(record)} record={record} parent={parentRecordData}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
-                    <span role="button">
+                    <span
+                      role="button"
+                      className={css`
+                        // 扩大 SchemaToolbar 的面积
+                        .nb-table-column-action-item .nb-action-link {
+                          margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
+                          padding: ${token.paddingContentVerticalLG}px ${token.marginSM}px;
+                        }
+                      `}
+                    >
                       <RecursionField
                         basePath={field.address.concat(record.__index || index)}
                         schema={s}

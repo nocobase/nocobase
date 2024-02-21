@@ -68,7 +68,7 @@ export const tableActionInitializers = new SchemaInitializer({
         {
           name: 'toggle',
           title: "{{t('Expand/Collapse')}}",
-          Component: 'ExpandActionInitializer',
+          Component: 'ExpandableActionInitializer',
           schema: {
             'x-align': 'right',
           },

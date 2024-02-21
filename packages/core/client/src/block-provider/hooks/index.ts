@@ -1008,7 +1008,7 @@ export const useAssociationFilterProps = () => {
   const collectionField = AssociationFilter.useAssociationField();
   const { service, props: blockProps } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
-  const cm = useCollectionManager();
+  const cm = useCollectionManager_deprecated();
   const valueKey = collectionField?.target ? cm.getCollection(collectionField.target)?.getPrimaryKey() : 'id';
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
   const field = useField();
@@ -1093,7 +1093,7 @@ export const useAssociationFilterBlockProps = () => {
   const field = useField();
   const { props: blockProps } = useBlockRequestContext();
   const headers = useDataSourceHeaders(blockProps?.dataSource);
-  const cm = useCollectionManager();
+  const cm = useCollectionManager_deprecated();
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 

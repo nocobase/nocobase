@@ -294,6 +294,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
               collection: item.collectionName || item.name,
               dataSource: item.dataSource,
               isCusomeizeCreate,
+              settings: 'blockSettings:createForm',
             }),
           );
         }

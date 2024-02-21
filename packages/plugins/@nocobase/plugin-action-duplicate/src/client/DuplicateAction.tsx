@@ -3,8 +3,10 @@ import { RecursionField, observer, useField, useFieldSchema } from '@formily/rea
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
-  FormBlockContext,
   RecordProvider_deprecated,
+  CollectionProvider,
+  FormBlockContext,
+  RecordProvider,
   fetchTemplateData,
   useAPIClient,
   useActionContext,
@@ -15,6 +17,7 @@ import {
   useFormBlockContext,
   useParentRecordData,
   useRecord_deprecated,
+  useRecord,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
 import React, { useState } from 'react';
@@ -154,6 +157,7 @@ export const DuplicateAction = observer(
           <div>
             {isLinkBtn ? (
               <a
+                className="nb-action-link"
                 role={props.role}
                 aria-label={props['aria-label']}
                 //@ts-ignore
@@ -161,6 +165,7 @@ export const DuplicateAction = observer(
                 style={{
                   opacity: designable && field?.data?.hidden && 0.1,
                   cursor: loading ? 'not-allowed' : 'pointer',
+                  position: 'relative',
                 }}
                 onClick={handelDuplicate}
               >

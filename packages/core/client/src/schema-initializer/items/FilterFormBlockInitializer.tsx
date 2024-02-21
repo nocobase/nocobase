@@ -4,7 +4,7 @@ import { useSchemaInitializerItem } from '../../application';
 import { createFilterFormBlockSchema } from '../utils';
 import { FilterBlockInitializer } from './FilterBlockInitializer';
 
-export const FilterFormBlockInitializer = ({ filterMenuItemChildren, isItem }) => {
+export const FilterFormBlockInitializer = ({ filterItems }) => {
   const itemConfig = useSchemaInitializerItem();
 
   return (
@@ -17,15 +17,18 @@ export const FilterFormBlockInitializer = ({ filterMenuItemChildren, isItem }) =
           template: templateSchema,
           dataSource: item.dataSource,
           collection: item.name || item.collectionName,
+          settings: 'blockSettings:filterForm',
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;
         }
         return s;
       }}
-      createBlockSchema={createFilterFormBlockSchema}
-      filterMenuItemChildren={filterMenuItemChildren}
-      isItem={isItem}
+      createBlockSchema={(options) => {
+        options = { ...options, settings: 'blockSettings:filterForm' };
+        return createFilterFormBlockSchema(options);
+      }}
+      filterItems={filterItems}
     />
   );
 };

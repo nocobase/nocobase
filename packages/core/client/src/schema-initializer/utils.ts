@@ -273,12 +273,14 @@ export const useInheritsTableColumnInitializerFields = () => {
 };
 
 export const useFormItemInitializerFields = (options?: any) => {
-  const { name, currentFields, template } = useCollection_deprecated();
+  const { type: formType } = useFormBlockContext();
+  const { name, currentFields } = useCollection_deprecated();
   const { getInterface, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-  const { snapshot, fieldSchema } = useActionContext();
+  const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
+
   return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
     ?.map((field) => {
@@ -292,7 +294,8 @@ export const useFormItemInitializerFields = (options?: any) => {
       const schema = {
         type: 'string',
         name: field.name,
-        'x-designer': 'FormItem.Designer',
+        'x-toolbar': 'FormItemSchemaToolbar',
+        'x-settings': 'fieldSettings:FormItem',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
@@ -358,15 +361,13 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
-      // const component =
-      //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
-      //     ? 'TableField'
-      //     : 'CollectionField';
       let schema = {
         type: 'string',
         name: field.name,
         required: false,
-        'x-designer': 'FormItem.FilterFormDesigner',
+        // 'x-designer': 'FormItem.FilterFormDesigner',
+        'x-toolbar': 'FormItemSchemaToolbar',
+        'x-settings': 'fieldSettings:FilterFormItem',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
@@ -377,7 +378,9 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           type: 'string',
           name: `${field.name}`,
           required: false,
-          'x-designer': 'FormItem.FilterFormDesigner',
+          // 'x-designer': 'FormItem.FilterFormDesigner',
+          'x-toolbar': 'FormItemSchemaToolbar',
+          'x-settings': 'fieldSettings:FilterFormItem',
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-collection-field': `${name}.${field.name}`,
@@ -429,9 +432,10 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
-            'x-designer': 'FormItem.Designer',
+            // 'x-designer': 'FormItem.Designer',
+            'x-toolbar': 'FormItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FormItem',
             'x-component': 'CollectionField',
-
             'x-read-pretty': readPretty,
             'x-component-props': {
               'pattern-disable': block === 'Form' && readPretty,
@@ -505,7 +509,9 @@ const getItem = (
   const schema = {
     type: 'string',
     name: schemaName,
-    'x-designer': 'FormItem.FilterFormDesigner',
+    // 'x-designer': 'FormItem.FilterFormDesigner',
+    'x-toolbar': 'FormItemSchemaToolbar',
+    'x-settings': 'fieldSettings:FilterFormItem',
     'x-designer-props': {
       // 在 useOperatorList 中使用，用于获取对应的操作符列表
       interface: field.interface,
@@ -565,7 +571,9 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             type: 'string',
             name: field.name,
             title: field?.uiSchema?.title || field.name,
-            'x-designer': 'FormItem.Designer',
+            // 'x-designer': 'FormItem.Designer',
+            'x-toolbar': 'FormItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FormItem',
             'x-component': component,
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
@@ -621,7 +629,9 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             required: false,
-            'x-designer': 'FormItem.FilterFormDesigner',
+            // 'x-designer': 'FormItem.FilterFormDesigner',
+            'x-toolbar': 'FormItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FilterFormItem',
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
@@ -669,7 +679,9 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         type: 'string',
         name: field.name,
         title: field?.uiSchema?.title || field.name,
-        'x-designer': 'FormItem.Designer',
+        // 'x-designer': 'FormItem.Designer',
+        'x-toolbar': 'FormItemSchemaToolbar',
+        'x-settings': 'fieldSettings:FormItem',
         'x-component': 'AssignedField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
@@ -691,57 +703,6 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         schema,
       } as SchemaInitializerItemType;
     });
-};
-
-export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection_deprecated();
-  const { getInterface, getCollection } = useCollectionManager_deprecated();
-  const form = useForm();
-  const { readPretty = form.readPretty, block = 'Form' } = options || {};
-  const remove = useRemoveGridFormItem();
-  const filterFields = useMemo(
-    () =>
-      fields
-        ?.filter((field) => {
-          return (
-            field?.interface &&
-            !field?.uiSchema?.['x-read-pretty'] &&
-            field.interface !== 'snapshot' &&
-            field.type !== 'sequence'
-          );
-        })
-        .map((field) => {
-          const interfaceConfig = getInterface(field.interface);
-          const schema = {
-            type: 'string',
-            name: field.name,
-            title: field?.uiSchema?.title || field.name,
-            'x-designer': 'FormItem.Designer',
-            'x-component': 'BulkEditField',
-            'x-decorator': 'FormItem',
-            'x-collection-field': `${name}.${field.name}`,
-          };
-          return {
-            name: field?.uiSchema?.title || field.name,
-            type: 'item',
-            title: field?.uiSchema?.title || field.name,
-            Component: 'CollectionFieldInitializer',
-            remove: remove,
-            schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, {
-                field,
-                block,
-                readPretty,
-                targetCollection: getCollection(field.target),
-              });
-            },
-            schema,
-          } as SchemaInitializerItemType;
-        }),
-    [fields],
-  );
-
-  return filterFields;
 };
 
 const findSchema = (schema: Schema, key: string, action: string) => {
@@ -909,6 +870,7 @@ export const createDetailsBlockSchema = (options) => {
     association,
     resource,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -929,7 +891,8 @@ export const createDetailsBlockSchema = (options) => {
       // useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
-    'x-designer': 'DetailsDesigner',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': settings,
     'x-component': 'CardItem',
     properties: {
       [uid()]: {
@@ -981,6 +944,7 @@ export const createListBlockSchema = (options) => {
     association,
     resource,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1002,7 +966,8 @@ export const createListBlockSchema = (options) => {
       ...others,
     },
     'x-component': 'CardItem',
-    'x-designer': 'List.Designer',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': settings,
     properties: {
       actionBar: {
         type: 'void',
@@ -1069,6 +1034,7 @@ export const createGridCardBlockSchema = (options) => {
     resource,
     template,
     dataSource,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1093,7 +1059,8 @@ export const createGridCardBlockSchema = (options) => {
     'x-component-props': {
       useProps: '{{ useGridCardBlockItemProps }}',
     },
-    'x-designer': 'GridCard.Designer',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': settings,
     properties: {
       actionBar: {
         type: 'void',
@@ -1162,6 +1129,7 @@ export const createFormBlockSchema = (options) => {
     'x-designer': designer = 'FormV2.Designer',
     template,
     title,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1182,7 +1150,8 @@ export const createFormBlockSchema = (options) => {
       // action: 'get',
       // useParams: '{{ useParamsFromRecord }}',
     },
-    'x-designer': designer,
+    'x-toolbar': 'BlockSchemaToolbar',
+    ...(settings ? { 'x-settings': settings } : { 'x-designer': designer }),
     'x-component': 'CardItem',
     'x-component-props': {
       title,
@@ -1230,6 +1199,7 @@ export const createFilterFormBlockSchema = (options) => {
     dataSource,
     action,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1244,7 +1214,8 @@ export const createFilterFormBlockSchema = (options) => {
       collection,
       association,
     },
-    'x-designer': 'FormV2.FilterDesigner',
+    'x-toolbar': 'BlockSchemaToolbar',
+    ...(settings ? { 'x-settings': settings } : { 'x-designer': 'FormV2.FilterDesigner' }),
     'x-component': 'CardItem',
     // 保存当前筛选区块所能过滤的数据区块
     'x-filter-targets': [],
@@ -1292,6 +1263,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
     dataSource,
     resource,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1309,7 +1281,8 @@ export const createReadPrettyFormBlockSchema = (options) => {
       useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
-    'x-designer': 'FormV2.ReadPrettyDesigner',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': settings,
     'x-component': 'CardItem',
     properties: {
       [uid()]: {
@@ -1355,7 +1328,6 @@ export const createTableBlockSchema = (options) => {
     tableActionColumnInitializers,
     tableBlockProvider,
     disableTemplate,
-    TableBlockDesigner,
     dataSource,
     blockType,
     pageSize = 20,
@@ -1380,7 +1352,8 @@ export const createTableBlockSchema = (options) => {
       blockType,
       ...others,
     },
-    'x-designer': TableBlockDesigner ?? 'TableBlockDesigner',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': 'blockSettings:table',
     'x-component': 'CardItem',
     'x-filter-targets': [],
     properties: {
@@ -1422,6 +1395,9 @@ export const createTableBlockSchema = (options) => {
                 'x-component': 'Space',
                 'x-component-props': {
                   split: '|',
+                  classNames: {
+                    item: 'nb-table-column-action-item',
+                  },
                 },
                 properties: {},
               },
@@ -1449,14 +1425,15 @@ export const createCollapseBlockSchema = (options) => {
       },
       name: 'filter-collapse',
     },
-    'x-designer': 'AssociationFilter.BlockDesigner',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': 'blockSettings:filterCollapse',
     'x-component': 'CardItem',
     'x-filter-targets': [],
     properties: {
       [uid()]: {
         type: 'void',
         'x-action': 'associateFilter',
-        'x-initializer': 'AssociationFilter.FilterBlockInitializer',
+        'x-initializer': 'AssociationFilterInitializers',
         'x-component': 'AssociationFilter',
         properties: {},
       },
@@ -1483,7 +1460,8 @@ export const createTableSelectorSchema = (options) => {
       rowKey,
       ...others,
     },
-    'x-designer': 'TableSelectorDesigner',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': 'blockSettings:tableSelector',
     'x-component': 'CardItem',
     properties: {
       actions: {

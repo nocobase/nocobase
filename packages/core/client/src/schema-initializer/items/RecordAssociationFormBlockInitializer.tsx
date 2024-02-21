@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { FormOutlined } from '@ant-design/icons';
 
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 
 export const RecordAssociationFormBlockInitializer = () => {
@@ -39,6 +39,7 @@ export const RecordAssociationFormBlockInitializer = () => {
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers,
               template: s,
+              settings: 'blockSettings:createForm',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -58,6 +59,7 @@ export const RecordAssociationFormBlockInitializer = () => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers,
+              settings: 'blockSettings:createForm',
             }),
           );
         }

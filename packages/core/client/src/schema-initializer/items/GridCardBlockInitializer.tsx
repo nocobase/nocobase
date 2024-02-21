@@ -1,9 +1,9 @@
-import React from 'react';
 import { OrderedListOutlined } from '@ant-design/icons';
+import React from 'react';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 import { createGridCardBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useCollectionManager_deprecated } from '../../collection-manager';
-import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const GridCardBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
@@ -20,6 +20,7 @@ export const GridCardBlockInitializer = () => {
           collection: item.name,
           dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
+          settings: 'blockSettings:gridCard',
         });
         insert(schema);
       }}

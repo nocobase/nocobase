@@ -10,7 +10,6 @@ import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
 import {
-  GeneralSchemaDesigner,
   SchemaSettingsDataScope,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
@@ -18,8 +17,8 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
   isPatternDisabled,
-} from '../../../schema-settings';
-import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+} from '../../../schema-settings/SchemaSettings';
+import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -27,6 +26,7 @@ import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import useServiceOptions from './useServiceOptions';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -348,7 +348,9 @@ AssociationSelect.Designer = function Designer() {
               description: fieldSchema['description'],
               default: fieldSchema['default'],
               'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
+              // 'x-designer': 'FormItem.Designer',
+              'x-toolbar': 'FormItemSchemaToolbar',
+              'x-settings': 'fieldSettings:FormItem',
               'x-component': type,
               'x-validator': fieldSchema['x-validator'],
               'x-collection-field': fieldSchema['x-collection-field'],

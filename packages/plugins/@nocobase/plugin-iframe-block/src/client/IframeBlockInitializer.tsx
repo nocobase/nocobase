@@ -12,7 +12,7 @@ export const IframeBlockInitializer = () => {
       onClick={() => {
         insert({
           type: 'void',
-          'x-designer': 'Iframe.Designer',
+          'x-settings': 'iframeBlockSchemaSettings',
           'x-decorator': 'BlockItem',
           'x-decorator-props': {
             name: 'iframe',

@@ -65,7 +65,7 @@ const useTableSelectorProps = () => {
   };
 };
 const InternalFileManager = (props) => {
-  const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
+  const { value, multiple, onChange, ...others } = props;
   const fieldSchema = useFieldSchema();
   const [visibleSelector, setVisibleSelector] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -145,8 +145,8 @@ const InternalFileManager = (props) => {
       <FileSelector
         value={options}
         multiple={multiple}
-        quickUpload={quickUpload !== false}
-        selectFile={selectFile !== false}
+        quickUpload={fieldSchema['x-component-props'].quickUpload !== false}
+        selectFile={fieldSchema['x-component-props'].selectFile !== false}
         action={`${collectionField?.target}:create`}
         onSelect={handleSelect}
         onRemove={handleRemove}
@@ -196,22 +196,11 @@ const InternalFileManager = (props) => {
 };
 
 const FileManageReadPretty = connect((props) => {
-  const fieldNames = useFieldNames(props);
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
-  const showFilePicker = isShowFilePicker(labelUiSchema);
-  if (showFilePicker) {
-    return (
-      <EllipsisWithTooltip ellipsis>
-        {collectionField ? <Preview {...props} fieldNames={fieldNames} /> : null}
-      </EllipsisWithTooltip>
-    );
-  } else {
-    return <ReadPrettyInternalViewer {...props} />;
-  }
+  return <EllipsisWithTooltip ellipsis>{collectionField ? <Preview {...props} /> : null}</EllipsisWithTooltip>;
 });
 
 export { FileManageReadPretty, InternalFileManager };

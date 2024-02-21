@@ -64,9 +64,7 @@ test.describe('configure fields', () => {
     //修改标题字段
     await page.getByLabel('schema-initializer-ActionBar-KanbanActionInitializers-general').click();
     await page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne').hover();
-    await page
-      .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToOne')
-      .hover();
+    await page.getByTestId('card-1').getByLabel('designer-schema-settings-').hover();
     await page.getByText('Title field').click();
     await page.getByRole('option', { name: 'Username' }).click();
     //显示新的标题字段符合预期

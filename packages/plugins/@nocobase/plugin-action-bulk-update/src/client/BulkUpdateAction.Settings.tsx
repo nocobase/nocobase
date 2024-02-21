@@ -1,18 +1,22 @@
-import React from 'react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { isValid, uid } from '@formily/shared';
 import {
-  SchemaSettings,
   ActionDesigner,
-  useSchemaToolbar,
-  useDesignable,
-  useCompile,
+  DefaultValueProvider,
+  FlagProvider,
+  SchemaSettings,
+  SchemaSettingsActionModalItem,
   SchemaSettingsItemGroup,
+  SchemaSettingsItemType,
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
   AssignedFieldValues,
+  useCompile,
+  useDesignable,
+  useSchemaToolbar,
 } from '@nocobase/client';
-import { isValid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
-import { useFieldSchema, ISchema } from '@formily/react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -121,60 +125,71 @@ function AfterSuccess() {
   );
 }
 
-const bulkUpdateActionSettings = new SchemaSettings({
+const schemaSettingsItems: SchemaSettingsItemType[] = [
+  {
+    name: 'Customize',
+    Component: MenuGroup,
+    children: [
+      {
+        name: 'editButton',
+        Component: ActionDesigner.ButtonEditor,
+        useComponentProps() {
+          const { buttonEditorProps } = useSchemaToolbar();
+          return buttonEditorProps;
+        },
+      },
+      {
+        name: 'updateMode',
+        Component: UpdateMode,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
+            fieldSchema['x-action'],
+          );
+          return isUpdateModePopupAction;
+        },
+      },
+      {
+        name: 'assignFieldValues',
+        Component: AssignedFieldValues,
+        // useVisible() {
+        //   const fieldSchema = useFieldSchema();
+        //   return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
+        // },
+      },
+      {
+        name: 'afterSuccess',
+        Component: AfterSuccess,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+        },
+      },
+      {
+        name: 'remove',
+        sort: 100,
+        Component: ActionDesigner.RemoveButton as any,
+        useComponentProps() {
+          const { removeButtonProps } = useSchemaToolbar();
+          return removeButtonProps;
+        },
+      },
+    ],
+  },
+];
+
+/**
+ * @deprecated
+ * 用于兼容之前版本的 name
+ */
+const deprecatedBulkUpdateActionSettings = new SchemaSettings({
   name: 'ActionSettings:customize:bulkUpdate',
-  items: [
-    {
-      name: 'Customize',
-      Component: MenuGroup,
-      children: [
-        {
-          name: 'editButton',
-          Component: ActionDesigner.ButtonEditor,
-          useComponentProps() {
-            const { buttonEditorProps } = useSchemaToolbar();
-            return buttonEditorProps;
-          },
-        },
-        {
-          name: 'updateMode',
-          Component: UpdateMode,
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
-              fieldSchema['x-action'],
-            );
-            return isUpdateModePopupAction;
-          },
-        },
-        {
-          name: 'assignFieldValues',
-          Component: AssignedFieldValues,
-          // useVisible() {
-          //   const fieldSchema = useFieldSchema();
-          //   return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
-          // },
-        },
-        {
-          name: 'afterSuccess',
-          Component: AfterSuccess,
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
-          },
-        },
-        {
-          name: 'remove',
-          sort: 100,
-          Component: ActionDesigner.RemoveButton as any,
-          useComponentProps() {
-            const { removeButtonProps } = useSchemaToolbar();
-            return removeButtonProps;
-          },
-        },
-      ],
-    },
-  ],
+  items: schemaSettingsItems,
 });
 
-export { bulkUpdateActionSettings };
+const bulkUpdateActionSettings = new SchemaSettings({
+  name: 'actionSettings:bulkUpdate',
+  items: schemaSettingsItems,
+});
+
+export { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings };

@@ -84,17 +84,19 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 删除已创建的 blocks，腾出页面空间
     // delete details block
     await page.getByText('GeneralConfigure actionsConfigure fields').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:singleDataDetails-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete form block
     await page.getByLabel('block-item-CardItem-general-form').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:editForm-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete markdown block
     await page.getByLabel('block-item-Markdown.Void-general-markdown').hover();
-    await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer-general').hover();
+    await page
+      .getByRole('button', { name: 'designer-schema-settings-Markdown.Void-blockSettings:markdown-general' })
+      .hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
@@ -133,7 +135,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test1')).toBeVisible();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-CreateFormBulkEditBlockInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-BulkEditBlockInitializers-general').hover();
     await page.getByText('Form').click();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
 
@@ -173,17 +175,17 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 删除已创建的 blocks，腾出页面空间
     // delete details block
     await page.getByText('GeneralConfigure actionsConfigure fields').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:singleDataDetails-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete form block
     await page.getByLabel('block-item-CardItem-general-form').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:editForm-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete markdown block
     await page.getByLabel('block-item-Markdown.Void-general-markdown').hover();
-    await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-Markdown.Void-blockSettings:markdown-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 

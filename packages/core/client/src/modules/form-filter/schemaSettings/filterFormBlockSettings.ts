@@ -1,17 +1,17 @@
 import { useFieldSchema } from '@formily/react';
-import { SchemaSettings } from '../../../application/schema-settings';
+import { useTranslation } from 'react-i18next';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { FilterBlockType } from '../../../filter-provider';
-import { useTranslation } from 'react-i18next';
 import {
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsConnectDataBlocks,
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
-  SchemaSettingsConnectDataBlocks,
-  SchemaSettingsBlockTitleItem,
 } from '../../../schema-settings';
 
-export const formFilterSettings = new SchemaSettings({
-  name: 'FormFilterSettings',
+export const filterFormBlockSettings = new SchemaSettings({
+  name: 'blockSettings:filterForm',
   items: [
     {
       name: 'title',

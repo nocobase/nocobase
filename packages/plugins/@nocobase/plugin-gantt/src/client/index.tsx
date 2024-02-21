@@ -1,13 +1,13 @@
+import { ActionBar, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
-import { Plugin, ActionBar, CurrentAppInfoProvider, SchemaComponentOptions } from '@nocobase/client';
-import { Gantt } from './components/gantt/gantt';
 import { GanttDesigner } from './Gantt.Designer';
-import { ViewMode } from './types/public-types';
-import { Event } from './components/gantt/Event';
+import { ganttSettings, oldGanttSettings } from './Gantt.Settings';
 import { GanttActionInitializers } from './GanttActionInitializers';
 import { GanttBlockInitializer } from './GanttBlockInitializer';
 import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
-import { ganttSettings } from './Gantt.Settings';
+import { Event } from './components/gantt/Event';
+import { Gantt } from './components/gantt/gantt';
+import { ViewMode } from './types/public-types';
 
 Gantt.ActionBar = ActionBar;
 Gantt.ViewMode = ViewMode;
@@ -32,6 +32,7 @@ GanttProvider.displayName = 'GanttProvider';
 export class GanttPlugin extends Plugin {
   async load() {
     this.app.use(GanttProvider);
+    this.app.schemaSettingsManager.add(oldGanttSettings);
     this.app.schemaSettingsManager.add(ganttSettings);
     this.app.schemaInitializerManager.add(GanttActionInitializers);
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');

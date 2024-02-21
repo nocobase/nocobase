@@ -24,7 +24,7 @@ const toValue = (value, placeholder) => {
   }
   return value;
 };
-function isObject(value) {
+export function isObject(value) {
   return typeof value === 'object' && value !== null;
 }
 export const ReadPrettyInternalViewer: React.FC = observer(

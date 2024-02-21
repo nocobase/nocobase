@@ -1,8 +1,8 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
+import { useSchemaInitializerItem } from '../../application';
 import { createFormBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializerItem } from '../../application';
 
 export const FormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -18,6 +18,7 @@ export const FormBlockInitializer = () => {
           dataSource: item.dataSource,
           template: templateSchema,
           collection: item.name,
+          settings: 'blockSettings:createForm',
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;

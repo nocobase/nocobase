@@ -1,21 +1,21 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
+import { SchemaSettings } from '../../../application/schema-settings';
 import { useFormBlockContext } from '../../../block-provider';
 import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
-import { useDesignable } from '../../hooks';
-import { removeNullCondition } from '../filter';
-import { SchemaSettings } from '../../../application/schema-settings';
 import {
-  SchemaSettingsLinkageRules,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDataScope,
   SchemaSettingsDataTemplates,
   SchemaSettingsFormItemTemplate,
-  SchemaSettingsDataScope,
-  SchemaSettingsBlockTitleItem,
+  SchemaSettingsLinkageRules,
   SchemaSettingsTemplate,
-} from '../../../schema-settings';
+} from '../../../schema-settings/SchemaSettings';
+import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
 
 export const formSettings = new SchemaSettings({
   name: 'FormSettings',

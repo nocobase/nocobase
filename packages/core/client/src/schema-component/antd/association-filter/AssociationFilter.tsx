@@ -12,7 +12,10 @@ import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer
 import { AssociationFilterProvider } from './AssociationFilterProvider';
 import { useSchemaInitializerRender } from '../../../application';
 import { Plugin } from '../../../application/Plugin';
-import { associationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
+import {
+  associationFilterFilterBlockInitializer,
+  associationFilterInitializers,
+} from './AssociationFilter.FilterBlockInitializer';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
 
 export const AssociationFilter = (props) => {
@@ -101,6 +104,7 @@ AssociationFilter.useAssociationField = () => {
 export class AssociationFilterPlugin extends Plugin {
   async load() {
     this.app.schemaInitializerManager.add(associationFilterFilterBlockInitializer);
+    this.app.schemaInitializerManager.add(associationFilterInitializers);
     this.app.schemaInitializerManager.add(associationFilterInitializer);
   }
 }

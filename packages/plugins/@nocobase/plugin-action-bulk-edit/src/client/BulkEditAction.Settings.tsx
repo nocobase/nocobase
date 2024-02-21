@@ -1,19 +1,19 @@
-import React from 'react';
+import { useFieldSchema } from '@formily/react';
 import {
-  SchemaSettings,
-  useCompile,
   ActionDesigner,
-  useSchemaToolbar,
-  useDesignable,
   SchemaInitializerOpenModeSchemaItems,
-  SchemaSettingsSelectItem,
+  SchemaSettings,
   SchemaSettingsDivider,
-  SchemaSettingsRemove,
   SchemaSettingsItemGroup,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  useCompile,
+  useDesignable,
+  useSchemaToolbar,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFieldSchema } from '@formily/react';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -78,7 +78,12 @@ function RemoveButton(
     )
   );
 }
-const bulkEditactionSettings = new SchemaSettings({
+
+/**
+ * @deprecated
+ * 之所以还保留，仅是为了兼容旧版 schema
+ */
+export const deprecatedBulkEditActionSettings = new SchemaSettings({
   name: 'ActionSettings:customize:bulkEdit',
   items: [
     {
@@ -131,4 +136,55 @@ const bulkEditactionSettings = new SchemaSettings({
   ],
 });
 
-export { bulkEditactionSettings };
+export const bulkEditActionSettings = new SchemaSettings({
+  name: 'actionSettings:bulkEdit',
+  items: [
+    {
+      name: 'Customize',
+      Component: MenuGroup,
+      children: [
+        {
+          name: 'editButton',
+          Component: ActionDesigner.ButtonEditor,
+          useComponentProps() {
+            const { buttonEditorProps } = useSchemaToolbar();
+            return buttonEditorProps;
+          },
+        },
+        {
+          name: 'openMode',
+          Component: SchemaInitializerOpenModeSchemaItems,
+          useComponentProps() {
+            const fieldSchema = useFieldSchema();
+            const isPopupAction = [
+              'create',
+              'update',
+              'view',
+              'customize:popup',
+              'duplicate',
+              'customize:create',
+            ].includes(fieldSchema['x-action'] || '');
+
+            return {
+              openMode: isPopupAction,
+              openSize: isPopupAction,
+            };
+          },
+        },
+        {
+          name: 'updateMode',
+          Component: UpdateMode,
+        },
+        {
+          name: 'remove',
+          sort: 100,
+          Component: RemoveButton as any,
+          useComponentProps() {
+            const { removeButtonProps } = useSchemaToolbar();
+            return removeButtonProps;
+          },
+        },
+      ],
+    },
+  ],
+});

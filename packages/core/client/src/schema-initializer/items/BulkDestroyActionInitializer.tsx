@@ -9,7 +9,8 @@ export const BulkDestroyActionInitializer = (props) => {
     title: '{{ t("Delete") }}',
     'x-action': 'destroy',
     'x-component': 'Action',
-    'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:bulkDelete',
     'x-decorator': 'ACLActionProvider',
     'x-acl-action-props': {
       skipScopeCheck: true,

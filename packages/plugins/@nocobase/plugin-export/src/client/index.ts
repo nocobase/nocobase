@@ -4,6 +4,7 @@ export * from './ExportPluginProvider';
 export * from './useExportAction';
 import { Plugin } from '@nocobase/client';
 import { ExportPluginProvider } from './ExportPluginProvider';
+import { exportActionSchemaSettings } from './schemaSettings';
 
 export class ExportPlugin extends Plugin {
   async load() {
@@ -24,6 +25,7 @@ export class ExportPlugin extends Plugin {
     const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
     tableActionInitializers?.add('enableActions.export', initializerData);
     this.app.schemaInitializerManager.addItem('GanttActionInitializers', 'enableActions.export', initializerData);
+    this.app.schemaSettingsManager.add(exportActionSchemaSettings);
   }
 }
 
