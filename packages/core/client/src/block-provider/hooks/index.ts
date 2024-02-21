@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
+  useCollectionManager,
   useDataSourceHeaders,
   useFormActiveFields,
   useFormBlockContext,
@@ -1007,7 +1008,8 @@ export const useAssociationFilterProps = () => {
   const collectionField = AssociationFilter.useAssociationField();
   const { service, props: blockProps } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
-  const valueKey = collectionField?.targetKey || 'id';
+  const cm = useCollectionManager();
+  const valueKey = collectionField?.target ? cm.getCollection(collectionField.target)?.getPrimaryKey() : 'id';
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
   const field = useField();
   const collectionFieldName = collectionField.name;
@@ -1091,10 +1093,11 @@ export const useAssociationFilterBlockProps = () => {
   const field = useField();
   const { props: blockProps } = useBlockRequestContext();
   const headers = useDataSourceHeaders(blockProps?.dataSource);
+  const cm = useCollectionManager();
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
-  valueKey = collectionField?.targetKey || 'id';
+  valueKey = collectionField?.target ? cm.getCollection(collectionField.target)?.getPrimaryKey() : 'id';
   labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
   // eslint-disable-next-line prefer-const

@@ -1,6 +1,7 @@
-import { useOptionalFieldList } from '../../../block-provider/hooks';
-import { useAssociatedFields } from '../../../filter-provider/utils';
 import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
+import { useOptionalFieldList } from '../../../block-provider/hooks';
+import { useCollectionManager } from '../../../data-source';
+import { useAssociatedFields } from '../../../filter-provider/utils';
 
 export const associationFilterFilterBlockInitializer = new SchemaInitializer({
   name: 'AssociationFilter.FilterBlockInitializer',
@@ -13,6 +14,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
       name: 'associationFields',
       title: '{{t("Association fields")}}',
       useChildren() {
+        const cm = useCollectionManager();
         const associatedFields = useAssociatedFields();
         const useProps = '{{useAssociationFilterBlockProps}}';
         const children = associatedFields.map((field) => ({
@@ -27,7 +29,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
             'x-component': 'AssociationFilter.Item',
             'x-component-props': {
               fieldNames: {
-                label: field.targetKey || 'id',
+                label: cm.getCollection(field.target)?.getPrimaryKey() || 'id',
               },
               useProps,
             },
