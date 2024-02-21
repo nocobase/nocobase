@@ -543,5 +543,10 @@
   "Not enabled": "Etkin değil",
   "Search plugin": "Eklenti ara",
   "Author": "Yazar",
-  "Plugin loading failed. Please check the server logs.": "Eklenti yüklenemedi. Lütfen sunucu günlüklerini kontrol edin."
+  "Plugin loading failed. Please check the server logs.": "Eklenti yüklenemedi. Lütfen sunucu günlüklerini kontrol edin.",
+  "loading": "yükleniyor",
+  "name is required": "ad gereklidir",
+  "data source": "veri kaynağı",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" silinmiş olabilir. Lütfen bu {{blockType}}'yi kaldırın.",
+  "DataSource": "Veri Kaynağı"
 }

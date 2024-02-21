@@ -1,5 +1,6 @@
 export * from './ACLProvider';
 export * from './ACLShortcut';
+export * from './Configuration';
 
 import { Plugin } from '../application/Plugin';
 import {

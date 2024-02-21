@@ -711,5 +711,10 @@
   "Add": "Adicionar",
   "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "Excluir automaticamente objetos que dependem desta tabela, bem como objetos que dependem desses objetos",
   "Allow add new":"Permitir novas adições",
-  "Allow selection of existing records":"Permitir a selecção dos registos existentes"
+  "Allow selection of existing records": "Permitir a selecção dos registos existentes",
+  "loading": "carregando",
+  "name is required": "nome é obrigatório",
+  "data source": "fonte de dados",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "O {{type}} \"{{name}}\" pode ter sido excluído. Por favor, remova este {{blockType}}.",
+  "DataSource": "Fonte de dados"
 }

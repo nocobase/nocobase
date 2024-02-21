@@ -3,21 +3,19 @@ import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 
-import { css, usePlugin } from '@nocobase/client';
+import { css, useCompile, usePlugin } from '@nocobase/client';
 
 import {
-  CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
   useAPIClient,
   useActionContext,
-  useCollectionManager,
-  useCompile,
   useCurrentUserContext,
   useFormBlockContext,
-  useRecord,
+  useRecord_deprecated,
   useTableBlockContext,
+  ExtendCollectionsProvider,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   useAvailableUpstreams,
@@ -212,7 +210,7 @@ const UserColumn = observer(
 );
 
 function UserJobStatusColumn(props) {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const labelUnprocessed = useLang('Unprocessed');
   if (record.execution.status && !record.status) {
     return <Tag>{labelUnprocessed}</Tag>;
@@ -456,7 +454,7 @@ function useSubmit() {
 function FlowContextProvider(props) {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const api = useAPIClient();
-  const { id } = useRecord();
+  const { id } = useRecord_deprecated();
   const [flowContext, setFlowContext] = useState<any>(null);
   const [node, setNode] = useState<any>(null);
 
@@ -530,7 +528,7 @@ function FlowContextProvider(props) {
 
 function useFormBlockProps() {
   const { userJob, execution } = useFlowContext();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { data: user } = useCurrentUserContext();
   const { form } = useFormBlockContext();
 
@@ -557,7 +555,7 @@ function useDetailsBlockProps() {
 
 function FooterStatus() {
   const compile = useCompile();
-  const { status, updatedAt } = useRecord();
+  const { status, updatedAt } = useRecord_deprecated();
   const statusOption = JobStatusOptionsMap[status];
   return status ? (
     <Space>
@@ -577,7 +575,7 @@ function FooterStatus() {
 
 function Drawer() {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status } = useRecord();
+  const { id, node, workflow, status } = useRecord_deprecated();
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>
@@ -617,7 +615,6 @@ function Drawer() {
 }
 
 function Decorator({ params = {}, children }) {
-  const { collections, ...cm } = useCollectionManager();
   const blockProps = {
     collection: 'users_jobs',
     resource: 'users_jobs',
@@ -635,14 +632,11 @@ function Decorator({ params = {}, children }) {
   };
 
   return (
-    <CollectionManagerProvider
-      {...cm}
-      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
-    >
+    <ExtendCollectionsProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
       <TableBlockProvider name="workflow-todo" {...blockProps}>
         {children}
       </TableBlockProvider>
-    </CollectionManagerProvider>
+    </ExtendCollectionsProvider>
   );
 }
 

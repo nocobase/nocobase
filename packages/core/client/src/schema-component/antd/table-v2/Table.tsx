@@ -11,12 +11,15 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
+import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
-  RecordProvider,
+  RecordProvider_deprecated,
+  useCollection_deprecated,
+  useParentRecordData,
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
@@ -38,6 +41,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
+  const parentRecordData = useParentRecordData();
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
@@ -64,7 +68,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           return (
             <SubFormProvider value={record}>
               <RecordIndexProvider index={record.__index || index}>
-                <RecordProvider record={record}>
+                <RecordProvider_deprecated isNew={_.isEmpty(record)} record={record} parent={parentRecordData}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
                     <span role="button">
                       <RecursionField
@@ -74,7 +78,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
                       />
                     </span>
                   </ColumnFieldProvider>
-                </RecordProvider>
+                </RecordProvider_deprecated>
               </RecordIndexProvider>
             </SubFormProvider>
           );
@@ -226,6 +230,7 @@ export const Table: any = observer(
     const field = useArrayField(others);
     const columns = useTableColumns(others);
     const schema = useFieldSchema();
+    const collection = useCollection_deprecated();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
     const { expandFlag, allIncludesChildren } = ctx;
@@ -552,7 +557,9 @@ export const Table: any = observer(
             columns={columns}
             expandable={{
               onExpand: (flag, record) => {
-                const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
+                const newKeys = flag
+                  ? [...expandedKeys, record[collection.getPrimaryKey()]]
+                  : expandedKeys.filter((i) => record[collection.getPrimaryKey()] !== i);
                 setExpandesKeys(newKeys);
                 onExpand?.(flag, record);
               },

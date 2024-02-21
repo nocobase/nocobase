@@ -186,6 +186,7 @@ export class ACLRole {
     const resource = this.resources.get(resourceName);
 
     let action = null;
+
     if (resource) {
       action = resource.getAction(actionName);
     }

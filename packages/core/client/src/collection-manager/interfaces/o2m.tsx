@@ -1,16 +1,16 @@
 import { ISchema } from '@formily/react';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
-import { IField } from './types';
 
-export const o2m: IField = {
-  name: 'o2m',
-  type: 'object',
-  group: 'relation',
-  order: 4,
-  title: '{{t("One to many")}}',
-  description: '{{t("One to many description")}}',
-  isAssociation: true,
-  default: {
+export class O2MFieldInterface extends CollectionFieldInterface {
+  name = 'o2m';
+  type = 'object';
+  group = 'relation';
+  order = 4;
+  title = '{{t("One to many")}}';
+  description = '{{t("One to many description")}}';
+  isAssociation = true;
+  default = {
     type: 'hasMany',
     // name,
     uiSchema: {
@@ -42,8 +42,8 @@ export const o2m: IField = {
         },
       },
     },
-  },
-  availableTypes: ['hasMany'],
+  };
+  availableTypes = ['hasMany'];
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
     // schema['type'] = 'array';
     schema['x-component-props'] = schema['x-component-props'] || {};
@@ -58,8 +58,8 @@ export const o2m: IField = {
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
-  },
-  properties: {
+  }
+  properties = {
     'uiSchema.title': {
       type: 'string',
       title: '{{t("Field display name")}}',
@@ -145,7 +145,7 @@ export const o2m: IField = {
                   description:
                     "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'ForeignKey',
                   'x-validator': 'uid',
                   'x-disabled': '{{ !createOnly }}',
                 },
@@ -181,8 +181,8 @@ export const o2m: IField = {
     },
     ...constraintsProps,
     ...reverseFieldProperties,
-  },
-  filterable: {
+  };
+  filterable = {
     nested: true,
     children: [
       // {
@@ -199,5 +199,5 @@ export const o2m: IField = {
       //   },
       // },
     ],
-  },
-};
+  };
+}

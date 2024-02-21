@@ -2,7 +2,11 @@ import { Field } from '@formily/core';
 import { Schema, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useEffect, useMemo } from 'react';
-import { CollectionFieldOptions, useCollection, useCollectionManager } from '../../../../collection-manager';
+import {
+  CollectionFieldOptions_deprecated,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+} from '../../../../collection-manager';
 import { isSubMode } from '../../association-field/util';
 
 /**
@@ -14,8 +18,8 @@ import { isSubMode } from '../../association-field/util';
 export const useSpecialCase = () => {
   const form = useForm();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionField } = useCollectionManager();
+  const { getField } = useCollection_deprecated();
+  const { getCollectionField } = useCollectionManager_deprecated();
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name);
@@ -74,9 +78,9 @@ export function isSpecialCaseField({
   fieldSchema,
   getCollectionField,
 }: {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   fieldSchema: Schema;
-  getCollectionField: (name: string) => CollectionFieldOptions;
+  getCollectionField: (name: string) => CollectionFieldOptions_deprecated;
 }) {
   if (collectionField && ['hasOne', 'belongsTo'].includes(collectionField.type) && fieldSchema) {
     const parentFieldSchema = getParentFieldSchema(fieldSchema);
@@ -137,7 +141,7 @@ export function transformValue(
 
 /**
  * 判断一个 record 是否是从数据库中获取的，如果是则返回 true，否则返回 false
- * @param value useRecord 返回的值
+ * @param value useRecord_deprecated  返回的值
  * @returns boolean
  */
 export function isFromDatabase(value: Record<string, any>) {

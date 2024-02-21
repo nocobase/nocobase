@@ -4,14 +4,26 @@ import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
-import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+
+export const useLabelUiSchemaV2 = () => {
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+
+  return (collectionName: string, label: string): ISchema => {
+    if (!collectionName) {
+      return;
+    }
+    const labelField = getCollectionJoinField(`${collectionName}.${label}`) as CollectionFieldOptions_deprecated;
+    return labelField?.uiSchema;
+  };
+};
 
 export const useLabelUiSchema = (collectionName: string, label: string): ISchema => {
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   if (!collectionName) {
     return;
   }
-  const labelField = getCollectionJoinField(`${collectionName}.${label}`) as CollectionFieldOptions;
+  const labelField = getCollectionJoinField(`${collectionName}.${label}`) as CollectionFieldOptions_deprecated;
   return labelField?.uiSchema;
 };
 

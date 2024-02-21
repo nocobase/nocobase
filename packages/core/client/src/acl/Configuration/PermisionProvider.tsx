@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
-import { useRecord } from '../../record-provider';
+import { useRecord_deprecated } from '../../record-provider';
 
 export const SettingCenterPermissionProvider = (props) => {
   const { currentRecord } = useContext(PermissionContext);
@@ -17,7 +17,7 @@ export const PermissionContext = createContext<any>(null);
 
 export const PermissionProvider = (props) => {
   const api = useAPIClient();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { t } = useTranslation();
   const { snippets } = record;
   snippets?.forEach((key) => {

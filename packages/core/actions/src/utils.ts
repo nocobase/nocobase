@@ -1,4 +1,4 @@
-import { MultipleRelationRepository, Repository } from '@nocobase/database';
+import { Database, MultipleRelationRepository, Repository } from '@nocobase/database';
 import { Context } from '.';
 
 export function pageArgsToLimitArgs(
@@ -17,11 +17,14 @@ export function pageArgsToLimitArgs(
 export function getRepositoryFromParams(ctx: Context) {
   const { resourceName, resourceOf } = ctx.action;
 
+  const connectionName = ctx.get('x-connection');
+  const database = ctx.app.getDb(connectionName || 'main') as Database;
+
   if (resourceOf) {
-    return ctx.db.getRepository<MultipleRelationRepository>(resourceName, resourceOf);
+    return database.getRepository<MultipleRelationRepository>(resourceName, resourceOf);
   }
 
-  return ctx.db.getRepository<Repository>(resourceName);
+  return database.getRepository<Repository>(resourceName);
 }
 
 export function RelationRepositoryActionBuilder(method: 'remove' | 'set') {

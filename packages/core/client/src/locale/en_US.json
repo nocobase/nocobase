@@ -783,5 +783,10 @@
   "Sign in with another account": "Sign in with another account",
   "Return to the main application": "Return to the main application",
   "Permission deined": "Permission denied",
+  "loading": "loading",
+  "name is required": "name is required",
+  "data source": "data source",
+  "DataSource": "DataSource",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.",
   "Preset fields":"Preset fields"
 }

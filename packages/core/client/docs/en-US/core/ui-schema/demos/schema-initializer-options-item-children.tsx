@@ -29,7 +29,7 @@ const myInitializer = new SchemaInitializer({
       ],
     },
     {
-      name: 'a',
+      name: 'b',
       type: 'itemGroup',
       title: '动态 children',
       useChildren() {

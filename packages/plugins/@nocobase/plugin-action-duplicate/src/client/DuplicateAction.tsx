@@ -1,23 +1,24 @@
 import { css, cx } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import { App, Button } from 'antd';
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
-  CollectionProvider,
-  RecordProvider,
+  CollectionProvider_deprecated,
+  FormBlockContext,
+  RecordProvider_deprecated,
+  fetchTemplateData,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useDesignable,
-  useRecord,
-  fetchTemplateData,
-  FormBlockContext,
   useFormBlockContext,
+  useParentRecordData,
+  useRecord_deprecated,
 } from '@nocobase/client';
+import { App, Button } from 'antd';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -72,11 +73,12 @@ export const DuplicateAction = observer(
     const [loading, setLoading] = useState(false);
     const { service, __parent, block } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
-    const record = useRecord();
+    const record = useRecord_deprecated();
+    const parentRecordData = useParentRecordData();
     const { id, __collection } = record;
     const ctx = useActionContext();
-    const { name } = useCollection();
-    const { getCollectionFields } = useCollectionManager();
+    const { name } = useCollection_deprecated();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     const { t } = useTranslation();
     const collectionFields = getCollectionFields(__collection || name);
     const formctx = useFormBlockContext();
@@ -178,13 +180,16 @@ export const DuplicateAction = observer(
                 {loading ? t('Duplicating') : children || t('Duplicate')}
               </Button>
             )}
-            <CollectionProvider name={duplicateCollection || name}>
-              <RecordProvider record={{ ...record, __collection: duplicateCollection || __collection }}>
+            <CollectionProvider_deprecated name={duplicateCollection || name}>
+              <RecordProvider_deprecated
+                record={{ ...record, __collection: duplicateCollection || __collection }}
+                parent={parentRecordData}
+              >
                 <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
                   <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
                 </ActionContextProvider>
-              </RecordProvider>
-            </CollectionProvider>
+              </RecordProvider_deprecated>
+            </CollectionProvider_deprecated>
           </div>
         </FormBlockContext.Provider>
       </div>

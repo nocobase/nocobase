@@ -1,7 +1,7 @@
 import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import { useBlockAssociationContext } from '../../block-provider';
-import { useCollection } from '../../collection-manager';
+import { useCollection_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
@@ -11,7 +11,7 @@ export const RecordFormBlockInitializer = () => {
   const { onCreateBlockSchema, componentType, createBlockSchema, targetCollection, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const currentCollection = useCollection();
+  const currentCollection = useCollection_deprecated();
   const collection = targetCollection || currentCollection;
   const association = useBlockAssociationContext();
   return (
@@ -25,6 +25,7 @@ export const RecordFormBlockInitializer = () => {
             const blockSchema = createFormBlockSchema({
               association,
               collection: collection.name,
+              dataSource: collection.dataSource,
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
@@ -43,6 +44,7 @@ export const RecordFormBlockInitializer = () => {
             createFormBlockSchema({
               association,
               collection: collection.name,
+              dataSource: collection.dataSource,
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',

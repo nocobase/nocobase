@@ -1,17 +1,17 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../collection-manager';
 
 export const useFieldModeOptions = (props?) => {
-  const { getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
   const currentFieldSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema || currentFieldSchema;
   const field = useField();
   const form = useForm();
   const isReadPretty = field.readPretty || form.readPretty;
   const isSubTableField = props?.fieldSchema;
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const { t } = useTranslation();
   const { label } = fieldSchema['x-component-props']?.fieldNames || {};

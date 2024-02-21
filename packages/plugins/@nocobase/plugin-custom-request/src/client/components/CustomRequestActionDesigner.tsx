@@ -5,7 +5,7 @@ import {
   SchemaSettings,
   SchemaSettingsActionModalItem,
   actionSettingsItems,
-  useCollection,
+  useCollection_deprecated,
   useRequest,
 } from '@nocobase/client';
 import React from 'react';
@@ -18,7 +18,7 @@ import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
 
 function CustomRequestSettingsItem() {
   const { t } = useTranslation();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
   const { message } = App.useApp();

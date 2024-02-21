@@ -6,11 +6,13 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
+import _ from 'lodash';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
+import { useRecord, useRecordData } from '../../../data-source/record/RecordProvider';
 import { FlagProvider } from '../../../flag-provider';
-import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
+import { RecordIndexProvider, RecordProvider_deprecated } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
   DefaultValueProvider,
@@ -41,6 +43,7 @@ export const Nester = (props) => {
 
 const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
+  const recordV2 = useRecord();
 
   const isAllowToSetDefaultValue = useCallback(
     ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
@@ -78,11 +81,11 @@ const ToOneNester = (props) => {
   return (
     <FormActiveFieldsProvider name="nester">
       <SubFormProvider value={field.value}>
-        <RecordProvider record={field.value}>
+        <RecordProvider_deprecated isNew={recordV2?.isNew} record={field.value} parent={recordV2?.data}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
           </DefaultValueProvider>
-        </RecordProvider>
+        </RecordProvider_deprecated>
       </SubFormProvider>
     </FormActiveFieldsProvider>
   );
@@ -93,6 +96,7 @@ const ToManyNester = observer(
     const fieldSchema = useFieldSchema();
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
+    const recordData = useRecordData();
 
     if (!Array.isArray(field.value)) {
       field.value = [];
@@ -186,7 +190,7 @@ const ToManyNester = observer(
               </div>
               <FormActiveFieldsProvider name="nester">
                 <SubFormProvider value={value}>
-                  <RecordProvider record={value}>
+                  <RecordProvider_deprecated isNew={_.isEmpty(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
                         <RecursionField
@@ -196,7 +200,7 @@ const ToManyNester = observer(
                         />
                       </DefaultValueProvider>
                     </RecordIndexProvider>
-                  </RecordProvider>
+                  </RecordProvider_deprecated>
                 </SubFormProvider>
               </FormActiveFieldsProvider>
               <Divider />

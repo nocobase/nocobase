@@ -7,14 +7,13 @@ import { cloneDeep } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import * as components from './components';
 import { TemplateSummary } from './components/TemplateSummary';
-import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {
@@ -99,7 +98,7 @@ const getSchema = (schema, category, compile): ISchema => {
 
 const useCreateCollection = (schema?: any) => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -137,18 +136,17 @@ const useCreateCollection = (schema?: any) => {
 };
 
 export const AddCollection = (props) => {
-  const record = useRecord();
-  return <AddCollectionAction item={record} {...props} />;
+  const recordData = useRecord_deprecated();
+  return <AddCollectionAction item={recordData} {...props} />;
 };
 
 export const AddCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getTemplate } = useCollectionManager();
+  const { getTemplate, templates: collectionTemplates } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const collectionTemplates = useMemo(templateOptions, []);
   const items = useMemo(() => {
     const result = [];
     collectionTemplates.forEach((item) => {
@@ -183,7 +181,7 @@ export const AddCollectionAction = (props) => {
   }, [category, items]);
 
   return (
-    <RecordProvider record={record}>
+    <RecordProvider_deprecated record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
           {children || (
@@ -206,6 +204,6 @@ export const AddCollectionAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

@@ -1,12 +1,10 @@
-import Database, { CollectionOptions, DatabaseOptions, mockDatabase } from '@nocobase/database';
+import Database, { CollectionOptions, mockDatabase } from '@nocobase/database';
 import { Handlers, ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import merge from 'deepmerge';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 import db2resource from '../../../server/src/middlewares/db2resource';
-import { uid } from '@nocobase/utils';
 
 interface ActionParams {
   fields?: string[];
@@ -85,6 +83,10 @@ export class MockServer extends Koa {
         prefix: '/api',
       }),
     );
+  }
+
+  getDb() {
+    return this.db;
   }
 
   collection(options: CollectionOptions) {

@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, operators, unique, primaryKey } from './properties';
-import { IField } from './types';
 import { i18n } from '../../i18n';
 import { registerValidateRules } from '@formily/validator';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 registerValidateRules({
   username(value) {
@@ -10,38 +10,38 @@ registerValidateRules({
   },
 });
 
-export const input: IField = {
-  name: 'input',
-  type: 'object',
-  group: 'basic',
-  order: 1,
-  title: '{{t("Single line text")}}',
-  sortable: true,
-  default: {
+export class InputFieldInterface extends CollectionFieldInterface {
+  name = 'input';
+  type = 'object';
+  group = 'basic';
+  order = 1;
+  title = '{{t("Single line text")}}';
+  sortable = true;
+  default = {
     interface: 'input',
     type: 'string',
     uiSchema: {
       type: 'string',
       'x-component': 'Input',
     },
-  },
-  availableTypes: ['string'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['string', 'uid'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
     primaryKey,
     unique,
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.string,
-  },
-  titleUsable: true,
+  };
+  titleUsable = true;
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
-  },
+  }
   validateSchema(fieldSchema) {
     return {
       max: {
@@ -165,5 +165,5 @@ export const input: IField = {
         },
       },
     };
-  },
-};
+  }
+}

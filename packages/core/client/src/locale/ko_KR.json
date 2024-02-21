@@ -45,7 +45,7 @@
   "Enable": "활성화",
   "Disable": "비활성화",
   "On": "켜기",
-  "Off": "끄기",  
+  "Off": "끄기",
   "Logo": "로고",
   "Add menu item": "메뉴 항목 추가",
   "Page": "페이지",
@@ -842,5 +842,10 @@
   "Return to the main application": "메인 애플리케이션으로 돌아가기",
   "Permission denied": "허가 거부",
   "Allow add new": "신규 추가 허용",
-  "Allow selection of existing records": "기존 레코드 선택 허용"
+  "Allow selection of existing records": "기존 레코드 선택 허용",
+  "loading": "로드 중",
+  "name is required": "이름은 필수입니다",
+  "data source": "데이터 소스",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\"이(가) 삭제되었을 수 있습니다. 이 {{blockType}}을(를) 제거하십시오.",
+  "DataSource": "데이터 소스"
 }

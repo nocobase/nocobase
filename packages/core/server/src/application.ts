@@ -46,7 +46,10 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
+import { DataSourceManager } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
+import { MultipleInstanceManager } from './helpers/multiple-instance-manager';
+import { AclSelectorMiddleware } from './middlewares/acl-selector';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -157,6 +160,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
+  private _databases: Map<string, Database> = new Map();
+  private _resourcers: MultipleInstanceManager<Resourcer>;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -165,6 +170,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.init();
 
     this._appSupervisor.addApp(this);
+  }
+
+  private _acls = new Map<string, ACL>();
+
+  get acls() {
+    return this._acls;
   }
 
   protected _loaded: boolean;
@@ -185,10 +196,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cronJobManager;
   }
 
-  protected _db: Database;
-
   get db() {
-    return this._db;
+    return this.getDb();
   }
 
   protected _logger: SystemLogger;
@@ -277,6 +286,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get name() {
     return this.options.name || 'main';
+  }
+
+  protected _dataSourceManager: DataSourceManager;
+
+  get dataSourceManager() {
+    return this._dataSourceManager;
+  }
+
+  createNewACL(name: string) {
+    this._acls.set(name, createACL());
+    return this._acls.get(name);
   }
 
   isMaintaining() {
@@ -383,11 +403,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.telemetry.shutdown();
     }
 
-    const oldDb = this._db;
+    const oldDb = this.getDb();
+
     this.init();
     if (!oldDb.closed()) {
       await oldDb.close();
     }
+
     this._loaded = false;
   }
 
@@ -408,8 +430,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         await this.telemetry.shutdown();
       }
 
-      const oldDb = this._db;
+      const oldDb = this.getDb();
+
       this.init();
+
       if (!oldDb.closed()) {
         await oldDb.close();
       }
@@ -896,6 +920,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
   }
 
+  getDb(name = 'main') {
+    if (!name) {
+      name = 'main';
+    }
+
+    return this._databases.get(name);
+  }
+
+  setDb(db: Database, name = 'main') {
+    this._databases.set(name, db);
+  }
+
   protected init() {
     const options = this.options;
 
@@ -918,17 +954,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cronJobManager = new CronJobManager(this);
 
-    if (this._db) {
+    if (this.getDb()) {
       // MaxListenersExceededWarning
-      this._db.removeAllListeners();
+      this.getDb().removeAllListeners();
     }
 
-    this._db = this.createDatabase(options);
+    this.setDb(this.createDatabase(options));
 
     this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this.context.db = this._db;
+    this.context.db = this.getDb();
+    this.context.getDb = this.getDb;
+
     // this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
     this.context.cacheManager = this._cacheManager;
@@ -958,10 +996,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       actions: authActions,
     });
 
+    this._dataSourceManager = new DataSourceManager();
+    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
 
     if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
+      this._resourcer.use(AclSelectorMiddleware(), { tag: 'acl', after: ['auth'] });
     }
 
     this._locales = new Locale(createAppProxy(this));

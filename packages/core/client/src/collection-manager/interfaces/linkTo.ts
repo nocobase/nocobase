@@ -1,24 +1,21 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { defaultProps } from './properties';
-import { IField } from './types';
 
-export const linkTo: IField = {
-  name: 'linkTo',
-  type: 'object',
-  group: 'relation',
-  order: 1,
-  title: '{{t("Link to")}}',
-  description: '{{t("Link to description")}}',
-  isAssociation: true,
-  default: {
+export class LinkToFieldInterface extends CollectionFieldInterface {
+  name = 'linkTo';
+  type = 'object';
+  group = 'relation';
+  order = 1;
+  title = '{{t("Link to")}}';
+  description = '{{t("Link to description")}}';
+  isAssociation = true;
+  default = {
     type: 'belongsToMany',
-    // name,
     uiSchema: {
-      // title,
       'x-component': 'AssociationField',
       'x-component-props': {
-        // mode: 'tags',
         multiple: true,
         fieldNames: {
           label: 'id',
@@ -29,12 +26,9 @@ export const linkTo: IField = {
     reverseField: {
       interface: 'linkTo',
       type: 'belongsToMany',
-      // name,
       uiSchema: {
-        // title,
         'x-component': 'AssociationField',
         'x-component-props': {
-          // mode: 'tags',
           multiple: true,
           fieldNames: {
             label: 'id',
@@ -43,11 +37,13 @@ export const linkTo: IField = {
         },
       },
     },
-  },
-  availableTypes: ['belongsToMany'],
+  };
+  // availableTypes = ['belongsToMany'];
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
     if (targetCollection?.titleField && schema['x-component-props']) {
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {
@@ -56,8 +52,8 @@ export const linkTo: IField = {
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
-  },
-  initialize: (values: any) => {
+  }
+  initialize = (values: any) => {
     if (values.type === 'belongsToMany') {
       if (!values.through) {
         values.through = `t_${uid()}`;
@@ -75,8 +71,8 @@ export const linkTo: IField = {
         values.targetKey = 'id';
       }
     }
-  },
-  properties: {
+  };
+  properties = {
     ...defaultProps,
     target: {
       type: 'string',
@@ -87,40 +83,14 @@ export const linkTo: IField = {
       'x-component': 'Select',
       'x-disabled': '{{ !createOnly }}',
     },
-    // through: {
-    //   type: 'string',
-    //   title: '{{t("Junction collection")}}',
-    //   'x-disabled': '{{ !createOnly }}',
-    //   'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Select',
-    //   'x-component-props': {
-    //     placeholder: '{{t("Leave it blank, unless you need a custom intermediate table")}}',
-    //   },
-    // },
-    // 'reverseField.uiSchema.title': {
-    //   type: 'string',
-    //   title: '{{t("Reverse field display name")}}',
-    //   // required: true,
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Input',
-    // },
-    // 'uiSchema.x-component-props.fieldNames.label': {
-    //   type: 'string',
-    //   title: '要显示的标题字段',
-    //   required: true,
-    //   'x-reactions': ['{{useAsyncDataSource(loadCollectionFields)}}'],
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Select',
-    // },
     'uiSchema.x-component-props.multiple': {
       type: 'boolean',
       'x-content': '{{t("Allow linking to multiple records")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },
-  },
-  filterable: {
+  };
+  filterable = {
     nested: true,
     children: [
       // {
@@ -137,5 +107,5 @@ export const linkTo: IField = {
       //   },
       // },
     ],
-  },
-};
+  };
+}

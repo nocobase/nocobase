@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   useAPIClient,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useGlobalTheme,
   FormDialog,
   SchemaComponent,
@@ -20,7 +20,7 @@ import { createKanbanBlockSchema } from './utils';
 export const KanbanBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   const { theme } = useGlobalTheme();
@@ -32,7 +32,7 @@ export const KanbanBlockInitializer = () => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const collectionFields = getCollectionFields(item.name);
+        const collectionFields = getCollectionFields(item.name, item.dataSource);
         const fields = collectionFields
           ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
           ?.map((field) => {
@@ -117,6 +117,7 @@ export const KanbanBlockInitializer = () => {
           createKanbanBlockSchema({
             groupField: values.groupField.value,
             collection: item.name,
+            dataSource: item.dataSource,
             params: {
               sort: [sortName.value],
               paginate: false,

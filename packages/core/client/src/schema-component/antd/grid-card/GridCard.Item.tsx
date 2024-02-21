@@ -3,7 +3,8 @@ import { ObjectField } from '@formily/core';
 import { useField } from '@formily/react';
 import { Card } from 'antd';
 import React from 'react';
-import { RecordProvider } from '../../../record-provider';
+import { useParentRecordData } from '../../../data-source/record/RecordProvider';
+import { RecordProvider_deprecated } from '../../../record-provider';
 
 const itemCss = css`
   display: flex;
@@ -16,6 +17,7 @@ const itemCss = css`
 
 export const GridCardItem = (props) => {
   const field = useField<ObjectField>();
+  const parentRecordData = useParentRecordData();
   return (
     <Card
       role="button"
@@ -32,7 +34,9 @@ export const GridCardItem = (props) => {
       `}
     >
       <div className={itemCss}>
-        <RecordProvider record={field.value}>{props.children}</RecordProvider>
+        <RecordProvider_deprecated record={field.value} parent={parentRecordData}>
+          {props.children}
+        </RecordProvider_deprecated>
       </div>
     </Card>
   );

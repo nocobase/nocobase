@@ -4,7 +4,7 @@ import { useSchemaInitializerItem } from '../../application';
 import { createFilterFormBlockSchema } from '../utils';
 import { FilterBlockInitializer } from './FilterBlockInitializer';
 
-export const FilterFormBlockInitializer = ({ filterItems }) => {
+export const FilterFormBlockInitializer = ({ filterMenuItemChildren, isItem }) => {
   const itemConfig = useSchemaInitializerItem();
 
   return (
@@ -15,6 +15,7 @@ export const FilterFormBlockInitializer = ({ filterItems }) => {
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
           template: templateSchema,
+          dataSource: item.dataSource,
           collection: item.name || item.collectionName,
         });
         if (item.template && item.mode === 'reference') {
@@ -23,7 +24,8 @@ export const FilterFormBlockInitializer = ({ filterItems }) => {
         return s;
       }}
       createBlockSchema={createFilterFormBlockSchema}
-      filterItems={filterItems}
+      filterMenuItemChildren={filterMenuItemChildren}
+      isItem={isItem}
     />
   );
 };

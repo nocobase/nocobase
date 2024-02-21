@@ -9,7 +9,7 @@ import { saveAs } from 'file-saver';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
-import { useRecord } from '../../../record-provider';
+import { useRecord_deprecated } from '../../../record-provider';
 import { isImage, isPdf, toArr, toImages } from './shared';
 import { useStyles } from './style';
 import type { UploadProps } from './type';
@@ -23,7 +23,7 @@ export const ReadPretty: Composed = () => null;
 
 ReadPretty.File = function File(props: UploadProps) {
   const { t } = useTranslation();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const field = useField<Field>();
   const value = isString(field.value) ? record : field.value;
   const images = toImages(toArr(value));

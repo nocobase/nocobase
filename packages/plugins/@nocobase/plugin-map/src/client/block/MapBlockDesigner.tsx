@@ -14,8 +14,8 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsTemplate,
   mergeFilter,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
   useSchemaTemplate,
@@ -27,15 +27,15 @@ import { useMapBlockContext } from './MapBlockProvider';
 import { findNestedOption } from './utils';
 
 export const MapBlockDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { service } = useMapBlockContext();
   const { t } = useMapTranslation();
   const { dn } = useDesignable();
-  const { getCollectionFieldsOptions } = useCollectionManager();
-  const collection = useCollection();
+  const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
+  const collection = useCollection_deprecated();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultZoom = fieldSchema?.['x-component-props']?.['zoom'] || 13;

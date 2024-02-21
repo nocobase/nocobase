@@ -3,7 +3,7 @@ import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { Link, Outlet, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -25,7 +25,6 @@ import {
 } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
-import { useCollectionManager } from '../../../collection-manager';
 import { VariablesProvider } from '../../../variables';
 
 const filterByACL = (schema, options) => {
@@ -68,6 +67,7 @@ const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
+  const location = useLocation();
   const isMatchAdmin = useMatch('/admin');
   const isMatchAdminName = useMatch('/admin/:name');
   const defaultSelectedUid = params.name;
@@ -126,11 +126,12 @@ const MenuEditor = (props) => {
 
   useEffect(() => {
     const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || data?.data?.properties;
-    if (properties && sideMenuRef.current) {
-      const pageType = Object.values(properties).find(
-        (item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item',
-      );
-      if (pageType) {
+    if (sideMenuRef.current) {
+      const pageType =
+        properties &&
+        Object.values(properties).find((item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item');
+      const isSettingPage = location?.pathname.includes('/settings');
+      if (pageType || isSettingPage) {
         sideMenuRef.current.style.display = 'none';
       } else {
         sideMenuRef.current.style.display = 'block';
@@ -263,11 +264,9 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const result = useSystemSettings();
-  const { service } = useCollectionManager();
+  // const { service } = useCollectionManager_deprecated();
   const params = useParams<any>();
   const { token } = useToken();
-  const { render } = useAppSpin();
-
   return (
     <Layout>
       <GlobalStyleForAdminLayout />
@@ -418,7 +417,8 @@ export const InternalAdminLayout = (props: any) => {
             pointer-events: none;
           `}
         ></header>
-        {service.contentLoading ? render() : <Outlet />}
+        <Outlet />
+        {/* {service.contentLoading ? render() : <Outlet />} */}
       </Layout.Content>
     </Layout>
   );

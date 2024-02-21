@@ -14,6 +14,8 @@ export interface ResourcerContext {
 }
 
 export interface KoaMiddlewareOptions {
+  skipIfDataSourceExists?: boolean;
+
   /**
    * 前缀
    */
@@ -262,9 +264,17 @@ export class Resourcer {
     this.middlewares.add(middlewares, options);
   }
 
-  restApiMiddleware({ prefix, accessors }: KoaMiddlewareOptions = {}) {
+  restApiMiddleware({ prefix, accessors, skipIfDataSourceExists = false }: KoaMiddlewareOptions = {}) {
     return async (ctx: ResourcerContext, next: () => Promise<any>) => {
+      if (skipIfDataSourceExists) {
+        const dataSource = ctx.get('x-data-source');
+        if (dataSource) {
+          return next();
+        }
+      }
+
       ctx.resourcer = this;
+
       let params = parseRequest(
         {
           path: ctx.request.path,
@@ -279,6 +289,7 @@ export class Resourcer {
       if (!params) {
         return next();
       }
+
       try {
         const resource = this.getResource(getNameByParams(params));
 
@@ -300,8 +311,10 @@ export class Resourcer {
             return next();
           }
         }
+
         // action 需要 clone 之后再赋给 ctx
         ctx.action = this.getAction(getNameByParams(params), params.actionName).clone();
+
         ctx.action.setContext(ctx);
         ctx.action.actionName = params.actionName;
         ctx.action.resourceOf = params.associatedIndex;
@@ -325,6 +338,7 @@ export class Resourcer {
         }
         return compose(ctx.action.getHandlers())(ctx, next);
       } catch (error) {
+        console.log(error);
         return next();
       }
     };

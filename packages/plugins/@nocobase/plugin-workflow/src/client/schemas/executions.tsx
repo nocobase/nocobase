@@ -1,7 +1,7 @@
 import React from 'react';
 import { ISchema } from '@formily/react';
 import { Link } from 'react-router-dom';
-import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+import { useActionContext, useRecord_deprecated, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { ExecutionStatusOptions } from '../constants';
 import { NAMESPACE } from '../locale';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +9,7 @@ import { message } from 'antd';
 import { getWorkflowDetailPath } from '../constant';
 
 export const executionCollection = {
-  name: 'executions',
+  name: 'execution-executions',
   fields: [
     {
       interface: 'id',

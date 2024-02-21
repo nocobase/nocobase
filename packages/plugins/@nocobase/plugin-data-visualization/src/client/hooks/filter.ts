@@ -1,4 +1,4 @@
-import { SchemaInitializerItemType, i18n, useActionContext, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemType, i18n, useActionContext, useCollectionManager_deprecated } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { CollectionOptions } from '@nocobase/database';
@@ -12,7 +12,7 @@ import { getFormulaComponent, getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
 
 export const useCustomFieldInterface = () => {
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   return {
     getSchemaByInterface: (fieldInterface: string) => {
       const interfaceConfig = getInterface(fieldInterface);
@@ -62,7 +62,8 @@ export const useChartFilter = () => {
   const { charts } = useContext(ChartDataContext);
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-  const { getCollection, getInterface, getCollectionFields, getCollectionJoinField } = useCollectionManager();
+  const { getCollection, getInterface, getCollectionFields, getCollectionJoinField } =
+    useCollectionManager_deprecated();
   const { fields: fieldProps, form } = useContext(ChartFilterContext);
 
   const getChartFilterFields = (collection: CollectionOptions) => {
@@ -375,7 +376,7 @@ export const useFilterVariable = () => {
 export const useChartFilterSourceFields = () => {
   const { t } = useChartsTranslation();
   const { getChartCollections } = useChartData();
-  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
+  const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const { values } = useFieldComponents();
   const field2option = (field: any, depth: number) => {
     if (!field.interface) {
@@ -457,7 +458,7 @@ export const useFieldComponents = () => {
 };
 
 export const useCollectionJoinFieldTitle = (name: string) => {
-  const { getCollection, getCollectionField } = useCollectionManager();
+  const { getCollection, getCollectionField } = useCollectionManager_deprecated();
   return useMemo(() => {
     if (!name) {
       return;

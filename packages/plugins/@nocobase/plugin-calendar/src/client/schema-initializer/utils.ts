@@ -3,13 +3,14 @@ import { uid } from '@formily/shared';
 import { generateNTemplate } from '../../locale';
 
 export const createCalendarBlockSchema = (options) => {
-  const { collection, resource, fieldNames, ...others } = options;
+  const { collection, dataSource, resource, fieldNames, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
     'x-decorator': 'CalendarBlockProvider',
     'x-decorator-props': {
       collection: collection,
+      dataSource,
       resource: resource || collection,
       action: 'list',
       fieldNames: {
@@ -91,6 +92,6 @@ export const createCalendarBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+
   return schema;
 };

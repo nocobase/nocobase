@@ -1,35 +1,34 @@
 import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const textarea: IField = {
-  name: 'textarea',
-  type: 'object',
-  group: 'basic',
-  order: 2,
-  title: '{{t("Long text")}}',
-  default: {
+export class TextareaFieldInterface extends CollectionFieldInterface {
+  name = 'textarea';
+  type = 'object';
+  group = 'basic';
+  order = 2;
+  title = '{{t("Long text")}}';
+  default = {
     interface: 'textarea',
     type: 'text',
-    // name,
     uiSchema: {
       type: 'string',
       'x-component': 'Input.TextArea',
     },
-  },
-  availableTypes: ['text'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['text', 'json'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
-  },
+  };
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
-  },
-  validateSchema(fieldSchema) {
+  }
+  validateSchema = (fieldSchema) => {
     return {
       max: {
         type: 'number',
@@ -69,8 +68,8 @@ export const textarea: IField = {
         },
       },
     };
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.string,
-  },
-};
+  };
+}
