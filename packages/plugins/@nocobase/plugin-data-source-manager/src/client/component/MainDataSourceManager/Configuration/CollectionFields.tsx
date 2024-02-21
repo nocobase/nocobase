@@ -67,9 +67,10 @@ const CurrentFields = (props) => {
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { resource, targetKey } = props.collectionResource || {};
-  const { [targetKey]: filterByTk, titleField, template } = useRecord_deprecated();
+  const parentRecordData = useRecord_deprecated();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
+  const { [targetKey]: filterByTk, titleField, template } = parentRecordData;
   const targetTemplate = getTemplate(template);
   const columns: TableColumnProps<any>[] = [
     {
@@ -138,7 +139,7 @@ const CurrentFields = (props) => {
         };
 
         return (
-          <RecordProvider_deprecated record={record}>
+          <RecordProvider_deprecated record={record} parent={parentRecordData}>
             <Space>
               <EditCollectionField role="button" aria-label={`edit-button-${record.name}`} type="primary" />
               <Action.Link {...deleteProps} />
@@ -181,10 +182,11 @@ const InheritFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager_deprecated();
   const { resource, targetKey } = props.collectionResource || {};
-  const { [targetKey]: filterByTk, titleField, name } = useRecord_deprecated();
+  const parentRecord = useRecord_deprecated();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
   const { refreshCM, isTitleField } = useCollectionManager_deprecated();
+  const { [targetKey]: filterByTk, titleField, name } = parentRecord;
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -245,7 +247,7 @@ const InheritFields = (props) => {
         };
 
         return (
-          <RecordProvider_deprecated record={record}>
+          <RecordProvider_deprecated record={record} parent={parentRecord}>
             <Space>
               <OverridingCollectionField {...overrideProps} />
               <ViewCollectionField {...viewCollectionProps} />

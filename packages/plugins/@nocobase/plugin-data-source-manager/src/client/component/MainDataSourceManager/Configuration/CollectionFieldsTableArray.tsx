@@ -83,7 +83,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
   (props) => {
     const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
     const field = useField<ArrayField>();
-    const { name } = useRecord_deprecated();
+    const recordData = useRecord_deprecated();
+    const { name } = recordData;
     const { t } = useTranslation();
     const compile = useCompile();
     const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
@@ -174,7 +175,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
               const index = findIndex(field.value, record);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider_deprecated record={record}>
+                  <RecordProvider_deprecated record={record} parent={recordData}>
                     <RecursionField schema={s} name={index} onlyRenderProperties />
                   </RecordProvider_deprecated>
                 </RecordIndexProvider>
@@ -205,7 +206,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
               const index = findIndex(field.value, record);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider_deprecated record={record}>
+                  <RecordProvider_deprecated record={record} parent={recordData}>
                     <SchemaComponent
                       scope={{ currentCollection: name }}
                       schema={overridingSchema as Schema}
