@@ -7,7 +7,7 @@ export class IdFieldInterface extends CollectionFieldInterface {
   group = 'systemInfo';
   order = 0;
   title = '{{t("ID")}}';
-  hidden= true;
+  hidden = true;
   sortable = true;
   default = {
     name: 'id',

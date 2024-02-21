@@ -1,14 +1,14 @@
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const sort: IField = {
-  name: 'sort',
-  type: 'object',
-  group: 'advanced',
-  order: 1,
-  title: '{{t("Sort")}}',
-  sortable: true,
-  default: {
+export class Sort extends CollectionFieldInterface {
+  name = 'sort';
+  type = 'object';
+  group = 'advanced';
+  order = 1;
+  title = '{{t("Sort")}}';
+  sortable = true;
+  default = {
     type: 'string',
     // name,
     uiSchema: {
@@ -17,14 +17,14 @@ export const sort: IField = {
       'x-component': 'Input',
       'x-component-props': {},
     },
-  },
-  availableTypes: ['string'],
-  hasDefaultValue: false,
-  properties: {
+  };
+  availableTypes = ['string'];
+  hasDefaultValue = false;
+  properties = {
     ...defaultProps,
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.string,
-  },
-  titleUsable: true,
-};
+  };
+  titleUsable = true;
+}
