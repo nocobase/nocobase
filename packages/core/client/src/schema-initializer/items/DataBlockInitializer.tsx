@@ -277,7 +277,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     filterMenuItemChildren,
     isItem,
   } = props;
-  const { insert } = useSchemaInitializer();
+  const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const onClick = useCallback(
@@ -298,6 +298,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
           );
         }
       }
+      setVisible(false);
     },
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
