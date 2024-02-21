@@ -14,7 +14,6 @@ interface Props {
     [key: string]: any;
   };
   condition;
-  values;
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }
@@ -36,7 +35,6 @@ export const collectFieldStateOfLinkageRules = ({
   value,
   field,
   condition,
-  values,
   variables,
   localVariables,
 }: Props) => {
