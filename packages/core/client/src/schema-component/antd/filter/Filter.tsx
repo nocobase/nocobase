@@ -27,8 +27,10 @@ export const Filter: any = observer(
     });
 
     useEffect(() => {
-      field.initialValue = fieldSchema.defaultValue;
-    }, []);
+      if (fieldSchema.defaultValue) {
+        field.initialValue = fieldSchema.defaultValue;
+      }
+    }, [fieldSchema.defaultValue]);
     return (
       <div className={className}>
         <FilterContext.Provider
