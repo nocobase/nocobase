@@ -14,7 +14,7 @@ export const BreadcumbTitle = () => {
   const { displayName } = dm.getDataSource(name) || {};
   const { dataSource } = useContext(DataSourceContext);
   const { status } = dataSource;
-  const option = statusEnum.find((v) => v.value === (status || 'loaded'));
+  const option = statusEnum.find((v) => v.value === status);
   return (
     <Breadcrumb
       separator=">"
@@ -24,9 +24,11 @@ export const BreadcumbTitle = () => {
           title: (
             <Space>
               <span>{compile(displayName)}</span>
-              <Tag key={status} color={option?.color}>
-                {compile(option?.label)}
-              </Tag>
+              {status && (
+                <Tag key={status} color={option?.color}>
+                  {compile(option?.label)}
+                </Tag>
+              )}
             </Space>
           ),
         },

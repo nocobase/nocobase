@@ -78,7 +78,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
             );
           },
         },
-        title: `${compile(record.__parent?.title || record.__parent.name)} - ${compile('{{ t("Edit field") }}')}`,
+        title: `${compile(record.__parent?.title || record.collectionName)} - ${compile('{{ t("Edit field") }}')}`,
         properties: {
           summary: {
             type: 'void',
@@ -169,7 +169,6 @@ const EditFieldAction = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const { name } = useParams();
-  const [data, setData] = useState<any>({});
   const isDialect = (dialect: string) => currentDatabase?.dialect === dialect;
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -179,7 +178,6 @@ const EditFieldAction = (props) => {
       };
     });
   }, []);
-
   return (
     <RecordProvider_deprecated record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -187,10 +185,9 @@ const EditFieldAction = (props) => {
           {...otherProps}
           onClick={async () => {
             const { data } = await api.request({
-              url: `dataSourcesCollections/${name}.${record.__parent.name}/fields:get?filterByTk=${record.name}`,
+              url: `dataSourcesCollections/${name}.${record.collectionName}/fields:get?filterByTk=${record.name}`,
               params: { appends: ['reverseField'] },
             });
-            setData(data?.data);
             const interfaceConf = getInterface(data?.data?.interface);
             const defaultValues: any = cloneDeep(data?.data) || {};
             if (!defaultValues?.reverseField) {
