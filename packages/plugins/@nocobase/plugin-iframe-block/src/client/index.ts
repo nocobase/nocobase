@@ -9,6 +9,24 @@ export class IframeBlockPlugin extends Plugin {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',
     });
+
+    const createFormBlockInitializers = this.app.schemaInitializerManager.get('CreateFormBlockInitializers');
+    createFormBlockInitializers?.add('otherBlocks.iframe', {
+      title: '{{t("Iframe")}}',
+      Component: 'IframeBlockInitializer',
+    });
+
+    const recordBlockInitializers = this.app.schemaInitializerManager.get('RecordBlockInitializers');
+    recordBlockInitializers?.add('otherBlocks.iframe', {
+      title: '{{t("Iframe")}}',
+      Component: 'IframeBlockInitializer',
+    });
+
+    const recordFormBlockInitializers = this.app.schemaInitializerManager.get('RecordFormBlockInitializers');
+    recordFormBlockInitializers?.add('otherBlocks.iframe', {
+      title: '{{t("Iframe")}}',
+      Component: 'IframeBlockInitializer',
+    });
   }
 }
 
