@@ -9,6 +9,7 @@ import ACLPlugin from '.';
 import { RolesManagerContext } from './RolesManagerProvider';
 import { RoleConfigure } from './permissions/RoleConfigure';
 import { Permissions } from './permissions/Permissions';
+import { NewRole } from './NewRole';
 
 const collection = {
   name: 'roles',
@@ -82,17 +83,7 @@ export const RolesManagement: React.FC = () => {
             >
               <CollectionProvider collection={collection}>
                 <Row>
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined />}
-                    style={{
-                      textAlign: 'left',
-                      marginBottom: '5px',
-                    }}
-                    block
-                  >
-                    {t('New role')}
-                  </Button>
+                  <NewRole />
                 </Row>
                 <Divider style={{ margin: '12px 0' }} />
                 <RolesMenu />

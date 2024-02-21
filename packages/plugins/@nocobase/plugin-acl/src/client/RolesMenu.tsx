@@ -1,19 +1,37 @@
-import { useAPIClient, useResourceActionContext } from '@nocobase/client';
+import {
+  ActionContextProvider,
+  RecordProvider,
+  SchemaComponent,
+  useAPIClient,
+  useResourceActionContext,
+} from '@nocobase/client';
 import { Menu, Empty, Dropdown, App, Tag } from 'antd';
 import { TagOutlined, MoreOutlined } from '@ant-design/icons';
 import React, { useContext, useEffect } from 'react';
 import { useACLTranslation } from './locale';
 import { Schema } from '@formily/react';
 import { RolesManagerContext } from './RolesManagerProvider';
+import { roleEditSchema } from './schemas/roles';
 
 export const RolesMenu: React.FC & {
-  Item: React.FC<{ item: any }>;
+  Item: React.FC<{ item: any; onEdit: () => void }>;
 } = () => {
+  const { t } = useACLTranslation();
   const { data } = useResourceActionContext();
+  const [visible, setVisible] = React.useState(false);
+  const [record, setRecord] = React.useState(null);
   const { role, setRole } = useContext(RolesManagerContext);
   const items = (data?.data || []).map((item: any) => ({
     key: item.name,
-    label: <RolesMenu.Item item={item} />,
+    label: (
+      <RolesMenu.Item
+        item={item}
+        onEdit={() => {
+          setVisible(true);
+          setRecord(item);
+        }}
+      />
+    ),
   }));
 
   const handleSelect = ({ key }) => {
@@ -27,14 +45,23 @@ export const RolesMenu: React.FC & {
     setRole(data?.data[0]);
   }, [data, setRole]);
 
-  return items.length ? (
-    <Menu style={{ border: 'none' }} items={items} selectedKeys={[role?.name]} onSelect={handleSelect} />
-  ) : (
-    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+  return (
+    <>
+      {items.length ? (
+        <Menu style={{ border: 'none' }} items={items} selectedKeys={[role?.name]} onSelect={handleSelect} />
+      ) : (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      )}
+      <ActionContextProvider value={{ visible, setVisible }}>
+        <RecordProvider record={record} collectionName="departments">
+          <SchemaComponent scope={{ t }} schema={roleEditSchema} />
+        </RecordProvider>
+      </ActionContextProvider>
+    </>
   );
 };
 
-RolesMenu.Item = function DepartmentTreeItem({ item }) {
+RolesMenu.Item = function DepartmentTreeItem({ item, onEdit }) {
   const { t } = useACLTranslation();
   const { refreshAsync } = useResourceActionContext();
   const { modal, message } = App.useApp();
@@ -53,6 +80,9 @@ RolesMenu.Item = function DepartmentTreeItem({ item }) {
   const handleClick = ({ key, domEvent }) => {
     domEvent.stopPropagation();
     switch (key) {
+      case 'edit':
+        onEdit();
+        break;
       case 'delete':
         deleteDepartment();
     }
@@ -69,10 +99,6 @@ RolesMenu.Item = function DepartmentTreeItem({ item }) {
       <Dropdown
         menu={{
           items: [
-            {
-              label: t('Configure'),
-              key: 'configure',
-            },
             {
               label: t('Edit'),
               key: 'edit',

@@ -1,12 +1,15 @@
-import { onFieldChange } from '@formily/core';
+import { onFormValuesChange, createForm, Form } from '@formily/core';
 import { connect } from '@formily/react';
 import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
-import { Checkbox } from 'antd';
+import { Checkbox, message } from 'antd';
 import uniq from 'lodash/uniq';
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RolesManagerContext } from '../RolesManagerProvider';
 import { StrategyActions } from './StrategyActions';
+import { useACLTranslation } from '../locale';
+import { uid } from '@formily/shared';
+import { useMemoizedFn } from 'ahooks';
 
 const SnippetCheckboxGroup = connect((props) => {
   const { t } = useTranslation();
@@ -52,47 +55,59 @@ const SnippetCheckboxGroup = connect((props) => {
   );
 });
 
-export const RoleConfigure = () => {
-  const { role } = useContext(RolesManagerContext);
-  const { t } = useTranslation();
+export const GeneralPermissions: React.FC<{
+  active: boolean;
+}> = ({ active }) => {
+  const { role, setRole } = useContext(RolesManagerContext);
+  const { t } = useACLTranslation();
+  const api = useAPIClient();
+  const { data } = useRequest(
+    () =>
+      api
+        .resource('roles')
+        .get({
+          filterByTk: role?.name,
+        })
+        .then((res) => {
+          const record = res?.data?.data;
+          record.snippets?.forEach((key: string) => {
+            record[key] = true;
+          });
+          return record;
+        }),
+    {
+      ready: active,
+      refreshDeps: [role?.name],
+    },
+  );
+  const update = useMemoizedFn(async (form: Form) => {
+    await api.resource('roles').update({
+      filterByTk: role.name,
+      values: form.values,
+    });
+    setRole({ ...role, ...form.values });
+    message.success(t('Saved successfully'));
+  });
+  const form = useMemo(() => {
+    return createForm({
+      values: data,
+      effects() {
+        onFormValuesChange(async (form) => {
+          await update(form);
+        });
+      },
+    });
+  }, [data, update]);
+
   return (
     <SchemaComponent
       components={{ SnippetCheckboxGroup, StrategyActions }}
       schema={{
         type: 'void',
-        name: 'form',
-        'x-component': 'Form',
+        name: uid(),
+        'x-component': 'FormV2',
         'x-component-props': {
-          useValues: (options: any) => {
-            const api = useAPIClient();
-            return useRequest(
-              () =>
-                api
-                  .resource('roles')
-                  .get({
-                    filterByTk: role?.name,
-                  })
-                  .then((res) => {
-                    const record = res?.data?.data;
-                    record.snippets?.forEach((key: string) => {
-                      record[key] = true;
-                    });
-                    return { data: record };
-                  }),
-              {
-                ...options,
-                refreshDeps: [role?.name],
-              },
-            );
-          },
-          effects() {
-            onFieldChange('*', async (field, form) => {
-              if (!form.modified) {
-                return;
-              }
-              // await update(field, form);
-            });
-          },
+          form,
         },
         properties: {
           snippets: {

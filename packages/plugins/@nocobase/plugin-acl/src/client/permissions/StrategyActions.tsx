@@ -43,6 +43,7 @@ export const StrategyActions = connect((props) => {
   return (
     <div>
       <Table
+        rowKey={'name'}
         size={'small'}
         pagination={false}
         columns={[
