@@ -670,5 +670,8 @@
   "Plugin loading failed. Please check the server logs.": "プラグインのロードに失敗しました。サーバーログを確認してください。",
   "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "テーブルに依存するオブジェクト、およびそれらに依存するオブジェクトを自動的に削除する",
   "Allow add new":"新規作成を許可",
-  "Allow selection of existing records":"既存のデータの選択を許可"
+  "Allow selection of existing records":"既存のデータの選択を許可",
+  "Home page": "ホームページ",
+  "User manual": "ユーザーマニュアル",
+  "License": "ライセンス"
 }
