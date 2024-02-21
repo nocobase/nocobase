@@ -355,15 +355,17 @@ export class CollectionManagerPlugin extends Plugin {
   async install() {
     const dataSourcesCollection = this.app.db.getCollection('dataSources');
 
-    await dataSourcesCollection.repository.create({
-      values: {
-        key: 'main',
-        type: 'main',
-        displayName: 'Main',
-        fixed: true,
-        options: {},
-      },
-    });
+    if (dataSourcesCollection) {
+      await dataSourcesCollection.repository.create({
+        values: {
+          key: 'main',
+          type: 'main',
+          displayName: 'Main',
+          fixed: true,
+          options: {},
+        },
+      });
+    }
   }
 }
 

@@ -95,6 +95,10 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.db.on('dataSources.afterCreate', async (model: DataSourceModel, options) => {
+      if (model.isMainRecord()) {
+        return;
+      }
+
       const { transaction } = options;
       await this.app.db.getRepository('dataSourcesRolesResourcesScopes').create({
         values: {
