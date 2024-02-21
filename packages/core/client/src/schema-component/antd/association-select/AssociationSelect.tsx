@@ -7,7 +7,7 @@ import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
 import {
   GeneralSchemaDesigner,
@@ -99,8 +99,8 @@ export const AssociationSelect = InternalAssociationSelect as unknown as Associa
 
 AssociationSelect.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection, isTitleField } =
-    useCollectionManager();
-  const { getField } = useCollection();
+    useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -612,8 +612,8 @@ AssociationSelect.Designer = function Designer() {
  * @returns
  */
 AssociationSelect.FilterDesigner = function FilterDesigner() {
-  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();

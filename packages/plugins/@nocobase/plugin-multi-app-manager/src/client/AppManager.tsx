@@ -1,11 +1,11 @@
-import { SchemaComponent, useRecord } from '@nocobase/client';
+import { SchemaComponent, useRecord_deprecated } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { schema } from './settings/schemas/applications';
 import { usePluginUtils } from './utils';
 
 const useLink = () => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   if (record.options?.standaloneDeployment && record.cname) {
     return `//${record.cname}`;
   }

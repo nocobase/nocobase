@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { useCallback, useState } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCompile } from '../../../schema-component';
 import { TreeNode } from '../TreeLabel';
 
@@ -19,7 +19,8 @@ export const systemKeys = [
   'sequence',
 ];
 export const useCollectionState = (currentCollectionName: string) => {
-  const { getCollectionFields, getAllCollectionsInheritChain, getCollection, getInterface } = useCollectionManager();
+  const { getCollectionFields, getAllCollectionsInheritChain, getCollection, getInterface } =
+    useCollectionManager_deprecated();
   const [collectionList] = useState(getCollectionList);
   const compile = useCompile();
   const templateField: any = useField();

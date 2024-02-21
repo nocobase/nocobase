@@ -4,11 +4,9 @@ import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
 import { AdminSettingsLayout } from './PluginSetting';
 import { PluginManager } from './PluginManager';
 import { ACLPane } from '../acl/ACLShortcut';
-import { CollectionManagerPane } from '../collection-manager';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
 import { ADMIN_SETTINGS_PATH } from '../application';
-import { Outlet } from 'react-router-dom';
 
 export * from './PluginManagerLink';
 export * from './PluginSetting';
@@ -39,16 +37,6 @@ export class PMPlugin extends Plugin {
       title: '{{t("System settings")}}',
       Component: SystemSettingsPane,
       aclSnippet: 'pm.system-settings.system-settings',
-    });
-
-    this.app.pluginSettingsManager.add('collection-manager', {
-      icon: 'DatabaseOutlined',
-      title: '{{t("Collection manager")}}',
-    });
-
-    this.app.pluginSettingsManager.add('collection-manager.collections', {
-      title: '{{t("Collections & Fields")}}',
-      Component: CollectionManagerPane,
     });
   }
 

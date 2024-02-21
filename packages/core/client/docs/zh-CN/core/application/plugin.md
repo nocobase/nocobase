@@ -34,6 +34,10 @@ class Plugin<T = any> {
     return this.app.schemaSettingsManager;
   }
 
+  get dataSourceManager() {
+    return this.app.dataSourceManager;
+  }
+
   async afterAdd() {}
 
   async beforeLoad() {}

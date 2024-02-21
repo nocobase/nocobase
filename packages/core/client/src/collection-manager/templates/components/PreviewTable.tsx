@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EllipsisWithTooltip, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
-import { useCollectionManager } from '../../hooks/useCollectionManager';
+import { useCollectionManager_deprecated } from '../../hooks/useCollectionManager_deprecated';
 
 const mapFields = ['lineString', 'point', 'circle', 'polygon'];
 export const PreviewTable = (props) => {
@@ -13,7 +13,7 @@ export const PreviewTable = (props) => {
   const [previewData, setPreviewData] = useState([]);
   const compile = useCompile();
   const [loading, setLoading] = useState(false);
-  const { getInterface, getCollectionFields } = useCollectionManager();
+  const { getInterface, getCollectionFields } = useCollectionManager_deprecated();
   const api = useAPIClient();
   const { t } = useTranslation();
   const form = useForm();

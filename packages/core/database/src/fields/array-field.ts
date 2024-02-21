@@ -11,9 +11,12 @@ export class ArrayField extends Field {
   }
 
   sortValue = (model) => {
-    const oldValue = model.get(this.options.name);
+    let oldValue = model.get(this.options.name);
 
     if (oldValue) {
+      if (typeof oldValue === 'string') {
+        oldValue = JSON.parse(oldValue);
+      }
       const newValue = oldValue.sort();
       model.set(this.options.name, newValue);
     }

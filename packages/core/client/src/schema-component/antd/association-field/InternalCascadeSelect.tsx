@@ -6,7 +6,7 @@ import { Select as AntdSelect, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useCollectionManager } from '../../../';
+import { useAPIClient, useCollectionManager_deprecated } from '../../../';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { SchemaComponent, useCompile } from '../../../schema-component';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
@@ -33,7 +33,7 @@ const CascadeSelect = connect((props) => {
   const service = useServiceOptions(props);
   const { options: collectionField, field: associationField } = useAssociationFieldContext<any>();
   const resource = api.resource(collectionField.target);
-  const { getCollectionJoinField, getInterface } = useCollectionManager();
+  const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
   const fieldNames = associationField?.componentProps?.fieldNames;
   const targetField =
     collectionField?.target &&

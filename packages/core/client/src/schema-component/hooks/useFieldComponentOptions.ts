@@ -1,12 +1,12 @@
 import { useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../collection-manager';
 
 export const useFieldComponentOptions = () => {
-  const { getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const { t } = useTranslation();
   const { label } = fieldSchema['x-component-props']?.fieldNames || {};

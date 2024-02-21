@@ -3,7 +3,7 @@ import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { getTempFieldState } from '../schema-component/antd/form-v2/utils';
 import { SchemaSettingsModalItem, SchemaSettingsSwitchItem } from '../schema-settings';
@@ -13,8 +13,8 @@ export const GeneralSchemaItems: React.FC<{
 }> = observer(
   (props) => {
     const { required = true } = props;
-    const { getCollectionJoinField } = useCollectionManager();
-    const { getField } = useCollection();
+    const { getCollectionJoinField } = useCollectionManager_deprecated();
+    const { getField } = useCollection_deprecated();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();

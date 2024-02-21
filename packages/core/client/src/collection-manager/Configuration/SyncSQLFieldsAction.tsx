@@ -1,18 +1,19 @@
-import { RecordProvider, useRecord } from '../../record-provider';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActionContextProvider, FormProvider, SchemaComponent, useActionContext } from '../../schema-component';
 import { SyncOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
-import { Button } from 'antd';
-import { uid } from '@formily/shared';
-import { useCancelAction } from '../action-hooks';
-import { FieldsConfigure, PreviewTable, SQLRequestProvider } from '../templates/components/sql-collection';
-import { createForm } from '@formily/core';
 import { FormLayout } from '@formily/antd-v5';
-import { useCollectionManager } from '../hooks';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
-import { useAPIClient } from '../../api-client';
+import { createForm } from '@formily/core';
 import { useField, useForm } from '@formily/react';
+import { uid } from '@formily/shared';
+import { Button } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../api-client';
+import { useParentRecordData } from '../../data-source/record/RecordProvider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { ActionContextProvider, FormProvider, SchemaComponent, useActionContext } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
+import { useCancelAction } from '../action-hooks';
+import { useCollectionManager_deprecated } from '../hooks/useCollectionManager_deprecated';
+import { FieldsConfigure, PreviewTable, SQLRequestProvider } from '../templates/components/sql-collection';
 
 const schema = {
   type: 'object',
@@ -90,10 +91,10 @@ const schema = {
 const useSyncFromDB = (refreshCMList?: any) => {
   const form = useForm();
   const ctx = useActionContext();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const { refresh } = useResourceActionContext();
   const { targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   const api = useAPIClient();
   const field = useField();
   return {
@@ -125,7 +126,8 @@ const useSyncFromDB = (refreshCMList?: any) => {
 export const SyncSQLFieldsAction: React.FC<{
   refreshCMList: any;
 }> = ({ refreshCMList }) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
+  const parentRecordData = useParentRecordData();
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const form = useMemo(
@@ -138,7 +140,7 @@ export const SyncSQLFieldsAction: React.FC<{
 
   return (
     record.template === 'sql' && (
-      <RecordProvider record={record}>
+      <RecordProvider_deprecated record={record} parent={parentRecordData}>
         <FormProvider form={form}>
           <ActionContextProvider value={{ visible, setVisible }}>
             <Button icon={<SyncOutlined />} onClick={(e) => setVisible(true)}>
@@ -154,7 +156,7 @@ export const SyncSQLFieldsAction: React.FC<{
             />
           </ActionContextProvider>
         </FormProvider>
-      </RecordProvider>
+      </RecordProvider_deprecated>
     )
   );
 };

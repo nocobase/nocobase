@@ -1,30 +1,28 @@
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, unique } from './properties';
-import { IField } from './types';
 
-export const password: IField = {
-  name: 'password',
-  type: 'object',
-  group: 'basic',
-  order: 9,
-  title: '{{t("Password")}}',
-  default: {
+export class PasswordFieldInterface extends CollectionFieldInterface {
+  name = 'password';
+  type = 'object';
+  group = 'basic';
+  order = 9;
+  title = '{{t("Password")}}';
+  default = {
     type: 'password',
     hidden: true,
-    // name,
     uiSchema: {
       type: 'string',
-      // title,
       'x-component': 'Password',
     },
-  },
-  availableTypes: ['password'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['password'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
     unique,
-  },
-  validateSchema(fieldSchema) {
+  };
+  validateSchema = (fieldSchema) => {
     return {
       max: {
         type: 'number',
@@ -64,5 +62,5 @@ export const password: IField = {
         },
       },
     };
-  },
-};
+  };
+}

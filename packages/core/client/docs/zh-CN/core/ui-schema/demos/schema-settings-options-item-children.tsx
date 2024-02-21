@@ -34,7 +34,7 @@ const mySettings = new SchemaSettings({
       ],
     },
     {
-      name: 'a',
+      name: 'b',
       type: 'itemGroup',
       componentProps: {
         title: '动态 children',
@@ -44,7 +44,9 @@ const mySettings = new SchemaSettings({
           {
             name: 'a1',
             type: 'item',
-            title: 'A 1',
+            componentProps: {
+              title: 'A 1',
+            },
             onClick: () => {
               alert('a-1');
             },
@@ -52,7 +54,9 @@ const mySettings = new SchemaSettings({
           {
             name: 'a2',
             type: 'item',
-            title: 'A 2',
+            componentProps: {
+              title: 'A 2',
+            },
           },
         ];
       },

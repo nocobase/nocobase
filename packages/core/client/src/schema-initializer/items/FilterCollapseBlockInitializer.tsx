@@ -5,7 +5,7 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../applicatio
 import { createCollapseBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 
-export const FilterCollapseBlockInitializer = ({ filterItems }) => {
+export const FilterCollapseBlockInitializer = ({ filterMenuItemChildren, isItem }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
 
@@ -16,13 +16,15 @@ export const FilterCollapseBlockInitializer = ({ filterItems }) => {
       componentType={'FilterCollapse'}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
+          dataSource: item.dataSource,
           collection: item.collectionName || item.name,
           // 与数据区块做区分
           blockType: 'filter',
         });
         insert(schema);
       }}
-      filterItems={filterItems}
+      filterMenuItemChildren={filterMenuItemChildren}
+      isItem={isItem}
     />
   );
 };

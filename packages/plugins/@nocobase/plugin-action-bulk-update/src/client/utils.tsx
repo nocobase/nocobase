@@ -1,20 +1,20 @@
+import { SchemaExpressionScopeContext, useField, useFieldSchema } from '@formily/react';
 import {
-  useBlockRequestContext,
-  useTableBlockContext,
-  useCompile,
-  useRecord,
-  useVariables,
-  useCollection,
-  useLocalVariables,
+  TableFieldResource,
   isVariable,
   transformVariableValue,
-  TableFieldResource,
+  useBlockRequestContext,
+  useCollection_deprecated,
+  useCompile,
+  useLocalVariables,
+  useRecord_deprecated,
+  useTableBlockContext,
+  useVariables,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
-import { SchemaExpressionScopeContext, useFieldSchema, useField } from '@formily/react';
-import { useNavigate } from 'react-router-dom';
 import { App, message } from 'antd';
 import { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBulkUpdateTranslation } from './locale';
 
 export const useCustomizeBulkUpdateActionProps = () => {
@@ -31,9 +31,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionField: any = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const record = useRecord();
-  const { name, getField } = useCollection();
-  const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
+  const record = useRecord_deprecated();
+  const { name, getField } = useCollection_deprecated();
+  const localVariables = useLocalVariables();
 
   return {
     async onClick() {

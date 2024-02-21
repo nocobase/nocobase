@@ -2,11 +2,11 @@ import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { observer, useField, useForm } from '@formily/react';
 import {
   CollectionField,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   SchemaComponent,
   Variable,
   css,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCompile,
   useToken,
 } from '@nocobase/client';
@@ -17,7 +17,7 @@ import { lang } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 
 function AssociationInput(props) {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const { path } = useField();
   const fieldName = path.segments[path.segments.length - 1] as string;
   const { values: config } = useForm();
@@ -39,7 +39,7 @@ const CollectionFieldSet = observer(
     const { t } = useTranslation();
     const compile = useCompile();
     const form = useForm();
-    const { getCollection, getCollectionFields } = useCollectionManager();
+    const { getCollection, getCollectionFields } = useCollectionManager_deprecated();
     const scope = useWorkflowVariableOptions();
     const { values: config } = form;
     const collectionName = config?.collection;
@@ -79,7 +79,7 @@ const CollectionFieldSet = observer(
         `}
       >
         {fields.length ? (
-          <CollectionProvider collection={getCollection(collectionName)}>
+          <CollectionProvider_deprecated collection={getCollection(collectionName)}>
             {fields
               .filter((field) => value && field.name in value)
               .map((field) => {
@@ -141,7 +141,7 @@ const CollectionFieldSet = observer(
                 <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
               </Dropdown>
             ) : null}
-          </CollectionProvider>
+          </CollectionProvider_deprecated>
         ) : (
           <p style={{ color: token.colorText }}>{lang('Please select collection first')}</p>
         )}

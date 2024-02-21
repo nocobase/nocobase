@@ -1,10 +1,10 @@
 import React from 'react';
-import { useCollectionManager, useCompile, Variable } from '@nocobase/client';
+import { useCollectionManager_deprecated, useCompile, Variable } from '@nocobase/client';
 
 export const Expression = (props) => {
   const { value = '', supports = [], useCurrentFields, onChange } = props;
   const compile = useCompile();
-  const { interfaces } = useCollectionManager();
+  const { interfaces } = useCollectionManager_deprecated();
 
   const fields = (useCurrentFields?.() ?? []).filter((field) => supports.includes(field.interface));
 

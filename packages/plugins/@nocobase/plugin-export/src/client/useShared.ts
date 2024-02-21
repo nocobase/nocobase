@@ -1,8 +1,8 @@
-import { Cascader, css, useCollection } from '@nocobase/client';
+import { Cascader, css, useCollection_deprecated } from '@nocobase/client';
 import { useFields } from './useFields';
 
 export const useShared = () => {
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const fields = useFields(name);
   return {
     schema: {

@@ -6,7 +6,7 @@ import { ConfigProvider, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -121,7 +121,7 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer(
 );
 
 Form.Designer = function Designer() {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>

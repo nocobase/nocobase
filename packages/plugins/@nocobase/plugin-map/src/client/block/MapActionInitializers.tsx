@@ -1,4 +1,4 @@
-import { SchemaInitializer, useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection_deprecated } from '@nocobase/client';
 
 // 表格操作配置
 export const mapActionInitializers: SchemaInitializer = new SchemaInitializer({
@@ -34,7 +34,7 @@ export const mapActionInitializers: SchemaInitializer = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return collection.template !== 'sql';
           },
         },
@@ -52,7 +52,7 @@ export const mapActionInitializers: SchemaInitializer = new SchemaInitializer({
       name: 'divider',
       type: 'divider',
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return collection.template !== 'sql';
       },
     },
@@ -62,7 +62,7 @@ export const mapActionInitializers: SchemaInitializer = new SchemaInitializer({
       name: 'customize',
       children: [],
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return collection.template !== 'sql';
       },
     },

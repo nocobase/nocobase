@@ -3,7 +3,7 @@ import { uniq } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord } from '../../record-provider';
+import { useRecord_deprecated } from '../../record-provider';
 import { useStyles } from '../style';
 import { useMenuItems } from './MenuItemsProvider';
 
@@ -41,7 +41,7 @@ const getChildrenUids = (data = [], arr = []) => {
 
 export const MenuConfigure = () => {
   const { styles } = useStyles();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const api = useAPIClient();
   const { items } = useMenuItems();
   const { t } = useTranslation();

@@ -1,4 +1,4 @@
-import { SchemaInitializerItemType, useCollectionManager, useCompile, usePlugin } from '@nocobase/client';
+import { SchemaInitializerItemType, useCollectionManager_deprecated, useCompile, usePlugin } from '@nocobase/client';
 
 import WorkflowPlugin, {
   defaultFieldNames,
@@ -80,7 +80,7 @@ export default class extends Instruction {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
       return null;
@@ -120,7 +120,7 @@ export default class extends Instruction {
   }
   useInitializers(node): SchemaInitializerItemType | null {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollection } = useCollectionManager();
+    const { getCollection } = useCollectionManager_deprecated();
     const formKeys = Object.keys(node.config.forms ?? {});
     if (!formKeys.length || node.config.mode) {
       return null;

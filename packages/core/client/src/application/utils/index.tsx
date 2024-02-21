@@ -28,7 +28,7 @@ export const compose = (...components: [ComponentType, any][]) => {
         <Child {...childProps}>{children}</Child>
       </Parent>
     );
-    ComposeComponent.displayName = Child.displayName || Child.name;
+    ComposeComponent.displayName = `compose(${Child.displayName || Child.name})`;
     return ComposeComponent;
   }, BlankComponent);
 

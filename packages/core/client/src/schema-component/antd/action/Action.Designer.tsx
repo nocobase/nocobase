@@ -2,7 +2,7 @@ import { ArrayTable } from '@formily/antd-v5';
 import { Field, onFieldValueChange } from '@formily/core';
 import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree, Flex, ModalProps, Space, Tag } from 'antd';
+import { Alert, Tree as AntdTree, Flex, ModalProps, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
@@ -10,7 +10,8 @@ import { useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
@@ -18,18 +19,16 @@ import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDes
 import {
   SchemaSettingsActionModalItem,
   SchemaSettingsDivider,
+  SchemaSettingsEnableChildCollections,
   SchemaSettingsItemGroup,
   SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSwitchItem,
-  SchemaSettingsEnableChildCollections,
 } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { useFormBlockContext } from '../../../block-provider';
-import { useRequest } from '../../../api-client';
 
 const Tree = connect(
   AntdTree,
@@ -145,7 +144,7 @@ function SaveMode() {
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const { getEnableFieldTree, getOnLoadData } = useCollectionState(name);
 
   return (
@@ -453,8 +452,8 @@ function WorkflowSelect({ actionType, direct = false, ...props }) {
   const { t } = useTranslation();
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
-  const baseCollection = useCollection();
-  const { getCollection } = useCollectionManager();
+  const baseCollection = useCollection_deprecated();
+  const { getCollection } = useCollectionManager_deprecated();
   const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
   const compile = useCompile();
 
@@ -472,7 +471,7 @@ function WorkflowSelect({ actionType, direct = false, ...props }) {
 
   useFormEffects(() => {
     onFieldValueChange(`group[${index}].context`, (field) => {
-      let collection: CollectionOptions = baseCollection;
+      let collection: any = baseCollection;
       if (field.value) {
         const paths = field.value.split('.');
         for (let i = 0; i < paths.length && collection; i++) {
@@ -542,7 +541,7 @@ function WorkflowConfig() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const { name: collection } = useCollection();
+  const { name: collection } = useCollection_deprecated();
   // TODO(refactor): should refactor for getting certain action type, better from 'x-action'.
   const formBlock = useFormBlockContext();
   const actionType = formBlock?.type || fieldSchema['x-action'];
@@ -710,14 +709,16 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       },
       {
         name: 'linkageRules',
-        Component: SchemaSettingsLinkageRules,
+        Component: (props) => {
+          return <SchemaSettingsLinkageRules {...props} />;
+        },
         useVisible() {
           const isAction = useLinkageAction();
           const { linkageAction } = useSchemaToolbar();
           return linkageAction || isAction;
         },
         useComponentProps() {
-          const { name } = useCollection();
+          const { name } = useCollection_deprecated();
           const { linkageRulesProps } = useSchemaToolbar();
           return {
             ...linkageRulesProps,
@@ -806,14 +807,14 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         Component: SchemaSettingsEnableChildCollections,
         useVisible() {
           const fieldSchema = useFieldSchema();
-          const { name } = useCollection();
-          const { getChildrenCollections } = useCollectionManager();
+          const { name } = useCollection_deprecated();
+          const { getChildrenCollections } = useCollectionManager_deprecated();
           const isChildCollectionAction =
             getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
           return isChildCollectionAction;
         },
         useComponentProps() {
-          const { name } = useCollection();
+          const { name } = useCollection_deprecated();
           return {
             collectionName: name,
           };

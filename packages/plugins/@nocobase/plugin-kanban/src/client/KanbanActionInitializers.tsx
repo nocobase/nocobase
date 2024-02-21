@@ -1,4 +1,4 @@
-import { SchemaInitializer, useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection_deprecated } from '@nocobase/client';
 
 export const kanbanActionInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'KanbanActionInitializers',
@@ -33,7 +33,7 @@ export const kanbanActionInitializers: SchemaInitializer = new SchemaInitializer
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection as any).template !== 'view' || collection?.writableView;
           },
         },

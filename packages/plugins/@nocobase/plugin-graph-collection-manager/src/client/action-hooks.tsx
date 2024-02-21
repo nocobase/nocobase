@@ -4,7 +4,7 @@ import {
   useAPIClient,
   useActionContext,
   useCollectionFieldFormValues,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCompile,
   useRequest,
 } from '@nocobase/client';
@@ -62,7 +62,7 @@ export const useCreateActionAndRefreshCM = (setTargetNode) => {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
 
   return {
     async run() {
@@ -80,7 +80,7 @@ export const useCreateAction = (collectionName, targetId?) => {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const { positionTargetNode, openPorts } = useContext(GraphCollectionContext);
   const { getValues } = useCollectionFieldFormValues();
 
@@ -120,7 +120,7 @@ export const useCreateAction = (collectionName, targetId?) => {
 };
 
 export const useUpdateFieldAction = ({ collectionName, name, key }) => {
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const form = useForm();
   const ctx = useActionContext();
@@ -149,7 +149,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
   const ctx = useActionContext();
   const { name } = form.values;
   const api = useAPIClient();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const { positionTargetNode } = useContext(GraphCollectionContext);
   return {
     async run() {
@@ -187,7 +187,7 @@ const useDestroyAction = (name) => {
 export const useDestroyActionAndRefreshCM = (props) => {
   const { name } = props;
   const { run } = useDestroyAction(name);
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const { positionTargetNode } = useContext(GraphCollectionContext);
   return {
     async run() {
@@ -213,7 +213,7 @@ const useDestroyFieldAction = (collectionName, name) => {
 
 export const useDestroyFieldActionAndRefreshCM = (props) => {
   const { collectionName, name } = props;
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const { run } = useDestroyFieldAction(collectionName, name);
   return {
     async run() {

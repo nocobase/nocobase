@@ -1,77 +1,12 @@
-import { ISchema } from '@formily/react';
-import { ReactNode } from 'react';
+import type { ISchema } from '@formily/react';
+import type { ReactNode } from 'react';
+import type { CollectionManager, CollectionOptions } from '../data-source';
 
-type dumpable = 'required' | 'optional' | 'skip';
-type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
-
-type MetaDataType = 'meta';
-type ConfigDataType = 'config';
-type BusinessDataType = 'business';
-
-type DumpDataType = MetaDataType | ConfigDataType | BusinessDataType;
-type Dumpable = 'required' | 'optional' | 'skip';
-
-type BaseDuplicatorObject = {
-  with?: string[] | string;
-  delayRestore?: any;
-};
-
-type Duplicator =
-  | Dumpable
-  | ({
-      dumpable?: Dumpable;
-    } & BaseDuplicatorObject)
-  | ({
-      dataType?: DumpDataType;
-    } & BaseDuplicatorObject);
-
-export interface CollectionOptions {
-  name: string;
-  title?: string;
-  namespace?: string;
-  /**
-   * Used for @nocobase/plugin-duplicator
-   * @see packages/core/database/src/collection-group-manager.tss
-   *
-   * @prop {'required' | 'optional' | 'skip'} dumpable - Determine whether the collection is dumped
-   * @prop {string[] | string} [with] - Collections dumped with this collection
-   * @prop {any} [delayRestore] - A function to execute after all collections are restored
-   */
-  duplicator?: Duplicator;
-  tableName?: string;
-  inherits?: string[] | string;
-  viewName?: string;
-  writableView?: boolean;
-
-  filterTargetKey?: string;
-  fields?: FieldOptions[];
-  model?: any;
-  repository?: any;
-  sortable?: CollectionSortable;
-  /**
-   * @default true
-   */
-  autoGenId?: boolean;
-  /**
-   * @default 'options'
-   */
-  magicAttribute?: string;
-
-  tree?: string;
-
-  template?: string;
-
-  [key: string]: any;
-}
+export type { CollectionOptions } from '../data-source';
 
 export interface CollectionManagerOptions {
-  service?: any;
-  interfaces?: any;
-  collections?: CollectionOptions[];
-  templates?: any;
-  refreshCM?: () => Promise<void>;
+  instance?: CollectionManager;
   children?: ReactNode;
-  updateCollection?: (collection: any) => void;
 }
 
 export type FieldOptions = any;
@@ -81,7 +16,7 @@ export interface ICollectionProviderProps {
   fields?: any;
 }
 
-export interface CollectionFieldOptions {
+export interface CollectionFieldOptions_deprecated {
   name?: any;
   collectionName?: string;
   sourceKey?: string; // association field

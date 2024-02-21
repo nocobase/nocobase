@@ -1,34 +1,32 @@
 import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const select: IField = {
-  name: 'select',
-  type: 'object',
-  group: 'choices',
-  order: 2,
-  title: '{{t("Single select")}}',
-  sortable: true,
-  default: {
+export class SelectFieldInterface extends CollectionFieldInterface {
+  name = 'select';
+  type = 'object';
+  group = 'choices';
+  order = 2;
+  title = '{{t("Single select")}}';
+  sortable = true;
+  default = {
     type: 'string',
-    // name,
     uiSchema: {
       type: 'string',
-      // title,
       'x-component': 'Select',
       enum: [],
     },
-  },
-  availableTypes: ['string'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['string', 'bigInt', 'boolean'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.enumType,
-  },
-  titleUsable: true,
+  };
+  titleUsable = true;
   schemaInitialize(schema: ISchema, { block }) {
     const props = (schema['x-component-props'] = schema['x-component-props'] || {});
     props.style = {
@@ -39,5 +37,5 @@ export const select: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       props['ellipsis'] = true;
     }
-  },
-};
+  }
+}

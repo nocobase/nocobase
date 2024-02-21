@@ -17,7 +17,7 @@ test('BlockInitializers should add gantt block', async ({ page, mockPage, mockCo
   await page.getByRole('option', { name: 'Percent2' }).click();
   await page.getByLabel('block-item-Select-Time scale').click();
   await page.getByRole('option', { name: 'Day', exact: true }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
   await expect(page.getByLabel('block-item-gantt')).toBeVisible();
 });
 

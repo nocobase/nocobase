@@ -1,28 +1,26 @@
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { dateTimeProps, defaultProps, operators } from './properties';
-import { IField } from './types';
 
-export const datetime: IField = {
-  name: 'datetime',
-  type: 'object',
-  group: 'datetime',
-  order: 1,
-  title: '{{t("Datetime")}}',
-  sortable: true,
-  default: {
+export class DatetimeFieldInterface extends CollectionFieldInterface {
+  name = 'datetime';
+  type = 'object';
+  group = 'datetime';
+  order = 1;
+  title = '{{t("Datetime")}}';
+  sortable = true;
+  default = {
     type: 'date',
-    // name,
     uiSchema: {
       type: 'string',
-      // title,
       'x-component': 'DatePicker',
       'x-component-props': {
         showTime: false,
       },
     },
-  },
-  availableTypes: ['date'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['date', 'dateOnly'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
     ...dateTimeProps,
     'uiSchema.x-component-props.gmt': {
@@ -34,9 +32,9 @@ export const datetime: IField = {
       'x-decorator': 'FormItem',
       default: false,
     },
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.datetime,
-  },
-  titleUsable: true,
-};
+  };
+  titleUsable = true;
+}

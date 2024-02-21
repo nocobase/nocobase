@@ -1,6 +1,6 @@
 import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
 import React from 'react';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -13,7 +13,7 @@ import { useActionContext } from '../action';
 
 const useLabelFields = (collectionName?: any) => {
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   if (!collectionName) {
     return [];
   }

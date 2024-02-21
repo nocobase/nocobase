@@ -7,14 +7,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettingsDataScope, SchemaSettingsItem } from '../..';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
 import { ITemplate } from '../../../schema-component/antd/form-v2/Templates';
 
 export const Designer = observer(
   () => {
-    const { getCollectionFields, getCollectionField, getCollection, isTitleField } = useCollectionManager();
+    const { getCollectionFields, getCollectionField, getCollection, isTitleField } = useCollectionManager_deprecated();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();

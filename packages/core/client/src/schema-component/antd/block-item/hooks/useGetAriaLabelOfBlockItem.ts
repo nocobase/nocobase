@@ -2,7 +2,7 @@ import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback } from 'react';
 import { useBlockContext } from '../../../../block-provider/BlockProvider';
-import { useCollection } from '../../../../collection-manager';
+import { useCollection_deprecated } from '../../../../collection-manager';
 import { useCompile } from '../../../hooks';
 
 /**
@@ -18,7 +18,7 @@ export const useGetAriaLabelOfBlockItem = (name?: string) => {
   const collectionField = compile(fieldSchema['x-collection-field']);
   let { name: blockName } = useBlockContext() || {};
   // eslint-disable-next-line prefer-const
-  let { name: collectionName, getField } = useCollection();
+  let { name: collectionName, getField } = useCollection_deprecated();
   blockName = name || blockName;
 
   const title = compile(fieldSchema['title']) || compile(getField(fieldSchema.name)?.uiSchema?.title);

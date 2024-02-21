@@ -1,12 +1,12 @@
+import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
 
-export const tree: ICollectionTemplate = {
-  name: 'tree',
-  title: '{{t("Tree collection")}}',
-  order: 3,
-  color: 'blue',
-  default: {
+export class TreeCollectionTemplate extends CollectionTemplate {
+  name = 'tree';
+  title = '{{t("Tree collection")}}';
+  order = 3;
+  color = 'blue';
+  default = {
     tree: 'adjacencyList',
     fields: [
       {
@@ -62,8 +62,8 @@ export const tree: ICollectionTemplate = {
         },
       },
     ],
-  },
-  events: {
+  };
+  events = {
     beforeSubmit(values) {
       if (Array.isArray(values?.fields)) {
         values?.fields.map((f) => {
@@ -71,13 +71,13 @@ export const tree: ICollectionTemplate = {
         });
       }
     },
-  },
-  configurableProperties: getConfigurableProperties(
+  };
+  configurableProperties = getConfigurableProperties(
     'title',
     'name',
     'inherits',
     'category',
     'description',
-    'moreOptions',
-  ),
-};
+    'presetFields',
+  );
+}

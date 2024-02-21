@@ -5,7 +5,7 @@ import { Tree as AntdTree } from 'antd';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 import { mergeFilter } from '../../filter-provider/utils';
 import { SchemaComponent, SchemaComponentContext, removeNullCondition } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
@@ -50,7 +50,7 @@ export const FormDataTemplates = observer(
       getScopeDataSource,
       useTitleFieldDataSource,
     } = useCollectionState(collectionName);
-    const { getCollection, getCollectionField } = useCollectionManager();
+    const { getCollection, getCollectionField } = useCollectionManager_deprecated();
     const { t } = useTranslation();
     // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
     const activeData = useMemo<ITemplate>(

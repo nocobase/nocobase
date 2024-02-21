@@ -2,7 +2,7 @@ import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
 import {
   useBlockAssociationContext,
-  useCollection,
+  useCollection_deprecated,
   useSchemaTemplateManager,
   createFormBlockSchema,
   useRecordCollectionDataSourceItems,
@@ -17,7 +17,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const association = useBlockAssociationContext();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   return (
     <SchemaInitializerItem
       icon={<FormOutlined />}
@@ -30,6 +30,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
               actionInitializers: 'CreateFormActionInitializers',
               association,
               collection: collection.name,
+              dataSource: collection.dataSource,
               template: s,
             });
             if (item.mode === 'reference') {
@@ -46,6 +47,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
               actionInitializers: 'BulkEditFormActionInitializers',
               association,
               collection: collection.name,
+              dataSource: collection.dataSource,
             }),
           );
         }

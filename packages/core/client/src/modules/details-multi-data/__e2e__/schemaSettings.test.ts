@@ -66,7 +66,7 @@ test.describe('actions schema settings', () => {
         await page.getByRole('button', { name: 'Duplicate' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
       },
-      supportedOptions: ['Edit button', 'Duplicate mode', 'Open mode', 'Popup size', 'Delete'],
+      supportedOptions: ['Edit button', 'Linkage rules', 'Duplicate mode', 'Open mode', 'Popup size', 'Delete'],
     });
   });
 });

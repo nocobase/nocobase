@@ -3,22 +3,22 @@ import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
 import { useTranslation } from 'react-i18next';
 import { useBlockRequestContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 
 export const useGetFilterOptions = () => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const getFilterFieldOptions = useGetFilterFieldOptions();
 
-  return (collectionName) => {
-    const fields = getCollectionFields(collectionName);
+  return (collectionName, dataSource?: string) => {
+    const fields = getCollectionFields(collectionName, dataSource);
     const options = getFilterFieldOptions(fields);
     return options;
   };
 };
 
 export const useFilterOptions = (collectionName: string) => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
   const options = useFilterFieldOptions(fields);
   return options;
@@ -27,7 +27,7 @@ export const useFilterOptions = (collectionName: string) => {
 export const useGetFilterFieldOptions = () => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const field2option = (field, depth) => {
     if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
       return;
@@ -85,7 +85,7 @@ export const useGetFilterFieldOptions = () => {
 export const useFilterFieldOptions = (fields) => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const field2option = (field, depth) => {
     if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
       return;
@@ -159,7 +159,7 @@ export const removeNullCondition = (filter) => {
 };
 
 export const useFilterActionProps = () => {
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const options = useFilterOptions(name);
   const { service, props } = useBlockRequestContext();
   return useFilterFieldProps({ options, service, params: props?.params });

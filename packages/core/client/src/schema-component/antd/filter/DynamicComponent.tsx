@@ -2,7 +2,7 @@ import { createForm, onFieldValueChange } from '@formily/core';
 import { FieldContext, FormContext } from '@formily/react';
 import { merge } from '@formily/shared';
 import React, { useCallback, useContext, useMemo } from 'react';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { SchemaComponent } from '../../core';
 import { useComponent } from '../../hooks';
 import { FilterContext } from './context';
@@ -12,7 +12,7 @@ export interface DynamicComponentProps {
   /**
    * `Filter` 组件左侧选择的字段
    */
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   onChange: (value: any) => void;
   renderSchemaComponent: () => React.JSX.Element;
 }
@@ -20,7 +20,7 @@ export interface DynamicComponentProps {
 interface Props {
   schema: any;
   value: any;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   onChange: (value: any) => void;
 }
 

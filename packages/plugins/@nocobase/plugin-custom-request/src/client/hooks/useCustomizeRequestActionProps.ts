@@ -5,11 +5,11 @@ import {
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
+  useCollection_deprecated,
   useCompile,
   useFilterByTk,
   useFormActiveFields,
-  useRecord,
+  useRecord_deprecated,
 } from '@nocobase/client';
 import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
@@ -24,9 +24,9 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { getPrimaryKey } = useCollection();
+  const { getPrimaryKey } = useCollection_deprecated();
   const { resource, __parent, service } = useBlockRequestContext();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
   const { setVisible } = useActionContext();

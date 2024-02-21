@@ -13,6 +13,7 @@ export interface SchemaInitializerSubMenuProps {
   name: string;
   title?: string;
   onClick?: (args: any) => void;
+  onOpenChange?: (openKeys: string[]) => void;
   icon?: string | ReactNode;
   children?: SchemaInitializerOptions['items'];
 }
@@ -66,9 +67,10 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
 };
 
 export const SchemaInitializerSubMenu: FC<SchemaInitializerSubMenuProps> = (props) => {
-  const { children, title, name = uid(), icon, ...others } = props;
+  const { children, title, name = uid(), onOpenChange, icon, ...others } = props;
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(children, name);
+
   const items = useMemo(() => {
     return [
       {
@@ -80,7 +82,7 @@ export const SchemaInitializerSubMenu: FC<SchemaInitializerSubMenuProps> = (prop
       },
     ];
   }, [childrenItems, compile, icon, name, others, title]);
-  return <SchemaInitializerMenu items={items}></SchemaInitializerMenu>;
+  return <SchemaInitializerMenu onOpenChange={onOpenChange} items={items}></SchemaInitializerMenu>;
 };
 
 export const SchemaInitializerSubMenuInternal = () => {

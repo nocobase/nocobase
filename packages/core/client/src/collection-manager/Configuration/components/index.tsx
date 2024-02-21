@@ -1,19 +1,19 @@
 import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
-import { Select } from 'antd';
-import React from 'react';
-import { useRecord } from '../../../record-provider';
+import { Select, Input } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { useRecord_deprecated } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
-import { useCollectionManager } from '../../hooks';
+import { useCollectionManager_deprecated } from '../../hooks';
 
 export const SourceForeignKey = observer(
   () => {
-    const record = useRecord();
-    const { getCollection } = useCollectionManager();
+    const record = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
     const collection = record?.collectionName ? getCollection(record.collectionName) : record;
     const field = useField<Field>();
     const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     return (
       <div>
         <Select
@@ -40,7 +40,7 @@ export const ThroughForeignKey = observer(
   () => {
     const field = useField<Field>();
     const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     return (
       <div>
         <Select
@@ -68,7 +68,7 @@ export const TargetForeignKey = observer(
   () => {
     const field = useField<Field>();
     const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     return (
       <div>
         <Select
@@ -94,8 +94,8 @@ export const TargetForeignKey = observer(
 
 export const SourceCollection = observer(
   () => {
-    const record = useRecord();
-    const { getCollection } = useCollectionManager();
+    const record = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
     const collection = record?.collectionName ? getCollection(record.collectionName) : record;
     const compile = useCompile();
     return (
@@ -113,23 +113,92 @@ export const SourceCollection = observer(
 );
 
 export const SourceKey = observer(
-  () => {
+  (props: any) => {
+    const { sourceKey, collectionName, name } = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
+    const field: any = useField();
+    const compile = useCompile();
+    const options = getCollection(collectionName || name)
+      .fields?.filter((v) => {
+        return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+      })
+      .map((k) => {
+        console.log(k);
+        return {
+          value: k.name,
+          label: compile(k.uiSchema?.title || k.name),
+        };
+      });
+    useEffect(() => {
+      field.initialValue = options?.[0]?.value || sourceKey;
+    }, []);
     return (
       <div>
-        <Select disabled value={'id'} options={[{ value: 'id', label: 'ID' }]} />
+        <Select
+          disabled={sourceKey}
+          options={options}
+          defaultValue={sourceKey || options?.[0]?.value}
+          onChange={props?.onChange}
+          showSearch
+        />
       </div>
     );
   },
   { displayName: 'SourceKey' },
 );
-
 export const TargetKey = observer(
-  () => {
+  (props: any) => {
+    const { value, disabled } = props;
+    const { targetKey } = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
+    const [options, setOptions] = useState([]);
+    const [initialValue, setInitialValue] = useState(value || targetKey);
+    const form = useForm();
+    const compile = useCompile();
+    const field: any = useField();
+    field.required = true;
     return (
       <div>
-        <Select disabled value={'id'} options={[{ value: 'id', label: 'ID' }]} />
+        <Select
+          showSearch
+          options={options}
+          onDropdownVisibleChange={async (open) => {
+            const { target } = form.values;
+            if (target && open) {
+              setOptions(
+                getCollection(target)
+                  .fields?.filter((v) => {
+                    return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+                  })
+                  .map((k) => {
+                    return {
+                      value: k.name,
+                      label: compile(k?.uiSchema?.title || k.title || k.name),
+                    };
+                  }),
+              );
+            }
+          }}
+          onChange={(value) => {
+            props?.onChange?.(value);
+            setInitialValue(value);
+          }}
+          value={initialValue}
+          disabled={disabled}
+        />
       </div>
     );
   },
   { displayName: 'TargetKey' },
+);
+
+export const ForeignKey = observer(
+  (props) => {
+    return (
+      <div>
+        <Input {...props} />
+      </div>
+    );
+  },
+  { displayName: 'ForeignKey' },
 );

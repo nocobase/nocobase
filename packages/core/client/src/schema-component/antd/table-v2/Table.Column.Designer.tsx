@@ -3,7 +3,7 @@ import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDateFormat,
@@ -25,7 +25,7 @@ import { removeNullCondition } from '../filter';
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   if (!collectionName) {
     return [];
   }
@@ -42,7 +42,7 @@ const useLabelFields = (collectionName?: any) => {
 
 export const useColorFields = (collectionName?: any) => {
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   if (!collectionName) {
     return [];
   }
@@ -59,7 +59,7 @@ export const useColorFields = (collectionName?: any) => {
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const { form } = useFormBlockContext();
-  const { getInterface, getCollection } = useCollectionManager();
+  const { getInterface, getCollection } = useCollectionManager_deprecated();
   const field: any = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();

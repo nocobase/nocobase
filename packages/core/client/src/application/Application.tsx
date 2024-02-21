@@ -15,7 +15,6 @@ import { PluginManager, PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
-
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
@@ -25,6 +24,11 @@ import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
+
+import { type DataSourceManagerOptions, DataSourceManager } from '../data-source/data-source/DataSourceManager';
+import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
+import { CollectionField } from '../data-source/collection-field/CollectionField';
+import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
@@ -40,7 +44,7 @@ export type DevDynamicImport = (packageName: string) => Promise<{ default: typeo
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
   name?: string;
-  apiClient?: APIClientOptions;
+  apiClient?: APIClientOptions | APIClient;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   providers?: (ComponentType | ComponentAndProps)[];
@@ -54,6 +58,7 @@ export interface ApplicationOptions {
   designable?: boolean;
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
+  dataSourceManager?: DataSourceManagerOptions;
 }
 
 export class Application {
@@ -64,8 +69,10 @@ export class Application {
   public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, ComponentType<any> | any> = {
+    DataBlockProvider,
     ...defaultAppComponents,
     ...schemaInitializerComponents,
+    CollectionField,
   };
   public pluginManager: PluginManager;
   public pluginSettingsManager: PluginSettingsManager;
@@ -74,6 +81,7 @@ export class Application {
   public notification;
   public schemaInitializerManager: SchemaInitializerManager;
   public schemaSettingsManager: SchemaSettingsManager;
+  public dataSourceManager: DataSourceManager;
 
   public name: string;
 
@@ -96,16 +104,14 @@ export class Application {
     this.devDynamicImport = options.devDynamicImport;
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
-    this.apiClient = new APIClient(options.apiClient);
+    this.apiClient = options.apiClient instanceof APIClient ? options.apiClient : new APIClient(options.apiClient);
     this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
-    this.router = new RouterManager({
-      ...options.router,
-      renderComponent: this.renderComponent.bind(this),
-    });
+    this.router = new RouterManager(options.router, this);
     this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
+    this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
@@ -133,6 +139,7 @@ export class Application {
       scope: this.scopes,
     });
     this.use(AntdAppProvider);
+    this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
   }
 
   private addReactRouterComponents() {
@@ -146,8 +153,12 @@ export class Application {
   private addRoutes() {
     this.router.add('not-found', {
       path: '*',
-      Component: this.components['AppNotFound'] || BlankComponent,
+      Component: this.components['AppNotFound'],
     });
+  }
+
+  getCollectionManager(dataSource?: string) {
+    return this.dataSourceManager.getDataSource(dataSource)?.collectionManager;
   }
 
   getComposeProviders() {
@@ -217,7 +228,7 @@ export class Application {
         });
       }
       loadFailed = true;
-      const others = error?.response?.data?.error || error?.response?.data?.errors?.[0] || error;
+      const others = error?.response?.data?.error || error?.response?.data?.errors?.[0] || { message: error?.message };
       this.error = {
         code: 'LOAD_ERROR',
         ...others,

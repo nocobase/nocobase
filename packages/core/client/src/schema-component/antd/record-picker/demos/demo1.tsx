@@ -9,7 +9,6 @@ import {
   Application,
   BlockItem,
   CollectionField,
-  CollectionManagerProvider,
   CurrentUserProvider,
   FormItem,
   Input,
@@ -178,11 +177,9 @@ const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <CurrentUserProvider>
-        <CollectionManagerProvider collections={[]}>
-          <SchemaComponentProvider components={components}>
-            <SchemaComponent schema={schema} />
-          </SchemaComponentProvider>
-        </CollectionManagerProvider>
+        <SchemaComponentProvider components={components}>
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
       </CurrentUserProvider>
     </APIClientProvider>
   );

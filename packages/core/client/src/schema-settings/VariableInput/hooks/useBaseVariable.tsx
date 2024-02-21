@@ -1,21 +1,21 @@
 import { ISchema, Schema } from '@formily/json-schema';
 import React, { useContext, useMemo } from 'react';
-import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { isSpecialCaseField } from '../../../schema-component/antd/form-item/hooks/useSpecialCase';
 import { FieldOption, Option } from '../type';
 
 export interface IsDisabledParams {
   option: FieldOption;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   uiSchema: ISchema;
   /** 消费变量值的字段 */
   targetFieldSchema: Schema;
-  getCollectionField: (name: string) => CollectionFieldOptions;
+  getCollectionField: (name: string) => CollectionFieldOptions_deprecated;
 }
 
 interface GetOptionsParams {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   uiSchema: any;
   depth: number;
   /** 消费变量值的字段 */
@@ -28,12 +28,12 @@ interface GetOptionsParams {
   loadChildren?: (option: Option) => Promise<void>;
   compile: (value: string) => any;
   isDisabled?: (params: IsDisabledParams) => boolean;
-  getCollectionField?: (name: string) => CollectionFieldOptions;
+  getCollectionField?: (name: string) => CollectionFieldOptions_deprecated;
 }
 
 interface BaseProps {
   // 当前字段
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   /** 当前字段的 `uiSchema`，和 `collectionField.uiSchema` 不同，该值也包含操作符中 schema（参见 useValues） */
   uiSchema: any;
   /** 消费变量值的字段 */
@@ -59,6 +59,7 @@ interface BaseProps {
    * @param option
    */
   returnFields?(fields: FieldOption[], option: Option): FieldOption[];
+  dataSource?: string;
 }
 
 interface BaseVariableProviderProps {
@@ -138,12 +139,13 @@ export const useBaseVariable = ({
   noChildren = false,
   // TODO: 等整理完完整测试用例后，再开启该功能
   noDisabled = true,
+  dataSource,
   returnFields = (fields) => fields,
 }: BaseProps) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const { isDisabled } = useContext(BaseVariableContext) || {};
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField } = useCollectionManager_deprecated(dataSource);
 
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
@@ -154,7 +156,7 @@ export const useBaseVariable = ({
     return new Promise((resolve) => {
       setTimeout(() => {
         const children = (
-          getChildren(returnFields(getFilterOptions(target), option), {
+          getChildren(returnFields(getFilterOptions(target, dataSource), option), {
             collectionField,
             uiSchema,
             targetFieldSchema,

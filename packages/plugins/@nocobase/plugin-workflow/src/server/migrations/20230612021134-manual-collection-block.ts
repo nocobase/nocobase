@@ -27,7 +27,7 @@ function migrateSchema(schema = {}): object {
     return (
       item['x-component'] === 'CardItem' &&
       item['x-designer'] === 'SimpleDesigner' &&
-      item['x-decorator'] === 'CollectionProvider'
+      item['x-decorator'] === 'CollectionProvider_deprecated'
     );
   });
 

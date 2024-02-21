@@ -2,7 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -14,7 +14,7 @@ import {
 import { useCompile } from '../../hooks';
 
 export const useFilterableFields = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
   return fields?.filter?.((field) => {
     if (!field.interface) {
@@ -32,7 +32,7 @@ export const FilterActionDesigner = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const fields = useFilterableFields(name);
   const compile = useCompile();
   const { t } = useTranslation();

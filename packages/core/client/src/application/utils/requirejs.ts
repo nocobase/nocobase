@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 // @ts-nocheck
 /* eslint-disable */
 /* prettier-ignore */

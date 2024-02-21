@@ -3,8 +3,8 @@ import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAPIClient } from '../api-client';
-import type { CollectionFieldOptions } from '../collection-manager';
-import { useCollectionManager } from '../collection-manager';
+import type { CollectionFieldOptions_deprecated } from '../collection-manager';
+import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCompile } from '../schema-component';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
@@ -33,7 +33,7 @@ const getFieldPath = (variablePath: string, variableToCollectionName: Record<str
 const VariablesProvider = ({ children }) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { builtinVariables } = useBuiltInVariables();
 
@@ -68,7 +68,7 @@ const VariablesProvider = ({ children }) => {
       let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables);
       let collectionName = getFieldPath(variableName, _variableToCollectionName);
 
-      if (!current[variableName]) {
+      if (!(variableName in current)) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
       }
 
@@ -78,7 +78,7 @@ const VariablesProvider = ({ children }) => {
         }
 
         const key = list[index];
-        const associationField: CollectionFieldOptions = getCollectionJoinField(
+        const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(
           getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName),
         );
         if (Array.isArray(current)) {

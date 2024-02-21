@@ -23,6 +23,7 @@
     "@nocobase/plugin-collection-manager": "0.19.0-alpha.7",
     "@nocobase/plugin-custom-request": "0.19.0-alpha.7",
     "@nocobase/plugin-data-visualization": "0.19.0-alpha.7",
+    "@nocobase/plugin-data-source-manager": "0.19.0-alpha.7",
     "@nocobase/plugin-error-handler": "0.19.0-alpha.7",
     "@nocobase/plugin-export": "0.19.0-alpha.7",
     "@nocobase/plugin-file-manager": "0.19.0-alpha.7",

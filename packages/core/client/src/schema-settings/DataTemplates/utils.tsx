@@ -4,14 +4,14 @@ import { message } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAssociationPath } from '../../block-provider/hooks';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
 import { TreeNode } from './TreeLabel';
 import { systemKeys } from './hooks/useCollectionState';
 import LRUCache from 'lru-cache';
 
 export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
-  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
+  const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex();
   const record = ArrayBase.useRecord();

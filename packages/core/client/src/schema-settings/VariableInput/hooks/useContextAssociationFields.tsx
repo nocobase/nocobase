@@ -1,12 +1,12 @@
 import { error } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
 
 export const useIsSameOrChildCollection = () => {
-  const { getChildrenCollections } = useCollectionManager();
+  const { getChildrenCollections } = useCollectionManager_deprecated();
   return (contextCollection, targetCollection) => {
     if (contextCollection === targetCollection) {
       return true;
@@ -71,7 +71,7 @@ export const useContextAssociationFields = ({
   schema: any;
   maxDepth?: number;
   contextCollectionName: string;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
 }) => {
   const { t } = useTranslation();
   const compile = useCompile();

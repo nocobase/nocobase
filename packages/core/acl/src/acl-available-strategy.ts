@@ -1,5 +1,6 @@
 import lodash from 'lodash';
 import { ACL } from './acl';
+
 type StrategyValue = false | '*' | string | string[];
 
 export interface AvailableStrategyOptions {
@@ -49,7 +50,7 @@ export class ACLAvailableStrategy {
       return true;
     }
 
-    if (this.actionsAsObject?.hasOwnProperty(actionName)) {
+    if (Object.prototype.hasOwnProperty.call(this.actionsAsObject || {}, actionName)) {
       const predicateName = this.actionsAsObject[actionName];
       if (predicateName) {
         return lodash.cloneDeep(predicate[predicateName]);

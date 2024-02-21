@@ -403,6 +403,10 @@ export const generalWithAssociation: CollectionSetting[] = [
         interface: 'm2m',
         target: 'users',
       },
+      {
+        name: 'id',
+        interface: 'id',
+      },
     ],
   },
 ];

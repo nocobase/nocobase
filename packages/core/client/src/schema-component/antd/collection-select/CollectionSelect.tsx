@@ -3,7 +3,7 @@ import { Select, SelectProps, Tag } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelfAndChildrenCollections } from '../../../collection-manager/action-hooks';
-import { useCollection, useCollectionManager } from '../../../collection-manager/hooks';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager/hooks';
 import { useCompile } from '../../hooks';
 import { FilterContext } from '../filter/context';
 
@@ -16,10 +16,10 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
   const compile = useCompile();
   const field: any = useField();
   const ctx: any = useContext(FilterContext);
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const targetCollection = isTableOid && (ctx?.field?.collectionName || ctx?.collectionName || collection.name);
   const inheritCollections = useSelfAndChildrenCollections(targetCollection);
-  const { collections = [] } = useCollectionManager();
+  const { collections = [] } = useCollectionManager_deprecated();
   const currentCollections = field?.dataSource
     ? collections.filter((v) => {
         return field?.dataSource.find((i) => i.value === v.name) || field?.dataSource.includes(v.name);

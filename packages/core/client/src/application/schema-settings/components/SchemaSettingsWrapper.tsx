@@ -20,8 +20,6 @@ export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
     }),
     [componentProps, props, style],
   );
-  Component.displayName = `${Component.displayName || Component.name}(${name})`;
-
   return (
     <SchemaSettingsDropdown
       title={React.createElement(Component, cProps)}

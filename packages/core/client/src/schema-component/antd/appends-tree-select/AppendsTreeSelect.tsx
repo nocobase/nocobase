@@ -3,7 +3,7 @@ import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType, TreeSelectProps } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions, useCollectionManager, useCompile } from '../../..';
+import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated, useCompile } from '../../..';
 
 export type AppendsTreeSelectProps = {
   value: string[] | string;
@@ -12,7 +12,7 @@ export type AppendsTreeSelectProps = {
   multiple?: boolean;
   filter?(field): boolean;
   collection?: string;
-  useCollection?(props: Pick<AppendsTreeSelectProps, 'collection'>): string;
+  useCollection_deprecated?(props: Pick<AppendsTreeSelectProps, 'collection'>): string;
   rootOption?: {
     label: string;
     value: string;
@@ -27,7 +27,7 @@ function usePropsCollection({ collection }) {
 
 type CallScope = {
   compile?(value: string): string;
-  getCollectionFields?(name: any): CollectionFieldOptions[];
+  getCollectionFields?(name: any): CollectionFieldOptions_deprecated[];
   filter(field): boolean;
 };
 
@@ -78,17 +78,17 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
     value: propsValue,
     onChange,
     collection,
-    useCollection = usePropsCollection,
+    useCollection_deprecated = usePropsCollection,
     filter = trueFilter,
     rootOption,
     loadData: propsLoadData,
     ...restProps
   } = props;
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { t } = useTranslation();
   const [optionsMap, setOptionsMap] = useState({});
-  const baseCollection = useCollection({ collection });
+  const baseCollection = useCollection_deprecated({ collection });
   const treeData = Object.values(optionsMap);
   const value: string | DefaultOptionType[] = useMemo(() => {
     if (props.multiple) {

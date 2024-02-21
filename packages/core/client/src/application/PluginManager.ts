@@ -50,7 +50,8 @@ export class PluginManager {
       devDynamicImport: this.app.devDynamicImport,
     });
     for await (const [name, pluginClass] of plugins) {
-      await this.add(pluginClass, { name });
+      const info = pluginList.find((item) => item.name === name);
+      await this.add(pluginClass, info);
     }
   }
 

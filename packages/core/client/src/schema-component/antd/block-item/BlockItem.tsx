@@ -4,10 +4,12 @@ import React from 'react';
 import { SortableItem } from '../../common';
 import { useDesigner, useProps } from '../../hooks';
 import { useGetAriaLabelOfBlockItem } from './hooks/useGetAriaLabelOfBlockItem';
+import { useFieldSchema } from '@formily/react';
 
 export const BlockItem: React.FC<any> = (props) => {
   const { className, children } = useProps(props);
   const Designer = useDesigner();
+  const fieldSchema = useFieldSchema();
   const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
 
   return (
@@ -63,7 +65,7 @@ export const BlockItem: React.FC<any> = (props) => {
         `,
       )}
     >
-      <Designer />
+      <Designer {...fieldSchema['x-toolbar-props']} />
       {children}
     </SortableItem>
   );

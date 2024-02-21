@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useCompile, useCollection } from '@nocobase/client';
+import { useCompile, useCollection_deprecated } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const useGanttTranslation = () => {
@@ -8,7 +8,7 @@ export const useGanttTranslation = () => {
 };
 export const useOptions = (type = 'string') => {
   const compile = useCompile();
-  const { fields } = useCollection();
+  const { fields } = useCollection_deprecated();
   const options = fields
     ?.filter((field) => field.type === type)
     ?.map((field) => {
@@ -30,7 +30,6 @@ export const createGanttBlockSchema = (options) => {
       resource: resource || collection,
       action: 'list',
       fieldNames: {
-        id: 'id',
         ...fieldNames,
       },
       params: {

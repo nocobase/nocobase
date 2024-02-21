@@ -6,6 +6,7 @@
   "module": "es/index.mjs",
   "types": "es/index.d.ts",
   "dependencies": {
+    "@ahooksjs/use-url-state": "3.5.1",
     "@ant-design/cssinjs": "^1.11.1",
     "@ant-design/icons": "^5.1.4",
     "@ant-design/pro-layout": "^7.16.11",

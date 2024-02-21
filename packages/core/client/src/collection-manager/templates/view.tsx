@@ -1,18 +1,18 @@
+import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
 
-export const view: ICollectionTemplate = {
-  name: 'view',
-  title: '{{t("Connect to database view")}}',
-  order: 4,
-  color: 'yellow',
-  default: {
+export class ViewCollectionTemplate extends CollectionTemplate {
+  name = 'view';
+  title = '{{t("Connect to database view")}}';
+  order = 4;
+  color = 'yellow';
+  default = {
     fields: [],
-  },
-  divider: true,
-  configurableProperties: {
+  };
+  divider = true;
+  configurableProperties = {
     title: {
       type: 'string',
       title: '{{ t("Collection display name") }}',
@@ -137,5 +137,5 @@ export const view: ICollectionTemplate = {
     },
 
     ...getConfigurableProperties('category', 'description'),
-  },
-};
+  };
+}

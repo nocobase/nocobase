@@ -2,7 +2,7 @@ import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import {
   useBlockAssociationContext,
-  useCollection,
+  useCollection_deprecated,
   useSchemaTemplateManager,
   useRecordCollectionDataSourceItems,
   useBlockRequestContext,
@@ -74,7 +74,7 @@ export const SnapshotBlockInitializersDetailItem = () => {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const collection = targetCollection || useCollection();
+  const collection = targetCollection || useCollection_deprecated();
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =

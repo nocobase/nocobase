@@ -6,6 +6,8 @@ import classNames from 'classnames';
 import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
+import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSource } from '../data-source/data-source/DataSourceProvider';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
@@ -75,6 +77,11 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   );
   const rowCtx = useGridRowContext();
   const ctx = useGridContext();
+  const dm = useDataSourceManager();
+  const dataSources = dm.getDataSources();
+  const dataSourceContext = useDataSource();
+  const dataSource = dataSources.length > 1 && dataSourceContext;
+
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`
     : template?.name;
@@ -96,14 +103,15 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   if (!designable) {
     return null;
   }
-
   return (
     <SchemaToolbarProvider {...contextValue}>
       <div className={classNames('general-schema-designer', overrideAntdCSS)}>
         {title && (
           <div className={classNames('general-schema-designer-title', titleCss)}>
             <Space size={2}>
-              <span className={'title-tag'}>{compile(title)}</span>
+              <span className={'title-tag'}>
+                {dataSource ? `${compile(dataSource?.displayName)} > ${compile(title)}` : compile(title)}
+              </span>
               {template && (
                 <span className={'title-tag'}>
                   {t('Reference template')}: {templateName || t('Untitled')}

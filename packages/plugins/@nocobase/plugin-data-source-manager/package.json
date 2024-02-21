@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-data-source-manager",
+  "version": "0.19.0-alpha.7",
+  "main": "dist/server/index.js",
+  "displayName": "Data source manager ",
+  "displayName.zh-CN": "外部数据源管理",
+  "description": "Connect external data source to NocoBase",
+  "description.zh-CN": "将外部数据源接入 NocoBase",
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "keywords": ["Data Model"]
+}

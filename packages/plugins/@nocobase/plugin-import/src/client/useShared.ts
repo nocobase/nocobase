@@ -1,5 +1,5 @@
 import type { VoidField } from '@formily/core';
-import { Cascader, css, useCollection } from '@nocobase/client';
+import { Cascader, css, useCollection_deprecated } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -11,7 +11,7 @@ const INCLUDE_FILE_TYPE = [
 
 export const useShared = () => {
   const { t } = useTranslation(NAMESPACE);
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const fields = useFields(name);
   return {
     importSettingsSchema: {

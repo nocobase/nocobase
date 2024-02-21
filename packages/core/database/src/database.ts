@@ -577,7 +577,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   hasCollection(name: string): boolean {
-    return this.collections.has(name);
+    return !!this.getCollection(name);
   }
 
   removeCollection(name: string) {

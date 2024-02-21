@@ -1,36 +1,34 @@
 import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const multipleSelect: IField = {
-  name: 'multipleSelect',
-  type: 'object',
-  group: 'choices',
-  order: 3,
-  title: '{{t("Multiple select")}}',
-  default: {
+export class MultipleSelectFieldInterface extends CollectionFieldInterface {
+  name = 'multipleSelect';
+  type = 'object';
+  group = 'choices';
+  order = 3;
+  title = '{{t("Multiple select")}}';
+  default = {
     type: 'array',
     defaultValue: [],
-    // name,
     uiSchema: {
       type: 'array',
-      // title,
       'x-component': 'Select',
       'x-component-props': {
         mode: 'multiple',
       },
       enum: [],
     },
-  },
-  availableTypes: ['array'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['array'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.array,
-  },
+  };
   schemaInitialize(schema: ISchema, { block }) {
     const props = (schema['x-component-props'] = schema['x-component-props'] || {});
     props.style = {
@@ -41,5 +39,5 @@ export const multipleSelect: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       props['ellipsis'] = true;
     }
-  },
-};
+  }
+}

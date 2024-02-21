@@ -1,4 +1,4 @@
-export * from './useCollection';
-export * from './useCollectionField';
-export * from './useCollectionManager';
+export * from './useCollection_deprecated';
+export * from './useCollectionField_deprecated';
+export * from './useCollectionManager_deprecated';
 export * from './useCollectionDataSource';

@@ -1,5 +1,5 @@
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCollection } from '../../collection-manager';
+import { useCollection_deprecated } from '../../collection-manager';
 
 // 表单的操作配置
 export const listActionInitializers = new SchemaInitializer({
@@ -35,7 +35,7 @@ export const listActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (
               (collection.template !== 'view' || collection?.writableView) &&
               collection.template !== 'file' &&
@@ -64,7 +64,7 @@ export const listActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -117,7 +117,7 @@ export const listItemActionInitializers = new SchemaInitializer({
             'x-align': 'left',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -132,7 +132,7 @@ export const listItemActionInitializers = new SchemaInitializer({
             'x-align': 'left',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return collection.template !== 'sql';
           },
         },
@@ -221,7 +221,7 @@ export const listItemActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -233,7 +233,7 @@ export const listItemActionInitializers = new SchemaInitializer({
             'x-action': 'customize:table:request',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },

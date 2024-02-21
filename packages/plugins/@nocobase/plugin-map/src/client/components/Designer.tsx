@@ -7,8 +7,8 @@ import {
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   isPatternDisabled,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
 } from '@nocobase/client';
@@ -17,8 +17,8 @@ import React from 'react';
 import { useMapTranslation } from '../locale';
 
 const Designer = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();

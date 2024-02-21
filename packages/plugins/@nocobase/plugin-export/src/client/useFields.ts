@@ -1,10 +1,10 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollectionManager } from '@nocobase/client';
+import { useCollectionManager_deprecated } from '@nocobase/client';
 
 export const useFields = (collectionName: string) => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
     if (!field.interface) {

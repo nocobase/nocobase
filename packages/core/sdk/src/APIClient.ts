@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse } from 'axios';
 import qs from 'qs';
 import getSubAppName from './getSubAppName';
 
@@ -271,14 +271,14 @@ export class APIClient {
   }
 
   request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R> {
-    const { resource, resourceOf, action, params } = config as any;
+    const { resource, resourceOf, action, params, headers } = config as any;
     if (resource) {
-      return this.resource(resource, resourceOf)[action](params);
+      return this.resource(resource, resourceOf, headers)[action](params);
     }
     return this.axios.request<T, R, D>(config);
   }
 
-  resource(name: string, of?: any): IResource {
+  resource(name: string, of?: any, headers?: AxiosRequestHeaders): IResource {
     const target = {};
     const handler = {
       get: (_: any, actionName: string) => {
@@ -309,6 +309,7 @@ export class APIClient {
           return await this.request({
             ...config,
             ...opts,
+            headers,
           });
         };
       },

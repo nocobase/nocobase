@@ -1,11 +1,11 @@
-import { render, screen, userEvent } from '@nocobase/test/client';
+import { render, screen, userEvent, sleep, waitFor } from '@nocobase/test/client';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import React, { FC } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { beforeAll } from 'vitest';
 import { Application } from '../Application';
-import { RouteType, RouterManager } from '../RouterManager';
+import { RouteType, RouterManager, createRouterManager } from '../RouterManager';
 
 describe('Router', () => {
   let app: Application;
@@ -21,7 +21,7 @@ describe('Router', () => {
     let router: RouterManager;
 
     beforeEach(() => {
-      router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
+      router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
     });
 
     it('basic', () => {
@@ -39,8 +39,26 @@ describe('Router', () => {
       };
 
       router.add('test2', route2);
+
       expect(router.getRoutesTree()).toHaveLength(2);
-      expect(router.getRoutesTree()).toEqual([route1, route2]);
+      expect(router.getRoutesTree()).toMatchObject([route1, route2]);
+      expect(router.getRoutes()).toEqual({
+        test: route1,
+        test2: route2,
+      });
+      expect(router.get('test')).toEqual(route1);
+      expect(router.get('test2')).toEqual(route2);
+      expect(router.has('test')).toBeTruthy();
+    });
+
+    it('createRouterManager', () => {
+      const router = createRouterManager({ type: 'memory', initialEntries: ['/'] }, app);
+      const route: RouteType = {
+        path: '/',
+        element: <div />,
+      };
+      router.add('test', route);
+      expect(router.has('test')).toBeTruthy();
     });
 
     it('nested route', () => {
@@ -89,11 +107,13 @@ describe('Router', () => {
     });
 
     it('Component is string', () => {
-      const router = new RouterManager({
-        type: 'memory',
-        initialEntries: ['/'],
-        renderComponent: app.renderComponent.bind(app),
-      });
+      const router = new RouterManager(
+        {
+          type: 'memory',
+          initialEntries: ['/'],
+        },
+        app,
+      );
       const Hello = () => <div></div>;
       app.addComponents({ Hello });
       const route: RouteType = {
@@ -109,7 +129,7 @@ describe('Router', () => {
     let router: RouterManager;
 
     beforeEach(() => {
-      router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
+      router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
     });
     it('basic', () => {
       const route1: RouteType = {
@@ -125,7 +145,7 @@ describe('Router', () => {
 
   describe('getRouterComponent', () => {
     it('basic', async () => {
-      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
+      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
       const Layout = () => {
         return (
           <div>
@@ -156,8 +176,28 @@ describe('Router', () => {
       expect(screen.getByText('AboutComponent')).toBeInTheDocument();
     });
 
+    it('basename and type', async () => {
+      const router = new RouterManager({ type: 'browser' }, app);
+      router.setType('hash');
+      router.setBasename('/admin');
+      router.add('home', {
+        path: '/',
+        element: <div data-testid="content">123</div>,
+      });
+
+      const RouterComponent = router.getRouterComponent();
+      render(<RouterComponent />);
+      expect(screen.queryByTestId('content')).not.toBeInTheDocument();
+
+      window.location.hash = '#/admin';
+
+      await waitFor(() => {
+        expect(screen.getByTestId('content')).toBeInTheDocument();
+      });
+    });
+
     it('BaseLayout', () => {
-      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
+      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
       router.add('home', {
         path: '/',
         element: <div>HomeComponent</div>,
@@ -172,10 +212,10 @@ describe('Router', () => {
     });
 
     it('nested router', () => {
-      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
+      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
 
       const Test = () => {
-        const router2 = new RouterManager({ type: 'memory', initialEntries: ['/'] });
+        const router2 = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
         router2.add('rooter2', {
           path: '/',
           element: <div>Router2</div>,

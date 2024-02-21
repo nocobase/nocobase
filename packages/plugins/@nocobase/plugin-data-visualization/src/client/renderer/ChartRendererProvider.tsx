@@ -1,5 +1,11 @@
 import { useFieldSchema } from '@formily/react';
-import { MaybeCollectionProvider, useAPIClient, useRequest } from '@nocobase/client';
+import {
+  CollectionManagerProvider,
+  MaybeCollectionProvider,
+  useAPIClient,
+  useDataSourceManager,
+  useRequest,
+} from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
 import { parseField, removeUnparsableFilter } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
@@ -42,6 +48,7 @@ export type QueryProps = Partial<{
 
 export type ChartRendererProps = {
   collection: string;
+  dataSource?: string;
   query?: QueryProps;
   config?: {
     chartType: string;
@@ -60,7 +67,7 @@ export const ChartRendererContext = createContext<
 >({} as any);
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
-  const { query, config, collection, transform } = props;
+  const { query, config, collection, transform, dataSource } = props;
   const { addChart } = useContext(ChartDataContext);
   const { ready, form, enabled } = useContext(ChartFilterContext);
   const { getFilter, hasFilter, appendFilter } = useChartFilter();
@@ -122,12 +129,14 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   );
 
   return (
-    <MaybeCollectionProvider collection={collection}>
-      <ConfigProvider card={{ style: { boxShadow: 'none' } }}>
-        <ChartRendererContext.Provider value={{ collection, config, transform, service, query }}>
-          {props.children}
-        </ChartRendererContext.Provider>
-      </ConfigProvider>
-    </MaybeCollectionProvider>
+    <CollectionManagerProvider dataSource={dataSource}>
+      <MaybeCollectionProvider collection={collection} dataSource={dataSource}>
+        <ConfigProvider card={{ style: { boxShadow: 'none' } }}>
+          <ChartRendererContext.Provider value={{ collection, config, transform, service, query }}>
+            {props.children}
+          </ChartRendererContext.Provider>
+        </ConfigProvider>
+      </MaybeCollectionProvider>
+    </CollectionManagerProvider>
   );
 };

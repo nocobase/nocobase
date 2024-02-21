@@ -15,7 +15,7 @@ import {
 
 describe('hooks', () => {
   beforeEach(() => {
-    vi.spyOn(client, 'useCollectionManager').mockReturnValue({
+    vi.spyOn(client, 'useCollectionManager_deprecated').mockReturnValue({
       getCollectionFields: (name: string) =>
         ({
           orders: [

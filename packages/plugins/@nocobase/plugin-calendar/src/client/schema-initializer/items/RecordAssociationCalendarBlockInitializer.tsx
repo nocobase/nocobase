@@ -4,7 +4,7 @@ import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import {
   useSchemaTemplateManager,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useGlobalTheme,
   SchemaInitializer,
   FormDialog,
@@ -25,7 +25,7 @@ export const RecordAssociationCalendarBlockInitializer = () => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const field = itemConfig.field;
   const collection = getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;

@@ -1,6 +1,10 @@
 import { ArrayField } from '@formily/core';
 import { ISchema, Schema, useForm } from '@formily/react';
-import { CollectionFieldOptions, useACLRoleContext, useCollectionManager } from '@nocobase/client';
+import {
+  CollectionFieldOptions_deprecated,
+  useACLRoleContext,
+  useCollectionManager_deprecated,
+} from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartConfigContext } from '../configure';
@@ -24,7 +28,7 @@ export type FieldOption = {
 
 export const useFields = (
   collection?: string,
-): (CollectionFieldOptions & {
+): (CollectionFieldOptions_deprecated & {
   key: string;
   label: string;
   value: string;
@@ -33,7 +37,7 @@ export const useFields = (
   if (!collection) {
     collection = current?.collection || '';
   }
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const fields = (getCollectionFields(collection) || [])
     .filter((field) => {
       return field.interface;
@@ -48,7 +52,7 @@ export const useFields = (
 };
 
 export const useFieldsWithAssociation = (collection?: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const fields = useFields(collection);
   return useMemo(
@@ -128,7 +132,7 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
 
 export const useCollectionOptions = () => {
   const { t } = useTranslation();
-  const { collections } = useCollectionManager();
+  const { collections } = useCollectionManager_deprecated();
   const { allowAll, parseAction } = useACLRoleContext();
   const options = collections
     .filter((collection: { name: string }) => {

@@ -1,38 +1,33 @@
 import { Form } from '@formily/core';
 import { useMemo } from 'react';
-import { useFormBlockContext } from '../../block-provider';
-import { useCollection } from '../../collection-manager';
-import { useRecord } from '../../record-provider';
-import { useSubFormValue } from '../../schema-component/antd/association-field/hooks';
-import { getDateRanges } from '../../schema-component/antd/date-picker/util';
+import { useCollection_deprecated } from '../../collection-manager';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
+import { useDatetimeVariable } from '../../schema-settings/VariableInput/hooks/useDateVariable';
+import { useCurrentFormVariable } from '../../schema-settings/VariableInput/hooks/useFormVariable';
+import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
+import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
 import { VariableOption } from '../types';
 
 interface Props {
   collectionName?: string;
-  currentRecord?: Record<string, any>;
   currentForm?: Form;
 }
 
 const useLocalVariables = (props?: Props) => {
-  const { name: currentCollectionName } = useCollection();
-  const { formValue: subFormValue } = useSubFormValue();
+  const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariable();
+  const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordVariable();
+  const { currentParentRecordCtx, collectionName: collectionNameOfParentRecord } = useCurrentParentRecordVariable();
+  const { datetimeCtx } = useDatetimeVariable();
+  const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
+  const { name: currentCollectionName } = useCollection_deprecated();
   let { name } = useBlockCollection();
-  let currentRecord = useRecord();
-  let { form } = useFormBlockContext();
 
-  if (props?.currentForm) {
-    form = props.currentForm;
-  }
-  if (props?.currentRecord) {
-    currentRecord = props.currentRecord;
-  }
   if (props?.collectionName) {
     name = props.collectionName;
   }
 
   return useMemo(() => {
-    const dateVars = getDateRanges();
     return (
       [
         /**
@@ -41,8 +36,8 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name: 'currentRecord',
-          ctx: currentRecord,
-          collectionName: name,
+          ctx: currentRecordCtx,
+          collectionName: collectionNameOfRecord,
         },
         /**
          * @deprecated
@@ -50,7 +45,7 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name,
-          ctx: form?.values || currentRecord,
+          ctx: currentFormCtx || currentRecordCtx,
           collectionName: name,
         },
         /**
@@ -59,27 +54,27 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name: '$form',
-          ctx: form?.values,
+          ctx: currentFormCtx,
           collectionName: name,
         },
         {
           name: '$nRecord',
-          ctx: currentRecord,
-          collectionName: currentRecord?.__collectionName,
+          ctx: currentRecordCtx,
+          collectionName: collectionNameOfRecord,
         },
         {
           name: '$nParentRecord',
-          ctx: currentRecord?.__parent,
-          collectionName: currentRecord?.__parent?.__collectionName,
+          ctx: currentParentRecordCtx,
+          collectionName: collectionNameOfParentRecord,
         },
         {
           name: '$nForm',
-          ctx: form?.values,
+          ctx: currentFormCtx,
           collectionName: name,
         },
         {
           name: '$nDate',
-          ctx: dateVars,
+          ctx: datetimeCtx,
         },
         /**
          * @deprecated
@@ -87,12 +82,27 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name: '$date',
-          ctx: dateVars,
+          ctx: datetimeCtx,
         },
-        subFormValue && { name: '$iteration', ctx: subFormValue, collectionName: currentCollectionName },
+        shouldDisplayCurrentObject && {
+          name: '$iteration',
+          ctx: currentObjectCtx,
+          collectionName: currentCollectionName,
+        },
       ] as VariableOption[]
     ).filter(Boolean);
-  }, [currentRecord, name, form?.values, subFormValue, currentCollectionName]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
+  }, [
+    currentRecordCtx,
+    collectionNameOfRecord,
+    name,
+    currentFormCtx,
+    currentParentRecordCtx,
+    collectionNameOfParentRecord,
+    datetimeCtx,
+    shouldDisplayCurrentObject,
+    currentObjectCtx,
+    currentCollectionName,
+  ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
 export default useLocalVariables;

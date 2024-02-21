@@ -1,12 +1,12 @@
-import { render, sleep } from '@nocobase/test/client';
+import { render, sleep, screen, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import { describe } from 'vitest';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
-import { useApp, usePlugin, useRouter } from '../hooks';
+import { useApp, usePlugin, useRouter, useAppSpin } from '../hooks';
 
 describe('Application Hooks', () => {
-  describe('useApp', () => {
+  describe('useApp()', () => {
     it('should return the application instance', async () => {
       const app = new Application();
       const Hello = () => {
@@ -22,7 +22,7 @@ describe('Application Hooks', () => {
     });
   });
 
-  describe('useRouter', () => {
+  describe('useRouter()', () => {
     it('should return the router instance', async () => {
       const app = new Application();
       const Hello = () => {
@@ -38,7 +38,7 @@ describe('Application Hooks', () => {
     });
   });
 
-  describe('usePlugin', () => {
+  describe('usePlugin()', () => {
     it('should return the plugin instance', async () => {
       class DemoPlugin extends Plugin {
         test = 'test';
@@ -57,6 +57,39 @@ describe('Application Hooks', () => {
       render(<Root />);
 
       await sleep(10);
+    });
+  });
+
+  describe('useAppSpin()', () => {
+    test('no app, should render ant-design Spin', async () => {
+      const Demo = () => {
+        const spin = useAppSpin();
+        return spin.render();
+      };
+
+      render(<Demo />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.ant-spin')).toBeTruthy();
+      });
+    });
+
+    test('has app, should render AppSpin Component', () => {
+      const Demo = () => {
+        const spin = useAppSpin();
+        return spin.render();
+      };
+
+      const app = new Application({
+        providers: [Demo],
+        components: {
+          AppSpin: () => <div data-testid="content">test</div>,
+        },
+      });
+      const Root = app.getRootComponent();
+      render(<Root></Root>);
+      expect(document.querySelector('.ant-spin')).toBeFalsy();
+      expect(screen.getByTestId('content')).toBeTruthy();
     });
   });
 });

@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
 import { useToken } from '../__builtins__';
@@ -94,7 +94,7 @@ AssociationFilter.BlockDesigner = AssociationFilterBlockDesigner;
 
 AssociationFilter.useAssociationField = () => {
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   return React.useMemo(() => getField(fieldSchema.name as any), [fieldSchema.name]);
 };
 

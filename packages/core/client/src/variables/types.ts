@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { CollectionFieldOptions } from '../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../collection-manager';
 
 export interface VariablesContextType {
   /**
@@ -63,7 +63,7 @@ export interface VariablesContextType {
   getCollectionField: (
     variableString: string,
     localVariables?: VariableOption | VariableOption[],
-  ) => Promise<CollectionFieldOptions>;
+  ) => Promise<CollectionFieldOptions_deprecated>;
   removeVariable: (variableName: string) => void;
 }
 

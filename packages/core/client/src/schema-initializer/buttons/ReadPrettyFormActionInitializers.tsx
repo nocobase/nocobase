@@ -1,8 +1,8 @@
-import { useCollection } from '../..';
+import { useCollection_deprecated } from '../..';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 const useVisibleCollection = () => {
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
 };
 // 表单的操作配置

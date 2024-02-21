@@ -1,15 +1,15 @@
-import { IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
 const { defaultProps, operators } = interfacesProperties;
 
-export const mathFormula: IField = {
-  name: 'mathFormula',
-  type: 'object',
-  group: 'advanced',
-  order: 1,
-  title: '{{t("Math formula")}}',
-  description: '{{t("Compute a value based on the other fields using mathjs")}}',
-  sortable: true,
-  default: {
+export class MathFormulaFieldInterface extends CollectionFieldInterface {
+  name = 'mathFormula';
+  type = 'object';
+  group = 'advanced';
+  order = 1;
+  title = '{{t("Math formula")}}';
+  description = '{{t("Compute a value based on the other fields using mathjs")}}';
+  sortable = true;
+  default = {
     type: 'mathFormula',
     // name,
     uiSchema: {
@@ -22,8 +22,8 @@ export const mathFormula: IField = {
         step: '1',
       },
     },
-  },
-  properties: {
+  };
+  properties = {
     ...defaultProps,
     dataType: {
       type: 'string',
@@ -75,8 +75,8 @@ export const mathFormula: IField = {
         useCurrentFields: '{{ useCurrentFields }}',
       },
     },
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.number,
-  },
-};
+  };
+}

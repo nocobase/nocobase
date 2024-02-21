@@ -8,8 +8,8 @@ import { getPath } from '../../variables/utils/getPath';
 import { getVariableName } from '../../variables/utils/getVariableName';
 import { isVariable } from '../../variables/utils/isVariable';
 
-export function useParsedFilter({ filterOption, currentRecord }: { filterOption: any; currentRecord?: any }) {
-  const { parseFilter, findVariable } = useParseDataScopeFilter({ currentRecord });
+export function useParsedFilter({ filterOption }: { filterOption: any }) {
+  const { parseFilter, findVariable } = useParseDataScopeFilter();
   const [filter, setFilter] = useState({});
 
   useEffect(() => {

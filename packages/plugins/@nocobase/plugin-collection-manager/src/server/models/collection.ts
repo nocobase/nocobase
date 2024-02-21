@@ -1,7 +1,7 @@
 import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
 import lodash from 'lodash';
-import { FieldModel } from './field';
 import { QueryInterfaceDropTableOptions } from 'sequelize';
+import { FieldModel } from './field';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -13,6 +13,15 @@ interface LoadOptions extends Transactionable {
 export class CollectionModel extends MagicAttributeModel {
   get db(): Database {
     return (<any>this.constructor).database;
+  }
+
+  toJSON() {
+    const json = super.toJSON();
+    if (!json.filterTargetKey) {
+      const collection = this.db.getCollection(json.name);
+      json.filterTargetKey = collection?.filterTargetKey;
+    }
+    return json;
   }
 
   async load(loadOptions: LoadOptions = {}) {

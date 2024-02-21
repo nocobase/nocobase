@@ -9,18 +9,21 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
-import { RecordProvider } from '../../../';
+import {
+  CollectionProvider_deprecated,
+  RecordProvider_deprecated,
+  useFormBlockContext,
+  useRecordData,
+} from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
-import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -75,6 +78,7 @@ export const InternalPicker = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const isAllowAddNew = fieldSchema['x-add-new'];
     const [selectedRows, setSelectedRows] = useState([]);
+    const recordData = useRecordData();
     const options = useMemo(() => {
       if (value && Object.keys(value).length > 0) {
         const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
@@ -172,7 +176,7 @@ export const InternalPicker = observer(
             />
           </div>
           {isAllowAddNew && (
-            <RecordProvider record={null}>
+            <RecordProvider_deprecated isNew record={null} parent={recordData}>
               <RecursionField
                 onlyRenderProperties
                 basePath={field.address}
@@ -181,7 +185,7 @@ export const InternalPicker = observer(
                   return s['x-component'] === 'Action';
                 }}
               />
-            </RecordProvider>
+            </RecordProvider_deprecated>
           )}
         </Input.Group>
         <ActionContextProvider
@@ -193,7 +197,7 @@ export const InternalPicker = observer(
           }}
         >
           <RecordPickerProvider {...pickerProps}>
-            <CollectionProvider name={collectionField?.target}>
+            <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                   <SchemaComponentOptions
@@ -213,7 +217,7 @@ export const InternalPicker = observer(
                   </SchemaComponentOptions>
                 </TableSelectorParamsProvider>
               </FormProvider>
-            </CollectionProvider>
+            </CollectionProvider_deprecated>
           </RecordPickerProvider>
         </ActionContextProvider>
       </>

@@ -6,8 +6,8 @@ import { SchemaToolbar, SchemaToolbarProps } from '../../../schema-settings';
 export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
   const { designable } = useDesignable();
   const toolbar = useMemo(() => {
-    if (fieldSchema['x-designer'] || fieldSchema['x-toolbar']) {
-      return fieldSchema['x-toolbar'];
+    if (fieldSchema['x-toolbar'] || fieldSchema['x-designer']) {
+      return fieldSchema['x-toolbar'] || fieldSchema['x-designer'];
     }
 
     if (fieldSchema['x-settings']) {
@@ -17,7 +17,7 @@ export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
 
   const C = useComponent(toolbar);
   return {
-    render(props?: SchemaToolbarProps) {
+    render(props?: SchemaToolbarProps & { [index: string]: any }) {
       if (!designable || !C) {
         return null;
       }

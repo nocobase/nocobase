@@ -1,11 +1,11 @@
 import React from 'react';
 import { observer, useForm } from '@formily/react';
-import { useActionContext, usePlugin, useRecord, useRequest } from '@nocobase/client';
+import { useActionContext, usePlugin, useRecord_deprecated, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
 import AuthPlugin from '..';
 
 export const useValuesFromOptions = (options) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const result = useRequest(
     () =>
       Promise.resolve({
@@ -36,7 +36,7 @@ export const useAdminSettingsForm = (authType: string) => {
 
 export const Options = observer(() => {
   const form = useForm();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const Component = useAdminSettingsForm(form.values.authType || record.authType);
   return Component ? <Component /> : null;
 });

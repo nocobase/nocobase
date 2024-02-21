@@ -7,11 +7,11 @@ import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import { PreviewFields } from '../templates/components/PreviewFields';
 import { PreviewTable } from '../templates/components/PreviewTable';
@@ -123,11 +123,11 @@ const getSchema = (schema: IField, record: any, compile) => {
 
 const useSyncFromDatabase = () => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   const api = useAPIClient();
   const field = useField();
   return {
@@ -153,7 +153,7 @@ const useSyncFromDatabase = () => {
 };
 
 export const SyncFieldsAction = (props) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   return <SyncFieldsActionCom item={record} {...props} />;
 };
 
@@ -165,7 +165,7 @@ export const SyncFieldsActionCom = (props) => {
   const { t } = useTranslation();
   return (
     record.template === 'view' && (
-      <RecordProvider record={record}>
+      <RecordProvider_deprecated record={record}>
         <ActionContextProvider value={{ visible, setVisible, drawerProps: { width: 900 } }}>
           {children || (
             <Button
@@ -195,7 +195,7 @@ export const SyncFieldsActionCom = (props) => {
             }}
           />
         </ActionContextProvider>
-      </RecordProvider>
+      </RecordProvider_deprecated>
     )
   );
 };

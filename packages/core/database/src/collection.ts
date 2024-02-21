@@ -151,12 +151,14 @@ export class Collection<
   }
 
   get filterTargetKey() {
-    const targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
-    if (!targetKey && this.model.rawAttributes['id']) {
-      return 'id';
+    const targetKey = this.options?.filterTargetKey;
+    if (targetKey && this.model.getAttributes()[targetKey]) {
+      return targetKey;
     }
-
-    return targetKey;
+    if (this.model.primaryKeyAttributes.length > 1) {
+      return null;
+    }
+    return this.model.primaryKeyAttribute;
   }
 
   get name() {
@@ -270,6 +272,9 @@ export class Collection<
     return this.fields.get(name);
   }
 
+  getFields() {
+    return [...this.fields.values()];
+  }
   addField(name: string, options: FieldOptions): Field {
     return this.setField(name, options);
   }

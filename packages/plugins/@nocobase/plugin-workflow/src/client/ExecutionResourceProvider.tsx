@@ -1,8 +1,8 @@
 import React from 'react';
-import { ResourceActionProvider, useRecord } from '@nocobase/client';
+import { ResourceActionProvider, useRecord_deprecated } from '@nocobase/client';
 
 export const ExecutionResourceProvider = ({ request, filter = {}, ...others }) => {
-  const workflow = useRecord();
+  const workflow = useRecord_deprecated();
   const props = {
     ...others,
     request: {

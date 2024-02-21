@@ -3,6 +3,7 @@ import _ from 'lodash';
 
 export class PresetNocoBase extends Plugin {
   builtInPlugins = [
+    'data-source-manager',
     'error-handler',
     'collection-manager',
     'ui-schema-storage',
@@ -169,10 +170,11 @@ export class PresetNocoBase extends Plugin {
 
   async install() {
     await this.createIfNotExists();
-    this.log.info('install built-in plugins');
+    this.log.info('start install built-in plugins');
     await this.pm.repository.init();
     await this.pm.load();
     await this.pm.install();
+    this.log.info('finish install built-in plugins');
   }
 
   async upgrade() {

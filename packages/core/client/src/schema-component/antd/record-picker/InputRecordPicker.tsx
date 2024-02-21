@@ -7,7 +7,7 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection } from '../../../collection-manager';
+import { CollectionProvider_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
@@ -87,7 +87,7 @@ const usePickActionProps = () => {
 const useAssociation = (props) => {
   const fieldSchema = useFieldSchema();
   const { association } = props;
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   if (association) {
     return association;
   }
@@ -269,7 +269,7 @@ const Drawer: React.FunctionComponent<{
   };
   return (
     <RecordPickerProvider {...recordPickerProps}>
-      <CollectionProvider allowNull name={collectionField?.target}>
+      <CollectionProvider_deprecated allowNull name={collectionField?.target}>
         <ActionContextProvider openMode="drawer" visible={visible} setVisible={setVisible}>
           <FormProvider>
             <TableSelectorParamsProvider params={{ filter: getFilter() }}>
@@ -285,7 +285,7 @@ const Drawer: React.FunctionComponent<{
             </TableSelectorParamsProvider>
           </FormProvider>
         </ActionContextProvider>
-      </CollectionProvider>
+      </CollectionProvider_deprecated>
     </RecordPickerProvider>
   );
 };

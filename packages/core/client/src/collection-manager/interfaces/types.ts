@@ -7,6 +7,8 @@ interface IDefault {
 }
 
 export interface IField extends ISchema {
+  group?: string;
+  order?: number;
   default?: IDefault;
   operators?: any[];
   /**

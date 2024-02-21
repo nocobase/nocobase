@@ -1,5 +1,5 @@
 import { useCompile } from '../../schema-component';
-import { useCollectionManager, useCollection } from '../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 
 const supportsType = [
   'id',
@@ -26,7 +26,7 @@ const supportsType = [
   'm2m',
 ];
 const useVariableTypes = (currentCollection, excludes = []) => {
-  const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
+  const { getCollectionFields, getInterface, getCollection } = useCollectionManager_deprecated();
   const collection = getCollection(currentCollection);
   const fields = getCollectionFields(currentCollection);
   return [

@@ -1,4 +1,4 @@
-import { SchemaInitializer, useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection_deprecated } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
 // 日历的操作配置
@@ -78,7 +78,7 @@ export const CalendarActionInitializers: SchemaInitializer = new SchemaInitializ
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },

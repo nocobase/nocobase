@@ -172,7 +172,7 @@ export const authenticatorsSchema: ISchema = {
       },
     },
   },
-  'x-component': 'CollectionProvider',
+  'x-component': 'CollectionProvider_deprecated',
   'x-component-props': {
     collection,
   },

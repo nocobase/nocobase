@@ -1,13 +1,13 @@
 import React from 'react';
 import { Tooltip } from 'antd';
 import { FallOutlined } from '@ant-design/icons';
-import { useCollectionManager } from '@nocobase/client';
+import { useCollectionManager_deprecated } from '@nocobase/client';
 import { getPopupContainer, useGCMTranslation } from '../utils';
 
 export const ConnectChildAction = (props) => {
   const { targetGraph, item } = props;
   const { t } = useGCMTranslation();
-  const { getChildrenCollections } = useCollectionManager();
+  const { getChildrenCollections } = useCollectionManager_deprecated();
   const childs = getChildrenCollections(item.name);
 
   const isShowChild = childs?.some(({ name }) => {

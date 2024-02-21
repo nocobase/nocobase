@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRecord } from '../../../record-provider';
+import { useRecord_deprecated } from '../../../record-provider';
 import { useDesignable } from '../../hooks';
 import { useIsBlockInPage } from './hooks/useIsBlockInPage';
 import { SchemaSettingsSwitchItem } from '../../../schema-settings';
@@ -44,7 +44,7 @@ export const useFixedBlock = () => {
 export const FixedBlockWrapper: React.FC = (props) => {
   const fixedBlock = useFixedSchema();
   const { height, fixedBlockUID } = useFixedBlock();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const isPopup = Object.keys(record).length;
   if (isPopup) {
     return <>{props.children}</>;

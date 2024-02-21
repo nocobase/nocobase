@@ -36,7 +36,7 @@ export class MobileClientPlugin extends Plugin {
   }
 
   setMobileRouter() {
-    const router = createRouterManager({ type: 'hash' });
+    const router = createRouterManager({ type: 'hash' }, this.app);
     router.add('root', {
       path: '/',
       element: <Navigate replace to="/mobile" />,

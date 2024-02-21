@@ -1,4 +1,4 @@
-import { CollectionManagerProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import { Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { CustomRequestConfigurationFieldsSchema } from './schemas';
 import { CustomRequestAction } from './components';
@@ -13,7 +13,7 @@ const CustomRequestProvider: React.FC = (props) => {
       }}
       components={{ CustomRequestAction, CustomRequestInitializer }}
     >
-      <CollectionManagerProvider>{props.children}</CollectionManagerProvider>
+      {props.children}
     </SchemaComponentOptions>
   );
 };

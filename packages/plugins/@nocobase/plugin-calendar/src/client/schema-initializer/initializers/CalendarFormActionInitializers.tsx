@@ -1,4 +1,4 @@
-import { SchemaInitializer, useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection_deprecated } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
 // 表单的操作配置
@@ -27,7 +27,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -40,7 +40,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
             'x-decorator': 'ACLActionProvider',
           },
           visible: function useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -53,7 +53,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -141,7 +141,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -150,7 +150,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
           title: generateNTemplate('Custom request'),
           Component: 'CustomRequestInitializer',
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },

@@ -1,9 +1,10 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useActionContext, useBlockRequestContext, useRecord } from '@nocobase/client';
+import { useActionContext, useBlockRequestContext, useRecord_deprecated } from '@nocobase/client';
 import { Alert, Modal, Space, Typography } from 'antd';
 import React from 'react';
 import { generateNTemplate } from '../../locale';
+import apiKeysCollection from '../../collections/apiKeys';
 import { useTranslation } from '../locale';
 const { useModal } = Modal;
 
@@ -43,7 +44,7 @@ const useCreateAction = () => {
 };
 
 const useDestroyAction = () => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { resource, service } = useBlockRequestContext();
   return {
     async run() {
@@ -62,7 +63,7 @@ export const configurationSchema: ISchema = {
       type: 'void',
       'x-decorator': 'TableBlockProvider',
       'x-decorator-props': {
-        collection: 'apiKeys',
+        collection: apiKeysCollection,
         resource: 'apiKeys',
         action: 'list',
         params: {

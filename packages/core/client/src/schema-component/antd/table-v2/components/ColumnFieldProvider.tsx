@@ -1,12 +1,12 @@
 import { observer, RecursionField } from '@formily/react';
 import React from 'react';
-import { useCollectionManager } from '../../../../collection-manager';
-import { useRecord } from '../../../../record-provider';
+import { useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useRecord_deprecated } from '../../../../record-provider';
 export const ColumnFieldProvider = observer(
   (props: { schema: any; basePath: any; children: any }) => {
     const { schema, basePath } = props;
-    const record = useRecord();
-    const { getCollectionJoinField } = useCollectionManager();
+    const record = useRecord_deprecated();
+    const { getCollectionJoinField } = useCollectionManager_deprecated();
     const fieldSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === 'CollectionField') {
         return s;

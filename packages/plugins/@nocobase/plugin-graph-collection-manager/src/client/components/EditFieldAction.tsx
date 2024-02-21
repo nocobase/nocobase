@@ -14,10 +14,11 @@ const useUpdateCollectionField = (record) => {
   };
 };
 
-export const EditFieldAction = ({ item: record }) => {
+export const EditFieldAction = ({ item: record, parentItem: ParentRecord }) => {
   return (
     <EditCollectionFieldAction
       item={record}
+      parentItem={ParentRecord}
       scope={{
         useCancelAction,
         useUpdateCollectionField: () => useUpdateCollectionField(record),

@@ -20,7 +20,8 @@ import { Package } from '@lerna/package';
 import { tarPlugin } from './tarPlugin'
 
 export async function build(pkgs: string[]) {
-  process.env.NODE_ENV = 'production';
+  const isDev = process.argv.includes('--development');
+  process.env.NODE_ENV = isDev ? 'development' : 'production';
 
   const packages = getPackages(pkgs);
   if (packages.length === 0) {
@@ -135,7 +136,8 @@ function runScript(args: string[], cwd: string, envs: Record<string, string> = {
     env: {
       ...process.env,
       ...envs,
-      NODE_ENV: 'production',
+      sourcemap: process.argv.includes('--sourcemap') ? 'sourcemap' : undefined,
+      NODE_ENV: process.env.NODE_ENV || 'production',
     },
   });
 }

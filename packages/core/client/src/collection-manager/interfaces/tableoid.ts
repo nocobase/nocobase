@@ -1,14 +1,14 @@
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { operators } from './properties';
-import { IField } from './types';
 
-export const tableoid: IField = {
-  name: 'tableoid',
-  type: 'object',
-  group: 'systemInfo',
-  order: 0,
-  title: '{{t("Table OID")}}',
-  sortable: true,
-  default: {
+export class TableoidFieldInterface extends CollectionFieldInterface {
+  name = 'tableoid';
+  type = 'object';
+  group = 'systemInfo';
+  order = 0;
+  title = '{{t("Table OID")}}';
+  sortable = true;
+  default = {
     name: '__collection',
     type: 'virtual',
     uiSchema: {
@@ -20,9 +20,8 @@ export const tableoid: IField = {
       },
       'x-read-pretty': true,
     },
-  },
-  availableTypes: ['string'],
-  properties: {
+  };
+  properties = {
     'uiSchema.title': {
       type: 'string',
       title: '{{t("Field display name")}}',
@@ -38,8 +37,8 @@ export const tableoid: IField = {
       'x-decorator': 'FormItem',
       'x-component': 'Input',
     },
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.tableoid,
-  },
-};
+  };
+}

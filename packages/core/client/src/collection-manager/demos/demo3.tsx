@@ -3,10 +3,10 @@ import {
   APIClient,
   APIClientProvider,
   CollectionFieldProvider,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   compose,
-  RecordProvider,
-  useCollectionField,
+  RecordProvider_deprecated,
+  useCollectionField_deprecated,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 
@@ -41,27 +41,24 @@ const providers = [
   // API 客户端
   [APIClientProvider, { apiClient }],
   // 提供当前数据表行记录的上下文
-  [RecordProvider, { record }],
+  [RecordProvider_deprecated, { record }],
   // 提供数据表配置的上下文
-  [CollectionProvider, { collection }],
+  [CollectionProvider_deprecated, { collection }],
   // 提供字段配置上的下文
   [CollectionFieldProvider, { name: 'tags' }],
 ];
 
 export default compose(...providers)(() => {
-  const { resource } = useCollectionField();
+  const { resource } = useCollectionField_deprecated();
   const [items, setItems] = useState([]);
   useEffect(() => {
     // 请求地址为 /posts/1/tags:list
-    resource.list().then((response) => {
-      setItems(response?.data?.data);
-    });
+    resource
+      .list()
+      .then((response) => {
+        setItems(response?.data?.data);
+      })
+      .catch(console.error);
   }, []);
-  return (
-    <div>
-      {items?.map((item, key) => (
-        <div key={key}>{item.name}</div>
-      ))}
-    </div>
-  );
+  return <div>{items?.map((item, key) => <div key={key}>{item.name}</div>)}</div>;
 });
