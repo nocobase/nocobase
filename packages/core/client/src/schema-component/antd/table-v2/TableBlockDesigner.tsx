@@ -28,7 +28,7 @@ import { FixedBlockDesignerItem } from '../page';
 import { useCompile } from '../../';
 
 export const EditSortField = () => {
-  const { fields } = useCollection();
+  const { fields } = useCollection_deprecated();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();

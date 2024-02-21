@@ -3,7 +3,7 @@ import { Table, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { observer, useForm } from '@formily/react';
 import { useCompile } from '../../../';
-import { useCollectionManager } from '../../';
+import { useCollectionManager_deprecated } from '../../';
 
 const getDefaultCollectionFields = (presetFields, values) => {
   if (values?.template === 'view' || values?.template === 'sql') {
@@ -101,7 +101,7 @@ const getDefaultCollectionFields = (presetFields, values) => {
   return defaults;
 };
 export const PresetFields = observer((props: any) => {
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const form = useForm();
   const compile = useCompile();
   const [selectedRowKeys, setSelectedRowKeys] = useState(

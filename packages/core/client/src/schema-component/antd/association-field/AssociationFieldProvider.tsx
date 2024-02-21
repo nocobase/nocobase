@@ -11,21 +11,6 @@ export const AssociationFieldProvider = observer(
     const fieldSchema = useFieldSchema();
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
-    useEffect(() => {
-      //处理关系字段 fieldNames
-      const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
-      const targetCollection = getCollection(collectionField?.target);
-      let fieldNames = {};
-      if (collectionField?.target && targetCollection) {
-        const initField = collectionField?.targetKey || targetCollection.getPrimaryKey();
-        fieldNames = {
-          label: field.componentProps.fieldNames?.label || initField,
-          value: initField,
-        };
-      }
-      const componentProps = merge(field.componentProps || {}, { fieldNames });
-      field.setComponentProps(componentProps);
-    }, []);
 
     const collectionField = useMemo(
       () => getCollectionJoinField(fieldSchema['x-collection-field']),

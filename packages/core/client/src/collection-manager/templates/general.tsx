@@ -16,5 +16,5 @@ export class GeneralCollectionTemplate extends CollectionTemplate {
     'category',
     'description',
     'presetFields',
-  ),
-};
+  );
+}

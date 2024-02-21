@@ -136,7 +136,7 @@ export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
-  const primaryKey = useCollection().getPrimaryKey();
+  const primaryKey = useCollection_deprecated().getPrimaryKey();
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);

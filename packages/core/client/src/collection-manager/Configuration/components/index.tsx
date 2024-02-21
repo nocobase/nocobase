@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { Select, Input } from 'antd';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRecord_deprecated } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager_deprecated } from '../../hooks';
@@ -114,8 +114,8 @@ export const SourceCollection = observer(
 
 export const SourceKey = observer(
   (props: any) => {
-    const { sourceKey, collectionName, name } = useRecord();
-    const { getCollection } = useCollectionManager();
+    const { sourceKey, collectionName, name } = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
     const field: any = useField();
     const compile = useCompile();
     const options = getCollection(collectionName || name)
@@ -149,9 +149,8 @@ export const SourceKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { targetKey } = useRecord();
-    const api = useAPIClient();
-    const { getCollection } = useCollectionManager();
+    const { targetKey } = useRecord_deprecated();
+    const { getCollection } = useCollectionManager_deprecated();
     const [options, setOptions] = useState([]);
     const [initialValue, setInitialValue] = useState(value || targetKey);
     const form = useForm();

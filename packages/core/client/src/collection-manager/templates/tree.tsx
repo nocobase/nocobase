@@ -79,5 +79,5 @@ export class TreeCollectionTemplate extends CollectionTemplate {
     'category',
     'description',
     'presetFields',
-  ),
-};
+  );
+}
