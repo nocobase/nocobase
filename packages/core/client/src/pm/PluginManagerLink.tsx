@@ -1,9 +1,9 @@
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Button, Card, Popover, Tooltip } from 'antd';
+import { Button, Card, Dropdown, Popover, Tooltip } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../application';
 import { ActionContextProvider, useCompile } from '../schema-component';
 import { useToken } from '../style';
@@ -35,6 +35,31 @@ export const SettingsCenterDropdown = () => {
   const app = useApp();
   const settings = app.pluginSettingsManager.getList();
   const [open, setOpen] = useState(false);
+  return (
+    <Dropdown
+      menu={{
+        style: {
+          maxHeight: '70vh',
+          overflow: 'auto',
+        },
+        items: settings
+          .filter((v) => v.isTopLevel !== false)
+          .map((setting) => {
+            return {
+              key: setting.name,
+              icon: setting.icon,
+              label: <Link to={setting.path}>{compile(setting.title)}</Link>,
+            };
+          }),
+      }}
+    >
+      <Button
+        data-testid="plugin-settings-button"
+        icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
+        // title={t('All plugin settings')}
+      />
+    </Dropdown>
+  );
   return (
     settings.length > 0 && (
       <ActionContextProvider value={{ visible, setVisible }}>
