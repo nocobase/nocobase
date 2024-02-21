@@ -4,7 +4,9 @@ import evaluators from '..';
 describe('evaluate', () => {
   describe('pre-process', () => {
     const preProcess = evaluate.bind((expression, scope) => ({ expression, scope }), {});
-    const preProcessWithBrackets = evaluate.bind((expression, scope) => ({ expression, scope }), { keepBrakets: true });
+    const preProcessReplaceValue = evaluate.bind((expression, scope) => ({ expression, scope }), {
+      replaceValue: true,
+    });
 
     it('only variable as null', () => {
       const { expression, scope } = preProcess('{{a}}', { a: null });
@@ -43,9 +45,9 @@ describe('evaluate', () => {
       expect(scope.$$0).toEqual([1, 2]);
     });
 
-    it('pre-process with brackets', () => {
-      const { expression, scope } = preProcessWithBrackets('a{{a}}b', { a: 1 });
-      expect(expression).toBe(`a{{$$0}}b`);
+    it('pre-process replace value', () => {
+      const { expression, scope } = preProcessReplaceValue('a{{a}}b', { a: 1 });
+      expect(expression).toBe(`a1b`);
       expect(scope.$$0).toBe(1);
     });
   });
