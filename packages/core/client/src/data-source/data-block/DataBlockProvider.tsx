@@ -5,7 +5,6 @@ import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { withDynamicSchemaProps } from '../../application/hoc';
 import { Designable, useDesignable } from '../../schema-component';
 import { AssociationProvider, CollectionManagerProvider, CollectionOptions, CollectionProvider } from '../collection';
-import { DataSourceProvider } from '../data-source/DataSourceProvider';
 import { Record } from '../record';
 import { BlockRequestProvider } from './DataBlockRequestProvider';
 import { DataBlockResourceProvider } from './DataBlockResourceProvider';
@@ -142,17 +141,15 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
           props: { ...resets, collection, association, dataSource } as AllDataBlockProps,
         }}
       >
-        <DataSourceProvider dataSource={dataSource}>
-          <CollectionManagerProvider>
-            <AssociationOrCollectionProvider collection={collection} association={association}>
-              <ACLCollectionProvider>
-                <DataBlockResourceProvider>
-                  <BlockRequestProvider>{children}</BlockRequestProvider>
-                </DataBlockResourceProvider>
-              </ACLCollectionProvider>
-            </AssociationOrCollectionProvider>
-          </CollectionManagerProvider>
-        </DataSourceProvider>
+        <CollectionManagerProvider dataSource={dataSource}>
+          <AssociationOrCollectionProvider collection={collection} association={association}>
+            <ACLCollectionProvider>
+              <DataBlockResourceProvider>
+                <BlockRequestProvider>{children}</BlockRequestProvider>
+              </DataBlockResourceProvider>
+            </ACLCollectionProvider>
+          </AssociationOrCollectionProvider>
+        </CollectionManagerProvider>
       </DataBlockContext.Provider>
     );
   },
