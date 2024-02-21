@@ -204,8 +204,8 @@ export const AddFieldAction = (props) => {
         optionArr.push({
           ...v,
           children: v.children.filter((v) => {
-            if (v.value === 'id') {
-              return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
+            if (v.hidden) {
+              return false;
             } else if (v.value === 'tableoid') {
               if (include?.length) {
                 return include.includes(v.value);
