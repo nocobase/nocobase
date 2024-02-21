@@ -337,9 +337,9 @@ export default class Processor {
     };
   }
 
-  public getParsedValue(value, sourceNodeId: number, additionalScope?: object) {
+  public getParsedValue(value, sourceNodeId: number) {
     const template = parse(value);
-    const scope = Object.assign(this.getScope(sourceNodeId), additionalScope);
+    const scope = this.getScope(sourceNodeId);
     template.parameters.forEach(({ key }) => {
       appendArrayColumn(scope, key);
     });
