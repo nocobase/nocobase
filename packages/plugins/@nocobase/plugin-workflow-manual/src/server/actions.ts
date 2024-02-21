@@ -54,7 +54,7 @@ export async function submit(context: Context, next) {
   if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
     return context.throw(403);
   }
-  const presetValues = Object.assign(processor.getParsedValue(actionItem.values ?? {}, userJob.nodeId), {
+  const presetValues = processor.getParsedValue(actionItem.values ?? {}, userJob.nodeId, {
     // @deprecated
     currentUser: currentUser,
     // @deprecated
