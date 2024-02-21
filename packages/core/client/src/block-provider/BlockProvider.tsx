@@ -1,22 +1,18 @@
 import { css } from '@emotion/css';
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
-import { useRequest } from 'ahooks';
 import { Col, Row } from 'antd';
 import merge from 'deepmerge';
 import template from 'lodash/template';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DataBlockProvider,
   TableFieldResource,
   WithoutTableFieldResource,
-  useAPIClient,
-  useActionContext,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockResource,
-  useDataSourceHeaders,
   useDesignable,
   useRecord_deprecated,
 } from '../';
@@ -28,7 +24,6 @@ import {
 } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
-import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
 
@@ -76,118 +71,10 @@ const useAssociation = (props) => {
   }
 };
 
-const useResource = (props: UseResourceProps) => {
-  const { block, collection, dataSource, resource, useSourceId } = props;
-  const record = useRecord_deprecated();
-  const api = useAPIClient();
-  const { fieldSchema } = useActionContext();
-  const isCreateAction = fieldSchema?.['x-action'] === 'create';
-  const association = useAssociation(props);
-  const sourceId = useSourceId?.();
-  const field = useField();
-  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const __parent = useBlockRequestContext();
-  const headers = useDataSourceHeaders(dataSource);
-
-  if (block === 'TableField') {
-    const options = {
-      field,
-      api,
-      resource,
-      sourceId: !isCreateAction
-        ? sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id']
-        : undefined,
-    };
-    return new TableFieldResource(options);
-  }
-
-  if (
-    !withoutTableFieldResource &&
-    __parent?.block === 'TableField' &&
-    __parent?.resource instanceof TableFieldResource
-  ) {
-    return __parent.resource;
-  }
-  if (!association) {
-    return api.resource(resource, undefined, headers);
-  }
-  if (sourceId) {
-    return api.resource(resource, sourceId, headers);
-  }
-  if (record?.__parent?.[association?.sourceKey || 'id']) {
-    return api.resource(resource, record.__parent[association?.sourceKey || 'id'], headers);
-  }
-  if (record?.[association?.sourceKey || 'id']) {
-    return api.resource(resource, record[association?.sourceKey || 'id'], headers);
-  }
-  return api.resource(collection, undefined, headers);
-};
-
 const useActionParams = (props) => {
   const { useParams } = props;
   const params = useParams?.() || {};
   return { ...props.params, ...params };
-};
-
-const useResourceAction = (props, opts = {}) => {
-  /**
-   * fieldName: 来自 TableFieldProvider
-   */
-  const { resource, action, fieldName: tableFieldName, runWhenParamsChanged = false } = props;
-  const { fields } = useCollection_deprecated();
-  const params = useActionParams(props);
-  const api = useAPIClient();
-  const fieldSchema = useFieldSchema();
-  const { snapshot } = useActionContext();
-  const { templateFinshed } = useTemplateBlockContext();
-  const record = useRecord_deprecated();
-  const isTemplate = fieldSchema['x-template-key'];
-  if (!Reflect.has(params, 'appends')) {
-    const appends = fields?.filter((field) => field.target).map((field) => field.name);
-    if (appends?.length) {
-      params['appends'] = appends;
-    }
-  }
-  const result = useRequest(
-    snapshot
-      ? async () => ({
-          data: record[tableFieldName] ?? [],
-        })
-      : (opts) => {
-          if (!action || (isTemplate && !templateFinshed)) {
-            return Promise.resolve({});
-          }
-          const actionParams = { ...params, ...opts };
-          if (params?.appends) {
-            actionParams.appends = params.appends;
-          }
-          return resource[action](actionParams).then((res) => res.data);
-        },
-    {
-      ...opts,
-      onSuccess(data, params) {
-        opts?.['onSuccess']?.(data, params);
-        if (fieldSchema['x-uid']) {
-          api.services[fieldSchema['x-uid']] = result;
-        }
-      },
-      defaultParams: [params],
-      refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends), templateFinshed],
-    },
-  );
-  // automatic run service when params has changed
-  const firstRun = useRef(false);
-  useEffect(() => {
-    if (!runWhenParamsChanged) {
-      return;
-    }
-    if (firstRun.current) {
-      result?.run({ ...result?.params?.[0], ...params });
-    }
-    firstRun.current = true;
-  }, [JSON.stringify(params), runWhenParamsChanged]);
-
-  return result;
 };
 
 export const MaybeCollectionProvider = (props) => {
