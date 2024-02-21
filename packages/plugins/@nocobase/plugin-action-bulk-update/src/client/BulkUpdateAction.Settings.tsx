@@ -1,20 +1,18 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React from 'react';
 import {
   SchemaSettings,
   ActionDesigner,
   useSchemaToolbar,
   useDesignable,
   useCompile,
-  DefaultValueProvider,
   SchemaSettingsItemGroup,
   SchemaSettingsModalItem,
-  SchemaSettingsActionModalItem,
   SchemaSettingsSelectItem,
-  FlagProvider,
+  AssignedFieldValues,
 } from '@nocobase/client';
-import { isValid, uid } from '@formily/shared';
+import { isValid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
-import { useField, useFieldSchema, ISchema } from '@formily/react';
+import { useFieldSchema, ISchema } from '@formily/react';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -122,61 +120,6 @@ function AfterSuccess() {
     />
   );
 }
-function AssignedFieldValues() {
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
-  const field = useField();
-  const [initialSchema, setInitialSchema] = useState<ISchema>();
-  useEffect(() => {
-    const schemaUid = uid();
-    const schema: ISchema = {
-      type: 'void',
-      'x-uid': schemaUid,
-      'x-component': 'Grid',
-      'x-initializer': 'CustomFormItemInitializers',
-    };
-    setInitialSchema(schema);
-  }, [field.address]);
-
-  const tips = {
-    'customize:update': t(
-      'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
-    ),
-    'customize:save': t(
-      'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
-    ),
-  };
-  const actionType = fieldSchema['x-action'] ?? '';
-  const onSubmit = useCallback(
-    (assignedValues) => {
-      fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
-      dn.emit('patch', {
-        schema: {
-          ['x-uid']: fieldSchema['x-uid'],
-          'x-action-settings': fieldSchema['x-action-settings'],
-        },
-      });
-    },
-    [dn, fieldSchema],
-  );
-
-  return (
-    <FlagProvider isInAssignFieldValues={true}>
-      <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
-        <SchemaSettingsActionModalItem
-          title={t('Assign field values')}
-          maskClosable={false}
-          initialSchema={initialSchema}
-          initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
-          modalTip={tips[actionType]}
-          uid={fieldSchema?.['x-action-settings']?.schemaUid}
-          onSubmit={onSubmit}
-        />
-      </DefaultValueProvider>
-    </FlagProvider>
-  );
-}
 
 const bulkUpdateActionSettings = new SchemaSettings({
   name: 'ActionSettings:customize:bulkUpdate',
@@ -207,10 +150,10 @@ const bulkUpdateActionSettings = new SchemaSettings({
         {
           name: 'assignFieldValues',
           Component: AssignedFieldValues,
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
-          },
+          // useVisible() {
+          //   const fieldSchema = useFieldSchema();
+          //   return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
+          // },
         },
         {
           name: 'afterSuccess',
