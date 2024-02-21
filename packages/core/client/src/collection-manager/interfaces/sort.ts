@@ -1,32 +1,35 @@
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, primaryKey, unique, autoIncrement } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 export class SortFieldInterface extends CollectionFieldInterface {
   name = 'sort';
-  type = 'string';
+  type = 'object';
   group = 'advanced';
   order = 1;
   title = '{{t("Sort")}}';
   sortable = true;
+  titleUsable = true;
   default = {
-    type: 'string',
-    // name,
+    type: 'sort',
     uiSchema: {
-      type: 'string',
-      // title,
-      'x-component': 'Input',
-      'x-component-props': {},
+      type: 'number',
+      'x-component': 'InputNumber',
+      'x-component-props': {
+        stringMode: true,
+        step: '1',
+      },
+      'x-validator': 'integer',
     },
   };
-  availableTypes = ['string'];
-  hasDefaultValue = false;
-
+  availableTypes = ['sort'];
+  hasDefaultValue = true;
   properties = {
     ...defaultProps,
+    primaryKey,
+    unique,
+    autoIncrement,
   };
-
   filterable = {
-    operators: operators.string,
+    operators: operators.number,
   };
-  titleUsable = true;
 }
