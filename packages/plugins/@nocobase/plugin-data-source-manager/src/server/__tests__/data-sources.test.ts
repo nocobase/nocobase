@@ -103,7 +103,14 @@ describe('data source', async () => {
       },
     });
 
-    const listResp = await app.agent().resource('dataSources').list();
+    const listResp = await app
+      .agent()
+      .resource('dataSources')
+      .list({
+        filter: {
+          'type.$ne': 'main',
+        },
+      });
 
     const item1 = listResp.body.data[0];
 
