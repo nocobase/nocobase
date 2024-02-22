@@ -286,6 +286,10 @@ export const generalWithBasic: CollectionSetting[] = [
         name: 'icon',
         interface: 'icon',
       },
+      {
+        name: 'sort',
+        interface: 'sort',
+      },
     ],
   },
 ];

@@ -94,15 +94,18 @@ test.describe('table block schema settings', () => {
 
       // 开启之后，隐藏 Set default sorting rules 选项
       await page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).click();
+      await page.getByText('Drag and drop sorting field').click();
+      await page.getByText('sort', { exact: true }).click();
       await expect(
         page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).getByRole('switch'),
       ).toBeChecked();
       await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
-
       // 显示出来 email 和 ID
       await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+      await page.getByLabel('schema-initializer-TableV2-').click();
+
       await page.mouse.move(300, 0);
 
       // 默认的排序
