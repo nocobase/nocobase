@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-export",
-  "displayName": "Data export",
-  "displayName.zh-CN": "数据导出",
-  "description": "Export data in excel format",
-  "description.zh-CN": "导出 excel 格式的数据",
+  "displayName": "Action: Export records",
+  "displayName.zh-CN": "操作：导出记录",
+  "description": "Export filtered records to excel, you can configure which fields to export.",
+  "description.zh-CN": "导出筛选后的记录到 Excel 中，可以配置导出哪些字段。",
   "version": "0.19.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

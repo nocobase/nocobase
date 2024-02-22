@@ -3,7 +3,7 @@
   "displayName": "Auth: SMS",
   "displayName.zh-CN": "认证：短信",
   "description": "SMS authentication.",
-  "description.zh-CN": "通过短信认证身份。",
+  "description.zh-CN": "通过短信验证码认证身份。",
   "version": "0.19.0-alpha.8",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/sms-auth",
@@ -27,6 +27,6 @@
   },
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
   "keywords": [
-    "Users & permissions"
+    "Authentication"
   ]
 }

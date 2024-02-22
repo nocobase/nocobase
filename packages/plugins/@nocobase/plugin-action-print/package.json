@@ -4,8 +4,8 @@
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/action-print",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/action-print",
-  "displayName": "Print",
-  "displayName.zh-CN": "打印操作",
+  "displayName": "Action: Print",
+  "displayName.zh-CN": "操作：打印",
   "description": "Provides print action",
   "description.zh-CN": "提供打印操作",
   "license": "AGPL-3.0",
@@ -16,6 +16,6 @@
   },
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
   "keywords": [
-    "actions"
+    "Actions"
   ]
 }

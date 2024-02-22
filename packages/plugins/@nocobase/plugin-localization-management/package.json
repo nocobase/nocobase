@@ -17,6 +17,9 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
+  "keywords": [
+    "System management"
+  ],
   "displayName": "Localization",
   "displayName.zh-CN": "本地化",
   "description": "Allows to manage localization resources of the application.",
