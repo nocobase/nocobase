@@ -14,17 +14,19 @@ import { useSwitchRole } from './SwitchRole';
 
 const useNickname = () => {
   const { data } = useCurrentUserContext();
+  const { token } = useToken();
+
   return useEffect(() => {
     return {
       key: 'nickname',
       disabled: true,
       label: (
-        <span aria-disabled="false" style={{ cursor: 'text' }}>
+        <span aria-disabled="false" style={{ cursor: 'text', color: token.colorTextDescription }}>
           {data?.data?.nickname || data?.data?.username || data?.data?.email}
         </span>
       ),
     };
-  }, [data?.data?.email, data?.data?.nickname, data?.data?.username, data?.data.version]);
+  }, [data?.data?.email, data?.data?.nickname, data?.data?.username, data?.data.version, token.colorTextDescription]);
 };
 
 /**
