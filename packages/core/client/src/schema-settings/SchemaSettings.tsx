@@ -1993,6 +1993,44 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
   );
 };
 
+export const SchemaSettingsSortField = () => {
+  const { fields } = useCollection_deprecated();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
+  const compile = useCompile();
+  const { service } = useTableBlockContext();
+
+  const options = fields
+    .filter((field) => !field?.target && field.interface === 'sort')
+    .map((field) => ({
+      value: field?.name,
+      label: compile(field?.uiSchema?.title) || field?.name,
+    }));
+
+  return (
+    <SchemaSettingsSelectItem
+      key="sort-field"
+      title={t('Drag and drop sorting field')}
+      options={options}
+      value={field.decoratorProps.dragSortBy}
+      onChange={(dragSortBy) => {
+        fieldSchema['x-decorator-props'].dragSortBy = dragSortBy;
+        service.run({ ...service.params?.[0], sort: dragSortBy });
+        field.decoratorProps.dragSortBy = dragSortBy;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
 // 是否是系统字段
 export const isSystemField = (collectionField: CollectionFieldOptions_deprecated, getInterface) => {
   const i = getInterface?.(collectionField?.interface);

@@ -16,6 +16,7 @@ import {
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsDataScope,
   SchemaSettingsTemplate,
+  SchemaSettingsSortField,
 } from '../../../schema-settings';
 
 export const tableBlockSettings = new SchemaSettings({
@@ -111,9 +112,13 @@ export const tableBlockSettings = new SchemaSettings({
           },
         };
       },
-      useVisible: () => {
-        const { sortable } = useCollection_deprecated();
-        return !!sortable;
+    },
+    {
+      name: 'SortField',
+      Component: SchemaSettingsSortField,
+      useVisible() {
+        const field = useField();
+        return field.decoratorProps.dragSort;
       },
     },
     {
