@@ -6,6 +6,7 @@ import {
   useCollectionManager_deprecated,
   useCompile,
   useDesigner,
+  CollectionFieldContext,
 } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 import { isCollectionFieldComponent } from './utils';
@@ -47,10 +48,11 @@ export const TableColumnDecorator = (props) => {
   }, [uiSchema?.title]);
   return (
     <SortableItem className={designerCss}>
-      <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
-      {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
-      <div role="button">{field?.title || compile(uiSchema?.title)}</div>
-      {/* <div
+      <CollectionFieldContext.Provider value={collectionField}>
+        <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
+        {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
+        <div role="button">{field?.title || compile(uiSchema?.title)}</div>
+        {/* <div
         onClick={() => {
           field.title = uid();
           // columnSchema.title = field.title = field.title;
@@ -62,6 +64,7 @@ export const TableColumnDecorator = (props) => {
       >
         Edit
       </div> */}
+      </CollectionFieldContext.Provider>
     </SortableItem>
   );
 };
