@@ -24,8 +24,8 @@
   },
   "displayName": "Authentication",
   "displayName.zh-CN": "用户认证",
-  "description": "Basic authentication and authenticator management.",
-  "description.zh-CN": "提供基础认证功能和扩展认证器管理功能。",
+  "description": "User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.",
+  "description.zh-CN": "用户认证管理，包括基础的密码认证、短信认证、SSO 协议的认证等，可扩展。",
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
   "keywords": [
     "Authentication"
