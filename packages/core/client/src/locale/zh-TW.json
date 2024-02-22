@@ -842,5 +842,8 @@
   "Return to the main application": "返回主App",
   "Permission denied": "沒有權限",
   "Allow add new":"允許新增",
-  "Allow selection of existing records":"允許選擇已有資料"
+  "Allow selection of existing records":"允許選擇已有資料",
+  "Home page": "主頁",
+  "User manual": "使用手冊",
+  "License": "許可證"
 }

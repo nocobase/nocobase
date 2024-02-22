@@ -45,7 +45,7 @@
   "Enable": "활성화",
   "Disable": "비활성화",
   "On": "켜기",
-  "Off": "끄기",  
+  "Off": "끄기",
   "Logo": "로고",
   "Add menu item": "메뉴 항목 추가",
   "Page": "페이지",
@@ -842,5 +842,8 @@
   "Return to the main application": "메인 애플리케이션으로 돌아가기",
   "Permission denied": "허가 거부",
   "Allow add new": "신규 추가 허용",
-  "Allow selection of existing records": "기존 레코드 선택 허용"
+  "Allow selection of existing records": "기존 레코드 선택 허용",
+  "Home page": "홈페이지",
+  "User manual": "사용자 매뉴얼",
+  "License": "라이선스"
 }
