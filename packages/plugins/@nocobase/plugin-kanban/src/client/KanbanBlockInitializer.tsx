@@ -115,6 +115,7 @@ export const KanbanBlockInitializer = () => {
         // }
         insert(
           createKanbanBlockSchema({
+            sortField: values.dragSortBy,
             groupField: values.groupField.value,
             collection: item.name,
             dataSource: item.dataSource,

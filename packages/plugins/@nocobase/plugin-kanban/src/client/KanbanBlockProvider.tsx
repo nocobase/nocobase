@@ -49,6 +49,7 @@ const InternalKanbanBlockProvider = (props) => {
           resource,
           groupField,
           fixedBlock: field?.decoratorProps?.fixedBlock,
+          sortField: props?.sortField,
         }}
       >
         {props.children}
@@ -156,7 +157,7 @@ export const useKanbanBlockProps = () => {
       const targetCard = destinationColumn?.cards?.[toPosition];
       const values = {
         sourceId: sourceCard.id,
-        sortField: `${groupField.name}_sort`,
+        sortField: ctx?.sortField?.value || `${groupField.name}_sort`,
       };
       if (targetCard) {
         values['targetId'] = targetCard.id;
