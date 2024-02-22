@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
 import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
-import { useActionContext, useDesignable, useIsAssociationField } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { Collection } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';

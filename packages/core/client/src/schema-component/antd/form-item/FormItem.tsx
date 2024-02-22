@@ -70,7 +70,7 @@ export const FormItem: any = observer(
     const fieldSchema = useFieldSchema();
 
     return (
-      <CollectionFieldProvider name={fieldSchema.name} allowNull>
+      <CollectionFieldProvider name={fieldSchema.name} allowNull={!fieldSchema['x-collection-field']}>
         <ACLCollectionFieldProvider>
           <BlockItem className={'nb-form-item'}>
             <Item className={className} {...props} extra={extra} />

@@ -20,11 +20,9 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
   const collectionManager = useCollectionManager();
-
-  if (allowNull && !collection) {
+  if (!collection || allowNull) {
     return <>{children}</>;
   }
-
   const field = fieldSchema?.['x-component-props']?.['field'];
   const value =
     collectionManager.getCollectionField(fieldSchema?.['x-collection-field']) ||
