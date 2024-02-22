@@ -3,9 +3,20 @@ import { CollectionOptions, ICollection, ICollectionManager, IRepository, MergeO
 
 export class SequelizeCollectionManager implements ICollectionManager {
   db: Database;
-
+  options: any;
   constructor(options) {
     this.db = this.createDB(options);
+    this.options = options;
+  }
+
+  collectionsFilter() {
+    if (this.options.collectionsFilter) {
+      return this.options.collectionsFilter;
+    }
+
+    return (collection) => {
+      return collection.options.introspected;
+    };
   }
 
   createDB(options: any = {}) {
@@ -62,7 +73,9 @@ export class SequelizeCollectionManager implements ICollectionManager {
   }
 
   getCollections() {
-    return [...this.db.collections.values()].filter((collection) => collection.options.introspected);
+    const collectionsFilter = this.collectionsFilter();
+
+    return [...this.db.collections.values()].filter((collection) => collectionsFilter(collection));
   }
 
   getRepository<R = IRepository>(name: string, sourceId?: string | number): R {

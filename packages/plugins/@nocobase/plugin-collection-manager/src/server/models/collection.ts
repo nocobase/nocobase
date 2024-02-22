@@ -34,6 +34,7 @@ export class CollectionModel extends MagicAttributeModel {
       origin: '@nocobase/plugin-collection-manager',
       ...this.get(),
       fields: [],
+      loadedFromCollectionManager: true,
     };
 
     if (!this.db.inDialect('postgres') && collectionOptions.schema) {

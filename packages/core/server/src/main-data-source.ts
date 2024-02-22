@@ -10,6 +10,9 @@ export class MainDataSource extends SequelizeDataSource {
     this.collectionManager = this.createCollectionManager({
       collectionManager: {
         database,
+        collectionsFilter: (collection) => {
+          return collection.options.loadedFromCollectionManager;
+        },
       },
     });
   }

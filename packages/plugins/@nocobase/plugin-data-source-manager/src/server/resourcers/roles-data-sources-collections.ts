@@ -65,7 +65,7 @@ const rolesRemoteCollectionsResourcer = {
               type: 'collection',
               name: collectionName,
               collectionName,
-              title: collection.options.uiSchema?.title,
+              title: collection.options.uiSchema?.title || collection.options.title,
               roleName: role,
               usingConfig,
               exists,
