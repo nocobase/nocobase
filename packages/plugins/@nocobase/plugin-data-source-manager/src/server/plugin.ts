@@ -415,6 +415,8 @@ export class PluginDataSourceManagerServer extends Plugin {
       name: `pm.${this.name}`,
       actions: ['dataSources:*', 'roles.dataSourceResources'],
     });
+
+    this.app.acl.allow('dataSources', 'listEnabled', 'loggedIn');
   }
 
   async load() {
