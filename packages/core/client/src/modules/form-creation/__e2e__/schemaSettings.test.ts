@@ -1154,7 +1154,7 @@ test.describe('creation form block schema settings', () => {
 
     //删除模板
     await page.getByTestId('plugin-settings-button').click();
-    await page.getByLabel('ui-schema-storage').click();
+    await page.getByRole('link', { name: 'Block templates' }).click();
     await page.getByRole('menuitem', { name: 'layout Block templates' }).click();
     await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-Users_Form').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
