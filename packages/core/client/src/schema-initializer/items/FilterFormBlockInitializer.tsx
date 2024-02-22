@@ -4,7 +4,7 @@ import { useSchemaInitializerItem } from '../../application';
 import { createFilterFormBlockSchema } from '../utils';
 import { FilterBlockInitializer } from './FilterBlockInitializer';
 
-export const FilterFormBlockInitializer = ({ filterItems }) => {
+export const FilterFormBlockInitializer = ({ filterMenuItemChildren }) => {
   const itemConfig = useSchemaInitializerItem();
 
   return (
@@ -28,7 +28,7 @@ export const FilterFormBlockInitializer = ({ filterItems }) => {
         options = { ...options, settings: 'blockSettings:filterForm' };
         return createFilterFormBlockSchema(options);
       }}
-      filterItems={filterItems}
+      filterMenuItemChildren={filterMenuItemChildren}
     />
   );
 };

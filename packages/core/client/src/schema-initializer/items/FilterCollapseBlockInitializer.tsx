@@ -5,7 +5,7 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../applicatio
 import { createCollapseBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 
-export const FilterCollapseBlockInitializer = ({ filterMenuItemChildren, isItem }) => {
+export const FilterCollapseBlockInitializer = ({ filterMenuItemChildren }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
 
@@ -24,7 +24,6 @@ export const FilterCollapseBlockInitializer = ({ filterMenuItemChildren, isItem 
         insert(schema);
       }}
       filterMenuItemChildren={filterMenuItemChildren}
-      isItem={isItem}
     />
   );
 };

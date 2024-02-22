@@ -258,8 +258,6 @@ export interface DataBlockInitializerProps {
   title: string;
   filter?: (collection: Collection) => boolean;
   filterMenuItemChildren?: (item: any, index: number, items: any[]) => boolean;
-  /** 如果为 true 则会渲染成 item 的形式，而非 menu */
-  isItem?: boolean;
   componentType: string;
 }
 
@@ -275,7 +273,6 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     title,
     filter,
     filterMenuItemChildren,
-    isItem,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -333,7 +330,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     [name, compile, title, icon, childItems, onClick, props],
   );
 
-  if (!isItem && childItems.length > 0) {
+  if (childItems.length > 1 || (childItems.length === 1 && childItems[0].children?.length > 0)) {
     return (
       <SchemaInitializerMenu
         onOpenChange={(keys) => {

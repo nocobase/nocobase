@@ -225,15 +225,20 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByTestId('select-data-picker').click();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-TableSelectorInitializers-roles').hover();
-    await page.getByRole('menuitem', { name: 'form Table' }).click();
-    await page.getByText('Form').click();
-    await page.getByRole('menuitem', { name: 'Collapse' }).click();
-    await page.getByRole('menuitem', { name: 'Add text' }).click();
+    await addBlock('form Table');
+    await addBlock('form Form');
+    await addBlock('Collapse');
+    await addBlock('Add text');
 
     await expect(page.getByLabel('block-item-CardItem-roles-table-selector')).toBeVisible();
     await expect(page.getByLabel('block-item-CardItem-roles-filter-form')).toBeVisible();
     await expect(page.getByLabel('block-item-CardItem-roles-filter-collapse')).toBeVisible();
     await expect(page.getByLabel('block-item-Markdown.Void-roles-form')).toBeVisible();
+
+    async function addBlock(name: string) {
+      await page.getByLabel('schema-initializer-Grid-TableSelectorInitializers-roles').hover();
+      await page.getByRole('menuitem', { name }).click();
+      await page.mouse.move(300, 0);
+    }
   });
 });

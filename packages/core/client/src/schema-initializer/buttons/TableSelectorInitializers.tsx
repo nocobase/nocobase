@@ -32,7 +32,9 @@ export const tableSelectorInitializers = new SchemaInitializer({
             title: '{{t("Form")}}',
             Component: 'FilterFormBlockInitializer',
             componentProps: {
-              isItem: true,
+              filterMenuItemChildren() {
+                return false;
+              },
             },
             collectionName: name,
             dataSource,
@@ -42,7 +44,9 @@ export const tableSelectorInitializers = new SchemaInitializer({
             title: '{{t("Collapse")}}',
             Component: 'FilterCollapseBlockInitializer',
             componentProps: {
-              isItem: true,
+              filterMenuItemChildren() {
+                return false;
+              },
             },
             collectionName: name,
             dataSource,
