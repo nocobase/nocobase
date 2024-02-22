@@ -751,5 +751,8 @@
   "Linkage with form fields": "Lien avec les champs de formulaire",
   "Allow add new, update and delete actions": "Autoriser les actions d'ajout, de mise à jour et de suppression",
   "Allow add new":"Autoriser les ajouts",
-  "Allow selection of existing records":"Permet de sélectionner des données existantes"
+  "Allow selection of existing records":"Permet de sélectionner des données existantes",
+  "Home page": "Page d'accueil",
+  "User manual": "Manuel de l'utilisateur",
+  "License": "Licence"
 }
