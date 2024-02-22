@@ -49,6 +49,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Grid-CusomeizeCreateFormBlockInitializers-general').hover();
     await page.getByText('Form').hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
+
+    // add Markdown
+    await page.getByLabel('schema-initializer-Grid-CusomeizeCreateFormBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
 
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
@@ -208,7 +211,11 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
 
     await page.getByText('Table').click();
+    await page.mouse.move(300, 0);
+
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
+    // 屏幕上没有显示错误提示
+    await expect(page.locator('.ant-notification-notice').first()).toBeHidden({ timeout: 1000 });
   });
 
   test('data picker', async ({ page, mockPage }) => {
