@@ -17,13 +17,11 @@ export function pageArgsToLimitArgs(
 export function getRepositoryFromParams(ctx: Context) {
   const { resourceName, resourceOf } = ctx.action;
 
-  const database = ctx.db;
-
   if (resourceOf) {
-    return database.getRepository<MultipleRelationRepository>(resourceName, resourceOf);
+    return ctx.db.getRepository<MultipleRelationRepository>(resourceName, resourceOf);
   }
 
-  return database.getRepository<Repository>(resourceName);
+  return ctx.db.getRepository<Repository>(resourceName);
 }
 
 export function RelationRepositoryActionBuilder(method: 'remove' | 'set') {

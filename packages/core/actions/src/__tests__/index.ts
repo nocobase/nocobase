@@ -85,10 +85,6 @@ export class MockServer extends Koa {
     );
   }
 
-  getDb() {
-    return this.db;
-  }
-
   collection(options: CollectionOptions) {
     return this.db.collection(options);
   }
