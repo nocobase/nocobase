@@ -163,7 +163,7 @@ export const roleSchema: ISchema = {
                               properties: {
                                 tab1: {
                                   type: 'void',
-                                  title: '{{t("General permissions")}}',
+                                  title: '{{t("General action permissions")}}',
                                   'x-component': 'Tabs.TabPane',
                                   'x-component-props': {},
                                   properties: {

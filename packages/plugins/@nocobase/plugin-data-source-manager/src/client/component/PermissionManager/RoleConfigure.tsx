@@ -47,12 +47,12 @@ export const RoleConfigure = () => {
         },
         properties: {
           'strategy.actions': {
-            title: t('Global action permissions'),
+            // title: t('Global action permissions'),
             description: t(
               'All collections use general action permissions by default; permission configured individually will override the default one.',
             ),
             'x-component': 'StrategyActions',
-            'x-decorator': 'FormItem',
+            // 'x-decorator': 'FormItem',
           },
         },
       }}
