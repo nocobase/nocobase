@@ -14,6 +14,7 @@ const SettingsMenu: React.FC<{
 }> = () => {
   const { t } = useTranslation();
   const data = useCurrentAppInfo();
+  const { token } = useToken();
 
   const items = [
     {
@@ -21,8 +22,8 @@ const SettingsMenu: React.FC<{
       disabled: true,
       label: (
         <div style={{ cursor: 'text' }}>
-          <div>NocoBase</div>
-          <div style={{ fontSize: '0.8em' }}>v{data?.data?.version}</div>
+          <div style={{ color: token.colorText }}>NocoBase</div>
+          <div style={{ fontSize: '0.8em', color: token.colorTextDescription }}>v{data?.data?.version}</div>
         </div>
       ),
     },
