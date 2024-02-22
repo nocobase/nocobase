@@ -962,7 +962,7 @@ function useFormItemCollectionField() {
 }
 
 export function useIsAssociationField() {
-  const collectionField = useCollectionField_deprecated();
+  const collectionField = useFormItemCollectionField();
   const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'updatedBy', 'createdBy'].includes(
     collectionField?.interface,
   );
