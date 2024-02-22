@@ -102,11 +102,11 @@ export const SettingsCenterDropdown = () => {
             </div>
           }
         >
-          {/* <Button
+          <Button
             data-testid="plugin-settings-button"
             icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
             // title={t('All plugin settings')}
-          /> */}
+          />
         </Popover>
       </ActionContextProvider>
     )
