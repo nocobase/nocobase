@@ -166,6 +166,7 @@ export const useTableBlockProps = () => {
       await ctx.resource.move({
         sourceId: from[ctx.rowKey || 'id'],
         targetId: to[ctx.rowKey || 'id'],
+        sortField: ctx.dragSort && ctx.dragSortBy,
       });
       ctx.service.refresh();
     },
