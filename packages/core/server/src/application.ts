@@ -186,7 +186,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   get mainDataSource() {
-    return this.dataSourceManager.dataSources.get('main') as SequelizeDataSource;
+    return this.dataSourceManager?.dataSources.get('main') as SequelizeDataSource;
   }
 
   get db(): Database {
@@ -928,7 +928,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
 
-    this._dataSourceManager = new DataSourceManager();
+    if (this.db) {
+      this.db.removeAllListeners();
+    }
+
     this.createMainDataSource(options);
 
     this._cronJobManager = new CronJobManager(this);
@@ -990,15 +993,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createMainDataSource(options: ApplicationOptions) {
-    this.dataSourceManager.dataSources.set(
-      'main',
-      new MainDataSource({
-        name: 'main',
-        database: this.createDatabase(options),
-        acl: createACL(),
-        resourceManager: createResourcer(options),
-      }),
-    );
+    const mainDataSourceInstance = new MainDataSource({
+      name: 'main',
+      database: this.createDatabase(options),
+      acl: createACL(),
+      resourceManager: createResourcer(options),
+    });
+
+    this._dataSourceManager = new DataSourceManager();
+
+    this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
   }
 
   protected createDatabase(options: ApplicationOptions) {
