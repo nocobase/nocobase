@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { ISchema } from '@formily/json-schema';
 import { useComponent, useDesignable } from '../../../schema-component';
-import { SchemaToolbar, SchemaToolbarProps } from '../../../schema-settings';
+import { SchemaToolbar, SchemaToolbarProps } from '../../../schema-settings/GeneralSchemaDesigner';
 
 export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
   const { designable } = useDesignable();
