@@ -6,14 +6,14 @@ import { RoleUsersManager } from './RoleUsersManager';
 class PluginUsersClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('organization', {
-      title: tval('Organization', { ns: 'users' }),
+      title: tval('Organization & Permissions', { ns: 'users' }),
       icon: 'TeamOutlined',
     });
     this.app.pluginSettingsManager.add('organization.users', {
       title: tval('Users'),
       icon: 'UserOutlined',
       Component: UsersManagement,
-      aclSnippet: 'pm.orgnaization.users',
+      aclSnippet: 'pm.users',
     });
 
     const acl = this.app.pm.get(ACLPlugin);

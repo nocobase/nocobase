@@ -10,7 +10,7 @@ class ACLPlugin extends Plugin {
       title: '{{t("Roles & Permissions")}}',
       icon: 'LockOutlined',
       Component: RolesManagement,
-      aclSnippet: 'pm.organization.roles',
+      aclSnippet: 'pm.roles',
       sort: 3,
     });
   }
