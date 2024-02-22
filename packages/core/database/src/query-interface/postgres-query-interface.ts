@@ -17,6 +17,7 @@ export default class PostgresQueryInterface extends QueryInterface {
     transaction?: Transaction;
   }): Promise<void> {
     const { tableInfo, columnName, seqName, currentVal, transaction } = options;
+
     if (!seqName) {
       throw new Error('seqName is required to set auto increment val in postgres');
     }

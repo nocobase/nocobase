@@ -1,9 +1,11 @@
 import * as functions from '@formulajs/formulajs';
 
+import { evaluate } from '.';
+
 const fnNames = Object.keys(functions).filter((key) => key !== 'default');
 const fns = fnNames.map((key) => functions[key]);
 
-export default function (expression: string, scope = {}) {
+export default evaluate.bind(function (expression: string, scope = {}) {
   const fn = new Function(...fnNames, ...Object.keys(scope), `return ${expression}`);
   const result = fn(...fns, ...Object.values(scope));
   if (typeof result === 'number') {
@@ -13,4 +15,4 @@ export default function (expression: string, scope = {}) {
     return functions.ROUND(result, 9);
   }
   return result;
-}
+}, {});

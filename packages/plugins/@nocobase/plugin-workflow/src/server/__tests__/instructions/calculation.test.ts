@@ -166,8 +166,7 @@ describe('workflow > instructions > calculation', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect((job.result as string).startsWith('a $$')).toBe(true);
-      expect((job.result as string).endsWith(' ')).toBe(true);
+      expect(job.result).toBe('a$$0');
     });
 
     it('text', async () => {

@@ -1,14 +1,17 @@
 {
   "name": "@nocobase/plugin-api-keys",
-  "displayName": "API keys",
-  "displayName.zh-CN": "API 密钥",
-  "description": "Allows users to use API key to access NocoBase HTTP API",
-  "description.zh-CN": "允许用户使用 API 密钥访问 NocoBase HTTP API",
+  "displayName": "Auth: API keys",
+  "displayName.zh-CN": "认证：API 密钥",
+  "description": "Allows users to use API key to access application's HTTP API",
+  "description.zh-CN": "允许用户使用 API 密钥访问应用的 HTTP API",
   "version": "0.19.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/api-keys",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/api-keys",
+  "keywords": [
+    "Authentication"
+  ],
   "devDependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
