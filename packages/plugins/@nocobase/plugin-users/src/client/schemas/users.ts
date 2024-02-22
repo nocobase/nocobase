@@ -437,7 +437,7 @@ export const roleUsersSchema: ISchema = {
                 style: {
                   marginRight: 8,
                 },
-                // useAction: '{{ useBulkRemoveDepartments }}',
+                useAction: '{{ useBulkRemoveUsers }}',
               },
             },
             create: {
@@ -455,6 +455,100 @@ export const roleUsersSchema: ISchema = {
                   'x-decorator': 'FormV2',
                   title: '{{t("Add users")}}',
                   properties: {
+                    resource: {
+                      type: 'void',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'RoleUsersProvider',
+                      properties: {
+                        actions: {
+                          type: 'void',
+                          'x-component': 'ActionBar',
+                          'x-component-props': {
+                            style: {
+                              marginBottom: 16,
+                            },
+                          },
+                          properties: {
+                            filter: {
+                              type: 'void',
+                              title: '{{ t("Filter") }}',
+                              default: {
+                                $and: [{ username: { $includes: '' } }, { nickname: { $includes: '' } }],
+                              },
+                              'x-action': 'filter',
+                              'x-component': 'Filter.Action',
+                              'x-component-props': {
+                                icon: 'FilterOutlined',
+                                useProps: '{{ useFilterActionProps }}',
+                              },
+                              'x-align': 'left',
+                            },
+                          },
+                        },
+                        table: {
+                          type: 'void',
+                          'x-component': 'Table.Void',
+                          'x-component-props': {
+                            rowKey: 'id',
+                            rowSelection: {
+                              type: 'checkbox',
+                              onChange: '{{ handleSelectRoleUsers }}',
+                            },
+                            useDataSource: '{{ cm.useDataSourceFromRAC }}',
+                          },
+                          properties: {
+                            username: {
+                              type: 'void',
+                              'x-decorator': 'Table.Column.Decorator',
+                              'x-component': 'Table.Column',
+                              properties: {
+                                username: {
+                                  type: 'string',
+                                  'x-component': 'CollectionField',
+                                  'x-read-pretty': true,
+                                },
+                              },
+                            },
+                            nickname: {
+                              type: 'void',
+                              'x-decorator': 'Table.Column.Decorator',
+                              'x-component': 'Table.Column',
+                              properties: {
+                                nickname: {
+                                  type: 'string',
+                                  'x-component': 'CollectionField',
+                                  'x-read-pretty': true,
+                                },
+                              },
+                            },
+                            phone: {
+                              type: 'void',
+                              'x-decorator': 'Table.Column.Decorator',
+                              'x-component': 'Table.Column',
+                              properties: {
+                                phone: {
+                                  type: 'string',
+                                  'x-component': 'CollectionField',
+                                  'x-read-pretty': true,
+                                },
+                              },
+                            },
+                            email: {
+                              type: 'void',
+                              'x-decorator': 'Table.Column.Decorator',
+                              'x-component': 'Table.Column',
+                              properties: {
+                                email: {
+                                  type: 'string',
+                                  'x-component': 'CollectionField',
+                                  'x-read-pretty': true,
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',
@@ -471,7 +565,7 @@ export const roleUsersSchema: ISchema = {
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
-                            // useAction: '{{ useAddDepartments }}',
+                            useAction: '{{ useAddRoleUsers }}',
                           },
                         },
                       },
@@ -542,7 +636,7 @@ export const roleUsersSchema: ISchema = {
                       title: "{{t('Remove user')}}",
                       content: "{{t('Are you sure you want to remove it?')}}",
                     },
-                    // useAction: '{{ useRemoveDepartment }}',
+                    useAction: '{{ useRemoveUser }}',
                   },
                 },
               },

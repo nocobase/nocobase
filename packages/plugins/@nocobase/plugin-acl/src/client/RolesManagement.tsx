@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Tabs, Button, Divider } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Tabs, Divider } from 'antd';
 import { CollectionProvider, ResourceActionProvider, usePlugin } from '@nocobase/client';
 import { ISchema, Schema } from '@formily/react';
 import { RolesMenu } from './RolesMenu';
 import { useACLTranslation } from './locale';
 import ACLPlugin from '.';
 import { RolesManagerContext } from './RolesManagerProvider';
-import { RoleConfigure } from './permissions/RoleConfigure';
 import { Permissions } from './permissions/Permissions';
 import { NewRole } from './NewRole';
 
@@ -53,10 +51,11 @@ const collection = {
 export const RolesManagement: React.FC = () => {
   const { t } = useACLTranslation();
   const aclPlugin = usePlugin(ACLPlugin);
+  const [activeKey, setActiveKey] = React.useState('permissions');
   const tabs = Array.from(aclPlugin.rolesManager.list()).map(([name, item]) => ({
     key: name,
     label: Schema.compile(item.title, { t }),
-    children: item.Component ? React.createElement(item.Component) : null,
+    children: item.Component ? React.createElement(item.Component, { active: activeKey === name }) : null,
   }));
   const [role, setRole] = useState(null);
 
@@ -92,11 +91,13 @@ export const RolesManagement: React.FC = () => {
           </Col>
           <Col span={19}>
             <Tabs
+              activeKey={activeKey}
+              onChange={(key) => setActiveKey(key)}
               items={[
                 {
                   key: 'permissions',
                   label: t('Permissions'),
-                  children: <Permissions />,
+                  children: <Permissions active={activeKey === 'permissions'} />,
                 },
                 ...tabs,
               ]}

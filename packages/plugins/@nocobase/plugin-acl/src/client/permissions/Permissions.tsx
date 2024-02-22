@@ -9,7 +9,7 @@ import { MenuItemsProvider } from './MenuItemsProvider';
 import { PluginPermissions } from './PluginPermissions';
 import { RolesManagerContext } from '../RolesManagerProvider';
 
-export const Permissions: React.FC = () => {
+export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
   const { t } = useACLTranslation();
   const [activeKey, setActiveKey] = React.useState('general');
   const { role } = useContext(RolesManagerContext);
@@ -19,19 +19,19 @@ export const Permissions: React.FC = () => {
       {
         key: 'general',
         label: t('General permissions'),
-        children: <GeneralPermissions active={activeKey === 'general'} />,
+        children: <GeneralPermissions active={activeKey === 'general' && active} />,
       },
       {
         key: 'action',
         label: t('Action permissions'),
-        children: <ActionPermissions active={activeKey === 'action'} />,
+        children: <ActionPermissions active={activeKey === 'action' && active} />,
       },
       {
         key: 'menu',
         label: t('Menu permissions'),
         children: (
           <MenuItemsProvider>
-            <MenuPermissions active={activeKey === 'menu'} />
+            <MenuPermissions active={activeKey === 'menu' && active} />
           </MenuItemsProvider>
         ),
       },
@@ -40,12 +40,12 @@ export const Permissions: React.FC = () => {
             {
               key: 'plugin',
               label: t('Plugin settings permissions'),
-              children: <PluginPermissions active={activeKey === 'plugin'} />,
+              children: <PluginPermissions active={activeKey === 'plugin' && active} />,
             },
           ]
         : []),
     ],
-    [pm, activeKey, t],
+    [pm, activeKey, active, t],
   );
 
   useEffect(() => {
