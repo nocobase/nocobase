@@ -26,7 +26,7 @@ export function evaluate(this: Evaluator, options: EvaluatorOptions = {}, expres
   const newContext = {};
   const keyMap = {};
   let index = 0;
-  const exp = expression.trim().replace(/{{\s*([^{}]+)\s*}}/g, (_, v) => {
+  const exp = expression.trim().replace(/{{\s*([\w$.-]+)\s*}}/g, (_, v) => {
     appendArrayColumn(context, v);
 
     let item = get(context, v) ?? null;
