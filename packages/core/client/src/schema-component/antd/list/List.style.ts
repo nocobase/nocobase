@@ -2,12 +2,11 @@ import { genStyleHook } from '../__builtins__';
 
 const useStyles = genStyleHook('nb-list', (token) => {
   const { componentCls } = token;
-
   return {
     [componentCls]: {
       width: '100%',
-      marginBottom: token.marginLG,
-      '.nb-action-bar:not(:empty)': { marginTop: token.marginXS },
+      marginBottom: 0,
+      // '.nb-action-bar:not(:empty)': { marginTop: token.marginXS },
       '&:hover': { '> .general-schema-designer': { display: 'block' } },
       '> .general-schema-designer': {
         position: 'absolute',
@@ -35,12 +34,10 @@ const useStyles = genStyleHook('nb-list', (token) => {
           },
         },
       },
-
       '.itemCss': {
         display: 'flex',
         width: '100%',
         flexDirection: 'column',
-
         '&:not(:first-child)': {
           paddingTop: token.paddingContentVertical,
         },

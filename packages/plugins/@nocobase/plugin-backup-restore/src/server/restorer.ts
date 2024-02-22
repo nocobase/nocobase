@@ -91,7 +91,7 @@ export class Restorer extends AppMigrator {
   async checkMeta() {
     const meta = await this.getImportMeta();
 
-    if (meta['dialectOnly'] && !this.app.db.inDialect(meta['dialect'])) {
+    if (!this.app.db.inDialect(meta['dialect'])) {
       throw new RestoreCheckError(`this backup file can only be imported in database ${meta['dialect']}`);
     }
 

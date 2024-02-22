@@ -1,4 +1,4 @@
-import { untracked } from '@formily/reactive';
+import { raw, untracked } from '@formily/reactive';
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
@@ -124,7 +124,13 @@ const VariablesProvider = ({ children }) => {
             data = await waitForData;
             clearRequested(url);
           }
-          current[key] = data.data.data;
+
+          // fix https://nocobase.height.app/T-3144，使用 `raw` 方法是为了避免触发 autorun，以修复 T-3144 的错误
+          if (!raw(current)[key]) {
+            // 把接口返回的数据保存起来，避免重复请求
+            raw(current)[key] = data.data.data;
+          }
+
           current = getValuesByPath(current, key);
         } else {
           current = getValuesByPath(current, key);

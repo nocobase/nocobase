@@ -4,13 +4,13 @@
   "displayName.zh-CN": "工作流",
   "description": "A powerful workflow plugin designed to support business process management and automation.",
   "description.zh-CN": "工作流插件，为业务流程管理和自动化提供支持。",
-  "version": "0.19.0-alpha.6",
+  "version": "0.19.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/workflow",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/workflow",
   "dependencies": {
-    "@nocobase/plugin-workflow-test": "0.19.0-alpha.6"
+    "@nocobase/plugin-workflow-test": "0.19.0-alpha.8"
   },
   "devDependencies": {
     "@ant-design/icons": "5.x",

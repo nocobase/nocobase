@@ -1222,12 +1222,15 @@ export const useAssociationNames = () => {
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
-        const rules = s['x-linkage-rules'];
-        rules.forEach(({ condition }) => {
-          const type = Object.keys(condition)[0] || '$and';
-          const list = condition[type];
+        const collectAppends = (obj) => {
+          const type = Object.keys(obj)[0] || '$and';
+          const list = obj[type];
 
           list.forEach((item) => {
+            if ('$and' in item || '$or' in item) {
+              return collectAppends(item);
+            }
+
             const fieldNames = getTargetField(item);
 
             // 只应该收集关系字段，只有大于 1 的时候才是关系字段
@@ -1235,6 +1238,11 @@ export const useAssociationNames = () => {
               appends.add(fieldNames.join('.'));
             }
           });
+        };
+
+        const rules = s['x-linkage-rules'];
+        rules.forEach(({ condition }) => {
+          collectAppends(condition);
         });
       }
 

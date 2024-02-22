@@ -128,12 +128,6 @@ export const kanbanCardInitializers: SchemaInitializer = new SchemaInitializer({
       type: 'divider',
     },
     {
-      title: '{{t("Display field title")}}',
-      name: 'displayFieldTitle',
-      Component: 'Kanban.Card.Designer.TitleSwitch',
-      enable: true,
-    },
-    {
       name: 'openMode',
       Component: SchemaInitializerOpenModeSchemaItems,
     },
