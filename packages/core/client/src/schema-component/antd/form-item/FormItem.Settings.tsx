@@ -14,13 +14,11 @@ import {
 } from '../../../collection-manager';
 import { useRecord_deprecated } from '../../../record-provider';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
-import {
-  SchemaSettingsDataScope,
-  SchemaSettingsDateFormat,
-  SchemaSettingsDefaultValue,
-  SchemaSettingsSortingRule,
-  isPatternDisabled,
-} from '../../../schema-settings/SchemaSettings';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
+import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
+import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';

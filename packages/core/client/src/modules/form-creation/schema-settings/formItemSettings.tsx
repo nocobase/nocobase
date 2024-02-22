@@ -11,9 +11,10 @@ import { useFieldComponentName } from '../../../common/useFieldComponentName';
 import { useDesignable, useValidateSchema } from '../../../schema-component';
 import { useIsFormReadPretty } from '../../../schema-component/antd/form-item/FormItem.Settings';
 import { getTempFieldState } from '../../../schema-component/antd/form-v2/utils';
-import { SchemaSettingsDefaultValue, isPatternDisabled } from '../../../schema-settings';
+import { isPatternDisabled } from '../../../schema-settings';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
 
 export const formItemSettings = new SchemaSettings({
   name: 'fieldSettings:FormItem',

@@ -13,7 +13,6 @@ import {
   GeneralSchemaDesigner,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsConnectDataBlocks,
-  SchemaSettingsDataScope,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -26,6 +25,7 @@ import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
 import { useCompile } from '../../';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();

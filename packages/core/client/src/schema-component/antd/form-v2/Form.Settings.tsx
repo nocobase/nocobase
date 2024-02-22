@@ -8,12 +8,12 @@ import { useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import {
   SchemaSettingsBlockTitleItem,
-  SchemaSettingsDataScope,
   SchemaSettingsDataTemplates,
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
   SchemaSettingsTemplate,
 } from '../../../schema-settings/SchemaSettings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 

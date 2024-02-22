@@ -7,7 +7,7 @@ import { SchemaSettings } from '../../../application/schema-settings/SchemaSetti
 import { recursiveParent, useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated, useSortFields } from '../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../schema-component';
-import { SchemaSettingsDataScope } from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const dataSelectorBlockSettings = new SchemaSettings({
   name: 'blockSettings:tableSelector',

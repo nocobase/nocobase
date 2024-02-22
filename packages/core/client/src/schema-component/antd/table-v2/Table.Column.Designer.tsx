@@ -6,21 +6,21 @@ import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
-  SchemaSettingsDataScope,
-  SchemaSettingsDateFormat,
-  SchemaSettingsDefaultValue,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
-  SchemaSettingsSortingRule,
   SchemaSettingsSwitchItem,
-  isPatternDisabled,
 } from '../../../schema-settings';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
+import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
+import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
+import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
 
 export const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用

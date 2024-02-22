@@ -9,7 +9,6 @@ import { useRecord_deprecated } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsBlockTitleItem,
-  SchemaSettingsDataScope,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -19,6 +18,7 @@ import {
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 /**
  * @deprecated - 已使用 SchemaSettings 替代

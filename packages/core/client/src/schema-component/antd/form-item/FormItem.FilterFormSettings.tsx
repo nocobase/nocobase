@@ -6,7 +6,7 @@ import { SchemaSettings } from '../../../application/schema-settings';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useRecord_deprecated } from '../../../record-provider';
-import { SchemaSettingsDataScope, VariableInput, getShouldChange } from '../../../schema-settings';
+import { VariableInput, getShouldChange } from '../../../schema-settings';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -21,6 +21,7 @@ import {
   EditTooltip,
   EditValidationRules,
 } from './SchemaSettingOptions';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 /**
  * @deprecated

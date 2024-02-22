@@ -16,17 +16,14 @@ import {
   useIsSelectFieldMode,
   useTitleFieldOptions,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import {
-  SchemaSettingsDataScope,
-  SchemaSettingsSortingRule,
-  VariableInput,
-  getShouldChange,
-} from '../../../../schema-settings';
+import { VariableInput, getShouldChange } from '../../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useCollectionField } from './utils';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 
 export const enableLink = {
   name: 'enableLink',

@@ -5,7 +5,8 @@ import { SchemaSettings } from '../../../application/schema-settings/SchemaSetti
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCompile, useDesignable } from '../../../schema-component';
-import { SchemaSettingsDataScope, SchemaSettingsDefaultSortingRules } from '../../../schema-settings';
+import { SchemaSettingsDefaultSortingRules } from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const filterCollapseItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterCollapseItem',
