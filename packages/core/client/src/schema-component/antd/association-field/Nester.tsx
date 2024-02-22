@@ -21,6 +21,7 @@ import {
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { AssociationFieldContext } from './context';
 import { SubFormProvider, useAssociationFieldContext } from './hooks';
+import { isNewRecord, markRecordAsNew } from '../../../data-source/record/isNewRecord';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -158,7 +159,7 @@ const ToManyNester = observer(
                             startIndex: index + 1,
                             insertCount: 1,
                           });
-                          field.value.splice(index + 1, 0, {});
+                          field.value.splice(index + 1, 0, markRecordAsNew({}));
                           each(field.form.fields, (targetField, key) => {
                             if (!targetField) {
                               delete field.form.fields[key];
@@ -190,7 +191,7 @@ const ToManyNester = observer(
               </div>
               <FormActiveFieldsProvider name="nester">
                 <SubFormProvider value={value}>
-                  <RecordProvider_deprecated isNew={_.isEmpty(value)} record={value} parent={recordData}>
+                  <RecordProvider_deprecated isNew={isNewRecord(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
                         <RecursionField

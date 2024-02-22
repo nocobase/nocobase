@@ -8,6 +8,7 @@ import {
   useCollectionManager_deprecated,
 } from '../../../../collection-manager';
 import { isSubMode } from '../../association-field/util';
+import { markRecordAsNew } from '../../../../data-source/record/isNewRecord';
 
 /**
  * #### 处理 `子表单` 和 `子表格` 中的特殊情况
@@ -167,7 +168,7 @@ export const useSubTableSpecialCase = ({ field }) => {
   useEffect(() => {
     if (_.isEmpty(field.value)) {
       const value = field.value;
-      field.value = [{}];
+      field.value = [markRecordAsNew({})];
       // 因为默认值的解析是异步的，所以下面的代码会优先于默认值的设置，这样就防止了设置完默认值后又被清空的问题
       setTimeout(() => {
         field.value = value;

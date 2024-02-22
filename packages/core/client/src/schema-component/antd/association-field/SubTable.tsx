@@ -27,6 +27,7 @@ import { Table } from '../table-v2/Table';
 import { useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { markRecordAsNew } from '../../../data-source/record/isNewRecord';
 
 export const SubTable: any = observer(
   (props: any) => {
@@ -173,7 +174,7 @@ export const SubTable: any = observer(
                           `}
                           onClick={() => {
                             field.value = field.value || [];
-                            field.value.push({});
+                            field.value.push(markRecordAsNew({}));
                             field.onInput(field.value);
                           }}
                         >

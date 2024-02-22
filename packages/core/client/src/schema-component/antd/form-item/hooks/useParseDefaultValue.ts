@@ -5,7 +5,6 @@ import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
 import { useRecordIndex } from '../../../../../src/record-provider';
-import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useRecord } from '../../../../data-source/record/RecordProvider';
 import { useFlag } from '../../../../flag-provider';
@@ -31,7 +30,6 @@ const useParseDefaultValue = () => {
   const { getField } = useCollection_deprecated();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
-  const { type: formBlockType } = useFormBlockType();
 
   /**
    * name: 如 $user

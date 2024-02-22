@@ -29,6 +29,7 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { isNewRecord } from '../../../data-source/record/isNewRecord';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -69,7 +70,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           return (
             <SubFormProvider value={record}>
               <RecordIndexProvider index={record.__index || index}>
-                <RecordProvider_deprecated isNew={_.isEmpty(record)} record={record} parent={parentRecordData}>
+                <RecordProvider_deprecated isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
                     <span
                       role="button"
