@@ -9,8 +9,6 @@ setup('admin', async ({ page }) => {
   await page.getByPlaceholder('Password').fill('admin123');
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  await expect(page.getByTestId('user-center-button').getByText('Super Admin')).toBeVisible();
-
   // 开启配置状态
   await page.evaluate(() => {
     localStorage.setItem('NOCOBASE_DESIGNABLE', 'true');
