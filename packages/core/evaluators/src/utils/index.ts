@@ -17,24 +17,34 @@ export function appendArrayColumn(scope, key) {
   }
 }
 
-export function evaluate(this: Evaluator, expression: string, scope: Scope = {}) {
+interface EvaluatorOptions {
+  replaceValue?: boolean;
+}
+
+export function evaluate(this: Evaluator, options: EvaluatorOptions = {}, expression: string, scope: Scope = {}) {
   const context = cloneDeep(scope);
   const newContext = {};
-  const exp = expression.trim().replace(/{{\s*([^{}]+)\s*}}/g, (_, v) => {
+  const keyMap = {};
+  let index = 0;
+  const exp = expression.trim().replace(/{{\s*([\w$.-]+)\s*}}/g, (_, v) => {
     appendArrayColumn(context, v);
 
-    let item = get(context, v);
+    let item = get(context, v) ?? null;
 
     if (typeof item === 'function') {
       item = item();
     }
 
-    const randomKey = `$$${Math.random().toString(36).slice(2, 10).padEnd(8, '0')}`;
-    if (item == null) {
-      return 'null';
+    let key = keyMap[v];
+    if (!key) {
+      key = `$$${index++}`;
+      keyMap[v] = key;
+
+      newContext[key] = item;
     }
-    newContext[randomKey] = item;
-    return ` ${randomKey} `;
+    return options.replaceValue
+      ? `${item == null || (typeof item === 'number' && (Number.isNaN(item) || !Number.isFinite(item))) ? '' : item}`
+      : key;
   });
 
   return this(exp, newContext);
