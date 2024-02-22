@@ -3,8 +3,8 @@
   "version": "0.19.0-alpha.8",
   "displayName": "Calendar",
   "displayName.zh-CN": "日历",
-  "description": "Provide calendar template and block",
-  "description.zh-CN": "提供日历模板和区块",
+  "description": "Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.",
+  "description.zh-CN": "提供日历数据表模板和区块，用于管理日期数据，通常用于事件、约会、任务等与日期/时间相关的信息。",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/calendar",
@@ -38,6 +38,7 @@
   },
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
   "keywords": [
+    "Collections",
     "Blocks"
   ]
 }

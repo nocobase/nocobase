@@ -5,7 +5,7 @@
   "homepage": "https://docs.nocobase.com/plugins/theme-editor",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/theme-editor",
   "displayName": "Theme editor",
-  "displayName.zh-CN": "Theme editor",
+  "displayName.zh-CN": "主题编辑器",
   "description": "Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.",
   "description.zh-CN": "自定义 UI 的颜色、尺寸等，并将结果保存为主题，可在多个主题间切换。",
   "devDependencies": {
