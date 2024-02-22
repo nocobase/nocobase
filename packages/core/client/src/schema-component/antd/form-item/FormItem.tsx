@@ -16,6 +16,7 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
+import { CollectionFieldProvider } from '../../../data-source';
 
 export const FormItem: any = observer(
   (props: any) => {
@@ -66,13 +67,16 @@ export const FormItem: any = observer(
         },
       );
     }, [showTitle]);
+    const fieldSchema = useFieldSchema();
 
     return (
-      <ACLCollectionFieldProvider>
-        <BlockItem className={'nb-form-item'}>
-          <Item className={className} {...props} extra={extra} />
-        </BlockItem>
-      </ACLCollectionFieldProvider>
+      <CollectionFieldProvider name={fieldSchema.name} allowNull>
+        <ACLCollectionFieldProvider>
+          <BlockItem className={'nb-form-item'}>
+            <Item className={className} {...props} extra={extra} />
+          </BlockItem>
+        </ACLCollectionFieldProvider>
+      </CollectionFieldProvider>
     );
   },
   { displayName: 'FormItem' },

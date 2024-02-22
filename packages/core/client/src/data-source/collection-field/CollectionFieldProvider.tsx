@@ -12,13 +12,19 @@ CollectionFieldContext.displayName = 'CollectionFieldContext';
 export type CollectionFieldProviderProps = {
   name?: SchemaKey;
   children?: ReactNode;
+  allowNull?: boolean;
 };
 
 export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props) => {
-  const { name, children } = props;
+  const { name, children, allowNull } = props;
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
   const collectionManager = useCollectionManager();
+
+  if (allowNull && !collection) {
+    return <>{children}</>;
+  }
+
   const field = fieldSchema?.['x-component-props']?.['field'];
   const value =
     collectionManager.getCollectionField(fieldSchema?.['x-collection-field']) ||
