@@ -48,6 +48,7 @@ export const oneTableBlock: PageConfig = {
                       showIndex: true,
                       collection: 'general',
                       disableTemplate: false,
+                      dataSource: 'main',
                     },
                     _isJSONSchemaObject: true,
                     properties: {

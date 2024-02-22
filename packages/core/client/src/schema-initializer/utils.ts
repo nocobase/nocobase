@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
 import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
-import { useActionContext, useDesignable } from '../schema-component';
+import { useActionContext, useDesignable, useIsAssociationField } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { Collection } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
@@ -287,10 +287,7 @@ export const useFormItemInitializerFields = (options?: any) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
-      // const component =
-      //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
-      //     ? 'TableField'
-      //     : 'CollectionField';
+      const isAssociationField = targetCollection;
       const schema = {
         type: 'string',
         name: field.name,
@@ -306,17 +303,19 @@ export const useFormItemInitializerFields = (options?: any) => {
                 value: 'id',
               },
             }
-          : {
-              fieldNames: {
-                label:
-                  targetCollection?.titleField ||
-                  field?.targetKey ||
-                  field?.foreignKey ||
-                  targetCollection?.getPrimaryKey() ||
-                  'id',
-                value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
-              },
-            },
+          : isAssociationField
+            ? {
+                fieldNames: {
+                  label:
+                    targetCollection?.titleField ||
+                    field?.targetKey ||
+                    field?.foreignKey ||
+                    targetCollection?.getPrimaryKey() ||
+                    'id',
+                  value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+                },
+              }
+            : {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       const resultItem = {
