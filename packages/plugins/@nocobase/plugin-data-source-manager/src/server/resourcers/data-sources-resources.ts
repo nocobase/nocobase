@@ -50,18 +50,15 @@ export default {
     async update(ctx, next) {
       const { associatedIndex: roleName } = ctx.action.params;
 
-      ctx.body = await ctx.app
-        .getDb()
-        .getRepository('dataSourcesRolesResources')
-        .update({
-          filter: {
-            roleName,
-            dataSourceKey: ctx.action.params.filter.dataSourceKey,
-            name: ctx.action.params.filter.name,
-          },
-          values: ctx.action.params.values,
-          updateAssociationValues: ['actions'],
-        });
+      ctx.body = await ctx.db.getRepository('dataSourcesRolesResources').update({
+        filter: {
+          roleName,
+          dataSourceKey: ctx.action.params.filter.dataSourceKey,
+          name: ctx.action.params.filter.name,
+        },
+        values: ctx.action.params.values,
+        updateAssociationValues: ['actions'],
+      });
 
       await next();
     },
@@ -69,17 +66,14 @@ export default {
     async get(ctx, next) {
       const { associatedIndex: roleName } = ctx.action.params;
 
-      const record = await ctx.app
-        .getDb()
-        .getRepository('dataSourcesRolesResources')
-        .findOne({
-          filter: {
-            roleName,
-            dataSourceKey: ctx.action.params.filter.dataSourceKey,
-            name: ctx.action.params.filter.name,
-          },
-          appends: ctx.action.params.appends,
-        });
+      const record = await ctx.db.getRepository('dataSourcesRolesResources').findOne({
+        filter: {
+          roleName,
+          dataSourceKey: ctx.action.params.filter.dataSourceKey,
+          name: ctx.action.params.filter.name,
+        },
+        appends: ctx.action.params.appends,
+      });
 
       ctx.body = record;
 
