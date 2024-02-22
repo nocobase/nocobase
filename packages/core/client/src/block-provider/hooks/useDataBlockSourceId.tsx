@@ -1,10 +1,10 @@
-import { useRecord } from '../..';
+import { useRecordData } from '../..';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 
 export const useDataBlockSourceId = ({ association, useSourceId }: { association: string; useSourceId?: any }) => {
   const sourceId = useSourceId?.();
-  const record = useRecord();
+  const recordData = useRecordData();
   const { getCollectionField } = useCollectionManager_deprecated();
 
-  return sourceId || record?.[getCollectionField(association)?.sourceKey || 'id'];
+  return sourceId || recordData?.[getCollectionField(association)?.sourceKey || 'id'];
 };
