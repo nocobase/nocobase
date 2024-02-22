@@ -6,11 +6,8 @@ import { SchemaSettings } from '../../../application/schema-settings/SchemaSetti
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../schema-component';
-import {
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsDataScope,
-  SchemaSettingsTemplate,
-} from '../../../schema-settings';
+import { SchemaSettingsBlockTitleItem, SchemaSettingsTemplate } from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const listBlockSettings = new SchemaSettings({
   name: 'blockSettings:list',

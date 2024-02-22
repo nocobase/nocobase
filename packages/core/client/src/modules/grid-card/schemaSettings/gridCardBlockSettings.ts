@@ -15,8 +15,9 @@ import {
   screenSizeMaps,
   screenSizeTitleMaps,
 } from '../../../schema-component/antd/grid-card/options';
-import { SchemaSettingsDataScope, SchemaSettingsTemplate } from '../../../schema-settings';
+import { SchemaSettingsTemplate } from '../../../schema-settings';
 import { columnCountMarks } from './utils';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const gridCardBlockSettings = new SchemaSettings({
   name: 'blockSettings:gridCard',

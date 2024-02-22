@@ -7,12 +7,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
-import {
-  SchemaSettingsModalItem,
-  SchemaSettingsSelectItem,
-  SchemaSettingsSwitchItem,
-  isPatternDisabled,
-} from '../../../schema-settings';
+import { SchemaSettingsModalItem, SchemaSettingsSelectItem, SchemaSettingsSwitchItem } from '../../../schema-settings';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';

@@ -10,14 +10,14 @@ import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
 import {
-  SchemaSettingsDataScope,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
-  isPatternDisabled,
 } from '../../../schema-settings/SchemaSettings';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';

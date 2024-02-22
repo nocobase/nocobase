@@ -14,10 +14,10 @@ import { useDesignable } from '../../../schema-component/hooks';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsConnectDataBlocks,
-  SchemaSettingsDataScope,
   SchemaSettingsTemplate,
   SchemaSettingsSortField,
 } from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',

@@ -11,7 +11,6 @@ import { useRecord_deprecated } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import {
   GeneralSchemaDesigner,
-  SchemaSettingsDataScope,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -23,6 +22,7 @@ import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { RecordPickerContext } from '../../antd/record-picker';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection_deprecated();

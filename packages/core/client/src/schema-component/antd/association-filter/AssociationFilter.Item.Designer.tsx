@@ -6,7 +6,6 @@ import { useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
-  SchemaSettingsDataScope,
   SchemaSettingsDefaultSortingRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -14,6 +13,7 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();

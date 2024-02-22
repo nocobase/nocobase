@@ -9,7 +9,6 @@ import { useCollection_deprecated, useSortFields } from '../../../collection-man
 import { useRecord_deprecated } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
-  SchemaSettingsDataScope,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -21,6 +20,7 @@ import { SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;
