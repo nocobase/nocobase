@@ -9,6 +9,10 @@ import { MenuItemsProvider } from './MenuItemsProvider';
 import { PluginPermissions } from './PluginPermissions';
 import { RolesManagerContext } from '../RolesManagerProvider';
 
+const TabLayout: React.FC = (props) => {
+  return <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>{props.children}</div>;
+};
+
 export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
   const { t } = useACLTranslation();
   const [activeKey, setActiveKey] = React.useState('general');
@@ -19,20 +23,30 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
       {
         key: 'general',
         label: t('General permissions'),
-        children: <GeneralPermissions active={activeKey === 'general' && active} />,
+        children: (
+          <TabLayout>
+            <GeneralPermissions active={activeKey === 'general' && active} />
+          </TabLayout>
+        ),
       },
       {
         key: 'action',
         label: t('Action permissions'),
-        children: <ActionPermissions active={activeKey === 'action' && active} />,
+        children: (
+          <TabLayout>
+            <ActionPermissions active={activeKey === 'action' && active} />
+          </TabLayout>
+        ),
       },
       {
         key: 'menu',
         label: t('Menu permissions'),
         children: (
-          <MenuItemsProvider>
-            <MenuPermissions active={activeKey === 'menu' && active} />
-          </MenuItemsProvider>
+          <TabLayout>
+            <MenuItemsProvider>
+              <MenuPermissions active={activeKey === 'menu' && active} />
+            </MenuItemsProvider>
+          </TabLayout>
         ),
       },
       ...(pm
@@ -40,7 +54,11 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
             {
               key: 'plugin',
               label: t('Plugin settings permissions'),
-              children: <PluginPermissions active={activeKey === 'plugin' && active} />,
+              children: (
+                <TabLayout>
+                  <PluginPermissions active={activeKey === 'plugin' && active} />
+                </TabLayout>
+              ),
             },
           ]
         : []),

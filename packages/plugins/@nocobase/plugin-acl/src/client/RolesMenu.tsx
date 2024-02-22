@@ -48,7 +48,12 @@ export const RolesMenu: React.FC & {
   return (
     <>
       {items.length ? (
-        <Menu style={{ border: 'none' }} items={items} selectedKeys={[role?.name]} onSelect={handleSelect} />
+        <Menu
+          style={{ border: 'none', maxHeight: '65vh', overflowY: 'auto' }}
+          items={items}
+          selectedKeys={[role?.name]}
+          onSelect={handleSelect}
+        />
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
       )}
