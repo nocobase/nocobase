@@ -35,35 +35,22 @@ export class InheritedCollection extends Collection {
     }
   }
 
-  protected bindParents() {
-    this.setParents(this.options.inherits);
-    this.setParentFields();
-    this.setFields(this.options.fields, false);
-    this.db.inheritanceMap.setInheritance(this.name, this.options.inherits);
-  }
-
-  protected setParents(inherits: string | string[]) {
-    this.parents = lodash.castArray(inherits).map((name) => {
-      const existCollection = this.db.collections.get(name);
-      if (!existCollection) {
-        throw new ParentCollectionNotFound(name);
-      }
-
-      return existCollection;
-    });
-  }
-
-  protected setParentFields() {
-    for (const [name, fieldOptions] of this.parentFields()) {
-      this.setField(name, {
-        ...fieldOptions,
-        inherit: true,
-      });
-    }
-  }
-
   getParents() {
     return this.parents;
+  }
+
+  getFlatParents() {
+    // get parents as flat array
+    const parents = [];
+    for (const parent of this.parents) {
+      if (parent.isInherited()) {
+        parents.push(...(<InheritedCollection>parent).getFlatParents());
+      }
+
+      parents.push(parent);
+    }
+
+    return parents;
   }
 
   parentFields() {
@@ -103,6 +90,33 @@ export class InheritedCollection extends Collection {
 
   isInherited() {
     return true;
+  }
+
+  protected bindParents() {
+    this.setParents(this.options.inherits);
+    this.setParentFields();
+    this.setFields(this.options.fields, false);
+    this.db.inheritanceMap.setInheritance(this.name, this.options.inherits);
+  }
+
+  protected setParents(inherits: string | string[]) {
+    this.parents = lodash.castArray(inherits).map((name) => {
+      const existCollection = this.db.collections.get(name);
+      if (!existCollection) {
+        throw new ParentCollectionNotFound(name);
+      }
+
+      return existCollection;
+    });
+  }
+
+  protected setParentFields() {
+    for (const [name, fieldOptions] of this.parentFields()) {
+      this.setField(name, {
+        ...fieldOptions,
+        inherit: true,
+      });
+    }
   }
 }
 

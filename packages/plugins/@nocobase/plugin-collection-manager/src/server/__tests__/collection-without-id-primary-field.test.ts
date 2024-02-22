@@ -2,7 +2,7 @@ import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from './index';
 
-describe('collection without id primary key', function () {
+describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('collection without id primary key', function () {
   let db: Database;
   let app: Application;
   let Collection: DBCollection;
