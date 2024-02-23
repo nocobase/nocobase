@@ -21,8 +21,11 @@ export const bulkEditFormItemSettings = new SchemaSettings({
     {
       name: 'decoratorOptions',
       type: 'itemGroup',
-      componentProps: {
-        title: 'Decorator options',
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Generic properties'),
+        };
       },
       useChildren() {
         return [
@@ -319,8 +322,11 @@ export const bulkEditFormItemSettings = new SchemaSettings({
     {
       name: 'componentOptions',
       type: 'itemGroup',
-      componentProps: {
-        title: 'Component options',
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Specific properties'),
+        };
       },
       useChildren() {
         const app = useApp();

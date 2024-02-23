@@ -1,10 +1,11 @@
-import React, { useContext } from 'react';
-import { Breadcrumb, Tag, Space } from 'antd';
-import { Link, useParams } from 'react-router-dom';
+import { RightOutlined } from '@ant-design/icons';
 import { useApp, useCompile, useDataSourceManager } from '@nocobase/client';
-import { lang, NAMESPACE } from '../locale';
-import { statusEnum } from '../schema';
+import { Breadcrumb, Space, Tag } from 'antd';
+import React, { useContext } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { DataSourceContext } from '../DatabaseConnectionProvider';
+import { NAMESPACE, lang } from '../locale';
+import { statusEnum } from '../schema';
 
 export const BreadcumbTitle = () => {
   const app = useApp();
@@ -17,7 +18,7 @@ export const BreadcumbTitle = () => {
   const option = statusEnum.find((v) => v.value === status);
   return (
     <Breadcrumb
-      separator=">"
+      separator={<RightOutlined />}
       items={[
         { title: <Link to={app.pluginSettingsManager.getRoutePath(NAMESPACE)}>{lang('Data source manager')}</Link> },
         {
