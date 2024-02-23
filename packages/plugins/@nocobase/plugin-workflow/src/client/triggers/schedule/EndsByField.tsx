@@ -20,6 +20,7 @@ export function EndsByField({ value, onChange }) {
         onChange={(t) => {
           onChange(t ? (t === 'field' ? {} : new Date()) : null);
         }}
+        className="auto-width"
       >
         <Select.Option value={null}>{t('No end')}</Select.Option>
         <Select.Option value={'field'}>{t('By field')}</Select.Option>
