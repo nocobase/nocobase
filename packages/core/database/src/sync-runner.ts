@@ -63,41 +63,50 @@ export class SyncRunner {
       throw e;
     }
 
-    // await this.handlePrimaryKey(options);
-
     const syncResult = await this.performSync(options);
     const columns = await this.queryInterface.describeTable(this.tableName, options);
     await this.removeUnusedColumns(columns, options);
     await this.handleDefaultValues(columns, options);
     await this.handleUniqueIndex(options);
+
+    await this.handlePrimaryKey(columns, options);
     return syncResult;
   }
 
-  // async handlePrimaryKey(options) {
-  //   try {
-  //     const tableInfo = await this.queryInterface.describeTable(this.tableName, options);
-  //     const columnsBePrimaryKey = Object.keys(tableInfo)
-  //       .filter((key) => {
-  //         return tableInfo[key].primaryKey == true;
-  //       })
-  //       .sort();
-  //
-  //     const columnsWillBePrimaryKey = Object.keys(this.rawAttributes)
-  //       .filter((key) => {
-  //         return this.rawAttributes[key].primaryKey == true;
-  //       })
-  //       .map((key) => {
-  //         return this.rawAttributes[key].field;
-  //       })
-  //       .sort();
-  //
-  //     console.log({ columnsBePrimaryKey, columnsWillBePrimaryKey });
-  //   } catch (e) {
-  //     if (e.message.includes('No description found')) {
-  //       return;
-  //     }
-  //   }
-  // }
+  async handlePrimaryKey(columns, options) {
+    if (!this.database.inDialect('postgres')) {
+      return;
+    }
+
+    try {
+      const columnsBePrimaryKey = Object.keys(columns)
+        .filter((key) => {
+          return columns[key].primaryKey == true;
+        })
+        .sort();
+
+      const columnsWillBePrimaryKey = Object.keys(this.rawAttributes)
+        .filter((key) => {
+          return this.rawAttributes[key].primaryKey == true;
+        })
+        .map((key) => {
+          return this.rawAttributes[key].field;
+        })
+        .sort();
+
+      if (JSON.stringify(columnsBePrimaryKey) != JSON.stringify(columnsWillBePrimaryKey)) {
+        await this.queryInterface.addConstraint(this.tableName, {
+          type: 'primary key',
+          fields: columnsWillBePrimaryKey,
+          transaction: options?.transaction,
+        });
+      }
+    } catch (e) {
+      if (e.message.includes('No description found')) {
+        return;
+      }
+    }
+  }
 
   async handleDefaultValues(columns, options) {
     const isJSONColumn = (column) => {
