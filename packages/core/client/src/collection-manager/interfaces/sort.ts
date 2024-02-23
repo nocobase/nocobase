@@ -1,4 +1,4 @@
-import { defaultProps, operators, primaryKey, unique, autoIncrement } from './properties';
+import { defaultProps, operators } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 export class SortFieldInterface extends CollectionFieldInterface {
@@ -25,9 +25,15 @@ export class SortFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    primaryKey,
-    unique,
-    autoIncrement,
+    scopeKey: {
+      type: 'string',
+      title: '{{t("Scope key")}}',
+      'x-disabled': '{{ !createOnly }}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      enum: '{{scopeKeyOptions}}',
+      description: "{{t('Group and sort according to this field')}}",
+    },
   };
   filterable = {
     operators: operators.number,

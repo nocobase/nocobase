@@ -305,6 +305,18 @@ export const AddFieldAction = (props) => {
       items,
     };
   }, [getInterface, items, record]);
+  const scopeKeyOptions = useMemo(() => {
+    return record.fields
+      .filter((v) => {
+        return v.interface === 'select';
+      })
+      .map((k) => {
+        return {
+          value: k.name,
+          label: compile(k.uiSchema?.title),
+        };
+      });
+  }, [record.name]);
   return (
     record.template !== 'sql' && (
       <RecordProvider_deprecated record={record}>
@@ -332,6 +344,7 @@ export const AddFieldAction = (props) => {
               collections: currentCollections,
               isDialect,
               disabledJSONB: false,
+              scopeKeyOptions,
               ...scope,
             }}
           />

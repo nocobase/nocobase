@@ -46,11 +46,12 @@ export const KanbanBlockInitializer = () => {
             };
           });
         const sortFields = collectionFields
-          ?.filter((field) => ['sort'].includes(field.interface))
+          ?.filter((field) => ['sort'].includes(field.interface) && field.scopeKey)
           ?.map((field) => {
             return {
               label: field?.uiSchema?.title,
               value: field.name,
+              scopeKey: field.scopeKey,
               uiSchema: {
                 ...field.uiSchema,
                 name: field.name,
@@ -66,18 +67,18 @@ export const KanbanBlockInitializer = () => {
                   <SchemaComponent
                     schema={{
                       properties: {
-                        groupField: {
-                          title: t('Grouping field'),
-                          enum: fields,
-                          required: true,
-                          description: '{{t("Single select and radio fields can be used as the grouping field")}}',
-                          'x-component': 'Select',
-                          'x-component-props': {
-                            objectValue: true,
-                            fieldNames: { label: 'label', value: 'value' },
-                          },
-                          'x-decorator': 'FormItem',
-                        },
+                        // groupField: {
+                        //   title: t('Grouping field'),
+                        //   enum: fields,
+                        //   required: true,
+                        //   description: '{{t("Single select and radio fields can be used as the grouping field")}}',
+                        //   'x-component': 'Select',
+                        //   'x-component-props': {
+                        //     objectValue: true,
+                        //     fieldNames: { label: 'label', value: 'value' },
+                        //   },
+                        //   'x-decorator': 'FormItem',
+                        // },
                         dragSortBy: {
                           title: t('Sorting field'),
                           enum: sortFields,
@@ -102,21 +103,11 @@ export const KanbanBlockInitializer = () => {
           initialValues: {},
         });
         const sortName = values.dragSortBy;
-        // const exists = collectionFields?.find((field) => field.name === sortName);
-        // if (!exists) {
-        //   await api.resource('collections.fields', item.name).create({
-        //     values: {
-        //       type: 'sort',
-        //       name: sortName,
-        //       hidden: true,
-        //       scopeKey: values.groupField.value,
-        //     },
-        //   });
-        // }
+
         insert(
           createKanbanBlockSchema({
             sortField: values.dragSortBy,
-            groupField: values.groupField.value,
+            groupField: values.dragSortBy.scopeKey,
             collection: item.name,
             dataSource: item.dataSource,
             params: {

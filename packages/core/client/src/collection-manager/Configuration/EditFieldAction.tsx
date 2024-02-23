@@ -150,7 +150,7 @@ export const EditCollectionField = (props) => {
 
 export const EditFieldAction = (props) => {
   const { scope, getContainer, item: record, parentItem: parentRecord, children, ...otherProps } = props;
-  const { getInterface, collections } = useCollectionManager_deprecated();
+  const { getInterface, collections, getCollection } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -158,6 +158,21 @@ export const EditFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const { isDialect } = useDialect();
+  const scopeKeyOptions = useMemo(() => {
+    return (
+      record?.fields ||
+      getCollection(record.collectionName)
+        .options.fields.filter((v) => {
+          return v.interface === 'select';
+        })
+        .map((k) => {
+          return {
+            value: k.name,
+            label: compile(k.uiSchema?.title),
+          };
+        })
+    );
+  }, [record.name]);
 
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -213,6 +228,7 @@ export const EditFieldAction = (props) => {
             collections: currentCollections,
             isDialect,
             disabledJSONB: true,
+            scopeKeyOptions,
             ...scope,
           }}
         />
