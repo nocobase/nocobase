@@ -60,7 +60,7 @@ export default class extends Trigger {
     useCollectionDataSource,
   };
   isActionTriggerable = (config, context) => {
-    return ['create', 'update'].includes(context.action);
+    return ['create', 'update', 'customize:triggerWorkflows'].includes(context.action);
   };
   useVariables(config, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
