@@ -2,8 +2,8 @@
   "name": "@nocobase/plugin-collection-manager",
   "displayName": "Collection manager",
   "displayName.zh-CN": "数据表管理",
-  "description": "Provide convenient collection management capabilities",
-  "description.zh-CN": "提供便捷的数据表管理能力",
+  "description": "Provide convenient collection management capabilities.",
+  "description.zh-CN": "提供便捷的数据表管理能力。",
   "version": "0.19.0-alpha.8",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/collection-manager",
@@ -24,6 +24,6 @@
   },
   "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
   "keywords": [
-    "Data Model"
+    "Data sources"
   ]
 }

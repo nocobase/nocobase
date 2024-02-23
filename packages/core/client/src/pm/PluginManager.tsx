@@ -75,15 +75,17 @@ const LocalPlugins = () => {
   const debouncedSearchValue = useDebounce(searchValue, { wait: 100 });
 
   const keyWordlists = [
-    'Data Model',
-    'Fields',
+    'Data model tools',
+    'Data sources',
+    'Collections',
+    'Collection fields',
     'Blocks',
     'Actions',
-    'Users & permissions',
     'Workflow',
+    'Users & permissions',
+    'Authentication',
     'System management',
-    'System & security',
-    'Third party services',
+    'Logging and monitoring',
     'Others',
   ];
 
