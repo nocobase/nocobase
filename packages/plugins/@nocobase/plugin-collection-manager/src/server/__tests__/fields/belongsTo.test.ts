@@ -1,7 +1,7 @@
 import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '..';
-import { CollectionRepository } from '@nocobase/plugin-collection-manager';
+import { CollectionRepository } from '../../index';
 
 describe('belongsTo', () => {
   let db: Database;
