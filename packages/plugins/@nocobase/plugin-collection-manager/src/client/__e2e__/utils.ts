@@ -193,7 +193,7 @@ export class CollectionManagerPage {
   }
 
   async goto() {
-    await this.page.goto('admin/settings/collection-manager/collections');
+    await this.page.goto('admin/settings/data-source-manager/main/collections');
   }
 
   async createCollection(
@@ -337,30 +337,38 @@ export class CollectionSettings {
   }
 
   private async ['Primary key, unique identifier, self growth'](value: boolean) {
-    // await this.page.getByLabel('Generate ID field').setChecked(value);
-    await this.page.getByRole('row', { name: 'ID' }).getByLabel('').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Primary key, unique identifier, self growth' })
+      .getByLabel('')
+      .setChecked(value);
   }
 
   private async ['Store the creation user of each record'](value: boolean) {
-    // await this.page.getByLabel('Store the creation user of').setChecked(value);
-    await this.page.getByRole('row', { name: 'CreatedBy' }).getByLabel('').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Store the creation user of each record' })
+      .getByLabel('')
+      .setChecked(value);
   }
 
   private async ['Store the last update user of each record'](value: boolean) {
-    await this.page.getByRole('row', { name: 'UpdatedBy' }).getByLabel('').setChecked(value);
-
-    // await this.page.getByLabel('Store the last update user of').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Store the last update user of each record' })
+      .getByLabel('')
+      .setChecked(value);
   }
 
   private async ['Store the creation time of each record'](value: boolean) {
-    await this.page.getByRole('row', { name: 'CreatedAt' }).getByLabel('').setChecked(value);
-
-    // await this.page.getByLabel('Store the creation time of').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Store the creation time of each record' })
+      .getByLabel('')
+      .setChecked(value);
   }
 
   private async ['Store the last update time of each record'](value: boolean) {
-    await this.page.getByRole('row', { name: 'UpdatedAt' }).getByLabel('').setChecked(value);
-    // await this.page.getByLabel('Store the last update time of').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Store the last update time of each record' })
+      .getByLabel('')
+      .setChecked(value);
   }
 }
 

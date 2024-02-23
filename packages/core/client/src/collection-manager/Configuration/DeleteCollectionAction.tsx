@@ -44,13 +44,11 @@ export const useDestroyAction = () => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord_deprecated();
-  const ctx = useActionContext();
   const form = useForm();
   const { cascade } = form?.values || {};
   return {
     async run() {
       await resource.destroy({ filterByTk, cascade });
-      ctx?.setVisible?.(false);
       refresh();
     },
   };
