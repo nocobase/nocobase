@@ -138,7 +138,7 @@ export const PresetFields = observer((props: any) => {
       name: 'createdAt',
     },
     {
-      field: t('Updated at'),
+      field: t('Last updated at'),
       interface: 'updatedAt',
       description: t('Store the last update time of each record'),
       name: 'updatedAt',
@@ -151,7 +151,7 @@ export const PresetFields = observer((props: any) => {
     },
 
     {
-      field: t('Updated by'),
+      field: t('Last updated by'),
       interface: 'updatedBy',
       description: t('Store the last update user of each record'),
       name: 'updatedBy',
