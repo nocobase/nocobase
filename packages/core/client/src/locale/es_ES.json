@@ -736,5 +736,8 @@
   "name is required": "el nombre es obligatorio",
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "El {{type}} \"{{name}}\" puede haber sido eliminado. Por favor, elimine este {{blockType}}.",
   "data source": "fuente de datos",
-  "DataSource": "Fuente de datos"
+  "DataSource": "Fuente de datos",
+  "Home page": "Página de inicio",
+  "User manual": "Manual de usuario",
+  "License": "Licencia"
 }

@@ -847,5 +847,8 @@
   "name is required": "이름은 필수입니다",
   "data source": "데이터 소스",
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\"이(가) 삭제되었을 수 있습니다. 이 {{blockType}}을(를) 제거하십시오.",
-  "DataSource": "데이터 소스"
+  "DataSource": "데이터 소스",
+  "Home page": "홈페이지",
+  "User manual": "사용자 매뉴얼",
+  "License": "라이선스"
 }

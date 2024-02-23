@@ -200,7 +200,7 @@
   "Before change": "Before change",
   "After change": "After change",
   "Delete record": "Delete record",
-  "Delete collection":"Delete collection",
+  "Delete collection": "Delete collection",
   "Create collection": "Create collection",
   "Collection display name": "Collection display name",
   "Collection name": "Collection name",
@@ -215,7 +215,7 @@
   "Calendar collection": "Calendar collection",
   "General collection": "General collection",
   "Connect to database view": "Connect to database view",
-  "Sync from database":"Sync from database",
+  "Sync from database": "Sync from database",
   "Source collections": "Source collections",
   "Field source": "Field source",
   "Preview": "Preview",
@@ -788,5 +788,8 @@
   "data source": "data source",
   "DataSource": "DataSource",
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.",
-  "Preset fields":"Preset fields"
+  "Preset fields": "Preset fields",
+  "Home page": "Home page",
+  "User manual": "User manual",
+  "License": "License"
 }

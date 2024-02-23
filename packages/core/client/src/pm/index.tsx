@@ -1,16 +1,16 @@
 import React from 'react';
-import { Plugin } from '../application/Plugin';
-import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
-import { AdminSettingsLayout } from './PluginSetting';
-import { PluginManager } from './PluginManager';
 import { ACLPane } from '../acl/ACLShortcut';
+import { ADMIN_SETTINGS_PATH } from '../application';
+import { Plugin } from '../application/Plugin';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
-import { ADMIN_SETTINGS_PATH } from '../application';
+import { PluginManager } from './PluginManager';
+import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
+import { AdminSettingsLayout } from './PluginSetting';
 
+export * from './PluginManager';
 export * from './PluginManagerLink';
 export * from './PluginSetting';
-export * from './PluginManager';
 
 export class PMPlugin extends Plugin {
   async load() {
