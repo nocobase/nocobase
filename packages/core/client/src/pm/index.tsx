@@ -21,7 +21,7 @@ export class PMPlugin extends Plugin {
 
   addSettings() {
     this.app.pluginSettingsManager.add('acl', {
-      title: '{{t("ACL")}}',
+      title: '{{t("Access control")}}',
       icon: 'LockOutlined',
       Component: ACLPane,
       aclSnippet: 'pm.acl.roles',

@@ -1,13 +1,12 @@
-import { PlusOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { ActionContext, SchemaComponent, useCompile, usePlugin } from '@nocobase/client';
-import { Button, Dropdown } from 'antd';
-import _ from 'lodash';
+import { Button, Dropdown, Empty } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PluginDatabaseConnectionsClient from '../';
-import { NAMESPACE } from '../locale';
 import { useTestConnectionAction } from '../hooks';
+import { NAMESPACE } from '../locale';
 
 export const CreateDatabaseConnectAction = () => {
   const [schema, setSchema] = useState({});
@@ -32,6 +31,9 @@ export const CreateDatabaseConnectAction = () => {
         <Dropdown
           menu={{
             onClick(info) {
+              if (info.key === '__empty__') {
+                return;
+              }
               const type = plugin.types.get(info.key);
               setDialect(info.key);
               setVisible(true);
@@ -87,17 +89,38 @@ export const CreateDatabaseConnectAction = () => {
                 },
               });
             },
-            items: [...plugin.types.keys()].map((key) => {
-              const type = plugin.types.get(key);
-              return {
-                key: key,
-                label: compile(type?.label),
-              };
-            }),
+            items: [
+              plugin.types.size
+                ? null
+                : ({
+                    key: '__empty__',
+                    label: (
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <>
+                            {t('No external data source plugin installed')}
+                            <br /> <a>{t('View more')}</a>
+                          </>
+                        }
+                      />
+                    ),
+                  } as any),
+            ]
+              .filter(Boolean)
+              .concat(
+                [...plugin.types.keys()].map((key) => {
+                  const type = plugin.types.get(key);
+                  return {
+                    key: key,
+                    label: compile(type?.label),
+                  };
+                }),
+              ),
           }}
         >
           <Button type={'primary'} icon={<PlusOutlined />}>
-            {t('Add new')}
+            {t('Add new')} <DownOutlined />
           </Button>
         </Dropdown>
         <SchemaComponent
