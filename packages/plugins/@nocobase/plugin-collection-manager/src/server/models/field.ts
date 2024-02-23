@@ -37,7 +37,6 @@ export class FieldModel extends MagicAttributeModel {
 
     const field = await (async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
-      console.log(`${this.get('name')} field:loaded at ${collectionName}`);
       return collection.setField(name, options);
     })();
 
