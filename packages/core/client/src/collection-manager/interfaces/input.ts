@@ -29,8 +29,14 @@ export class InputFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    primaryKey,
-    unique,
+    layout: {
+      type: 'void',
+      'x-component': 'Space',
+      properties: {
+        primaryKey,
+        unique,
+      },
+    },
   };
   filterable = {
     operators: operators.string,
