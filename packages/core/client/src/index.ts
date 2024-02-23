@@ -51,3 +51,5 @@ export * from './testUtils';
 export * from './user';
 export * from './variables';
 export * from './data-source';
+
+export { withDynamicSchemaProps } from './application/hoc/withDynamicSchemaProps';

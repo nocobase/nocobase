@@ -9,7 +9,7 @@ import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
-import { FormActiveFieldsProvider } from './hooks';
+import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
 
 export const FormBlockContext = createContext<any>({});
 
