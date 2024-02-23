@@ -78,17 +78,14 @@ export class CollectionRepository extends Repository {
         const fields = nameMap[instanceName].get('fields');
 
         return fields
-          .filter(
-            (field) =>
-              (field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target'])) ||
-              field['type'] === 'belongsToMany',
-          )
+          .filter((field) => field['type'] === 'belongsTo' || field['type'] === 'belongsToMany')
           .map((field) => field.get('name'));
       })();
 
       if (lodash.isArray(skipField) && skipField.length) {
         lazyCollectionFields.set(instanceName, skipField);
       }
+
       this.database.logger.debug(`load collection`, {
         instanceName,
         submodule: 'CollectionRepository',
