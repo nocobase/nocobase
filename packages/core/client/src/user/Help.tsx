@@ -85,7 +85,7 @@ export const Help = () => {
           }}
         >
           <span
-            data-testid="user-center-button"
+            data-testid="help-button"
             className={css`
               max-width: 160px;
               overflow: hidden;
