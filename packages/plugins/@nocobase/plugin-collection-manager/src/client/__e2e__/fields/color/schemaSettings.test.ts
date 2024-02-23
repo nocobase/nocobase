@@ -216,7 +216,10 @@ test.describe('form item & view form', () => {
     await page.getByRole('dialog').getByRole('textbox').fill('testing edit tooltip');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
-    await page.getByRole('img', { name: 'question-circle' }).hover();
+    await page
+      .getByLabel('block-item-CollectionField-general-form-general.color-color')
+      .getByRole('img', { name: 'question-circle' })
+      .hover();
     await expect(page.getByText('testing edit tooltip')).toBeVisible();
   });
 });
