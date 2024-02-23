@@ -180,7 +180,10 @@ export const PresetFields = observer((props: any) => {
   }, []);
   return (
     <Table
+      size="small"
+      pagination={false}
       rowKey="name"
+      bordered
       dataSource={dataSource}
       columns={column}
       rowSelection={{
