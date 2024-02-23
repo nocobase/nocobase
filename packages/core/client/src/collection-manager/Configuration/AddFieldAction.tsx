@@ -206,13 +206,13 @@ export const AddFieldAction = (props) => {
           children: v.children.filter((v) => {
             if (v.hidden) {
               return false;
-            } else if (v.value === 'tableoid') {
+            } else if (v.name === 'tableoid') {
               if (include?.length) {
-                return include.includes(v.value);
+                return include.includes(v.name);
               }
               return database?.dialect === 'postgres';
             } else {
-              return typeof record[v.value] === 'boolean' ? record[v.value] : true;
+              return typeof record[v.name] === 'boolean' ? record[v.name] : true;
             }
           }),
         });
@@ -220,7 +220,7 @@ export const AddFieldAction = (props) => {
         let children = [];
         if (include?.length) {
           include.forEach((k) => {
-            const field = v?.children?.find((h) => [k, k.interface].includes(h.value));
+            const field = v?.children?.find((h) => [k, k.interface].includes(h.name));
             field &&
               children.push({
                 ...field,
@@ -229,7 +229,7 @@ export const AddFieldAction = (props) => {
           });
         } else if (exclude?.length) {
           children = v?.children?.filter((v) => {
-            return !exclude.includes(v.value);
+            return !exclude.includes(v.name);
           });
         } else {
           children = v?.children;
