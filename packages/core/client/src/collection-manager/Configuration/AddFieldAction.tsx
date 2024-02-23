@@ -206,13 +206,13 @@ export const AddFieldAction = (props) => {
           children: v.children.filter((v) => {
             if (v.hidden) {
               return false;
-            } else if (v.name === 'tableoid') {
+            } else if (v.value === 'tableoid') {
               if (include?.length) {
-                return include.includes(v.name);
+                return include.includes(v.value);
               }
               return database?.dialect === 'postgres';
             } else {
-              return typeof record[v.name] === 'boolean' ? record[v.name] : true;
+              return typeof record[v.value] === 'boolean' ? record[v.value] : true;
             }
           }),
         });
