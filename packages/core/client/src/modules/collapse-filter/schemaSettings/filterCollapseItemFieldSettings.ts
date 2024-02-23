@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useCompile, useDesignable } from '../../../schema-component';
 import { SchemaSettingsDefaultSortingRules } from '../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
@@ -14,8 +14,11 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
     {
       name: 'decoratorOptions',
       type: 'itemGroup',
-      componentProps: {
-        title: 'Decorator options',
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Generic properties'),
+        };
       },
       useChildren() {
         return [

@@ -7,8 +7,8 @@ import { useAssociationFieldContext } from '../../../schema-component/antd/assoc
 import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useDesignable } from '../../../schema-component/hooks';
 import { isPatternDisabled } from '../../../schema-settings';
-import { useFieldComponentName } from './utils';
 import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
+import { useFieldComponentName } from './utils';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
@@ -16,8 +16,11 @@ export const tableColumnSettings = new SchemaSettings({
     {
       name: 'decoratorOptions',
       type: 'itemGroup',
-      componentProps: {
-        title: 'Decorator options',
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Generic properties'),
+        };
       },
       children: [
         {
@@ -283,8 +286,11 @@ export const tableColumnSettings = new SchemaSettings({
     {
       name: 'componentOptions',
       type: 'itemGroup',
-      componentProps: {
-        title: 'Component options',
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Specific properties'),
+        };
       },
       useChildren() {
         const app = useApp();
