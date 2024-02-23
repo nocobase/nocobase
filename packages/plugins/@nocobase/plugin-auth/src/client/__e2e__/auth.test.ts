@@ -29,6 +29,7 @@ test.describe('auth', () => {
     await page.getByPlaceholder('Password').fill('zidonghuaceshi123');
     await page.getByRole('button', { name: 'Sign in' }).click();
 
+    await page.getByTestId('user-center-button').hover();
     await expect(page.getByText('zidonghuaceshi')).toBeVisible();
   });
 });
