@@ -69,6 +69,8 @@ export const Help = () => {
       className={css`
         display: inline-block;
         vertical-align: top;
+        width: 46px;
+        height: 46px;
         &:hover {
           background: rgba(255, 255, 255, 0.1) !important;
         }
