@@ -65,7 +65,7 @@ export class SyncRunner {
 
     const syncResult = await this.performSync(options);
     const columns = await this.queryInterface.describeTable(this.tableName, options);
-    await this.removeUnusedColumns(columns, options);
+
     await this.handleDefaultValues(columns, options);
     await this.handleUniqueIndex(options);
 

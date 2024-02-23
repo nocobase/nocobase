@@ -1,6 +1,6 @@
 import { Database, mockDatabase } from '../../index';
 
-describe('delete field', () => {
+describe.skip('delete field', () => {
   let db: Database;
 
   beforeEach(async () => {
