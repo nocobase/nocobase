@@ -104,11 +104,7 @@ export const PresetFields = observer((props: any) => {
   const { getInterface } = useCollectionManager_deprecated();
   const form = useForm();
   const compile = useCompile();
-  const [selectedRowKeys, setSelectedRowKeys] = useState(
-    form.values?.fields?.map?.((v) => {
-      return v.name;
-    }),
-  );
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const { t } = useTranslation();
   const column = [
     {
@@ -162,22 +158,28 @@ export const PresetFields = observer((props: any) => {
     },
   ];
   useEffect(() => {
-    setSelectedRowKeys(
-      form.values?.fields?.map?.((v) => {
-        return v.name;
-      }),
-    );
-  }, [form.values?.fields]);
-  useEffect(() => {
     const config = {
-      autoGenId: false,
-      createdAt: false,
-      createdBy: false,
-      updatedAt: false,
-      updatedBy: false,
+      autoGenId: true,
+      createdAt: true,
+      createdBy: true,
+      updatedAt: true,
+      updatedBy: true,
     };
+    const initialValue = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
+    setSelectedRowKeys(initialValue);
     form.setValues({ ...form.values, ...config });
   }, []);
+  useEffect(() => {
+    const fields = getDefaultCollectionFields(
+      selectedRowKeys.map((v) => {
+        return {
+          name: v,
+        };
+      }),
+      form.values,
+    );
+    form.setValuesIn('fields', fields);
+  }, [selectedRowKeys]);
   return (
     <Table
       size="small"
