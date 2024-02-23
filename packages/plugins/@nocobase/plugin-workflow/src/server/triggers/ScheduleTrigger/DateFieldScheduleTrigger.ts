@@ -4,8 +4,26 @@ import type Plugin from '../../Plugin';
 import type { WorkflowModel } from '../../types';
 import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
 
-function getOnTimestampWithOffset(on, now: Date) {
-  const { field, offset = 0, unit = 1000 } = on;
+export type ScheduleOnField = {
+  field: string;
+  // in seconds
+  offset?: number;
+  unit?: 1000 | 60000 | 3600000 | 86400000;
+};
+
+export interface ScheduleTriggerConfig {
+  // trigger mode
+  mode: number;
+  // how to repeat
+  repeat?: string | number | null;
+  // limit of repeat times
+  limit?: number;
+
+  startsOn?: ScheduleOnField;
+  endsOn?: string | ScheduleOnField;
+}
+
+function getOnTimestampWithOffset({ field, offset = 0, unit = 1000 }: ScheduleOnField, now: Date) {
   if (!field) {
     return null;
   }
@@ -72,8 +90,8 @@ export default class ScheduleTrigger {
 
   private cache: Map<string, any> = new Map();
 
-  // caching workflows in range, default to 1min
-  cacheCycle = 60_000;
+  // caching workflows in range, default to 5min
+  cacheCycle = 300_000;
 
   constructor(public workflow: Plugin) {
     workflow.app.on('afterStart', async () => {
@@ -89,6 +107,11 @@ export default class ScheduleTrigger {
     workflow.app.on('beforeStop', () => {
       if (this.timer) {
         clearInterval(this.timer);
+      }
+
+      for (const [key, timer] of this.cache.entries()) {
+        clearTimeout(timer);
+        this.cache.delete(key);
       }
     });
   }
@@ -126,7 +149,7 @@ export default class ScheduleTrigger {
   //     ii. endsOn before now -> no
   async loadRecordsToSchedule(
     { config: { collection, limit, startsOn, repeat, endsOn }, allExecuted }: WorkflowModel,
-    currentDate,
+    currentDate: Date,
   ) {
     const { db } = this.workflow.app;
     if (limit && allExecuted >= limit) {
@@ -259,9 +282,11 @@ export default class ScheduleTrigger {
   }
 
   schedule(workflow: WorkflowModel, record, nextTime, toggle = true, options = {}) {
+    const { model } = this.workflow.app.db.getCollection(workflow.config.collection);
+    const recordPk = record.get(model.primaryKeyAttribute);
     if (toggle) {
       const nextInterval = Math.max(0, nextTime - Date.now());
-      const key = `${workflow.id}:${record.id}@${nextTime}`;
+      const key = `${workflow.id}:${recordPk}@${nextTime}`;
 
       if (!this.cache.has(key)) {
         if (nextInterval) {
@@ -272,7 +297,7 @@ export default class ScheduleTrigger {
       }
     } else {
       for (const [key, timer] of this.cache.entries()) {
-        if (key.startsWith(`${workflow.id}:${record.id}@`)) {
+        if (key.startsWith(`${workflow.id}:${recordPk}@`)) {
           clearTimeout(timer);
           this.cache.delete(key);
         }
@@ -282,19 +307,20 @@ export default class ScheduleTrigger {
 
   async trigger(workflow: WorkflowModel, record, nextTime, { transaction }: Transactionable = {}) {
     const { repository, model } = this.workflow.app.db.getCollection(workflow.config.collection);
+    const recordPk = record.get(model.primaryKeyAttribute);
     const data = await repository.findOne({
-      filterByTk: record.get(model.primaryKeyAttribute),
+      filterByTk: recordPk,
       appends: workflow.config.appends,
       transaction,
     });
-    const key = `${workflow.id}:${record.id}@${nextTime}`;
+    const key = `${workflow.id}:${recordPk}@${nextTime}`;
     this.cache.delete(key);
     this.workflow.trigger(workflow, {
       data: data.toJSON(),
       date: new Date(nextTime),
     });
 
-    if (workflow.config.repeat && workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1) {
+    if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
       return;
     }
 

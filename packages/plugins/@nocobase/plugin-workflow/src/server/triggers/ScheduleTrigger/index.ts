@@ -6,26 +6,6 @@ import DateFieldScheduleTrigger from './DateFieldScheduleTrigger';
 import StaticScheduleTrigger from './StaticScheduleTrigger';
 import { SCHEDULE_MODE } from './utils';
 
-export type ScheduleOnField =
-  | string
-  | {
-      field: string;
-      // in seconds
-      offset?: number;
-      unit?: 1000 | 60000 | 3600000 | 86400000;
-    };
-export interface ScheduleTriggerConfig {
-  // trigger mode
-  mode: number;
-  // how to repeat
-  repeat?: string | number | null;
-  // limit of repeat times
-  limit?: number;
-
-  startsOn?: ScheduleOnField;
-  endsOn?: ScheduleOnField;
-}
-
 export default class ScheduleTrigger extends Trigger {
   sync = false;
 
