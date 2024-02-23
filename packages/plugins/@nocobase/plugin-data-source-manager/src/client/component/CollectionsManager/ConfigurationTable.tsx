@@ -19,6 +19,7 @@ import {
   FieldSummary,
   TemplateSummary,
   ResourceActionContext,
+  useDataSourceManager,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
@@ -82,6 +83,7 @@ export const ConfigurationTable = () => {
   const {
     data: { database },
   } = useCurrentAppInfo();
+  const ds = useDataSourceManager();
   const ctx = useContext(SchemaComponentContext);
   const { name } = useParams();
   const data = useContext(CollectionCategroriesContext);
@@ -144,6 +146,7 @@ export const ConfigurationTable = () => {
             message.success(t('Data source synchronization successful'));
             service?.refresh?.();
           }
+          await ds.getDataSource(name).reload();
         } catch (error) {
           field.data.loading = false;
         }
