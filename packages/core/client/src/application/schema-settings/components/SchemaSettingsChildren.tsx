@@ -17,6 +17,7 @@ import {
 } from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingItemContext } from '../context';
 import { SchemaSettingsItemType } from '../types';
+import { uid } from '@formily/shared';
 
 export interface SchemaSettingsChildrenProps {
   children: SchemaSettingsItemType[];
@@ -52,9 +53,12 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
     <>
       {children
         .sort((a, b) => (a.sort || 0) - (b.sort || 0))
-        .map((item) => (
-          <SchemaSettingsChild key={item.name} {...item} />
-        ))}
+        .map((item) => {
+          // 当动态切换 SchemaSettings 列表时，切换前和切换后的 item.name 可能相同，导致 key 相同，从而导致组件不会重新渲染；
+          // 因为 SchemaSettingsChild 的某些 hooks 是通过 props 传入的，两次渲染之间 props 可能发生变化，就可能报 hooks 调用
+          // 顺序的错误。所以这里使用一个随机值作为 key，保证每次渲染都是新的组件。
+          return <SchemaSettingsChild key={uid()} {...item} />;
+        })}
     </>
   );
 };
