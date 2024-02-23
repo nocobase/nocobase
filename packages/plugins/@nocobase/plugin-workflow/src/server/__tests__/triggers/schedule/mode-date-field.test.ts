@@ -351,22 +351,22 @@ describe('workflow > triggers > schedule > date field mode', () => {
       });
 
       await sleepToEvenSecond();
-      const startTime = new Date();
-      startTime.setMilliseconds(0);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(1500);
+      await sleep(1700);
 
-      const e1s = await workflow.getExecutions();
-      expect(e1s.length).toBe(2);
+      console.log('check executions');
+
+      const e1c = await workflow.countExecutions();
+      expect(e1c).toBe(2);
 
       await post.update({ createdAt: new Date(post.createdAt.getTime() - 1000) });
 
       await sleep(3000);
 
-      const e2s = await workflow.getExecutions();
-      expect(e2s.length).toBe(2);
+      const e2c = await workflow.countExecutions();
+      expect(e2c).toBe(2);
     });
   });
 });
