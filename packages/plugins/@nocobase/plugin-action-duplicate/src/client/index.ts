@@ -65,7 +65,6 @@ export class PluginDuplicateClient extends Plugin {
       'actions.duplicate',
       initializerTableData,
     );
-    this.app.schemaInitializerManager.addItem('DetailsActionInitializers', 'enableActions.duplicate', initializerData);
     this.app.schemaInitializerManager.addItem(
       'ReadPrettyFormActionInitializers',
       'enableActions.duplicate',
