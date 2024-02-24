@@ -125,6 +125,18 @@ const MenuEditor = (props) => {
     },
   );
 
+  const match = useMatch('/admin/:name');
+
+  useEffect(() => {
+    if (match) {
+      const schema = filterByACL(data?.data, ctx);
+      const s = findByUid(schema, defaultSelectedUid);
+      if (s) {
+        setTitle(s.title);
+      }
+    }
+  }, [data?.data, location.pathname, defaultSelectedUid]);
+
   useEffect(() => {
     const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || data?.data?.properties;
     if (sideMenuRef.current) {
