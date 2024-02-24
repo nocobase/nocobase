@@ -16,6 +16,7 @@ export default (app: Application) => {
         } else {
           await app.install();
         }
+
         app['_started'] = true;
         await app.restart();
         app.log.info('app has been started');

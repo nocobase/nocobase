@@ -4,6 +4,7 @@ export default defineCollection({
   name: 'dataSources',
   model: 'DataSourceModel',
   autoGenId: false,
+  shared: true,
   fields: [
     {
       type: 'string',
