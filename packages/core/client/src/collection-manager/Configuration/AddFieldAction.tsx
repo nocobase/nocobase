@@ -178,7 +178,7 @@ export const AddCollectionField = (props) => {
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align, database } = props;
-  const { getInterface, getTemplate, collections } = useCollectionManager_deprecated();
+  const { getInterface, getTemplate, collections, getCollection } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
@@ -186,6 +186,7 @@ export const AddFieldAction = (props) => {
   const { t } = useTranslation();
   const { isDialect } = useDialect();
   const options = useFieldInterfaceOptions();
+  const fields = getCollection(record.name)?.options?.fields || record.fields;
 
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -306,7 +307,7 @@ export const AddFieldAction = (props) => {
     };
   }, [getInterface, items, record]);
   const scopeKeyOptions = useMemo(() => {
-    return record.fields
+    return fields
       .filter((v) => {
         return v.interface === 'select';
       })
@@ -316,7 +317,7 @@ export const AddFieldAction = (props) => {
           label: compile(k.uiSchema?.title),
         };
       });
-  }, [record.name]);
+  }, [fields.length]);
   return (
     record.template !== 'sql' && (
       <RecordProvider_deprecated record={record}>
