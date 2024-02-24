@@ -6,7 +6,7 @@ import { RoleUsersManager } from './RoleUsersManager';
 class PluginUsersClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('organization', {
-      title: tval('Organization & Permissions', { ns: 'users' }),
+      title: tval('Users & Permissions', { ns: 'users' }),
       icon: 'TeamOutlined',
     });
     this.app.pluginSettingsManager.add('organization.users', {
