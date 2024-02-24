@@ -21,6 +21,9 @@ const mockData = {
       },
     ],
   },
+  'users:destroy': {
+    result: 'ok',
+  },
   'roles:list': {
     data: [
       {
@@ -64,6 +67,9 @@ export function mock(app: Application) {
       return [200, data];
     });
     mock.onPost(url).reply(async (config) => {
+      return [200, data];
+    });
+    mock.onDelete(url).reply(async (config) => {
       return [200, data];
     });
   });

@@ -612,7 +612,344 @@ class MyPlugin extends Plugin {
 
 <code src="./tmp-demos/demo7.tsx"></code>
 
+### 8. 增加顶部操作按钮
 
-### 8. 字段可动态配置
+我们可以给区块增加顶部操作按钮，比如增加 `Add New` 和 `Refresh` 新增列表数据按钮。
 
-？
+我们先修改 `tableSchema`。
+
+```diff
+ const tableSchema = {
+  type: 'void',
+  'x-component': 'CardItem',
+  // ...
+  properties: {
++   actions: {
++     type: 'void',
++     'x-component': 'ActionBar',
++   },
+    // ...
+  }
+}
+```
+
+然后我们实现 `ActionBar`。
+
+```tsx | pure
+const CreateAction = () => {
+  const [open, setOpen] = useState(false);
+
+  const showDrawer = () => {
+    setOpen(true);
+  };
+
+  const onClose = () => {
+    setOpen(false);
+  };
+
+  const compile = useCompile();
+  const collection = useCollection();
+  const title = compile(collection.title);
+
+  return <>
+    <Button type='primary' onClick={showDrawer}>Add New</Button>
+    <Drawer title={`${title} | Add New`} onClose={onClose} open={open}>
+      <p>Some contents...</p>
+    </Drawer>
+  </>
+}
+
+const RefreshAction = () => {
+  const { refresh } = useDataBlockRequest();
+  return <Button onClick={refresh}>Refresh</Button>
+}
+
+const ActionBar = () => {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: "var(--nb-spacing)" }}>
+      <Space>
+        <CreateAction></CreateAction>
+        <RefreshAction></RefreshAction>
+      </Space>
+    </div>
+  )
+};
+```
+
+其中：
+
+- `useDataBlockRequest()`： 用于获取区块的请求对象，具体用法请参考 [useDataBlockRequest](/core/data-block/data-block-request-provider#usedatablockrequest)。
+
+然后我们将 `ActionBar` 注册到 NocoBase 应用中。
+
+```diff
+class MyPlugin extends Plugin {
+  async load() {
+    // ...
++   this.app.addComponents({ ActionBar });
+  }
+}
+```
+
+<code src="./tmp-demos/demo8.tsx"></code>
+
+### 9. 动态配置顶部操作按钮
+
+上面的 `ActionBar` 里面的 `CreateAction` 和 `RefreshAction` 是固定的，我们可以将其配置动态化。
+
+首先修改 `tableSchema`。
+
+```diff
+ const tableSchema = {
+  type: 'void',
+  'x-component': 'CardItem',
+  // ...
+  properties: {
+    actions: {
+      type: 'void',
+      'x-component': 'ActionBar',
++     'x-initializer': 'tableActionInitializers',
+    },
+    // ...
+  }
+}
+```
+
+然后我们实现 `tableActionInitializers`。
+
+```tsx | pure
+const CreateActionInitializer = () => {
+  const { insert } = useSchemaInitializer();
+  const handleClick = () => {
+    insert({
+      type: 'void',
+      'x-component': 'CreateAction',
+    });
+  };
+  return <SchemaInitializerItem title={'Add New'} onClick={handleClick}></SchemaInitializerItem>;
+}
+
+
+const RefreshActionInitializer = () => {
+  const { insert } = useSchemaInitializer();
+  const handleClick = () => {
+    insert({
+      type: 'void',
+      'x-component': 'RefreshAction',
+    });
+  };
+  return <SchemaInitializerItem title={'Add New'} onClick={handleClick}></SchemaInitializerItem>;
+}
+
+const tableActionInitializers = new SchemaInitializer({
+  name: 'tableActionInitializers',
+  title: "Configure actions",
+  icon: 'SettingOutlined',
+  style: {
+    marginLeft: 8,
+  },
+  items: [
+    {
+      type: 'item',
+      name: 'addNew',
+      title: "Add New",
+      Component: CreateActionInitializer,
+    },
+    {
+      type: 'item',
+      name: 'refresh',
+      title: "Refresh",
+      Component: RefreshActionInitializer,
+    },
+  ]
+})
+```
+
+然后修改 `ActionBar`：
+
+```diff
+const ActionBar = ({ children }) => {
++ const fieldSchema = useFieldSchema();
++ const { render } = useSchemaInitializerRender(fieldSchema['x-initializer']);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: "var(--nb-spacing)" }}>
+      <Space>
++       {children}
++       {render()}
+      </Space>
+    </div>
+  )
+};
+```
+
+然后我们将 `tableActionInitializers` 和 `CreateAction`、`RefreshAction` 注册到 NocoBase 应用中。
+
+```diff
+class MyPlugin extends Plugin {
+  async load() {
+    // ...
++   this.app.addComponents({ CreateAction, RefreshAction });
++   this.app.schemaInitializerManager.add(tableActionInitializers);
+  }
+}
+```
+
+<code src="./tmp-demos/demo9.tsx"></code>
+
+### 10. 动态配置 table 列
+
+首先修改 `tableSchema`。
+
+```diff
+const tableSchema = {
+  type: 'void',
+  'x-component': 'CardItem',
+  // ...
+  properties: {
+    action: {
+      // ...
+    },
+    [uid()]: {
+      type: 'array',
+      'x-component': 'MyTable',
++     'x-initializer': 'tableColumnInitializers',
+      'x-use-component-props': 'useTableProps',
+    },
+  }
+}
+```
+
+然后我们实现 `tableColumnInitializers`。
+
+```tsx | pure
+const tableColumnInitializers = new SchemaInitializer({
+  name: 'tableColumnInitializers',
+  insertPosition: 'beforeEnd',
+  icon: 'SettingOutlined',
+  title: 'Configure columns',
+  items: [
+    {
+      name: 'displayFields',
+      type: 'itemGroup',
+      title: 'Display fields',
+      useChildren: useTableColumnInitializerFields,
+    }
+  ],
+})
+
+const useTableColumnInitializerFields = () => {
+  const collection = useCollection();
+  return collection.fields.map((field) => {
+    return {
+      type: 'item',
+      name: field.name,
+      title: field?.uiSchema?.title || field.name,
+      'x-collection-field': `${collection.name}.${field.name}`,
+      Component: 'TableCollectionFieldInitializer',
+      schema: {
+        type: 'void',
+        name: field.name,
+        title: field?.uiSchema?.title || field.name,
+        'x-component': 'CollectionField',
+        'x-decorator': 'FormItem',
+        'x-read-pretty': true,
+        'x-decorator-props': {
+          labelStyle: {
+            display: 'none',
+          },
+        },
+      }
+    }
+  });
+}
+
+export const TableCollectionFieldInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
+  const { exists, remove } = useCurrentSchema(itemConfig['x-collection-field'], 'x-collection-field');
+  return <SchemaInitializerSwitch
+    checked={exists}
+    title={itemConfig.title}
+    onClick={() => {
+      if (exists) {
+        return remove();
+      }
+      insert(itemConfig.schema);
+    }}
+  />;
+};
+```
+
+然后我们修改 `useTableProps`，增加 `useTableColumns`：
+
+```diff
+function useTableProps(): TableProps<any> {
+  const { tableProps } = useDataBlockProps();
+  const { data, loading } = useDataBlockRequest<any[]>();
+  const dataSource = useMemo(() => data?.data || [], [data]);
++ const columns = useTableColumns();
+
+  return {
+    ...tableProps,
+    loading,
+    dataSource,
+    columns,
+  };
+}
+```
+
+```tsx | pure
+function useTableColumns() {
+  const schema = useFieldSchema();
+  const { designable } = useDesignable();
+  const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
+  const columns = schema.mapProperties((field: any, name) => {
+    return {
+      title: field.title || name,
+      dataIndex: name,
+      key: name,
+      render(value, record) {
+        return (
+          <RecordProvider record={record}>
+            <SchemaComponent
+              schema={field.toJSON()}
+            />
+          </RecordProvider>
+        );
+      },
+    }
+  });
+  const tableColumns = useMemo(() => {
+    return [
+      ...columns,
+      {
+        title: render(),
+        dataIndex: 'TABLE_COLUMN_INITIALIZER',
+        key: 'TABLE_COLUMN_INITIALIZER',
+        render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
+      }
+    ];
+  }, [columns, render, designable]);
+
+  return tableColumns;
+}
+```
+
+然后我们将 `tableColumnInitializers` 和 `TableCollectionFieldInitializer` 注册到 NocoBase 应用中。
+
+```diff
+class MyPlugin extends Plugin {
+  async load() {
+    // ...
++   this.app.schemaInitializerManager.add(tableColumnInitializers);
++   this.app.addComponents({ TableCollectionFieldInitializer });
+  }
+}
+```
+
+<code src="./tmp-demos/demo10.tsx"></code>
+
+### 11. 增加操作列
+
+<code src="./tmp-demos/demo11.tsx"></code>
