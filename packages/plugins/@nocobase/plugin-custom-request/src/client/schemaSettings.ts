@@ -14,58 +14,49 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
   name: 'actionSettings:customRequest',
   items: [
     {
-      name: 'title',
-      type: 'itemGroup',
-      componentProps: {
-        title: 'Customize > Custom request',
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
       },
-      children: [
-        {
-          name: 'editButton',
-          Component: ButtonEditor,
-          useComponentProps() {
-            const { buttonEditorProps } = useSchemaToolbar();
-            return buttonEditorProps;
-          },
-        },
-        {
-          name: 'linkageRules',
-          Component: SchemaSettingsLinkageRules,
-          useComponentProps() {
-            const { name } = useCollection();
-            const { linkageRulesProps } = useSchemaToolbar();
-            return {
-              ...linkageRulesProps,
-              collectionName: name,
-            };
-          },
-        },
-        {
-          name: 'secondConFirm',
-          Component: SecondConFirm,
-        },
-        {
-          name: 'afterSuccessfulSubmission',
-          Component: AfterSuccess,
-        },
-        {
-          name: 'request settings',
-          Component: CustomRequestSettingsItem,
-        },
-        {
-          name: 'accessControl',
-          Component: CustomRequestACL,
-        },
-        {
-          name: 'delete',
-          sort: 100,
-          Component: RemoveButton as any,
-          useComponentProps() {
-            const { removeButtonProps } = useSchemaToolbar();
-            return removeButtonProps;
-          },
-        },
-      ],
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection();
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
+      },
+    },
+    {
+      name: 'secondConFirm',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'afterSuccessfulSubmission',
+      Component: AfterSuccess,
+    },
+    {
+      name: 'request settings',
+      Component: CustomRequestSettingsItem,
+    },
+    {
+      name: 'accessControl',
+      Component: CustomRequestACL,
+    },
+    {
+      name: 'delete',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
     },
   ],
 });

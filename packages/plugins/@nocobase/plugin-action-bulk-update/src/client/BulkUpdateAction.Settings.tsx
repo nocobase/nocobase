@@ -18,17 +18,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from 'react';
 
-const MenuGroup = (props) => {
-  const fieldSchema = useFieldSchema();
-  const { t } = useTranslation();
-  const compile = useCompile();
-  const actionTitle = fieldSchema.title ? compile(fieldSchema.title) : '';
-
-  return (
-    <SchemaSettingsItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettingsItemGroup>
-  );
-};
-
 function UpdateMode() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -127,54 +116,46 @@ function AfterSuccess() {
 
 const schemaSettingsItems: SchemaSettingsItemType[] = [
   {
-    name: 'Customize',
-    Component: MenuGroup,
-    children: [
-      {
-        name: 'editButton',
-        Component: ActionDesigner.ButtonEditor,
-        useComponentProps() {
-          const { buttonEditorProps } = useSchemaToolbar();
-          return buttonEditorProps;
-        },
-      },
-      {
-        name: 'updateMode',
-        Component: UpdateMode,
-        useVisible() {
-          const fieldSchema = useFieldSchema();
-          const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
-            fieldSchema['x-action'],
-          );
-          return isUpdateModePopupAction;
-        },
-      },
-      {
-        name: 'assignFieldValues',
-        Component: AssignedFieldValues,
-        // useVisible() {
-        //   const fieldSchema = useFieldSchema();
-        //   return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
-        // },
-      },
-      {
-        name: 'afterSuccess',
-        Component: AfterSuccess,
-        useVisible() {
-          const fieldSchema = useFieldSchema();
-          return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
-        },
-      },
-      {
-        name: 'remove',
-        sort: 100,
-        Component: ActionDesigner.RemoveButton as any,
-        useComponentProps() {
-          const { removeButtonProps } = useSchemaToolbar();
-          return removeButtonProps;
-        },
-      },
-    ],
+    name: 'editButton',
+    Component: ActionDesigner.ButtonEditor,
+    useComponentProps() {
+      const { buttonEditorProps } = useSchemaToolbar();
+      return buttonEditorProps;
+    },
+  },
+  {
+    name: 'updateMode',
+    Component: UpdateMode,
+    useVisible() {
+      const fieldSchema = useFieldSchema();
+      const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
+      return isUpdateModePopupAction;
+    },
+  },
+  {
+    name: 'assignFieldValues',
+    Component: AssignedFieldValues,
+    // useVisible() {
+    //   const fieldSchema = useFieldSchema();
+    //   return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
+    // },
+  },
+  {
+    name: 'afterSuccess',
+    Component: AfterSuccess,
+    useVisible() {
+      const fieldSchema = useFieldSchema();
+      return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+    },
+  },
+  {
+    name: 'remove',
+    sort: 100,
+    Component: ActionDesigner.RemoveButton as any,
+    useComponentProps() {
+      const { removeButtonProps } = useSchemaToolbar();
+      return removeButtonProps;
+    },
   },
 ];
 

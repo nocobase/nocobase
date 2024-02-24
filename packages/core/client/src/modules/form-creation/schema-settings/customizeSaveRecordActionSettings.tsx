@@ -16,54 +16,45 @@ export const customizeSaveRecordActionSettings = new SchemaSettings({
   name: 'actionSettings:saveRecord',
   items: [
     {
-      name: 'title',
-      type: 'itemGroup',
-      componentProps: {
-        title: 'Customize > Save record',
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
       },
-      children: [
-        {
-          name: 'editButton',
-          Component: ButtonEditor,
-          useComponentProps() {
-            const { buttonEditorProps } = useSchemaToolbar();
-            return buttonEditorProps;
-          },
-        },
-        {
-          name: 'secondConfirmation',
-          Component: SecondConFirm,
-        },
-        {
-          name: 'assignFieldValues',
-          Component: AssignedFieldValues,
-        },
-        {
-          name: 'skipRequiredValidation',
-          Component: SkipValidation,
-        },
-        {
-          name: 'afterSuccessfulSubmission',
-          Component: AfterSuccess,
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
-          },
-        },
-        {
-          name: 'bindWorkflow',
-          Component: WorkflowConfig,
-        },
-        {
-          name: 'delete',
-          sort: 100,
-          Component: RemoveButton as any,
-          useComponentProps() {
-            const { removeButtonProps } = useSchemaToolbar();
-            return removeButtonProps;
-          },
-        },
-      ],
+    },
+    {
+      name: 'secondConfirmation',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'assignFieldValues',
+      Component: AssignedFieldValues,
+    },
+    {
+      name: 'skipRequiredValidation',
+      Component: SkipValidation,
+    },
+    {
+      name: 'afterSuccessfulSubmission',
+      Component: AfterSuccess,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+      },
+    },
+    {
+      name: 'bindWorkflow',
+      Component: WorkflowConfig,
+    },
+    {
+      name: 'delete',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
     },
   ],
 });

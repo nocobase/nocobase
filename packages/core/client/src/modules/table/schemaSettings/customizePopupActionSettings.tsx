@@ -9,50 +9,41 @@ export const customizePopupActionSettings = new SchemaSettings({
   name: 'actionSettings:popup',
   items: [
     {
-      name: 'title',
-      type: 'itemGroup',
-      componentProps: {
-        title: 'Customize > Popup',
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
       },
-      children: [
-        {
-          name: 'editButton',
-          Component: ButtonEditor,
-          useComponentProps() {
-            const { buttonEditorProps } = useSchemaToolbar();
-            return buttonEditorProps;
-          },
-        },
-        {
-          name: 'linkageRules',
-          Component: SchemaSettingsLinkageRules,
-          useComponentProps() {
-            const { name } = useCollection_deprecated();
-            const { linkageRulesProps } = useSchemaToolbar();
-            return {
-              ...linkageRulesProps,
-              collectionName: name,
-            };
-          },
-        },
-        {
-          name: 'openMode',
-          Component: SchemaSettingOpenModeSchemaItems,
-          componentProps: {
-            openMode: true,
-            openSize: true,
-          },
-        },
-        {
-          name: 'remove',
-          sort: 100,
-          Component: RemoveButton as any,
-          useComponentProps() {
-            const { removeButtonProps } = useSchemaToolbar();
-            return removeButtonProps;
-          },
-        },
-      ],
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
+      },
+    },
+    {
+      name: 'openMode',
+      Component: SchemaSettingOpenModeSchemaItems,
+      componentProps: {
+        openMode: true,
+        openSize: true,
+      },
+    },
+    {
+      name: 'remove',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
     },
   ],
 });

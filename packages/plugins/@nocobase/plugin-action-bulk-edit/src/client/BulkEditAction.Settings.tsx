@@ -87,51 +87,40 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
   name: 'ActionSettings:customize:bulkEdit',
   items: [
     {
-      name: 'Customize',
-      Component: MenuGroup,
-      children: [
-        {
-          name: 'editButton',
-          Component: ActionDesigner.ButtonEditor,
-          useComponentProps() {
-            const { buttonEditorProps } = useSchemaToolbar();
-            return buttonEditorProps;
-          },
-        },
-        {
-          name: 'openMode',
-          Component: SchemaInitializerOpenModeSchemaItems,
-          useComponentProps() {
-            const fieldSchema = useFieldSchema();
-            const isPopupAction = [
-              'create',
-              'update',
-              'view',
-              'customize:popup',
-              'duplicate',
-              'customize:create',
-            ].includes(fieldSchema['x-action'] || '');
+      name: 'editButton',
+      Component: ActionDesigner.ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'openMode',
+      Component: SchemaInitializerOpenModeSchemaItems,
+      useComponentProps() {
+        const fieldSchema = useFieldSchema();
+        const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate', 'customize:create'].includes(
+          fieldSchema['x-action'] || '',
+        );
 
-            return {
-              openMode: isPopupAction,
-              openSize: isPopupAction,
-            };
-          },
-        },
-        {
-          name: 'updateMode',
-          Component: UpdateMode,
-        },
-        {
-          name: 'remove',
-          sort: 100,
-          Component: RemoveButton as any,
-          useComponentProps() {
-            const { removeButtonProps } = useSchemaToolbar();
-            return removeButtonProps;
-          },
-        },
-      ],
+        return {
+          openMode: isPopupAction,
+          openSize: isPopupAction,
+        };
+      },
+    },
+    {
+      name: 'updateMode',
+      Component: UpdateMode,
+    },
+    {
+      name: 'remove',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
     },
   ],
 });
@@ -140,51 +129,40 @@ export const bulkEditActionSettings = new SchemaSettings({
   name: 'actionSettings:bulkEdit',
   items: [
     {
-      name: 'Customize',
-      Component: MenuGroup,
-      children: [
-        {
-          name: 'editButton',
-          Component: ActionDesigner.ButtonEditor,
-          useComponentProps() {
-            const { buttonEditorProps } = useSchemaToolbar();
-            return buttonEditorProps;
-          },
-        },
-        {
-          name: 'openMode',
-          Component: SchemaInitializerOpenModeSchemaItems,
-          useComponentProps() {
-            const fieldSchema = useFieldSchema();
-            const isPopupAction = [
-              'create',
-              'update',
-              'view',
-              'customize:popup',
-              'duplicate',
-              'customize:create',
-            ].includes(fieldSchema['x-action'] || '');
+      name: 'editButton',
+      Component: ActionDesigner.ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'openMode',
+      Component: SchemaInitializerOpenModeSchemaItems,
+      useComponentProps() {
+        const fieldSchema = useFieldSchema();
+        const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate', 'customize:create'].includes(
+          fieldSchema['x-action'] || '',
+        );
 
-            return {
-              openMode: isPopupAction,
-              openSize: isPopupAction,
-            };
-          },
-        },
-        {
-          name: 'updateMode',
-          Component: UpdateMode,
-        },
-        {
-          name: 'remove',
-          sort: 100,
-          Component: RemoveButton as any,
-          useComponentProps() {
-            const { removeButtonProps } = useSchemaToolbar();
-            return removeButtonProps;
-          },
-        },
-      ],
+        return {
+          openMode: isPopupAction,
+          openSize: isPopupAction,
+        };
+      },
+    },
+    {
+      name: 'updateMode',
+      Component: UpdateMode,
+    },
+    {
+      name: 'remove',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
     },
   ],
 });
