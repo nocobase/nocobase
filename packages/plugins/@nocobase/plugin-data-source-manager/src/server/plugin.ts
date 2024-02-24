@@ -417,6 +417,14 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.acl.allow('dataSources', 'listEnabled', 'loggedIn');
+
+    this.app.acl.addFixedParams('dataSources', 'destroy', () => {
+      return {
+        filter: {
+          'key.$ne': 'main',
+        },
+      };
+    });
   }
 
   async load() {
