@@ -1,23 +1,74 @@
-import { type DataSource } from './data-source';
 import { list } from './default-actions/list';
-import { get } from './default-actions/get';
-import { update } from './default-actions/update';
-import { destroy } from './default-actions/destroy';
+import { proxyToRepository } from './default-actions/proxy-to-repository';
 
-export function loadDefaultActions(dataSource: DataSource) {
-  return {
-    async create(ctx, next) {
-      const { whitelist, blacklist, updateAssociationValues, values } = ctx.action.params;
-      console.log('values', values, ctx.request.body);
-      const repository = ctx.getCurrentRepository();
-      const instance = await repository.create({ values, whitelist, blacklist, updateAssociationValues, context: ctx });
-      ctx.body = instance;
-      await next();
+type Actions = { [key: string]: { params: Array<string> | ((ctx: any) => Array<string>); method: string } };
+
+const actions: Actions = {
+  add: {
+    params(ctx) {
+      return ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
     },
+    method: 'add',
+  },
+  create: {
+    params: ['whitelist', 'blacklist', 'updateAssociationValues', 'values'],
+    method: 'create',
+  },
+  get: {
+    params: ['filterByTk', 'fields', 'appends', 'except', 'filter', 'targetCollection'],
+    method: 'findOne',
+  },
+  update: {
+    params: [
+      'filterByTk',
+      'values',
+      'whitelist',
+      'blacklist',
+      'filter',
+      'updateAssociationValues',
+      'forceUpdate',
+      'targetCollection',
+    ],
+    method: 'update',
+  },
+  destroy: {
+    params: ['filterByTk', 'filter'],
+    method: 'destroy',
+  },
+  firstOrCreate: {
+    params: ['values', 'filterKeys'],
+    method: 'firstOrCreate',
+  },
+  updateOrCreate: {
+    params: ['values', 'filterKeys'],
+    method: 'updateOrCreate',
+  },
+  remove: {
+    params(ctx) {
+      return ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
+    },
+    method: 'remove',
+  },
+  set: {
+    params(ctx) {
+      return ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
+    },
+    method: 'set',
+  },
+  toggle: {
+    params(ctx) {
+      return ctx.action.params.values;
+    },
+    method: 'toggle',
+  },
+};
 
+export function loadDefaultActions() {
+  return {
+    ...Object.keys(actions).reduce((carry, key) => {
+      carry[key] = proxyToRepository(actions[key].params, actions[key].method);
+      return carry;
+    }, {}),
     list,
-    get,
-    update,
-    destroy,
   };
 }

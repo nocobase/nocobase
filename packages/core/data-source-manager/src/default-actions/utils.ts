@@ -1,4 +1,5 @@
 import { Context } from '@nocobase/actions';
+import { DataSource, IRepository } from '@nocobase/data-source-manager';
 
 export function pageArgsToLimitArgs(
   page: number,
@@ -13,12 +14,14 @@ export function pageArgsToLimitArgs(
   };
 }
 
-export function getRepositoryFromParams(ctx: Context) {
+export function getRepositoryFromParams(ctx: Context): IRepository {
   const { resourceName, resourceOf } = ctx.action;
 
+  const dataSource: DataSource = ctx.dataSource;
+
   if (resourceOf) {
-    return ctx.dataSource.collectionManager.getRepository(resourceName, resourceOf);
+    return dataSource.collectionManager.getRepository(resourceName, resourceOf);
   }
 
-  return ctx.dataSource.collectionManager.getRepository(resourceName);
+  return dataSource.collectionManager.getRepository(resourceName);
 }

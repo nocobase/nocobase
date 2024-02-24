@@ -1,16 +1,21 @@
-import lodash from 'lodash';
 import { getRepositoryFromParams } from './utils';
+import lodash from 'lodash';
+import { DataSource } from '@nocobase/data-source-manager';
 
-export function proxyToRepository(paramKeys: string[], repositoryMethod: string) {
+export function proxyToRepository(paramKeys: string[] | ((ctx: any) => object), repositoryMethod: string) {
   return async function (ctx, next) {
     const repository = getRepositoryFromParams(ctx);
+    const callObj =
+      typeof paramKeys === 'function' ? paramKeys(ctx) : { ...lodash.pick(ctx.action.params, paramKeys), context: ctx };
+    const dataSource: DataSource = ctx.dataSource;
 
-    const callObj = lodash.pick(ctx.action.params, paramKeys);
-    callObj.context = ctx;
+    if (!repository[repositoryMethod]) {
+      throw new Error(
+        `Repository can not handle action ${repositoryMethod} for ${ctx.action.resourceName} in ${dataSource.name}`,
+      );
+    }
 
     ctx.body = await repository[repositoryMethod](callObj);
-
-    ctx.status = 200;
     await next();
   };
 }
