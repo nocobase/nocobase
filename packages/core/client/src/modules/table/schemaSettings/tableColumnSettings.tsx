@@ -9,6 +9,7 @@ import { useDesignable } from '../../../schema-component/hooks';
 import { isPatternDisabled } from '../../../schema-settings';
 import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
 import { useFieldComponentName } from './utils';
+import { useIsAssociationField } from '../../../schema-component/antd/form-item/FormItem.Settings';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
@@ -16,6 +17,7 @@ export const tableColumnSettings = new SchemaSettings({
     {
       name: 'decoratorOptions',
       type: 'itemGroup',
+      hideIfNoChildren: true,
       useComponentProps() {
         const { t } = useTranslation();
         return {
@@ -286,6 +288,7 @@ export const tableColumnSettings = new SchemaSettings({
     {
       name: 'componentOptions',
       type: 'itemGroup',
+      hideIfNoChildren: true,
       useComponentProps() {
         const { t } = useTranslation();
         return {
@@ -295,6 +298,7 @@ export const tableColumnSettings = new SchemaSettings({
       useChildren() {
         const app = useApp();
         const fieldComponentName = useFieldComponentName();
+        const isAssociationField = useIsAssociationField();
         const map = {
           Select: 'Select',
           DatePicker: 'DatePicker',
@@ -307,7 +311,12 @@ export const tableColumnSettings = new SchemaSettings({
         const componentSettings = app.schemaSettingsManager.get(
           `fieldSettings:component:${map[fieldComponentName] || fieldComponentName}`,
         );
-        return componentSettings?.items || [];
+
+        // fix https://nocobase.height.app/T-3162/description
+        // 非关系字段（如下拉单选）的 Specific properties 应该是空的，但是其对应的 fieldSettings:component:Select 并不是空的，
+        // 且当其 items 的 useVisible 返回的是 false 时，会导致只显示一个空的 Specific properties。
+        // 当前情况下，仅关系字段支持 Specific properties，所以当不是关系字段时，返回空数组。
+        return isAssociationField ? componentSettings?.items || [] : [];
       },
     },
     {

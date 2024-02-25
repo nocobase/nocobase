@@ -341,9 +341,10 @@ export const selectComponentFieldSettings = new SchemaSettings({
     {
       ...quickCreate,
       useVisible() {
+        const isAssociationField = useIsAssociationField();
         const readPretty = useIsFieldReadPretty();
         const { fieldSchema } = useColumnSchema();
-        return !fieldSchema && !readPretty;
+        return isAssociationField && !fieldSchema && !readPretty;
       },
     },
     {

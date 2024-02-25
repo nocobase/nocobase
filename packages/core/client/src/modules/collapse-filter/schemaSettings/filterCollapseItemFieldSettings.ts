@@ -14,6 +14,7 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
     {
       name: 'decoratorOptions',
       type: 'itemGroup',
+      hideIfNoChildren: true,
       useComponentProps() {
         const { t } = useTranslation();
         return {
