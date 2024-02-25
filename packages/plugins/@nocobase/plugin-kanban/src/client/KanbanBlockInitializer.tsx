@@ -5,7 +5,6 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
-  useAPIClient,
   useCollectionManager_deprecated,
   useGlobalTheme,
   FormDialog,
@@ -22,7 +21,6 @@ export const KanbanBlockInitializer = () => {
   const { t } = useTranslation();
   const { getCollectionFields } = useCollectionManager_deprecated();
   const options = useContext(SchemaOptionsContext);
-  const api = useAPIClient();
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();
 
@@ -67,29 +65,33 @@ export const KanbanBlockInitializer = () => {
                   <SchemaComponent
                     schema={{
                       properties: {
-                        // groupField: {
-                        //   title: t('Grouping field'),
-                        //   enum: fields,
-                        //   required: true,
-                        //   description: '{{t("Single select and radio fields can be used as the grouping field")}}',
-                        //   'x-component': 'Select',
-                        //   'x-component-props': {
-                        //     objectValue: true,
-                        //     fieldNames: { label: 'label', value: 'value' },
-                        //   },
-                        //   'x-decorator': 'FormItem',
-                        // },
-                        dragSortBy: {
-                          title: t('Sorting field'),
-                          enum: sortFields,
+                        groupField: {
+                          title: t('Grouping field'),
+                          enum: fields,
                           required: true,
-                          description: '{{t("Drag-and-drop sorting of Kanban cards")}}',
+                          description: t('Single select and radio fields can be used as the grouping field'),
                           'x-component': 'Select',
                           'x-component-props': {
                             objectValue: true,
                             fieldNames: { label: 'label', value: 'value' },
                           },
                           'x-decorator': 'FormItem',
+                        },
+                        dragSortBy: {
+                          title: t('Sorting field'),
+                          required: true,
+                          description: t('Drag-and-drop sorting of Kanban cards'),
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            objectValue: true,
+                            fieldNames: { label: 'label', value: 'value' },
+                          },
+                          'x-decorator': 'FormItem',
+                          'x-reactions': (field) => {
+                            field.dataSource = sortFields.filter(
+                              (v) => v.scopeKey === field.form.values?.groupField?.value,
+                            );
+                          },
                         },
                       },
                     }}
@@ -107,7 +109,7 @@ export const KanbanBlockInitializer = () => {
         insert(
           createKanbanBlockSchema({
             sortField: values.dragSortBy,
-            groupField: values.dragSortBy.scopeKey,
+            groupField: values.groupField.value,
             collection: item.name,
             dataSource: item.dataSource,
             params: {
