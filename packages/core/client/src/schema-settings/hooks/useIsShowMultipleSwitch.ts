@@ -7,9 +7,7 @@ import { useColumnSchema } from '../../schema-component/antd/table-v2/Table.Colu
  */
 export function useIsShowMultipleSwitch() {
   const field = useField();
-  const { fieldSchema: tableColumnSchema } = useColumnSchema();
-  const schema = useFieldSchema();
-  const fieldSchema = tableColumnSchema || schema;
+  const fieldSchema = useFieldSchema();
   const { getCollectionField } = useCollectionManager_deprecated();
 
   const collectionField = fieldSchema['x-collection-field']
