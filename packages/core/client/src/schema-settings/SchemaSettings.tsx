@@ -178,6 +178,12 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
         onOpenChange={(open, info) => {
           changeMenu(open, info);
         }}
+        overlayClassName={css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 300px;
+            overflow-y: auto;
+          }
+        `}
         menu={{ items, style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' } }}
       >
         <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
