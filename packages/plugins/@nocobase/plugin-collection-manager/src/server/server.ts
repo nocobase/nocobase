@@ -361,7 +361,7 @@ export class CollectionManagerPlugin extends Plugin {
         values: {
           key: 'main',
           type: 'main',
-          displayName: 'Main',
+          displayName: '{{t("Main")}}',
           fixed: true,
           options: {},
         },
