@@ -66,10 +66,10 @@ export class SyncRunner {
     const syncResult = await this.performSync(options);
     const columns = await this.queryInterface.describeTable(this.tableName, options);
 
-    await this.handleDefaultValues(columns, options);
     await this.handleUniqueIndex(options);
-
     await this.handlePrimaryKey(columns, options);
+    await this.handleDefaultValues(columns, options);
+
     return syncResult;
   }
 
@@ -116,7 +116,12 @@ export class SyncRunner {
 
     for (const columnName in columns) {
       const column = columns[columnName];
-      if (column.primaryKey) continue;
+      const isPrimaryKey = () => {
+        const attribute = this.findAttributeByColumnName(columnName);
+        return (attribute && attribute.primaryKey) || column.primaryKey;
+      };
+      if (isPrimaryKey()) continue;
+
       if (await this.isParentColumn(columnName, options)) continue;
 
       const currentAttribute = this.findAttributeByColumnName(columnName);
