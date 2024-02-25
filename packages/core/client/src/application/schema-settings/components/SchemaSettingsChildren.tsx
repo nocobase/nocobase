@@ -62,7 +62,7 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
           // 两次渲染之间 props 可能发生变化，就可能报 hooks 调用顺序的错误。所以这里使用 fieldComponentName 和 item.name 拼成
           // 一个不会重复的 key，保证每次渲染都是新的组件。
           const key = `${fieldComponentName ? fieldComponentName + '-' : ''}${item.name}`;
-          return <SchemaSettingsChild key={key} {...item} name={key} />;
+          return <SchemaSettingsChild key={key} {...item} />;
         })}
     </>
   );
