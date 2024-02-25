@@ -32,7 +32,7 @@ export const collection: CollectionOptions = {
       uiSchema: {
         title: '{{ t("Collection name") }}',
         type: 'string',
-        'x-component': 'Input',
+        'x-component': 'CollectionName',
         description:
           '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
       },
@@ -181,7 +181,7 @@ export const collectionTableSchema: ISchema = {
         rowSelection: {
           type: 'checkbox',
         },
-        useDataSource: '{{ cm.useDataSourceFromRAC }}',
+        useDataSource: '{{cm.useDataSourceFromRAC }}',
         useAction() {
           const api = useAPIClient();
           const { t } = useTranslation();

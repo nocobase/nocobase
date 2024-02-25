@@ -12,6 +12,7 @@ import {
   CollectionCategroriesContext,
 } from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
+import { CollectionName } from './components/CollectionName';
 import { collectionTableSchema } from './schema/collections';
 
 const TabBar = ({ item }) => {
@@ -102,7 +103,7 @@ export const ConfigurationTabs = () => {
     <DndProvider>
       <Card bordered={false}>
         <SchemaComponentOptions
-          components={{ CollectionFields }}
+          components={{ CollectionFields, CollectionName }}
           inherit
           scope={{
             loadCategories,
