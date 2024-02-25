@@ -1171,7 +1171,7 @@ test.describe('actions schema settings', () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
       },
-      supportedOptions: ['Edit button', 'Bind workflows', 'Delete'],
+      supportedOptions: ['Edit button', 'Second confirmation', 'Bind workflows', 'Delete'],
     });
   });
 

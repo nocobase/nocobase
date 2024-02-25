@@ -28,6 +28,7 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { SaveMode } from '../../../modules/form-creation/schema-settings/createSubmitActionSettings';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -673,6 +674,10 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           const fieldSchema = useFieldSchema();
           return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
         },
+      },
+      {
+        name: 'saveMode',
+        Component: SaveMode,
       },
       {
         name: 'enableChildCollections',
