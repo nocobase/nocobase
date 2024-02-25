@@ -1,5 +1,6 @@
 import { list } from './default-actions/list';
 import { proxyToRepository } from './default-actions/proxy-to-repository';
+import { DataSource } from './data-source';
 
 type Actions = { [key: string]: { params: Array<string> | ((ctx: any) => Array<string>); method: string } };
 
@@ -63,7 +64,7 @@ const actions: Actions = {
   },
 };
 
-export function loadDefaultActions() {
+export function loadDefaultActions(dataSource: DataSource) {
   return {
     ...Object.keys(actions).reduce((carry, key) => {
       carry[key] = proxyToRepository(actions[key].params, actions[key].method);
