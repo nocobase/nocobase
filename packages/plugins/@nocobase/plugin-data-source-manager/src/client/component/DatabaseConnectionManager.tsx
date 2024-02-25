@@ -1,7 +1,6 @@
 import { uid } from '@formily/shared';
 import {
   SchemaComponent,
-  useCompile,
   usePlugin,
   useResourceActionContext,
   useResourceContext,
@@ -10,7 +9,7 @@ import {
 } from '@nocobase/client';
 import { Card } from 'antd';
 import _ from 'lodash';
-import { useField } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect } from 'react';
 import PluginDatabaseConnectionsClient from '../';
 import { databaseConnectionSchema } from '../schema';
@@ -20,16 +19,17 @@ import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
 import { ThirdDataSource } from '../ThridDataSource';
 
 export const DatabaseConnectionManagerPane = () => {
-  const compile = useCompile();
+  const { t } = useTranslation();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
-  const types = [...plugin.types.keys()].map((key) => {
-    const type = plugin.types.get(key);
-    return {
-      value: key,
-      label: compile(type?.label),
-    };
-  });
-
+  const types = [...plugin.types.keys()]
+    .map((key) => {
+      const type = plugin.types.get(key);
+      return {
+        value: key,
+        label: t(type?.label),
+      };
+    })
+    .concat([{ value: 'main', label: t('Main') }]);
   const dm = useDataSourceManager();
 
   const reloadKeys = React.useRef<string[]>([]);

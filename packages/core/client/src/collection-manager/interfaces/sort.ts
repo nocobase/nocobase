@@ -9,6 +9,7 @@ export class SortFieldInterface extends CollectionFieldInterface {
   title = '{{t("Sort")}}';
   sortable = true;
   titleUsable = true;
+  description = '{{t("Used for drag and drop sorting scenarios, supporting grouping sorting")}}';
   default = {
     type: 'sort',
     uiSchema: {
@@ -27,12 +28,12 @@ export class SortFieldInterface extends CollectionFieldInterface {
     ...defaultProps,
     scopeKey: {
       type: 'string',
-      title: '{{t("Scope key")}}',
+      title: '{{t("Group sorting")}}',
       'x-disabled': '{{ !createOnly }}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       enum: '{{scopeKeyOptions}}',
-      description: "{{t('Group and sort according to this field')}}",
+      description: "{{t('When a field is selected as a group, it will be grouped first and then sorted')}}",
     },
   };
   filterable = {

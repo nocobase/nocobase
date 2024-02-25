@@ -384,6 +384,8 @@
   "Edit description": "编辑描述",
   "Required": "必填",
   "Unique": "不允许重复",
+  "Primary":"主键",
+  "AutoIncrement":"自动增长",
   "Label field": "标签字段",
   "Default is the ID field": "默认为 ID 字段",
   "Set default sorting rules": "设置排序规则",
@@ -874,5 +876,9 @@
   "User manual": "用户手册",
   "License": "许可证",
   "Generic properties": "通用属性",
-  "Specific properties": "特有属性"
+  "Specific properties": "特有属性",
+  "Used for drag and drop sorting scenarios, supporting grouping sorting":"用于拖拽排序场景，支持分组排序",
+  "Group sorting":"分组排序",
+  "When a field is selected as a group, it will be grouped first and then sorted": "当选了某个字段作为分组时，将先分组再排序",
+  "Main": "主数据源"
 }
