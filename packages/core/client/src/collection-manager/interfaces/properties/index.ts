@@ -47,7 +47,7 @@ export const primaryKey = {
 };
 export const autoIncrement = {
   type: 'boolean',
-  'x-content': '{{t("AutoIncrement")}}',
+  'x-content': '{{t("Auto increment")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
 };

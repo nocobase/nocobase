@@ -364,7 +364,7 @@
   "Required": "Required",
   "Unique": "Unique",
   "Primary": "Primary",
-  "AutoIncrement": "AutoIncrement",
+  "Auto increment": "Auto increment",
   "Label field": "Label field",
   "Default is the ID field": "Default is the ID field",
   "Set default sorting rules": "Set default sorting rules",

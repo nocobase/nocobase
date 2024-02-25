@@ -309,7 +309,7 @@ export const AddFieldAction = (props) => {
   const scopeKeyOptions = useMemo(() => {
     return fields
       .filter((v) => {
-        return v.interface === 'select';
+        return ['string', 'bigInt', 'integer'].includes(v.type);
       })
       .map((k) => {
         return {
