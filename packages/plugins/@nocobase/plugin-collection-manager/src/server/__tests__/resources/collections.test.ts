@@ -22,6 +22,7 @@ describe('collections', () => {
           name: 'test',
         },
       });
+
     const collection = app.db.getCollection('test');
     expect(await collection.existsInDb()).toBeTruthy();
 
