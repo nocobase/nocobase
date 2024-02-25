@@ -26,6 +26,29 @@ export default class PluginUsersServer extends Plugin {
       },
     });
 
+    this.db.on('field.afterAdd', ({ collection, field }) => {
+      if (field.options.interface === 'createdBy') {
+        collection.setField('createdById', {
+          type: 'context',
+          dataType: 'bigInt',
+          dataIndex: 'state.currentUser.id',
+          createOnly: true,
+          visible: true,
+          index: true,
+        });
+      }
+
+      if (field.options.interface === 'updatedBy') {
+        collection.setField('updatedById', {
+          type: 'context',
+          dataType: 'bigInt',
+          dataIndex: 'state.currentUser.id',
+          visible: true,
+          index: true,
+        });
+      }
+    });
+
     this.db.on('afterDefineCollection', (collection: Collection) => {
       const { createdBy, updatedBy } = collection.options;
       if (createdBy === true) {

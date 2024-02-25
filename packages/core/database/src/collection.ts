@@ -358,6 +358,11 @@ export class Collection<
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
 
+    this.db.emit('field.afterAdd', {
+      collection: this,
+      field,
+    });
+
     // refresh children models
     if (this.isParent()) {
       for (const child of this.context.database.inheritanceMap.getChildren(this.name, {
