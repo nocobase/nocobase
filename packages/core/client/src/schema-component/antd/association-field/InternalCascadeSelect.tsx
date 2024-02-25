@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useCollectionManager } from '../../../';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { mergeFilter } from '../../../filter-provider/utils';
 import { SchemaComponent, useCompile } from '../../../schema-component';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
@@ -130,8 +130,8 @@ const CascadeSelect = connect((props) => {
     const data = await handleGetOptions({ parentId: option?.id });
     const options = [...selectedOptions];
     options.splice(index + 1);
-    if (value) {
-      options[index] = { ...options[index], value: option };
+    options[index] = { ...options[index], value: option };
+    if (option?.id) {
       options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
     }
     setSelectedOptions(options);

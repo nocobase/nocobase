@@ -1,7 +1,7 @@
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
-export const mBlockInitializers = new SchemaInitializer({
+export const mBlockInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'MBlockInitializers',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',

@@ -20,5 +20,5 @@ export const useDesigner = () => {
   }, [fieldSchema]);
 
   const component = useComponent(toolbar);
-  return designable ? component : Def;
+  return designable ? component || Def : Def;
 };

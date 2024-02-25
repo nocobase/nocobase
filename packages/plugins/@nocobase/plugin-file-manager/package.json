@@ -1,12 +1,14 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.17.0-alpha.1",
+  "version": "0.19.0-alpha.8",
   "displayName": "File manager",
   "displayName.zh-CN": "文件管理器",
-  "description": "Provides file storage services, and extended the file collection template and the attachment field",
-  "description.zh-CN": "提供文件存储服务，并拓展了文件表模板和附件字段",
+  "description": "Provides files storage services with files collection template and attachment field.",
+  "description.zh-CN": "提供文件存储服务，并提供了文件表模板和附件字段。",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/file-manager",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/file-manager",
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
     "@formily/antd-v5": "1.x",
@@ -37,5 +39,9 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "keywords": [
+    "Collections",
+    "Collection fields"
+  ],
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

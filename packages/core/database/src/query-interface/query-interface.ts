@@ -1,6 +1,11 @@
-import { QueryInterface as SequelizeQueryInterface, Transactionable } from 'sequelize';
+import { QueryInterface as SequelizeQueryInterface, Transaction, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import Database from '../database';
+
+export type TableInfo = {
+  tableName: string;
+  schema?: string;
+};
 
 export default abstract class QueryInterface {
   sequelizeQueryInterface: SequelizeQueryInterface;
@@ -25,7 +30,7 @@ export default abstract class QueryInterface {
 
   abstract parseSQL(sql: string): any;
 
-  abstract showTableDefinition(tableInfo: { name: string; schema?: string }): Promise<any>;
+  abstract showTableDefinition(tableInfo: TableInfo): Promise<any>;
 
   async dropAll(options) {
     if (options.drop !== true) return;
@@ -46,4 +51,17 @@ export default abstract class QueryInterface {
 
     await this.db.sequelize.getQueryInterface().dropAllTables(options);
   }
+
+  abstract getAutoIncrementInfo(options: {
+    tableInfo: TableInfo;
+    fieldName: string;
+  }): Promise<{ seqName?: string; currentVal: number }>;
+
+  abstract setAutoIncrementVal(options: {
+    tableInfo: TableInfo;
+    columnName: string;
+    seqName?: string;
+    currentVal: number;
+    transaction?: Transaction;
+  }): Promise<void>;
 }

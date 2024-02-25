@@ -124,6 +124,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                             setFileList((prevFileList) => {
                               if (!multiple) {
                                 onChange?.(null as any);
+                                setSync(true);
                                 return [];
                               }
                               const index = prevFileList.indexOf(file);
@@ -167,6 +168,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                     if (info.file.status === 'done') {
                       onChange?.(toValue(list));
                     }
+                    onChange?.(toValue(list));
                     setFileList(list.map(toItem));
                     setSync(true);
                   } else {

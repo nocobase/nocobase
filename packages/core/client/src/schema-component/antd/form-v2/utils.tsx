@@ -14,7 +14,6 @@ interface Props {
     [key: string]: any;
   };
   condition;
-  values;
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }
@@ -36,7 +35,6 @@ export const collectFieldStateOfLinkageRules = ({
   value,
   field,
   condition,
-  values,
   variables,
   localVariables,
 }: Props) => {
@@ -48,14 +46,18 @@ export const collectFieldStateOfLinkageRules = ({
 
   switch (operator) {
     case ActionType.Required:
-      requiredResult.push(getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), true));
+      requiredResult.push(
+        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), true),
+      );
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         required: requiredResult,
       };
       break;
     case ActionType.InRequired:
-      requiredResult.push(getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), false));
+      requiredResult.push(
+        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), false),
+      );
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         required: requiredResult,
@@ -65,7 +67,7 @@ export const collectFieldStateOfLinkageRules = ({
     case ActionType.None:
     case ActionType.Hidden:
       displayResult.push(
-        getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), operator),
+        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), operator),
       );
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
@@ -76,7 +78,7 @@ export const collectFieldStateOfLinkageRules = ({
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
       patternResult.push(
-        getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), operator),
+        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), operator),
       );
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
@@ -91,15 +93,14 @@ export const collectFieldStateOfLinkageRules = ({
               return;
             }
 
-            // 1. 解析如 `{{$user.name}}` 之类的变量
+            // 解析如 `{{$user.name}}` 之类的变量
             const { exp, scope: expScope } = await replaceVariables(value.value || value.result, {
               variables,
               localVariables,
             });
 
             try {
-              // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
-              const result = evaluate(exp, { ...values, now: () => new Date().toString(), ...expScope });
+              const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
               return result;
             } catch (error) {
               console.error(error);
@@ -114,7 +115,7 @@ export const collectFieldStateOfLinkageRules = ({
           valueResult.push(getTempFieldState(true, getValue()));
         } else {
           valueResult.push(
-            getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), getValue()),
+            getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), getValue()),
           );
         }
         field.stateOfLinkageRules = {
@@ -162,7 +163,7 @@ async function replaceVariables(
 
   return {
     exp: value.replace(REGEX_OF_VARIABLE, (match) => {
-      return store[match] || match;
+      return `{{${store[match] || match}}}`;
     }),
     scope,
   };

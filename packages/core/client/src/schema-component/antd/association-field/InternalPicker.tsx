@@ -14,14 +14,15 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider } from '../../../collection-manager';
+import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 
-const useTableSelectorProps = () => {
+export const useTableSelectorProps = () => {
   const field: any = useField();
   const {
     multiple,
@@ -62,13 +63,14 @@ const useTableSelectorProps = () => {
 
 export const InternalPicker = observer(
   (props: any) => {
-    const { value, multiple, onChange, quickUpload, selectFile, shouldMountElement, ...others } = props;
+    const { value, multiple, openSize, onChange, quickUpload, selectFile, shouldMountElement, ...others } = props;
     const field: any = useField();
     const fieldNames = useFieldNames(props);
     const [visibleSelector, setVisibleSelector] = useState(false);
     const fieldSchema = useFieldSchema();
     const insertSelector = useInsertSchema('Selector');
     const { options: collectionField } = useAssociationFieldContext();
+    const { collectionName } = useFormBlockContext();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const isAllowAddNew = fieldSchema['x-add-new'];
@@ -99,6 +101,7 @@ export const InternalPicker = observer(
       selectedRows,
       setSelectedRows,
       collectionField,
+      currentFormCollection: collectionName,
     };
 
     const getValue = () => {
@@ -124,6 +127,9 @@ export const InternalPicker = observer(
             onChange(selectedRows?.[0] || null);
           }
           setVisible(false);
+        },
+        style: {
+          display: multiple !== false && ['o2m', 'm2m'].includes(collectionField?.interface) ? 'block' : 'none',
         },
       };
     };
@@ -180,6 +186,7 @@ export const InternalPicker = observer(
         </Input.Group>
         <ActionContextProvider
           value={{
+            openSize,
             openMode: 'drawer',
             visible: visibleSelector,
             setVisible: setVisibleSelector,
@@ -189,7 +196,12 @@ export const InternalPicker = observer(
             <CollectionProvider name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
-                  <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
+                  <SchemaComponentOptions
+                    scope={{
+                      usePickActionProps,
+                      useTableSelectorProps,
+                    }}
+                  >
                     <RecursionField
                       onlyRenderProperties
                       basePath={field.address}

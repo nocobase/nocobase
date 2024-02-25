@@ -1,0 +1,8 @@
+{
+  "Formula": "公式",
+  "Calculation engine": "计算引擎",
+  "Expression": "表达式",
+  "Expression syntax error": "表达式语法错误",
+  "Syntax references": "语法参考",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "可以配置并存储同一条记录的多字段值之间的计算结果，支持 Math.js 和 Excel formula functions 两种引擎。"
+}

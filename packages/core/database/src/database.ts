@@ -1,5 +1,6 @@
-import { Logger } from '@nocobase/logger';
-import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
+import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import chalk from 'chalk';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
@@ -22,6 +23,7 @@ import {
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
+import { CollectionFactory } from './collection-factory';
 import { CollectionGroupManager } from './collection-group-manager';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
@@ -30,6 +32,7 @@ import { referentialIntegrityCheck } from './features/referential-integrity-chec
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
+import { checkDatabaseVersion } from './helpers';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
 import { registerBuiltInListeners } from './listeners';
@@ -90,6 +93,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
 }
@@ -191,7 +195,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
-  importedFrom = new Map<string, Array<string>>();
+  importedFrom = new Map<string, Set<string>>();
   modelHook: ModelHook;
   version: DatabaseVersion;
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
@@ -216,6 +220,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
       ...lodash.clone(options),
     };
 
+    if (options.logger) {
+      if (typeof options.logger['log'] === 'function') {
+        this.logger = options.logger as Logger;
+      } else {
+        this.logger = createLogger(options.logger);
+      }
+    } else {
+      this.logger = createConsoleLogger();
+    }
+
     if (!options.instanceId) {
       this._instanceId = nanoid();
     } else {
@@ -238,6 +252,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       // https://github.com/sequelize/sequelize/issues/1774
       require('pg').defaults.parseInt8 = true;
     }
+
     this.options = opts;
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
@@ -293,8 +308,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
-      namespace: 'core.migration',
-      duplicator: 'required',
+      dumpRules: 'required',
+      origin: '@nocobase/database',
       fields: [{ type: 'string', name: 'name', primaryKey: true }],
     });
 
@@ -322,6 +337,27 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this._instanceId;
   }
 
+  createMigrator({ migrations }) {
+    const migratorOptions: any = this.options.migrator || {};
+    const context = {
+      db: this,
+      sequelize: this.sequelize,
+      queryInterface: this.sequelize.getQueryInterface(),
+      ...migratorOptions.context,
+    };
+    return new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations: Array.isArray(migrations) ? lodash.sortBy(migrations, (m) => m.name) : migrations,
+      context,
+      storage: new SequelizeStorage({
+        tableName: `${this.options.tablePrefix || ''}migrations`,
+        modelName: 'migrations',
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
+    });
+  }
+
   registerCollectionType() {
     this.collectionFactory.registerCollectionType(InheritedCollection, {
       condition: (options) => {
@@ -332,10 +368,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   setContext(context: any) {
     this.context = context;
-  }
-
-  setLogger(logger: Logger) {
-    this.logger = logger;
   }
 
   sequelizeOptions(options) {
@@ -437,6 +469,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     });
 
+    this.on('afterDefineCollection', async (collection: Collection) => {
+      const options = collection.options;
+      if (options.origin) {
+        const existsSet = this.importedFrom.get(options.origin) || new Set();
+        existsSet.add(collection.name);
+        this.importedFrom.set(options.origin, existsSet);
+      }
+    });
+
     registerBuiltInListeners(this);
   }
 
@@ -450,12 +491,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const files = glob.sync(patten, {
       ignore: ['**/*.d.ts'],
     });
+
     for (const file of files) {
       let filename = basename(file);
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
+
       this.migrations.add({
         name: namespace ? `${namespace}/${filename}` : filename,
-        migration: requireModule(file),
+        migration: file,
         context,
       });
     }
@@ -741,12 +784,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
-        console.log('Connection has been established successfully.');
+        this.logger.info('connection has been established successfully.', { method: 'auth' });
       } catch (error) {
-        console.log(`Attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`);
+        this.logger.warn(`attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`, {
+          method: 'auth',
+        });
         const nextDelay = startingDelay * Math.pow(timeMultiple, attemptNumber - 1);
-        console.log(`Will retry in ${nextDelay}ms...`);
         attemptNumber++;
+        if (attemptNumber < (retry as number)) {
+          this.logger.warn(`will retry in ${nextDelay}ms...`, { method: 'auth' });
+        }
         throw error; // Re-throw the error so that backoff can catch and handle it
       }
     };
@@ -886,11 +933,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (module.extend) {
         this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
-        const collection = this.collection(module);
-
-        if (options.from) {
-          this.importedFrom.set(options.from, [...(this.importedFrom.get(options.from) || []), collection.name]);
-        }
+        const collection = this.collection({
+          ...module,
+          origin: options.from,
+        });
 
         result.set(collection.name, collection);
       }

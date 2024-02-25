@@ -35,7 +35,10 @@ const User = sequelize.define(
 const app = new Koa();
 
 app.use(async (ctx, next) => {
-  ctx.body = await User.findAll();
+  ctx.body = await User.findAndCountAll({
+    offset: 0,
+    limit: 20,
+  });
   await next();
 });
 

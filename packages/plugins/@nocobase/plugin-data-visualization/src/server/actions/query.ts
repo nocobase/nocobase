@@ -46,35 +46,27 @@ type QueryParams = Partial<{
 }>;
 
 export const postProcess = async (ctx: Context, next: Next) => {
-  const { sequelize } = ctx.db;
-  const dialect = sequelize.getDialect();
   const { data, fieldMap } = ctx.action.params.values as {
     data: any[];
     fieldMap: { [source: string]: { type?: string } };
   };
-  switch (dialect) {
-    case 'postgres':
-      // https://github.com/sequelize/sequelize/issues/4550
-      ctx.body = data.map((record) => {
-        const result = {};
-        Object.entries(record).forEach(([key, value]) => {
-          const { type } = fieldMap[key] || {};
-          switch (type) {
-            case 'bigInt':
-            case 'integer':
-            case 'float':
-            case 'double':
-              value = Number(value);
-              break;
-          }
-          result[key] = value;
-        });
-        return result;
-      });
-      break;
-    default:
-      ctx.body = data;
-  }
+  ctx.body = data.map((record) => {
+    Object.entries(record).forEach(([key, value]) => {
+      if (!value) {
+        return;
+      }
+      const { type } = fieldMap[key] || {};
+      switch (type) {
+        case 'bigInt':
+        case 'integer':
+        case 'float':
+        case 'double':
+          record[key] = Number(value);
+          break;
+      }
+    });
+    return record;
+  });
   await next();
 };
 
@@ -253,7 +245,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
   const getUser = () => {
     return async ({ fields }) => {
       const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
-      ctx.logger?.info('filter-parse: ', { userFields });
+      ctx.logger?.info('parse filter variables', { userFields, method: 'parseVariables' });
       if (!ctx.state.currentUser) {
         return;
       }
@@ -264,8 +256,9 @@ export const parseVariables = async (ctx: Context, next: Next) => {
         filterByTk: ctx.state.currentUser.id,
         fields: userFields,
       });
-      ctx.logger?.info('filter-parse: ', {
+      ctx.logger?.info('parse filter variables', {
         $user: user?.toJSON(),
+        method: 'parseVariables',
       });
       return user;
     };
@@ -329,7 +322,6 @@ export const query = async (ctx: Context, next: Next) => {
       postProcess,
     ])(ctx, next);
   } catch (err) {
-    ctx.app.logger.error('charts query: ', err);
     ctx.throw(500, err);
   }
 };

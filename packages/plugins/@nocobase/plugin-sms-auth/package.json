@@ -1,11 +1,14 @@
 {
   "name": "@nocobase/plugin-sms-auth",
-  "displayName": "SMS auth",
-  "displayName.zh-CN": "短信认证",
-  "description": "SMS authentication for NocoBase",
-  "description.zh-CN": "SMS authentication for NocoBase",
-  "version": "0.17.0-alpha.1",
+  "displayName": "Auth: SMS",
+  "displayName.zh-CN": "认证：短信",
+  "description": "SMS authentication.",
+  "description.zh-CN": "通过短信验证码认证身份。",
+  "version": "0.19.0-alpha.8",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/sms-auth",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/sms-auth",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "@formily/react": "2.x",
     "antd": "5.x",
@@ -17,9 +20,13 @@
     "@nocobase/auth": "0.x",
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
-    "@nocobase/plugin-auth": "0.x",
+    "@nocobase/plugin-auth": ">=0.17.0-alpha.7",
     "@nocobase/plugin-verification": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "Authentication"
+  ]
 }

@@ -100,7 +100,7 @@ export const snapshot: IField = {
   type: 'object',
   group: 'advanced',
   title: `{{t('Snapshot', {ns: '${NAMESPACE}'})}}`,
-  description: `{{t('When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.', {ns: '${NAMESPACE}'})}}`,
+  description: `{{t('When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.', {ns: '${NAMESPACE}'})}}`,
   default: {
     type: 'snapshot',
     // name,

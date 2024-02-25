@@ -265,6 +265,7 @@ export class ACL extends EventEmitter {
             state,
           },
           $user: async () => state.currentUser,
+          $nRole: () => state.currentRole,
         },
       });
       json.filter = filter;

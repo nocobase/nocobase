@@ -193,6 +193,7 @@ export const RolesResourcesActions = connect((props) => {
                     render: (checked, field) => (
                       <Checkbox
                         checked={checked}
+                        aria-label={`${action.name}_checkbox`}
                         onChange={() => {
                           const item = actionMap[action.name] || {
                             name: action.name,

@@ -42,24 +42,15 @@ export class PluginManager {
   }
 
   private async initRemotePlugins() {
-    try {
-      const res = await this.app.apiClient.request({ url: 'pm:listEnabled' });
-      const pluginList: PluginData[] = res?.data?.data || [];
-      const plugins = await getPlugins({
-        requirejs: this.app.requirejs,
-        pluginData: pluginList,
-        devDynamicImport: this.app.devDynamicImport,
-      });
-      for await (const [name, pluginClass] of plugins) {
-        await this.add(pluginClass, { name });
-      }
-    } catch (error) {
-      if (401 === error?.response?.status) {
-        this.app.apiClient.auth.setRole(null);
-        window.location.reload();
-      } else {
-        throw error;
-      }
+    const res = await this.app.apiClient.request({ url: 'pm:listEnabled' });
+    const pluginList: PluginData[] = res?.data?.data || [];
+    const plugins = await getPlugins({
+      requirejs: this.app.requirejs,
+      pluginData: pluginList,
+      devDynamicImport: this.app.devDynamicImport,
+    });
+    for await (const [name, pluginClass] of plugins) {
+      await this.add(pluginClass, { name });
     }
   }
 

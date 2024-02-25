@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-localization-management",
-  "version": "0.17.0-alpha.1",
+  "version": "0.19.0-alpha.8",
   "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/localization-management",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/localization-management",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "deepmerge": "^4.3.1"
   },
@@ -14,8 +17,12 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "displayName": "Localization management",
-  "displayName.zh-CN": "多语言管理",
+  "keywords": [
+    "System management"
+  ],
+  "displayName": "Localization",
+  "displayName.zh-CN": "本地化",
   "description": "Allows to manage localization resources of the application.",
-  "description.zh-CN": "支持管理应用程序的多语言资源。"
+  "description.zh-CN": "支持管理应用程序的本地化资源。",
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

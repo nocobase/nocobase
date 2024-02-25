@@ -1,4 +1,4 @@
-import { moment2str } from '@nocobase/utils';
+import { moment2str } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 
 export const getOptionsSchema = () => {
@@ -154,7 +154,7 @@ export const transformValue = (value: any, props: any) => {
       start = start.startOf('day');
       end = end.endOf('day');
     }
-    return [moment2str(start, props), moment2str(end, props)];
+    return [start.toISOString(), end.toISOString()];
   }
   return value;
 };

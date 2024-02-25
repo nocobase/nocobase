@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
+import Database, { Collection as DBCollection, CollectionGroupManager, HasManyRepository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
 import CollectionManagerPlugin, { CollectionRepository } from '../index';
@@ -118,6 +118,52 @@ describe('collections repository', () => {
         default: true,
       },
     });
+  });
+
+  it('should create collection with optional duplicator option', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'tests',
+        dumpRules: {
+          group: 'business',
+        },
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const testsCollection = db.getCollection('tests');
+
+    const duplicator = CollectionGroupManager.unifyDumpRules(testsCollection.options.dumpRules);
+    expect(duplicator.group).toEqual('business');
+  });
+
+  it('should create collection with required duplicator option', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'tests',
+        dumpRules: {
+          group: 'required',
+        },
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const testsCollection = db.getCollection('tests');
+
+    const duplicator = CollectionGroupManager.unifyDumpRules(testsCollection.options.dumpRules);
+    expect(duplicator.group).toEqual('required');
   });
 
   it('should create collection with sortable option', async () => {

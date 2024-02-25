@@ -2,9 +2,11 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useAssociationNames } from '../../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
+import { useRecord } from '../../../../record-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
@@ -20,16 +22,21 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const form = useForm();
+  const record = useRecord();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
   const { formValue: subFormValue } = useSubFormValue();
   const { isInSubForm, isInSubTable } = useFlag() || {};
+  const { getAssociationAppends } = useAssociationNames();
 
   const schemaName = fieldSchema.name.toString();
   const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
   const collectionFieldRef = useRef(null);
   const sourceCollectionFieldRef = useRef(null);
+
+  // 是否已经预加载了数据（通过 appends 的形式）
+  const hasPreloadData = useMemo(() => hasPreload(record, schemaName), []);
 
   if (collectionFieldRef.current == null && isDisplayField(schemaName)) {
     collectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName}`);
@@ -46,7 +53,13 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   useEffect(() => {
     // 如果 schemaName 中是以 `.` 分割的，说明是一个关联字段，需要去获取关联字段的值；
     // 在数据表管理页面，也存在 `a.b` 之类的 schema name，其 collectionName 为 fields，所以在这里排除一下 `name === 'fields'` 的情况
-    if (!isDisplayField(schemaName) || !variables || name === 'fields' || !collectionFieldRef.current) {
+    if (
+      !isDisplayField(schemaName) ||
+      !variables ||
+      name === 'fields' ||
+      !collectionFieldRef.current ||
+      hasPreloadData
+    ) {
       return;
     }
 
@@ -66,8 +79,10 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       return;
     }
 
+    const { appends } = getAssociationAppends();
+
     variables
-      .parseVariable(variableString, formVariable)
+      .parseVariable(variableString, formVariable, { appends })
       .then((value) => {
         nextTick(() => {
           const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
@@ -86,3 +101,14 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
 };
 
 export default useLazyLoadDisplayAssociationFieldsOfForm;
+
+/**
+ * 数据是否已被预加载
+ * @param record
+ * @param path
+ * @returns
+ */
+function hasPreload(record: Record<string, any>, path: string) {
+  const value = _.get(record, path);
+  return value != null && JSON.stringify(value) !== '[{}]' && JSON.stringify(value) !== '{}';
+}

@@ -6,9 +6,9 @@ import { Schema } from '@formily/react';
 import { useChartsTranslation } from '../locale';
 import { ChartFilterContext } from '../filter/FilterProvider';
 import { useMemoizedFn } from 'ahooks';
-import { parse } from '@nocobase/utils';
+import { parse } from '@nocobase/utils/client';
 import lodash from 'lodash';
-import { getValuesByPath } from '../utils';
+import { getFormulaComponent, getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
 
 export const useCustomFieldInterface = () => {
@@ -88,9 +88,10 @@ export const useChartFilter = () => {
         },
       };
       if (field.interface === 'formula') {
+        const component = getFormulaComponent(field.dataType) || 'Input';
         schema = {
           ...schema,
-          'x-component': 'InputNumber',
+          'x-component': component,
         };
       }
       if (['oho', 'o2m'].includes(field.interface)) {
@@ -411,26 +412,28 @@ export const useChartFilterSourceFields = () => {
   };
 
   const collections = getChartCollections();
-  const options = [];
-  collections.forEach((name) => {
-    const collection = getCollection(name);
-    const children = [];
-    const fields = getCollectionFields(collection);
-    fields.forEach((field) => {
-      const option = field2option(field, 1);
-      if (option) {
-        children.push(option);
+  return useMemo(() => {
+    const options = [];
+    collections.forEach((name) => {
+      const collection = getCollection(name);
+      const children = [];
+      const fields = getCollectionFields(collection);
+      fields.forEach((field) => {
+        const option = field2option(field, 1);
+        if (option) {
+          children.push(option);
+        }
+      });
+      if (children.length) {
+        options.push({
+          value: name,
+          label: t(collection.title),
+          children,
+        });
       }
     });
-    if (children.length) {
-      options.push({
-        value: name,
-        label: t(collection.title),
-        children,
-      });
-    }
-  });
-  return options;
+    return options;
+  }, [collections]);
 };
 
 export const useFieldComponents = () => {

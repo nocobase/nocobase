@@ -1,6 +1,6 @@
 import type { ThemeConfig as Config } from '@nocobase/client';
 import type { ReactElement } from 'react';
-export type ThemeConfig = Config & { name?: string };
+export type ThemeConfig = Config;
 
 export interface ThemeItem {
   id: number;
@@ -10,6 +10,7 @@ export interface ThemeItem {
   optional: boolean;
   isBuiltIn?: boolean;
   uid?: string;
+  default?: boolean; // 当前系统默认主题
 }
 
 export type Theme = {

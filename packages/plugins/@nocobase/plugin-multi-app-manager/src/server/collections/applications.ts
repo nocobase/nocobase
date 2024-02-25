@@ -1,12 +1,12 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'multi-app-manager.multi-apps',
-  duplicator: 'optional',
+  dumpRules: {
+    group: 'third-party',
+  },
   name: 'applications',
   model: 'ApplicationModel',
   autoGenId: false,
-  title: '{{t("Applications")}}',
   sortable: 'sort',
   filterTargetKey: 'name',
   fields: [

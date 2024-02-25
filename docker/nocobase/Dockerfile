@@ -1,4 +1,4 @@
-FROM node:18-slim as builder
+FROM node:18-bullseye-slim as builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN cd /app \
   && rm -rf nocobase.tar.gz \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
-FROM node:18-slim
+FROM node:18-bullseye-slim
 
 # COPY ./sources.list /etc/apt/sources.list
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
@@ -38,5 +38,7 @@ WORKDIR /app/nocobase
 COPY docker-entrypoint.sh /app/
 # COPY docker-entrypoint.sh /usr/local/bin/
 # ENTRYPOINT ["docker-entrypoint.sh"]
+
+EXPOSE 80/tcp
 
 CMD ["/app/docker-entrypoint.sh"]

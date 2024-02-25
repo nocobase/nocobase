@@ -168,21 +168,6 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             return collection.tree && treeTable !== false;
           },
         },
-        {
-          type: 'item',
-          title: '{{t("Duplicate")}}',
-          name: 'duplicate',
-          Component: 'DuplicateActionInitializer',
-          schema: {
-            'x-component': 'Action.Link',
-            'x-action': 'duplicate',
-            'x-decorator': 'ACLActionProvider',
-          },
-          useVisible() {
-            const collection = useCollection();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
-        },
       ],
     },
     {
@@ -275,26 +260,11 @@ export const tableActionColumnInitializers = new SchemaInitializer({
           },
         },
         {
-          type: 'item',
-          title: '{{t("Custom request")}}',
           name: 'customRequest',
-          Component: 'CustomizeActionInitializer',
+          title: '{{t("Custom request")}}',
+          Component: 'CustomRequestInitializer',
           schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action.Link',
             'x-action': 'customize:table:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Request success")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
           },
           useVisible() {
             const collection = useCollection();

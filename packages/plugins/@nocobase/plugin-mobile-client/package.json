@@ -1,11 +1,14 @@
 {
   "name": "@nocobase/plugin-mobile-client",
-  "version": "0.17.0-alpha.1",
+  "version": "0.19.0-alpha.8",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/mobile-client",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/mobile-client",
+  "license": "AGPL-3.0",
   "displayName": "Mobile client",
   "displayName.zh-CN": "移动端",
-  "description": "Provides the ability to configure mobile pages",
-  "description.zh-CN": "提供移动端页面配置的能力",
+  "description": "Provides the ability to configure mobile pages.",
+  "description.zh-CN": "提供移动端页面配置的能力。",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",
@@ -29,5 +32,6 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

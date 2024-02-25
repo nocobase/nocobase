@@ -4,9 +4,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
   SchemaInitializerItem,
+  SchemaInitializerMenu,
   useSchemaInitializer,
   useSchemaInitializerMenuItems,
-  SchemaInitializerMenu,
 } from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -48,7 +48,7 @@ export const SearchCollections = ({ value: outValue, onChange }) => {
       <Input
         ref={inputRef}
         allowClear
-        style={{ padding: '0 4px 6px' }}
+        style={{ padding: '0 4px 6px', boxShadow: 'none' }}
         bordered={false}
         placeholder={t('Search and select collection')}
         value={value}
@@ -226,6 +226,7 @@ export interface DataBlockInitializerProps {
   name: string;
   title: string;
   items?: any[];
+  filterItems?: (item: any, index: number, items: any[]) => boolean;
   componentType: string;
 }
 
@@ -240,6 +241,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     name,
     title,
     items,
+    filterItems,
   } = props;
   const { insert } = useSchemaInitializer();
   const compile = useCompile();
@@ -260,7 +262,13 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
   const defaultItems = useCollectionDataSourceItemsV2(componentType);
-  const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
+  const menuChildren = useMemo(() => {
+    const result = items || defaultItems;
+    if (filterItems) {
+      return result.filter(filterItems);
+    }
+    return result;
+  }, [items, defaultItems]);
   const childItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
   const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
   const searchedChildren = useMenuSearch(childItems, isOpenSubMenu);

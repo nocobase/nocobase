@@ -1,0 +1,93 @@
+name: manual-build-pro-image
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Please enter a pull request number'
+        required: true
+
+jobs:
+  build-and-push:
+    if: github.event.pull_request.head.repo.fork != true
+    runs-on: ubuntu-latest
+    services:
+      verdaccio:
+        image: verdaccio/verdaccio:latest
+        ports:
+          - 4873:4873
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          submodules: true
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ref: refs/pull/${{ inputs.pr_number }}/head
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: rm .git
+        run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            nocobase/nocobase
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+      - name: Set variables
+        run: |
+          target_directory="./packages/pro-plugins/@nocobase"
+          subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
+          trimmed_variable=$(echo "$subdirectories" | xargs)
+          packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
+          pluginNames="${trimmed_variable//plugin-/}"
+          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
+          APPEND_PRESET_LOCAL_PLUGINS="notifications,disable-pm-add,${pluginNames// /,}"
+          echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+        id: vars
+      - name: Build and push - pr-${{ inputs.pr_number }}-pro
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |
+            VERDACCIO_URL=http://localhost:4873/
+            COMMIT_HASH=${GITHUB_SHA}
+            PLUGINS_DIRS=pro-plugins
+            BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
+            APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
+          push: true
+          tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-${{ inputs.pr_number }}-pro
+      - name: Deploy NocoBase
+        run: |
+          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}pr-${{ inputs.pr_number }}-pro" \
+          --header 'Content-Type: application/json' \
+          -d "{
+              \"tag\": \"pr-${{ inputs.pr_number }}-pro\",
+              \"dialect\": \"postgres\"
+          }"

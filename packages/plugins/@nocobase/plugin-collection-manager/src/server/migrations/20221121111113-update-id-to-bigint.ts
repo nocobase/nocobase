@@ -2,6 +2,7 @@ import { DataTypes } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 
 export default class UpdateIdToBigIntMigrator extends Migration {
+  appVersion = '<0.8.1-alpha.2';
   async up() {
     const result = await this.app.version.satisfies('<0.9.0-alpha.1');
     if (!result) {
@@ -100,7 +101,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
           }
         }
 
-        this.app.log.info(`updated ${tableName}.${fieldName} to BIGINT`, tableName, fieldName);
+        this.app.log.info(`updated ${tableName}.${fieldName} to BIGINT`, { tableName, fieldName });
       }
     };
 

@@ -1,16 +1,23 @@
 name: deploy client docs
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
       - 'main'
     paths:
       - 'packages/core/client/**'
+      - 'packages/core/client/docs/**'
       - '.github/workflows/deploy-client-docs.yml'
   pull_request:
     branches:
       - '**'
     paths:
       - 'packages/core/client/**'
+      - 'packages/core/client/docs/**'
       - '.github/workflows/deploy-client-docs.yml'
 
 jobs:

@@ -9,7 +9,18 @@ type InferredField = {
 type InferredFieldResult = {
   [key: string]: InferredField;
 };
+
 export class ViewColumnTypeMapper {
+  static extractTypeFromDefinition(typeDefinition) {
+    const leftParenIndex = typeDefinition.indexOf('(');
+
+    if (leftParenIndex === -1) {
+      return typeDefinition.toLowerCase();
+    }
+
+    return typeDefinition.substring(0, leftParenIndex).toLowerCase().trim();
+  }
+
   static async inferFields(options: {
     db: Database;
     viewName: string;
@@ -113,5 +124,30 @@ export class ViewColumnTypeMapper {
     }
 
     return Object.fromEntries(rawFields);
+  }
+
+  static inferToFieldType(options: { name: string; type: string; dialect: string }) {
+    const { dialect } = options;
+    const fieldTypeMap = FieldTypeMap[dialect];
+
+    if (!options.type) {
+      return {
+        possibleTypes: Object.keys(fieldTypeMap),
+      };
+    }
+
+    const queryType = this.extractTypeFromDefinition(options.type);
+    const mappedType = fieldTypeMap[queryType];
+
+    if (isArray(mappedType)) {
+      return {
+        type: mappedType[0],
+        possibleTypes: mappedType,
+      };
+    }
+
+    return {
+      type: mappedType,
+    };
   }
 }

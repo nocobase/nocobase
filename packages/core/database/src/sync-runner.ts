@@ -28,6 +28,7 @@ export class SyncRunner {
 
     const tableName = inheritedCollection.getTableNameWithSchema();
     const attributes = model.tableAttributes;
+
     const childAttributes = lodash.pickBy(attributes, (value) => {
       return !value.inherit;
     });

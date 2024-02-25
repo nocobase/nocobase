@@ -4,24 +4,25 @@ networks:
     driver: bridge
 services:
   app:
-    image: nocobase/nocobase:main
+    image: nocobase/nocobase:latest
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
+      - APP_KEY=your-secret-key # Replace it with your own app key
       - DB_DIALECT=mysql
       - DB_HOST=mysql
       - DB_DATABASE=nocobase
       - DB_USER=nocobase
       - DB_PASSWORD=nocobase
-      - LOCAL_STORAGE_BASE_URL=/storage/uploads
+      - DB_TIMEZONE=+08:00
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - "13000:80"
   mysql:
-    image: mysql:8
+    image: mysql:latest
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase

@@ -1,12 +1,17 @@
 {
   "name": "@nocobase/plugin-acl",
-  "displayName": "ACL",
+  "displayName": "Access control",
   "displayName.zh-CN": "权限控制",
-  "description": "A simple access control based on roles, resources and actions",
-  "description.zh-CN": "基于角色、资源和操作的权限控制。",
-  "version": "0.17.0-alpha.1",
+  "description": "Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.",
+  "description.zh-CN": "基于角色、资源和操作的权限控制，可以精确控制界面配置权限、数据操作权限、菜单访问权限、插件权限。",
+  "version": "0.19.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/acl",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/acl",
+  "keywords": [
+    "Users & permissions"
+  ],
   "devDependencies": {
     "@types/jsonwebtoken": "^8.5.8",
     "async-mutex": "^0.3.2",
@@ -17,6 +22,7 @@
   "peerDependencies": {
     "@nocobase/acl": "0.x",
     "@nocobase/actions": "0.x",
+    "@nocobase/cache": "0.x",
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
@@ -28,5 +34,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/acl"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

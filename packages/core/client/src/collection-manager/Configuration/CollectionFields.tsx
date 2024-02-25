@@ -41,8 +41,11 @@ const tableContainer = css`
   th {
     flex: 2;
     width: 0;
+    &:nth-child(5) {
+      flex: 1.2;
+    }
     &:last-child {
-      flex: 1;
+      flex: 1.8;
     }
   }
   .ant-table-selection-column,

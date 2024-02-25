@@ -4,16 +4,16 @@ export default (app: Application) => {
   app
     .command('install')
     .ipc()
+    .auth()
     .option('-f, --force')
     .option('-c, --clean')
-    .action(async (...cliArgs) => {
-      const [opts] = cliArgs;
-      await app.install({
-        cliArgs,
-        clean: opts.clean,
-        sync: {
-          force: opts.force,
-        },
-      });
+    .option('--lang <lang>')
+    .action(async (options) => {
+      if (options.lang) {
+        process.env.INIT_APP_LANG = options.lang;
+      }
+      await app.install(options);
+      const reinstall = options.clean || options.force;
+      app.log.info(`app ${reinstall ? 'reinstalled' : 'installed'} successfully [v${app.getVersion()}]`);
     });
 };

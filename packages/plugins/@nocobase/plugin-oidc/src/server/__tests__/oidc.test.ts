@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
-import OIDCPlugin from '../index';
+import { MockServer, createMockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 import { authType } from '../../constants';
 import { OIDCAuth } from '../oidc-auth';
 
@@ -11,11 +11,9 @@ describe('oidc', () => {
   let authenticator;
 
   beforeAll(async () => {
-    app = mockServer({
-      plugins: ['users', 'auth'],
+    app = await createMockServer({
+      plugins: ['users', 'auth', 'oidc'],
     });
-    app.plugin(OIDCPlugin);
-    await app.loadAndInstall({ clean: true });
     db = app.db;
     agent = app.agent();
 
@@ -41,7 +39,7 @@ describe('oidc', () => {
   });
 
   afterEach(async () => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     await db.getRepository('users').destroy({
       truncate: true,
     });
@@ -49,12 +47,12 @@ describe('oidc', () => {
 
   it('should get auth url', async () => {
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       authorizationUrl: ({ state }) => state,
     } as any);
     const res = await agent.set('X-Authenticator', 'oidc-auth').resource('oidc').getAuthUrl();
     expect(res.body.data).toBeDefined();
-    const search = new URLSearchParams(res.body.data);
+    const search = new URLSearchParams(decodeURIComponent(res.body.data));
     expect(search.get('token')).toBeDefined();
     expect(search.get('name')).toBe('oidc-auth');
     expect(res.headers['set-cookie']).toBeDefined();
@@ -71,7 +69,7 @@ describe('oidc', () => {
       },
     });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),
@@ -97,7 +95,7 @@ describe('oidc', () => {
       },
     });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),
@@ -133,7 +131,7 @@ describe('oidc', () => {
       },
     });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),
@@ -171,7 +169,7 @@ describe('oidc', () => {
       },
     });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),

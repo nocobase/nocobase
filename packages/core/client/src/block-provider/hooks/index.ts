@@ -1,7 +1,7 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
-import _, { cloneDeep } from 'lodash';
+import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
@@ -12,17 +12,15 @@ import { AssociationFilter, useFormActiveFields, useFormBlockContext, useTableBl
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
-import { transformToFilter } from '../../filter-provider/utils';
+import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
-import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
-import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export * from './useFormActiveFields';
@@ -184,6 +182,7 @@ export const useCreateActionProps = () => {
   const compile = useCompile();
   const { modal } = App.useApp();
   const { t } = useTranslation();
+  const { updateAssociationValues } = useFormBlockContext();
   const collectValues = useCollectValuesToSubmit();
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
@@ -205,6 +204,7 @@ export const useCreateActionProps = () => {
           triggerWorkflows: triggerWorkflows?.length
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
+          updateAssociationValues,
         });
         setVisible?.(false);
         actionField.data.loading = false;
@@ -212,14 +212,14 @@ export const useCreateActionProps = () => {
         __parent?.service?.refresh?.();
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
-          await form.reset();
+          await form.reset(undefined, { forceClear: true });
           return;
         }
         if (onSuccess?.manualClose) {
           modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
-              await form.reset();
+              await form.reset(undefined, { forceClear: true });
               if (onSuccess?.redirecting && onSuccess?.redirectTo) {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
@@ -231,7 +231,7 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
-          await form.reset();
+          await form.reset(undefined, { forceClear: true });
           if (onSuccess?.redirecting && onSuccess?.redirectTo) {
             if (isURL(onSuccess.redirectTo)) {
               window.location.href = onSuccess.redirectTo;
@@ -678,94 +678,6 @@ export const useCustomizeBulkUpdateActionProps = () => {
   };
 };
 
-export const useCustomizeBulkEditActionProps = () => {
-  const form = useForm();
-  const { t } = useTranslation();
-  const { field, resource, __parent } = useBlockRequestContext();
-  const expressionScope = useContext(SchemaExpressionScopeContext);
-  const actionContext = useActionContext();
-  const navigate = useNavigate();
-  const compile = useCompile();
-  const actionField = useField();
-  const tableBlockContext = useTableBlockContext();
-  const { modal } = App.useApp();
-
-  const { rowKey } = tableBlockContext;
-  const selectedRecordKeys =
-    tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
-  const { setVisible, fieldSchema: actionSchema } = actionContext;
-  return {
-    async onClick() {
-      const { onSuccess, skipValidator, updateMode } = actionSchema?.['x-action-settings'] ?? {};
-      const { filter } = __parent.service.params?.[0] ?? {};
-      if (!skipValidator) {
-        await form.submit();
-      }
-      const values = cloneDeep(form.values);
-      actionField.data = field.data || {};
-      actionField.data.loading = true;
-      for (const key in values) {
-        if (Object.prototype.hasOwnProperty.call(values, key)) {
-          const value = values[key];
-          if (BulkEditFormItemValueType.Clear in value) {
-            values[key] = null;
-          } else if (BulkEditFormItemValueType.ChangedTo in value) {
-            values[key] = value[BulkEditFormItemValueType.ChangedTo];
-          } else if (BulkEditFormItemValueType.RemainsTheSame in value) {
-            delete values[key];
-          }
-        }
-      }
-      try {
-        const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
-          values,
-          filter,
-          forceUpdate: false,
-        };
-        if (updateMode === 'selected') {
-          if (!selectedRecordKeys?.length) {
-            message.error(t('Please select the records to be updated'));
-            return;
-          }
-          updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRecordKeys } }] };
-        }
-        if (!updateData.filter) {
-          updateData.forceUpdate = true;
-        }
-        await resource.update(updateData);
-        actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.__parent?.service?.refresh?.();
-        }
-        __parent?.service?.refresh?.();
-        setVisible?.(false);
-        if (!onSuccess?.successMessage) {
-          return;
-        }
-        if (onSuccess?.manualClose) {
-          modal.success({
-            title: compile(onSuccess?.successMessage),
-            onOk: async () => {
-              await form.reset();
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
-                } else {
-                  navigate(onSuccess.redirectTo);
-                }
-              }
-            },
-          });
-        } else {
-          message.success(compile(onSuccess?.successMessage));
-        }
-      } finally {
-        actionField.data.loading = false;
-      }
-    },
-  };
-};
-
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
   const navigate = useNavigate();
@@ -1073,6 +985,7 @@ export const useDetailsPaginationProps = () => {
     current: ctx.service?.data?.meta?.page || 1,
     total: count,
     pageSize: 1,
+    showSizeChanger: false,
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });
@@ -1295,11 +1208,11 @@ export function getAssociationPath(str) {
 }
 
 export const useAssociationNames = () => {
+  let updateAssociationValues = new Set([]);
+  let appends = new Set([]);
   const { getCollectionJoinField, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
-  const updateAssociationValues = new Set([]);
-  const appends = new Set([]);
-  const getAssociationAppends = (schema, str) => {
+  const _getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {
       const prefix = pre || str;
       const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
@@ -1309,12 +1222,15 @@ export const useAssociationNames = () => {
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
-        const rules = s['x-linkage-rules'];
-        rules.forEach(({ condition }) => {
-          const type = Object.keys(condition)[0] || '$and';
-          const list = condition[type];
+        const collectAppends = (obj) => {
+          const type = Object.keys(obj)[0] || '$and';
+          const list = obj[type];
 
           list.forEach((item) => {
+            if ('$and' in item || '$or' in item) {
+              return collectAppends(item);
+            }
+
             const fieldNames = getTargetField(item);
 
             // 只应该收集关系字段，只有大于 1 的时候才是关系字段
@@ -1322,6 +1238,11 @@ export const useAssociationNames = () => {
               appends.add(fieldNames.join('.'));
             }
           });
+        };
+
+        const rules = s['x-linkage-rules'];
+        rules.forEach(({ condition }) => {
+          collectAppends(condition);
         });
       }
 
@@ -1338,7 +1259,7 @@ export const useAssociationNames = () => {
         if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);
           const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
-          getAssociationAppends(s, bufPrefix);
+          _getAssociationAppends(s, bufPrefix);
         }
       } else if (
         ![
@@ -1354,12 +1275,18 @@ export const useAssociationNames = () => {
           'TableField',
         ].includes(s['x-component'])
       ) {
-        getAssociationAppends(s, str);
+        _getAssociationAppends(s, str);
       }
     }, str);
   };
-  getAssociationAppends(fieldSchema, '');
-  return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
+  const getAssociationAppends = () => {
+    updateAssociationValues = new Set([]);
+    appends = new Set([]);
+    _getAssociationAppends(fieldSchema, '');
+    return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
+  };
+
+  return { getAssociationAppends };
 };
 
 function getTargetField(obj) {

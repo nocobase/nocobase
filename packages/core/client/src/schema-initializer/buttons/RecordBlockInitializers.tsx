@@ -1,4 +1,5 @@
 import { Schema, useFieldSchema } from '@formily/react';
+import { useMemo } from 'react';
 import { useCollection, useCollectionManager } from '../..';
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
@@ -34,19 +35,19 @@ const useRelationFields = () => {
     .map((field) => {
       if (['hasOne', 'belongsTo'].includes(field.type)) {
         return {
-          key: field.name,
+          name: field.name,
           type: 'subMenu',
           title: field?.uiSchema?.title || field.name,
           children: [
             {
-              key: `${field.name}_details`,
+              name: `${field.name}_details`,
               type: 'item',
               title: '{{t("Details")}}',
               field,
               Component: 'RecordReadPrettyAssociationFormBlockInitializer',
             },
             // {
-            //   key: `${field.name}_form`,
+            //   name: `${field.name}_form`,
             //   type: 'item',
             //   title: '{{t("Form")}}',
             //   field,
@@ -58,47 +59,48 @@ const useRelationFields = () => {
 
       if (['hasMany', 'belongsToMany'].includes(field.type)) {
         return {
-          key: field.name,
+          name: field.name,
           type: 'subMenu',
           title: field?.uiSchema?.title || field.name,
           children: [
             {
-              key: `${field.name}_table`,
+              name: `${field.name}_table`,
               type: 'item',
               title: '{{t("Table")}}',
               field,
               Component: 'RecordAssociationBlockInitializer',
             },
             {
-              key: `${field.name}_details`,
+              name: `${field.name}_details`,
               type: 'item',
               title: '{{t("Details")}}',
               field,
               Component: 'RecordAssociationDetailsBlockInitializer',
             },
             {
-              key: `${field.name}_list`,
+              name: `${field.name}_list`,
               type: 'item',
               title: '{{t("List")}}',
               field,
               Component: 'RecordAssociationListBlockInitializer',
             },
             {
-              key: `${field.name}_grid_card`,
+              name: `${field.name}_grid_card`,
               type: 'item',
               title: '{{t("Grid Card")}}',
               field,
               Component: 'RecordAssociationGridCardBlockInitializer',
             },
             {
-              key: `${field.name}_form`,
+              name: `${field.name}_form`,
               type: 'item',
               title: '{{t("Form")}}',
               field,
               Component: 'RecordAssociationFormBlockInitializer',
             },
+            // TODO: This one should be append in the calendar plugin
             {
-              key: `${field.name}_calendar`,
+              name: `${field.name}_calendar`,
               type: 'item',
               title: '{{t("Calendar")}}',
               field,
@@ -109,7 +111,7 @@ const useRelationFields = () => {
       }
 
       return {
-        key: field.name,
+        name: field.name,
         type: 'item',
         field,
         title: field?.uiSchema?.title || field.name,
@@ -125,7 +127,6 @@ const useDetailCollections = (props) => {
   const detailCollections = [
     {
       name: collection.name,
-      key: collection.name,
       type: 'item',
       title: collection?.title || collection.name,
       Component: 'RecordReadPrettyFormBlockInitializer',
@@ -137,7 +138,6 @@ const useDetailCollections = (props) => {
     childrenCollections.map((c) => {
       return {
         name: c.name,
-        key: c.name,
         type: 'item',
         title: c?.title || c.name,
         Component: 'RecordReadPrettyFormBlockInitializer',
@@ -155,7 +155,6 @@ const useFormCollections = (props) => {
   const formCollections = [
     {
       name: collection.name,
-      key: collection.name,
       type: 'item',
       title: collection?.title || collection.name,
       Component: 'RecordFormBlockInitializer',
@@ -167,7 +166,6 @@ const useFormCollections = (props) => {
     childrenCollections.map((c) => {
       return {
         name: c.name,
-        key: c.name,
         type: 'item',
         title: c?.title || c.name,
         Component: 'RecordFormBlockInitializer',
@@ -249,6 +247,49 @@ export const recordBlockInitializers = new SchemaInitializer({
       name: 'currentRecordBlocks',
       title: '{{t("Current record blocks")}}',
       useChildren: useRecordBlocks,
+    },
+    {
+      name: 'filterBlocks',
+      title: '{{t("Filter blocks")}}',
+      type: 'itemGroup',
+      children: [
+        {
+          name: 'filterForm',
+          title: '{{t("Form")}}',
+          Component: 'FilterFormBlockInitializer',
+          useComponentProps() {
+            const collection = useCollection();
+            const toManyField = useMemo(
+              () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
+              [collection.fields],
+            );
+
+            return {
+              filterItems(item) {
+                return toManyField.some((field) => field.target === item.name);
+              },
+            };
+          },
+        },
+        {
+          name: 'filterCollapse',
+          title: '{{t("Collapse")}}',
+          Component: 'FilterCollapseBlockInitializer',
+          useComponentProps() {
+            const collection = useCollection();
+            const toManyField = useMemo(
+              () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
+              [collection.fields],
+            );
+
+            return {
+              filterItems(item) {
+                return toManyField.some((field) => field.target === item.name);
+              },
+            };
+          },
+        },
+      ],
     },
     {
       type: 'itemGroup',

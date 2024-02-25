@@ -1,16 +1,19 @@
 {
   "name": "@nocobase/plugin-cas",
-  "displayName": "CAS auth - SSO login",
-  "displayName.zh-CN": "CAS 认证 - SSO 登录",
-  "description": "CAS authentication for NocoBase",
-  "description.zh-CN": "NocoBase 的 CAS 身份验证",
-  "version": "0.17.0-alpha.1",
+  "displayName": "Auth: CAS",
+  "displayName.zh-CN": "认证：CAS",
+  "description": "CAS authentication.",
+  "description.zh-CN": "通过 CAS 协议认证身份。",
+  "version": "0.19.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/cas",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/cas",
   "peerDependencies": {
     "@nocobase/actions": "0.x",
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
+    "@nocobase/plugin-auth": ">=0.17.0-alpha.7",
     "@nocobase/sdk": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
@@ -19,5 +22,9 @@
     "@ant-design/icons": "5.x",
     "antd": "5.x",
     "react-router-dom": "6.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "Authentication"
+  ]
 }

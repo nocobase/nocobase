@@ -6,7 +6,7 @@ import { Modal, ModalProps, ThemeConfig } from 'antd';
 import React, { Fragment, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GlobalThemeProvider } from '../../../global-theme';
-import { createPortalProvider, createPortalRoot, loading, usePrefixCls } from '../__builtins__';
+import { createPortalProvider, createPortalRoot, loading, usePrefixCls, useToken } from '../__builtins__';
 
 type FormDialogRenderer = React.ReactElement | ((form: Form) => React.ReactElement);
 
@@ -87,27 +87,35 @@ export function FormDialog(title: any, id: any, renderer?: any, theme?: any): IF
     return (
       <GlobalThemeProvider theme={theme}>
         <Observer>
-          {() => (
-            <Modal
-              {...modal}
-              open={open}
-              confirmLoading={form.submitting}
-              onCancel={(e) => {
-                if (modal?.onCancel?.(e) !== false) {
-                  reject?.();
-                }
-              }}
-              onOk={async (e) => {
-                if (modal?.onOk?.(e) !== false) {
-                  resolve?.();
-                }
-              }}
-            >
-              <FormProvider form={form}>
-                <DialogContent />
-              </FormProvider>
-            </Modal>
-          )}
+          {() => {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const { token } = useToken();
+
+            return (
+              <Modal
+                // fix https://nocobase.height.app/T-2797
+                // fix https://nocobase.height.app/T-2838
+                zIndex={token.zIndexPopupBase + 1000}
+                {...modal}
+                open={open}
+                confirmLoading={form.submitting}
+                onCancel={(e) => {
+                  if (modal?.onCancel?.(e) !== false) {
+                    reject?.();
+                  }
+                }}
+                onOk={async (e) => {
+                  if (modal?.onOk?.(e) !== false) {
+                    resolve?.();
+                  }
+                }}
+              >
+                <FormProvider form={form}>
+                  <DialogContent />
+                </FormProvider>
+              </Modal>
+            );
+          }}
         </Observer>
       </GlobalThemeProvider>
     );

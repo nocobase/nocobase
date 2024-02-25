@@ -10,6 +10,7 @@ import { useFormVariable } from './useFormVariable';
 import { useIterationVariable } from './useIterationVariable';
 import { useParentRecordVariable } from './useParentRecordVariable';
 import { useRecordVariable } from './useRecordVariable';
+import { useRoleVariable } from './useRoleVariable';
 import { useUserVariable } from './useUserVariable';
 
 interface Props {
@@ -36,6 +37,10 @@ interface Props {
   noDisabled?: boolean;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
+  /**指定当前表单数据表 */
+  currentFormCollectionName?: string;
+  /**指定当前对象数据表 */
+  currentIterationCollectionName?: string;
 }
 
 export const useVariableOptions = ({
@@ -46,6 +51,8 @@ export const useVariableOptions = ({
   noDisabled,
   targetFieldSchema,
   record,
+  currentFormCollectionName,
+  currentIterationCollectionName,
 }: Props) => {
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
   const { isInSubForm, isInSubTable } = useFlag() || {};
@@ -58,16 +65,22 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const roleVariable = useRoleVariable({
+    uiSchema: uiSchema,
+    collectionField,
+    noDisabled,
+    targetFieldSchema,
+  });
   const dateVariable = useDateVariable({ operator, schema: uiSchema, noDisabled });
   const formVariable = useFormVariable({
     schema: uiSchema,
-    collectionName: blockCollectionName,
+    collectionName: currentFormCollectionName || blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
   });
   const iterationVariable = useIterationVariable({
-    currentCollection: name,
+    currentCollection: currentIterationCollectionName || name,
     collectionField,
     schema: uiSchema,
     noDisabled,
@@ -91,6 +104,7 @@ export const useVariableOptions = ({
   return useMemo(() => {
     return [
       userVariable,
+      roleVariable,
       dateVariable,
       form && !form.readPretty && formVariable,
       (isInSubForm || isInSubTable) && iterationVariable,
@@ -101,6 +115,7 @@ export const useVariableOptions = ({
     ].filter(Boolean);
   }, [
     userVariable,
+    roleVariable,
     dateVariable,
     form,
     formVariable,

@@ -19,7 +19,6 @@ import { ACLCollectionProvider } from '../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
-import { SharedFilterProvider } from './SharedFilterProvider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
 
@@ -305,7 +304,8 @@ export const BlockProvider = (props: {
 }) => {
   const { collection, association, name } = props;
   const resource = useResource(props);
-  const { appends, updateAssociationValues } = useAssociationNames();
+  const { getAssociationAppends } = useAssociationNames();
+  const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
     if (!props.params?.['appends']) {
       return { ...props.params, appends };
@@ -320,11 +320,9 @@ export const BlockProvider = (props: {
         <BlockAssociationContext.Provider value={association}>
           <BlockResourceContext.Provider value={resource}>
             <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
-              <SharedFilterProvider {...props} params={params}>
-                <FilterBlockRecord {...props} params={params}>
-                  {props.children}
-                </FilterBlockRecord>
-              </SharedFilterProvider>
+              <FilterBlockRecord {...props} params={params}>
+                {props.children}
+              </FilterBlockRecord>
             </BlockRequestProvider>
           </BlockResourceContext.Provider>
         </BlockAssociationContext.Provider>

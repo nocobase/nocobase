@@ -44,7 +44,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { designable } = useDesignable();
     const { snapshot } = useActionContext();
     const targetCollection = getCollection(collectionField?.target);
-    const isTreeCollection = targetCollection.template === 'tree';
+    const isTreeCollection = targetCollection?.template === 'tree';
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
@@ -54,8 +54,8 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               .map((o) => o?.[fieldNames?.label || 'label'])
               .join(' / ')
           : isObject(value)
-          ? JSON.stringify(value)
-          : value;
+            ? JSON.stringify(value)
+            : value;
         const val = toValue(compile(label), 'N/A');
         const labelUiSchema = useLabelUiSchema(
           record?.__collection || collectionField?.target,
@@ -67,7 +67,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             <span>
               {snapshot ? (
                 text
-              ) : enableLink !== false && !props.enableLink ? (
+              ) : enableLink !== false ? (
                 <a
                   onClick={(e) => {
                     e.stopPropagation();
@@ -125,7 +125,13 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               {renderRecords()}
             </EllipsisWithTooltip>
             <ActionContextProvider
-              value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField?.interface === 'snapshot' }}
+              value={{
+                visible,
+                setVisible,
+                openMode: 'drawer',
+                snapshot: collectionField?.interface === 'snapshot',
+                fieldSchema: fieldSchema,
+              }}
             >
               {renderRecordProvider()}
             </ActionContextProvider>

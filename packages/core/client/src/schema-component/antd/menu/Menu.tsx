@@ -18,6 +18,7 @@ import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner 
 import { Icon, useAPIClient, useSchemaInitializerRender } from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
+import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
@@ -29,6 +30,8 @@ const subMenuDesignerCss = css`
   padding: 0 34px 0 24px;
   width: calc(100% + 58px);
   height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -477,7 +480,7 @@ export const Menu: ComposedMenu = observer(
 
 Menu.Item = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -532,7 +535,7 @@ Menu.Item = observer(
 
 Menu.URL = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -586,7 +589,7 @@ Menu.URL = observer(
 
 Menu.SubMenu = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { Component, getMenuItems } = useMenuItem();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;

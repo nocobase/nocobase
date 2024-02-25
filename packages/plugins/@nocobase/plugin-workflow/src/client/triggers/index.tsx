@@ -1,8 +1,13 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Input, Tag, message } from 'antd';
+import { cloneDeep } from 'lodash';
 import { InfoOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
+
 import {
   ActionContextProvider,
+  FieldNames,
   FormProvider,
   SchemaComponent,
   SchemaInitializerItemType,
@@ -11,20 +16,16 @@ import {
   useAPIClient,
   useActionContext,
   useCompile,
+  usePlugin,
   useResourceActionContext,
 } from '@nocobase/client';
-import { Registry } from '@nocobase/utils/client';
-import { Button, Input, Tag, message } from 'antd';
-import { cloneDeep } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+
+import WorkflowPlugin from '..';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
-import { VariableOptions } from '../variable';
-import collection from './collection';
-import formTrigger from './form';
-import schedule from './schedule/';
+import { UseVariableOptions, VariableOption } from '../variable';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -39,7 +40,7 @@ function useUpdateConfigAction() {
         return;
       }
       await form.submit();
-      await api.resource('workflows').update?.({
+      await api.resource('workflows').update({
         filterByTk: workflow.id,
         values: {
           config: form.values,
@@ -52,37 +53,30 @@ function useUpdateConfigAction() {
   };
 }
 
-export interface Trigger {
+export abstract class Trigger {
+  sync: boolean;
   title: string;
-  type: string;
   description?: string;
   // group: string;
-  useVariables?(config: any, options?): VariableOptions;
+  useVariables?(config: Record<string, any>, options?: UseVariableOptions): VariableOption[];
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   useInitializers?(config): SchemaInitializerItemType | null;
   initializers?: any;
-  useActionTriggerable?: boolean | (() => boolean);
+  isActionTriggerable?: boolean | ((config: object, context?: object) => boolean);
 }
-
-export const triggers = new Registry<Trigger>();
-
-triggers.register(formTrigger.type, formTrigger);
-triggers.register(collection.type, collection);
-triggers.register(schedule.type, schedule);
 
 function TriggerExecution() {
   const compile = useCompile();
   const { workflow, execution } = useFlowContext();
   const { styles } = useStyles();
+  const trigger = useTrigger();
 
   if (!execution) {
     return null;
   }
-
-  const trigger = triggers.get(workflow.type);
 
   return (
     <SchemaComponent
@@ -156,25 +150,24 @@ export const TriggerConfig = () => {
   const [formValueChanged, setFormValueChanged] = useState(false);
   const { styles } = useStyles();
   const compile = useCompile();
+  const trigger = useTrigger();
 
-  const { title, type, executed } = workflow;
-  const trigger = triggers.get(type);
   const typeTitle = compile(trigger.title);
   const { fieldset, scope, components } = trigger;
-  const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
+  const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = lang('Trigger');
 
   useEffect(() => {
     if (workflow) {
-      setEditingTitle(workflow.title ?? typeTitle);
+      setEditingTitle(workflow.triggerTitle ?? workflow.title ?? typeTitle);
     }
   }, [workflow]);
 
   const form = useMemo(() => {
-    const values = cloneDeep(workflow?.config);
+    const values = cloneDeep(workflow.config);
     return createForm({
       initialValues: values,
-      disabled: workflow?.executed,
+      disabled: workflow.executed,
     });
   }, [workflow]);
 
@@ -192,13 +185,13 @@ export const TriggerConfig = () => {
     async function (next) {
       const t = next || typeTitle;
       setEditingTitle(t);
-      if (t === title) {
+      if (t === workflow.triggerTitle) {
         return;
       }
-      await api.resource('workflows').update?.({
+      await api.resource('workflows').update({
         filterByTk: workflow.id,
         values: {
-          title: t,
+          triggerTitle: t,
         },
       });
       refresh();
@@ -305,7 +298,7 @@ export const TriggerConfig = () => {
                       properties: fieldset,
                     },
                     actions: {
-                      ...(executed
+                      ...(workflow.executed
                         ? {}
                         : {
                             type: 'void',
@@ -341,15 +334,7 @@ export const TriggerConfig = () => {
 };
 
 export function useTrigger() {
+  const workflowPlugin = usePlugin(WorkflowPlugin);
   const { workflow } = useFlowContext();
-  return triggers.get(workflow.type);
-}
-
-export function getTriggersOptions() {
-  return Array.from(triggers.getEntities()).map(([value, { title, ...options }]) => ({
-    value,
-    label: title,
-    color: 'gold',
-    options,
-  }));
+  return workflowPlugin.triggers.get(workflow.type);
 }

@@ -1,5 +1,7 @@
-import net from 'net';
+import { Logger, createConsoleLogger } from '@nocobase/logger';
 import * as events from 'events';
+import net from 'net';
+import xpipe from 'xpipe';
 
 export const writeJSON = (socket: net.Socket, data: object) => {
   socket.write(JSON.stringify(data) + '\n', 'utf8');
@@ -7,9 +9,11 @@ export const writeJSON = (socket: net.Socket, data: object) => {
 
 export class IPCSocketClient extends events.EventEmitter {
   client: net.Socket;
+  logger: Logger;
 
   constructor(client: net.Socket) {
     super();
+    this.logger = createConsoleLogger();
 
     this.client = client;
 
@@ -31,7 +35,7 @@ export class IPCSocketClient extends events.EventEmitter {
 
   static async getConnection(serverPath: string) {
     return new Promise<IPCSocketClient>((resolve, reject) => {
-      const client = net.createConnection({ path: serverPath }, () => {
+      const client = net.createConnection({ path: xpipe.eq(serverPath) }, () => {
         // 'connect' listener.
         resolve(new IPCSocketClient(client));
       });
@@ -41,20 +45,22 @@ export class IPCSocketClient extends events.EventEmitter {
     });
   }
 
-  async handleServerMessage({ type, payload }) {
+  async handleServerMessage({ reqId, type, payload }) {
     switch (type) {
+      case 'not_found':
+        break;
       case 'error':
-        console.error(payload.message);
+        this.logger.error({ reqId, message: `${payload.message}|${payload.stack}` });
         break;
       case 'success':
-        console.log('success');
+        this.logger.info({ reqId, message: 'success' });
         break;
       default:
-        console.log({ type, payload });
+        this.logger.info({ reqId, message: JSON.stringify({ type, payload }) });
         break;
     }
 
-    this.emit('response', { type, payload });
+    this.emit('response', { reqId, type, payload });
   }
 
   close() {

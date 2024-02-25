@@ -10,6 +10,7 @@ import 'dayjs/plugin/weekday';
 
 // 重置浏览器样式
 import 'antd/dist/reset.css';
+import './global.less';
 
 export * from '@emotion/css';
 export * from './acl';
@@ -18,14 +19,14 @@ export * from './api-client';
 export * from './appInfo';
 export * from './application';
 export * from './async-data-provider';
-export * from './auth';
 export * from './block-provider';
-export * from './board';
 export * from './china-region';
 export * from './collection-manager';
+export * from './common';
 export * from './css-variable';
 export * from './document-title';
 export * from './filter-provider';
+export * from './flag-provider';
 export * from './formula';
 export * from './global-theme';
 export * from './hooks';
@@ -45,5 +46,6 @@ export * from './schema-settings';
 export * from './schema-templates';
 export * from './style';
 export * from './system-settings';
+export * from './testUtils';
 export * from './user';
 export * from './variables';

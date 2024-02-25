@@ -1,0 +1,9 @@
+{
+  "Delay": "延时",
+  "Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.": "延时一段时间，然后继续或退出流程。可以用于并行分支中等待其他分支或设置超时时间。",
+  "Duration": "时长",
+  "End status": "到时状态",
+  "Select status": "选择状态",
+  "Succeed and continue": "通过并继续",
+  "Fail and exit": "失败并退出"
+}

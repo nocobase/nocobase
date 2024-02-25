@@ -149,7 +149,7 @@ const WithForm = (props: WithFormProps) => {
 
                     return result;
                   },
-                  getSubscriber(action, field, rule, form, variables, localVariables),
+                  getSubscriber(action, field, rule, variables, localVariables),
                   { fireImmediately: true },
                 ),
               );
@@ -229,7 +229,6 @@ function getSubscriber(
   action: any,
   field: any,
   rule: any,
-  form: FormilyForm<any>,
   variables: VariablesContextType,
   localVariables: VariableOption[],
 ): (value: string, oldValue: string) => void {
@@ -240,7 +239,6 @@ function getSubscriber(
       value: action.value,
       field,
       condition: rule.condition,
-      values: form.values,
       variables,
       localVariables,
     });
@@ -251,7 +249,7 @@ function getSubscriber(
       const fieldName = getFieldNameByOperator(action.operator);
 
       // 防止重复赋值
-      if (!field.stateOfLinkageRules[fieldName]) {
+      if (!field.stateOfLinkageRules?.[fieldName]) {
         return;
       }
 

@@ -60,22 +60,14 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
         )}
         footer={
           footerSchema ? (
-            <div
-              className={css`
-                display: flex;
-                justify-content: flex-end;
-                width: 100%;
-              `}
-            >
-              <RecursionField
-                basePath={field.address}
-                schema={schema}
-                onlyRenderProperties
-                filterProperties={(s) => {
-                  return s['x-component'] === footerNodeName;
-                }}
-              />
-            </div>
+            <RecursionField
+              basePath={field.address}
+              schema={schema}
+              onlyRenderProperties
+              filterProperties={(s) => {
+                return s['x-component'] === footerNodeName;
+              }}
+            />
           ) : (
             false
           )

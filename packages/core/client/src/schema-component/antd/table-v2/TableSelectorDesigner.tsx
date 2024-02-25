@@ -1,12 +1,14 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
-import React from 'react';
+import _ from 'lodash';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
 import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
+import { useRecord } from '../../../record-provider';
+import { useLocalVariables, useVariables } from '../../../variables';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDataScope,
@@ -19,10 +21,13 @@ import {
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
+import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
+import { RecordPickerContext } from '../../antd/record-picker';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager();
+
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
@@ -47,10 +52,13 @@ export const TableSelectorDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection();
   const { dragSort } = field.decoratorProps;
+  const record = useRecord();
+  const variables = useVariables();
+  const { currentFormCollection } = useContext(RecordPickerContext);
+  const localVariables = useLocalVariables({ collectionName: currentFormCollection });
   return (
     <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
       <SchemaSettingsDataScope
-        collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
         form={form}
         onSubmit={({ filter }) => {
@@ -59,7 +67,7 @@ export const TableSelectorDesigner = () => {
           params.filter = filter;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-          let serviceFilter = cloneDeep(filter);
+          let serviceFilter = _.cloneDeep(filter);
           if (extraFilter) {
             if (serviceFilter) {
               serviceFilter = {
@@ -76,6 +84,25 @@ export const TableSelectorDesigner = () => {
               'x-decorator-props': fieldSchema['x-decorator-props'],
             },
           });
+        }}
+        collectionName={name}
+        dynamicComponent={(props) => {
+          return (
+            <VariableInput
+              {...props}
+              form={form}
+              collectionField={props.collectionField}
+              record={record}
+              shouldChange={getShouldChange({
+                collectionField: props.collectionField,
+                variables,
+                localVariables,
+                getAllCollectionsInheritChain,
+              })}
+              currentFormCollectionName={currentFormCollection}
+              currentIterationCollectionName={collectionField.collectionName}
+            />
+          );
         }}
       />
       {collection?.tree && collectionField?.target === collectionField?.collectionName && (
