@@ -449,14 +449,8 @@ export const formItemSettings = new SchemaSettings({
       useChildren() {
         const app = useApp();
         const fieldComponentName = useFieldComponentName();
-        const isAssociationField = useIsAssociationField();
         const componentSettings = app.schemaSettingsManager.get(`fieldSettings:component:${fieldComponentName}`);
-
-        // fix https://nocobase.height.app/T-3162/description
-        // 非关系字段（如下拉单选）的 Specific properties 应该是空的，但是其对应的 fieldSettings:component:Select 并不是空的，
-        // 且当其 items 的 useVisible 返回的是 false 时，会导致只显示一个空的 Specific properties。
-        // 当前情况下，仅关系字段支持 Specific properties，所以当不是关系字段时，返回空数组。
-        return isAssociationField ? componentSettings?.items || [] : [];
+        return componentSettings?.items || [];
       },
     },
     {
