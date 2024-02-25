@@ -317,7 +317,7 @@ export const AddFieldAction = (props) => {
           label: compile(k.uiSchema?.title),
         };
       });
-  }, [fields.length]);
+  }, [fields?.length]);
   return (
     record.template !== 'sql' && (
       <RecordProvider_deprecated record={record}>
