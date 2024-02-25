@@ -363,8 +363,8 @@
   "Edit description": "Edit description",
   "Required": "Required",
   "Unique": "Unique",
-  "Primary":"Primary",
-  "AutoIncrement":"AutoIncrement",
+  "Primary": "Primary",
+  "AutoIncrement": "AutoIncrement",
   "Label field": "Label field",
   "Default is the ID field": "Default is the ID field",
   "Set default sorting rules": "Set default sorting rules",
@@ -797,5 +797,6 @@
   "Generic properties": "Generic properties",
   "Specific properties": "Specific properties",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Used for drag and drop sorting scenarios, supporting grouping sorting",
-  "Scope key":"分组排序"
+  "Group sorting": "Group sorting",
+  "When a field is selected as a group, it will be grouped first and then sorted": "When a field is selected as a group, it will be grouped first and then sorted"
 }
