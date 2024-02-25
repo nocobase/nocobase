@@ -186,7 +186,7 @@ export const AddFieldAction = (props) => {
   const { t } = useTranslation();
   const { isDialect } = useDialect();
   const options = useFieldInterfaceOptions();
-  const fields = getCollection(record.name)?.options?.fields || record.fields;
+  const fields = getCollection(record.name)?.options?.fields || record.fields || [];
 
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
