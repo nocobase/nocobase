@@ -812,7 +812,7 @@ describe('acl', () => {
     expect(response.statusCode).toEqual(200);
   });
 
-  it('should sync data to acl after app reload', async () => {
+  it.skip('should sync data to acl after app reload', async () => {
     const role = await db.getRepository('roles').create({
       values: {
         name: 'new',

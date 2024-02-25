@@ -3,6 +3,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'dataSourcesCollections',
   model: 'DataSourcesCollectionModel',
+  shared: true,
   autoGenId: false,
   timestamps: false,
   fields: [

@@ -326,13 +326,16 @@ export class PluginDataSourceManagerServer extends Plugin {
       const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find({
         filter: {
           enabled: true,
-          'type.$ne': 'main',
         },
       });
 
-      const loadPromises = dataSourcesRecords.map((dataSourceRecord) =>
-        dataSourceRecord.loadIntoApplication({ app, loadAtAfterStart: true }),
-      );
+      const loadPromises = dataSourcesRecords.map((dataSourceRecord) => {
+        if (dataSourceRecord.isMainRecord()) {
+          return dataSourceRecord.loadIntoACL({ app, acl: app.acl });
+        }
+
+        return dataSourceRecord.loadIntoApplication({ app, loadAtAfterStart: true });
+      });
 
       this.app.setMaintainingMessage('Loading data sources...');
       await Promise.all(loadPromises);
