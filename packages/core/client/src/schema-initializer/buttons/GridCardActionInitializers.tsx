@@ -211,6 +211,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
                 redirecting: false,
                 successMessage: '{{t("Updated successfully")}}',
               },
+              triggerWorkflows: [],
             },
             'x-component-props': {
               useProps: '{{ useCustomizeUpdateActionProps }}',

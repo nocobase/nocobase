@@ -2,8 +2,8 @@ import { Plugin, SchemaInitializerItemType } from '@nocobase/client';
 import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import FormTrigger from './FormTrigger';
+import { useTriggerWorkflowsActionProps, useRecordTriggerWorkflowsActionProps } from './useTriggerWorkflowActionProps';
 
-// TODO(refactor): should be moved to workflow plugin
 const formTriggerWorkflowActionInitializer: SchemaInitializerItemType = {
   name: 'submitToWorkflow',
   title: '{{t("Submit to workflow", { ns: "workflow" })}}',
@@ -16,8 +16,32 @@ const formTriggerWorkflowActionInitializer: SchemaInitializerItemType = {
     },
     'x-designer': 'Action.Designer',
     'x-action-settings': {
-      assignedValues: {},
+      // assignedValues: {},
       skipValidator: false,
+      onSuccess: {
+        manualClose: true,
+        redirecting: false,
+        successMessage: '{{t("Submitted successfully")}}',
+      },
+      triggerWorkflows: [],
+    },
+    'x-action': 'customize:triggerWorkflows',
+  },
+};
+
+const recordTriggerWorkflowActionInitializer: SchemaInitializerItemType = {
+  name: 'submitToWorkflow',
+  title: '{{t("Submit to workflow", { ns: "workflow" })}}',
+  Component: 'CustomizeActionInitializer',
+  schema: {
+    title: '{{t("Submit to workflow", { ns: "workflow" })}}',
+    'x-component': 'Action',
+    'x-component-props': {
+      useProps: '{{ useRecordTriggerWorkflowsActionProps }}',
+    },
+    'x-designer': 'Action.Designer',
+    'x-action-settings': {
+      // assignedValues: {},
       onSuccess: {
         manualClose: true,
         redirecting: false,
@@ -41,6 +65,11 @@ export default class extends Plugin {
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
     workflow.registerTrigger('form', FormTrigger);
 
+    this.app.addScopes({
+      useTriggerWorkflowsActionProps,
+      useRecordTriggerWorkflowsActionProps,
+    });
+
     const FormActionInitializers = this.app.schemaInitializerManager.get('FormActionInitializers');
     FormActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
 
@@ -51,18 +80,24 @@ export default class extends Plugin {
     UpdateFormActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
 
     const DetailsActionInitializers = this.app.schemaInitializerManager.get('DetailsActionInitializers');
-    DetailsActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
+    DetailsActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
 
     const ReadPrettyFormActionInitializers = this.app.schemaInitializerManager.get('ReadPrettyFormActionInitializers');
-    ReadPrettyFormActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
+    ReadPrettyFormActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
 
     const TableActionColumnInitializers = this.app.schemaInitializerManager.get('TableActionColumnInitializers');
-    TableActionColumnInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
+    TableActionColumnInitializers.add('customize.submitToWorkflow', {
+      ...recordTriggerWorkflowActionInitializer,
+      schema: {
+        ...recordTriggerWorkflowActionInitializer.schema,
+        'x-component': 'Action.Link',
+      },
+    });
 
     const GridCardItemActionInitializers = this.app.schemaInitializerManager.get('GridCardItemActionInitializers');
-    GridCardItemActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
+    GridCardItemActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
 
     const ListItemActionInitializers = this.app.schemaInitializerManager.get('ListItemActionInitializers');
-    ListItemActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
+    ListItemActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
   }
 }
