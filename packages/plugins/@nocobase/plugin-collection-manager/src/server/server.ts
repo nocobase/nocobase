@@ -356,7 +356,8 @@ export class CollectionManagerPlugin extends Plugin {
     const dataSourcesCollection = this.app.db.getCollection('dataSources');
 
     if (dataSourcesCollection) {
-      await dataSourcesCollection.repository.create({
+      await dataSourcesCollection.repository.firstOrCreate({
+        filterKeys: ['key'],
         values: {
           key: 'main',
           type: 'main',

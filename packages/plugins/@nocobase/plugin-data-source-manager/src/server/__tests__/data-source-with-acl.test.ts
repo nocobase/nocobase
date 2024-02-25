@@ -12,7 +12,7 @@ describe('data source with acl', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase', 'data-source-manager'],
+      plugins: ['nocobase'],
       acl: true,
     });
 
@@ -123,6 +123,75 @@ describe('data source with acl', () => {
     const adminAgent: any = app.agent().login(adminUser).set('x-data-source', 'mockInstance1');
     const postRes = await adminAgent.resource('api/posts').list({});
     expect(postRes.status).toBe(200);
+  });
+
+  it('should set main data source strategy', async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        title: '测试角色',
+      },
+    });
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const adminAgent: any = app.agent().login(adminUser);
+
+    const testUserAgent: any = app.agent().login(testUser);
+
+    const listRes = await testUserAgent.resource('posts').list({});
+    expect(listRes.status).toBe(403);
+
+    const updateRes = await adminAgent.resource('dataSources.roles', 'main').update({
+      filterByTk: 'testRole',
+      values: {
+        strategy: {
+          actions: ['view'],
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(200);
+
+    // get strategy
+    const getRes = await adminAgent.resource('dataSources.roles', 'main').get({
+      filterByTk: 'testRole',
+    });
+
+    expect(getRes.status).toBe(200);
+
+    const testRole = app.acl.getRole('testRole');
+    const roleData = testRole.toJSON();
+
+    expect(roleData.strategy).toMatchObject({
+      actions: ['view'],
+    });
+
+    const listRes2 = await testUserAgent.resource('posts').list({});
+    expect(listRes2.status).toBe(200);
   });
 
   it('should create strategy', async () => {

@@ -794,9 +794,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.reInit();
     await this.db.sync();
     await this.load({ hooks: false });
+
     this.log.debug('emit beforeInstall', { method: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
+
     // await app.db.sync();
     await this.pm.install();
     await this.version.update();
@@ -817,6 +819,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     // await this.pm.install(options);
     // this.log.debug('update version', { method: 'install' });
     // await this.version.update();
+
     this.log.debug('emit afterInstall', { method: 'install' });
     this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);

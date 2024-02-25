@@ -124,18 +124,24 @@ export class PluginACL extends Plugin {
     });
   }
 
-  async writeRolesToACL() {
+  async writeRolesToACL(options) {
     const roles = (await this.app.db.getRepository('roles').find({
       appends: ['resources', 'resources.actions'],
     })) as RoleModel[];
 
     for (const role of roles) {
-      await this.writeRoleToACL(role);
+      await this.writeRoleToACL(role, options);
     }
   }
 
-  async writeRoleToACL(role: RoleModel, transaction: any = null) {
+  async writeRoleToACL(role: RoleModel, options: any = {}) {
+    const transaction = options?.transaction;
+
     role.writeToAcl({ acl: this.acl });
+
+    if (options.withOutResources) {
+      return;
+    }
 
     let resources = role.get('resources') as RoleResourceModel[];
 
@@ -230,7 +236,9 @@ export class PluginACL extends Plugin {
     });
 
     this.app.on('acl:writeRoleToACL', async (roleModel: RoleModel) => {
-      await this.writeRoleToACL(roleModel);
+      await this.writeRoleToACL(roleModel, {
+        withOutResources: true,
+      });
     });
 
     this.app.db.on('roles.afterSaveWithAssociations', async (model, options) => {
@@ -362,12 +370,16 @@ export class PluginACL extends Plugin {
       const exists = await this.app.db.collectionExistsInDb('roles');
       if (exists) {
         this.log.info('write roles to ACL', { method: 'writeRolesToACL' });
-        await this.writeRolesToACL();
+        await this.writeRolesToACL(options);
       }
     };
 
     // sync database role data to acl
-    this.app.on('afterLoad', writeRolesToACL);
+    this.app.on('afterLoad', async () => {
+      await writeRolesToACL(this.app, {
+        withOutResources: true,
+      });
+    });
     // this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {

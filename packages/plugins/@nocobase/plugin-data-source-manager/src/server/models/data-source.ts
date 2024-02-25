@@ -2,9 +2,8 @@ import { Model, Transaction } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { LocalData } from '../services/database-introspector';
 import { setCurrentRole } from '@nocobase/plugin-acl';
-import { AvailableActionOptions } from '@nocobase/acl';
+import { ACL, AvailableActionOptions } from '@nocobase/acl';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
-import { DataSource } from '@nocobase/data-source-manager';
 import PluginDataSourceManagerServer from '../plugin';
 
 const availableActions: {
@@ -49,6 +48,30 @@ export class DataSourceModel extends Model {
     return this.get('type') === 'main';
   }
 
+  async loadIntoACL(options: { app: Application; acl: ACL; transaction?: Transaction }) {
+    const { app, acl } = options;
+    const loadRoleIntoACL = async (model: DataSourcesRolesModel) => {
+      const pluginACL: any = app.pm.get('acl');
+
+      await model.writeToAcl({
+        grantHelper: pluginACL.grantHelper,
+        associationFieldsActions: pluginACL.associationFieldsActions,
+        acl,
+      });
+    };
+
+    const rolesModel: DataSourcesRolesModel[] = await app.db.getRepository('dataSourcesRoles').find({
+      transaction: options.transaction,
+      filter: {
+        dataSourceKey: this.get('key'),
+      },
+    });
+
+    for (const roleModel of rolesModel) {
+      await loadRoleIntoACL(roleModel);
+    }
+  }
+
   async loadIntoApplication(options: { app: Application; transaction?: Transaction; loadAtAfterStart?: boolean }) {
     const { app, loadAtAfterStart } = options;
 
@@ -61,16 +84,6 @@ export class DataSourceModel extends Model {
     } else {
       pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loading';
     }
-
-    const loadRoleIntoDataSource = async (model: DataSourcesRolesModel, dataSource: DataSource) => {
-      const pluginACL: any = app.pm.get('acl');
-
-      await model.writeToAcl({
-        grantHelper: pluginACL.grantHelper,
-        associationFieldsActions: pluginACL.associationFieldsActions,
-        acl: dataSource.acl,
-      });
-    };
 
     const type = this.get('type');
     const createOptions = this.get('options');
@@ -98,16 +111,7 @@ export class DataSourceModel extends Model {
 
     dataSource.resourceManager.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
 
-    const rolesModel: DataSourcesRolesModel[] = await app.db.getRepository('dataSourcesRoles').find({
-      transaction: options.transaction,
-      filter: {
-        dataSourceKey: this.get('key'),
-      },
-    });
-
-    for (const roleModel of rolesModel) {
-      await loadRoleIntoDataSource(roleModel, dataSource);
-    }
+    await this.loadIntoACL({ app, acl, transaction: options.transaction });
 
     try {
       await app.dataSourceManager.add(dataSource, {
