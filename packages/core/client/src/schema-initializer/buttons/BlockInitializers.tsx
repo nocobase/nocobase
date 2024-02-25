@@ -1,5 +1,5 @@
-import { gridRowColWrap } from '../utils';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { gridRowColWrap } from '../utils';
 
 export const blockInitializers = new SchemaInitializer({
   name: 'BlockInitializers',
@@ -36,21 +36,6 @@ export const blockInitializers = new SchemaInitializer({
           name: 'gridCard',
           title: '{{t("Grid Card")}}',
           Component: 'GridCardBlockInitializer',
-        },
-        {
-          name: 'calendar',
-          title: '{{t("Calendar")}}',
-          Component: 'CalendarBlockInitializer',
-        },
-        {
-          name: 'kanban',
-          title: '{{t("Kanban")}}',
-          Component: 'KanbanBlockInitializer',
-        },
-        {
-          name: 'gantt',
-          title: '{{t("Gantt")}}',
-          Component: 'GanttBlockInitializer',
         },
       ],
     },

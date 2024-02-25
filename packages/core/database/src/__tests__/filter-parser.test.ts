@@ -8,6 +8,7 @@ describe('filter by related', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.collection({
       name: 'users',
       fields: [

@@ -7,6 +7,12 @@ import type { FlowNodeModel, JobModel } from '../types';
 
 type Comparer = (a: any, b: any) => boolean;
 
+export const BRANCH_INDEX = {
+  DEFAULT: null,
+  ON_TRUE: 1,
+  ON_FALSE: 0,
+} as const;
+
 export const calculators = new Registry<Comparer>();
 
 // built-in functions
@@ -146,6 +152,7 @@ export class ConditionInstruction extends Instruction {
       result,
       // TODO(optimize): try unify the building of job
       nodeId: node.id,
+      nodeKey: node.key,
       upstreamId: (prevJob && prevJob.id) || null,
     };
 

@@ -1,9 +1,11 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'workflow.executionLogs',
-  duplicator: 'optional',
+  dumpRules: {
+    group: 'log',
+  },
   name: 'executions',
+  shared: true,
   fields: [
     {
       type: 'belongsTo',
@@ -12,11 +14,6 @@ export default {
     {
       type: 'uid',
       name: 'key',
-    },
-    {
-      type: 'boolean',
-      name: 'useTransaction',
-      defaultValue: false,
     },
     {
       type: 'hasMany',

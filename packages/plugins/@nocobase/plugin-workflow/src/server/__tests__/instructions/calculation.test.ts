@@ -166,7 +166,7 @@ describe('workflow > instructions > calculation', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result).toBe('a $context.data.title ');
+      expect(job.result).toBe('a$$0');
     });
 
     it('text', async () => {

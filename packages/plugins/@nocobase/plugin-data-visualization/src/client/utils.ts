@@ -111,7 +111,7 @@ export const removeUnparsableFilter = (filter: any) => {
       const newLogic = {};
       for (const key in filter) {
         const value = removeUnparsableFilter(filter[key]);
-        if (value && !(typeof value === 'object' && Object.keys(value).length === 0)) {
+        if (value !== null && value !== undefined && !(typeof value === 'object' && Object.keys(value).length === 0)) {
           newLogic[key] = value;
         }
       }
@@ -132,4 +132,28 @@ export const getValuesByPath = (values: any, path: string) => {
     result = lodash.get(result, keys.slice(-1)[0]);
   }
   return result;
+};
+
+export const getFormulaComponent = (type: string) => {
+  return {
+    boolean: 'Checkbox',
+    integer: 'InputNumber',
+    bigInt: 'InputNumber',
+    double: 'InputNumber',
+    decimal: 'InputNumber',
+    date: 'DatePicker',
+    string: 'Input',
+  }[type];
+};
+
+export const getFormulaInterface = (type: string) => {
+  return {
+    boolean: 'boolean',
+    integer: 'integer',
+    bigInt: 'integer',
+    double: 'number',
+    decimal: 'number',
+    date: 'datetime',
+    string: 'input',
+  }[type];
 };

@@ -1,3 +1,8 @@
+import { css, cx } from '@emotion/css';
+import { FormItem, FormLayout } from '@formily/antd-v5';
+import { Field, onFieldValueChange } from '@formily/core';
+import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   ACLCollectionFieldProvider,
   BlockItem,
@@ -13,24 +18,30 @@ import {
   useGlobalTheme,
   useSchemaInitializerItem,
 } from '@nocobase/client';
-import React, { useCallback, useContext, useMemo } from 'react';
-import { lang, useChartsTranslation } from '../locale';
-import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
-import { FormLayout, FormItem } from '@formily/antd-v5';
-import { uid } from '@formily/shared';
+import { Alert, ConfigProvider, Typography } from 'antd';
+import React, { memo, useCallback, useContext, useMemo } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useChartData, useChartFilter, useChartFilterSourceFields, useFieldComponents } from '../hooks/filter';
-import { Alert } from 'antd';
+import { lang, useChartsTranslation } from '../locale';
 import { getPropsSchemaByComponent } from './utils';
-import { Field, onFieldValueChange } from '@formily/core';
-import { css, cx } from '@emotion/css';
-import { ConfigProvider } from 'antd';
+const { Paragraph, Text } = Typography;
 
 const FieldComponentProps: React.FC = observer((props) => {
   const form = useForm();
   const schema = getPropsSchemaByComponent(form.values.component);
   return schema ? <SchemaComponent schema={schema} {...props} /> : null;
 });
+
+const ErrorFallback = ({ error }) => {
+  return (
+    <Paragraph copyable>
+      <Text type="danger" style={{ whiteSpace: 'pre-line', textAlign: 'center', padding: '5px' }}>
+        {error.message}
+      </Text>
+    </Paragraph>
+  );
+};
 
 export const ChartFilterFormItem = observer(
   (props: any) => {
@@ -68,7 +79,9 @@ export const ChartFilterFormItem = observer(
     return (
       <ACLCollectionFieldProvider>
         <BlockItem className={'nb-form-item'}>
-          <FormItem className={className} {...props} extra={extra} />
+          <ErrorBoundary onError={(err) => console.log(err)} FallbackComponent={ErrorFallback}>
+            <FormItem className={className} {...props} extra={extra} />
+          </ErrorBoundary>
         </BlockItem>
       </ACLCollectionFieldProvider>
     );
@@ -78,7 +91,7 @@ export const ChartFilterFormItem = observer(
 
 export const ChartFilterCustomItemInitializer: React.FC<{
   insert?: any;
-}> = (props) => {
+}> = memo((props) => {
   const { locale } = useContext(ConfigProvider.ConfigContext);
   const { t: lang } = useChartsTranslation();
   const t = useMemoizedFn(lang);
@@ -200,9 +213,9 @@ export const ChartFilterCustomItemInitializer: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme]);
   return <SchemaInitializerItem {...itemConfig} {...props} onClick={handleClick} />;
-};
+});
 
-export const chartFilterItemInitializers = new SchemaInitializer({
+export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'ChartFilterItemInitializers',
   'data-testid': 'configure-fields-button-of-chart-filter-item',
   wrap: gridRowColWrap,
@@ -218,16 +231,19 @@ export const chartFilterItemInitializers = new SchemaInitializer({
         const { getChartCollections } = useChartData();
         const { getChartFilterFields } = useChartFilter();
         const collections = getChartCollections();
-        return collections.map((name: any) => {
-          const collection = getCollection(name);
-          const fields = getChartFilterFields(collection);
-          return {
-            name: collection.key,
-            type: 'subMenu',
-            title: collection.title,
-            children: fields,
-          };
-        });
+
+        return useMemo(() => {
+          return collections.map((name: any) => {
+            const collection = getCollection(name);
+            const fields = getChartFilterFields(collection);
+            return {
+              name: collection.key,
+              type: 'subMenu',
+              title: collection.title,
+              children: fields,
+            };
+          });
+        }, [collections]);
       },
     },
     {

@@ -9,7 +9,7 @@ export const useFieldModeOptions = (props?) => {
   const fieldSchema = props?.fieldSchema || currentFieldSchema;
   const field = useField();
   const form = useForm();
-  const isReadPretty = field.readPretty && form.readPretty;
+  const isReadPretty = field.readPretty || form.readPretty;
   const isSubTableField = props?.fieldSchema;
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);

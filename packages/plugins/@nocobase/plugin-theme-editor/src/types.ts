@@ -1,6 +1,6 @@
 import type { ThemeConfig as Config } from '@nocobase/client';
 import type { ReactElement } from 'react';
-export type ThemeConfig = Config & { name?: string };
+export type ThemeConfig = Config;
 
 export interface ThemeItem {
   id: number;

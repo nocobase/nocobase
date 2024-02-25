@@ -32,6 +32,7 @@ export default class extends Instruction {
       // save loop index
       result: 0,
       nodeId: node.id,
+      nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 

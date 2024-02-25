@@ -1,23 +1,31 @@
 name: NocoBase Backend Test
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
       - main
       - develop
     paths:
+      - 'package.json'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
       - 'packages/core/server/**'
+      - 'packages/core/utils/**'
       - 'packages/plugins/**/src/server/**'
       - '.github/workflows/nocobase-test-backend.yml'
   pull_request:
     paths:
+      - 'package.json'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
       - 'packages/core/server/**'
+      - 'packages/core/utils/**'
       - 'packages/plugins/**/src/server/**'
       - '.github/workflows/nocobase-test-backend.yml'
 
@@ -50,7 +58,7 @@ jobs:
       - name: Install project dependencies
         run: yarn --prefer-offline
       - name: Test with Sqlite
-        run: node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+        run: yarn test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
@@ -107,7 +115,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          yarn test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
@@ -132,7 +140,7 @@ jobs:
     container: node:${{ matrix.node_version }}
     services:
       mysql:
-        image: mysql:8
+        image: mysql:8.2 # >= 8.3 will meet unsolved error: https://github.com/nocobase/nocobase/actions/runs/7581141593/job/20653828990?pr=3383
         env:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: nocobase
@@ -160,7 +168,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          yarn test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mysql
@@ -210,7 +218,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          yarn test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mariadb

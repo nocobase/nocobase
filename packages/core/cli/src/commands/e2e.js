@@ -2,6 +2,10 @@ const { Command } = require('commander');
 const { run, isPortReachable } = require('../util');
 const { execSync } = require('node:child_process');
 const axios = require('axios');
+const { pTest } = require('./p-test');
+const os = require('os');
+const treeKill = require('tree-kill');
+const chalk = require('chalk');
 
 /**
  * 检查服务是否启动成功
@@ -31,7 +35,7 @@ const checkServer = async (duration = 1000, max = 60 * 10) => {
           }
         })
         .catch((error) => {
-          console.error('Request error:', error.message);
+          console.error('Request error:', error?.response?.data?.error);
         });
     }, duration);
   });
@@ -89,6 +93,17 @@ async function runApp(options = {}) {
   run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
 }
 
+process.on('SIGINT', async () => {
+  treeKill(process.pid, (error) => {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log(chalk.yellow('Force killing...'));
+    }
+    process.exit();
+  });
+});
+
 const commonConfig = {
   stdio: 'inherit',
 };
@@ -96,13 +111,13 @@ const commonConfig = {
 const runCodegenSync = () => {
   try {
     execSync(
-      `npx playwright codegen --load-storage=playwright/.auth/codegen.auth.json ${process.env.APP_BASE_URL} --save-storage=playwright/.auth/codegen.auth.json`,
+      `npx playwright codegen --load-storage=storage/playwright/.auth/codegen.auth.json ${process.env.APP_BASE_URL} --save-storage=storage/playwright/.auth/codegen.auth.json`,
       commonConfig,
     );
   } catch (err) {
     if (err.message.includes('auth.json')) {
       execSync(
-        `npx playwright codegen ${process.env.APP_BASE_URL} --save-storage=playwright/.auth/codegen.auth.json`,
+        `npx playwright codegen ${process.env.APP_BASE_URL} --save-storage=storage/playwright/.auth/codegen.auth.json`,
         commonConfig,
       );
     } else {
@@ -126,6 +141,12 @@ const filterArgv = () => {
     if (element === '--skip-reporter') {
       continue;
     }
+    if (element === '--build') {
+      continue;
+    }
+    if (element === '--production') {
+      continue;
+    }
     argv.push(element);
   }
   return argv;
@@ -142,12 +163,23 @@ module.exports = (cli) => {
       console.log('APP_BASE_URL:', process.env.APP_BASE_URL);
     }
   });
+
   e2e
     .command('test')
     .allowUnknownOption()
     .option('--url [url]')
     .option('--skip-reporter')
+    .option('--build')
+    .option('--production')
     .action(async (options) => {
+      process.env.__E2E__ = true;
+      if (options.production) {
+        process.env.APP_ENV = 'production';
+      }
+      if (options.build) {
+        process.env.APP_ENV = 'production';
+        await run('yarn', ['build']);
+      }
       if (options.skipReporter) {
         process.env.PLAYWRIGHT_SKIP_REPORTER = true;
       }
@@ -182,8 +214,13 @@ module.exports = (cli) => {
   e2e
     .command('start-app')
     .option('--production')
+    .option('--build')
     .option('--port [port]')
     .action(async (options) => {
+      process.env.__E2E__ = true;
+      if (options.build) {
+        await run('yarn', ['build']);
+      }
       if (options.production) {
         process.env.APP_ENV = 'production';
       }
@@ -196,4 +233,22 @@ module.exports = (cli) => {
   e2e.command('reinstall-app').action(async (options) => {
     await run('nocobase', ['install', '-f'], options);
   });
+
+  e2e.command('install-deps').action(async () => {
+    await run('npx', ['playwright', 'install', '--with-deps']);
+  });
+
+  e2e
+    .command('p-test')
+    .option('--stop-on-error')
+    .option('--build')
+    .option('--concurrency [concurrency]', '', os.cpus().length)
+    .action(async (options) => {
+      process.env.__E2E__ = true;
+      if (options.build) {
+        process.env.APP_ENV = 'production';
+        await run('yarn', ['build']);
+      }
+      await pTest({ ...options, concurrency: 1 * options.concurrency });
+    });
 };

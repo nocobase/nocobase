@@ -1,0 +1,44 @@
+{
+  "name": "@nocobase/plugin-backup-restore",
+  "displayName": "App backup & restore",
+  "displayName.zh-CN": "应用的备份与还原",
+  "description": "Backup and restore applications for scenarios such as application replication, migration, and upgrades.",
+  "description.zh-CN": "备份和还原应用，可用于应用的复制、迁移、升级等场景。",
+  "version": "0.19.0-alpha.8",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/backup-restore",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/backup-restore",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/plugins/plugin-backup-restore"
+  },
+  "devDependencies": {
+    "@koa/multer": "^3.0.2",
+    "@types/archiver": "^5.3.1",
+    "antd": "5.x",
+    "archiver": "^5.3.1",
+    "content-disposition": "^0.5.4",
+    "dayjs": "^1.11.8",
+    "decompress": "^4.2.1",
+    "inquirer": "^8.0.0",
+    "koa-send": "^5.0.1",
+    "mkdirp": "^1.0.4",
+    "object-path": "^0.11.8",
+    "react": "^18.2.0",
+    "semver": "^7.5.4",
+    "tar": "^6.1.13"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
+  },
+  "keywords": [
+    "System management"
+  ]
+}

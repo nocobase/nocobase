@@ -21,7 +21,7 @@ export const PreviewTable = (props) => {
     if (databaseView) {
       getPreviewData();
     }
-  }, [form.values.fields]);
+  }, [viewName, schema]);
 
   useEffect(() => {
     const pColumns = formatPreviewColumns(fields);

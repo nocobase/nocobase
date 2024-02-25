@@ -1,11 +1,13 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "0.17.0-alpha.5",
-  "displayName": "Data Visualization",
+  "version": "0.19.0-alpha.8",
+  "displayName": "Data visualization",
   "displayName.zh-CN": "数据可视化",
-  "description": "Provides business intelligence and data visualization features",
-  "description.zh-CN": "提供 BI 面板和数据可视化功能",
+  "description": "Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.",
+  "description.zh-CN": "提供数据可视化功能，包含图表区块和图表筛选区块，支持折线图、面积图、柱状图等十几种图表，你也可以扩展更多图表类型。",
   "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/data-visualization",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/data-visualization",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@ant-design/plots": "^1.2.5",
@@ -14,15 +16,13 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "@testing-library/react": "^14.0.0",
     "antd": "5.x",
     "classnames": "^2.3.1",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-error-boundary": "^4.0.10",
-    "react-i18next": "^11.15.1",
-    "vitest": "0.x"
+    "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
     "@nocobase/actions": "0.x",
@@ -32,5 +32,9 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "Blocks"
+  ]
 }

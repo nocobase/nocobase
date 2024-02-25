@@ -1,7 +1,7 @@
 import { RecursionField } from '@formily/react';
 import { CollectionManagerProvider, SchemaComponentOptions, useCurrentRoles } from '@nocobase/client';
 import React from 'react';
-import apiKeysCollection from '../../collections';
+import apiKeysCollection from '../../collections/apiKeys';
 import { ExpiresSelect } from './ExpiresSelect';
 import { configurationSchema } from './schema';
 

@@ -2,10 +2,12 @@
   "name": "@nocobase/plugin-collection-manager",
   "displayName": "Collection manager",
   "displayName.zh-CN": "数据表管理",
-  "description": "Provide convenient collection management capabilities",
-  "description.zh-CN": "提供便捷的数据表管理能力",
-  "version": "0.17.0-alpha.5",
+  "description": "Provide convenient collection management capabilities.",
+  "description.zh-CN": "提供便捷的数据表管理能力。",
+  "version": "0.19.0-alpha.8",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/collection-manager",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/collection-manager",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@hapi/topo": "^6.0.0",
@@ -20,5 +22,8 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "Data sources"
+  ]
 }

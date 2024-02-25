@@ -1,9 +1,8 @@
 import { ArrayTable } from '@formily/antd-v5';
-import { onFieldInputValueChange, onFieldValueChange } from '@formily/core';
+import { Field, onFieldValueChange } from '@formily/core';
 import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree, ModalProps } from 'antd';
-import { cloneDeep } from 'lodash';
+import { Alert, Tree as AntdTree, Flex, ModalProps, Space, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
@@ -13,10 +12,8 @@ import { SchemaSettingOptions, SchemaSettings } from '../../../application/schem
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
-import { useRecord } from '../../../record-provider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
-import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
   SchemaSettingsActionModalItem,
@@ -25,12 +22,14 @@ import {
   SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
-  SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
+  SchemaSettingsEnableChildCollections,
 } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { useFormBlockContext } from '../../../block-provider';
+import { useRequest } from '../../../api-client';
 
 const Tree = connect(
   AntdTree,
@@ -44,27 +43,10 @@ const Tree = connect(
       field.value = checkedKeys;
     };
     field.onCheck = onCheck;
-    const form = useForm();
     return {
       ...props,
       checkedKeys,
       onCheck,
-      treeData: props?.treeData.map((v: any) => {
-        if (form.values.duplicateMode === 'quickDulicate') {
-          const children = v?.children?.map((k) => {
-            return {
-              ...k,
-              disabled: false,
-            };
-          });
-          return {
-            ...v,
-            disabled: false,
-            children,
-          };
-        }
-        return v;
-      }),
     };
   }),
 );
@@ -121,8 +103,8 @@ function ButtonEditor(props) {
               default: fieldSchema?.['x-component-props']?.danger
                 ? 'danger'
                 : fieldSchema?.['x-component-props']?.type === 'primary'
-                ? 'primary'
-                : 'default',
+                  ? 'primary'
+                  : 'default',
               enum: [
                 { value: 'default', label: '{{t("Default")}}' },
                 { value: 'primary', label: '{{t("Highlight")}}' },
@@ -269,281 +251,16 @@ const getAllkeys = (data, result) => {
   return result;
 };
 
-function DuplicationMode() {
+export function AssignedFieldValues() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
-  const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
-  const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
-  const record = useRecord();
-  const syncCallBack = useCallback((treeData, selectFields, form) => {
-    form.query('duplicateFields').take((f) => {
-      f.componentProps.treeData = treeData;
-      f.componentProps.defaultCheckedKeys = selectFields;
-      f.setInitialValue(selectFields);
-      f?.onCheck(selectFields);
-      form.setValues({ ...form.values, treeData });
-    });
-  }, []);
-  const useSelectAllFields = (form) => {
-    return {
-      async run() {
-        form.query('duplicateFields').take((f) => {
-          const selectFields = getAllkeys(f.componentProps.treeData, []);
-          f.componentProps.defaultCheckedKeys = selectFields;
-          f.setInitialValue(selectFields);
-          f?.onCheck(selectFields);
-        });
-      },
-    };
+  const initialSchema = {
+    type: 'void',
+    'x-uid': uid(),
+    'x-component': 'Grid',
+    'x-initializer': 'CustomFormItemInitializers',
   };
-  const useUnSelectAllFields = (form) => {
-    return {
-      async run() {
-        form.query('duplicateFields').take((f) => {
-          f.componentProps.defaultCheckedKeys = [];
-          f.setInitialValue([]);
-          f?.onCheck([]);
-        });
-      },
-    };
-  };
-  return (
-    <SchemaSettingsModalItem
-      title={t('Duplicate mode')}
-      components={{ Tree }}
-      scope={{
-        getEnableFieldTree,
-        collectionName: fieldSchema['x-component-props']?.duplicateCollection || record?.__collection || name,
-        currentCollection: record?.__collection || name,
-        getOnLoadData,
-        getOnCheck,
-        treeData: fieldSchema['x-component-props']?.treeData,
-        duplicateValues,
-        onFieldInputValueChange,
-      }}
-      schema={
-        {
-          type: 'object',
-          title: t('Duplicate mode'),
-          properties: {
-            duplicateMode: {
-              'x-decorator': 'FormItem',
-              'x-component': 'Radio.Group',
-              title: t('Duplicate mode'),
-              default: fieldSchema['x-component-props']?.duplicateMode || 'quickDulicate',
-              enum: [
-                { value: 'quickDulicate', label: '{{t("Direct duplicate")}}' },
-                { value: 'continueduplicate', label: '{{t("Copy into the form and continue to fill in")}}' },
-              ],
-            },
-            collection: {
-              type: 'string',
-              title: '{{ t("Target collection") }}',
-              required: true,
-              description: t('If collection inherits, choose inherited collections as templates'),
-              default: '{{ collectionName }}',
-              'x-display': collectionList.length > 1 ? 'visible' : 'hidden',
-              'x-decorator': 'FormItem',
-              'x-component': 'Select',
-              'x-component-props': {
-                options: collectionList,
-              },
-              'x-reactions': [
-                {
-                  dependencies: ['.duplicateMode'],
-                  fulfill: {
-                    state: {
-                      disabled: `{{ $deps[0]==="quickDulicate" }}`,
-                      value: `{{ $deps[0]==="quickDulicate"? currentCollection:collectionName }}`,
-                    },
-                  },
-                },
-              ],
-            },
-            syncFromForm: {
-              type: 'void',
-              title: '{{ t("Sync from form fields") }}',
-              'x-component': 'Action.Link',
-              'x-component-props': {
-                type: 'primary',
-                style: { float: 'right', position: 'relative', zIndex: 1200 },
-                useAction: () => {
-                  const formSchema = useMemo(() => findFormBlock(fieldSchema), [fieldSchema]);
-                  return useSyncFromForm(
-                    formSchema,
-                    fieldSchema['x-component-props']?.duplicateCollection || record?.__collection || name,
-                    syncCallBack,
-                  );
-                },
-              },
-              'x-reactions': [
-                {
-                  dependencies: ['.duplicateMode'],
-                  fulfill: {
-                    state: {
-                      visible: `{{ $deps[0]!=="quickDulicate" }}`,
-                    },
-                  },
-                },
-              ],
-            },
-            selectAll: {
-              type: 'void',
-              title: '{{ t("Select all") }}',
-              'x-component': 'Action.Link',
-              'x-reactions': [
-                {
-                  dependencies: ['.duplicateMode'],
-                  fulfill: {
-                    state: {
-                      visible: `{{ $deps[0]==="quickDulicate"}}`,
-                    },
-                  },
-                },
-              ],
-              'x-component-props': {
-                type: 'primary',
-                style: { float: 'right', position: 'relative', zIndex: 1200 },
-                useAction: () => {
-                  const from = useForm();
-                  return useSelectAllFields(from);
-                },
-              },
-            },
-            unselectAll: {
-              type: 'void',
-              title: '{{ t("UnSelect all") }}',
-              'x-component': 'Action.Link',
-              'x-reactions': [
-                {
-                  dependencies: ['.duplicateMode', '.duplicateFields'],
-                  fulfill: {
-                    state: {
-                      visible: `{{ $deps[0]==="quickDulicate"&&$form.getValuesIn('duplicateFields').length>0 }}`,
-                    },
-                  },
-                },
-              ],
-              'x-component-props': {
-                type: 'primary',
-                style: { float: 'right', position: 'relative', zIndex: 1200, marginRight: '10px' },
-                useAction: () => {
-                  const from = useForm();
-                  return useUnSelectAllFields(from);
-                },
-              },
-            },
-            duplicateFields: {
-              type: 'array',
-              title: '{{ t("Data fields") }}',
-              required: true,
-              description: t('Only the selected fields will be used as the initialization data for the form'),
-              'x-decorator': 'FormItem',
-              'x-component': Tree,
-              'x-component-props': {
-                defaultCheckedKeys: duplicateValues,
-                treeData: [],
-                checkable: true,
-                checkStrictly: true,
-                selectable: false,
-                loadData: '{{ getOnLoadData($self) }}',
-                onCheck: '{{ getOnCheck($self) }}',
-                rootStyle: {
-                  padding: '8px 0',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '2px',
-                  maxHeight: '30vh',
-                  overflow: 'auto',
-                  margin: '2px 0',
-                },
-              },
-              'x-reactions': [
-                {
-                  dependencies: ['.collection', '.duplicateMode'],
-                  fulfill: {
-                    state: {
-                      disabled: '{{ !$deps[0] }}',
-                      componentProps: {
-                        treeData: '{{ getEnableFieldTree($deps[0], $self,treeData) }}',
-                      },
-                    },
-                  },
-                },
-              ],
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={({ duplicateMode, collection, duplicateFields, treeData }) => {
-        const fields = Array.isArray(duplicateFields) ? duplicateFields : duplicateFields.checked || [];
-        field.componentProps.duplicateMode = duplicateMode;
-        field.componentProps.duplicateFields = fields;
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props'].duplicateMode = duplicateMode;
-        fieldSchema['x-component-props'].duplicateFields = fields;
-        fieldSchema['x-component-props'].duplicateCollection = collection;
-        fieldSchema['x-component-props'].treeData = treeData || field.componentProps?.treeData;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': {
-              ...fieldSchema['x-component-props'],
-            },
-          },
-        });
-        dn.refresh();
-      }}
-    />
-  );
-}
-
-function UpdateMode() {
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
-
-  return (
-    <SchemaSettingsSelectItem
-      title={t('Data will be updated')}
-      options={[
-        { label: t('Selected'), value: 'selected' },
-        { label: t('All'), value: 'all' },
-      ]}
-      value={fieldSchema?.['x-action-settings']?.['updateMode']}
-      onChange={(value) => {
-        fieldSchema['x-action-settings']['updateMode'] = value;
-        dn.emit('patch', {
-          schema: {
-            'x-uid': fieldSchema['x-uid'],
-            'x-action-settings': fieldSchema['x-action-settings'],
-          },
-        });
-        dn.refresh();
-      }}
-    />
-  );
-}
-
-function AssignedFieldValues() {
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
-  const field = useField();
-  const [initialSchema, setInitialSchema] = useState<ISchema>();
-  useEffect(() => {
-    const schemaUid = uid();
-    const schema: ISchema = {
-      type: 'void',
-      'x-uid': schemaUid,
-      'x-component': 'Grid',
-      'x-initializer': 'CustomFormItemInitializers',
-    };
-    setInitialSchema(schema);
-  }, [field.address]);
-
   const tips = {
     'customize:update': t(
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
@@ -565,7 +282,6 @@ function AssignedFieldValues() {
     },
     [dn, fieldSchema],
   );
-
   return (
     <FlagProvider isInAssignFieldValues={true}>
       <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
@@ -630,7 +346,6 @@ function SkipValidation() {
     />
   );
 }
-
 function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -699,7 +414,6 @@ function AfterSuccess() {
     />
   );
 }
-
 function RemoveButton(
   props: {
     onConfirmOk?: ModalProps['onOk'];
@@ -727,13 +441,27 @@ function RemoveButton(
   );
 }
 
-function WorkflowSelect({ types, ...props }) {
+function WorkflowSelect({ actionType, direct = false, ...props }) {
   const { t } = useTranslation();
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
   const baseCollection = useCollection();
   const { getCollection } = useCollectionManager();
   const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
+  const compile = useCompile();
+
+  const workflowPlugin = usePlugin('workflow') as any;
+  const workflowTypes = useMemo(
+    () =>
+      workflowPlugin
+        .getTriggersOptions()
+        .filter((item) => {
+          return typeof item.options.isActionTriggerable === 'function' || item.options.isActionTriggerable === true;
+        })
+        .map((item) => item.value),
+    [workflowPlugin],
+  );
+
   useFormEffects(() => {
     onFieldValueChange(`group[${index}].context`, (field) => {
       let collection: CollectionOptions = baseCollection;
@@ -752,6 +480,20 @@ function WorkflowSelect({ types, ...props }) {
     });
   });
 
+  const optionFilter = useCallback(
+    ({ type, config }) => {
+      const trigger = workflowPlugin.triggers.get(type);
+      if (trigger.isActionTriggerable === true) {
+        return true;
+      }
+      if (typeof trigger.isActionTriggerable === 'function') {
+        return trigger.isActionTriggerable(config, { action: actionType, direct });
+      }
+      return false;
+    },
+    [workflowPlugin.triggers, actionType, direct],
+  );
+
   return (
     <RemoteSelect
       manual={false}
@@ -765,11 +507,23 @@ function WorkflowSelect({ types, ...props }) {
         action: 'list',
         params: {
           filter: {
-            type: types,
+            type: workflowTypes,
             enabled: true,
             'config.collection': workflowCollection,
           },
         },
+      }}
+      optionFilter={optionFilter}
+      optionRender={({ label, data }) => {
+        const typeOption = workflowPlugin.getTriggersOptions().find((item) => item.value === data.type);
+        return typeOption ? (
+          <Flex justify="space-between">
+            <span>{label}</span>
+            <Tag color={typeOption.color}>{compile(typeOption.label)}</Tag>
+          </Flex>
+        ) : (
+          label
+        );
       }}
       {...props}
     />
@@ -781,20 +535,26 @@ function WorkflowConfig() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { name: collection } = useCollection();
-  const workflowPlugin = usePlugin('workflow') as any;
-  const workflowTypes = workflowPlugin.getTriggersOptions().filter((item) => {
-    return typeof item.options.useActionTriggerable === 'function'
-      ? item.options.useActionTriggerable()
-      : item.options.useActionTriggerable;
-  });
+  // TODO(refactor): should refactor for getting certain action type, better from 'x-action'.
+  const formBlock = useFormBlockContext();
+  const actionType = formBlock?.type || fieldSchema['x-action'];
+
   const description = {
-    submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),
-    'customize:save': t('Workflow will be triggered after saving succeeded.', { ns: 'workflow' }),
-    'customize:triggerWorkflows': t('Workflow will be triggered directly once the button clicked.', { ns: 'workflow' }),
+    submit: t('Workflow will be triggered before or after submitting succeeded based on workflow type.', {
+      ns: 'workflow',
+    }),
+    'customize:save': t('Workflow will be triggered before or after submitting succeeded based on workflow type.', {
+      ns: 'workflow',
+    }),
+    'customize:triggerWorkflows': t(
+      'Workflow will be triggered directly once the button clicked, without data saving.',
+      { ns: 'workflow' },
+    ),
+    destroy: t('Workflow will be triggered before deleting succeeded.', { ns: 'workflow' }),
   }[fieldSchema?.['x-action']];
 
   return (
-    <SchemaSettingsModalItem
+    <SchemaSettingsActionModalItem
       title={t('Bind workflows', { ns: 'workflow' })}
       scope={{
         fieldFilter(field) {
@@ -850,6 +610,7 @@ function WorkflowConfig() {
                             value: '',
                           },
                           allowClear: false,
+                          loadData: actionType === 'destroy' ? null : undefined,
                         },
                         default: '',
                       },
@@ -867,7 +628,9 @@ function WorkflowConfig() {
                         'x-decorator': 'FormItem',
                         'x-component': 'WorkflowSelect',
                         'x-component-props': {
-                          types: workflowTypes.map((item) => item.value),
+                          placeholder: t('Select workflow', { ns: 'workflow' }),
+                          actionType,
+                          direct: fieldSchema['x-action'] === 'customize:triggerWorkflows',
                         },
                         required: true,
                       },
@@ -941,7 +704,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         name: 'linkageRules',
         Component: SchemaSettingsLinkageRules,
         useVisible() {
-          const fieldSchema = useFieldSchema();
           const isAction = useLinkageAction();
           const { linkageAction } = useSchemaToolbar();
           return linkageAction || isAction;
@@ -953,15 +715,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
             ...linkageRulesProps,
             collectionName: name,
           };
-        },
-      },
-      {
-        name: 'duplicationMode',
-        Component: DuplicationMode,
-        useVisible() {
-          const fieldSchema = useFieldSchema();
-          const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
-          return isDuplicateAction;
         },
       },
       {
@@ -985,14 +738,19 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
-        name: 'updateMode',
-        Component: UpdateMode,
+        name: 'secondConFirm',
+        Component: SecondConFirm,
         useVisible() {
           const fieldSchema = useFieldSchema();
-          const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
-            fieldSchema['x-action'],
-          );
-          return isUpdateModePopupAction;
+          const isPopupAction = [
+            'create',
+            'update',
+            'view',
+            'customize:popup',
+            'duplicate',
+            'customize:create',
+          ].includes(fieldSchema['x-action'] || '');
+          return !isPopupAction;
         },
       },
       {
@@ -1037,7 +795,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       },
       {
         name: 'enableChildCollections',
-        Component: SchemaSettingsLinkageRules,
+        Component: SchemaSettingsEnableChildCollections,
         useVisible() {
           const fieldSchema = useFieldSchema();
           const { name } = useCollection();
@@ -1069,7 +827,42 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
     ],
   },
 ];
+function SecondConFirm() {
+  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const field = useField<Field>();
 
+  return (
+    <SchemaSettingsSwitchItem
+      title={t('Second confirmation')}
+      checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
+      onChange={(value) => {
+        if (!fieldSchema['x-component-props']) {
+          fieldSchema['x-component-props'] = {};
+        }
+        if (value) {
+          fieldSchema['x-component-props'].confirm = value
+            ? {
+                title: 'Perform the {{title}}',
+                content: 'Are you sure you want to perform the {{title}} action?',
+              }
+            : {};
+        } else {
+          fieldSchema['x-component-props'].confirm = {};
+        }
+        field.componentProps.confirm = { ...fieldSchema['x-component-props']?.confirm };
+
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': { ...fieldSchema['x-component-props'] },
+          },
+        });
+      }}
+    />
+  );
+}
 export const actionSettings = new SchemaSettings({
   name: 'ActionSettings',
   items: actionSettingsItems,

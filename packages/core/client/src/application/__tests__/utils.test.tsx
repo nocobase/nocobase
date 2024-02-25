@@ -1,5 +1,5 @@
+import { render, screen } from '@nocobase/test/client';
 import React from 'react';
-import { render, screen } from 'testUtils';
 import { describe } from 'vitest';
 import { compose, normalizeContainer } from '../utils';
 

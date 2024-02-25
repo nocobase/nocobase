@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { mockServer, MockServer, waitSecond } from '@nocobase/test';
 import { CronJobManager } from '../cron/cron-job-manager';
 
@@ -30,7 +31,7 @@ describe('cron service', () => {
 
   it('should add cron job', async () => {
     const cronManager = app.cronJobManager;
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
     cronManager.addJob({
       cronTime: '* * * * * *',
       onTick: jestFn,
@@ -45,7 +46,7 @@ describe('cron service', () => {
 
   it('should remove cron job', async () => {
     const cronManager = app.cronJobManager;
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
     const job = cronManager.addJob({
       cronTime: '* * * * * *',
       onTick: jestFn,

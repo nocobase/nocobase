@@ -1,6 +1,6 @@
 import { CloseCircleFilled } from '@ant-design/icons';
 import { Tag, TreeSelect } from 'antd';
-import type { DefaultOptionType } from 'rc-tree-select/es/TreeSelect';
+import type { DefaultOptionType, TreeSelectProps } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions, useCollectionManager, useCompile } from '../../..';
@@ -72,7 +72,7 @@ function getCollectionFieldOptions(this: CallScope, collection, parentNode?): Tr
   });
 }
 
-export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
+export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProps> = (props) => {
   const {
     title,
     value: propsValue,
@@ -81,6 +81,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     useCollection = usePropsCollection,
     filter = trueFilter,
     rootOption,
+    loadData: propsLoadData,
     ...restProps
   } = props;
   const { getCollectionFields } = useCollectionManager();
@@ -98,6 +99,9 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
 
   const loadData = useCallback(
     async (option) => {
+      if (propsLoadData !== null) {
+        return propsLoadData(option);
+      }
       if (!option.isLeaf && option.loadChildren) {
         const children = option.loadChildren(option);
         setOptionsMap((prev) => {
@@ -105,7 +109,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
         });
       }
     },
-    [setOptionsMap],
+    [propsLoadData],
   );
 
   useEffect(() => {
@@ -119,17 +123,16 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
           isLeaf: false,
         }
       : null;
-    const treeData = getCollectionFieldOptions.call(
-      { compile, getCollectionFields, filter },
-      baseCollection,
-      parentNode,
-    );
+    const treeData =
+      propsLoadData === null
+        ? []
+        : getCollectionFieldOptions.call({ compile, getCollectionFields, filter }, baseCollection, parentNode);
     const map = treeData.reduce((result, item) => Object.assign(result, { [item.value]: item }), {});
     if (parentNode) {
       map[parentNode.value] = parentNode;
     }
     setOptionsMap(map);
-  }, [collection, baseCollection, rootOption, filter]);
+  }, [collection, baseCollection, rootOption, filter, propsLoadData]);
 
   useEffect(() => {
     const arr = (props.multiple ? propsValue : propsValue ? [propsValue] : []) as string[];
@@ -217,8 +220,8 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const valueKeys: string[] = props.multiple
     ? (propsValue as string[])
     : propsValue != null
-    ? [propsValue as string]
-    : [];
+      ? [propsValue as string]
+      : [];
 
   return (
     <TreeSelect

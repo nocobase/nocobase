@@ -162,8 +162,9 @@ function Calculation({ calculator, operands = [], onChange }) {
         aria-label="select-operator-calc"
         value={calculator}
         onChange={(v) => onChange({ operands, calculator: v })}
-        placeholder={lang('Calculator')}
+        placeholder={lang('Operator')}
         popupMatchSelectWidth={false}
+        className="auto-width"
       >
         {calculatorGroups
           .filter((group) => Boolean(getGroupCalculators(group.value).length))

@@ -2,11 +2,16 @@
   "name": "@nocobase/plugin-workflow",
   "displayName": "Workflow",
   "displayName.zh-CN": "工作流",
-  "description": "A powerful workflow plugin designed to support business process management and automation.",
-  "description.zh-CN": "工作流插件，为业务流程管理和自动化提供支持。",
-  "version": "0.17.0-alpha.5",
+  "description": "A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.",
+  "description.zh-CN": "一个强大的 BPM 工具，为业务自动化提供基础支持，并且可任意扩展更多的触发器和节点。",
+  "version": "0.19.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/workflow",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/workflow",
+  "dependencies": {
+    "@nocobase/plugin-workflow-test": "0.19.0-alpha.8"
+  },
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",
@@ -24,8 +29,7 @@
     "react-i18next": "^11.15.1",
     "react-js-cron": "^3.1.0",
     "react-router-dom": "^6.11.2",
-    "sequelize": "^6.26.0",
-    "winston": "^3.8.2"
+    "sequelize": "^6.26.0"
   },
   "peerDependencies": {
     "@nocobase/actions": "0.x",
@@ -36,11 +40,13 @@
     "@nocobase/plugin-collection-manager": "0.x",
     "@nocobase/plugin-error-handler": "0.x",
     "@nocobase/plugin-users": "0.x",
-    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "@nocobase/resourcer": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "Workflow"
+  ]
 }

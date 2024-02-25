@@ -9,6 +9,7 @@ import {
   css,
   interfacesProperties,
   useCompile,
+  useToken,
 } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
@@ -102,25 +103,12 @@ const RuleTypes = {
     title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       digits: function Digits({ value }) {
-        const { t } = useTranslation();
-        return <span>{t('{{value}} Digits', { ns: NAMESPACE, value })}</span>;
+        return <code>{value}</code>;
       },
       start: function Start({ value }) {
-        const { t } = useTranslation();
-        return <span>{t('Starts from {{value}}', { ns: NAMESPACE, value })}</span>;
+        return <code>{value}</code>;
       },
-      cycle: function Cycle({ value }) {
-        return (
-          <SchemaComponent
-            schema={{
-              type: 'string',
-              name: 'cycle',
-              'x-component': 'Cron',
-              'x-read-pretty': true,
-            }}
-          />
-        );
-      },
+      cycle: Cron.ReadPretty,
     },
     fieldset: {
       digits: {
@@ -216,11 +204,13 @@ export function RuleConfigForm() {
   const index = ArrayTable.useIndex();
   const { type, options } = values.patterns[index];
   const ruleType = RuleTypes[type];
+  const { token } = useToken();
   return ruleType?.fieldset ? (
     <Button
       type="link"
       onClick={() => {
-        FormDrawer(compile(ruleType.title), () => {
+        // fix https://nocobase.height.app/T-2868
+        FormDrawer({ title: compile(ruleType.title), zIndex: token.zIndexPopupBase + 1000 }, () => {
           return (
             <FormLayout layout="vertical">
               <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
@@ -272,6 +262,7 @@ export const sequence: IField = {
   group: 'advanced',
   order: 3,
   title: `{{t("Sequence", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.", { ns: "${NAMESPACE}" })}}`,
   sortable: true,
   default: {
     type: 'sequence',

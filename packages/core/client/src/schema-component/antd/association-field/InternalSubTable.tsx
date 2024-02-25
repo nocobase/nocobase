@@ -14,13 +14,18 @@ export const InternalSubTable = observer(
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const insert = useInsertSchema('SubTable');
+    const insertSelector = useInsertSchema('Selector');
     const { options } = useAssociationFieldContext();
     const { actionName } = useACLActionParamsContext();
     useEffect(() => {
       insert(schema.SubTable);
       field.required = fieldSchema['required'];
     }, []);
-
+    useEffect(() => {
+      if (field.componentProps?.allowSelectExistingRecord) {
+        insertSelector(schema.Selector);
+      }
+    }, [field.componentProps?.allowSelectExistingRecord]);
     const option = useSchemaOptionsContext();
     const components = {
       ...option.components,
@@ -30,7 +35,7 @@ export const InternalSubTable = observer(
     };
     return (
       <CollectionProvider name={options.target}>
-        <ACLCollectionProvider actionPath={`${options.target}:${actionName}`}>
+        <ACLCollectionProvider actionPath={`${options.target}:${actionName || 'view'}`}>
           <FormLayout
             className={css`
               .ant-formily-item-bordered-none {

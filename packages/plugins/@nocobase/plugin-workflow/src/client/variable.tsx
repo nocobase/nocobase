@@ -11,21 +11,26 @@ export type VariableOption = {
   key?: string;
   value?: string;
   label?: string;
-  children?: VariableOptions;
+  children?: VariableOption[] | null;
   [key: string]: any;
 };
 
-export type VariableOptions = VariableOption[] | null;
-
 export type VariableDataType =
-  | string
+  | 'boolean'
+  | 'number'
+  | 'string'
+  | 'date'
   | {
-      type: string;
-      options?: { entity?: boolean; collection?: string };
+      type: 'reference';
+      options: {
+        collection: string;
+        multiple?: boolean;
+        entity?: boolean;
+      };
     }
-  | ((field: any, appends?: string[]) => boolean);
+  | ((field: any) => boolean);
 
-export type OptionsOfUseVariableOptions = {
+export type UseVariableOptions = {
   types?: VariableDataType[];
   fieldNames?: {
     label?: string;
@@ -34,7 +39,6 @@ export type OptionsOfUseVariableOptions = {
   };
   appends?: string[] | null;
   depth?: number;
-  current?: any;
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
@@ -42,7 +46,7 @@ export const defaultFieldNames = { label: 'label', value: 'value', children: 'ch
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
   value: '$jobsMapByNodeKey',
-  useOptions(options: OptionsOfUseVariableOptions) {
+  useOptions(options: UseVariableOptions) {
     const { instructions } = usePlugin(WorkflowPlugin);
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
@@ -61,7 +65,7 @@ export const nodesOptions = {
 export const triggerOptions = {
   label: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
   value: '$context',
-  useOptions(options: OptionsOfUseVariableOptions) {
+  useOptions(options: UseVariableOptions) {
     const { triggers } = usePlugin(WorkflowPlugin);
     const { workflow } = useFlowContext();
     const trigger = triggers.get(workflow.type);
@@ -72,7 +76,7 @@ export const triggerOptions = {
 export const scopeOptions = {
   label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
   value: '$scopes',
-  useOptions(options: OptionsOfUseVariableOptions) {
+  useOptions(options: UseVariableOptions & { current: any }) {
     const { fieldNames = defaultFieldNames, current } = options;
     const { instructions } = usePlugin(WorkflowPlugin);
     const source = useNodeContext();
@@ -98,7 +102,7 @@ export const scopeOptions = {
 export const systemOptions = {
   label: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
   value: '$system',
-  useOptions({ types, fieldNames = defaultFieldNames }: OptionsOfUseVariableOptions) {
+  useOptions({ types, fieldNames = defaultFieldNames }: UseVariableOptions) {
     return [
       ...(!types || types.includes('date')
         ? [
@@ -136,13 +140,12 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type): boolean {
-  const inputType = typeof type;
-  if (inputType === 'string') {
+function matchFieldType(field, type: VariableDataType): boolean {
+  if (typeof type === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
   }
 
-  if (inputType === 'object' && type.type === 'reference') {
+  if (typeof type === 'object' && type.type === 'reference') {
     if (isAssociationField(field)) {
       return (
         type.options?.entity && (field.collectionName === type.options?.collection || type.options?.collection === '*')
@@ -157,7 +160,7 @@ function matchFieldType(field, type): boolean {
     }
   }
 
-  if (inputType === 'function') {
+  if (typeof type === 'function') {
     return type(field);
   }
 
@@ -232,7 +235,7 @@ function useOptions(scope, opts) {
   };
 }
 
-export function useWorkflowVariableOptions(options: OptionsOfUseVariableOptions = {}) {
+export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
   const result = [

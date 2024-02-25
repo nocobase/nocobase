@@ -14,10 +14,10 @@ export class Locale {
   constructor(app: Application) {
     this.app = app;
     this.app.on('afterLoad', async () => {
-      this.app.log.debug('load locale resource');
+      this.app.log.debug('load locale resource', { submodule: 'locale', method: 'onAfterLoad' });
       this.app.setMaintainingMessage('load locale resource');
       await this.load();
-      this.app.log.debug('locale resource loaded');
+      this.app.log.debug('locale resource loaded', { submodule: 'locale', method: 'onAfterLoad' });
       this.app.setMaintainingMessage('locale resource loaded');
     });
   }
@@ -79,7 +79,7 @@ export class Locale {
         if (!p) {
           continue;
         }
-        const packageName = p.options?.packageName;
+        const packageName: string = p.options?.packageName;
         if (!packageName) {
           continue;
         }
@@ -87,7 +87,10 @@ export class Locale {
         // this.app.setMaintainingMessage(`load [${packageName}] locale resource `);
         const res = getResource(packageName, lang);
         if (res) {
-          resources[name] = { ...res };
+          resources[packageName] = { ...res };
+          if (packageName.includes('@nocobase/plugin-')) {
+            resources[packageName.substring('@nocobase/plugin-'.length)] = { ...res };
+          }
         }
       } catch (err) {
         // empty
@@ -96,6 +99,7 @@ export class Locale {
     Object.keys(resources).forEach((name) => {
       this.app.i18n.addResources(lang, name, resources[name]);
     });
+
     return resources;
   }
 

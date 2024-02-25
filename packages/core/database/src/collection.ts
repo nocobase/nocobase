@@ -5,10 +5,12 @@ import {
   ModelOptions,
   ModelStatic,
   QueryInterfaceDropTableOptions,
+  QueryInterfaceOptions,
   SyncOptions,
   Transactionable,
   Utils,
 } from 'sequelize';
+import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
@@ -18,9 +20,16 @@ import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;
 
-export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
+export type CollectionSortable =
+  | string
+  | boolean
+  | {
+      name?: string;
+      scopeKey?: string;
+    };
 
 type dumpable = 'required' | 'optional' | 'skip';
+type dumpableType = 'meta' | 'business' | 'config';
 
 function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const originalMethod = descriptor.value;
@@ -52,26 +61,21 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
   return descriptor;
 }
 
+export type BaseDumpRules = {
+  delayRestore?: any;
+};
+
+export type DumpRules =
+  | BuiltInGroup
+  | ({ required: true } & BaseDumpRules)
+  | ({ skipped: true } & BaseDumpRules)
+  | ({ group: BuiltInGroup | string } & BaseDumpRules);
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   title?: string;
   namespace?: string;
-  /**
-   * Used for @nocobase/plugin-duplicator
-   * @see packages/core/database/src/collection-group-manager.tss
-   *
-   * @prop {'required' | 'optional' | 'skip'} dumpable - Determine whether the collection is dumped
-   * @prop {string[] | string} [with] - Collections dumped with this collection
-   * @prop {any} [delayRestore] - A function to execute after all collections are restored
-   */
-  duplicator?:
-    | dumpable
-    | {
-        dumpable: dumpable;
-        with?: string[] | string;
-        delayRestore?: any;
-      };
-
+  dumpRules?: DumpRules;
   tableName?: string;
   inherits?: string[] | string;
   viewName?: string;
@@ -90,10 +94,18 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @default 'options'
    */
   magicAttribute?: string;
-
   tree?: string;
-
   template?: string;
+
+  /**
+   * where is the collection from
+   *
+   * values
+   * - 'plugin' - collection is from plugin
+   * - 'core' - collection is from core
+   * - 'user' - collection is from user
+   */
+  origin?: string;
 
   [key: string]: any;
 }
@@ -149,6 +161,10 @@ export class Collection<
 
   get name() {
     return this.options.name;
+  }
+
+  get origin() {
+    return this.options.origin || 'core';
   }
 
   get titleField() {
@@ -382,6 +398,84 @@ export class Collection<
     return this.context.database.removeCollection(this.name);
   }
 
+  async removeFieldFromDb(name: string, options?: QueryInterfaceOptions) {
+    const field = this.getField(name);
+    if (!field) {
+      return;
+    }
+
+    const attribute = this.model.rawAttributes[name];
+
+    if (!attribute) {
+      field.remove();
+      // console.log('field is not attribute');
+      return;
+    }
+
+    // @ts-ignore
+    if (this.isInherited() && this.parentFields().has(name)) {
+      return;
+    }
+
+    if ((this.model as any)._virtualAttributes.has(this.name)) {
+      field.remove();
+      // console.log('field is virtual attribute');
+      return;
+    }
+
+    if (this.model.primaryKeyAttributes.includes(this.name)) {
+      // 主键不能删除
+      return;
+    }
+
+    if (this.model.options.timestamps !== false) {
+      // timestamps 相关字段不删除
+      let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
+      if (this.db.options.underscored) {
+        timestampsFields = timestampsFields.map((fieldName) => snakeCase(fieldName));
+      }
+      if (timestampsFields.includes(field.columnName())) {
+        this.fields.delete(name);
+        return;
+      }
+    }
+
+    // 排序字段通过 sortable 控制
+    const sortable = this.options.sortable;
+    if (sortable) {
+      let sortField: any;
+      if (sortable === true) {
+        sortField = 'sort';
+      } else if (typeof sortable === 'string') {
+        sortField = sortable;
+      } else if (sortable.name) {
+        sortField = sortable.name || 'sort';
+      }
+      if (field.name === sortField) {
+        return;
+      }
+    }
+
+    if (this.isView()) {
+      field.remove();
+      return;
+    }
+
+    const columnReferencesCount = _.filter(this.model.rawAttributes, (attr) => attr.field == field.columnName()).length;
+
+    if (
+      (await field.existsInDb({
+        transaction: options?.transaction,
+      })) &&
+      columnReferencesCount == 1
+    ) {
+      const queryInterface = this.db.sequelize.getQueryInterface();
+      await queryInterface.removeColumn(this.getTableNameWithSchema(), field.columnName(), options);
+    }
+
+    field.remove();
+  }
+
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
     if (
       !this.isView() &&
@@ -485,7 +579,16 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
-  addIndex(index: string | string[] | { fields: string[]; unique?: boolean; [key: string]: any }) {
+  addIndex(
+    index:
+      | string
+      | string[]
+      | {
+          fields: string[];
+          unique?: boolean;
+          [key: string]: any;
+        },
+  ) {
     if (!index) {
       return;
     }
@@ -699,6 +802,17 @@ export class Collection<
     };
   }
 
+  protected bindFieldEventListener() {
+    this.on('field.afterAdd', (field: Field) => {
+      field.bind();
+    });
+
+    this.on('field.afterRemove', (field: Field) => {
+      field.unbind();
+      this.db.emit('field.afterRemove', field);
+    });
+  }
+
   private checkOptions(options: CollectionOptions) {
     checkIdentifier(options.name);
     this.checkTableName();
@@ -715,16 +829,5 @@ export class Collection<
         throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
       }
     }
-  }
-
-  private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => {
-      field.bind();
-    });
-
-    this.on('field.afterRemove', (field: Field) => {
-      field.unbind();
-      this.db.emit('field.afterRemove', field);
-    });
   }
 }

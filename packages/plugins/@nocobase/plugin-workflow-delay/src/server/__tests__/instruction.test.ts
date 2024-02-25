@@ -1,11 +1,7 @@
-import path from 'path';
-
 import Database from '@nocobase/database';
-import { Application } from '@nocobase/server';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-
-import Plugin from '..';
+import { Application } from '@nocobase/server';
 
 describe('workflow > instructions > delay', () => {
   let app: Application;
@@ -17,8 +13,7 @@ describe('workflow > instructions > delay', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: [Plugin],
-      collectionPath: path.join(__dirname, './collections'),
+      plugins: ['workflow-delay'],
     });
     plugin = app.pm.get('workflow');
 
@@ -91,7 +86,7 @@ describe('workflow > instructions > delay', () => {
       expect(j2.status).toBe(JOB_STATUS.FAILED);
     });
 
-    it('delay to resolve and rollback in downstream node', async () => {
+    it('delay to resolve and downstream node error', async () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
@@ -102,11 +97,9 @@ describe('workflow > instructions > delay', () => {
       const n2 = await workflow.createNode({
         type: 'create',
         config: {
-          collection: 'comment',
+          collection: 'notExistsTable',
           params: {
-            values: {
-              status: 'should be number but use string to raise an error',
-            },
+            values: {},
           },
         },
         upstreamId: n1.id,

@@ -1,11 +1,13 @@
 {
   "name": "@nocobase/plugin-theme-editor",
-  "version": "0.17.0-alpha.5",
+  "version": "0.19.0-alpha.8",
   "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/theme-editor",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/theme-editor",
   "displayName": "Theme editor",
   "displayName.zh-CN": "主题编辑器",
-  "description": "Allows you to customize UI colors, sizes, etc",
-  "description.zh-CN": "允许你自定义 UI 的颜色、尺寸等",
+  "description": "Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.",
+  "description.zh-CN": "自定义 UI 的颜色、尺寸等，并将结果保存为主题，可在多个主题间切换。",
   "devDependencies": {
     "@ant-design/cssinjs": "^1.11.1",
     "@ant-design/icons": "5.x",
@@ -13,7 +15,6 @@
     "@ctrl/tinycolor": "^3.6.0",
     "@emotion/css": "^11.11.2",
     "antd": "5.x",
-    "antd-token-previewer": "2.0.0-alpha.8",
     "classnames": "^2.3.1",
     "lodash": "4.17.21",
     "rc-util": "^5.32.0",
@@ -30,5 +31,9 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "System management"
+  ]
 }

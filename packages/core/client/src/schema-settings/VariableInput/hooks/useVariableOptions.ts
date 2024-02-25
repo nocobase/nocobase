@@ -37,6 +37,10 @@ interface Props {
   noDisabled?: boolean;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
+  /**指定当前表单数据表 */
+  currentFormCollectionName?: string;
+  /**指定当前对象数据表 */
+  currentIterationCollectionName?: string;
 }
 
 export const useVariableOptions = ({
@@ -47,6 +51,8 @@ export const useVariableOptions = ({
   noDisabled,
   targetFieldSchema,
   record,
+  currentFormCollectionName,
+  currentIterationCollectionName,
 }: Props) => {
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
   const { isInSubForm, isInSubTable } = useFlag() || {};
@@ -68,13 +74,13 @@ export const useVariableOptions = ({
   const dateVariable = useDateVariable({ operator, schema: uiSchema, noDisabled });
   const formVariable = useFormVariable({
     schema: uiSchema,
-    collectionName: blockCollectionName,
+    collectionName: currentFormCollectionName || blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
   });
   const iterationVariable = useIterationVariable({
-    currentCollection: name,
+    currentCollection: currentIterationCollectionName || name,
     collectionField,
     schema: uiSchema,
     noDisabled,

@@ -6,7 +6,6 @@ import { NAMESPACE, useLang } from '../locale';
 
 export default class extends Trigger {
   title = `{{t("Form event", { ns: "${NAMESPACE}" })}}`;
-  type = 'form';
   description = `{{t("Event triggers when submitted a workflow bound form action.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
@@ -60,7 +59,9 @@ export default class extends Trigger {
   scope = {
     useCollectionDataSource,
   };
-  useActionTriggerable = true;
+  isActionTriggerable = (config, context) => {
+    return ['create', 'update'].includes(context.action);
+  };
   useVariables(config, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
@@ -70,6 +71,8 @@ export default class extends Trigger {
     const langTriggerData = useLang('Trigger data');
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const langUserSubmittedForm = useLang('User submitted form');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const langRoleSubmittedForm = useLang('Role of user submitted form');
     const rootFields = [
       {
         collectionName: config.collection,
@@ -87,6 +90,12 @@ export default class extends Trigger {
         target: 'users',
         uiSchema: {
           title: langUserSubmittedForm,
+        },
+      },
+      {
+        name: 'roleName',
+        uiSchema: {
+          title: langRoleSubmittedForm,
         },
       },
     ];

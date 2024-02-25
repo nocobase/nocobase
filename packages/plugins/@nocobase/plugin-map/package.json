@@ -1,12 +1,14 @@
 {
   "name": "@nocobase/plugin-map",
-  "displayName": "Map",
-  "displayName.zh-CN": "地图",
-  "version": "0.17.0-alpha.5",
-  "description": "Provides map fields and blocks",
-  "description.zh-CN": "提供地图字段和区块",
+  "displayName": "Block: Map",
+  "displayName.zh-CN": "区块：地图",
+  "version": "0.19.0-alpha.8",
+  "description": "Map block, support Gaode map and Google map, you can also extend more map types.",
+  "description.zh-CN": "地图区块，支持高德地图和 Google 地图，你也可以扩展更多地图类型。",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/map",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/map",
   "devDependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
     "@amap/amap-jsapi-types": "^0.0.10",
@@ -33,5 +35,9 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "Blocks"
+  ]
 }

@@ -1,10 +1,7 @@
 import Database from '@nocobase/database';
-import UserPlugin from '@nocobase/plugin-users';
-import { MockServer } from '@nocobase/test';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-
-import Plugin from '..';
+import { MockServer } from '@nocobase/test';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
 describe('workflow > instructions > manual', () => {
@@ -22,9 +19,9 @@ describe('workflow > instructions > manual', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'auth', Plugin],
+      plugins: ['users', 'auth', 'workflow-manual'],
     });
-    await app.getPlugin('auth').install();
+    // await app.getPlugin('auth').install();
     agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -34,11 +31,10 @@ describe('workflow > instructions > manual', () => {
     UserJobModel = db.getModel('users_jobs');
 
     users = await UserModel.bulkCreate([
-      { id: 1, nickname: 'a' },
-      { id: 2, nickname: 'b' },
+      { id: 2, nickname: 'a' },
+      { id: 3, nickname: 'b' },
     ]);
 
-    const userPlugin = app.getPlugin('users') as UserPlugin;
     userAgents = users.map((user) => app.agent().login(user));
 
     workflow = await WorkflowModel.create({
@@ -846,10 +842,6 @@ describe('workflow > instructions > manual', () => {
       expect(j2.result).toBe(1);
     });
   });
-
-  describe('mode: (0,1) (multiple record, all to percent)', () => {});
-
-  describe('mode: (-1,0) (multiple record, any to percent)', () => {});
 
   describe('use result of submitted form in manual node', () => {
     it('result should be available and correct', async () => {

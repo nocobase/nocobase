@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import Application from '../application';
 
 /**
@@ -8,10 +7,9 @@ export default (app: Application) => {
   app
     .command('upgrade')
     .ipc()
-    .action(async (...cliArgs) => {
-      const [opts] = cliArgs;
-      console.log('upgrading...');
-      await app.upgrade();
-      console.log(chalk.green(`✨  NocoBase has been upgraded to v${app.getVersion()}`));
+    .auth()
+    .action(async (options) => {
+      await app.upgrade(options);
+      app.log.info(`✨  NocoBase has been upgraded to v${app.getVersion()}`);
     });
 };

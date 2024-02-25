@@ -1,11 +1,14 @@
 {
   "name": "@nocobase/plugin-custom-request",
-  "version": "0.17.0-alpha.5",
+  "version": "0.19.0-alpha.8",
   "main": "dist/server/index.js",
-  "displayName": "Custom request",
-  "displayName.zh-CN": "自定义请求",
-  "description": "Custom request action",
-  "description.zh-CN": "自定义请求操作",
+  "homepage": "https://docs.nocobase.com/plugins/custom-request",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/custom-request",
+  "displayName": "Action: Custom request",
+  "displayName.zh-CN": "操作：自定义请求",
+  "description": "Sending a request to any HTTP service supports sending context data to the target service.",
+  "description.zh-CN": "向任意 HTTP 服务发送请求，支持将上下文数据发送给目标服务。",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
@@ -18,5 +21,9 @@
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "Actions"
+  ]
 }

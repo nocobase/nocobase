@@ -1,7 +1,6 @@
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { Select } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,8 +10,8 @@ import { Collection, useCollection, useCollectionManager } from '../../../collec
 import { useRecord } from '../../../record-provider';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import {
-  SchemaSettingsDataFormat,
   SchemaSettingsDataScope,
+  SchemaSettingsDateFormat,
   SchemaSettingsDefaultValue,
   SchemaSettingsSortingRule,
   isPatternDisabled,
@@ -33,6 +32,72 @@ export const formItemSettings = new SchemaSettings({
   name: 'FormItemSettings',
   items: [
     ...(generalSettingsItems as any),
+    {
+      name: 'allowAddNewData',
+      type: 'switch',
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        const isAssociationField = useIsAssociationField();
+        const fieldMode = useFieldMode();
+        return !readPretty && isAssociationField && ['SubTable'].includes(fieldMode);
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const fieldSchema = useFieldSchema();
+        const { dn, refresh } = useDesignable();
+        return {
+          title: t('Allow add new'),
+          checked: fieldSchema['x-component-props']?.allowAddnew !== (false as boolean),
+          onChange(value) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.allowAddnew = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].allowAddnew = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'allowSelectExistingRecord',
+      type: 'switch',
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        const isAssociationField = useIsAssociationField();
+        const fieldMode = useFieldMode();
+        return !readPretty && isAssociationField && ['SubTable'].includes(fieldMode);
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const fieldSchema = useFieldSchema();
+        const { dn, refresh } = useDesignable();
+        return {
+          title: t('Allow selection of existing records'),
+          checked: fieldSchema['x-component-props']?.allowSelectExistingRecord,
+          onChange(value) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.allowSelectExistingRecord = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].allowSelectExistingRecord = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          },
+        };
+      },
+    },
     {
       name: 'quickUpload',
       type: 'switch',
@@ -349,7 +414,7 @@ export const formItemSettings = new SchemaSettings({
     },
     {
       name: 'popupSize',
-      type: 'item',
+      type: 'select',
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
@@ -357,35 +422,25 @@ export const formItemSettings = new SchemaSettings({
         const { dn } = useDesignable();
         return {
           title: t('Popup size'),
-          children: (
-            <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-              {t('Popup size')}
-              <Select
-                bordered={false}
-                options={[
-                  { label: t('Small'), value: 'small' },
-                  { label: t('Middle'), value: 'middle' },
-                  { label: t('Large'), value: 'large' },
-                ]}
-                value={
-                  fieldSchema?.['x-component-props']?.['openSize'] ??
-                  (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
-                }
-                onChange={(value) => {
-                  field.componentProps.openSize = value;
-                  fieldSchema['x-component-props'] = field.componentProps;
-                  dn.emit('patch', {
-                    schema: {
-                      'x-uid': fieldSchema['x-uid'],
-                      'x-component-props': fieldSchema['x-component-props'],
-                    },
-                  });
-                  dn.refresh();
-                }}
-                style={{ textAlign: 'right', minWidth: 100 }}
-              />
-            </div>
-          ),
+          options: [
+            { label: t('Small'), value: 'small' },
+            { label: t('Middle'), value: 'middle' },
+            { label: t('Large'), value: 'large' },
+          ],
+          value:
+            fieldSchema?.['x-component-props']?.['openSize'] ??
+            (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle'),
+          onChange: (value) => {
+            field.componentProps.openSize = value;
+            fieldSchema['x-component-props'] = field.componentProps;
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': fieldSchema['x-component-props'],
+              },
+            });
+            dn.refresh();
+          },
         };
       },
       useVisible() {
@@ -742,7 +797,7 @@ export const formItemSettings = new SchemaSettings({
     },
     {
       name: 'dateFormat',
-      Component: SchemaSettingsDataFormat,
+      Component: SchemaSettingsDateFormat,
       useVisible() {
         const collectionField = useCollectionField();
         const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
@@ -872,7 +927,7 @@ function isFileCollection(collection: Collection) {
   return collection?.template === 'file';
 }
 
-function useIsFormReadPretty() {
+export function useIsFormReadPretty() {
   const { form } = useFormBlockContext();
   return !!form?.readPretty;
 }
@@ -911,7 +966,7 @@ function useFieldMode() {
   return fieldMode;
 }
 
-function useIsSelectFieldMode() {
+export function useIsSelectFieldMode() {
   const fieldMode = useFieldMode();
   const isAssociationField = useIsAssociationField();
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';

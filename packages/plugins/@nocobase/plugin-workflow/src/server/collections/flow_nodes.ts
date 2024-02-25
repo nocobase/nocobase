@@ -1,9 +1,9 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'workflow.workflowConfig',
-  duplicator: 'required',
+  dumpRules: 'required',
   name: 'flow_nodes',
+  shared: true,
   fields: [
     {
       type: 'uid',

@@ -1,12 +1,13 @@
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import { ErrorHandler } from '../errors/handler';
 
 describe('create with exception', () => {
   let app: MockServer;
   beforeEach(async () => {
-    app = mockServer({});
-    await app.cleanDb();
+    app = await createMockServer({
+      acl: false,
+    });
   });
 
   afterEach(async () => {

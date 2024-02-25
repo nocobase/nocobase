@@ -85,8 +85,8 @@ function getMode(mode) {
 export default class extends Instruction {
   formTypes = new Registry<FormHandler>();
 
-  constructor(public plugin: WorkflowPlugin) {
-    super(plugin);
+  constructor(public workflow: WorkflowPlugin) {
+    super(workflow);
 
     initFormTypes(this);
   }
@@ -99,11 +99,12 @@ export default class extends Instruction {
       status: JOB_STATUS.PENDING,
       result: mode ? [] : null,
       nodeId: node.id,
+      nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
     // NOTE: batch create users jobs
-    const UserJobModel = processor.options.plugin.db.getModel('users_jobs');
+    const UserJobModel = this.workflow.app.db.getModel('users_jobs');
     await UserJobModel.bulkCreate(
       assignees.map((userId) => ({
         userId,
@@ -114,7 +115,7 @@ export default class extends Instruction {
         status: JOB_STATUS.PENDING,
       })),
       {
-        transaction: processor.transaction,
+        // transaction: processor.transaction,
       },
     );
 
@@ -125,13 +126,13 @@ export default class extends Instruction {
     // NOTE: check all users jobs related if all done then continue as parallel
     const { assignees = [], mode } = node.config as ManualConfig;
 
-    const UserJobModel = processor.options.plugin.db.getModel('users_jobs');
+    const UserJobModel = this.workflow.app.db.getModel('users_jobs');
     const distribution = await UserJobModel.count({
       where: {
         jobId: job.id,
       },
       group: ['status'],
-      transaction: processor.transaction,
+      // transaction: processor.transaction,
     });
 
     const submitted = distribution.reduce(

@@ -5,8 +5,8 @@ import dayjs from 'dayjs';
 import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { mergeFilter } from '../../../filter-provider/utils';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -22,6 +22,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   targetField?: any;
   service: ResourceActionOptions<P>;
   CustomDropdownRender?: (v: any) => any;
+  optionFilter?: (option: any) => boolean;
 };
 
 const InternalRemoteSelect = connect(
@@ -37,6 +38,7 @@ const InternalRemoteSelect = connect(
       mapOptions,
       targetField: _targetField,
       CustomDropdownRender,
+      optionFilter,
       ...others
     } = props;
     const [open, setOpen] = useState(false);
@@ -192,8 +194,9 @@ const InternalRemoteSelect = connect(
       }
       const valueOptions =
         (v != null && (Array.isArray(v) ? v : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) || [];
-      return uniqBy(data?.data?.concat(valueOptions ?? []), fieldNames.value);
-    }, [value, defaultValue, data?.data, fieldNames.value]);
+      const filtered = typeof optionFilter === 'function' ? data.data.filter(optionFilter) : data.data;
+      return uniqBy(filtered.concat(valueOptions ?? []), fieldNames.value);
+    }, [value, defaultValue, data?.data, fieldNames.value, optionFilter]);
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
       searchData.current = null;

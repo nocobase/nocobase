@@ -1,9 +1,18 @@
 import { Plugin } from '@nocobase/client';
-import { SamlProvider } from './SamlProvider';
+import AuthPlugin from '@nocobase/plugin-auth/client';
+import { authType } from '../constants';
+import { SAMLButton } from './SAMLButton';
+import { Options } from './Options';
 
 export class SamlPlugin extends Plugin {
   async load() {
-    this.app.use(SamlProvider);
+    const auth = this.app.pm.get(AuthPlugin);
+    auth.registerType(authType, {
+      components: {
+        SignInButton: SAMLButton,
+        AdminSettingsForm: Options,
+      },
+    });
   }
 }
 

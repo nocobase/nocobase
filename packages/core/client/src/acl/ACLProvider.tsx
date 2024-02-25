@@ -233,7 +233,7 @@ export const ACLActionProvider = (props) => {
   }
   const params = parseAction(actionPath, { schema, recordPkValue });
   if (!params) {
-    return null;
+    return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
   //视图表无编辑权限时不显示
   if (editablePath.includes(actionPath) || editablePath.includes(actionPath?.split(':')[1])) {

@@ -99,6 +99,7 @@ function migrateSchema(schema = {}): object {
 }
 
 export default class extends Migration {
+  appVersion = '<0.9.4-alpha.3';
   async up() {
     const match = await this.app.version.satisfies('<0.9.4-alpha.3');
     if (!match) {
@@ -106,6 +107,7 @@ export default class extends Migration {
     }
     const { db } = this.context;
     const NodeRepo = db.getRepository('flow_nodes');
+    await NodeRepo.collection.sync();
     await db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
         filter: {

@@ -3,20 +3,14 @@ import actions from '@nocobase/actions';
 import { HandlerType } from '@nocobase/resourcer';
 import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
 
-import jobsCollection from './collecions/jobs';
-import usersCollection from './collecions/users';
-import usersJobsCollection from './collecions/users_jobs';
+import path from 'path';
 import { submit } from './actions';
 
 import ManualInstruction from './ManualInstruction';
 
 export default class extends Plugin {
-  workflow: WorkflowPlugin;
-
   async load() {
-    this.app.db.collection(usersJobsCollection);
-    this.app.db.extendCollection(usersCollection);
-    this.app.db.extendCollection(jobsCollection);
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.app.resource({
       name: 'users_jobs',
@@ -41,8 +35,9 @@ export default class extends Plugin {
       },
     });
 
-    const workflowPlugin = this.app.getPlugin('workflow') as WorkflowPlugin;
-    this.workflow = workflowPlugin;
-    workflowPlugin.instructions.register('manual', new ManualInstruction(workflowPlugin));
+    this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
+
+    const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    workflowPlugin.registerInstruction('manual', ManualInstruction);
   }
 }

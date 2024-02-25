@@ -5,10 +5,10 @@ import { uid } from '@formily/shared';
 import {
   CollectionCategroriesContext,
   CollectionProvider,
-  PopoverWithStopPropagation,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
+  StablePopover,
   collection,
   useCollectionManager,
   useCompile,
@@ -33,8 +33,8 @@ import { CollectionNodeProvder } from './CollectionNodeProvder';
 import { ConnectAssociationAction } from './ConnectAssociationAction';
 import { ConnectChildAction } from './ConnectChildAction';
 import { ConnectParentAction } from './ConnectParentAction';
-import { EditCollectionAction } from './EditCollectionAction';
 import { DeleteCollectionAction } from './DeleteCollectionAction';
+import { EditCollectionAction } from './EditCollectionAction';
 import { EditFieldAction } from './EditFieldAction';
 import { FieldSummary } from './FieldSummary';
 import { OverrideFieldAction } from './OverrideFieldAction';
@@ -128,16 +128,16 @@ const OperationButton: any = React.memo((props: any) => {
                 delete: {
                   type: 'void',
                   'x-action': 'destroy',
-                  'x-component': 'Action',
+                  'x-component': 'Action.Link',
                   'x-visible': '{{isInheritField}}',
                   'x-component-props': {
                     component: DeleteOutlined,
                     icon: 'DeleteOutlined',
                     className: 'btn-del',
                     confirm: {
-                      title: "{{t('Delete record')}}",
                       getContainer: getPopupContainer,
-                      collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                      title: "{{t('Delete record')}}",
+                      content: "{{t('Are you sure you want to delete it?')}}",
                     },
                     useAction: () =>
                       useDestroyFieldActionAndRefreshCM({
@@ -257,7 +257,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
         }}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <PopoverWithStopPropagation
+        <StablePopover
           content={CollectionConten(property)}
           getPopupContainer={getPopupContainer}
           mouseLeaveDelay={0}
@@ -276,7 +276,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
             <Badge color={typeColor(property)} />
             {compile(property.uiSchema?.title)}
           </div>
-        </PopoverWithStopPropagation>
+        </StablePopover>
         <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
         {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>

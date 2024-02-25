@@ -2,6 +2,7 @@ import { Repository } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
+  appVersion = '<0.16.0-alpha.1';
   async up() {
     const result = await this.app.version.satisfies('<0.15.0-alpha.5');
 
@@ -10,6 +11,7 @@ export default class extends Migration {
     }
 
     const r = this.db.getRepository<Repository>('storages');
+    await r.collection.sync();
     const items = await r.find({
       filter: {
         type: 'local',

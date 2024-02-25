@@ -1,9 +1,9 @@
 import { Context, Next } from '@nocobase/actions';
 import { Database, Model, Op } from '@nocobase/database';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 import LocalizationManagementPlugin from '../plugin';
 import { getTextsFromDBRecord, getTextsFromUISchema } from '../utils';
-import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 
 const getResourcesInstance = async (ctx: Context) => {
   const plugin = ctx.app.getPlugin('localization-management') as LocalizationManagementPlugin;
@@ -88,21 +88,24 @@ export const getTextsFromDB = async (db: Database) => {
   return result;
 };
 
-const getSchemaUid = async (db: Database) => {
-  const systemSettings = await db.getRepository('systemSettings').findOne();
-  const options = systemSettings?.options || {};
-  const { adminSchemaUid, mobileSchemaUid } = options;
-  return { adminSchemaUid, mobileSchemaUid };
+const getSchemaUid = async (db: Database, migrate = false) => {
+  if (migrate) {
+    const systemSettings = await db.getRepository('systemSettings').findOne();
+    const options = systemSettings?.options || {};
+    const { adminSchemaUid, mobileSchemaUid } = options;
+    return { adminSchemaUid, mobileSchemaUid };
+  }
+  return { adminSchemaUid: 'nocobase-admin-menu', mobileSchemaUid: 'nocobase-mobile-container' };
 };
 
-export const getTextsFromMenu = async (db: Database) => {
+export const getTextsFromMenu = async (db: Database, migrate = false) => {
   const result = {};
-  const { adminSchemaUid, mobileSchemaUid } = await getSchemaUid(db);
+  const { adminSchemaUid, mobileSchemaUid } = await getSchemaUid(db, migrate);
   const repo = db.getRepository('uiSchemas') as UiSchemaRepository;
   if (adminSchemaUid) {
     const schema = await repo.getProperties(adminSchemaUid);
     const extractTitle = (schema: any) => {
-      if (schema.properties) {
+      if (schema?.properties) {
         Object.values(schema.properties).forEach((item: any) => {
           if (item.title) {
             result[item.title] = '';
@@ -115,7 +118,7 @@ export const getTextsFromMenu = async (db: Database) => {
   }
   if (mobileSchemaUid) {
     const schema = await repo.getProperties(mobileSchemaUid);
-    if (schema['properties']?.tabBar?.properties) {
+    if (schema?.['properties']?.tabBar?.properties) {
       Object.values(schema['properties']?.tabBar?.properties).forEach((item: any) => {
         const title = item['x-component-props']?.title;
         if (title) {
@@ -129,7 +132,7 @@ export const getTextsFromMenu = async (db: Database) => {
 
 const sync = async (ctx: Context, next: Next) => {
   const startTime = Date.now();
-  ctx.app.logger.info('Start sync localization resources');
+  ctx.logger.info('Start sync localization resources');
   const resourcesInstance = await getResourcesInstance(ctx);
   const locale = ctx.get('X-Locale') || 'en-US';
   const { type = [] } = ctx.action.params.values || {};
@@ -189,7 +192,7 @@ const sync = async (ctx: Context, next: Next) => {
     });
     await resourcesInstance.updateCacheTexts(newTexts);
   });
-  ctx.app.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
+  ctx.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
   await next();
 };
 

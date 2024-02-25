@@ -1,6 +1,6 @@
 import { useField, useForm } from '@formily/react';
 import { Cascader, Input, Select, Spin, Table, Tag } from 'antd';
-import { last } from 'lodash';
+import { last, omit } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceActionContext, useCompile } from '../../../';
@@ -82,9 +82,11 @@ const PreviewCom = (props) => {
             setDataSource([]);
             const fieldsData = Object.values(data?.data?.fields)?.map((v: any) => {
               if (v.source) {
-                return v;
+                const option = fields?.data.find((h) => h.name === v.name) || v;
+                return { ...v, uiSchema: omit(option.uiSchema, 'rawTitle') };
               } else {
-                return fields?.data.find((h) => h.name === v.name) || v;
+                const option = fields?.data.find((h) => h.name === v.name) || v;
+                return { ...option, uiSchema: omit(option.uiSchema, 'rawTitle') };
               }
             });
             field.value = fieldsData;
@@ -203,9 +205,12 @@ const PreviewCom = (props) => {
         const item = dataSource[index];
         return (
           <Input
-            value={item?.uiSchema?.title || text}
+            defaultValue={item?.uiSchema?.title || text}
             onChange={(e) =>
-              handleFieldChange({ ...item, uiSchema: { ...item?.uiSchema, title: e.target.value } }, index)
+              handleFieldChange(
+                { ...item, uiSchema: { ...omit(item?.uiSchema, 'rawTitle'), title: e.target.value } },
+                index,
+              )
             }
           />
         );

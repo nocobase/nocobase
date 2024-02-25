@@ -5,10 +5,11 @@ import { Tree as AntdTree } from 'antd';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { mergeFilter } from '../../block-provider';
 import { useCollectionManager } from '../../collection-manager';
+import { mergeFilter } from '../../filter-provider/utils';
 import { SchemaComponent, SchemaComponentContext, removeNullCondition } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
+import { VariableInput } from '../VariableInput';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
 import { getSelectedIdFilter } from './components/Designer';
@@ -143,6 +144,9 @@ export const FormDataTemplates = observer(
                       title: '{{ t("Assign  data scope for the template") }}',
                       'x-decorator': 'FormItem',
                       'x-component': 'Filter',
+                      'x-component-props': {
+                        dynamicComponent: VariableInput,
+                      },
                       'x-decorator-props': {
                         style: {
                           marginBottom: '0px',

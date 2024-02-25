@@ -1,43 +1,22 @@
 import path from 'path';
 
-import { Plugin, ApplicationOptions } from '@nocobase/server';
-import { MockServer, mockServer } from '@nocobase/test';
+import { ApplicationOptions, Plugin } from '@nocobase/server';
+import { MockServer, createMockServer } from '@nocobase/test';
 
-import instructions from './instructions';
 import functions from './functions';
+import triggers from './triggers';
+import instructions from './instructions';
 
-interface MockServerOptions extends ApplicationOptions {
-  autoStart?: boolean;
+export interface MockServerOptions extends ApplicationOptions {
   collectionsPath?: string;
-  cleanDb?: boolean;
 }
 
-async function createMockServer({ autoStart, collectionsPath, cleanDb, ...options }: MockServerOptions) {
-  const app = mockServer(options);
-
-  if (cleanDb) {
-    await app.cleanDb();
-  }
-
-  await app.load();
-
-  if (collectionsPath) {
-    await app.db.import({ directory: collectionsPath });
-  }
-
-  try {
-    await app.db.sync();
-  } catch (error) {
-    console.error(error);
-  }
-
-  if (autoStart) {
-    await app.start();
-    // await app.runCommand('start', '--quickstart');
-  }
-
-  return app;
-}
+// async function createMockServer(options: MockServerOptions) {
+//   const app = mockServer(options);
+//   await app.cleanDb();
+//   await app.runCommand('start', '--quickstart');
+//   return app;
+// }
 
 export function sleep(ms: number) {
   return new Promise((resolve) => {
@@ -45,34 +24,35 @@ export function sleep(ms: number) {
   });
 }
 
-export async function getApp({
-  autoStart = true,
-  cleanDb = true,
-  plugins = [],
-  ...options
-}: MockServerOptions = {}): Promise<MockServer> {
+export async function getApp(options: MockServerOptions = {}): Promise<MockServer> {
+  const { plugins = [], collectionsPath, ...others } = options;
+  class TestCollectionPlugin extends Plugin {
+    async load() {
+      if (collectionsPath) {
+        await this.db.import({ directory: collectionsPath });
+      }
+    }
+  }
   return createMockServer({
-    ...options,
-    autoStart,
-    cleanDb,
-    plugins: ['workflow', 'workflow-test', ...plugins],
+    ...others,
+    plugins: [
+      [
+        'workflow',
+        {
+          triggers,
+          instructions,
+          functions,
+        },
+      ],
+      'workflow-test',
+      TestCollectionPlugin,
+      ...plugins,
+    ],
   });
 }
 
-export default class extends Plugin {
+export default class WorkflowTestPlugin extends Plugin {
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
-
-    const workflow = this.app.getPlugin<any>('workflow');
-
-    for (const [key, instruction] of Object.entries(instructions)) {
-      workflow.instructions.register(key, instruction);
-    }
-
-    for (const [key, func] of Object.entries(functions)) {
-      workflow.functions.register(key, func);
-    }
+    await this.importCollections(path.resolve(__dirname, 'collections'));
   }
 }

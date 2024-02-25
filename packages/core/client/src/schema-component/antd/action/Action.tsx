@@ -1,11 +1,11 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { App, Button, Popover } from 'antd';
+import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useActionContext } from '../..';
+import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
 import { RecordProvider, useRecord } from '../../../record-provider';
@@ -25,6 +25,7 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
+import { useACLActionParamsContext } from '../../../acl';
 
 export const Action: ComposedAction = observer(
   (props: any) => {
@@ -44,6 +45,7 @@ export const Action: ComposedAction = observer(
       disabled: propsDisabled,
       ...others
     } = useProps(props);
+    const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
@@ -65,7 +67,6 @@ export const Action: ComposedAction = observer(
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
@@ -100,15 +101,16 @@ export const Action: ComposedAction = observer(
         e.preventDefault();
         e.stopPropagation();
 
-        if (!disabled) {
+        if (!disabled && aclCtx) {
           const onOk = () => {
             onClick?.(e);
             setVisible(true);
             run();
           };
-          if (confirm) {
+          if (confirm?.content) {
             modal.confirm({
-              ...confirm,
+              title: t(confirm.title, { title: actionTitle }),
+              content: t(confirm.content, { title: actionTitle }),
               onOk,
             });
           } else {
@@ -122,12 +124,12 @@ export const Action: ComposedAction = observer(
     const buttonStyle = useMemo(() => {
       return {
         ...style,
-        opacity: designable && field?.data?.hidden && 0.1,
+        opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
       };
     }, [designable, field?.data?.hidden, style]);
 
     const renderButton = () => {
-      if (!designable && field?.data?.hidden) {
+      if (!designable && (field?.data?.hidden || !aclCtx)) {
         return null;
       }
 
@@ -187,7 +189,7 @@ Action.Popover = observer(
   (props) => {
     const { button, visible, setVisible } = useActionContext();
     return (
-      <Popover
+      <StablePopover
         {...props}
         destroyTooltipOnHide
         open={visible}
@@ -197,7 +199,7 @@ Action.Popover = observer(
         content={props.children}
       >
         {button}
-      </Popover>
+      </StablePopover>
     );
   },
   { displayName: 'Action.Popover' },

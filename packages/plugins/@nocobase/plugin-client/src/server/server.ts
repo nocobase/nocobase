@@ -1,5 +1,4 @@
 import { Plugin } from '@nocobase/server';
-import fs from 'fs';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
@@ -14,45 +13,31 @@ async function getLang(ctx) {
   if (enabledLanguages.includes(currentUser?.appLang)) {
     lang = currentUser?.appLang;
   }
-  if (ctx.request.query.locale) {
+  if (ctx.request.query.locale && enabledLanguages.includes(ctx.request.query.locale)) {
     lang = ctx.request.query.locale;
   }
   return lang;
 }
 
 export class ClientPlugin extends Plugin {
-  async beforeLoad() {
-    // const cmd = this.app.findCommand('install');
-    // if (cmd) {
-    //   cmd.option('--import-demo');
-    // }
-    this.app.on('afterInstall', async (app, options) => {
-      const [opts] = options?.cliArgs || [{}];
-      if (opts?.importDemo) {
-        //
-      }
-    });
+  async beforeLoad() {}
 
-    this.db.on('systemSettings.beforeCreate', async (instance, { transaction }) => {
-      const uiSchemas = this.db.getRepository<any>('uiSchemas');
-      const schema = await uiSchemas.insert(
-        {
-          type: 'void',
-          'x-component': 'Menu',
-          'x-designer': 'Menu.Designer',
-          'x-initializer': 'MenuItemInitializers',
-          'x-component-props': {
-            mode: 'mix',
-            theme: 'dark',
-            // defaultSelectedUid: 'u8',
-            onSelect: '{{ onSelect }}',
-            sideMenuRefScopeKey: 'sideMenuRef',
-          },
-          properties: {},
-        },
-        { transaction },
-      );
-      instance.set('options.adminSchemaUid', schema['x-uid']);
+  async install() {
+    const uiSchemas = this.db.getRepository<any>('uiSchemas');
+    await uiSchemas.insert({
+      type: 'void',
+      'x-uid': 'nocobase-admin-menu',
+      'x-component': 'Menu',
+      'x-designer': 'Menu.Designer',
+      'x-initializer': 'MenuItemInitializers',
+      'x-component-props': {
+        mode: 'mix',
+        theme: 'dark',
+        // defaultSelectedUid: 'u8',
+        onSelect: '{{ onSelect }}',
+        sideMenuRefScopeKey: 'sideMenuRef',
+      },
+      properties: {},
     });
   }
 
@@ -75,12 +60,6 @@ export class ClientPlugin extends Plugin {
       actions: ['app:restart', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
-    const restartMark = resolve(process.cwd(), 'storage', 'restart');
-    this.app.on('beforeStart', async () => {
-      if (fs.existsSync(restartMark)) {
-        fs.unlinkSync(restartMark);
-      }
-    });
 
     this.app.resource({
       name: 'app',

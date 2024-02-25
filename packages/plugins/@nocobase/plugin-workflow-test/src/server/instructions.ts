@@ -45,6 +45,7 @@ export default {
     },
     resume(node, input, processor) {
       throw new Error('input failed');
+      return null;
     },
   },
 

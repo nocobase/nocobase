@@ -5,10 +5,10 @@ import { Model, modelAssociationByKey } from '@nocobase/database';
 import WorkflowPlugin, { Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
 
 export default class extends Trigger {
-  constructor(plugin: WorkflowPlugin) {
-    super(plugin);
+  constructor(workflow: WorkflowPlugin) {
+    super(workflow);
 
-    plugin.app.resourcer.use(this.middleware);
+    workflow.app.resourcer.use(this.middleware);
   }
 
   async triggerAction(context, next) {
@@ -45,16 +45,20 @@ export default class extends Trigger {
       return;
     }
 
-    this.trigger(context);
+    return this.trigger(context);
   };
 
   private async trigger(context) {
     const { triggerWorkflows = '', values } = context.action.params;
 
-    const { currentUser } = context.state;
+    const { currentUser, currentRole } = context.state;
+    const userInfo = {
+      user: toJSON(currentUser),
+      roleName: currentRole,
+    };
 
     const triggers = triggerWorkflows.split(',').map((trigger) => trigger.split('!'));
-    const workflowRepo = this.plugin.db.getRepository('workflows');
+    const workflowRepo = this.workflow.db.getRepository('workflows');
     const workflows = await workflowRepo.find({
       filter: {
         key: triggers.map((trigger) => trigger[0]),
@@ -63,15 +67,21 @@ export default class extends Trigger {
         enabled: true,
       },
     });
-    workflows.forEach((workflow) => {
+    const syncGroup = [];
+    const asyncGroup = [];
+    for (const workflow of workflows) {
       const trigger = triggers.find((trigger) => trigger[0] == workflow.key);
-      if (context.body?.data) {
-        const { data } = context.body;
-        (Array.isArray(data) ? data : [data]).forEach(async (row: Model) => {
+      const event = [workflow];
+      if (context.action.resourceName !== 'workflows') {
+        if (!context.body) {
+          continue;
+        }
+        const { body: data } = context;
+        for (const row of Array.isArray(data) ? data : [data]) {
           let payload = row;
           if (trigger[1]) {
             const paths = trigger[1].split('.');
-            for await (const field of paths) {
+            for (const field of paths) {
               if (payload.get(field)) {
                 payload = payload.get(field);
               } else {
@@ -83,7 +93,7 @@ export default class extends Trigger {
           const { collection, appends = [] } = workflow.config;
           const model = <typeof Model>payload.constructor;
           if (collection !== model.collection.name) {
-            return;
+            continue;
           }
           if (appends.length) {
             payload = await model.collection.repository.findOne({
@@ -91,16 +101,27 @@ export default class extends Trigger {
               appends,
             });
           }
-          this.plugin.trigger(workflow, { data: toJSON(payload), user: toJSON(currentUser) });
-        });
+          // this.workflow.trigger(workflow, { data: toJSON(payload), ...userInfo });
+          event.push({ data: toJSON(payload), ...userInfo });
+        }
       } else {
         const data = trigger[1] ? get(values, trigger[1]) : values;
-        this.plugin.trigger(workflow, {
-          data,
-          user: currentUser,
-        });
+        // this.workflow.trigger(workflow, {
+        //   data,
+        //   ...userInfo,
+        // });
+        event.push({ data, ...userInfo });
       }
-    });
+      (workflow.sync ? syncGroup : asyncGroup).push(event);
+    }
+
+    for (const event of syncGroup) {
+      await this.workflow.trigger(event[0], event[1], { httpContext: context });
+    }
+
+    for (const event of asyncGroup) {
+      this.workflow.trigger(event[0], event[1]);
+    }
   }
 
   on(workflow: WorkflowModel) {}

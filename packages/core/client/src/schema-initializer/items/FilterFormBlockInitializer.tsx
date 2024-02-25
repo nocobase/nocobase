@@ -4,9 +4,8 @@ import { useSchemaInitializerItem } from '../../application';
 import { createFilterFormBlockSchema } from '../utils';
 import { FilterBlockInitializer } from './FilterBlockInitializer';
 
-export const FilterFormBlockInitializer = (props) => {
+export const FilterFormBlockInitializer = ({ filterItems }) => {
   const itemConfig = useSchemaInitializerItem();
-  const items = itemConfig?.name === 'filterFormBlockInTableSelector' ? [] : undefined;
 
   return (
     <FilterBlockInitializer
@@ -16,7 +15,7 @@ export const FilterFormBlockInitializer = (props) => {
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
           template: templateSchema,
-          collection: item.collectionName,
+          collection: item.name || item.collectionName,
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;
@@ -24,7 +23,7 @@ export const FilterFormBlockInitializer = (props) => {
         return s;
       }}
       createBlockSchema={createFilterFormBlockSchema}
-      items={items}
+      filterItems={filterItems}
     />
   );
 };

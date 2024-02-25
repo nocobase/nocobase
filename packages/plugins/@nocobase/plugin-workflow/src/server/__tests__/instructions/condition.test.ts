@@ -1,7 +1,8 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { BRANCH_INDEX } from '../../instructions/ConditionInstruction';
 
 describe('workflow > instructions > condition', () => {
   let app: Application;

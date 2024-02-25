@@ -9,6 +9,7 @@ import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;
+  [key: string]: any;
 }
 
 export default class Processor {
@@ -24,19 +25,19 @@ export default class Processor {
   };
 
   logger: Logger;
-
-  transaction?: Transaction;
-
+  transaction: Transaction;
   nodes: FlowNodeModel[] = [];
   nodesMap = new Map<number, FlowNodeModel>();
   jobsMap = new Map<number, JobModel>();
   jobsMapByNodeKey: { [key: string]: any } = {};
+  lastSavedJob: JobModel | null = null;
 
   constructor(
     public execution: ExecutionModel,
     public options: ProcessorOptions,
   ) {
     this.logger = options.plugin.getLogger(execution.workflowId);
+    this.transaction = options.transaction;
   }
 
   // make dual linked nodes list then cache
@@ -67,29 +68,13 @@ export default class Processor {
     });
   }
 
-  private async getTransaction() {
-    if (!this.execution.workflow.options?.useTransaction) {
-      return;
-    }
-
-    const { options } = this;
-
-    // @ts-ignore
-    return options.transaction && !options.transaction.finished
-      ? options.transaction
-      : await options.plugin.db.sequelize.transaction();
-  }
-
   public async prepare() {
-    const { execution } = this;
+    const { execution, transaction } = this;
     if (!execution.workflow) {
-      execution.workflow = await execution.getWorkflow();
+      execution.workflow = await execution.getWorkflow({ transaction });
     }
 
-    const transaction = await this.getTransaction();
-    this.transaction = transaction;
-
-    const nodes = await execution.workflow.getNodes();
+    const nodes = await execution.workflow.getNodes({ transaction });
 
     this.makeNodes(nodes);
 
@@ -104,7 +89,7 @@ export default class Processor {
   public async start() {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status}`);
+      throw new Error(`execution was ended with status ${execution.status} before, could not be started again`);
     }
     await this.prepare();
     if (this.nodes.length) {
@@ -118,18 +103,11 @@ export default class Processor {
   public async resume(job: JobModel) {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status}`);
+      throw new Error(`execution was ended with status ${execution.status} before, could not be resumed`);
     }
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);
     await this.recall(node, job);
-  }
-
-  private async commit() {
-    // @ts-ignore
-    if (this.transaction && (!this.options.transaction || this.options.transaction.finished)) {
-      await this.transaction.commit();
-    }
   }
 
   private async exec(instruction: Runner, node: FlowNodeModel, prevJob) {
@@ -151,7 +129,13 @@ export default class Processor {
       job = {
         result:
           err instanceof Error
-            ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
+            ? {
+                message: err.message,
+                stack:
+                  process.env.NODE_ENV === 'production'
+                    ? 'Error stack will not be shown under "production" environment, please check logs.'
+                    : err.stack,
+              }
             : err,
         status: JOB_STATUS.ERROR,
       };
@@ -165,6 +149,7 @@ export default class Processor {
     if (!(job instanceof Model)) {
       job.upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
       job.nodeId = node.id;
+      job.nodeKey = node.key;
     }
     const savedJob = await this.saveJob(job);
 
@@ -227,37 +212,33 @@ export default class Processor {
       await this.execution.update({ status }, { transaction: this.transaction });
     }
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`);
-    await this.commit();
     return null;
   }
 
   // TODO(optimize)
   async saveJob(payload) {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
+    const { transaction } = this;
     const { model } = database.getCollection('jobs');
     let job;
     if (payload instanceof model) {
-      job = await payload.save({ transaction: this.transaction });
+      job = await payload.save({ transaction });
     } else if (payload.id) {
-      job = await model.findByPk(payload.id);
-      await job.update(payload, {
-        transaction: this.transaction,
-      });
+      job = await model.findByPk(payload.id, { transaction });
+      await job.update(payload, { transaction });
     } else {
       job = await model.create(
         {
           ...payload,
           executionId: this.execution.id,
         },
-        {
-          transaction: this.transaction,
-        },
+        { transaction },
       );
     }
     this.jobsMap.set(job.id, job);
 
-    const node = this.nodesMap.get(job.nodeId);
-    this.jobsMapByNodeKey[node.key] = job.result;
+    this.lastSavedJob = job;
+    this.jobsMapByNodeKey[job.nodeKey] = job.result;
 
     return job;
   }
