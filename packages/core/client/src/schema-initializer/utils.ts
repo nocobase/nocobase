@@ -1402,7 +1402,7 @@ export const createTableBlockSchema = (options) => {
             'x-designer': 'TableV2.ActionColumnDesigner',
             'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
             properties: {
-              actions: {
+              [uid()]: {
                 type: 'void',
                 'x-decorator': 'DndContext',
                 'x-component': 'Space',
