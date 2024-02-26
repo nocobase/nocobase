@@ -1175,7 +1175,7 @@ export const createFormBlockSchema = (options) => {
             'x-initializer': formItemInitializers,
             properties: {},
           },
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
@@ -1240,7 +1240,7 @@ export const createFilterFormBlockSchema = (options) => {
             'x-initializer': formItemInitializers,
             properties: {},
           },
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
@@ -1298,7 +1298,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
           useProps: '{{ useFormBlockProps }}',
         },
         properties: {
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
@@ -1394,7 +1394,7 @@ export const createTableBlockSchema = (options) => {
             'x-designer': 'TableV2.ActionColumnDesigner',
             'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
             properties: {
-              actions: {
+              [uid()]: {
                 type: 'void',
                 'x-decorator': 'DndContext',
                 'x-component': 'Space',
@@ -1466,7 +1466,7 @@ export const createTableSelectorSchema = (options) => {
     'x-settings': 'blockSettings:tableSelector',
     'x-component': 'CardItem',
     properties: {
-      actions: {
+      [uid()]: {
         type: 'void',
         'x-initializer': 'TableActionInitializers',
         'x-component': 'ActionBar',
