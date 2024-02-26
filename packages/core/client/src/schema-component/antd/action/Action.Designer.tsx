@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
-import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
+import { SchemaSettingOptions, SchemaSettings, SchemaSettingsChildren } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
@@ -31,17 +31,7 @@ import { requestSettingsSchema } from './utils';
 import { SaveMode } from '../../../modules/form-creation/schema-settings/createSubmitActionSettings';
 
 const MenuGroup = (props) => {
-  const fieldSchema = useFieldSchema();
-  const { t } = useTranslation();
-  const compile = useCompile();
-  const actionTitle = fieldSchema.title ? compile(fieldSchema.title) : '';
-  const actionType = fieldSchema['x-action'] ?? '';
-  if (!actionType.startsWith('customize:') || !actionTitle) {
-    return props.children;
-  }
-  return (
-    <SchemaSettingsItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettingsItemGroup>
-  );
+  return props.children;
 };
 
 export function ButtonEditor(props) {
