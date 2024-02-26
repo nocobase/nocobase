@@ -1,6 +1,7 @@
 import {
   CollectionContext,
   CollectionProvider,
+  CollectionProvider_deprecated,
   ResourceActionContext,
   SchemaComponent,
   useAPIClient,
@@ -8,6 +9,7 @@ import {
   useFilterFieldOptions,
   useFilterFieldProps,
   useRecord,
+  useRecord_deprecated,
   useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
@@ -98,7 +100,7 @@ const useFilterActionProps = () => {
 const useSaveRoleResourceAction = () => {
   const form = useForm();
   const api = useAPIClient();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   return {
@@ -117,7 +119,7 @@ const useSaveRoleResourceAction = () => {
 };
 
 const useRoleResourceValues = (options: any) => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const { visible } = useActionContext();
   const result = useRequest(
     {
@@ -167,13 +169,13 @@ export const ActionPermissions: React.FC<{
   );
   return (
     <ResourceActionContext.Provider value={{ ...service }}>
-      <CollectionProvider collection={collection}>
+      <CollectionProvider_deprecated collection={collection}>
         <SchemaComponent
           schema={roleCollectionsSchema}
           components={{ RolesResourcesActions }}
           scope={{ useFilterActionProps, useSaveRoleResourceAction, useRoleResourceValues }}
         />
-      </CollectionProvider>
+      </CollectionProvider_deprecated>
     </ResourceActionContext.Provider>
   );
 };

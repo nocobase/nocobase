@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Row, Col, Tabs, Divider } from 'antd';
-import { CollectionProvider, ResourceActionProvider, usePlugin } from '@nocobase/client';
+import { CollectionProvider, CollectionProvider_deprecated, ResourceActionProvider, usePlugin } from '@nocobase/client';
 import { ISchema, Schema } from '@formily/react';
 import { RolesMenu } from './RolesMenu';
 import { useACLTranslation } from './locale';
@@ -80,13 +80,13 @@ export const RolesManagement: React.FC = () => {
                 },
               }}
             >
-              <CollectionProvider collection={collection}>
+              <CollectionProvider_deprecated collection={collection}>
                 <Row>
                   <NewRole />
                 </Row>
                 <Divider style={{ margin: '12px 0' }} />
                 <RolesMenu />
-              </CollectionProvider>
+              </CollectionProvider_deprecated>
             </ResourceActionProvider>
           </Col>
           <Col span={19}>

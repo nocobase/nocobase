@@ -1,7 +1,13 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { connect, useField, useForm } from '@formily/react';
-import { useCollectionManager, useCompile, useRecord } from '@nocobase/client';
+import {
+  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCompile,
+  useRecord,
+  useRecord_deprecated,
+} from '@nocobase/client';
 import { Checkbox, Table, Tag } from 'antd';
 import { isEmpty } from 'lodash';
 import React, { createContext } from 'react';
@@ -36,9 +42,9 @@ export const RolesResourcesActions = connect((props) => {
     props.onChange(items);
   };
   const form = useForm();
-  const roleCollection = useRecord();
+  const roleCollection = useRecord_deprecated();
   const availableActions = useAvailableActions();
-  const { getCollection, getCollectionFields } = useCollectionManager();
+  const { getCollection, getCollectionFields } = useCollectionManager_deprecated();
   const collection = getCollection(roleCollection.collectionName);
   const collectionFields = getCollectionFields(roleCollection.collectionName);
   const compile = useCompile();

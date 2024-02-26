@@ -6,7 +6,7 @@ class ACLPlugin extends Plugin {
   rolesManager = new RolesManager();
 
   async load() {
-    this.app.pluginSettingsManager.add('users.roles', {
+    this.app.pluginSettingsManager.add('users-permissions.roles', {
       title: '{{t("Roles & Permissions")}}',
       icon: 'LockOutlined',
       Component: RolesManagement,

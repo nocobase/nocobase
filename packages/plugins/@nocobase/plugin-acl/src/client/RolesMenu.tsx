@@ -1,6 +1,6 @@
 import {
   ActionContextProvider,
-  RecordProvider,
+  RecordProvider_deprecated,
   SchemaComponent,
   useAPIClient,
   useResourceActionContext,
@@ -58,9 +58,9 @@ export const RolesMenu: React.FC & {
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
       )}
       <ActionContextProvider value={{ visible, setVisible }}>
-        <RecordProvider record={record} collectionName="departments">
+        <RecordProvider_deprecated record={record} collectionName="departments">
           <SchemaComponent scope={{ t }} schema={roleEditSchema} />
-        </RecordProvider>
+        </RecordProvider_deprecated>
       </ActionContextProvider>
     </>
   );

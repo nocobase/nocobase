@@ -2,12 +2,14 @@ import React, { useContext, useRef } from 'react';
 import { App } from 'antd';
 import {
   CollectionProvider,
+  CollectionProvider_deprecated,
   ResourceActionContext,
   ResourceActionProvider,
   SchemaComponent,
   useAPIClient,
   useActionContext,
   useRecord,
+  useRecord_deprecated,
   useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
@@ -18,12 +20,12 @@ import { roleUsersSchema, userCollection } from './schemas/users';
 const useRemoveUser = () => {
   const api = useAPIClient();
   const { role } = useContext(RolesManagerContext);
-  const { id } = useRecord();
+  const record = useRecord_deprecated();
   const { refresh } = useResourceActionContext();
   return {
     async run() {
       await api.resource('roles.users', role?.name).remove({
-        values: [id],
+        values: [record['id']],
       });
       refresh();
     },
@@ -107,7 +109,7 @@ export const RoleUsersManager: React.FC = () => {
 
   return (
     <ResourceActionContext.Provider value={{ ...service }}>
-      <CollectionProvider collection={userCollection}>
+      <CollectionProvider_deprecated collection={userCollection}>
         <SchemaComponent
           schema={roleUsersSchema}
           components={{ RoleUsersProvider }}
@@ -119,7 +121,7 @@ export const RoleUsersManager: React.FC = () => {
             t,
           }}
         />
-      </CollectionProvider>
+      </CollectionProvider_deprecated>
     </ResourceActionContext.Provider>
   );
 };
