@@ -98,7 +98,7 @@ export class SyncRunner {
         await this.queryInterface.addConstraint(this.tableName, {
           type: 'primary key',
           fields: columnsWillBePrimaryKey,
-          name: `${columnsWillBePrimaryKey.join('_')}_pkey`,
+          name: `${this.tableName}_${columnsWillBePrimaryKey.join('_')}_pk`,
           transaction: options?.transaction,
         });
       }

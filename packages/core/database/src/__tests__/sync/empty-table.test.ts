@@ -13,13 +13,14 @@ describe('empty table', () => {
     await db.close();
   });
 
-  it('should add field into empty table', async () => {
+  it('should add primary key field into empty table', async () => {
     const syncOptions = {
       alter: {
         drop: false,
       },
       force: false,
     };
+
     const empty = db.collection({
       name: 'empty',
       autoGenId: false,
@@ -30,9 +31,28 @@ describe('empty table', () => {
     empty.setField('code', {
       type: 'string',
       primaryKey: true,
-      unique: true,
     });
 
     await db.sync(syncOptions);
+
+    const emptyInfo = await db.sequelize.getQueryInterface().describeTable(empty.getTableNameWithSchema());
+    expect(emptyInfo.code.primaryKey).toBeTruthy();
+
+    const empty2 = db.collection({
+      name: 'empty2',
+      autoGenId: false,
+    });
+
+    await db.sync(syncOptions);
+
+    empty2.setField('code', {
+      type: 'string',
+      primaryKey: true,
+    });
+
+    await db.sync(syncOptions);
+
+    const empty2Info = await db.sequelize.getQueryInterface().describeTable(empty2.getTableNameWithSchema());
+    expect(empty2Info.code.primaryKey).toBeTruthy();
   });
 });
