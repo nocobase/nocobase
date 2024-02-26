@@ -65,15 +65,12 @@ const InternalExpiresRadio = (props) => {
           {props.options.map((v) => {
             if (v.value === 'custom') {
               return (
-                <Radio value={v.value}>
+                <Radio value={v.value} key={v.value}>
                   <Input
                     style={{ width: '150px' }}
                     defaultValue={targetValue}
                     onChange={(e) => {
-                      if (
-                        e.target.value &&
-                        moment(timeFormat ? date.format() : date.toLocaleString(), e.target.value).isValid()
-                      ) {
+                      if (e.target.value) {
                         setCustomFormatPreview(date.format(e.target.value));
                       } else {
                         setCustomFormatPreview(null);
@@ -87,7 +84,11 @@ const InternalExpiresRadio = (props) => {
                 </Radio>
               );
             }
-            return <Radio value={v.value}>{v.label}</Radio>;
+            return (
+              <Radio value={v.value} key={v.value}>
+                {v.label}
+              </Radio>
+            );
           })}
         </Space>
       </Radio.Group>
