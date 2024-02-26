@@ -81,9 +81,9 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   const rowCtx = useGridRowContext();
   const ctx = useGridContext();
   const dm = useDataSourceManager();
-  const dataSources = dm.getDataSources();
+  const dataSources = dm?.getDataSources();
   const dataSourceContext = useDataSource();
-  const dataSource = dataSources.length > 1 && dataSourceContext;
+  const dataSource = dataSources?.length > 1 && dataSourceContext;
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`
     : template?.name;
@@ -178,9 +178,9 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const dm = useDataSourceManager();
-  const dataSources = dm.getDataSources();
+  const dataSources = dm?.getDataSources();
   const dataSourceContext = useDataSource();
-  const dataSource = dataSources.length > 1 && dataSourceContext;
+  const dataSource = dataSources?.length > 1 && dataSourceContext;
 
   const titleArr = useMemo(() => {
     if (!title) return undefined;
