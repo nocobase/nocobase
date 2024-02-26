@@ -1229,7 +1229,7 @@ export const useAssociationNames = (dataSource?: string) => {
   const _getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {
       const prefix = pre || str;
-      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
         collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
