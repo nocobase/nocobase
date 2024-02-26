@@ -41,13 +41,13 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
                   }
                 `,
                 defaultValue: 'dddd',
-                formats: ['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+                formats: ['MMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'],
               },
               default: dateFormatDefaultValue,
               enum: [
                 {
-                  label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
-                  value: 'MMMMM Do YYYY',
+                  label: DateFormatCom({ format: 'MMMM Do YYYY' }),
+                  value: 'MMMM Do YYYY',
                 },
                 {
                   label: DateFormatCom({ format: 'YYYY-MM-DD' }),
