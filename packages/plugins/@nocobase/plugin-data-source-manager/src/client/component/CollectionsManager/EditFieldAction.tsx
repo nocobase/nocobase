@@ -21,10 +21,23 @@ import {
   useCancelAction,
   useCollectionManager_deprecated,
   useCurrentAppInfo,
+  useParentRecordData,
 } from '@nocobase/client';
 import { useRemoteCollectionContext } from './CollectionFields';
 
-const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
+const getSchema = ({
+  schema,
+  record,
+  parentRecord,
+  compile,
+  getContainer,
+}: {
+  schema: IField;
+  record: any;
+  parentRecord: any;
+  compile;
+  getContainer;
+}): ISchema => {
   if (!schema) {
     return;
   }
@@ -78,7 +91,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
             );
           },
         },
-        title: `${compile(record.__parent?.title || record.collectionName)} - ${compile('{{ t("Edit field") }}')}`,
+        title: `${compile(parentRecord?.title || parentRecord?.name)} - ${compile('{{ t("Edit field") }}')}`,
         properties: {
           summary: {
             type: 'void',
@@ -154,11 +167,12 @@ const useUpdateCollectionField = () => {
 
 export const EditCollectionField = (props) => {
   const record = useRecord_deprecated();
-  return <EditFieldAction item={record} {...props} />;
+  const parentRecordData = useParentRecordData();
+  return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
 const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, ...otherProps } = props;
+  const { scope, getContainer, item: record, parentItem: parentRecord, children, ...otherProps } = props;
   const { getInterface, collections } = useCollectionManager_deprecated();
   const {
     data: { database: currentDatabase },
@@ -179,13 +193,13 @@ const EditFieldAction = (props) => {
     });
   }, []);
   return (
-    <RecordProvider_deprecated record={record}>
+    <RecordProvider_deprecated record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
           onClick={async () => {
             const { data } = await api.request({
-              url: `dataSourcesCollections/${name}.${record.collectionName}/fields:get?filterByTk=${record.name}`,
+              url: `dataSourcesCollections/${name}.${parentRecord.name}/fields:get?filterByTk=${record.name}`,
               params: { appends: ['reverseField'] },
             });
             const interfaceConf = getInterface(data?.data?.interface);
@@ -196,15 +210,16 @@ const EditFieldAction = (props) => {
               set(defaultValues.reverseField, 'name', `f_${uid()}`);
               set(defaultValues.reverseField, 'uiSchema.title', record.__parent?.title);
             }
-            const schema = getSchema(
-              {
+            const schema = getSchema({
+              schema: {
                 ...interfaceConf,
                 default: defaultValues,
               },
               record,
+              parentRecord,
               compile,
               getContainer,
-            );
+            });
             setSchema(schema);
             setVisible(true);
           }}
