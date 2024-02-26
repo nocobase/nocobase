@@ -88,7 +88,7 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      form.setValuesIn(fieldName, v);
+      v !== value && props.onChange(v);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;
