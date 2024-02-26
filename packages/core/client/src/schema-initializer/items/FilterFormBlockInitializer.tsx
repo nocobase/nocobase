@@ -3,15 +3,22 @@ import React from 'react';
 import { useSchemaInitializerItem } from '../../application';
 import { createFilterFormBlockSchema } from '../utils';
 import { FilterBlockInitializer } from './FilterBlockInitializer';
+import { Collection } from '../../data-source';
 
-export const FilterFormBlockInitializer = ({ filterMenuItemChildren }) => {
+export const FilterFormBlockInitializer = ({
+  filterMenuItemChildren,
+  onlyCurrentDataSource,
+}: {
+  filterMenuItemChildren: (collection: Collection) => boolean;
+  onlyCurrentDataSource: boolean;
+}) => {
   const itemConfig = useSchemaInitializerItem();
 
   return (
     <FilterBlockInitializer
       {...itemConfig}
       icon={<FormOutlined />}
-      onlyCurrentDataSource
+      onlyCurrentDataSource={onlyCurrentDataSource}
       componentType={'FilterFormItem'}
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
@@ -29,7 +36,7 @@ export const FilterFormBlockInitializer = ({ filterMenuItemChildren }) => {
         options = { ...options, settings: 'blockSettings:filterForm' };
         return createFilterFormBlockSchema(options);
       }}
-      filterMenuItemChildren={filterMenuItemChildren}
+      filter={filterMenuItemChildren}
     />
   );
 };

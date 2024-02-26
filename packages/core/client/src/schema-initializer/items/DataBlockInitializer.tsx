@@ -257,7 +257,6 @@ export interface DataBlockInitializerProps {
   name: string;
   title: string;
   filter?: (collection: Collection) => boolean;
-  filterMenuItemChildren?: (item: any, index: number, items: any[]) => boolean;
   componentType: string;
   onlyCurrentDataSource?: boolean;
 }
@@ -274,7 +273,6 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     title,
     filter,
     onlyCurrentDataSource,
-    filterMenuItemChildren,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -305,15 +303,8 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   const items = useCollectionDataSourceItems(componentType, filter, onlyCurrentDataSource);
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {
-    const _items = items.map((item) => {
-      if (item?.children?.length && filterMenuItemChildren) {
-        item.children = item.children.filter(filterMenuItemChildren);
-        return item;
-      }
-      return item;
-    });
-    return getMenuItems(_items, name);
-  }, [filterMenuItemChildren, getMenuItems, items, name]);
+    return getMenuItems(items, name);
+  }, [getMenuItems, items, name]);
   const [openMenuKeys, setOpenMenuKeys] = useState([]);
   const searchedChildren = useMenuSearch(childItems, openMenuKeys);
   const compiledMenuItems = useMemo(

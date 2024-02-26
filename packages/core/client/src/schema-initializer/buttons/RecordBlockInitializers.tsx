@@ -265,9 +265,10 @@ export const recordBlockInitializers = new SchemaInitializer({
             );
 
             return {
-              filterMenuItemChildren(item) {
-                return toManyField.some((field) => field.target === item.name);
+              filterMenuItemChildren(collection) {
+                return toManyField.some((field) => field.target === collection.name);
               },
+              onlyCurrentDataSource: true,
             };
           },
         },
@@ -283,9 +284,10 @@ export const recordBlockInitializers = new SchemaInitializer({
             );
 
             return {
-              filterMenuItemChildren(item) {
-                return toManyField.some((field) => field.target === item.name);
+              filterMenuItemChildren(collection) {
+                return toManyField.some((field) => field.target === collection.name);
               },
+              onlyCurrentDataSource: true,
             };
           },
         },

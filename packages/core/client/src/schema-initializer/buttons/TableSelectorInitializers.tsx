@@ -35,6 +35,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
               filterMenuItemChildren() {
                 return false;
               },
+              onlyCurrentDataSource: true,
             },
             collectionName: name,
             dataSource,
@@ -47,6 +48,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
               filterMenuItemChildren() {
                 return false;
               },
+              onlyCurrentDataSource: true,
             },
             collectionName: name,
             dataSource,
