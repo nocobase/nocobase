@@ -38,7 +38,7 @@ export default class extends Trigger {
     //   ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
     //   : 1;
 
-    if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
+    if (config.mode === SCHEDULE_MODE.DATE_FIELD) {
       const [fieldOption] = getCollectionFieldOptions({
         // depth,
         appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],

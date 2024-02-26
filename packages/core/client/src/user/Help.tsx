@@ -16,6 +16,9 @@ const SettingsMenu: React.FC<{
   const data = useCurrentAppInfo();
   const { token } = useToken();
 
+  // 是否是简体中文
+  const isSimplifiedChinese = data?.data?.lang === 'zh-CN';
+
   const items = [
     {
       key: 'nocobase',
@@ -34,7 +37,7 @@ const SettingsMenu: React.FC<{
     {
       key: 'homePage',
       label: (
-        <a href="https://www.nocobase.com" target="__blank">
+        <a href={isSimplifiedChinese ? 'https://cn.nocobase.com/' : 'https://www.nocobase.com'} target="__blank">
           {t('Home page')}
         </a>
       ),
@@ -42,7 +45,14 @@ const SettingsMenu: React.FC<{
     {
       key: 'userManual',
       label: (
-        <a href="https://docs.nocobase.com/manual/quick-start/the-first-app" target="__blank">
+        <a
+          href={
+            isSimplifiedChinese
+              ? 'https://docs-cn.nocobase.com/manual/quick-start/the-first-app'
+              : 'https://docs.nocobase.com/manual/quick-start/the-first-app'
+          }
+          target="__blank"
+        >
           {t('User manual')}
         </a>
       ),

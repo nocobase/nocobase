@@ -427,9 +427,7 @@ export const formItemSettings = new SchemaSettings({
             { label: t('Middle'), value: 'middle' },
             { label: t('Large'), value: 'large' },
           ],
-          value:
-            fieldSchema?.['x-component-props']?.['openSize'] ??
-            (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle'),
+          value: fieldSchema?.['x-component-props']?.['openSize'] ?? 'middle',
           onChange: (value) => {
             field.componentProps.openSize = value;
             fieldSchema['x-component-props'] = field.componentProps;
