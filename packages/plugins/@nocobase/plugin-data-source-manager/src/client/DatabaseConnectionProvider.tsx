@@ -5,7 +5,7 @@ import * as hooks from './hooks';
 export const DataSourceContext = createContext(null);
 
 export const DatabaseConnectionProvider: FC = (props) => {
-  const [dataSource, setDataSource] = useState({});
+  const [dataSource, setDataSource] = useState(null);
   return (
     <DataSourceContext.Provider value={{ dataSource, setDataSource }}>
       <SchemaComponentOptions scope={hooks} components={{}}>

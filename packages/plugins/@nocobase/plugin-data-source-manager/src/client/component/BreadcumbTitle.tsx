@@ -14,7 +14,7 @@ export const BreadcumbTitle = () => {
   const dm = useDataSourceManager();
   const { displayName } = dm.getDataSource(name) || {};
   const { dataSource } = useContext(DataSourceContext);
-  const { status } = dataSource;
+  const { status } = dataSource || dm.getDataSource(name);
   const option = statusEnum.find((v) => v.value === status);
   return (
     <Breadcrumb
