@@ -12,6 +12,7 @@ export const FilterCollapseBlockInitializer = ({ filterMenuItemChildren }) => {
   return (
     <DataBlockInitializer
       {...itemConfig}
+      onlyCurrentDataSource
       icon={<TableOutlined />}
       componentType={'FilterCollapse'}
       onCreateBlockSchema={async ({ item }) => {

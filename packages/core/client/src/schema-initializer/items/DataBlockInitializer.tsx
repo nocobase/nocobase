@@ -259,6 +259,7 @@ export interface DataBlockInitializerProps {
   filter?: (collection: Collection) => boolean;
   filterMenuItemChildren?: (item: any, index: number, items: any[]) => boolean;
   componentType: string;
+  onlyCurrentDataSource?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -272,6 +273,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     name,
     title,
     filter,
+    onlyCurrentDataSource,
     filterMenuItemChildren,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
@@ -300,7 +302,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     },
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
-  const items = useCollectionDataSourceItems(componentType, filter);
+  const items = useCollectionDataSourceItems(componentType, filter, onlyCurrentDataSource);
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {
     const _items = items.map((item) => {

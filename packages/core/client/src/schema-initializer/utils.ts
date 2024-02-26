@@ -3,7 +3,7 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
+import { SchemaInitializerItemType, useDataSourceKey, useFormActiveFields, useFormBlockContext } from '../';
 import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -835,10 +835,16 @@ export const useRecordCollectionDataSourceItems = (
 export const useCollectionDataSourceItems = (
   componentName,
   filter: (collection: Collection) => boolean = () => true,
+  onlyCurrentDataSource = false,
 ) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
-  const allCollections = dm.getAllCollections(filter);
+  const dataSourceKey = useDataSourceKey();
+  let allCollections = dm.getAllCollections(filter);
+  if (onlyCurrentDataSource) {
+    allCollections = allCollections.filter((collection) => collection.key === dataSourceKey);
+  }
+
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const res = useMemo(() => {
     return allCollections.map(({ key, displayName, collections }) => ({

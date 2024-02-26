@@ -11,6 +11,7 @@ export const FilterFormBlockInitializer = ({ filterMenuItemChildren }) => {
     <FilterBlockInitializer
       {...itemConfig}
       icon={<FormOutlined />}
+      onlyCurrentDataSource
       componentType={'FilterFormItem'}
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
