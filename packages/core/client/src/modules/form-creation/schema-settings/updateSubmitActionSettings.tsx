@@ -73,7 +73,6 @@ export const submitActionSettings = new SchemaSettings({
       Component: SaveMode,
       useVisible() {
         const fieldSchema = useFieldSchema();
-        console.log(fieldSchema);
         return (
           fieldSchema['x-action'] === 'submit' &&
           fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'

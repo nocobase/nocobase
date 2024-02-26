@@ -15,16 +15,6 @@ import { ModalProps } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-const MenuGroup = (props) => {
-  const fieldSchema = useFieldSchema();
-  const { t } = useTranslation();
-  const compile = useCompile();
-  const actionTitle = fieldSchema.title ? compile(fieldSchema.title) : '';
-  return (
-    <SchemaSettingsItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettingsItemGroup>
-  );
-};
-
 function UpdateMode() {
   const { dn } = useDesignable();
   const { t } = useTranslation();

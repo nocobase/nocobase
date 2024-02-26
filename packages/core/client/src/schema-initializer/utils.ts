@@ -1394,9 +1394,6 @@ export const createTableBlockSchema = (options) => {
                 'x-component': 'Space',
                 'x-component-props': {
                   split: '|',
-                  classNames: {
-                    item: 'nb-table-column-action-item',
-                  },
                 },
                 properties: {},
               },

@@ -13,6 +13,7 @@ export const RecordProvider_deprecated: React.FC<{
   record: any;
   parent?: any;
   isNew?: boolean;
+  collectionName?: string;
 }> = (props) => {
   const { record, children, parent, isNew } = props;
   const { name: __collectionName } = useCollection_deprecated();

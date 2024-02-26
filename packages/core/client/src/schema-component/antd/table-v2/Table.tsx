@@ -76,7 +76,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
                       role="button"
                       className={css`
                         // 扩大 SchemaToolbar 的面积
-                        .nb-table-column-action-item .nb-action-link {
+                        .nb-action-link {
                           margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
                           padding: ${token.paddingContentVerticalLG}px ${token.marginSM}px;
                         }
