@@ -5,8 +5,8 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
-import { useFormActiveFields } from '../../../block-provider';
-import { Collection } from '../../../collection-manager';
+import { useFormActiveFields } from '../../../block-provider/hooks/useFormActiveFields';
+import { Collection_deprecated } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { useVariables } from '../../../variables';
 import useContextVariable from '../../../variables/hooks/useContextVariable';
@@ -16,6 +16,7 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
+import { CollectionFieldProvider } from '../../../data-source';
 
 export const FormItem: any = observer(
   (props: any) => {
@@ -66,13 +67,16 @@ export const FormItem: any = observer(
         },
       );
     }, [showTitle]);
+    const fieldSchema = useFieldSchema();
 
     return (
-      <ACLCollectionFieldProvider>
-        <BlockItem className={'nb-form-item'}>
-          <Item className={className} {...props} extra={extra} />
-        </BlockItem>
-      </ACLCollectionFieldProvider>
+      <CollectionFieldProvider name={fieldSchema.name} allowNull={!fieldSchema['x-collection-field']}>
+        <ACLCollectionFieldProvider>
+          <BlockItem className={'nb-form-item'}>
+            <Item className={className} {...props} extra={extra} />
+          </BlockItem>
+        </ACLCollectionFieldProvider>
+      </CollectionFieldProvider>
     );
   },
   { displayName: 'FormItem' },
@@ -89,7 +93,7 @@ FormItem.Designer = function Designer() {
   );
 };
 
-export function isFileCollection(collection: Collection) {
+export function isFileCollection(collection: Collection_deprecated) {
   return collection?.template === 'file';
 }
 

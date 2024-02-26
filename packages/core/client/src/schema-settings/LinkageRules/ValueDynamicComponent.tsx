@@ -2,7 +2,7 @@ import { Input, Select } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../block-provider';
-import { useRecord } from '../../record-provider';
+import { useRecord_deprecated } from '../../record-provider';
 import { Variable } from '.././../schema-component';
 import { useCompatOldVariables } from '../VariableInput/VariableInput';
 import { useVariableOptions } from '../VariableInput/hooks/useVariableOptions';
@@ -22,7 +22,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   const [mode, setMode] = useState(fieldValue?.mode || 'constant');
   const { t } = useTranslation();
   const { form } = useFormBlockContext();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const scope = useVariableOptions({
     collectionField: { uiSchema: schema },
     form,

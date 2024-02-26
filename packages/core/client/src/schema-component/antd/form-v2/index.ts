@@ -3,7 +3,6 @@ import { DetailsDesigner, FormDesigner, ReadPrettyFormDesigner } from './Form.De
 import { FilterDesigner } from './Form.FilterDesigner';
 import { Templates } from './Templates';
 export * from './Form.Settings';
-export * from './Form.FilterSettings';
 
 FormV2.Designer = FormDesigner;
 FormV2.FilterDesigner = FilterDesigner;
@@ -13,4 +12,4 @@ FormV2.Templates = Templates;
 export * from './FormField';
 export * from './Templates';
 
-export { FormV2, DetailsDesigner };
+export { DetailsDesigner, FormV2 };

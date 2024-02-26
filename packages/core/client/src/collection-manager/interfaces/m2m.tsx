@@ -1,17 +1,17 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
-import { IField } from './types';
 
-export const m2m: IField = {
-  name: 'm2m',
-  type: 'object',
-  group: 'relation',
-  order: 6,
-  title: '{{t("Many to many")}}',
-  description: '{{t("Many to many description")}}',
-  isAssociation: true,
-  default: {
+export class M2MFieldInterface extends CollectionFieldInterface {
+  name = 'm2m';
+  type = 'object';
+  group = 'relation';
+  order = 6;
+  title = '{{t("Many to many")}}';
+  description = '{{t("Many to many description")}}';
+  isAssociation = true;
+  default = {
     type: 'belongsToMany',
     // name,
     uiSchema: {
@@ -20,10 +20,10 @@ export const m2m: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -36,30 +36,32 @@ export const m2m: IField = {
         'x-component-props': {
           // mode: 'tags',
           multiple: true,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
-  },
-  availableTypes: ['belongsToMany'],
-  schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
+  };
+  availableTypes = ['belongsToMany'];
+  schemaInitialize(schema: ISchema, { field, readPretty, block, targetCollection }) {
     // schema['type'] = 'array';
-    if (targetCollection?.titleField) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
-      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
-    }
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+    };
+    schema['x-component-props'].fieldNames.label =
+      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
+
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
-  },
-  initialize: (values: any) => {
+  }
+  initialize(values: any) {
     if (values.type === 'belongsToMany') {
       if (!values.through) {
         values.through = `t_${uid()}`;
@@ -77,8 +79,8 @@ export const m2m: IField = {
         values.targetKey = 'id';
       }
     }
-  },
-  properties: {
+  }
+  properties = {
     ...defaultProps,
     type: relationshipType,
     grid: {
@@ -146,7 +148,7 @@ export const m2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Source key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
@@ -166,7 +168,7 @@ export const m2m: IField = {
                   description:
                     "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'ForeignKey',
                   'x-validator': 'uid',
                   'x-disabled': '{{ !createOnly||override }}',
                 },
@@ -200,7 +202,7 @@ export const m2m: IField = {
                   description:
                     "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'ForeignKey',
                   'x-validator': 'uid',
                   'x-disabled': '{{ !createOnly||override }}',
                 },
@@ -211,7 +213,7 @@ export const m2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
@@ -224,8 +226,8 @@ export const m2m: IField = {
       },
     },
     ...reverseFieldProperties,
-  },
-  filterable: {
+  };
+  filterable = {
     nested: true,
     children: [
       // {
@@ -242,5 +244,5 @@ export const m2m: IField = {
       //   },
       // },
     ],
-  },
-};
+  };
+}

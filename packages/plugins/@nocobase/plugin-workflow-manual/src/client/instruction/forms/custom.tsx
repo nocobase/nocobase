@@ -7,18 +7,18 @@ import lodash from 'lodash';
 
 import {
   ActionContextProvider,
-  CollectionContext,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   FormBlockContext,
-  RecordProvider,
+  RecordProvider_deprecated,
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemType,
   SchemaInitializerItems,
   gridRowColWrap,
-  useCollectionManager,
-  useRecord,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
+  useRecord_deprecated,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
@@ -31,7 +31,7 @@ import { findSchema } from '../utils';
 
 function CustomFormBlockProvider(props) {
   const [fields, setCollectionFields] = useState(props.collection?.fields ?? []);
-  const userJob = useRecord();
+  const userJob = useRecord_deprecated();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
@@ -46,13 +46,13 @@ function CustomFormBlockProvider(props) {
   );
 
   return !userJob.status || values ? (
-    <CollectionProvider
+    <CollectionProvider_deprecated
       collection={{
         ...props.collection,
         fields,
       }}
     >
-      <RecordProvider record={values} parent={false}>
+      <RecordProvider_deprecated record={values} parent={null}>
         <FormBlockContext.Provider
           value={{
             form,
@@ -62,8 +62,8 @@ function CustomFormBlockProvider(props) {
         >
           {props.children}
         </FormBlockContext.Provider>
-      </RecordProvider>
-    </CollectionProvider>
+      </RecordProvider_deprecated>
+    </CollectionProvider_deprecated>
   ) : null;
 }
 
@@ -183,7 +183,7 @@ function getOptions(interfaces) {
 }
 
 function useCommonInterfaceInitializers(): SchemaInitializerItemType[] {
-  const { interfaces } = useCollectionManager();
+  const { interfaces } = useCollectionManager_deprecated();
   const options = getOptions(interfaces);
 
   return options.map((group) => ({
@@ -206,7 +206,7 @@ const CustomItemsComponent = (props) => {
   const [interfaceOptions, setInterface] = useState<any>(null);
   const [insert, setCallback] = useState<any>();
   const items = useCommonInterfaceInitializers();
-  const collection = useContext(CollectionContext);
+  const collection = useCollection_deprecated();
   const { setCollectionFields } = useContext(FormBlockContext);
 
   return (
@@ -297,7 +297,9 @@ const CustomItemsComponent = (props) => {
                                   field: newField,
                                 },
                                 'x-collection-field': `${collection.name}.${options.name}`,
-                                'x-designer': 'FormItem.Designer',
+                                // 'x-designer': 'FormItem.Designer',
+                                'x-toolbar': 'FormItemSchemaToolbar',
+                                'x-settings': 'fieldSettings:FormItem',
                               });
                               setCallback(null);
                               setInterface(null);
@@ -332,7 +334,7 @@ function CustomFormFieldInitializer() {
   const itemConfig = useSchemaInitializerItem();
   const { insert, setVisible } = useSchemaInitializer();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
 
   const interfaceOptions = getInterface(itemConfig.fieldInterface);
 

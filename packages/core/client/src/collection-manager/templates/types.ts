@@ -1,14 +1,18 @@
-import { ISchema } from '@formily/react';
-import { FieldOptions } from '../../collection-manager/types';
+import type { ISchema } from '@formily/react';
+import type { FieldOptions } from '../types';
+import type { Application } from '../../application';
+import type { CollectionOptions, Collection } from '../../data-source/collection/Collection';
 
 export interface ICollectionTemplate {
   name: string;
+  Collection?: typeof Collection;
+  transform?: (collection: CollectionOptions, app: Application) => CollectionOptions;
   title?: string;
   color?: string;
   /** 排序 */
   order?: number;
   /** 默认配置 */
-  default?: CollectionOptions;
+  default?: CollectionDefaultOptions;
   events?: any;
   /** UI 可配置的 CollectionOptions 参数（添加或编辑的 Collection 表单的字段） */
   configurableProperties?: Record<string, ISchema>;
@@ -32,7 +36,7 @@ interface AvailableFieldInterfacesExclude {
   exclude?: any[];
 }
 
-interface CollectionOptions {
+interface CollectionDefaultOptions {
   /**
    * 自动生成 id
    * @default true

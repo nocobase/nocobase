@@ -7,11 +7,12 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
+import { useParentRecordData } from '../../data-source/record/RecordProvider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
-import { useCancelAction, useUpdateAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCancelAction } from '../action-hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import * as components from './components';
@@ -117,12 +118,11 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 const useUpdateCollectionField = () => {
   const form = useForm();
-  const { run } = useUpdateAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   return {
     async run() {
       await form.submit();
@@ -143,13 +143,14 @@ const useUpdateCollectionField = () => {
 };
 
 export const EditCollectionField = (props) => {
-  const record = useRecord();
-  return <EditFieldAction item={record} {...props} />;
+  const record = useRecord_deprecated();
+  const parentRecordData = useParentRecordData();
+  return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
 export const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, ...otherProps } = props;
-  const { getInterface, collections } = useCollectionManager();
+  const { scope, getContainer, item: record, parentItem: parentRecord, children, ...otherProps } = props;
+  const { getInterface, collections, getCollection } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -157,6 +158,21 @@ export const EditFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const { isDialect } = useDialect();
+  const scopeKeyOptions = useMemo(() => {
+    return (
+      record?.fields ||
+      getCollection(record.collectionName)
+        .options.fields.filter((v) => {
+          return v.interface === 'select';
+        })
+        .map((k) => {
+          return {
+            value: k.name,
+            label: compile(k.uiSchema?.title),
+          };
+        })
+    );
+  }, [record.name]);
 
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -168,7 +184,7 @@ export const EditFieldAction = (props) => {
   }, []);
 
   return (
-    <RecordProvider record={record}>
+    <RecordProvider_deprecated record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -184,7 +200,7 @@ export const EditFieldAction = (props) => {
               defaultValues.autoCreateReverseField = false;
               defaultValues.reverseField = interfaceConf?.default?.reverseField;
               set(defaultValues.reverseField, 'name', `f_${uid()}`);
-              set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
+              set(defaultValues.reverseField, 'uiSchema.title', record.__parent?.title);
             }
             const schema = getSchema(
               {
@@ -212,10 +228,11 @@ export const EditFieldAction = (props) => {
             collections: currentCollections,
             isDialect,
             disabledJSONB: true,
+            scopeKeyOptions,
             ...scope,
           }}
         />
       </ActionContextProvider>
-    </RecordProvider>
+    </RecordProvider_deprecated>
   );
 };

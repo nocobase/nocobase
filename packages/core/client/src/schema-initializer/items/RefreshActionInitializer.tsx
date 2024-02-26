@@ -6,7 +6,8 @@ export const RefreshActionInitializer = (props) => {
     title: '{{ t("Refresh") }}',
     'x-action': 'refresh',
     'x-component': 'Action',
-    'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:refresh',
     'x-component-props': {
       icon: 'ReloadOutlined',
       useProps: '{{ useRefreshActionProps }}',

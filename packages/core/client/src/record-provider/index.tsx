@@ -1,22 +1,35 @@
 import React, { createContext, useContext } from 'react';
-import { useCollection } from '../collection-manager';
+import { useCollection_deprecated } from '../collection-manager';
+import { RecordProvider } from '../data-source';
 import { useCurrentUserContext } from '../user';
 
-export const RecordContext = createContext({});
+export const RecordContext_deprecated = createContext({});
 export const RecordIndexContext = createContext(null);
 
-export const RecordProvider: React.FC<{ record: any; parent?: any; collectionName?: string }> = (props) => {
-  const { record, children, collectionName, parent = false } = props;
-  const { name: __collectionName } = useCollection();
-  const __parent = useContext(RecordContext);
+/**
+ * @deprecated use `RecordProvider` instead
+ */
+export const RecordProvider_deprecated: React.FC<{
+  record: any;
+  parent?: any;
+  isNew?: boolean;
+}> = (props) => {
+  const { record, children, parent, isNew } = props;
+  const { name: __collectionName } = useCollection_deprecated();
   const value = { ...record };
-  value['__parent'] = parent ? parent : __parent;
-  value['__collectionName'] = collectionName || __collectionName;
-  return <RecordContext.Provider value={value}>{children}</RecordContext.Provider>;
+  value['__parent'] = parent;
+  value['__collectionName'] = __collectionName;
+  return (
+    <RecordContext_deprecated.Provider value={value}>
+      <RecordProvider isNew={isNew} record={record} parentRecord={parent}>
+        {children}
+      </RecordProvider>
+    </RecordContext_deprecated.Provider>
+  );
 };
 
 export const RecordSimpleProvider: React.FC<{ value: Record<string, any>; children: React.ReactNode }> = (props) => {
-  return <RecordContext.Provider {...props} />;
+  return <RecordContext_deprecated.Provider {...props} />;
 };
 
 export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
@@ -24,8 +37,11 @@ export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
   return <RecordIndexContext.Provider value={index}>{children}</RecordIndexContext.Provider>;
 };
 
-export function useRecord<D = any>() {
-  return useContext(RecordContext) as D;
+/**
+ * @deprecated use `useRecord` instead
+ */
+export function useRecord_deprecated<D = any>() {
+  return useContext(RecordContext_deprecated) as D;
 }
 
 export function useRecordIndex() {
@@ -33,7 +49,7 @@ export function useRecordIndex() {
 }
 
 export const useRecordIsOwn = () => {
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const ctx = useCurrentUserContext();
   if (!record?.createdById) {
     return false;

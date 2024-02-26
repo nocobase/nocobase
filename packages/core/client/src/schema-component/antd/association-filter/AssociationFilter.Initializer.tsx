@@ -1,6 +1,6 @@
 import { SchemaInitializerItemType } from '../../../application';
-import { useAssociatedFields } from '../../../filter-provider/utils';
 import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
+import { useAssociatedFields } from '../../../filter-provider/utils';
 
 export const associationFilterInitializer = new SchemaInitializer({
   name: 'AssociationFilter.Initializer',
@@ -26,7 +26,9 @@ export const associationFilterInitializer = new SchemaInitializer({
             name: field.name,
             title: field.uiSchema?.title,
             type: 'void',
-            'x-designer': 'AssociationFilter.Item.Designer',
+            // 'x-designer': 'AssociationFilter.Item.Designer',
+            'x-toolbar': 'CollapseItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FilterCollapseItem',
             'x-component': 'AssociationFilter.Item',
             'x-component-props': {
               fieldNames: {

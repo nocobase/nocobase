@@ -2,7 +2,7 @@ import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { RecursionField, useField, useFieldSchema, observer } from '@formily/react';
 import React, { useEffect } from 'react';
-import { CollectionProvider } from '../../../collection-manager';
+import { CollectionProvider_deprecated } from '../../../collection-manager';
 import { useAssociationFieldContext, useInsertSchema } from './hooks';
 import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
 import schema from './schema';
@@ -19,7 +19,7 @@ export const InternalNester = observer(
       insertNester(schema.Nester);
     }, []);
     return (
-      <CollectionProvider name={collectionField.target}>
+      <CollectionProvider_deprecated name={collectionField.target}>
         <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName}`}>
           <FormLayout layout={'vertical'}>
             <div
@@ -58,7 +58,7 @@ export const InternalNester = observer(
             </div>
           </FormLayout>
         </ACLCollectionProvider>
-      </CollectionProvider>
+      </CollectionProvider_deprecated>
     );
   },
   { displayName: 'InternalNester' },

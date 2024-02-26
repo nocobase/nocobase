@@ -1,7 +1,7 @@
 import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Select, SelectProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from '../input';
 import Cron from './Cron';
@@ -12,7 +12,7 @@ interface CronSetProps extends SelectProps {
 
 const CronSetInternal = (props: CronSetProps) => {
   const { onChange, value } = props;
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const uiSchemaOptions = getField(fieldSchema?.name)?.uiSchema.enum;
   const compile = useCompile();
@@ -87,7 +87,7 @@ const ReadPretty = (props: CronSetProps) => {
   const { value } = props;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const uiSchemaOptions = getField(fieldSchema?.name)?.uiSchema.enum;
 
   const options = useMemo(() => {

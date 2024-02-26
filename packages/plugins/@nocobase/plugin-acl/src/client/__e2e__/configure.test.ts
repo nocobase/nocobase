@@ -63,7 +63,7 @@ test('allows to confgiure plugins ', async ({ page, mockPage, mockRole, updateRo
   }, roleData);
   await page.reload();
   await page.getByTestId('plugin-settings-button').click();
-  await page.getByLabel('acl').click();
+  await page.getByRole('link', { name: 'Access control' }).click();
   await page.getByLabel(`action-Action.Link-Configure-roles-${roleData.name}`).click();
   await expect(page.getByRole('tab').getByText('Plugin settings permissions')).toBeVisible();
   await updateRole({
@@ -128,22 +128,20 @@ test('plugin settings permissions', async ({ page, mockPage, mockRole, updateRol
   }, roleData);
   await page.reload();
   await page.getByTestId('plugin-settings-button').hover();
-  await expect(page.getByLabel('acl')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Access control' })).toBeVisible();
   await expect(page.getByLabel('auth')).not.toBeVisible();
   await expect(page.getByLabel('collection-manager')).not.toBeVisible();
-  await page.getByLabel('acl').click();
+  await page.getByRole('link', { name: 'Access control' }).click();
   await expect(page.getByRole('menuitem', { name: 'login Authentication' })).not.toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'database Collection manager' })).not.toBeVisible();
   await updateRole({
     name: roleData.name,
-    snippets: ['pm', 'pm.*', 'pm.auth.authenticators', 'pm.collection-manager', 'pm.collection-manager.collections'],
+    snippets: ['pm', 'pm.*', 'pm.auth.authenticators'],
   });
   await page.reload();
   await page.getByTestId('plugin-settings-button').hover();
-  await expect(page.getByLabel('acl')).toBeVisible();
-  await expect(page.getByLabel('auth')).toBeVisible();
-  await expect(page.getByLabel('collection-manager')).toBeVisible();
-  await page.getByLabel('acl').click();
+  await expect(page.getByRole('link', { name: 'Access control' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Authentication' })).toBeVisible();
+  await page.getByRole('link', { name: 'Access control' }).click();
   await expect(page.getByRole('menuitem', { name: 'login Authentication' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'database Collection manager' })).toBeVisible();
 });

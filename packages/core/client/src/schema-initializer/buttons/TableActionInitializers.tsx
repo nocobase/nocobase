@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection } from '../../';
+import { useCollection_deprecated } from '../../';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 // 表格操作配置
@@ -38,7 +38,7 @@ export const tableActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -52,7 +52,7 @@ export const tableActionInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -68,13 +68,13 @@ export const tableActionInitializers = new SchemaInitializer({
         {
           name: 'toggle',
           title: "{{t('Expand/Collapse')}}",
-          Component: 'ExpandActionInitializer',
+          Component: 'ExpandableActionInitializer',
           schema: {
             'x-align': 'right',
           },
           useVisible() {
             const schema = useFieldSchema();
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
             return collection.tree && treeTable !== false;
           },
@@ -85,7 +85,7 @@ export const tableActionInitializers = new SchemaInitializer({
       name: 'divider',
       type: 'divider',
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
@@ -110,7 +110,7 @@ export const tableActionInitializers = new SchemaInitializer({
         },
       ],
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },

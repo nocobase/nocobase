@@ -94,15 +94,18 @@ test.describe('table block schema settings', () => {
 
       // 开启之后，隐藏 Set default sorting rules 选项
       await page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).click();
+      await page.getByText('Drag and drop sorting field').click();
+      await page.getByText('sort', { exact: true }).click();
       await expect(
         page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).getByRole('switch'),
       ).toBeChecked();
       await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
-
       // 显示出来 email 和 ID
       await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+      await page.getByLabel('schema-initializer-TableV2-').click();
+
       await page.mouse.move(300, 0);
 
       // 默认的排序
@@ -582,7 +585,9 @@ test.describe('actions schema settings', () => {
 
     const showMenu = async (page: Page) => {
       await page.getByLabel('action-Action.Link-Popup-customize:popup-general-table-0').hover();
-      await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-Action.Designer-general' }).hover();
+      await page
+        .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:popup-general' })
+        .hover();
     };
 
     test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -637,7 +642,9 @@ test.describe('actions schema settings', () => {
 
     const showMenu = async (page: Page) => {
       await page.getByLabel('action-Action.Link-Update record-customize:update-general-table-0').hover();
-      await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-Action.Designer-general' }).hover();
+      await page
+        .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:updateRecord-general' })
+        .hover();
     };
 
     test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -664,7 +671,7 @@ test.describe('actions schema settings', () => {
   test.describe('add child', () => {
     const showMenu = async (page: Page) => {
       await page.getByLabel('action-Action.Link-Add child-create-treeCollection-table-0').hover();
-      await page.getByLabel('designer-schema-settings-Action.Link-Action.Designer-tree').hover();
+      await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:addChild-tree').hover();
     };
 
     test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -685,7 +692,7 @@ test.describe('actions schema settings', () => {
       await page.getByRole('button', { name: 'Submit' }).click();
 
       // 添加 add child 按钮
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-tree').hover();
       await page.getByRole('menuitem', { name: 'Add child' }).click();
 

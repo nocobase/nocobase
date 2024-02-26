@@ -286,6 +286,10 @@ export const generalWithBasic: CollectionSetting[] = [
         name: 'icon',
         interface: 'icon',
       },
+      {
+        name: 'sort',
+        interface: 'sort',
+      },
     ],
   },
 ];
@@ -402,6 +406,10 @@ export const generalWithAssociation: CollectionSetting[] = [
         name: 'manyToMany',
         interface: 'm2m',
         target: 'users',
+      },
+      {
+        name: 'id',
+        interface: 'id',
       },
     ],
   },

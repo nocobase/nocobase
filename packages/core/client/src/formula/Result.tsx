@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import * as math from 'mathjs';
 import { isNumber } from 'mathjs';
 import React, { useState } from 'react';
-import { useCollection } from '../collection-manager';
+import { useCollection_deprecated } from '../collection-manager';
 
 const ReadPretty = (props) => {
   if (props?.options?.dataType !== 'string') {
@@ -44,7 +44,7 @@ const Input = (props) => {
 
 export const Result = (props: any) => {
   const field = useField();
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const options = getField(fieldSchema.name as string);
   return field.readPretty ? <ReadPretty {...props} options={options} /> : <Input {...props} options={options} />;

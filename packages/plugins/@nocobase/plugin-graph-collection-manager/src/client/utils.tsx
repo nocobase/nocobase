@@ -1,5 +1,6 @@
 import lodash from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { CollectionOptions } from '@nocobase/client';
 
 const { groupBy, reduce, uniq, uniqBy } = lodash;
 
@@ -50,7 +51,8 @@ export const getChildrenCollections = (collections, name) => {
 export const formatData = (data) => {
   const edgeData = [];
   const targetTablekeys = [];
-  const tableData = data.map((item, index) => {
+
+  const tableData = data.map((item) => {
     const ports = [];
     const totalFields = [...item.fields];
     const inheritCollections = getInheritCollections(data, item.name);
@@ -555,4 +557,78 @@ export const getPopupContainer = () => {
 
 export const cleanGraphContainer = () => {
   graphContainer = null;
+};
+
+export const collection: CollectionOptions = {
+  name: 'collections',
+  filterTargetKey: 'name',
+  targetKey: 'name',
+  sortable: true,
+  fields: [
+    {
+      type: 'integer',
+      name: 'title',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Collection display name") }}',
+        type: 'number',
+        'x-component': 'Input',
+        required: true,
+      },
+    },
+    {
+      type: 'string',
+      name: 'name',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Collection name") }}',
+        type: 'string',
+        'x-component': 'Input',
+        description:
+          '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+      },
+    },
+    {
+      type: 'string',
+      name: 'template',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Collection Template") }}',
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'hasMany',
+      name: 'fields',
+      target: 'fields',
+      collectionName: 'collections',
+      sourceKey: 'name',
+      targetKey: 'name',
+      uiSchema: {},
+    },
+    {
+      type: 'hasMany',
+      name: 'inherits',
+      interface: 'select',
+      uiSchema: {
+        title: '{{ t("Inherits") }}',
+        type: 'string',
+        'x-component': 'Select',
+        'x-component-props': {
+          mode: 'multiple',
+        },
+      },
+    },
+    {
+      type: 'string',
+      name: 'description',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Description") }}',
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+  ],
 };

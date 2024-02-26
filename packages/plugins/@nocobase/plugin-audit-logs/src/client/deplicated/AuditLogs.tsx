@@ -1,14 +1,13 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import {
-  CollectionManagerContext,
-  CollectionManagerProvider,
+  ExtendCollectionsProvider,
   FormProvider,
   SchemaComponent,
   TableBlockProvider,
-  useCollection,
+  useCollection_deprecated,
   useCompile,
-  useRecord,
+  useRecord_deprecated,
 } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
 import { AuditLogsDesigner } from './AuditLogsDesigner';
@@ -184,7 +183,9 @@ export const AuditLogs: any = () => {
                       o80rypwmeeg: {
                         type: 'void',
                         title: '{{ t("View") }}',
-                        'x-designer': 'Action.Designer',
+                        // 'x-designer': 'Action.Designer',
+                        'x-toolbar': 'ActionSchemaToolbar',
+                        'x-settings': 'actionSettings:view',
                         'x-component': 'Action.Link',
                         'x-component-props': {
                           openMode: 'drawer',
@@ -460,9 +461,8 @@ export const AuditLogs: any = () => {
 
 AuditLogs.Decorator = observer(
   (props: any) => {
-    const parent = useCollection();
-    const record = useRecord();
-    const { interfaces } = useContext(CollectionManagerContext);
+    const parent = useCollection_deprecated();
+    const record = useRecord_deprecated();
     let filter = props?.params?.filter;
     if (parent.name) {
       const filterByTk = record?.[parent.filterTargetKey || 'id'];
@@ -500,9 +500,9 @@ AuditLogs.Decorator = observer(
     };
     return (
       <IsAssociationBlock.Provider value={!!parent.name}>
-        <CollectionManagerProvider collections={[collection]} interfaces={interfaces}>
+        <ExtendCollectionsProvider collections={[collection]}>
           <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
-        </CollectionManagerProvider>
+        </ExtendCollectionsProvider>
       </IsAssociationBlock.Provider>
     );
   },

@@ -2,7 +2,7 @@ import { FormItem, FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import React from 'react';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 registerValidateRules({
   json(value) {
@@ -18,14 +18,14 @@ registerValidateRules({
   },
 });
 
-export const json: IField = {
-  name: 'json',
-  type: 'object',
-  group: 'advanced',
-  order: 4,
-  title: '{{t("JSON")}}',
-  sortable: true,
-  default: {
+export class JsonFieldInterface extends CollectionFieldInterface {
+  name = 'json';
+  type = 'object';
+  group = 'advanced';
+  order = 4;
+  title = '{{t("JSON")}}';
+  sortable = true;
+  default = {
     type: 'json',
     // name,
     uiSchema: {
@@ -40,10 +40,10 @@ export const json: IField = {
       },
       default: null,
     },
-  },
-  availableTypes: ['json', 'array', 'jsonb'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['json', 'array', 'jsonb', 'text', 'circle', 'lineString', 'point', 'polygon'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
     jsonb: {
       type: 'boolean',
@@ -58,8 +58,8 @@ export const json: IField = {
       'x-hidden': `{{ !isDialect('postgres') }}`,
       'x-disabled': `{{ disabledJSONB }}`,
     },
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.string,
-  },
-};
+  };
+}

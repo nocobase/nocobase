@@ -7,6 +7,7 @@ import { ResourceType } from './resource';
 export interface ParseRequest {
   path: string;
   method: string;
+  namespace?: string;
   // 资源类型
   type?: ResourceType;
 }

@@ -42,7 +42,6 @@ export {
   useAssociatedFormItemInitializerFields,
   useAssociatedTableColumnInitializerFields,
   useCollectionDataSourceItems,
-  useCollectionDataSourceItemsV2,
   useCurrentSchema,
   useFormItemInitializerFields,
   useInheritsTableColumnInitializerFields,

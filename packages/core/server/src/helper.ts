@@ -1,21 +1,20 @@
 import cors from '@koa/cors';
-import Database from '@nocobase/database';
+import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
-import { postPerfHooksWrap, prePerfHooksWrap, uid } from '@nocobase/utils';
+import { uid } from '@nocobase/utils';
 import { Command } from 'commander';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
 import { resolve } from 'path';
+import { createHistogram, RecordableHistogram } from 'perf_hooks';
 import Application, { ApplicationOptions } from './application';
 import { parseVariables } from './middlewares';
 import { dateTemplate } from './middlewares/data-template';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { db2resource } from './middlewares/db2resource';
 import { i18n } from './middlewares/i18n';
-import { requestLogger } from '@nocobase/logger';
-import { randomUUID } from 'crypto';
-import { createHistogram, RecordableHistogram } from 'perf_hooks';
 
 export function createI18n(options: ApplicationOptions) {
   const instance = i18next.createInstance();
@@ -29,14 +28,6 @@ export function createI18n(options: ApplicationOptions) {
   return instance;
 }
 
-export function createDatabase(options: ApplicationOptions) {
-  if (options.database instanceof Database) {
-    return options.database;
-  } else {
-    return new Database(options.database);
-  }
-}
-
 export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
@@ -46,7 +37,9 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     app.context.reqId = randomUUID();
     await next();
   });
+
   app.use(requestLogger(app.name, options.logger?.request), { tag: 'logger' });
+
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],
@@ -95,7 +88,8 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   app.resourcer.use(dateTemplate, { tag: 'dateTemplate', after: 'acl' });
 
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
-  app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
+  app.use(app.resourcer.restApiMiddleware({ skipIfDataSourceExists: true }), { tag: 'restApi', after: 'db2resource' });
+  app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'restApi' });
 }
 
 export const createAppProxy = (app: Application) => {

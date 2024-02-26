@@ -66,30 +66,24 @@ test.describe('configure actions', () => {
     await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('menuitem', { name: 'Duplicate' }).click();
 
     await expect(page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch')).toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Duplicate' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Duplicate' })).toBeVisible();
 
     // delete buttons
     await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('menuitem', { name: 'Duplicate' }).click();
 
     await expect(page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch')).not.toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Duplicate' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Edit' })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete' })).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Duplicate' })).not.toBeVisible();
   });
 });

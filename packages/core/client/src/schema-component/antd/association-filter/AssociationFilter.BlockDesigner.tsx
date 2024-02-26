@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { FilterBlockType } from '../../../filter-provider/utils';
 import {
   GeneralSchemaDesigner,
@@ -14,7 +14,7 @@ import {
 import { useSchemaTemplate } from '../../../schema-templates';
 
 export const AssociationFilterBlockDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();

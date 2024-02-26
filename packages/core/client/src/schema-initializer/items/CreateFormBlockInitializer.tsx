@@ -1,11 +1,11 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useBlockAssociationContext } from '../../block-provider';
-import { useCollection } from '../../collection-manager';
+import { useCollection_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 // TODO: `SchemaInitializerItem` items
 export const CreateFormBlockInitializer = () => {
@@ -14,7 +14,7 @@ export const CreateFormBlockInitializer = () => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { insert } = useSchemaInitializer();
   const association = useBlockAssociationContext();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   return (
     <SchemaInitializerItem
       icon={<FormOutlined />}
@@ -26,8 +26,10 @@ export const CreateFormBlockInitializer = () => {
             const blockSchema = createFormBlockSchema({
               actionInitializers: 'CreateFormActionInitializers',
               association,
+              dataSource: collection.dataSource,
               collection: collection.name,
               template: s,
+              settings: 'blockSettings:createForm',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -41,7 +43,9 @@ export const CreateFormBlockInitializer = () => {
             createFormBlockSchema({
               actionInitializers: 'CreateFormActionInitializers',
               association,
+              dataSource: collection.dataSource,
               collection: collection.name,
+              settings: 'blockSettings:createForm',
             }),
           );
         }

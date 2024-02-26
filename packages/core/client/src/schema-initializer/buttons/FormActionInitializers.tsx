@@ -1,30 +1,10 @@
 import { SchemaInitializerItemType } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
-// TODO(refactor): should be moved to workflow plugin
 const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
   name: 'submitToWorkflow',
   title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-  Component: 'CustomizeActionInitializer',
-  schema: {
-    title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-    'x-component': 'Action',
-    'x-component-props': {
-      useProps: '{{ useTriggerWorkflowsActionProps }}',
-    },
-    'x-designer': 'Action.Designer',
-    'x-action-settings': {
-      assignedValues: {},
-      skipValidator: false,
-      onSuccess: {
-        manualClose: true,
-        redirecting: false,
-        successMessage: '{{t("Submitted successfully")}}',
-      },
-      triggerWorkflows: [],
-    },
-    'x-action': 'customize:triggerWorkflows',
-  },
+  Component: 'FormTriggerWorkflowActionInitializerV2',
 };
 
 // 表单的操作配置
@@ -60,30 +40,7 @@ export const formActionInitializers = new SchemaInitializer({
         {
           name: 'saveRecord',
           title: '{{t("Save record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Save record") }}',
-            'x-action': 'customize:save',
-            'x-component': 'Action',
-            'x-designer': 'Action.Designer',
-            'x-designer-props': {
-              modalTip:
-                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
-            },
-            'x-action-settings': {
-              assignedValues: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
-              },
-              triggerWorkflows: [],
-            },
-            'x-component-props': {
-              useProps: '{{ useCreateActionProps }}',
-            },
-          },
+          Component: 'SaveRecordActionInitializer',
         },
         formTriggerWorkflowActionInitializerV2,
         {
@@ -128,30 +85,7 @@ export const createFormActionInitializers = new SchemaInitializer({
         {
           name: 'saveRecord',
           title: '{{t("Save record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Save record") }}',
-            'x-action': 'customize:save',
-            'x-component': 'Action',
-            'x-designer': 'Action.Designer',
-            'x-designer-props': {
-              modalTip:
-                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
-            },
-            'x-action-settings': {
-              assignedValues: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
-              },
-              triggerWorkflows: [],
-            },
-            'x-component-props': {
-              useProps: '{{ useCreateActionProps }}',
-            },
-          },
+          Component: 'SaveRecordActionInitializer',
         },
         formTriggerWorkflowActionInitializerV2,
         {
@@ -196,80 +130,17 @@ export const updateFormActionInitializers = new SchemaInitializer({
         {
           name: 'popup',
           title: '{{t("Popup")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            type: 'void',
-            title: '{{ t("Popup") }}',
-            'x-action': 'customize:popup',
-            'x-designer': 'Action.Designer',
-            'x-component': 'Action',
-            'x-component-props': {
-              openMode: 'drawer',
-            },
-            properties: {
-              drawer: {
-                type: 'void',
-                title: '{{ t("Popup") }}',
-                'x-component': 'Action.Container',
-                'x-component-props': {
-                  className: 'nb-action-popup',
-                },
-                properties: {
-                  tabs: {
-                    type: 'void',
-                    'x-component': 'Tabs',
-                    'x-component-props': {},
-                    'x-initializer': 'TabPaneInitializers',
-                    properties: {
-                      tab1: {
-                        type: 'void',
-                        title: '{{t("Details")}}',
-                        'x-component': 'Tabs.TabPane',
-                        'x-designer': 'Tabs.Designer',
-                        'x-component-props': {},
-                        properties: {
-                          grid: {
-                            type: 'void',
-                            'x-component': 'Grid',
-                            'x-initializer': 'RecordBlockInitializers',
-                            properties: {},
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+          Component: 'PopupActionInitializer',
+          useComponentProps() {
+            return {
+              'x-component': 'Action',
+            };
           },
         },
         {
           name: 'saveRecord',
           title: '{{t("Save record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Save") }}',
-            'x-component': 'Action',
-            'x-action': 'customize:save',
-            'x-designer': 'Action.Designer',
-            'x-designer-props': {
-              modalTip:
-                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
-            },
-            'x-action-settings': {
-              assignedValues: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
-              },
-              triggerWorkflows: [],
-            },
-            'x-component-props': {
-              useProps: '{{ useUpdateActionProps }}',
-            },
-          },
+          Component: 'SaveRecordActionInitializer',
         },
         formTriggerWorkflowActionInitializerV2,
         {

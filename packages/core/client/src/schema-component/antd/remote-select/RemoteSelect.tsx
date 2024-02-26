@@ -5,11 +5,13 @@ import dayjs from 'dayjs';
 import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { useDataSourceHeaders } from '../../../data-source/utils';
+import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -41,13 +43,15 @@ const InternalRemoteSelect = connect(
       optionFilter,
       ...others
     } = props;
+    const dataSource = useDataSourceKey();
+    const headers = useDataSourceHeaders(dataSource);
     const [open, setOpen] = useState(false);
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
-    const { getField } = useCollection();
+    const { getField } = useCollection_deprecated();
     const searchData = useRef(null);
-    const { getCollectionJoinField, getInterface } = useCollectionManager();
+    const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
     const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
     const targetField =
       _targetField ||
@@ -130,6 +134,7 @@ const InternalRemoteSelect = connect(
       {
         action: 'list',
         ...service,
+        headers,
         params: {
           pageSize: 200,
           ...service?.params,
@@ -205,7 +210,6 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
-
     return (
       <Select
         open={open}
@@ -252,9 +256,9 @@ const InternalRemoteSelect = connect(
         ...props,
         fieldNames: {
           ...defaultFieldNames,
-          ...props.fieldNames,
           ...field.componentProps.fieldNames,
           ...fieldSchema['x-component-props']?.fieldNames,
+          ...props.fieldNames,
         },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };

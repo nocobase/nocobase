@@ -5,11 +5,11 @@ import { RoleUsersManager } from './RoleUsersManager';
 
 class PluginUsersClient extends Plugin {
   async load() {
-    this.app.pluginSettingsManager.add('organization', {
+    this.app.pluginSettingsManager.add('users', {
       title: tval('Users & Permissions', { ns: 'users' }),
       icon: 'TeamOutlined',
     });
-    this.app.pluginSettingsManager.add('organization.users', {
+    this.app.pluginSettingsManager.add('users.users', {
       title: tval('Users'),
       icon: 'UserOutlined',
       Component: UsersManagement,

@@ -3,7 +3,14 @@ import { Button, Modal, Select, Tag, Tooltip, message } from 'antd';
 import { ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
-import { Action, css, useCompile, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+import {
+  Action,
+  css,
+  useCompile,
+  useRecord_deprecated,
+  useResourceActionContext,
+  useResourceContext,
+} from '@nocobase/client';
 
 import { EXECUTION_STATUS, ExecutionStatusOptions, ExecutionStatusOptionsMap } from '../constants';
 import { lang } from '../locale';
@@ -61,7 +68,7 @@ export function ExecutionStatusColumn(props) {
   const { t } = useTranslation();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const onCancel = useCallback(() => {
     Modal.confirm({
       title: lang('Cancel the execution'),

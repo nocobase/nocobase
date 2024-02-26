@@ -1,5 +1,5 @@
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCollection } from '../../collection-manager';
+import { useCollection_deprecated } from '../../collection-manager';
 
 // 表单的操作配置
 export const gridCardActionInitializers = new SchemaInitializer({
@@ -35,7 +35,7 @@ export const gridCardActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -60,7 +60,7 @@ export const gridCardActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -113,7 +113,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
             'x-align': 'left',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -128,7 +128,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
             'x-align': 'left',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return collection.template !== 'sql';
           },
         },
@@ -146,78 +146,19 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
         {
           name: 'popup',
           title: '{{t("Popup")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            type: 'void',
-            title: '{{ t("Popup") }}',
-            'x-action': 'customize:popup',
-            'x-designer': 'Action.Designer',
-            'x-component': 'Action.Link',
-            'x-component-props': {
-              openMode: 'drawer',
-            },
-            properties: {
-              drawer: {
-                type: 'void',
-                title: '{{ t("Popup") }}',
-                'x-component': 'Action.Container',
-                'x-component-props': {
-                  className: 'nb-action-popup',
-                },
-                properties: {
-                  tabs: {
-                    type: 'void',
-                    'x-component': 'Tabs',
-                    'x-component-props': {},
-                    'x-initializer': 'TabPaneInitializers',
-                    properties: {
-                      tab1: {
-                        type: 'void',
-                        title: '{{t("Details")}}',
-                        'x-component': 'Tabs.TabPane',
-                        'x-designer': 'Tabs.Designer',
-                        'x-component-props': {},
-                        properties: {
-                          grid: {
-                            type: 'void',
-                            'x-component': 'Grid',
-                            'x-initializer': 'RecordBlockInitializers',
-                            properties: {},
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+          Component: 'PopupActionInitializer',
+          useComponentProps() {
+            return {
+              'x-component': 'Action.Link',
+            };
           },
         },
         {
           name: 'update-record',
           title: '{{t("Update record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Update record") }}',
-            'x-component': 'Action.Link',
-            'x-action': 'customize:update',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action': 'update',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              assignedValues: {},
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Updated successfully")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
-            },
-          },
+          Component: 'UpdateRecordActionInitializer',
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -229,7 +170,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
             'x-action': 'customize:table:request',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },

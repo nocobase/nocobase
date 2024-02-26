@@ -32,11 +32,10 @@ test.describe('actions schema settings', () => {
   test('edit & delete & duplicate', async ({ page, mockPage }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
 
-    // 创建 Edit & Delete & Duplicate 三个按钮
+    // 创建 Edit & Delete 两个按钮
     await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('menuitem', { name: 'Duplicate' }).click();
     await page.mouse.move(0, 300);
 
     // Edit button settings ---------------------------------------------------------------
@@ -57,16 +56,6 @@ test.describe('actions schema settings', () => {
         await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
       },
       supportedOptions: ['Edit button', 'Linkage rules', 'Delete'],
-    });
-
-    // Duplicate settings ----------------------------------------------------------------
-    await expectSettingsMenu({
-      page,
-      showMenu: async () => {
-        await page.getByRole('button', { name: 'Duplicate' }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
-      },
-      supportedOptions: ['Edit button', 'Duplicate mode', 'Open mode', 'Popup size', 'Delete'],
     });
   });
 });

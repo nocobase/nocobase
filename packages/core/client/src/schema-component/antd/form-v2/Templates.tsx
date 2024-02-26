@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
@@ -39,7 +39,7 @@ const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { duplicateData } = useFormBlockContext();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   if (duplicateData) {
     return duplicateData;
   }
@@ -87,7 +87,7 @@ const useDataTemplates = () => {
 export const Templates = ({ style = {}, form }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const templateOptions = compatibleDataId(templates);
   const [targetTemplate, setTargetTemplate] = useState(defaultTemplate?.key || 'none');
   const [targetTemplateData, setTemplateData] = useState(null);

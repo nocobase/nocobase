@@ -104,6 +104,106 @@ export default defineConfig({
             },
           ],
         },
+        {
+          title: 'Data Source',
+          type: 'group',
+          children: [
+            {
+              title: 'DataSourceManager',
+              link: '/core/data-source/data-source-manager',
+            },
+            {
+              title: 'DataSourceManagerProvider',
+              link: '/core/data-source/data-source-manager-provider',
+            },
+            {
+              title: 'DataSource',
+              link: '/core/data-source/data-source',
+            },
+            {
+              title: 'DataSourceProvider',
+              link: '/core/data-source/data-source-provider',
+            },
+            {
+              title: 'CollectionManager',
+              link: '/core/data-source/collection-manager',
+            },
+            {
+              title: 'CollectionManagerProvider',
+              link: '/core/data-source/collection-manager-provider',
+            },
+            {
+              title: 'CollectionTemplateManager',
+              link: '/core/data-source/collection-template-manager',
+            },
+            {
+              title: 'CollectionTemplate',
+              link: '/core/data-source/collection-template',
+            },
+            {
+              title: 'Collection',
+              link: '/core/data-source/collection',
+            },
+            {
+              title: 'CollectionProvider',
+              link: '/core/data-source/collection-provider',
+            },
+            {
+              title: 'CollectionMixins',
+              link: '/core/data-source/collection-mixins',
+            },
+            {
+              title: 'CollectionField',
+              link: '/core/data-source/collection-field',
+            },
+            {
+              title: 'CollectionFieldInterfaceManager',
+              link: '/core/data-source/collection-field-interface-manager',
+            },
+            {
+              title: 'CollectionFieldInterface',
+              link: '/core/data-source/collection-field-interface',
+            },
+            {
+              title: 'AssociationProvider',
+              link: '/core/data-source/association-provider',
+            },
+            {
+              title: 'ExtendCollectionsProvider',
+              link: '/core/data-source/extend-collections-provider',
+            },
+          ]
+        },
+        {
+          title: 'DataBlock',
+          type: 'group',
+          children: [
+            {
+              title: '临时',
+              link: '/core/data-block/tmp',
+            },
+            {
+              title: 'Record',
+              link: '/core/data-block/record',
+            },
+            {
+              title: 'RecordProvider',
+              link: '/core/data-block/record-provider',
+            },
+            {
+              title: 'DataBlockProvider',
+              link: '/core/data-block/data-block-provider',
+            },
+            {
+              title: 'DataBlockResourceProvider',
+              link: '/core/data-block/data-block-resource-provider',
+            },
+            {
+              title: 'DataBlockRequestProvider',
+              link: '/core/data-block/data-block-request-provider',
+            },
+          ]
+        }
       ],
       // '/ui-schema': [
       //   {

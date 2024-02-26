@@ -77,7 +77,9 @@ export const readPrettyFormItemInitializers = new SchemaInitializer({
         type: 'void',
         'x-editable': false,
         'x-decorator': 'FormItem',
-        'x-designer': 'Markdown.Void.Designer',
+        // 'x-designer': 'Markdown.Void.Designer',
+        'x-toolbar': 'BlockSchemaToolbar',
+        'x-settings': 'blockSettings:markdown',
         'x-component': 'Markdown.Void',
         'x-component-props': {
           content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',

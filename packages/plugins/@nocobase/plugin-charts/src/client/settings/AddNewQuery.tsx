@@ -6,7 +6,7 @@ import {
   ActionContextProvider,
   SchemaComponent,
   useActionContext,
-  useRecord,
+  useRecord_deprecated,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
@@ -39,7 +39,7 @@ const useUpdateAction = () => {
   const form = useForm();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk } = useRecord_deprecated();
   const ctx = useChartQueryMetadataContext();
   return {
     async run() {
@@ -157,7 +157,7 @@ export const AddNewQuery = () => {
 
 export const EditQuery = () => {
   const [visible, setVisible] = useState(false);
-  const record = useRecord();
+  const record = useRecord_deprecated();
   const form = useMemo(() => createForm(), []);
   const schema = getSchema(record, { form, isNewRecord: false });
   return (

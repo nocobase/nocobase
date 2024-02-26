@@ -320,6 +320,7 @@ ChartConfigure.Query = function Query() {
       schema,
       field,
       collection: value,
+      dataSource: current.dataSource,
       service: current.service,
       initialValues: {},
       data: undefined,

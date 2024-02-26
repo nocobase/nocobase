@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
@@ -8,12 +8,12 @@ import { useSchemaTemplate } from '../../../schema-templates';
  * @returns
  */
 export const FilterDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
 
   return (
     <GeneralSchemaDesigner
-      schemaSettings="FormFilterSettings"
+      schemaSettings="blockSettings:filterForm"
       template={template}
       title={title || name}
     ></GeneralSchemaDesigner>

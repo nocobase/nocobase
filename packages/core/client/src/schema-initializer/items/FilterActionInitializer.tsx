@@ -7,7 +7,8 @@ export const FilterActionInitializer = (props) => {
     type: 'void',
     title: '{{ t("Filter") }}',
     'x-action': 'filter',
-    'x-designer': 'Filter.Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:filter',
     'x-component': 'Filter.Action',
     'x-component-props': {
       icon: 'FilterOutlined',

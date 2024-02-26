@@ -114,7 +114,7 @@ export const kanbanCardInitializers: SchemaInitializer = new SchemaInitializer({
       divider: true,
       title: '{{t("Display association fields")}}',
       name: 'displayAssociationFields',
-      checkChildrenLength: true,
+      hideIfNoChildren: true,
       useChildren() {
         const associationFields = useAssociatedFormItemInitializerFields({
           readPretty: true,

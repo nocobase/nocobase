@@ -5,10 +5,9 @@ import {
   APIClientProvider,
   Application,
   BlockSchemaComponentProvider,
-  CollectionManagerProvider,
   SchemaComponent,
-  Plugin,
   SchemaComponentProvider,
+  ExtendCollectionsProvider,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
@@ -106,13 +105,13 @@ const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <SchemaComponentProvider>
-        <CollectionManagerProvider collections={collections.data}>
+        <ExtendCollectionsProvider collections={collections.data as any}>
           <AntdSchemaComponentProvider>
             <BlockSchemaComponentProvider>
               <SchemaComponent schema={schema} />
             </BlockSchemaComponentProvider>
           </AntdSchemaComponentProvider>
-        </CollectionManagerProvider>
+        </ExtendCollectionsProvider>
       </SchemaComponentProvider>
     </APIClientProvider>
   );

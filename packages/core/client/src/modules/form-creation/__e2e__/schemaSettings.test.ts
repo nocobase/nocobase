@@ -511,7 +511,9 @@ test.describe('creation form block schema settings', () => {
 
       // 测试子表单字段默认值 ------------------------------------------------------------------------------------------
       await page.getByLabel(`block-item-CollectionField-users-form-users.nickname-Nickname`).hover();
-      await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-users-users.Nickname`).hover();
+      await page
+        .getByLabel(`designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.Nickname`)
+        .hover();
       await page.getByRole('menuitem', { name: 'Set default value', exact: true }).click();
       await page.getByLabel('Set default value').getByRole('textbox').click();
       await page.getByLabel('Set default value').getByRole('textbox').fill('test default value');
@@ -526,7 +528,9 @@ test.describe('creation form block schema settings', () => {
 
       // 为 username 设置一个变量默认值: {{ currentObject.nickname }}
       await page.getByLabel(`block-item-CollectionField-users-form-users.username-Username`).hover();
-      await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-users-users.Username`).hover();
+      await page
+        .getByLabel(`designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.Username`)
+        .hover();
       await page.getByRole('menuitem', { name: 'Set default value', exact: true }).click();
       await page.getByLabel('variable-button').click();
       await page.getByRole('menuitemcheckbox', { name: 'Current object' }).click();
@@ -581,7 +585,7 @@ test.describe('creation form block schema settings', () => {
       // 测试子表格字段默认值 ------------------------------------------------------------------------------------------
       await page.getByRole('button', { name: 'Nickname', exact: true }).hover();
       await page
-        .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-TableV2.Column.Designer-users' })
+        .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
         .hover();
       await page.getByRole('menuitem', { name: 'Set default value', exact: true }).click();
       await page.mouse.move(300, 0);
@@ -592,7 +596,7 @@ test.describe('creation form block schema settings', () => {
       // 确保下拉选项被隐藏
       await page.getByRole('button', { name: 'Nickname', exact: true }).hover();
       await page
-        .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-TableV2.Column.Designer-users' })
+        .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
         .hover();
       await page.mouse.move(300, 0);
 
@@ -610,7 +614,7 @@ test.describe('creation form block schema settings', () => {
       // 为 username 设置一个变量默认值: {{ currentObject.nickname }}
       await page.getByRole('button', { name: 'Username', exact: true }).hover();
       await page
-        .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-TableV2.Column.Designer-users' })
+        .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
         .hover();
       await page.getByRole('menuitem', { name: 'Set default value', exact: true }).click();
       await page.mouse.move(300, 0);
@@ -1150,7 +1154,7 @@ test.describe('creation form block schema settings', () => {
 
     //删除模板
     await page.getByTestId('plugin-settings-button').click();
-    await page.getByLabel('ui-schema-storage').click();
+    await page.getByRole('link', { name: 'Block templates' }).click();
     await page.getByRole('menuitem', { name: 'layout Block templates' }).click();
     await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-Users_Form').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -1167,7 +1171,7 @@ test.describe('actions schema settings', () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
       },
-      supportedOptions: ['Edit button', 'Bind workflows', 'Delete'],
+      supportedOptions: ['Edit button', 'Second confirmation', 'Bind workflows', 'Delete'],
     });
   });
 

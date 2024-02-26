@@ -21,7 +21,7 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   await expect(page.getByLabel('page1')).toBeVisible();
   await expect(page.getByLabel('page2')).not.toBeVisible();
   await page.getByTestId('plugin-settings-button').hover();
-  await page.getByLabel('acl').click();
+  await page.getByRole('link', { name: 'Access control' }).click();
   await page.getByLabel(`action-Action.Link-Configure-roles-${roleData.name}`).click();
   await page.getByRole('tab').getByText('Menu permissions').click();
   await page.waitForSelector('.ant-table');
@@ -33,7 +33,7 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   await expect(page.getByLabel('page2')).toBeVisible();
   await expect(page.getByLabel('page1')).not.toBeVisible();
   await page.getByTestId('plugin-settings-button').hover();
-  await page.getByLabel('acl').click();
+  await page.getByRole('link', { name: 'Access control' }).click();
   await page.getByLabel(`action-Action.Link-Configure-roles-${roleData.name}`).click();
   await page.getByRole('tab').getByText('Menu permissions').click();
   await page.waitForSelector('.ant-table');
