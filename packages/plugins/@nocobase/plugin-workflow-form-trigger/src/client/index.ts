@@ -53,6 +53,14 @@ const recordTriggerWorkflowActionInitializer: SchemaInitializerItemType = {
   },
 };
 
+const recordTriggerWorkflowActionLinkInitializer = {
+  ...recordTriggerWorkflowActionInitializer,
+  schema: {
+    ...recordTriggerWorkflowActionInitializer.schema,
+    'x-component': 'Action.Link',
+  },
+};
+
 export default class extends Plugin {
   async afterAdd() {
     // await this.app.pm.add()
@@ -86,18 +94,12 @@ export default class extends Plugin {
     ReadPrettyFormActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
 
     const TableActionColumnInitializers = this.app.schemaInitializerManager.get('TableActionColumnInitializers');
-    TableActionColumnInitializers.add('customize.submitToWorkflow', {
-      ...recordTriggerWorkflowActionInitializer,
-      schema: {
-        ...recordTriggerWorkflowActionInitializer.schema,
-        'x-component': 'Action.Link',
-      },
-    });
+    TableActionColumnInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionLinkInitializer);
 
     const GridCardItemActionInitializers = this.app.schemaInitializerManager.get('GridCardItemActionInitializers');
-    GridCardItemActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
+    GridCardItemActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionLinkInitializer);
 
     const ListItemActionInitializers = this.app.schemaInitializerManager.get('ListItemActionInitializers');
-    ListItemActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
+    ListItemActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionLinkInitializer);
   }
 }
