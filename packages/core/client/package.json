@@ -36,7 +36,7 @@
     "cronstrue": "^2.11.0",
     "file-saver": "^2.0.5",
     "flat": "^5.0.2",
-    "i18next": "^22.4.9",
+    "i18next": "^23.10.0",
     "i18next-http-backend": "^2.1.1",
     "lodash": "4.17.21",
     "markdown-it": "13.0.1",
