@@ -678,6 +678,13 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       {
         name: 'saveMode',
         Component: SaveMode,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return (
+            fieldSchema['x-action'] === 'submit' &&
+            fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
+          );
+        },
       },
       {
         name: 'enableChildCollections',
