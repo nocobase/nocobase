@@ -280,7 +280,7 @@ export class SyncRunner {
   async handleZeroColumnModel(options) {
     // @ts-ignore
     if (Object.keys(this.model.tableAttributes).length === 0) {
-      if (this.database.inDialect('sqlite', 'mysql', 'mariadb')) {
+      if (this.database.inDialect('sqlite', 'mysql', 'mariadb', 'postgres')) {
         throw new ZeroColumnTableError(
           `Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`,
         );

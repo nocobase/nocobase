@@ -1,5 +1,5 @@
 import { Cache } from '@nocobase/cache';
-import { Database } from '@nocobase/database';
+import { Database, Transaction } from '@nocobase/database';
 
 export default class Resources {
   cache: Cache;
@@ -10,11 +10,12 @@ export default class Resources {
     this.db = db;
   }
 
-  async getTexts() {
+  async getTexts(transaction?: Transaction) {
     return await this.cache.wrap(`texts`, async () => {
       return await this.db.getRepository('localizationTexts').find({
         fields: ['id', 'module', 'text'],
         raw: true,
+        transaction,
       });
     });
   }
@@ -50,20 +51,20 @@ export default class Resources {
     return resources;
   }
 
-  async filterExists(texts: { text: string; module: string }[]) {
-    const existTexts = await this.getTexts();
+  async filterExists(texts: { text: string; module: string }[], transaction?: Transaction) {
+    const existTexts = await this.getTexts(transaction);
     return texts.filter((text) => {
       return !existTexts.find((item: any) => item.text === text.text && item.module === text.module);
     });
   }
 
-  async updateCacheTexts(texts: any[]) {
+  async updateCacheTexts(texts: any[], transaction?: Transaction) {
     const newTexts = texts.map((text) => ({
       id: text.id,
       module: text.module,
       text: text.text,
     }));
-    const existTexts = await this.getTexts();
+    const existTexts = await this.getTexts(transaction);
     await this.cache.set(`texts`, [...existTexts, ...newTexts]);
   }
 
