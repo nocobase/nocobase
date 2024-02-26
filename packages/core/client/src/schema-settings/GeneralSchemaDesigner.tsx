@@ -58,6 +58,9 @@ export interface GeneralSchemaDesignerProps {
   draggable?: boolean;
 }
 
+/**
+ * @deprecated use `SchemaToolbar` instead
+ */
 export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any) => {
   const { disableInitializer, title, template, schemaSettings, contextValue, draggable = true } = props;
   const { dn, designable } = useDesignable();
@@ -81,7 +84,6 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   const dataSources = dm.getDataSources();
   const dataSourceContext = useDataSource();
   const dataSource = dataSources.length > 1 && dataSourceContext;
-
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`
     : template?.name;
@@ -173,7 +175,12 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
+  const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
+  const dm = useDataSourceManager();
+  const dataSources = dm.getDataSources();
+  const dataSourceContext = useDataSource();
+  const dataSource = dataSources.length > 1 && dataSourceContext;
 
   const titleArr = useMemo(() => {
     if (!title) return undefined;
@@ -231,7 +238,6 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const settingsElement = useMemo(() => {
     return settings !== false && schemaSettingsExists ? schemaSettingsRender() : null;
   }, [schemaSettingsExists, schemaSettingsRender, settings]);
-  const { styles } = useStyles();
 
   const toolbarRef = useRef<HTMLDivElement>(null);
 
@@ -278,7 +284,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
           <Space size={2}>
             {titleArr.map((item) => (
               <span key={item} className={styles.toolbarTitleTag}>
-                {item}
+                {dataSource ? `${compile(dataSource?.displayName)} > ${item}` : item}
               </span>
             ))}
           </Space>
