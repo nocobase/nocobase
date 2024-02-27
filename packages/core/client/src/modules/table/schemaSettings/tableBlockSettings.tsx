@@ -363,7 +363,7 @@ export const tableBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'divider',
+      name: 'divider2',
       type: 'divider',
     },
     {
