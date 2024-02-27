@@ -252,6 +252,10 @@ export const recordBlockInitializers = new SchemaInitializer({
       name: 'filterBlocks',
       title: '{{t("Filter blocks")}}',
       type: 'itemGroup',
+      useVisible() {
+        const collection = useCollection_deprecated();
+        return collection.fields.some((field) => ['hasMany', 'belongsToMany'].includes(field.type));
+      },
       children: [
         {
           name: 'filterForm',

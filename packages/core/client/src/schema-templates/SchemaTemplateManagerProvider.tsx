@@ -128,7 +128,7 @@ const Internal = (props) => {
     resource: 'uiSchemaTemplates',
     action: 'list',
     params: {
-      appends: ['collection'],
+      // appends: ['collection'],
       paginate: false,
     },
   };

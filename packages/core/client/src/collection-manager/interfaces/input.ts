@@ -31,7 +31,14 @@ export class InputFieldInterface extends CollectionFieldInterface {
     ...defaultProps,
     layout: {
       type: 'void',
+      title: '{{t("Index")}}',
       'x-component': 'Space',
+      'x-decorator': 'FormItem',
+      'x-decorator-props': {
+        style: {
+          marginBottom: '0px',
+        },
+      },
       properties: {
         primaryKey,
         unique,
