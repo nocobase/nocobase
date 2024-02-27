@@ -3,6 +3,7 @@ import {
   useActionContext,
   useBlockRequestContext,
   useCollection,
+  useSourceIdFromParentRecord,
   useSourceIdFromRecord,
 } from '@nocobase/client';
 import { notification } from 'antd';
@@ -18,7 +19,7 @@ export const useUploadFiles = () => {
   const { setVisible } = useActionContext();
   const { props: blockProps } = useBlockRequestContext();
   const collection = useCollection();
-  const sourceId = useSourceIdFromRecord();
+  const sourceId = useSourceIdFromParentRecord();
   const action = useMemo(() => {
     let action = `${collection.name}:create`;
     if (blockProps?.association) {
