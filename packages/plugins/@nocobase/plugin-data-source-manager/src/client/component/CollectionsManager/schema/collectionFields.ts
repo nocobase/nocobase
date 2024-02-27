@@ -28,7 +28,7 @@ export const collection: CollectionOptions = {
       name: 'interface',
       interface: 'input',
       uiSchema: {
-        title: '{{ t("Field interface") }}',
+        title: `{{t("Field interface", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
         enum: '{{interfaces}}',
