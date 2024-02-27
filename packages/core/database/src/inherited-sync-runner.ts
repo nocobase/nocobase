@@ -26,6 +26,13 @@ export class InheritedSyncRunner {
       );
     }
 
+    for (const parent of parents) {
+      if (Object.keys(parent.model.rawAttributes).length === 0) {
+        throw new Error(
+          `can't inherit from collection ${parent.options.name} because it has no attributes, please define at least one attribute in parent collection`,
+        );
+      }
+    }
     const tableName = inheritedCollection.getTableNameWithSchema();
     const attributes = model.tableAttributes;
 
