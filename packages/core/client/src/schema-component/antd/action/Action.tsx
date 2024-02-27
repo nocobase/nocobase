@@ -9,7 +9,7 @@ import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import { Icon } from '../../../icon';
-import { useRecord_deprecated } from '../../../record-provider';
+import { RecordProvider_deprecated, useRecord_deprecated } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -44,6 +44,8 @@ export const Action: ComposedAction = observer(
       openSize,
       disabled: propsDisabled,
       actionCallback,
+      /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
+      addChild,
       ...others
     } = useProps(props);
     const aclCtx = useACLActionParamsContext();
@@ -167,6 +169,15 @@ export const Action: ComposedAction = observer(
         {element}
       </ActionContextProvider>
     );
+
+    // fix https://nocobase.height.app/T-3235/description
+    if (addChild) {
+      return wrapSSR(
+        <RecordProvider_deprecated record={null} parent={record}>
+          {result}
+        </RecordProvider_deprecated>,
+      );
+    }
 
     return wrapSSR(result);
   },

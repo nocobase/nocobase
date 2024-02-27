@@ -54,7 +54,7 @@ const getSchema = (schema: IField, record: any, compile) => {
         fulfill: {
           state: {
             hidden: true,
-            value: undefined,
+            value: null,
           },
         },
         otherwise: {
