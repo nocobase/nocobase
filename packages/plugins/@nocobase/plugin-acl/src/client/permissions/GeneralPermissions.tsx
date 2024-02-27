@@ -116,14 +116,6 @@ export const GeneralPermissions: React.FC<{
             'x-decorator': 'FormItem',
             'x-component': 'SnippetCheckboxGroup',
           },
-          'strategy.actions': {
-            title: t('Global action permissions'),
-            description: t(
-              'All collections use general action permissions by default; permission configured individually will override the default one.',
-            ),
-            'x-component': 'StrategyActions',
-            'x-decorator': 'FormItem',
-          },
           allowNewMenu: {
             title: t('Menu permissions'),
             'x-decorator': 'FormItem',

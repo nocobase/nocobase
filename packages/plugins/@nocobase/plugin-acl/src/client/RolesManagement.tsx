@@ -62,8 +62,8 @@ export const RolesManagement: React.FC = () => {
   return (
     <RolesManagerContext.Provider value={{ role, setRole }}>
       <Card>
-        <Row gutter={24}>
-          <Col span={5} style={{ borderRight: '1px solid #eee' }}>
+        <Row gutter={24} style={{ flexWrap: 'nowrap' }}>
+          <Col span={5} style={{ borderRight: '1px solid #eee', minWidth: '250px' }}>
             <ResourceActionProvider
               collection={collection}
               request={{

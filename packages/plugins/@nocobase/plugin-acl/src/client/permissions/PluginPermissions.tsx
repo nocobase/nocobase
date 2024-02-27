@@ -1,9 +1,10 @@
-import { SettingsCenterContext, useAPIClient, useApp, useCompile, useRecord, useRequest } from '@nocobase/client';
+import { useAPIClient, useApp, useCompile, useRecord, useRequest } from '@nocobase/client';
 import { Checkbox, message, Table } from 'antd';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStyles } from './style';
 import { RolesManagerContext } from '../RolesManagerProvider';
+import lodash from 'lodash';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -124,7 +125,16 @@ export const PluginPermissions: React.FC<{
           },
         },
       ]}
-      dataSource={settings}
+      dataSource={settings
+        .filter((v) => {
+          return v.isTopLevel !== false;
+        })
+        .map((v) => {
+          if (v.showTabs !== false) {
+            return v;
+          }
+          return lodash.omit(v, 'children');
+        })}
     />
   );
 };

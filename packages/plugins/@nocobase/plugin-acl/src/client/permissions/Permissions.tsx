@@ -30,15 +30,6 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
         ),
       },
       {
-        key: 'action',
-        label: t('Action permissions'),
-        children: (
-          <TabLayout>
-            <ActionPermissions active={activeKey === 'action' && active} />
-          </TabLayout>
-        ),
-      },
-      {
         key: 'menu',
         label: t('Menu permissions'),
         children: (
