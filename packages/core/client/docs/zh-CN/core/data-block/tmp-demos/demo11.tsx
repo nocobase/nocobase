@@ -1,5 +1,5 @@
 import { Button, Drawer, Space, Table, TableProps } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   CardItem,
   CollectionField,
@@ -27,7 +27,6 @@ import {
   useDataBlock,
   useDataBlockProps,
   useDataBlockRequest,
-  useDataBlockResource,
   useDataSource,
   useDataSourceManager,
   useDesignable,
@@ -39,7 +38,7 @@ import {
 } from '@nocobase/client';
 import { Application } from '@nocobase/client';
 import { uid } from '@formily/shared';
-import { ISchema, observer, useFieldSchema } from '@formily/react';
+import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { mainCollections, TestDBCollections } from './collections';
 import { mock } from './mockData';
 
@@ -80,12 +79,8 @@ function useTableColumns() {
       title: field.title || name,
       dataIndex: name,
       key: name,
-      render(value, record) {
-        return (
-          <RecordProvider record={record}>
-            <SchemaComponent schema={field.toJSON()} />
-          </RecordProvider>
-        );
+      render(value, record, index) {
+        return <RecursionField name={`${index}.${field.name}`} schema={field} />;
       },
     };
   });
@@ -122,6 +117,12 @@ function useTableProps(): TableProps<any> {
   const { tableProps } = useDataBlockProps();
   const { data, loading } = useDataBlockRequest<any[]>();
   const dataSource = useMemo(() => data?.data || [], [data]);
+  const field = useField<any>();
+
+  useEffect(() => {
+    field.value = dataSource;
+  }, [dataSource]);
+
   const columns = useTableColumns();
 
   return {
@@ -272,7 +273,7 @@ const RefreshActionInitializer = () => {
       'x-component': 'RefreshAction',
     });
   };
-  return <SchemaInitializerItem title={'Add New'} onClick={handleClick}></SchemaInitializerItem>;
+  return <SchemaInitializerItem title={'Refresh'} onClick={handleClick}></SchemaInitializerItem>;
 };
 
 const tableActionInitializers = new SchemaInitializer({
@@ -286,13 +287,11 @@ const tableActionInitializers = new SchemaInitializer({
     {
       type: 'item',
       name: 'addNew',
-      title: 'Add New',
       Component: CreateActionInitializer,
     },
     {
       type: 'item',
       name: 'refresh',
-      title: 'Refresh',
       Component: RefreshActionInitializer,
     },
   ],
@@ -349,11 +348,10 @@ const useTableColumnInitializerFields = () => {
       'x-collection-field': `${collection.name}.${field.name}`,
       Component: 'TableCollectionFieldInitializer',
       schema: {
-        type: 'void',
+        type: 'string',
         name: field.name,
         title: field?.uiSchema?.title || field.name,
         'x-component': 'CollectionField',
-        'x-decorator': 'FormItem',
         'x-read-pretty': true,
         'x-decorator-props': {
           labelStyle: {
@@ -400,9 +398,8 @@ const tableColumnInitializers = new SchemaInitializer({
 
 const MyToolbar = (props) => {
   const collection = useCollection();
-  const dataSource = useDataSource();
   const compile = useCompile();
-  return <SchemaToolbar title={`${compile(dataSource.displayName)} > ${compile(collection.title)}`} {...props} />;
+  return <SchemaToolbar title={`${compile(collection.title)}`} {...props} />;
 };
 
 const myInitializer = new SchemaInitializer({

@@ -49,8 +49,9 @@ const MyTable = () => {
 
 <code src="./tmp-demos/demo1.tsx"></code>
 
+### 2. 使用 UI Schema 的方式将组件渲染到页面上
 
-### 2. 将组件注册到 NocoBase 应用中
+先将组件注册到 NocoBase 应用中
 
 ```tsx | pure
 import { Plugin } from '@nocobase/client';
@@ -61,8 +62,6 @@ class MyPlugin extends Plugin {
     }
 }
 ```
-
-### 3. 使用 UI Schema 的方式将组件渲染到页面上
 
 ```tsx | pure
 const tableSchema = {
@@ -93,7 +92,7 @@ app.router.add('root', {
 
 其中 `CardItem` 是 NocoBase 的内置组件，相当于外层的容器。
 
-### 4. 使用 `SchemaInitializer` 将组件动态添加到页面上
+### 3. 使用 `SchemaInitializer` 将组件动态添加到页面上
 
 首先我们将 `Root` 组件更换 Schema 为 `rootSchema`。
 
@@ -197,7 +196,7 @@ class MyPlugin extends Plugin {
 在真正的插件开发过程中只需要定义和添加 `myInitializer` 和 `MyTable` 即可，`Page` 和 `Root` 是 NocoBase 内置的组件，无需重复定义。
 
 
-### 5. 从数据表中读取数据
+### 4. 从数据表中读取数据
 
 上述 Table 中的数据是固定数据，我们需要动态的获取数据并渲染。
 
@@ -332,8 +331,7 @@ const MyTable = () => {
 
 <code src="./tmp-demos/demo4.tsx"></code>
 
-
-### 6. 将字段渲染为自定义组件
+### 5. 将字段渲染为自定义组件
 
 上面一步仅是把数据渲染成普通的字符串，还需要进一步把字段渲染成不同的组件。
 
@@ -356,34 +354,59 @@ const MyTable = () => {
 其和渲染相关的是 `uiSchema` 字段和 `interface` 字段，`interface` 相当于一些公共的配置，`uiSchema` 相当于一些私有的配置，更多信息请参考 [CollectionField](/core/data-source/collection-field)。
 
 ```diff
++ useEffect(() => {
++   field.value = dataSource;
++ }, [dataSource]);
+
   const columns = useMemo(() => {
     return collection.getFields().map((field) => {
       return {
         title: field.uiSchema?.title || field.name,
         dataIndex: field.name,
-+       render(value, record) {
-+         return <SchemaComponent schema={{
-+           name: field.name,
-+           'x-component': 'CollectionField',
-+           'x-decorator': 'FormItem',
-+           'x-read-pretty': true,
-+           'x-component-props': {
-+             value,
-+           },
-+           'x-decorator-props': {
-+             labelStyle: {
-+               display: 'none',
-+             },
-+           },
-+         }} />
-        }
++       render(value, record, index) {
++         return (
++           <RecursionField
++             name={`${index}.${field.name}`}
++             schema={{
++               name: field.name,
++               'x-component': 'CollectionField',
++               'x-read-pretty': true,
++               'x-decorator-props': {
++                 labelStyle: {
++                   display: 'none',
++                 },
++               },
++             }}
++           />
++         );
++       },
       };
     });
   }, [collection]);
 ```
 
-<code src="./tmp-demos/demo5.tsx"></code>
+其中：
 
+`field.value = dataSource` 用于将数据赋值给 `MyTable` 这一层的 `field`，相当于：
+
+```diff
+const tableSchema = {
+  // ...
+  properties: {
+    [uid()]: {
+      type: 'array',
++     value: dataSource,
+      'x-component': 'MyTable',
+    },
+  },
+};
+```
+
+然后使用 `RecursionField` 组件将字段渲染成自定义组件，其中 `name` 属性是字段的路径，因为是数组，所以需要加上 `index`，这样子组件才能正确的读取到数据。
+
+关于 `RecursionField` 的更多信息请参考 [RecursionField](https://react.formilyjs.org/api/components/recursion-fieldeld)。
+
+<code src="./tmp-demos/demo5.tsx"></code>
 
 ### 6. 区块属性配置
 
@@ -431,22 +454,23 @@ const { data, loading } = useDataBlockRequest<any[]>();
       return {
         title: field.uiSchema?.title || field.name,
         dataIndex: field.name,
-        render(value, record) {
-          return <SchemaComponent schema={{
-            name: field.name,
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-            'x-read-pretty': true,
-            'x-component-props': {
-              value,
-            },
-            'x-decorator-props': {
-              labelStyle: {
-                display: 'none',
-              },
-            },
-          }} />
-        }
+        render(value, record, index) {
+          return (
+            <RecursionField
+              name={`${index}.${field.name}`}
+              schema={{
+                name: field.name,
+                'x-component': 'CollectionField',
+                'x-read-pretty': true,
+                'x-decorator-props': {
+                  labelStyle: {
+                    display: 'none',
+                  },
+                },
+              }}
+            />
+          );
+        },
       };
     });
   }, [collection]);
@@ -464,33 +488,7 @@ const { data, loading } = useDataBlockRequest<any[]>();
 ```diff
 function useTableProps(): TableProps<any> {
 + const { tableProps } = useDataBlockProps();
-  const { data, loading } = useDataBlockRequest<any[]>();
-  const dataSource = useMemo(() => data?.data || [], [data]);
-  const collection = useCollection();
-  const columns = useMemo(() => {
-    return collection.getFields().map((field) => {
-      return {
-        title: field.uiSchema?.title || field.name,
-        dataIndex: field.name,
-        render(value, record) {
-          return <SchemaComponent schema={{
-            name: field.name,
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-            'x-read-pretty': true,
-            'x-component-props': {
-              value,
-            },
-            'x-decorator-props': {
-              labelStyle: {
-                display: 'none',
-              },
-            },
-          }} />
-        }
-      };
-    });
-  }, [collection]);
+  // ...
 
   return {
 +   ...tableProps,
@@ -586,9 +584,8 @@ class MyPlugin extends Plugin {
 ```tsx | pure
 const MyToolbar = (props) => {
   const collection = useCollection();
-  const dataSource = useDataSource();
   const compile = useCompile();
-  return <SchemaToolbar title={`${compile(dataSource.displayName)} > ${compile(collection.title)}`} {...props} />
+  return <SchemaToolbar title={`${compile(collection.title)}`} {...props} />
 }
 ```
 
@@ -848,11 +845,10 @@ const useTableColumnInitializerFields = () => {
       'x-collection-field': `${collection.name}.${field.name}`,
       Component: 'TableCollectionFieldInitializer',
       schema: {
-        type: 'void',
+        type: 'string',
         name: field.name,
         title: field?.uiSchema?.title || field.name,
         'x-component': 'CollectionField',
-        'x-decorator': 'FormItem',
         'x-read-pretty': true,
         'x-decorator-props': {
           labelStyle: {
@@ -909,13 +905,12 @@ function useTableColumns() {
       title: field.title || name,
       dataIndex: name,
       key: name,
-      render(value, record) {
+      render(value, record, index) {
         return (
-          <RecordProvider record={record}>
-            <SchemaComponent
-              schema={field.toJSON()}
-            />
-          </RecordProvider>
+          <RecursionField
+            name={`${index}.${field.name}`}
+            schema={field}
+          />
         );
       },
     }
