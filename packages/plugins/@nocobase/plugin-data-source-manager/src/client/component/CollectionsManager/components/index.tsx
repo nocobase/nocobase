@@ -5,6 +5,8 @@ import { useParams } from 'react-router-dom';
 import { useRecord_deprecated, useCompile, useAPIClient } from '@nocobase/client';
 import { useRemoteCollectionContext } from '../CollectionFields';
 
+const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
+
 export const SourceKey = observer(
   (props: any) => {
     const { fields, sourceKey } = useRecord_deprecated();
@@ -12,7 +14,7 @@ export const SourceKey = observer(
     const compile = useCompile();
     const options = fields
       ?.filter((v) => {
-        return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+        return supportTypes.includes(v.type);
       })
       .map((k) => {
         return {
@@ -55,7 +57,7 @@ export const ForeignKey = observer(
       if (['belongsTo'].includes(type) && fields) {
         const sourceOptions = fields
           ?.filter((v) => {
-            return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+            return supportTypes.includes(v.type);
           })
           .map((k) => {
             return {
@@ -96,7 +98,7 @@ export const ForeignKey = observer(
               setOptions(
                 data.data
                   ?.filter((v) => {
-                    return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+                    return supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {
@@ -150,7 +152,7 @@ export const TargetKey = observer(
               setOptions(
                 data.data
                   ?.filter((v) => {
-                    return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+                    return supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {
