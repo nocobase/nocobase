@@ -24,10 +24,10 @@ const MyTable = () => {
   const dataSource = useMemo(() => data?.data || [], [data]);
   const collection = useCollection();
   const columns = useMemo(() => {
-    return collection.getFields().map((field) => {
+    return collection.getFields().map((collectionField) => {
       return {
-        title: field.uiSchema?.title || field.name,
-        dataIndex: field.name,
+        title: collectionField.uiSchema?.title || collectionField.name,
+        dataIndex: collectionField.name,
       };
     });
   }, [collection]);

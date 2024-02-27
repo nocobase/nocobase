@@ -8,7 +8,7 @@ import { Plugin } from '../application/Plugin';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { BlockTemplate } from './BlockTemplate';
-import { DEFAULT_DATA_SOURCE_NAME } from '../data-source';
+import { DEFAULT_DATA_SOURCE_KEY } from '../data-source';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
 
@@ -109,7 +109,7 @@ export const useSchemaTemplateManager = () => {
       const totalCollections = parentCollections.concat([collectionName]);
       const items = templates?.filter?.(
         (template) =>
-          (template.dataSource || DEFAULT_DATA_SOURCE_NAME) === dataSource &&
+          (template.dataSourceKey || DEFAULT_DATA_SOURCE_KEY) === dataSource &&
           totalCollections.includes(template.collectionName),
       );
       return items || [];

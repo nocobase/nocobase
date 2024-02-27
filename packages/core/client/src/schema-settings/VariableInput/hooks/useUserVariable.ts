@@ -2,7 +2,7 @@ import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
-import { DEFAULT_DATA_SOURCE_NAME } from '../../../data-source/data-source/DataSourceManager';
+import { DEFAULT_DATA_SOURCE_KEY } from '../../../data-source/data-source/DataSourceManager';
 import { useCurrentUserContext } from '../../../user';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -36,7 +36,7 @@ export const useUserVariable = ({
     name: '$user',
     title: t('Current user'),
     collectionName: 'users',
-    dataSource: DEFAULT_DATA_SOURCE_NAME,
+    dataSource: DEFAULT_DATA_SOURCE_KEY,
     noDisabled,
     targetFieldSchema,
   });

@@ -270,7 +270,7 @@ export const SchemaSettingsTemplate = function Template(props) {
           collectionName,
           resourceName,
           componentName,
-          dataSource: collection.dataSource,
+          dataSourceKey: collection.dataSource,
           name: values.name,
           uid: fieldSchema['x-uid'],
         });

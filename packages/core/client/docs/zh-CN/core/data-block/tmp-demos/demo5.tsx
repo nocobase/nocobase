@@ -46,7 +46,7 @@ const MyTable = () => {
 
   const columns = useMemo(() => {
     return collection.getFields().map((collectionField) => {
-      const schema = {
+      const tableFieldSchema = {
         type: 'void',
         title: collectionField.uiSchema?.title || collectionField.name,
         'x-component': 'TableColumn',
@@ -64,10 +64,12 @@ const MyTable = () => {
       };
 
       return {
-        title: <RecursionField name={collectionField.name} schema={schema} onlyRenderSelf />,
+        title: <RecursionField name={collectionField.name} schema={tableFieldSchema} onlyRenderSelf />,
         dataIndex: collectionField.name,
         render(value, record, index) {
-          return <RecursionField name={`${index}.${collectionField.name}`} onlyRenderProperties schema={schema} />;
+          return (
+            <RecursionField basePath={field.address.concat(index)} onlyRenderProperties schema={tableFieldSchema} />
+          );
         },
       };
     });

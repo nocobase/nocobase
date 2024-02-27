@@ -5,7 +5,7 @@ import {
   CollectionField,
   CollectionPlugin,
   CurrentUserProvider,
-  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_KEY,
   DEFAULT_DATA_SOURCE_TITLE,
   FormBlockProvider,
   FormItem,
@@ -97,7 +97,7 @@ const Demo = () => {
 class MyPlugin extends Plugin {
   async load() {
     this.app.dataSourceManager.addDataSource(LocalDataSource, {
-      key: DEFAULT_DATA_SOURCE_NAME,
+      key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
       collections: collections as any,
     });

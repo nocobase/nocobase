@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { CardItem, useCompile, useDesignable } from '../../schema-component';
 import { useDataSource } from '../data-source/DataSourceProvider';
 import { useDataSourceManager } from '../data-source';
-import { DEFAULT_DATA_SOURCE_NAME } from '../../data-source/data-source/DataSourceManager';
+import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCollection } from '../collection';
 
 export interface CollectionDeletedPlaceholderProps {
@@ -28,7 +28,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
       return name;
     }
     const dataSourcePrefix =
-      dataSourceManager?.getDataSources().length >= 1 && dataSource && dataSource.key !== DEFAULT_DATA_SOURCE_NAME
+      dataSourceManager?.getDataSources().length >= 1 && dataSource && dataSource.key !== DEFAULT_DATA_SOURCE_KEY
         ? `${compile(dataSource.displayName || dataSource.key)} > `
         : '';
     if (type === 'Collection') {

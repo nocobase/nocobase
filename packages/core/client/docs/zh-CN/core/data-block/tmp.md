@@ -63,6 +63,8 @@ class MyPlugin extends Plugin {
 }
 ```
 
+然后定义 UI Schema，并通过 `SchemaComponent` 渲染到页面上。
+
 ```tsx | pure
 const tableSchema = {
   name: 'demo',
@@ -312,10 +314,10 @@ const MyTable = () => {
 
 +  const collection = useCollection();
 +  const columns = useMemo(() => {
-+    return collection.getFields().map((field) => {
++    return collection.getFields().map((collectionField) => {
 +      return {
-+        title: compile(field.uiSchema?.title || field.name),
-+        dataIndex: field.name,
++        title: compile(collectionField.uiSchema?.title || collectionField.name),
++        dataIndex: collectionField.name,
 +      };
 +    });
 +  }, [collection, compile]);
@@ -335,7 +337,7 @@ const MyTable = () => {
 
 上面一步仅是把数据渲染成普通的字符串，还需要进一步把字段渲染成不同的组件。
 
-我们以 `nickname` 字段为例，其数据结构如下：
+我们以 `favoriteColor` 字段为例，其数据结构如下：
 
 ```json
 {
@@ -359,30 +361,48 @@ const MyTable = () => {
 + }, [dataSource]);
 
   const columns = useMemo(() => {
-    return collection.getFields().map((field) => {
-      return {
-        title: field.uiSchema?.title || field.name,
-        dataIndex: field.name,
-+       render(value, record, index) {
-+         return (
-+           <RecursionField
-+             name={`${index}.${field.name}`}
-+             schema={{
-+               name: field.name,
-+               'x-component': 'CollectionField',
-+               'x-read-pretty': true,
-+               'x-decorator-props': {
-+                 labelStyle: {
-+                   display: 'none',
-+                 },
-+               },
-+             }}
-+           />
-+         );
-+       },
-      };
+    return collection.getFields().map((collectionField) => {
++      const tableFieldSchema = {
++        type: 'void',
++        title: collectionField.uiSchema?.title || collectionField.name,
++        'x-component': 'TableColumn',
++        properties: {
++          [collectionField.name]: {
++            'x-component': 'CollectionField',
++            'x-read-pretty': true,
++            'x-decorator-props': {
++              labelStyle: {
++                display: 'none',
++              },
++            },
++          },
++        },
++      };
++
++      return {
+-        title: collectionField.uiSchema?.title || collectionField.name,
++        title: <RecursionField name={collectionField.name} schema={tableFieldSchema} onlyRenderSelf />,
+         dataIndex: collectionField.name,
++        render(value, record, index) {
++          return <RecursionField basePath={field.address.concat(index)} onlyRenderProperties schema={tableFieldSchema} />;
++        },
++      };
     });
   }, [collection]);
+```
+
+```diff
++ const TableColumn = observer(() => {
++   const field = useField<any>();
++   return <div>{field.title}</div>;
++ });
+
+class MyPlugin extends Plugin {
+  async load() {
+    // ...
++   this.app.addComponents({ TableColumn });
+  }
+}
 ```
 
 其中：
@@ -402,7 +422,7 @@ const tableSchema = {
 };
 ```
 
-然后使用 `RecursionField` 组件将字段渲染成自定义组件，其中 `name` 属性是字段的路径，因为是数组，所以需要加上 `index`，这样子组件才能正确的读取到数据。
+然后使用 `RecursionField` 组件将字段渲染成自定义组件，因为是数组，所以需要加上 `index`，这样子组件才能正确的读取到数据。
 
 关于 `RecursionField` 的更多信息请参考 [RecursionField](https://react.formilyjs.org/api/components/recursion-fieldeld)。
 
@@ -446,30 +466,40 @@ const tableSchema = {
 
 ```tsx | pure
 function useTableProps(): TableProps<any> {
-const { data, loading } = useDataBlockRequest<any[]>();
+  const { data, loading } = useDataBlockRequest<any[]>();
   const dataSource = useMemo(() => data?.data || [], [data]);
   const collection = useCollection();
+
+  const field = useField<any>();
+
+  useEffect(() => {
+    field.value = dataSource;
+  }, [dataSource]);
+
   const columns = useMemo(() => {
-    return collection.getFields().map((field) => {
+    return collection.getFields().map((collectionField) => {
+      const tableFieldSchema = {
+        type: 'void',
+        title: collectionField.uiSchema?.title || collectionField.name,
+        'x-component': 'TableColumn',
+        properties: {
+          [collectionField.name]: {
+            'x-component': 'CollectionField',
+            'x-read-pretty': true,
+            'x-decorator-props': {
+              labelStyle: {
+                display: 'none',
+              },
+            },
+          },
+        },
+      };
+
       return {
-        title: field.uiSchema?.title || field.name,
-        dataIndex: field.name,
+        title: <RecursionField name={collectionField.name} schema={tableFieldSchema} onlyRenderSelf />,
+        dataIndex: collectionField.name,
         render(value, record, index) {
-          return (
-            <RecursionField
-              name={`${index}.${field.name}`}
-              schema={{
-                name: field.name,
-                'x-component': 'CollectionField',
-                'x-read-pretty': true,
-                'x-decorator-props': {
-                  labelStyle: {
-                    display: 'none',
-                  },
-                },
-              }}
-            />
-          );
+          return <RecursionField basePath={field.address.concat(index)} onlyRenderProperties schema={tableFieldSchema} />;
         },
       };
     });
@@ -534,6 +564,10 @@ const myTableSettings = new SchemaSettings({
         };
       },
     },
+    {
+      type: 'remove',
+      name: 'remove',
+    }
   ],
 });
 ```
@@ -794,7 +828,13 @@ class MyPlugin extends Plugin {
 
 <code src="./tmp-demos/demo9.tsx"></code>
 
-### 10. 动态配置 table 列
+### 10. 操作按钮的配置
+
+目前的操作按钮只能添加，不能删除或者配置 ，我们可以通过 `SchemaSettings` 来配置。
+
+<code src="./tmp-demos/demo10.tsx"></code>
+
+### 11. 动态配置 table 列
 
 首先修改 `tableSchema`。
 
@@ -943,8 +983,8 @@ class MyPlugin extends Plugin {
 }
 ```
 
-<code src="./tmp-demos/demo10.tsx"></code>
-
-### 11. 增加操作列
-
 <code src="./tmp-demos/demo11.tsx"></code>
+
+### 12. 增加操作列
+
+<code src="./tmp-demos/demo12.tsx"></code>

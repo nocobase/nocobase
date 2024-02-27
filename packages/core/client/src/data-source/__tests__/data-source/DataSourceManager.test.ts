@@ -1,4 +1,4 @@
-import { Application, Collection, DEFAULT_DATA_SOURCE_NAME, LocalDataSource, Plugin } from '@nocobase/client';
+import { Application, Collection, DEFAULT_DATA_SOURCE_KEY, LocalDataSource, Plugin } from '@nocobase/client';
 import collections from '../collections.json';
 
 describe('DataSourceManager', () => {
@@ -111,7 +111,7 @@ describe('DataSourceManager', () => {
       const allCollections = app.dataSourceManager.getAllCollections();
 
       expect(allCollections.length).toBe(2);
-      expect(allCollections[0].key).toBe(DEFAULT_DATA_SOURCE_NAME);
+      expect(allCollections[0].key).toBe(DEFAULT_DATA_SOURCE_KEY);
       expect(allCollections[1].key).toBe('a');
 
       expect(allCollections[0].collections.length).toBe(2);

@@ -4,7 +4,7 @@ import {
   BlockRequestContext_deprecated,
   CollectionManagerProvider,
   CollectionProvider_deprecated,
-  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_KEY,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
@@ -23,7 +23,7 @@ export function FormBlockProvider(props) {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
-  const dataSource = props.dataSource || DEFAULT_DATA_SOURCE_NAME;
+  const dataSource = props.dataSource || DEFAULT_DATA_SOURCE_KEY;
 
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();

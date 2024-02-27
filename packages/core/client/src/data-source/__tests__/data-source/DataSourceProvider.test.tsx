@@ -1,6 +1,6 @@
 import {
   Application,
-  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_KEY,
   DataSourceManagerProvider,
   DataSourceOptions,
   DataSource,
@@ -57,7 +57,7 @@ describe('DataSourceProvider', () => {
   }
   it('should render default dataSource', () => {
     renderComponent();
-    expect(screen.getByTestId('demo')).toHaveTextContent(DEFAULT_DATA_SOURCE_NAME);
+    expect(screen.getByTestId('demo')).toHaveTextContent(DEFAULT_DATA_SOURCE_KEY);
   });
 
   it('should render children when data source is available', () => {
