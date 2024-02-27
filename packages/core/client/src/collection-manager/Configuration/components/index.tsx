@@ -6,6 +6,7 @@ import { useRecord_deprecated } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager_deprecated } from '../../hooks';
 
+const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
 export const SourceForeignKey = observer(
   () => {
     const record = useRecord_deprecated();
@@ -120,7 +121,7 @@ export const SourceKey = observer(
     const compile = useCompile();
     const options = getCollection(collectionName || name)
       .fields?.filter((v) => {
-        return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+        return supportTypes.includes(v.type);
       })
       .map((k) => {
         return {
@@ -161,7 +162,7 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target)
             .fields?.filter((v) => {
-              return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+              return [supportTypes].includes(v.type);
             })
             .map((k) => {
               return {
@@ -183,7 +184,7 @@ export const TargetKey = observer(
               setOptions(
                 getCollection(target)
                   .fields?.filter((v) => {
-                    return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+                    return supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {
@@ -229,7 +230,7 @@ export const ForeignKey = observer(
       if (fields) {
         const sourceOptions = fields
           ?.filter((v) => {
-            return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+            return supportTypes.includes(v.type);
           })
           .map((k) => {
             return {
@@ -263,7 +264,7 @@ export const ForeignKey = observer(
               setOptions(
                 fields
                   ?.filter((v) => {
-                    return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+                    return supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {
