@@ -8,6 +8,7 @@ import { Plugin } from '../application/Plugin';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { BlockTemplate } from './BlockTemplate';
+import { DEFAULT_DATA_SOURCE_NAME } from '../data-source';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
 
@@ -103,10 +104,14 @@ export const useSchemaTemplateManager = () => {
     getTemplateById(key) {
       return templates?.find((template) => template.key === key);
     },
-    getTemplatesByCollection(collectionName: string, resourceName: string = null) {
-      const parentCollections = getInheritCollections(collectionName);
+    getTemplatesByCollection(dataSource: string, collectionName: string) {
+      const parentCollections = getInheritCollections(collectionName, dataSource);
       const totalCollections = parentCollections.concat([collectionName]);
-      const items = templates?.filter?.((template) => totalCollections.includes(template.collectionName));
+      const items = templates?.filter?.(
+        (template) =>
+          (template.dataSource || DEFAULT_DATA_SOURCE_NAME) === dataSource &&
+          totalCollections.includes(template.collectionName),
+      );
       return items || [];
     },
     getTemplatesByComponentName(componentName: string): Array<any> {

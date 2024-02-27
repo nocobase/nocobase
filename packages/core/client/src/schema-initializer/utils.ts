@@ -769,7 +769,7 @@ export const useRecordCollectionDataSourceItems = (
   const { t } = useTranslation();
   const collection = useCollection_deprecated();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
-  const templates = getTemplatesByCollection(collectionName || collection.name)
+  const templates = getTemplatesByCollection(collection.dataSource, collectionName || collection.name)
     .filter((template) => {
       return componentName && template.componentName === componentName;
     })
@@ -853,7 +853,6 @@ export const useCollectionDataSourceItems = (
       type: 'subMenu',
       children: getChildren({
         collections,
-        dataSourceManager: dm,
         componentName,
         searchValue: '',
         dataSource: key,
@@ -1491,13 +1490,11 @@ export const createTableSelectorSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
 const getChildren = ({
   collections,
-  dataSourceManager,
   dataSource,
   componentName,
   searchValue,
@@ -1505,11 +1502,10 @@ const getChildren = ({
   t,
 }: {
   collections: any[];
-  dataSourceManager: DataSourceManager;
   componentName: string;
   searchValue: string;
   dataSource: string;
-  getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
+  getTemplatesByCollection: (dataSource: string, collectionName: string, resourceName?: string) => any;
   t;
 }) => {
   return collections
@@ -1536,7 +1532,7 @@ const getChildren = ({
     })
     ?.map((item, index) => {
       const title = item.title || item.tableName || item.label;
-      const templates = getTemplatesByCollection(item.name).filter((template) => {
+      const templates = getTemplatesByCollection(dataSource, item.name).filter((template) => {
         return (
           componentName &&
           template.componentName === componentName &&
