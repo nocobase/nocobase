@@ -505,7 +505,7 @@ export class Collection<
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
 
-    if (options.dropCollection !== false) {
+    if (options?.dropCollection !== false) {
       return this.remove();
     }
   }
