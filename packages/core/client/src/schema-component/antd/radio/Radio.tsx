@@ -30,8 +30,8 @@ Radio.Group = connect(
     }
     const { value } = props;
     const field = useField<any>();
-    const { uiSchema } = useCollectionField();
-    const dataSource = field.dataSource || uiSchema.enum || [];
+    const collectionField = useCollectionField();
+    const dataSource = field.dataSource || collectionField?.uiSchema.enum || [];
     return (
       <div>
         {dataSource

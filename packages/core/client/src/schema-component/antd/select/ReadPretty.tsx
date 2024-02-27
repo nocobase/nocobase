@@ -18,8 +18,8 @@ export const ReadPretty = observer(
     if (isArrayField(field) && field?.value?.length === 0) {
       return <div />;
     }
-    const { uiSchema } = useCollectionField();
-    const dataSource = field.dataSource || props.options || uiSchema.enum || [];
+    const collectionField = useCollectionField();
+    const dataSource = field.dataSource || props.options || collectionField?.uiSchema.enum || [];
     const currentOptions = getCurrentOptions(field.value, dataSource, fieldNames);
 
     return (

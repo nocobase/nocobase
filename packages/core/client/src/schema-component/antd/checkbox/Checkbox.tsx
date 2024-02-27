@@ -51,8 +51,8 @@ Checkbox.Group = connect(
       return null;
     }
     const field = useField<any>();
-    const { uiSchema } = useCollectionField();
-    const dataSource = field.dataSource || uiSchema.enum || [];
+    const collectionField = useCollectionField();
+    const dataSource = field.dataSource || collectionField?.uiSchema.enum || [];
     const value = uniq(field.value ? field.value : []);
     return (
       <EllipsisWithTooltip ellipsis={props.ellipsis}>

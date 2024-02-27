@@ -38,9 +38,9 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
 
 export const useCollectionField = () => {
   const context = useContext(CollectionFieldContext);
-  if (!context) {
-    throw new Error('useCollectionField() must be used within a CollectionFieldProvider');
-  }
+  // if (!context) {
+  //   throw new Error('useCollectionField() must be used within a CollectionFieldProvider');
+  // }
 
   return context;
 };
