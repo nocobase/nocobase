@@ -216,12 +216,13 @@ export const BlockProvider = (props: {
   dataSource?: string;
   params?: any;
   children?: any;
+  parentRecord?: any;
   /** @deprecated */
   useSourceId?: any;
   /** @deprecated */
   useParams?: any;
 }) => {
-  const { name, dataSource, association, useSourceId, useParams } = props;
+  const { name, dataSource, association, useSourceId, useParams, parentRecord } = props;
   const sourceId = useDataBlockSourceId({ association, useSourceId });
   const paramsFromHook = useParams?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
@@ -236,7 +237,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <DataBlockProvider {...(props as any)} params={params} sourceId={sourceId}>
+      <DataBlockProvider {...(props as any)} params={params} sourceId={sourceId} parentRecord={parentRecord}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
           <DataBlockCollector {...props} params={params}>
             {props.children}
