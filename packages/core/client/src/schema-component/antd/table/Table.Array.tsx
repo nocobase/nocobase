@@ -19,6 +19,7 @@ import {
   RecordIndexProvider,
   RecordProvider_deprecated,
   useParentRecordData,
+  useRecordData,
   useRequest,
   useSchemaInitializerRender,
 } from '../../../';
@@ -34,6 +35,7 @@ const useTableColumns = () => {
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const scope = useContext(SchemaExpressionScopeContext);
   const parentRecordData = useParentRecordData();
+  const recordData = useRecordData();
 
   const columns = schema
     .reduceProperties((buf, s) => {
@@ -49,10 +51,11 @@ const useTableColumns = () => {
         key: s.name,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
-              <RecordProvider_deprecated record={record} parent={parentRecordData}>
+              {/* fix https://nocobase.height.app/T-3232/description */}
+              {/* 如果作为关系表格区块，则 parentRecordData 应该有值；如果作为普通表格使用（如数据源管理页面的表格）则应该使用 recordData，且 parentRecordData 为空 */}
+              <RecordProvider_deprecated record={record} parent={parentRecordData || recordData}>
                 <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider_deprecated>
             </RecordIndexProvider>

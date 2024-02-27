@@ -14,6 +14,8 @@ import {
   useDataBlockRequest,
   useDataBlockResource,
   useDesignable,
+  useParentRecord,
+  useRecord,
   useRecord_deprecated,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
@@ -23,7 +25,7 @@ import {
   useCollection_deprecated,
 } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
-import { useRecordIndex } from '../record-provider';
+import { RecordProvider_deprecated, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
 
@@ -98,6 +100,8 @@ export const BlockRequestProvider_deprecated = (props) => {
   const resource = useDataBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
   const service = useDataBlockRequest();
+  const record = useRecord();
+  const parentRecord = useParentRecord();
 
   // Infinite scroll support
   const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
@@ -122,7 +126,10 @@ export const BlockRequestProvider_deprecated = (props) => {
         updateAssociationValues: props?.updateAssociationValues || [],
       }}
     >
-      {props.children}
+      {/* 用于兼容旧版 record.__parent 的写法 */}
+      <RecordProvider_deprecated isNew={record?.isNew} record={record?.data} parent={parentRecord?.data}>
+        {props.children}
+      </RecordProvider_deprecated>
     </BlockRequestContext_deprecated.Provider>
   );
 };
@@ -216,12 +223,13 @@ export const BlockProvider = (props: {
   dataSource?: string;
   params?: any;
   children?: any;
+  parentRecord?: any;
   /** @deprecated */
   useSourceId?: any;
   /** @deprecated */
   useParams?: any;
 }) => {
-  const { name, dataSource, association, useSourceId, useParams } = props;
+  const { name, dataSource, association, useSourceId, useParams, parentRecord } = props;
   const sourceId = useDataBlockSourceId({ association, useSourceId });
   const paramsFromHook = useParams?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
@@ -236,7 +244,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <DataBlockProvider {...(props as any)} params={params} sourceId={sourceId}>
+      <DataBlockProvider {...(props as any)} params={params} sourceId={sourceId} parentRecord={parentRecord}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
           <DataBlockCollector {...props} params={params}>
             {props.children}
@@ -273,6 +281,11 @@ export const useFilterByTk = () => {
   return record?.[collection.filterTargetKey || 'id'];
 };
 
+/**
+ * @deprecated
+ * 已弃用，应使用 useSourceIdFromParentRecord
+ * @returns
+ */
 export const useSourceIdFromRecord = () => {
   const record = useRecord_deprecated();
   const { getCollectionField } = useCollectionManager_deprecated();

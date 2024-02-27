@@ -28,18 +28,18 @@ export default defineCollection({
       name: 'resourceName',
     },
     {
+      type: 'string',
+      name: 'collectionName',
+    },
+    {
+      type: 'string',
+      name: 'dataSourceKey',
+    },
+    {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'uiSchemas',
       foreignKey: 'uid',
-    },
-    {
-      type: 'belongsTo',
-      name: 'collection',
-      target: 'collections',
-      foreignKey: 'collectionName',
-      targetKey: 'name',
-      onDelete: 'CASCADE',
     },
   ],
 });

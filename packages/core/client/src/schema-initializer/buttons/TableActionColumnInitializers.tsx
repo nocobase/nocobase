@@ -210,7 +210,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
       ],
     },
     {
-      name: 'divider',
+      name: 'divider2',
       type: 'divider',
     },
     {

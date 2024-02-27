@@ -61,10 +61,10 @@ const formSettings = new SchemaSettings({
       name: 'required',
       type: 'switch',
       useComponentProps() {
-        // const { uiSchema } = useCollectionField(); // 报错
+        // const collectionField = useCollectionField(); // 报错
         return {
           checked: true,
-          // checked: !!uiSchema?.required,
+          // checked: !!collectionField?.uiSchema?.required,
           title: 'Required',
           onChange(v) {
             // ?

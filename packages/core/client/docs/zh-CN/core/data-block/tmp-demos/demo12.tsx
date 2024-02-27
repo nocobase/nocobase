@@ -14,6 +14,7 @@ import {
   InputNumber,
   NumberFieldInterface,
   Plugin,
+  RecordProvider,
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItem,
@@ -26,8 +27,10 @@ import {
   useDataBlock,
   useDataBlockProps,
   useDataBlockRequest,
+  useDataSource,
   useDataSourceManager,
   useDesignable,
+  useRecord,
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaInitializerRender,
@@ -46,6 +49,32 @@ const TableColumn = observer(() => {
   return <div>{field.title}</div>;
 });
 
+const ColumnView = observer(
+  () => {
+    const record = useRecord();
+    const [open, setOpen] = useState(false);
+
+    const showDrawer = () => {
+      setOpen(true);
+    };
+
+    const onClose = () => {
+      setOpen(false);
+    };
+    return (
+      <>
+        <Button type="link" onClick={showDrawer}>
+          view
+        </Button>
+        <Drawer onClose={onClose} open={open}>
+          <pre>{JSON.stringify(record, null, 2)}</pre>
+        </Drawer>
+      </>
+    );
+  },
+  { displayName: 'ColumnView' },
+);
+
 function useTableColumns() {
   const schema = useFieldSchema();
   const { designable } = useDesignable();
@@ -63,6 +92,20 @@ function useTableColumns() {
   const tableColumns = useMemo(() => {
     return [
       ...columns,
+      {
+        title: 'Actions',
+        dataIndex: 'actions',
+        key: 'actions',
+        render: (value, record) => {
+          return (
+            <RecordProvider record={record}>
+              <Space>
+                <ColumnView />
+              </Space>
+            </RecordProvider>
+          );
+        },
+      },
       {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
@@ -332,16 +375,14 @@ const useTableColumnInitializerFields = () => {
 export const TableCollectionFieldInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const { remove } = useDesignable();
-  const schema = useFieldSchema();
-  const exists = !!schema?.properties?.[itemConfig.name];
+  const { exists, remove } = useCurrentSchema(itemConfig['x-collection-field'], 'x-collection-field');
   return (
     <SchemaInitializerSwitch
       checked={exists}
       title={itemConfig.title}
       onClick={() => {
         if (exists) {
-          return remove(itemConfig.schema);
+          return remove();
         }
         insert(itemConfig.schema);
       }}

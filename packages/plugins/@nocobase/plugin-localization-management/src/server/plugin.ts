@@ -72,7 +72,7 @@ export class LocalizationManagementPlugin extends Plugin {
       actions: ['localization:*', 'localizationTexts:*', 'localizationTranslations:*'],
     });
 
-    this.db.on('afterSave', async (instance: Model) => {
+    this.db.on('afterSave', async (instance: Model, options) => {
       const module = `resources.${NAMESPACE_COLLECTIONS}`;
       const model = instance.constructor as typeof Model;
       const collection = model.collection;
@@ -90,7 +90,7 @@ export class LocalizationManagementPlugin extends Plugin {
       textsFromDB.forEach((text) => {
         texts.push({ text, module });
       });
-      texts = await this.resources.filterExists(texts);
+      texts = await this.resources.filterExists(texts, options?.transaction);
       this.db
         .getModel('localizationTexts')
         .bulkCreate(
@@ -98,8 +98,11 @@ export class LocalizationManagementPlugin extends Plugin {
             module,
             text,
           })),
+          {
+            transaction: options?.transaction,
+          },
         )
-        .then((newTexts) => this.resources.updateCacheTexts(newTexts))
+        .then((newTexts) => this.resources.updateCacheTexts(newTexts, options?.transaction))
         .catch((err) => {});
     });
 

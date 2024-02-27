@@ -15,7 +15,7 @@ const openSizeWidthMap = new Map<OpenSize, string>([
 export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
   (props) => {
     const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
-    const { visible, setVisible, openSize = 'large', modalProps } = useActionContext();
+    const { visible, setVisible, openSize = 'middle', modalProps } = useActionContext();
     const actualWidth = width ?? openSizeWidthMap.get(openSize);
     const schema = useFieldSchema();
     const field = useField();

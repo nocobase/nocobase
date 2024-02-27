@@ -252,6 +252,10 @@ export const recordBlockInitializers = new SchemaInitializer({
       name: 'filterBlocks',
       title: '{{t("Filter blocks")}}',
       type: 'itemGroup',
+      useVisible() {
+        const collection = useCollection_deprecated();
+        return collection.fields.some((field) => ['hasMany', 'belongsToMany'].includes(field.type));
+      },
       children: [
         {
           name: 'filterForm',
@@ -265,9 +269,10 @@ export const recordBlockInitializers = new SchemaInitializer({
             );
 
             return {
-              filterMenuItemChildren(item) {
-                return toManyField.some((field) => field.target === item.name);
+              filterMenuItemChildren(collection) {
+                return toManyField.some((field) => field.target === collection.name);
               },
+              onlyCurrentDataSource: true,
             };
           },
         },
@@ -283,9 +288,10 @@ export const recordBlockInitializers = new SchemaInitializer({
             );
 
             return {
-              filterMenuItemChildren(item) {
-                return toManyField.some((field) => field.target === item.name);
+              filterMenuItemChildren(collection) {
+                return toManyField.some((field) => field.target === collection.name);
               },
+              onlyCurrentDataSource: true,
             };
           },
         },

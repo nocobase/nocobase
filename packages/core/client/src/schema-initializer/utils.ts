@@ -3,7 +3,7 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
+import { SchemaInitializerItemType, useDataSourceKey, useFormActiveFields, useFormBlockContext } from '../';
 import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -769,7 +769,7 @@ export const useRecordCollectionDataSourceItems = (
   const { t } = useTranslation();
   const collection = useCollection_deprecated();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
-  const templates = getTemplatesByCollection(collectionName || collection.name)
+  const templates = getTemplatesByCollection(collection.dataSource, collectionName || collection.name)
     .filter((template) => {
       return componentName && template.componentName === componentName;
     })
@@ -835,10 +835,16 @@ export const useRecordCollectionDataSourceItems = (
 export const useCollectionDataSourceItems = (
   componentName,
   filter: (collection: Collection) => boolean = () => true,
+  onlyCurrentDataSource = false,
 ) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
-  const allCollections = dm.getAllCollections(filter);
+  const dataSourceKey = useDataSourceKey();
+  let allCollections = dm.getAllCollections(filter);
+  if (onlyCurrentDataSource) {
+    allCollections = allCollections.filter((collection) => collection.key === dataSourceKey);
+  }
+
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const res = useMemo(() => {
     return allCollections.map(({ key, displayName, collections }) => ({
@@ -847,7 +853,6 @@ export const useCollectionDataSourceItems = (
       type: 'subMenu',
       children: getChildren({
         collections,
-        dataSourceManager: dm,
         componentName,
         searchValue: '',
         dataSource: key,
@@ -1169,7 +1174,7 @@ export const createFormBlockSchema = (options) => {
             'x-initializer': formItemInitializers,
             properties: {},
           },
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
@@ -1234,7 +1239,7 @@ export const createFilterFormBlockSchema = (options) => {
             'x-initializer': formItemInitializers,
             properties: {},
           },
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
@@ -1292,7 +1297,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
           useProps: '{{ useFormBlockProps }}',
         },
         properties: {
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
@@ -1388,7 +1393,7 @@ export const createTableBlockSchema = (options) => {
             'x-designer': 'TableV2.ActionColumnDesigner',
             'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
             properties: {
-              actions: {
+              [uid()]: {
                 type: 'void',
                 'x-decorator': 'DndContext',
                 'x-component': 'Space',
@@ -1460,7 +1465,7 @@ export const createTableSelectorSchema = (options) => {
     'x-settings': 'blockSettings:tableSelector',
     'x-component': 'CardItem',
     properties: {
-      actions: {
+      [uid()]: {
         type: 'void',
         'x-initializer': 'TableActionInitializers',
         'x-component': 'ActionBar',
@@ -1485,13 +1490,11 @@ export const createTableSelectorSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
 const getChildren = ({
   collections,
-  dataSourceManager,
   dataSource,
   componentName,
   searchValue,
@@ -1499,11 +1502,10 @@ const getChildren = ({
   t,
 }: {
   collections: any[];
-  dataSourceManager: DataSourceManager;
   componentName: string;
   searchValue: string;
   dataSource: string;
-  getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
+  getTemplatesByCollection: (dataSource: string, collectionName: string, resourceName?: string) => any;
   t;
 }) => {
   return collections
@@ -1530,7 +1532,7 @@ const getChildren = ({
     })
     ?.map((item, index) => {
       const title = item.title || item.tableName || item.label;
-      const templates = getTemplatesByCollection(item.name).filter((template) => {
+      const templates = getTemplatesByCollection(dataSource, item.name).filter((template) => {
         return (
           componentName &&
           template.componentName === componentName &&

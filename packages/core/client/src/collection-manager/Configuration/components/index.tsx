@@ -1,11 +1,12 @@
 import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
-import { Select, Input } from 'antd';
+import { Select, AutoComplete } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { useRecord_deprecated } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager_deprecated } from '../../hooks';
 
+const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
 export const SourceForeignKey = observer(
   () => {
     const record = useRecord_deprecated();
@@ -120,10 +121,9 @@ export const SourceKey = observer(
     const compile = useCompile();
     const options = getCollection(collectionName || name)
       .fields?.filter((v) => {
-        return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+        return supportTypes.includes(v.type);
       })
       .map((k) => {
-        console.log(k);
         return {
           value: k.name,
           label: compile(k.uiSchema?.title || k.name),
@@ -149,7 +149,7 @@ export const SourceKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { targetKey } = useRecord_deprecated();
+    const { targetKey, target } = useRecord_deprecated();
     const { getCollection } = useCollectionManager_deprecated();
     const [options, setOptions] = useState([]);
     const [initialValue, setInitialValue] = useState(value || targetKey);
@@ -157,6 +157,22 @@ export const TargetKey = observer(
     const compile = useCompile();
     const field: any = useField();
     field.required = true;
+    useEffect(() => {
+      if (target) {
+        setOptions(
+          getCollection(target)
+            .fields?.filter((v) => {
+              return [supportTypes].includes(v.type);
+            })
+            .map((k) => {
+              return {
+                value: k.name,
+                label: compile(k?.uiSchema?.title || k.title || k.name),
+              };
+            }),
+        );
+      }
+    }, []);
     return (
       <div>
         <Select
@@ -168,7 +184,7 @@ export const TargetKey = observer(
               setOptions(
                 getCollection(target)
                   .fields?.filter((v) => {
-                    return ['string', 'bigInt', 'integer', 'float'].includes(v.type);
+                    return supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {
@@ -193,10 +209,77 @@ export const TargetKey = observer(
 );
 
 export const ForeignKey = observer(
-  (props) => {
+  (props: any) => {
+    const { disabled } = props;
+    const [options, setOptions] = useState([]);
+    const { getCollection } = useCollectionManager_deprecated();
+    const record = useRecord_deprecated();
+    const field: any = useField();
+    const { collectionName, target, type, through, name } = record;
+    const value = record[field.props.name];
+    const compile = useCompile();
+    const form = useForm();
+    const [initialValue, setInitialValue] = useState(value || field.initialValue);
+    useEffect(() => {
+      const effectField = ['belongsTo'].includes(type)
+        ? collectionName
+        : ['belongsToMany'].includes(type)
+          ? through
+          : target;
+      const fields = getCollection(effectField)?.fields;
+      if (fields) {
+        const sourceOptions = fields
+          ?.filter((v) => {
+            return supportTypes.includes(v.type);
+          })
+          .map((k) => {
+            return {
+              value: k.name,
+              label: compile(k.uiSchema?.title || k.name),
+            };
+          });
+        setOptions(sourceOptions);
+        if (value) {
+          const option = sourceOptions.find((v) => v.value === value);
+          setInitialValue(option?.label || value);
+        }
+      }
+    }, [type]);
     return (
       <div>
-        <Input {...props} />
+        <AutoComplete
+          disabled={disabled}
+          value={initialValue}
+          options={options}
+          showSearch
+          onDropdownVisibleChange={async (open) => {
+            const { target, type, through } = form.values;
+            const effectField = ['belongsTo'].includes(type)
+              ? collectionName || name
+              : ['belongsToMany'].includes(type)
+                ? through
+                : target;
+            if (effectField && open) {
+              const fields = getCollection(effectField).fields;
+              setOptions(
+                fields
+                  ?.filter((v) => {
+                    return supportTypes.includes(v.type);
+                  })
+                  .map((k) => {
+                    return {
+                      value: k.name,
+                      label: compile(k.uiSchema?.title || k.name),
+                    };
+                  }),
+              );
+            }
+          }}
+          onChange={(value, option) => {
+            props?.onChange?.(value);
+            setInitialValue(option.label);
+          }}
+        />
       </div>
     );
   },

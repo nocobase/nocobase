@@ -1,5 +1,5 @@
 import { Button, Drawer, Space, Table, TableProps } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   CardItem,
   CollectionField,
@@ -14,73 +14,76 @@ import {
   InputNumber,
   NumberFieldInterface,
   Plugin,
-  RecordProvider,
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItem,
-  SchemaInitializerSwitch,
   SchemaSettings,
   SchemaToolbar,
   useCollection,
   useCompile,
-  useCurrentSchema,
   useDataBlock,
   useDataBlockProps,
   useDataBlockRequest,
   useDataSource,
   useDataSourceManager,
-  useDesignable,
   useSchemaInitializer,
-  useSchemaInitializerItem,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Application } from '@nocobase/client';
 import { uid } from '@formily/shared';
-import { ISchema, observer, useFieldSchema } from '@formily/react';
+import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { mainCollections, TestDBCollections } from './collections';
 import { mock } from './mockData';
 
 const MyTable = withDynamicSchemaProps(Table, { displayName: 'MyTable' });
 
-function useTableColumns() {
-  const schema = useFieldSchema();
-  const { designable } = useDesignable();
-  const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const columns = schema.mapProperties((field: any, name) => {
-    return {
-      title: field.title || name,
-      dataIndex: name,
-      key: name,
-      render(value, record) {
-        return (
-          <RecordProvider record={record}>
-            <SchemaComponent schema={field.toJSON()} />
-          </RecordProvider>
-        );
-      },
-    };
-  });
-  const tableColumns = useMemo(() => {
-    return [
-      ...columns,
-      {
-        title: render(),
-        dataIndex: 'TABLE_COLUMN_INITIALIZER',
-        key: 'TABLE_COLUMN_INITIALIZER',
-        render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
-      },
-    ];
-  }, [columns, render, designable]);
-
-  return tableColumns;
-}
+const TableColumn = observer(() => {
+  const field = useField<any>();
+  return <div>{field.title}</div>;
+});
 
 function useTableProps(): TableProps<any> {
   const { tableProps } = useDataBlockProps();
   const { data, loading } = useDataBlockRequest<any[]>();
   const dataSource = useMemo(() => data?.data || [], [data]);
-  const columns = useTableColumns();
+  const collection = useCollection();
+  const field = useField<any>();
+
+  useEffect(() => {
+    field.value = dataSource;
+  }, [dataSource]);
+
+  const columns = useMemo(() => {
+    return collection.getFields().map((collectionField) => {
+      const tableFieldSchema = {
+        type: 'void',
+        title: collectionField.uiSchema?.title || collectionField.name,
+        'x-component': 'TableColumn',
+        properties: {
+          [collectionField.name]: {
+            'x-component': 'CollectionField',
+            'x-read-pretty': true,
+            'x-decorator-props': {
+              labelStyle: {
+                display: 'none',
+              },
+            },
+          },
+        },
+      };
+
+      return {
+        title: <RecursionField name={collectionField.name} schema={tableFieldSchema} onlyRenderSelf />,
+        dataIndex: collectionField.name,
+        render(value, record, index) {
+          return (
+            <RecursionField basePath={field.address.concat(index)} onlyRenderProperties schema={tableFieldSchema} />
+          );
+        },
+      };
+    });
+  }, [collection]);
 
   return {
     ...tableProps,
@@ -108,6 +111,10 @@ const myTableSettings = new SchemaSettings({
           },
         };
       },
+    },
+    {
+      type: 'remove',
+      name: 'remove',
     },
   ],
 });
@@ -230,7 +237,7 @@ const RefreshActionInitializer = () => {
       'x-component': 'RefreshAction',
     });
   };
-  return <SchemaInitializerItem title={'Add New'} onClick={handleClick}></SchemaInitializerItem>;
+  return <SchemaInitializerItem title={'Refresh'} onClick={handleClick}></SchemaInitializerItem>;
 };
 
 const tableActionInitializers = new SchemaInitializer({
@@ -244,13 +251,11 @@ const tableActionInitializers = new SchemaInitializer({
     {
       type: 'item',
       name: 'addNew',
-      title: 'Add New',
       Component: CreateActionInitializer,
     },
     {
       type: 'item',
       name: 'refresh',
-      title: 'Refresh',
       Component: RefreshActionInitializer,
     },
   ],
@@ -284,7 +289,6 @@ const TableDataBlockInitializer = () => {
           type: 'array',
           'x-component': 'MyTable',
           'x-use-component-props': 'useTableProps',
-          'x-initializer': 'tableColumnInitializers',
         },
       },
     };
@@ -297,70 +301,10 @@ const TableDataBlockInitializer = () => {
   return <SchemaInitializerItem title={'Table'} items={menuItems} onClick={handleClick} />;
 };
 
-const useTableColumnInitializerFields = () => {
-  const collection = useCollection();
-  return collection.fields.map((field) => {
-    return {
-      type: 'item',
-      name: field.name,
-      title: field?.uiSchema?.title || field.name,
-      'x-collection-field': `${collection.name}.${field.name}`,
-      Component: 'TableCollectionFieldInitializer',
-      schema: {
-        type: 'void',
-        name: field.name,
-        title: field?.uiSchema?.title || field.name,
-        'x-component': 'CollectionField',
-        'x-decorator': 'FormItem',
-        'x-read-pretty': true,
-        'x-decorator-props': {
-          labelStyle: {
-            display: 'none',
-          },
-        },
-      },
-    };
-  });
-};
-
-export const TableCollectionFieldInitializer = () => {
-  const itemConfig = useSchemaInitializerItem();
-  const { insert } = useSchemaInitializer();
-  const { exists, remove } = useCurrentSchema(itemConfig['x-collection-field'], 'x-collection-field');
-  return (
-    <SchemaInitializerSwitch
-      checked={exists}
-      title={itemConfig.title}
-      onClick={() => {
-        if (exists) {
-          return remove();
-        }
-        insert(itemConfig.schema);
-      }}
-    />
-  );
-};
-
-const tableColumnInitializers = new SchemaInitializer({
-  name: 'tableColumnInitializers',
-  insertPosition: 'beforeEnd',
-  icon: 'SettingOutlined',
-  title: 'Configure columns',
-  items: [
-    {
-      name: 'displayFields',
-      type: 'itemGroup',
-      title: 'Display fields',
-      useChildren: useTableColumnInitializerFields,
-    },
-  ],
-});
-
 const MyToolbar = (props) => {
   const collection = useCollection();
-  const dataSource = useDataSource();
   const compile = useCompile();
-  return <SchemaToolbar title={`${compile(dataSource.displayName)} > ${compile(collection.title)}`} {...props} />;
+  return <SchemaToolbar title={`${compile(collection.title)}`} {...props} />;
 };
 
 const myInitializer = new SchemaInitializer({
@@ -384,19 +328,11 @@ const rootSchema: ISchema = {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.addComponents({
-      MyTable,
-      MyToolbar,
-      ActionBar,
-      CreateAction,
-      RefreshAction,
-      TableCollectionFieldInitializer,
-    });
+    this.app.addComponents({ MyTable, TableColumn, MyToolbar, ActionBar, CreateAction, RefreshAction });
     this.app.schemaInitializerManager.add(myInitializer);
     this.app.schemaSettingsManager.add(myTableSettings);
     this.app.addScopes({ useTableProps });
     this.app.schemaInitializerManager.add(tableActionInitializers);
-    this.app.schemaInitializerManager.add(tableColumnInitializers);
   }
 }
 

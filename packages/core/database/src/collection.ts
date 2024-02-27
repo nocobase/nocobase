@@ -433,11 +433,6 @@ export class Collection<
       return;
     }
 
-    if (this.model.primaryKeyAttributes.includes(this.name)) {
-      // 主键不能删除
-      return;
-    }
-
     if (this.model.options.timestamps !== false) {
       // timestamps 相关字段不删除
       let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
@@ -479,14 +474,27 @@ export class Collection<
       })) &&
       columnReferencesCount == 1
     ) {
-      const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.removeColumn(this.getTableNameWithSchema(), field.columnName(), options);
+      const columns = await this.model.sequelize
+        .getQueryInterface()
+        .describeTable(this.getTableNameWithSchema(), options);
+
+      if (Object.keys(columns).length == 1) {
+        // remove table if only one column left
+        await this.removeFromDb({
+          ...options,
+          cascade: true,
+          dropCollection: false,
+        });
+      } else {
+        const queryInterface = this.db.sequelize.getQueryInterface();
+        await queryInterface.removeColumn(this.getTableNameWithSchema(), field.columnName(), options);
+      }
     }
 
     field.remove();
   }
 
-  async removeFromDb(options?: QueryInterfaceDropTableOptions) {
+  async removeFromDb(options?: QueryInterfaceDropTableOptions & { dropCollection?: boolean }) {
     if (
       !this.isView() &&
       (await this.existsInDb({
@@ -497,7 +505,9 @@ export class Collection<
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
 
-    return this.remove();
+    if (options?.dropCollection !== false) {
+      return this.remove();
+    }
   }
 
   async existsInDb(options?: Transactionable) {

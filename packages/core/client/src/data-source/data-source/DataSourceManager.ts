@@ -5,7 +5,7 @@ import { type DataSourceOptions, DataSource, LocalDataSource, DataSourceFactory 
 import { type CollectionTemplateFactory, CollectionTemplateManager } from '../collection-template';
 import { type CollectionFieldInterfaceFactory, CollectionFieldInterfaceManager } from '../collection-field-interface';
 
-export const DEFAULT_DATA_SOURCE_NAME = 'main';
+export const DEFAULT_DATA_SOURCE_KEY = 'main';
 export const DEFAULT_DATA_SOURCE_TITLE = '{{t("Main")}}';
 
 export interface DataSourceManagerOptions {
@@ -37,7 +37,7 @@ export class DataSourceManager {
     this.collectionMixins.push(...(options.collectionMixins || []));
 
     this.addDataSource(LocalDataSource, {
-      key: DEFAULT_DATA_SOURCE_NAME,
+      key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
       collections: options.collections || [],
     });
@@ -60,7 +60,7 @@ export class DataSourceManager {
   }
 
   getDataSource(key?: string) {
-    return key ? this.dataSourceInstancesMap[key] : this.dataSourceInstancesMap[DEFAULT_DATA_SOURCE_NAME];
+    return key ? this.dataSourceInstancesMap[key] : this.dataSourceInstancesMap[DEFAULT_DATA_SOURCE_KEY];
   }
 
   removeDataSources(keys: string[]) {

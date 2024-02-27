@@ -380,10 +380,13 @@ export default {
         formBlock['x-decorator-props'].collection.fields = fields.map(
           (field) => field['x-component-props']?.field ?? field['x-interface-options'],
         );
+        //获取actionBar的schemakey
+        const actionKey =
+          Object.entries(formSchema.properties).find(([key, f]) => f['x-component'] === 'ActionBar')?.[0] || 'actions';
         forms[formKey] = {
           type: 'custom',
           title: formBlock['x-component-props']?.title || formKey,
-          actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
+          actions: findSchema(formSchema.properties[actionKey], (item) => item['x-component'] === 'Action').map(
             (item) => ({
               status: item['x-decorator-props'].value,
               values: item['x-action-settings']?.assignedValues?.values,

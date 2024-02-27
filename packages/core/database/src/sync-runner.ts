@@ -98,7 +98,7 @@ export class SyncRunner {
         await this.queryInterface.addConstraint(this.tableName, {
           type: 'primary key',
           fields: columnsWillBePrimaryKey,
-          name: `${columnsWillBePrimaryKey.join('_')}_pkey`,
+          name: `${this.collection.tableName()}_${columnsWillBePrimaryKey.join('_')}_pk`,
           transaction: options?.transaction,
         });
       }
@@ -168,7 +168,7 @@ export class SyncRunner {
   }
 
   async handleUniqueIndex(options) {
-    const existsIndexes: any = await this.queryInterface.showIndex(this.tableName, options);
+    const existsIndexes: any = await this.queryInterface.showIndex(this.collection.getTableNameWithSchema(), options);
     const existsUniqueIndexes = existsIndexes.filter((index) => index.unique);
 
     const uniqueAttributes = Object.keys(this.rawAttributes).filter((key) => {
@@ -280,7 +280,7 @@ export class SyncRunner {
   async handleZeroColumnModel(options) {
     // @ts-ignore
     if (Object.keys(this.model.tableAttributes).length === 0) {
-      if (this.database.inDialect('sqlite', 'mysql', 'mariadb')) {
+      if (this.database.inDialect('sqlite', 'mysql', 'mariadb', 'postgres')) {
         throw new ZeroColumnTableError(
           `Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`,
         );

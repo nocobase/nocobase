@@ -3,6 +3,7 @@ import { isValid } from '@formily/shared';
 import { Radio as AntdRadio, Tag } from 'antd';
 import type { RadioGroupProps, RadioProps } from 'antd/es/radio';
 import React from 'react';
+import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 
 type ComposedRadio = React.FC<RadioProps> & {
   Group?: React.FC<RadioGroupProps>;
@@ -29,7 +30,8 @@ Radio.Group = connect(
     }
     const { value } = props;
     const field = useField<any>();
-    const dataSource = field.dataSource || [];
+    const collectionField = useCollectionField();
+    const dataSource = field.dataSource || collectionField?.uiSchema.enum || [];
     return (
       <div>
         {dataSource

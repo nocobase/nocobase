@@ -6,7 +6,7 @@ import {
   CollectionPlugin,
   DataBlockProvider,
   LocalDataSource,
-  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_KEY,
   DEFAULT_DATA_SOURCE_TITLE,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
@@ -17,7 +17,7 @@ export function createApp(Demo: ComponentType<any>, options: ApplicationOptions 
   class MyPlugin extends Plugin {
     async load() {
       this.app.dataSourceManager.addDataSource(LocalDataSource, {
-        key: DEFAULT_DATA_SOURCE_NAME,
+        key: DEFAULT_DATA_SOURCE_KEY,
         displayName: DEFAULT_DATA_SOURCE_TITLE,
         collections: collections as any,
       });

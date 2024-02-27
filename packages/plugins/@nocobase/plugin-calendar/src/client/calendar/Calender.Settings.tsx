@@ -214,7 +214,7 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'divider',
+      name: 'divider2',
       type: 'divider',
     },
     {

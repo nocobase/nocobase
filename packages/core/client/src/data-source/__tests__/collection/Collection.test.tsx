@@ -1,4 +1,4 @@
-import { Application, CollectionOptions, DEFAULT_DATA_SOURCE_NAME } from '@nocobase/client';
+import { Application, CollectionOptions, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import collections from '../collections.json';
 
 function getCollection(collection: CollectionOptions) {
@@ -69,7 +69,7 @@ describe('Collection', () => {
         name: 'test',
         titleField: 'a',
         targetKey: 'b',
-        dataSource: DEFAULT_DATA_SOURCE_NAME,
+        dataSource: DEFAULT_DATA_SOURCE_KEY,
       });
     });
 
@@ -78,7 +78,7 @@ describe('Collection', () => {
       expect(collection.getOption('name')).toBe('test');
       expect(collection.getOption('key')).toBe('a');
       expect(collection.getOption('model')).toBe('b');
-      expect(collection.getOption('dataSource')).toBe(DEFAULT_DATA_SOURCE_NAME);
+      expect(collection.getOption('dataSource')).toBe(DEFAULT_DATA_SOURCE_KEY);
     });
   });
 

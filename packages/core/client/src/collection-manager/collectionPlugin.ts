@@ -48,7 +48,7 @@ import {
   TreeCollectionTemplate,
   ViewCollectionTemplate,
 } from './templates';
-import { DEFAULT_DATA_SOURCE_NAME, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
+import { DEFAULT_DATA_SOURCE_KEY, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
 import { DataSource } from '../data-source/data-source/DataSource';
 
 class MainDataSource extends DataSource {
@@ -81,7 +81,7 @@ export class CollectionPlugin extends Plugin {
     this.addFieldInterfaceGroups();
 
     this.dataSourceManager.addDataSource(MainDataSource, {
-      key: DEFAULT_DATA_SOURCE_NAME,
+      key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
     });
   }

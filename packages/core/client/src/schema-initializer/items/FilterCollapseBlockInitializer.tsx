@@ -4,14 +4,22 @@ import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { createCollapseBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
+import { Collection } from '../../data-source';
 
-export const FilterCollapseBlockInitializer = ({ filterMenuItemChildren }) => {
+export const FilterCollapseBlockInitializer = ({
+  filterMenuItemChildren,
+  onlyCurrentDataSource,
+}: {
+  filterMenuItemChildren: (collection: Collection) => boolean;
+  onlyCurrentDataSource: boolean;
+}) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
 
   return (
     <DataBlockInitializer
       {...itemConfig}
+      onlyCurrentDataSource={onlyCurrentDataSource}
       icon={<TableOutlined />}
       componentType={'FilterCollapse'}
       onCreateBlockSchema={async ({ item }) => {
@@ -23,7 +31,7 @@ export const FilterCollapseBlockInitializer = ({ filterMenuItemChildren }) => {
         });
         insert(schema);
       }}
-      filterMenuItemChildren={filterMenuItemChildren}
+      filter={filterMenuItemChildren}
     />
   );
 };

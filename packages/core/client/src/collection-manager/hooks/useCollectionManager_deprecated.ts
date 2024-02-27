@@ -7,7 +7,7 @@ import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin
 import { uid } from '@formily/shared';
 import { useDataSourceManager } from '../../data-source/data-source/DataSourceManagerProvider';
 import { useDataSource } from '../../data-source/data-source/DataSourceProvider';
-import { DEFAULT_DATA_SOURCE_NAME } from '../../data-source/data-source/DataSourceManager';
+import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
 
 /**
@@ -45,13 +45,13 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
   );
 
   const collections = useMemo(
-    () => dm?.getDataSource(DEFAULT_DATA_SOURCE_NAME)?.collectionManager?.getCollections(),
+    () => dm?.getDataSource(DEFAULT_DATA_SOURCE_KEY)?.collectionManager?.getCollections(),
     [dm, random],
   );
   const service = useCallback(
     () =>
       dm
-        ?.getDataSource(DEFAULT_DATA_SOURCE_NAME)
+        ?.getDataSource(DEFAULT_DATA_SOURCE_KEY)
         .reload()
         .then(() => {
           refresh();
@@ -62,7 +62,7 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
   const refreshCM = useCallback(
     () =>
       dm
-        ?.getDataSource(DEFAULT_DATA_SOURCE_NAME)
+        ?.getDataSource(DEFAULT_DATA_SOURCE_KEY)
         .reload()
         .then(() => {
           refresh();

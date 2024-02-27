@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { uid } from '@formily/shared';
 import { useSchemaInitializerItem } from '../../application';
 import { InitializerWithSwitch } from './InitializerWithSwitch';
 
@@ -13,7 +13,7 @@ export const TableActionColumnInitializer = () => {
     'x-initializer': 'TableActionColumnInitializers',
     'x-action-column': 'actions',
     properties: {
-      actions: {
+      [uid()]: {
         type: 'void',
         'x-decorator': 'DndContext',
         'x-component': 'Space',
