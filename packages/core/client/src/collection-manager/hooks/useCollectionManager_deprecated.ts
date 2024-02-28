@@ -106,11 +106,9 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
   const getChildrenCollections = useCallback(
     (name: string, isSupportView = false, customDataSource?: string) => {
       if (!name) return [];
-      return (
-        getCm(customDataSource)
-          ?.getCollection<InheritanceCollectionMixin>(name)
-          ?.getChildrenCollections(isSupportView) || []
-      );
+      const collection = getCm(customDataSource)?.getCollection<InheritanceCollectionMixin>(name);
+      const res = collection?.getChildrenCollections(isSupportView);
+      return res;
     },
     [dm, getCm],
   );

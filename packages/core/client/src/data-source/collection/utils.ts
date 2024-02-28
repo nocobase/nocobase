@@ -26,17 +26,27 @@ export const collectionTransform = (collection: CollectionOptions, app: Applicat
   };
 };
 
-export function applyMixins(instance: any, mixins: any[]) {
+export function applyMixins(Cls: any, mixins: any[], options?: any, collectionManager?: any) {
+  const instance = new Cls(options, collectionManager);
   mixins.forEach((MixinClass) => {
-    const mixin = new MixinClass();
+    const mixin = new MixinClass(options, collectionManager);
+    // 设置实例属性，将 mixin 的属性复制到 instance 上
     Object.getOwnPropertyNames(mixin).forEach((key) => {
-      instance.__proto__[key] = mixin[key];
+      const descriptor = Object.getOwnPropertyDescriptor(mixin, key);
+      if (descriptor) {
+        Object.defineProperty(instance, key, descriptor);
+      } else {
+        instance[key] = mixin[key];
+      }
     });
 
-    Object.getOwnPropertyNames(mixin.__proto__).forEach((key) => {
+    // 将 mixin 的原型属方法复制到 instance 的原型上
+    Object.getOwnPropertyNames(MixinClass.prototype).forEach((key) => {
       if (key !== 'constructor') {
-        instance.__proto__[key] = mixin.__proto__[key];
+        instance.__proto__[key] = MixinClass.prototype[key];
       }
     });
   });
+
+  return instance;
 }

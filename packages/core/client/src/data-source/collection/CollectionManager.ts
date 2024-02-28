@@ -32,8 +32,8 @@ export class CollectionManager {
     const transformedCollection = transform
       ? transform(collectionTransform(collection, this.app), this.app)
       : collectionTransform(collection, this.dataSource.dataSourceManager.app);
-    const instance = new Cls({ ...transformedCollection, dataSource: this.dataSource.key }, this);
-    applyMixins(instance, this.dataSourceManager.collectionMixins);
+    const options = { ...transformedCollection, dataSource: this.dataSource.key };
+    const instance = applyMixins(Cls, this.dataSourceManager.collectionMixins, options, this);
     return instance;
   }
 
