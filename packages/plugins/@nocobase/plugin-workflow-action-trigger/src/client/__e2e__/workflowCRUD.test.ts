@@ -56,7 +56,7 @@ test.describe('Add new', () => {
     const workFlowName = faker.string.alphanumeric(5);
     await createWorkFlow.name.fill(workFlowName);
     await createWorkFlow.triggerType.click();
-    await page.getByRole('option', { name: 'Action event' }).click();
+    await page.getByRole('option', { name: 'Record action event' }).click();
     await page.getByLabel('action-Action-Submit-workflows').click();
 
     // 3、预期结果：列表中出现新建的工作流
