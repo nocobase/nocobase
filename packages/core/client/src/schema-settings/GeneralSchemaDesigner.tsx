@@ -243,7 +243,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
   useEffect(() => {
     const toolbarElement = toolbarRef.current;
-
+    const parentElement = toolbarElement?.parentElement;
     function show() {
       if (toolbarElement) {
         toolbarElement.style.display = 'block';
@@ -256,15 +256,20 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       }
     }
 
-    if (toolbarElement?.parentElement) {
-      toolbarElement.parentElement.addEventListener('mouseenter', show);
-      toolbarElement.parentElement.addEventListener('mouseleave', hide);
+    if (parentElement) {
+      const style = window.getComputedStyle(parentElement);
+      if (style.position === 'static') {
+        parentElement.style.position = 'relative';
+      }
+
+      parentElement.addEventListener('mouseenter', show);
+      parentElement.addEventListener('mouseleave', hide);
     }
 
     return () => {
-      if (toolbarElement?.parentElement) {
-        toolbarElement.parentElement.removeEventListener('mouseenter', show);
-        toolbarElement.parentElement.removeEventListener('mouseleave', hide);
+      if (parentElement) {
+        parentElement.removeEventListener('mouseenter', show);
+        parentElement.removeEventListener('mouseleave', hide);
       }
     };
   }, []);
