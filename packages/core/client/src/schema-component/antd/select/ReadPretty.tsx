@@ -5,6 +5,7 @@ import { Tag } from 'antd';
 import React from 'react';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { defaultFieldNames, getCurrentOptions } from './utils';
+import { useCollectionField } from '../../../collection-manager';
 
 export const ReadPretty = observer(
   (props: any) => {
@@ -17,7 +18,8 @@ export const ReadPretty = observer(
     if (isArrayField(field) && field?.value?.length === 0) {
       return <div />;
     }
-    const dataSource = field.dataSource || props.options || [];
+    const { uiSchema } = useCollectionField();
+    const dataSource = field.dataSource || props.options || uiSchema.enum || [];
     const currentOptions = getCurrentOptions(field.value, dataSource, fieldNames);
 
     return (

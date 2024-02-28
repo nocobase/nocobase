@@ -186,7 +186,7 @@ const LocalPlugins = () => {
             </Space>
           </div>
         </div>
-        <Row style={{ width: '100%' }}>
+        <Row style={{ width: '100%' }} wrap={false}>
           <Col flex="200px">
             <List
               size="small"

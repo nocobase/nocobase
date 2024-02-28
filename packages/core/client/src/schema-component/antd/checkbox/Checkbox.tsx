@@ -5,6 +5,7 @@ import { Checkbox as AntdCheckbox, Tag } from 'antd';
 import type { CheckboxGroupProps, CheckboxProps } from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
 import React from 'react';
+import { useCollectionField } from '../../../collection-manager';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
 type ComposedCheckbox = React.ForwardRefExoticComponent<
@@ -50,7 +51,8 @@ Checkbox.Group = connect(
       return null;
     }
     const field = useField<any>();
-    const dataSource = field.dataSource || [];
+    const { uiSchema } = useCollectionField();
+    const dataSource = field.dataSource || uiSchema.enum || [];
     const value = uniq(field.value ? field.value : []);
     return (
       <EllipsisWithTooltip ellipsis={props.ellipsis}>
