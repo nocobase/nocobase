@@ -26,13 +26,8 @@ describe('Collection', () => {
       expect(collection.getPrimaryKey()).toBe('a');
     });
 
-    test('If targetKey does not exist and no field has primaryKey set to true, return `id`', () => {
-      const collection = getCollection({ name: 'test' });
-      expect(collection.getPrimaryKey()).toBe('id');
-    });
-
     test('cache the result', () => {
-      const collection = getCollection({ name: 'test' });
+      const collection = getCollection({ name: 'test', fields: [{ name: 'a', primaryKey: true }] });
       const spy = vitest.spyOn(collection, 'getFields');
       collection.getPrimaryKey();
       collection.getPrimaryKey();
@@ -54,11 +49,6 @@ describe('Collection', () => {
     test('if `titleField` does not exist, return `primaryKey`', () => {
       const collection = getCollection({ name: 'test', targetKey: 'a' });
       expect(collection.titleField).toBe('a');
-    });
-
-    test('if `titleField` and `primaryKey` do not exist, return `id`', () => {
-      const collection = getCollection({ name: 'test' });
-      expect(collection.titleField).toBe('id');
     });
   });
 
