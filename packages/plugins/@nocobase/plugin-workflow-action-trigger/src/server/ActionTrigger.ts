@@ -63,7 +63,7 @@ export default class extends Trigger {
       filter: {
         key: triggers.map((trigger) => trigger[0]),
         current: true,
-        type: 'form',
+        type: 'action',
         enabled: true,
       },
     });

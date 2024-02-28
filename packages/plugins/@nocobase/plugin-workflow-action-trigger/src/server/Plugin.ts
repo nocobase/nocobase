@@ -1,11 +1,11 @@
 import { Plugin } from '@nocobase/server';
 import WorkflowPlugin from '@nocobase/plugin-workflow';
 
-import FormTrigger from './FormTrigger';
+import ActionTrigger from './ActionTrigger';
 
 export default class extends Plugin {
   async load() {
-    const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
-    workflowPlugin.triggers.register('form', new FormTrigger(workflowPlugin));
+    const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    workflowPlugin.triggers.register('action', new ActionTrigger(workflowPlugin));
   }
 }

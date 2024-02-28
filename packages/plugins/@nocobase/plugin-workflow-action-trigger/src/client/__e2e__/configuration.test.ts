@@ -38,7 +38,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -130,7 +130,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -211,7 +211,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
 });
 
 test.describe('Configuration Page Path Jump Workflow Management Page', () => {
-  test('Form event Workflow Configuration Page Path Jump Workflow Management Page', async ({
+  test('Action event Workflow Configuration Page Path Jump Workflow Management Page', async ({
     page,
     mockPage,
     mockCollections,
@@ -232,7 +232,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -254,7 +254,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     await apiDeleteWorkflow(workflowId);
   });
 
-  test('Form event Workflow History Version Configuration Page Path Jump Workflow Management Page', async ({
+  test('Action event Workflow History Version Configuration Page Path Jump Workflow Management Page', async ({
     page,
     mockPage,
     mockCollections,
@@ -278,7 +278,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -320,7 +320,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     await apiDeleteWorkflow(workflowId);
   });
 
-  test('Form event Workflow Execution Log Page Path Jump Workflow Management Page', async ({
+  test('Action event Workflow Execution Log Page Path Jump Workflow Management Page', async ({
     page,
     mockPage,
     mockCollections,
@@ -344,7 +344,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -384,7 +384,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     await apiDeleteWorkflow(workflowId);
   });
 
-  test.skip('Form event Workflow Execution Log Page Path Jump Execution Log Screen', async ({
+  test.skip('Action event Workflow Execution Log Page Path Jump Execution Log Screen', async ({
     page,
     mockCollections,
     mockRecords,
@@ -407,7 +407,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -451,7 +451,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
 test.describe('Configuration page version switching', () => {});
 
 test.describe('Configuration page disable enable', () => {
-  test('Form event Workflow Add Data Trigger Disable Do Not Trigger', async ({
+  test('Action event Workflow Add Data Trigger Disable Do Not Trigger', async ({
     page,
     mockCollections,
     mockRecords,
@@ -474,7 +474,7 @@ test.describe('Configuration page disable enable', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: false,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -522,7 +522,7 @@ test.describe('Configuration page disable enable', () => {
     await apiDeleteWorkflow(workflowId);
   });
 
-  test('Form event Workflow Add Data Trigger Disable Enable Post Trigger', async ({
+  test('Action event Workflow Add Data Trigger Disable Enable Post Trigger', async ({
     page,
     mockCollections,
     mockRecords,
@@ -545,7 +545,7 @@ test.describe('Configuration page disable enable', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -597,7 +597,7 @@ test.describe('Configuration page disable enable', () => {
 test.describe('Configuration page execution history', () => {});
 
 test.describe('Configuration page copy to new version', () => {
-  test('Copy the Form event of the Configuration Trigger node', async ({ page, mockCollections, mockRecords }) => {
+  test('Copy the action event of the Configuration Trigger node', async ({ page, mockCollections, mockRecords }) => {
     //数据表后缀标识
     const triggerNodeAppendText = faker.string.alphanumeric(5);
 
@@ -616,7 +616,7 @@ test.describe('Configuration page copy to new version', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
