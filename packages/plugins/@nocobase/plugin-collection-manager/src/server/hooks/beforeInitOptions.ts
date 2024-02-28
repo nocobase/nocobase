@@ -118,8 +118,8 @@ export const beforeCheckOptions = {
   belongsTo(model: Model, { database }) {
     const target = model.get('target');
 
-    const targetModel = database.getCollection(target).model;
-    const sourceModel = database.getCollection(model.get('collectionName')).model;
+    const targetModel = database.getCollection(target)?.model;
+    const sourceModel = database.getCollection(model.get('collectionName'))?.model;
     if (!sourceModel || !targetModel) {
       return;
     }
@@ -141,8 +141,8 @@ export const beforeCheckOptions = {
   hasMany(model: Model, { database }) {
     const target = model.get('target');
     const source = model.get('collectionName');
-    const targetModel = database.getCollection(target).model;
-    const sourceModel = database.getCollection(source).model;
+    const targetModel = database.getCollection(target)?.model;
+    const sourceModel = database.getCollection(source)?.model;
 
     if (!sourceModel || !targetModel) {
       return;
@@ -165,8 +165,8 @@ export const beforeCheckOptions = {
   hasOne(model: Model, { database }) {
     const target = model.get('target');
     const source = model.get('collectionName');
-    const targetModel = database.getCollection(target).model;
-    const sourceModel = database.getCollection(source).model;
+    const targetModel = database.getCollection(target)?.model;
+    const sourceModel = database.getCollection(source)?.model;
     if (!sourceModel || !targetModel) {
       return;
     }
@@ -193,8 +193,8 @@ export const beforeCheckOptions = {
       return;
     }
 
-    const targetModel = database.getCollection(target).model;
-    const sourceModel = database.getCollection(model.get('collectionName')).model;
+    const targetModel = database.getCollection(target)?.model;
+    const sourceModel = database.getCollection(model.get('collectionName'))?.model;
 
     if (!sourceModel || !targetModel) {
       return;
