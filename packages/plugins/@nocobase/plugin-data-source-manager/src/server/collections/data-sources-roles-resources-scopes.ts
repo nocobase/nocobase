@@ -9,6 +9,11 @@ export default defineCollection({
       name: 'key',
     },
     {
+      name: 'dataSourceKey',
+      type: 'string',
+      defaultValue: 'main',
+    },
+    {
       type: 'belongsTo',
       name: 'dataSources',
       foreignKey: 'dataSourceKey',

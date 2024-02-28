@@ -354,6 +354,34 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
+    this.app.db.on('dataSourcesRolesResourcesActions.afterUpdateWithAssociations', async (model, options) => {
+      const { transaction } = options;
+
+      const resource = await model.getResource({
+        transaction,
+      });
+
+      const pluginACL: any = this.app.pm.get('acl');
+
+      const dataSource = this.app.dataSourceManager.dataSources.get(resource.get('dataSourceKey'));
+      await resource.writeToACL({
+        acl: dataSource.acl,
+        associationFieldsActions: pluginACL.associationFieldsActions,
+        transaction: transaction,
+        grantHelper: pluginACL.grantHelper,
+      });
+    });
+
+    this.app.db.on('dataSourcesRolesResources.afterDestroy', async (model, options) => {
+      const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
+      const roleName = model.get('roleName');
+      const role = dataSource.acl.getRole(roleName);
+
+      if (role) {
+        role.revokeResource(model.get('name'));
+      }
+    });
+
     this.app.db.on('dataSourcesRoles.afterSave', async (model: DataSourcesRolesModel, options) => {
       const { transaction } = options;
 
