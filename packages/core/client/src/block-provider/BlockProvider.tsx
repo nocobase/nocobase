@@ -302,7 +302,7 @@ export const useSourceIdFromParentRecord = () => {
   const association = useBlockAssociationContext();
   if (association) {
     const collectionField = getCollectionField(association);
-    return record?.__parent?.[collectionField.sourceKey || 'id'];
+    return record?.__parent?.[collectionField.sourceKey || collectionField.targetKey || 'id'];
   }
 };
 
