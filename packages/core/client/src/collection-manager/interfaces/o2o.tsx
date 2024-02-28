@@ -45,7 +45,7 @@ export class O2OFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['hasOne'];
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
@@ -53,6 +53,12 @@ export class O2OFieldInterface extends CollectionFieldInterface {
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+    };
+    schema['x-component-props'].fieldNames.label =
+      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
   }
   properties = {
     'uiSchema.title': {
@@ -223,7 +229,7 @@ export class OHOFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['hasOne'];
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
@@ -232,6 +238,12 @@ export class OHOFieldInterface extends CollectionFieldInterface {
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+    };
+    schema['x-component-props'].fieldNames.label =
+      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
   }
   properties = {
     'uiSchema.title': {

@@ -184,7 +184,7 @@ function useRecordBlocks() {
   const { actionInitializers } = options;
   const collection = useCollection_deprecated();
   const { getChildrenCollections } = useCollectionManager_deprecated();
-  const formChildrenCollections = getChildrenCollections(collection.name);
+  const formChildrenCollections = getChildrenCollections(collection.name, collection.dataSource);
   const hasFormChildCollection = formChildrenCollections?.length > 0;
   const detailChildrenCollections = getChildrenCollections(collection.name, true);
   const hasDetailChildCollection = detailChildrenCollections?.length > 0;

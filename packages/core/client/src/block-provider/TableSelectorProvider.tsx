@@ -148,8 +148,8 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
-  const collection = getCollection(collectionField.collectionName);
-  const primaryKey = collection.getPrimaryKey();
+  const collection = getCollection(collectionField?.collectionName);
+  const primaryKey = collection?.getPrimaryKey();
   const appends = useAssociationNames(props.collection);
   let params = { ...props.params };
   if (props.dragSort) {

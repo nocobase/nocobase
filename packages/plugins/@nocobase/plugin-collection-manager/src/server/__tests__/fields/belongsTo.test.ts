@@ -20,6 +20,58 @@ describe('belongsTo', () => {
     await app.destroy();
   });
 
+  it('should check belongs to association keys', async () => {
+    const Post = await Collection.repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'bigInt',
+            name: 'postId',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const Tag = await Collection.repository.create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    let error;
+    try {
+      await Field.repository.create({
+        values: {
+          collectionName: 'posts',
+          type: 'belongsTo',
+          name: 'tags',
+          targetKey: 'name',
+          foreignKey: 'postId',
+        },
+        context: {},
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.message).toContain(
+      'Foreign key "postId" type "BIGINT" does not match target key "name" type "STRING"',
+    );
+  });
   it('should load belongsTo field', async () => {
     await Collection.repository.create({
       values: {
