@@ -120,6 +120,10 @@ export const beforeCheckOptions = {
 
     const targetModel = database.getCollection(target).model;
     const sourceModel = database.getCollection(model.get('collectionName')).model;
+    if (!sourceModel || !targetModel) {
+      return;
+    }
+
     const foreignKey = sourceModel.rawAttributes[model.get('foreignKey')];
     const targetKey = targetModel.rawAttributes[model.get('targetKey')];
 
@@ -140,6 +144,10 @@ export const beforeCheckOptions = {
     const targetModel = database.getCollection(target).model;
     const sourceModel = database.getCollection(source).model;
 
+    if (!sourceModel || !targetModel) {
+      return;
+    }
+
     const foreignKey = targetModel.rawAttributes[model.get('foreignKey')];
     const sourceKey = sourceModel.rawAttributes[model.get('sourceKey')];
 
@@ -159,6 +167,9 @@ export const beforeCheckOptions = {
     const source = model.get('collectionName');
     const targetModel = database.getCollection(target).model;
     const sourceModel = database.getCollection(source).model;
+    if (!sourceModel || !targetModel) {
+      return;
+    }
 
     const foreignKey = targetModel.rawAttributes[model.get('foreignKey')];
     const sourceKey = sourceModel.rawAttributes[model.get('sourceKey')];
@@ -184,6 +195,10 @@ export const beforeCheckOptions = {
 
     const targetModel = database.getCollection(target).model;
     const sourceModel = database.getCollection(model.get('collectionName')).model;
+
+    if (!sourceModel || !targetModel) {
+      return;
+    }
 
     const foreignKey = throughCollection.model.rawAttributes[model.get('foreignKey')];
     const otherKey = throughCollection.model.rawAttributes[model.get('otherKey')];
