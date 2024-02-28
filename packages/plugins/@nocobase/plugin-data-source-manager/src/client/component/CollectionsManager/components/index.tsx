@@ -2,24 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
 import { observer, useForm, useField } from '@formily/react';
 import { useParams } from 'react-router-dom';
-import { useRecord_deprecated, useCompile, useAPIClient } from '@nocobase/client';
+import { useRecord_deprecated, useCompile, useAPIClient, useCollectionManager_deprecated } from '@nocobase/client';
 import { useRemoteCollectionContext } from '../CollectionFields';
 
 const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
 
 export const SourceKey = observer(
   (props: any) => {
-    const { fields, sourceKey } = useRecord_deprecated();
+    const { name: dataSourceKey } = useParams();
+    const { collectionName, sourceKey, name } = useRecord_deprecated();
     const field: any = useField();
     const compile = useCompile();
-    const options = fields
-      ?.filter((v) => {
+    const { getCollection } = useCollectionManager_deprecated();
+    const options = getCollection(collectionName || name, dataSourceKey)
+      .fields?.filter((v) => {
         return supportTypes.includes(v.type);
       })
       .map((k) => {
         return {
           value: k.name,
-          label: compile(k.title || k.name),
+          label: compile(k.uiSchema?.title || k.title || k.name),
         };
       });
     useEffect(() => {
@@ -42,19 +44,27 @@ export const SourceKey = observer(
 
 export const ForeignKey = observer(
   (props: any) => {
-    const { value, disabled } = props;
+    const { disabled } = props;
     const api = useAPIClient();
     const [options, setOptions] = useState([]);
     const { name: dataSourceKey } = useParams();
-    const { name: collectionName, fields } = useRecord_deprecated();
+    const record = useRecord_deprecated();
+    const field: any = useField();
+    const { collectionName, target, type, through, name } = record;
+    const value = record[field.props.name];
+    const { getCollection } = useCollectionManager_deprecated();
     const compile = useCompile();
     const form = useForm();
-    const { target, type, through } = form.values;
     const [initialValue, setInitialValue] = useState(value);
-    const field: any = useField();
     useEffect(() => {
       field.initialValue = null;
-      if (['belongsTo'].includes(type) && fields) {
+      const effectField = ['belongsTo'].includes(type)
+        ? collectionName
+        : ['belongsToMany'].includes(type)
+          ? through
+          : target;
+      const fields = getCollection(effectField || name, dataSourceKey)?.fields;
+      if (fields) {
         const sourceOptions = fields
           ?.filter((v) => {
             return supportTypes.includes(v.type);
@@ -62,10 +72,14 @@ export const ForeignKey = observer(
           .map((k) => {
             return {
               value: k.name,
-              label: compile(k.title || k.name),
+              label: compile(k.uiSchema?.title || k.title || k.name),
             };
           });
         setOptions(sourceOptions);
+        if (value) {
+          const option = sourceOptions.find((v) => v.value === value);
+          setInitialValue(option?.label || value);
+        }
       }
     }, [type]);
     useEffect(() => {
@@ -79,6 +93,7 @@ export const ForeignKey = observer(
           options={options}
           showSearch
           onDropdownVisibleChange={async (open) => {
+            const { target, type, through } = form.values;
             const effectField = ['belongsTo'].includes(type)
               ? collectionName
               : ['belongsToMany'].includes(type)
@@ -103,7 +118,7 @@ export const ForeignKey = observer(
                   .map((k) => {
                     return {
                       value: k.name,
-                      label: compile(k.title || k.name),
+                      label: compile(k.uiSchema?.title || k.title || k.name),
                     };
                   }),
               );
@@ -122,8 +137,9 @@ export const ForeignKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { targetKey } = useRecord_deprecated();
+    const { targetKey, target } = useRecord_deprecated();
     const { name: dataSourceKey } = useParams();
+    const { getCollection } = useCollectionManager_deprecated();
     const api = useAPIClient();
     const [options, setOptions] = useState([]);
     const [initialValue, setInitialValue] = useState(value || targetKey);
@@ -131,6 +147,22 @@ export const TargetKey = observer(
     const compile = useCompile();
     const field: any = useField();
     field.required = true;
+    useEffect(() => {
+      if (target) {
+        setOptions(
+          getCollection(target, dataSourceKey)
+            .fields?.filter((v) => {
+              return supportTypes.includes(v.type);
+            })
+            .map((k) => {
+              return {
+                value: k.name,
+                label: compile(k?.uiSchema?.title || k.title || k.name),
+              };
+            }),
+        );
+      }
+    }, []);
     return (
       <div>
         <Select
@@ -157,7 +189,7 @@ export const TargetKey = observer(
                   .map((k) => {
                     return {
                       value: k.name,
-                      label: compile(k.title || k.name),
+                      label: compile(k.uiSchema?.title || k.title || k.name),
                     };
                   }),
               );

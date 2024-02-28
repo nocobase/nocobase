@@ -162,7 +162,7 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target)
             .fields?.filter((v) => {
-              return [supportTypes].includes(v.type);
+              return supportTypes.includes(v.type);
             })
             .map((k) => {
               return {
