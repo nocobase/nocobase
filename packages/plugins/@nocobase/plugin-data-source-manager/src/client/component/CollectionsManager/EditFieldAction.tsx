@@ -22,6 +22,7 @@ import {
   useCollectionManager_deprecated,
   useCurrentAppInfo,
   useParentRecordData,
+  useDataSourceManager,
 } from '@nocobase/client';
 import { useRemoteCollectionContext } from './CollectionFields';
 
@@ -143,6 +144,7 @@ const useUpdateCollectionField = () => {
   const { targetCollection } = useRemoteCollectionContext();
   const { name: dataSourceKey } = useParams();
   const { name: filterByTk } = useRecord_deprecated();
+  const dm = useDataSourceManager();
   return {
     async run() {
       await form.submit();
@@ -159,6 +161,7 @@ const useUpdateCollectionField = () => {
         data: values,
       });
       ctx.setVisible(false);
+      dm.getDataSource(dataSourceKey).reload();
       await form.reset();
       refresh();
     },
