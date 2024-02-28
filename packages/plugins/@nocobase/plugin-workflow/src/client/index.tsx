@@ -9,7 +9,7 @@ export * from './utils';
 export * from './hooks/useGetAriaLabelOfAddButton';
 export { default as useStyles } from './style';
 export * from './variable';
-export { getCollectionFieldOptions, useWorkflowVariableOptions } from './variable';
+export * from './hooks/useTriggerWorkflowActionProps';
 
 import React from 'react';
 

@@ -1,10 +1,12 @@
 import { Plugin, SchemaInitializerItemType } from '@nocobase/client';
-import WorkflowPlugin from '@nocobase/plugin-workflow/client';
+import WorkflowPlugin, {
+  useTriggerWorkflowsActionProps,
+  useRecordTriggerWorkflowsActionProps,
+} from '@nocobase/plugin-workflow/client';
 
-import FormTrigger from './FormTrigger';
-import { useTriggerWorkflowsActionProps, useRecordTriggerWorkflowsActionProps } from './useTriggerWorkflowActionProps';
+import ActionTrigger from './ActionTrigger';
 
-const formTriggerWorkflowActionInitializer: SchemaInitializerItemType = {
+const submitToWorkflowActionInitializer: SchemaInitializerItemType = {
   name: 'submitToWorkflow',
   title: '{{t("Submit to workflow", { ns: "workflow" })}}',
   Component: 'CustomizeActionInitializer',
@@ -62,16 +64,9 @@ const recordTriggerWorkflowActionLinkInitializer = {
 };
 
 export default class extends Plugin {
-  async afterAdd() {
-    // await this.app.pm.add()
-  }
-
-  async beforeLoad() {}
-
-  // You can get and modify the app instance here
   async load() {
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
-    workflow.registerTrigger('form', FormTrigger);
+    workflow.registerTrigger('action', ActionTrigger);
 
     this.app.addScopes({
       useTriggerWorkflowsActionProps,
@@ -79,13 +74,13 @@ export default class extends Plugin {
     });
 
     const FormActionInitializers = this.app.schemaInitializerManager.get('FormActionInitializers');
-    FormActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
+    FormActionInitializers.add('customize.submitToWorkflow', submitToWorkflowActionInitializer);
 
     const CreateFormActionInitializers = this.app.schemaInitializerManager.get('CreateFormActionInitializers');
-    CreateFormActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
+    CreateFormActionInitializers.add('customize.submitToWorkflow', submitToWorkflowActionInitializer);
 
     const UpdateFormActionInitializers = this.app.schemaInitializerManager.get('UpdateFormActionInitializers');
-    UpdateFormActionInitializers.add('customize.submitToWorkflow', formTriggerWorkflowActionInitializer);
+    UpdateFormActionInitializers.add('customize.submitToWorkflow', submitToWorkflowActionInitializer);
 
     const DetailsActionInitializers = this.app.schemaInitializerManager.get('DetailsActionInitializers');
     DetailsActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);

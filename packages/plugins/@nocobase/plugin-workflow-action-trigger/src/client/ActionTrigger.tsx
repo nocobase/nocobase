@@ -1,11 +1,16 @@
 import { useForm } from '@formily/react';
 
-import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemType,
+  useCollectionDataSource,
+  useCollectionManager_deprecated,
+  useCompile,
+} from '@nocobase/client';
 import { Trigger, CollectionBlockInitializer, getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
 export default class extends Trigger {
-  title = `{{t("Form event", { ns: "${NAMESPACE}" })}}`;
+  title = `{{t("Record action event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t("Event triggers when submitted a workflow bound form action.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
@@ -16,8 +21,8 @@ export default class extends Trigger {
       'x-component-props': {
         className: 'auto-width',
       },
-      title: `{{t("Form data model", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Use a collection to match form data.", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Collection or record", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Which collection record belongs to.", { ns: "${NAMESPACE}" })}}`,
       'x-reactions': [
         {
           target: 'appends',
@@ -39,7 +44,7 @@ export default class extends Trigger {
       'x-component-props': {
         title: 'Preload associations',
         multiple: true,
-        useCollection() {
+        useCollection_deprecated() {
           const { values } = useForm();
           return values?.collection;
         },
@@ -66,7 +71,7 @@ export default class extends Trigger {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const langTriggerData = useLang('Trigger data');
     // eslint-disable-next-line react-hooks/rules-of-hooks

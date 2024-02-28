@@ -24,6 +24,8 @@ export function useTriggerWorkflowsActionProps() {
   const { modal } = App.useApp();
   const collectValues = useCollectValuesToSubmit();
 
+  const filterKeys = actionField.componentProps.filterKeys || [];
+
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
@@ -36,6 +38,7 @@ export function useTriggerWorkflowsActionProps() {
       try {
         const data = await api.resource('workflows').trigger({
           values,
+          filterKeys: filterKeys,
           // TODO(refactor): should change to inject by plugin
           triggerWorkflows: triggerWorkflows?.length
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
