@@ -4,7 +4,6 @@ import {
   useBlockRequestContext,
   useCollection,
   useSourceIdFromParentRecord,
-  useSourceIdFromRecord,
 } from '@nocobase/client';
 import { notification } from 'antd';
 import { useContext, useMemo } from 'react';
