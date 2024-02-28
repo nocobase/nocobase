@@ -5246,3 +5246,248 @@ export const T3106: PageConfig = {
     'x-async': true,
   },
 };
+
+export const T3251: PageConfig = {
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      wthxmf7a7vt: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        properties: {
+          xovhjqo0uig: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              e6ltgswudd5: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  zhip07zf2sk: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-acl-action-props': {
+                      skipScopeCheck: true,
+                    },
+                    'x-acl-action': 'users:create',
+                    'x-decorator': 'FormBlockProvider',
+                    'x-decorator-props': {
+                      resource: 'users',
+                      collection: 'users',
+                    },
+                    'x-designer': 'FormV2.Designer',
+                    'x-component': 'CardItem',
+                    'x-component-props': {},
+                    properties: {
+                      o14tnfwmiah: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'FormV2',
+                        'x-component-props': {
+                          useProps: '{{ useFormBlockProps }}',
+                        },
+                        properties: {
+                          grid: {
+                            'x-uid': 'fcczneadfb7',
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'FormItemInitializers',
+                            'x-linkage-rules': [
+                              {
+                                condition: {
+                                  $and: [
+                                    {
+                                      nickname: {
+                                        $includes: 'nickname',
+                                      },
+                                    },
+                                    {
+                                      $and: [
+                                        {
+                                          username: {
+                                            $includes: 'username',
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  ],
+                                },
+                                actions: [
+                                  {
+                                    targetFields: ['email'],
+                                    operator: 'disabled',
+                                  },
+                                ],
+                              },
+                            ],
+                            properties: {
+                              gjzekanhi3t: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  ql3al6wtn1j: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      nickname: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        'x-designer': 'FormItem.Designer',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'users.nickname',
+                                        'x-component-props': {},
+                                        'x-uid': 'by956vuuq17',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': '67iwm2hgafu',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': '66ccfjw2mqq',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                              iw013a1ahid: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  frgfw52u7q1: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      username: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        'x-designer': 'FormItem.Designer',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'users.username',
+                                        'x-component-props': {},
+                                        'x-uid': 'en26umyz49e',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'oc78q5uf599',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'xf0m0i82wx6',
+                                'x-async': false,
+                                'x-index': 2,
+                              },
+                              xeop5qaq5wo: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  x1uk4pvrsrj: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      email: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        'x-designer': 'FormItem.Designer',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'users.email',
+                                        'x-component-props': {},
+                                        'x-uid': 'ow19p5g3ed3',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': '25jhpf6i8mi',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'ujz8f344x8l',
+                                'x-async': false,
+                                'x-index': 3,
+                              },
+                            },
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          c1nzoyb7v3f: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-initializer': 'FormActionInitializers',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              layout: 'one-column',
+                              style: {
+                                marginTop: 24,
+                              },
+                            },
+                            'x-uid': 'vnkbks8htxa',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                        },
+                        'x-uid': 'kwjha09k4k3',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': '8zffjdnv1ps',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'j2l9f3xw0j9',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'tqovgfp1kw0',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'kwi4lems81c',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'zq9yecy6wri',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
