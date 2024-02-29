@@ -227,3 +227,50 @@ export const SourceCollection = observer(
   },
   { displayName: 'SourceCollection' },
 );
+
+export const ThroughCollection = observer(
+  (props: any) => {
+    const { disabled } = props;
+    const compile = useCompile();
+    const [options, setOptions] = useState([]);
+    const { name: dataSourceKey } = useParams();
+    const field: any = useField();
+    const { getCollections } = useCollectionManager_deprecated(dataSourceKey);
+    const record = useRecord_deprecated();
+    const value = record[field.props.name];
+
+    const loadCollections = () => {
+      const filteredItems = getCollections().filter((item) => {
+        const isAutoCreateAndThrough = item.autoCreate && item.isThrough;
+        if (isAutoCreateAndThrough) {
+          return false;
+        }
+        return true;
+      });
+      return filteredItems.map((item) => ({
+        label: compile(item.title || item.name),
+        value: item.name,
+      }));
+    };
+    useEffect(() => {
+      const data = loadCollections();
+      setOptions(data);
+    }, []);
+    return (
+      <div>
+        <Select
+          disabled={disabled}
+          showSearch
+          popupMatchSelectWidth={false}
+          fieldNames={{ label: 'label', value: 'value' }}
+          defaultValue={value}
+          options={options}
+          onChange={(value) => {
+            props?.onChange?.(value);
+          }}
+        />
+      </div>
+    );
+  },
+  { displayName: 'ThroughCollection' },
+);

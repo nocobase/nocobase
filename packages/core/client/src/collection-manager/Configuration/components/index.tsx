@@ -334,5 +334,5 @@ export const ThroughCollection = observer(
       </div>
     );
   },
-  { displayName: 'SourceCollection' },
+  { displayName: 'ThroughCollection' },
 );
