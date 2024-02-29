@@ -243,7 +243,11 @@ export class OHOFieldInterface extends CollectionFieldInterface {
       value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
     };
     schema['x-component-props'].fieldNames.label =
-      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
+      schema['x-component-props'].fieldNames?.label ||
+      targetCollection?.titleField ||
+      field?.targetKey ||
+      targetCollection?.getPrimaryKey() ||
+      'id';
   }
   properties = {
     'uiSchema.title': {
@@ -419,7 +423,11 @@ export class OBOFieldInterface extends CollectionFieldInterface {
       value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
     };
     schema['x-component-props'].fieldNames.label =
-      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
+      schema['x-component-props'].fieldNames?.label ||
+      targetCollection?.titleField ||
+      field?.targetKey ||
+      targetCollection?.getPrimaryKey() ||
+      'id';
   }
   properties = {
     'uiSchema.title': {
