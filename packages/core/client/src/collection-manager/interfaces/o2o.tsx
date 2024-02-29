@@ -128,6 +128,7 @@ export class O2OFieldInterface extends CollectionFieldInterface {
                 sourceKey: {
                   type: 'string',
                   title: '{{t("Source key")}}',
+                  description: "{{t('The field must be a primary key or have a unique index set')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
                 },
@@ -317,6 +318,7 @@ export class OHOFieldInterface extends CollectionFieldInterface {
                 sourceKey: {
                   type: 'string',
                   title: '{{t("Source key")}}',
+                  description: "{{t('The field must be a primary key or have a unique index set')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
                 },
@@ -515,6 +517,7 @@ export class OBOFieldInterface extends CollectionFieldInterface {
                 targetKey: {
                   type: 'string',
                   title: '{{t("Target key")}}',
+                  description: "{{t('The field must be a primary key or have a unique index set')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
                   'x-disabled': '{{ !createOnly }}',

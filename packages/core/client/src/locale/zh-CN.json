@@ -881,5 +881,6 @@
   "Group sorting":"分组排序",
   "When a field is selected as a group, it will be grouped first and then sorted": "当选了某个字段作为分组时，将先分组再排序",
   "Main": "主数据源",
-  "Index":"索引"
+  "Index":"索引",
+  "The field must be a primary key or have a unique index set":"字段必须是主键或者设置了唯一索引"
 }

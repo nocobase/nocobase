@@ -121,7 +121,7 @@ export const SourceKey = observer(
     const compile = useCompile();
     const options = getCollection(collectionName || name)
       .fields?.filter((v) => {
-        return supportTypes.includes(v.type);
+        return v.primaryKey || v.unique;
       })
       .map((k) => {
         return {
@@ -162,7 +162,7 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target)
             .fields?.filter((v) => {
-              return supportTypes.includes(v.type);
+              return v.primaryKey || v.unique;
             })
             .map((k) => {
               return {
@@ -184,7 +184,7 @@ export const TargetKey = observer(
               setOptions(
                 getCollection(target)
                   .fields?.filter((v) => {
-                    return supportTypes.includes(v.type);
+                    return v.primaryKey || v.unique;
                   })
                   .map((k) => {
                     return {
