@@ -53,3 +53,8 @@ export * from './variables';
 export * from './data-source';
 
 export { withDynamicSchemaProps } from './application/hoc/withDynamicSchemaProps';
+
+export * from './modules/blocks/BlockSchemaToolbar';
+export * from './modules/blocks/data-blocks/table';
+export * from './modules/blocks/data-blocks/form';
+export * from './modules/blocks/data-blocks/table-selector';

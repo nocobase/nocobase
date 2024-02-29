@@ -1,15 +1,16 @@
 import { useFieldSchema } from '@formily/react';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../block-provider';
-import { useCollection_deprecated } from '../../../collection-manager';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext } from '../../../../block-provider';
+import { useCollection_deprecated } from '../../../../collection-manager';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsDataTemplates,
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
-} from '../../../schema-settings';
+} from '../../../../schema-settings';
 
 //历史数据
+// TODO: 0.20 发版之前删除
 export const creationFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:creationForm',
   items: [

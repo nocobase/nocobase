@@ -1,10 +1,10 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
-import { useBlockAssociationContext } from '../../block-provider';
-import { useCollection_deprecated } from '../../collection-manager';
-import { useSchemaTemplateManager } from '../../schema-templates';
-import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
+import { useBlockAssociationContext } from '../../../../block-provider';
+import { useCollection_deprecated } from '../../../../collection-manager';
+import { useSchemaTemplateManager } from '../../../../schema-templates';
+import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 
 export const RecordFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();

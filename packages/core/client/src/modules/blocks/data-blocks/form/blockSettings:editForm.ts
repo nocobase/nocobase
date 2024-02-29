@@ -1,13 +1,13 @@
 import { useFieldSchema } from '@formily/react';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../block-provider';
-import { useCollection_deprecated } from '../../../collection-manager';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext } from '../../../../block-provider';
+import { useCollection_deprecated } from '../../../../collection-manager';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsDataTemplates,
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
-} from '../../../schema-settings';
+} from '../../../../schema-settings';
 
 export const editFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:editForm',
