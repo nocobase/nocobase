@@ -56,7 +56,7 @@ describe('update associations', () => {
     expect(await User.repository.count()).toBe(1);
   });
 
-  it.only('should create user with posts', async () => {
+  it('should create user with posts', async () => {
     await User.repository.create({
       values: {
         name: 'user1',
