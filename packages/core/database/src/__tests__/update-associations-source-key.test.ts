@@ -15,7 +15,7 @@ describe('update associations', () => {
       autoGenId: true,
       timestamps: false,
       fields: [
-        { type: 'string', name: 'name', unique: true },
+        { type: 'string', name: 'name' },
         {
           type: 'hasMany',
           name: 'posts',
@@ -32,7 +32,7 @@ describe('update associations', () => {
       autoGenId: true,
       timestamps: false,
       fields: [
-        { type: 'string', name: 'title', unique: true },
+        { type: 'string', name: 'title' },
         { type: 'belongsTo', name: 'user', target: 'users', foreignKey: 'userName', targetKey: 'name' },
       ],
     });
@@ -67,7 +67,17 @@ describe('update associations', () => {
         ],
       },
     });
+    await User.repository.create({
+      values: {
+        name: 'user2',
+        posts: [
+          {
+            title: 'post1',
+          },
+        ],
+      },
+    });
 
-    expect(await Post.repository.count()).toBe(1);
+    expect(await Post.repository.count()).toBe(2);
   });
 });

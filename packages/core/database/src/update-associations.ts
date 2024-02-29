@@ -456,19 +456,33 @@ export async function updateMultipleAssociation(
       newItems.push(instance);
     } else {
       // set & update record
+      const where = {
+        [targetKey]: item[targetKey],
+      };
+      if (association.associationType === 'HasMany') {
+        const foreignKey = association?.['options']?.['foreignKey'];
+        const sourceKey = association?.['options']?.['sourceKey'];
+        where[foreignKey] = model.get(sourceKey);
+      }
       let instance = await association.target.findOne<any>({
-        where: {
-          [targetKey]: item[targetKey],
-        },
+        where,
         transaction,
       });
       if (!instance) {
         // create new record
         instance = await model[createAccessor](item, accessorOptions);
+        await updateAssociations(instance, item, {
+          ...options,
+          transaction,
+          associationContext: association,
+          updateAssociationValues: keys,
+        });
+        newItems.push(instance);
+        continue;
       }
       const addAccessor = association.accessors.add;
 
-      await model[addAccessor](instance, accessorOptions);
+      await model[addAccessor](instance[association.target.primaryKeyAttribute], accessorOptions);
 
       if (!recursive) {
         continue;
