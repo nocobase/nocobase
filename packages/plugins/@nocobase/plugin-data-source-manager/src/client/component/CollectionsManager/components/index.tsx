@@ -16,7 +16,7 @@ export const SourceKey = observer(
     const { getCollection } = useCollectionManager_deprecated();
     const options = getCollection(collectionName || name, dataSourceKey)
       .fields?.filter((v) => {
-        return supportTypes.includes(v.type);
+        return v.primaryKey || v.unique;
       })
       .map((k) => {
         return {
@@ -152,7 +152,7 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target, dataSourceKey)
             .fields?.filter((v) => {
-              return supportTypes.includes(v.type);
+              return v.primaryKey || v.unique;
             })
             .map((k) => {
               return {
@@ -184,7 +184,7 @@ export const TargetKey = observer(
               setOptions(
                 data.data
                   ?.filter((v) => {
-                    return supportTypes.includes(v.type);
+                    return v.primaryKey || v.unique;
                   })
                   .map((k) => {
                     return {
