@@ -247,7 +247,7 @@ export const EditFieldAction = (props) => {
             isDialect,
             disabledJSONB: true,
             scopeKeyOptions,
-            createMainOnly: false,
+            createMainOnly: true,
             ...scope,
           }}
         />
