@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection_deprecated } from '../../';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { useCollection_deprecated } from '../../../..';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 
 // 表格操作配置
 export const tableActionInitializers = new SchemaInitializer({

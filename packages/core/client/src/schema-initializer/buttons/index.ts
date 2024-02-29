@@ -15,7 +15,6 @@ export * from './RecordFormBlockInitializers';
 export * from './SubTableActionInitializers';
 export * from './TabPaneInitializers';
 export * from './TableActionColumnInitializers';
-export * from './TableActionInitializers';
 export * from './TableColumnInitializers';
 export * from './TableSelectorInitializers';
 // association filter
