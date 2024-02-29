@@ -149,14 +149,16 @@ export const usersSchema: ISchema = {
                   title: "{{t('Delete users')}}",
                   content: "{{t('Are you sure you want to delete it?')}}",
                 },
+                icon: 'DeleteOutlined',
               },
             },
             create: {
               type: 'void',
-              title: '{{t("Add user")}}',
+              title: '{{t("Add new")}}',
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
+                icon: 'PlusOutlined',
               },
               properties: {
                 drawer: {
