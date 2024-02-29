@@ -11,7 +11,6 @@ import {
   createFormBlockInitializers,
   cusomeizeCreateFormBlockInitializers,
   customFormItemInitializers,
-  detailsActionInitializers,
   filterFormActionInitializers,
   filterFormItemInitializers,
   gridCardActionInitializers,
@@ -37,6 +36,7 @@ import { RecordReadPrettyFormBlockInitializer } from '../modules/blocks/data-blo
 import { readPrettyFormActionInitializers } from '../modules/blocks/data-blocks/details-single/ReadPrettyFormActionInitializers';
 import { readPrettyFormItemInitializers } from '../modules/blocks/data-blocks/details-single/ReadPrettyFormItemInitializers';
 import { DetailsBlockInitializer } from '../modules/blocks/data-blocks/details-multi/DetailsBlockInitializer';
+import { detailsActionInitializers } from '../modules/blocks/data-blocks/details-multi/DetailsActionInitializers';
 export * from './buttons';
 export * from './items';
 export {

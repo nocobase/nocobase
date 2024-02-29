@@ -2,7 +2,6 @@ export * from './BlockInitializers';
 export * from './CreateFormBlockInitializers';
 export * from './CusomeizeCreateFormBlockInitializers';
 export * from './CustomFormItemInitializers';
-export * from './DetailsActionInitializers';
 export * from './FilterFormActionInitializers';
 export * from './FormItemInitializers';
 export * from './GridCardActionInitializers';
