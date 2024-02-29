@@ -3,12 +3,12 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../api-client';
-import { SchemaInitializerActionModal, SchemaInitializerItem, useSchemaInitializer } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCollection_deprecated } from '../../collection-manager';
-import { createDesignable, useDesignable } from '../../schema-component';
-import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { useAPIClient } from '../../../../api-client';
+import { SchemaInitializerActionModal, SchemaInitializerItem, useSchemaInitializer } from '../../../../application';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { useCollection_deprecated } from '../../../../collection-manager';
+import { createDesignable, useDesignable } from '../../../../schema-component';
+import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 export const Resizable = () => {
   const { t } = useTranslation();
