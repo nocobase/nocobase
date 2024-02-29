@@ -9,6 +9,7 @@ import {
   ModelStatic,
   Transactionable,
 } from 'sequelize';
+import Database from './database';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
 
@@ -460,8 +461,10 @@ export async function updateMultipleAssociation(
         [targetKey]: item[targetKey],
       };
       if (association.associationType === 'HasMany') {
-        const foreignKey = association?.['options']?.['foreignKey'];
-        const sourceKey = association?.['options']?.['sourceKey'];
+        const db = model.constructor['database'] as Database;
+        const fieldOptions = db.getFieldByPath(`${model.constructor.name}.${key}`).options;
+        const foreignKey = fieldOptions['foreignKey'];
+        const sourceKey = fieldOptions['sourceKey'];
         where[foreignKey] = model.get(sourceKey);
       }
       let instance = await association.target.findOne<any>({
