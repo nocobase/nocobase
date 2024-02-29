@@ -118,8 +118,7 @@ export class M2MFieldInterface extends CollectionFieldInterface {
                   description: '{{ t("Generated automatically if left blank") }}',
                   'x-decorator': 'FormItem',
                   'x-disabled': '{{ !createOnly }}',
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-                  'x-component': 'Select',
+                  'x-component': 'ThroughCollection',
                   'x-component-props': {
                     allowClear: true,
                   },

@@ -260,7 +260,7 @@ export const ForeignKey = observer(
                 ? through
                 : target;
             if (effectField && open) {
-              const fields = getCollection(effectField).fields;
+              const fields = getCollection(effectField)?.fields || [];
               setOptions(
                 fields
                   ?.filter((v) => {
@@ -284,4 +284,55 @@ export const ForeignKey = observer(
     );
   },
   { displayName: 'ForeignKey' },
+);
+
+export const ThroughCollection = observer(
+  (props: any) => {
+    const { disabled } = props;
+    const compile = useCompile();
+    const { getCollections } = useCollectionManager_deprecated();
+    const [options, setOptions] = useState([]);
+    const field: any = useField();
+    const record = useRecord_deprecated();
+    const value = record[field.props.name];
+    const [initialValue, setInitialValue] = useState(value || field.initialValue);
+
+    const loadCollections = () => {
+      const filteredItems = getCollections().filter((item) => {
+        const isAutoCreateAndThrough = item.autoCreate && item.isThrough;
+        if (isAutoCreateAndThrough) {
+          return false;
+        }
+        return true;
+      });
+      return filteredItems.map((item) => ({
+        label: compile(item.title),
+        value: item.name,
+      }));
+    };
+    useEffect(() => {
+      const data = loadCollections();
+      setOptions(data);
+      if (value) {
+        const option = data.find((v) => v.value === value);
+        setInitialValue(option?.label || value);
+      }
+    }, []);
+    return (
+      <div>
+        <AutoComplete
+          disabled={disabled}
+          showSearch
+          popupMatchSelectWidth={false}
+          value={initialValue}
+          options={options}
+          onChange={(value, option) => {
+            props?.onChange?.(value);
+            setInitialValue(option.label);
+          }}
+        />
+      </div>
+    );
+  },
+  { displayName: 'SourceCollection' },
 );

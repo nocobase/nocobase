@@ -175,7 +175,6 @@ export const EditFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const { isDialect } = useDialect();
-  console.log(record);
   const scopeKeyOptions = useMemo(() => {
     return (
       record?.fields ||
