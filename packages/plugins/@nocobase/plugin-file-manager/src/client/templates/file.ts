@@ -301,5 +301,6 @@ export class FileCollectionTemplate extends CollectionTemplate {
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadStorages)}}'],
     },
+    ...getConfigurableProperties('presetFields'),
   };
 }

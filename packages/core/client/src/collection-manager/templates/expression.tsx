@@ -54,5 +54,12 @@ export class ExpressionCollectionTemplate extends CollectionTemplate {
   availableFieldInterfaces = {
     include: [],
   };
-  configurableProperties = getConfigurableProperties('title', 'name', 'inherits', 'category', 'description');
+  configurableProperties = getConfigurableProperties(
+    'title',
+    'name',
+    'inherits',
+    'category',
+    'description',
+    'presetFields',
+  );
 }
