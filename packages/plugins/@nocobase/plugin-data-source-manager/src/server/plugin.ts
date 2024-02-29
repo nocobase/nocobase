@@ -448,6 +448,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.acl.allow('dataSources', 'listEnabled', 'loggedIn');
+    this.app.acl.allow('dataSources', 'get', 'loggedIn');
 
     this.app.acl.addFixedParams('dataSources', 'destroy', () => {
       return {
