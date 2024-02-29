@@ -5,7 +5,7 @@ import {
   useAPIClient,
   useResourceActionContext,
 } from '@nocobase/client';
-import { Menu, Empty, Dropdown, App, Tag } from 'antd';
+import { Menu, Empty, Dropdown, App, Tag, Row, Col } from 'antd';
 import { TagOutlined, MoreOutlined } from '@ant-design/icons';
 import React, { useContext, useEffect } from 'react';
 import { useACLTranslation } from './locale';
@@ -93,33 +93,37 @@ RolesMenu.Item = function DepartmentTreeItem({ item, onEdit }) {
     }
   };
   return (
-    <>
-      <TagOutlined />
-      <span style={{ marginLeft: '10px' }}>{Schema.compile(item.title, { t })}</span>
-      {item.default ? (
-        <Tag style={{ marginLeft: '10px' }} color="success" bordered={false}>
-          {t('Default')}
-        </Tag>
-      ) : null}
-      <Dropdown
-        menu={{
-          items: [
-            {
-              label: t('Edit'),
-              key: 'edit',
-            },
-            {
-              label: t('Delete'),
-              key: 'delete',
-            },
-          ],
-          onClick: handleClick,
-        }}
-      >
-        <div style={{ float: 'right' }}>
+    <Row>
+      <Col flex={3} style={{ display: 'inline-flex', alignItems: 'center' }}>
+        <span style={{ whiteSpace: 'nowrap', width: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <TagOutlined />
+          <span style={{ marginLeft: '10px' }}>{Schema.compile(item.title, { t })}</span>
+        </span>
+      </Col>
+      <Col>
+        {item.default ? (
+          <Tag color="success" bordered={false}>
+            {t('Default')}
+          </Tag>
+        ) : null}
+        <Dropdown
+          menu={{
+            items: [
+              {
+                label: t('Edit'),
+                key: 'edit',
+              },
+              {
+                label: t('Delete'),
+                key: 'delete',
+              },
+            ],
+            onClick: handleClick,
+          }}
+        >
           <MoreOutlined />
-        </div>
-      </Dropdown>
-    </>
+        </Dropdown>
+      </Col>
+    </Row>
   );
 };
