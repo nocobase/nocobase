@@ -305,15 +305,7 @@ export const useFormItemInitializerFields = (options?: any) => {
             }
           : isAssociationField
             ? {
-                fieldNames: {
-                  label:
-                    targetCollection?.titleField ||
-                    field?.targetKey ||
-                    field?.foreignKey ||
-                    targetCollection?.getPrimaryKey() ||
-                    'id',
-                  value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
-                },
+                fieldNames: field?.uiSchema['x-component-props']['fieldNames'],
               }
             : {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
