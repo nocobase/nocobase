@@ -1,5 +1,5 @@
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCollection_deprecated } from '../../collection-manager';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { useCollection_deprecated } from '../../../../collection-manager';
 
 export const listItemActionInitializers = new SchemaInitializer({
   name: 'ListItemActionInitializers',
