@@ -149,7 +149,7 @@ export const SourceKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { targetKey, target } = useRecord_deprecated();
+    const { targetKey, target, type } = useRecord_deprecated();
     const { getCollection } = useCollectionManager_deprecated();
     const [options, setOptions] = useState([]);
     const [initialValue, setInitialValue] = useState(value || targetKey);
@@ -162,7 +162,10 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target)
             .fields?.filter((v) => {
-              return v.primaryKey || v.unique;
+              if (type !== 'hasMany') {
+                return v.primaryKey || v.unique;
+              }
+              return supportTypes.includes(v.type);
             })
             .map((k) => {
               return {
@@ -179,12 +182,15 @@ export const TargetKey = observer(
           showSearch
           options={options}
           onDropdownVisibleChange={async (open) => {
-            const { target } = form.values;
+            const { target, type } = form.values;
             if (target && open) {
               setOptions(
                 getCollection(target)
                   .fields?.filter((v) => {
-                    return v.primaryKey || v.unique;
+                    if (type !== 'hasMany') {
+                      return v.primaryKey || v.unique;
+                    }
+                    return supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {

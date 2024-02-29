@@ -137,7 +137,7 @@ export const ForeignKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { targetKey, target } = useRecord_deprecated();
+    const { targetKey, target, type } = useRecord_deprecated();
     const { name: dataSourceKey } = useParams();
     const { getCollection } = useCollectionManager_deprecated();
     const api = useAPIClient();
@@ -152,7 +152,10 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target, dataSourceKey)
             .fields?.filter((v) => {
-              return v.primaryKey || v.unique;
+              if (type !== 'hasMany') {
+                return v.primaryKey || v.unique;
+              }
+              return supportTypes.includes(v.type);
             })
             .map((k) => {
               return {
@@ -169,7 +172,7 @@ export const TargetKey = observer(
           showSearch
           options={options}
           onDropdownVisibleChange={async (open) => {
-            const { target } = form.values;
+            const { target, type } = form.values;
             if (target && open) {
               const { data } = await api.request({
                 url: `dataSourcesCollections/${dataSourceKey}.${target}/fields:list`,
@@ -184,7 +187,10 @@ export const TargetKey = observer(
               setOptions(
                 data.data
                   ?.filter((v) => {
-                    return v.primaryKey || v.unique;
+                    if (type !== 'hasMany') {
+                      return v.primaryKey || v.unique;
+                    }
+                    return supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {

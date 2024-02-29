@@ -174,7 +174,6 @@ export class O2MFieldInterface extends CollectionFieldInterface {
                 targetKey: {
                   type: 'string',
                   title: '{{t("Target key")}}',
-                  description: "{{t('The field must be a primary key or have a unique index set')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
                   'x-disabled': '{{ !createOnly }}',
