@@ -1,27 +1,20 @@
-import { SchemaInitializerItemType } from '../../../../application';
 import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { formTriggerWorkflowActionInitializerV2 } from './formActionInitializers';
 
-export const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
-  name: 'submitToWorkflow',
-  title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-  Component: 'FormTriggerWorkflowActionInitializerV2',
-};
-
-// 表单的操作配置
-export const formActionInitializers = new SchemaInitializer({
-  name: 'FormActionInitializers',
+export const updateFormActionInitializers = new SchemaInitializer({
+  name: 'UpdateFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',
-      name: 'enableActions',
       title: '{{t("Enable actions")}}',
+      name: 'enableActions',
       children: [
         {
           name: 'submit',
           title: '{{t("Submit")}}',
-          Component: 'CreateSubmitActionInitializer',
+          Component: 'UpdateSubmitActionInitializer',
           schema: {
             'x-action-settings': {},
           },
@@ -33,10 +26,20 @@ export const formActionInitializers = new SchemaInitializer({
       type: 'divider',
     },
     {
-      name: 'custom',
       type: 'subMenu',
       title: '{{t("Customize")}}',
+      name: 'customize',
       children: [
+        {
+          name: 'popup',
+          title: '{{t("Popup")}}',
+          Component: 'PopupActionInitializer',
+          useComponentProps() {
+            return {
+              'x-component': 'Action',
+            };
+          },
+        },
         {
           name: 'saveRecord',
           title: '{{t("Save record")}}',
@@ -44,6 +47,7 @@ export const formActionInitializers = new SchemaInitializer({
         },
         formTriggerWorkflowActionInitializerV2,
         {
+          type: 'item',
           name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',

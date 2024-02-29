@@ -1,22 +1,15 @@
-import { SchemaInitializerItemType } from '../../../../application';
 import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { formTriggerWorkflowActionInitializerV2 } from './formActionInitializers';
 
-export const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
-  name: 'submitToWorkflow',
-  title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-  Component: 'FormTriggerWorkflowActionInitializerV2',
-};
-
-// 表单的操作配置
-export const formActionInitializers = new SchemaInitializer({
-  name: 'FormActionInitializers',
+export const createFormActionInitializers = new SchemaInitializer({
+  name: 'CreateFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',
-      name: 'enableActions',
       title: '{{t("Enable actions")}}',
+      name: 'enableActions',
       children: [
         {
           name: 'submit',
@@ -33,9 +26,9 @@ export const formActionInitializers = new SchemaInitializer({
       type: 'divider',
     },
     {
-      name: 'custom',
       type: 'subMenu',
       title: '{{t("Customize")}}',
+      name: 'customize',
       children: [
         {
           name: 'saveRecord',
