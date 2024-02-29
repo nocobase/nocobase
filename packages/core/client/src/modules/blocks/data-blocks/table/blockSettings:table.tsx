@@ -9,7 +9,7 @@ import {
   useSortFields,
 } from '../../../../collection-manager';
 import { mergeFilter, FilterBlockType } from '../../../../filter-provider';
-import { useDesignable, FixedBlockDesignerItem, removeNullCondition } from '../../../../schema-component';
+import { useDesignable, removeNullCondition } from '../../../../schema-component';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsSortField,
@@ -20,6 +20,7 @@ import {
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';
+import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
