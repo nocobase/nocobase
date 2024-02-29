@@ -36,6 +36,7 @@ import { TableSelectorInitializer } from '../modules/blocks/data-blocks/table-se
 import { RecordReadPrettyFormBlockInitializer } from '../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
 import { readPrettyFormActionInitializers } from '../modules/blocks/data-blocks/details-single/ReadPrettyFormActionInitializers';
 import { readPrettyFormItemInitializers } from '../modules/blocks/data-blocks/details-single/ReadPrettyFormItemInitializers';
+import { DetailsBlockInitializer } from '../modules/blocks/data-blocks/details-multi/DetailsBlockInitializer';
 export * from './buttons';
 export * from './items';
 export {
@@ -67,6 +68,7 @@ export class SchemaInitializerPlugin extends Plugin {
       TableBlockInitializer,
       TableSelectorInitializer,
       RecordReadPrettyFormBlockInitializer,
+      DetailsBlockInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);

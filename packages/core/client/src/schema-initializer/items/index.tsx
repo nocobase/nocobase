@@ -17,7 +17,6 @@ export * from './CustomizeAddRecordActionInitializer';
 export * from './DataBlockInitializer';
 export * from './DeleteEventActionInitializer';
 export * from './DestroyActionInitializer';
-export * from './DetailsBlockInitializer';
 export * from './ExpandableActionInitializer';
 export * from './FilterActionInitializer';
 export * from './FilterCollapseBlockInitializer';
