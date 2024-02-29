@@ -25,7 +25,7 @@ import {
   updateSubmitActionSettings,
   submitActionSettings,
 } from '../modules/form-creation/schema-settings/updateSubmitActionSettings';
-import { editFormBlockSettings } from '../modules/form-edit/schemaSettings/editFormBlockSettings';
+import { editFormBlockSettings } from '../modules/blocks/data-blocks/form/blockSettings:editForm';
 import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings/filterFormBlockSettings';
 import { filterFormItemFieldSettings } from '../modules/form-filter/schemaSettings/filterFormItemFieldSettings';
 import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings/gridCardBlockSettings';
