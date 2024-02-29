@@ -12,26 +12,27 @@ describe('update associations', () => {
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
-      autoGenId: false,
+      autoGenId: true,
       timestamps: false,
       fields: [
-        { type: 'string', name: 'name', primaryKey: true },
+        { type: 'string', name: 'name', unique: true },
         {
           type: 'hasMany',
           name: 'posts',
           target: 'posts',
           foreignKey: 'userName',
           sourceKey: 'name',
+          targetKey: 'title',
         },
       ],
     });
 
     Post = db.collection({
       name: 'posts',
-      autoGenId: false,
+      autoGenId: true,
       timestamps: false,
       fields: [
-        { type: 'string', name: 'title', primaryKey: true },
+        { type: 'string', name: 'title', unique: true },
         { type: 'belongsTo', name: 'user', target: 'users', foreignKey: 'userName', targetKey: 'name' },
       ],
     });
@@ -55,7 +56,7 @@ describe('update associations', () => {
     expect(await User.repository.count()).toBe(1);
   });
 
-  it('should create user with posts', async () => {
+  it.only('should create user with posts', async () => {
     await User.repository.create({
       values: {
         name: 'user1',

@@ -427,10 +427,9 @@ export async function updateMultipleAssociation(
   await model[setAccessor](setItems, { transaction, context, individualHooks: true });
 
   const newItems = [];
+  const targetKey = association?.['options']?.['targetKey'] || association.target.primaryKeyAttribute;
 
   for (const item of objectItems) {
-    const pk = association.target.primaryKeyAttribute;
-
     const through = (<any>association).through ? (<any>association).through.model.name : null;
 
     const accessorOptions = {
@@ -444,7 +443,7 @@ export async function updateMultipleAssociation(
       accessorOptions['through'] = throughValue;
     }
 
-    if (isUndefinedOrNull(item[pk])) {
+    if (isUndefinedOrNull(item[targetKey])) {
       // create new record
       const instance = await model[createAccessor](item, accessorOptions);
 
@@ -457,7 +456,10 @@ export async function updateMultipleAssociation(
       newItems.push(instance);
     } else {
       // set & update record
-      let instance = await association.target.findByPk<any>(item[pk], {
+      let instance = await association.target.findOne<any>({
+        where: {
+          [targetKey]: item[targetKey],
+        },
         transaction,
       });
       if (!instance) {
@@ -466,7 +468,7 @@ export async function updateMultipleAssociation(
       }
       const addAccessor = association.accessors.add;
 
-      await model[addAccessor](item[pk], accessorOptions);
+      await model[addAccessor](instance, accessorOptions);
 
       if (!recursive) {
         continue;
