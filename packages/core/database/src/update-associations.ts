@@ -9,6 +9,7 @@ import {
   ModelStatic,
   Transactionable,
 } from 'sequelize';
+import Database from './database';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
 
@@ -427,10 +428,9 @@ export async function updateMultipleAssociation(
   await model[setAccessor](setItems, { transaction, context, individualHooks: true });
 
   const newItems = [];
+  const targetKey = association?.['options']?.['targetKey'] || association.target.primaryKeyAttribute;
 
   for (const item of objectItems) {
-    const pk = association.target.primaryKeyAttribute;
-
     const through = (<any>association).through ? (<any>association).through.model.name : null;
 
     const accessorOptions = {
@@ -444,7 +444,7 @@ export async function updateMultipleAssociation(
       accessorOptions['through'] = throughValue;
     }
 
-    if (isUndefinedOrNull(item[pk])) {
+    if (isUndefinedOrNull(item[targetKey])) {
       // create new record
       const instance = await model[createAccessor](item, accessorOptions);
 
@@ -457,15 +457,35 @@ export async function updateMultipleAssociation(
       newItems.push(instance);
     } else {
       // set & update record
-      const instance = await association.target.findByPk<any>(item[pk], {
+      const where = {
+        [targetKey]: item[targetKey],
+      };
+      if (association.associationType === 'HasMany') {
+        const db = model.constructor['database'] as Database;
+        const fieldOptions = db.getFieldByPath(`${model.constructor.name}.${key}`).options;
+        const foreignKey = fieldOptions['foreignKey'];
+        const sourceKey = fieldOptions['sourceKey'];
+        where[foreignKey] = model.get(sourceKey);
+      }
+      let instance = await association.target.findOne<any>({
+        where,
         transaction,
       });
       if (!instance) {
+        // create new record
+        instance = await model[createAccessor](item, accessorOptions);
+        await updateAssociations(instance, item, {
+          ...options,
+          transaction,
+          associationContext: association,
+          updateAssociationValues: keys,
+        });
+        newItems.push(instance);
         continue;
       }
       const addAccessor = association.accessors.add;
 
-      await model[addAccessor](item[pk], accessorOptions);
+      await model[addAccessor](instance[association.target.primaryKeyAttribute], accessorOptions);
 
       if (!recursive) {
         continue;
