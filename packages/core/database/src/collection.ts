@@ -305,6 +305,12 @@ export class Collection<
     }
   }
 
+  correctOptions(options) {
+    if (options.primaryKey && options.autoIncrement) {
+      delete options.defaultValue;
+    }
+  }
+
   @EnsureAtomicity
   setField(name: string, options: FieldOptions): Field {
     checkIdentifier(name);
@@ -332,6 +338,7 @@ export class Collection<
       }
     }
 
+    this.correctOptions(options);
     this.emit('field.beforeAdd', name, options, { collection: this });
 
     const field = database.buildField(
