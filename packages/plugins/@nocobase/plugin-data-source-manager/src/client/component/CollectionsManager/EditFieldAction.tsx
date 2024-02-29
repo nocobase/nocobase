@@ -242,6 +242,7 @@ const EditFieldAction = (props) => {
             disabledJSONB: true,
             ...scope,
             createOnly: false,
+            createMainOnly: false,
           }}
         />
       </ActionContextProvider>

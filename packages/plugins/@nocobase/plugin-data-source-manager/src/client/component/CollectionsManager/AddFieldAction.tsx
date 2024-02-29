@@ -334,6 +334,7 @@ const AddFieldAction = (props) => {
               collections: currentCollections,
               isDialect,
               disabledJSONB: false,
+              createMainOnly: true,
               ...scope,
             }}
           />

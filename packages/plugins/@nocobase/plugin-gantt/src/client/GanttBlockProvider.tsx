@@ -75,7 +75,12 @@ const InternalGanttBlockProvider = (props) => {
 };
 
 export const GanttBlockProvider = (props) => {
-  const params = { filter: props.params.filter, tree: true, paginate: false, sort: props.fieldNames.start };
+  const params = { filter: props.params.filter, paginate: false, sort: props.fieldNames.start };
+  const collection = useCollection_deprecated();
+
+  if (collection?.tree) {
+    params['tree'] = true;
+  }
   return (
     <div aria-label="block-item-gantt" role="button">
       <BlockProvider name="gantt" {...props} params={params}>

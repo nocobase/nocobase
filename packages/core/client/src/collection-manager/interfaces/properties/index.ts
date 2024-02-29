@@ -38,6 +38,7 @@ export const unique = {
   'x-content': '{{t("Unique")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
+  'x-disabled': '{{ !createMainOnly }}',
   'x-reactions': [
     {
       dependencies: ['primaryKey'],
@@ -55,6 +56,7 @@ export const primaryKey = {
   'x-content': '{{t("Primary")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
+  'x-disabled': '{{ !createMainOnly }}',
   'x-reactions': [
     {
       dependencies: ['unique'],
@@ -74,6 +76,7 @@ export const autoIncrement = {
   'x-content': '{{t("Auto increment")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
+  'x-disabled': '{{ !createMainOnly }}',
 };
 
 export const relationshipType: ISchema = {
