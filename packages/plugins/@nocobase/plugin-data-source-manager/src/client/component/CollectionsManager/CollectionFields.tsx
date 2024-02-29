@@ -24,7 +24,7 @@ import { AddCollectionField } from './AddFieldAction';
 import { FieldTitleInput } from './components/FieldTitleInput';
 import { useBulkDestroyActionAndRefreshCM, useDestroyActionAndRefreshCM } from './hooks';
 import { EditCollectionField } from './EditFieldAction';
-import { SourceCollection, TargetKey, SourceKey, ForeignKey } from './components';
+import { SourceCollection, TargetKey, SourceKey, ForeignKey, ThroughCollection } from './components';
 import { FieldType } from './components/FieldType';
 import { UnSupportFields } from './components/UnSupportFields';
 
@@ -166,6 +166,7 @@ export const CollectionFields = () => {
                 Select,
                 FieldType,
                 ForeignKey,
+                ThroughCollection,
               }}
               inherit
               scope={{
