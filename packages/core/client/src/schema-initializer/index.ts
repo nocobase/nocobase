@@ -15,7 +15,6 @@ import {
   filterFormItemInitializers,
   gridCardActionInitializers,
   gridCardItemActionInitializers,
-  listActionInitializers,
   listItemActionInitializers,
   recordBlockInitializers,
   recordFormBlockInitializers,
@@ -38,6 +37,7 @@ import { readPrettyFormItemInitializers } from '../modules/blocks/data-blocks/de
 import { DetailsBlockInitializer } from '../modules/blocks/data-blocks/details-multi/DetailsBlockInitializer';
 import { detailsActionInitializers } from '../modules/blocks/data-blocks/details-multi/DetailsActionInitializers';
 import { ListBlockInitializer } from '../modules/blocks/data-blocks/list/ListBlockInitializer';
+import { listActionInitializers } from '../modules/blocks/data-blocks/list/ListActionInitializers';
 export * from './buttons';
 export * from './items';
 export {
