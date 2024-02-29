@@ -457,11 +457,12 @@ export async function updateMultipleAssociation(
       newItems.push(instance);
     } else {
       // set & update record
-      const instance = await association.target.findByPk<any>(item[pk], {
+      let instance = await association.target.findByPk<any>(item[pk], {
         transaction,
       });
       if (!instance) {
-        continue;
+        // create new record
+        instance = await model[createAccessor](item, accessorOptions);
       }
       const addAccessor = association.accessors.add;
 
