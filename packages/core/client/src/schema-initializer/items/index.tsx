@@ -24,7 +24,6 @@ export * from './FilterFormBlockInitializer';
 export * from './G2PlotInitializer';
 export * from './GridCardBlockInitializer';
 export * from './InitializerWithSwitch';
-export * from './ListBlockInitializer';
 export * from './MarkdownBlockInitializer';
 export * from './RecordAssociationBlockInitializer';
 export * from './RecordAssociationGridCardBlockInitializer';
