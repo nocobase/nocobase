@@ -198,6 +198,16 @@ const CreateAction = () => {
   );
 };
 
+const createActionSettings = new SchemaSettings({
+  name: 'createActionSettings',
+  items: [
+    {
+      type: 'remove',
+      name: 'remove',
+    },
+  ],
+});
+
 const RefreshAction = () => {
   const { refresh } = useDataBlockRequest();
   return <Button onClick={refresh}>Refresh</Button>;
@@ -224,16 +234,6 @@ const ActionBar = ({ children }) => {
     </div>
   );
 };
-
-const createActionSettings = new SchemaSettings({
-  name: 'createActionSettings',
-  items: [
-    {
-      type: 'remove',
-      name: 'remove',
-    },
-  ],
-});
 
 const CreateActionInitializer = () => {
   const { insert } = useSchemaInitializer();

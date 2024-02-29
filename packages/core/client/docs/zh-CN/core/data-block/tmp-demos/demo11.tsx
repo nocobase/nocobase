@@ -31,6 +31,7 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaInitializerRender,
+  useSchemaToolbarRender,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Application } from '@nocobase/client';
@@ -184,18 +185,33 @@ const CreateAction = () => {
   const compile = useCompile();
   const collection = useCollection();
   const title = compile(collection.title);
+  const fieldSchema = useFieldSchema();
 
+  const { render } = useSchemaToolbarRender(fieldSchema);
   return (
     <>
-      <Button type="primary" onClick={showDrawer}>
-        Add New
-      </Button>
+      <div>
+        {render()}
+        <Button type="primary" onClick={showDrawer}>
+          Add New
+        </Button>
+      </div>
       <Drawer title={`${title} | Add New`} onClose={onClose} open={open}>
         <p>Some contents...</p>
       </Drawer>
     </>
   );
 };
+
+const createActionSettings = new SchemaSettings({
+  name: 'createActionSettings',
+  items: [
+    {
+      type: 'remove',
+      name: 'remove',
+    },
+  ],
+});
 
 const RefreshAction = () => {
   const { refresh } = useDataBlockRequest();
@@ -230,6 +246,7 @@ const CreateActionInitializer = () => {
     insert({
       type: 'void',
       'x-component': 'CreateAction',
+      'x-settings': 'createActionSettings',
     });
   };
   return <SchemaInitializerItem title={'Add New'} onClick={handleClick}></SchemaInitializerItem>;
@@ -414,6 +431,7 @@ class MyPlugin extends Plugin {
     this.app.addScopes({ useTableProps });
     this.app.schemaInitializerManager.add(tableActionInitializers);
     this.app.schemaInitializerManager.add(tableColumnInitializers);
+    this.app.schemaSettingsManager.add(createActionSettings);
   }
 }
 
