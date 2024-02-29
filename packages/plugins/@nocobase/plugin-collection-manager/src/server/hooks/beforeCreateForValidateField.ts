@@ -8,12 +8,15 @@ export function beforeCreateForValidateField(db: Database) {
       }
     }
 
-    if (model.get('primaryKey')) {
+    const isPrimaryKey = model.get('isPrimaryKey');
+    if (isPrimaryKey) {
       const collection = db.getCollection(model.get('collectionName'));
       const primaryKey = collection.model.primaryKeyAttribute;
 
-      if (collection.model.rawAttributes[primaryKey]) {
-        throw new Error(`collection ${collection.name} already has primary key ${primaryKey}`);
+      if (primaryKey !== model.get('name') && collection.model.rawAttributes[primaryKey]) {
+        throw new Error(
+          `add field ${model.get('name')} failed, collection ${collection.name} already has primary key ${primaryKey}`,
+        );
       }
     }
   };
