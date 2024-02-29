@@ -298,15 +298,24 @@ function getFieldNameByOperator(operator: ActionType) {
 
 function getFieldValuesInCondition({ linkageRules, formValues }) {
   return linkageRules.map((rule) => {
-    const type = Object.keys(rule.condition)[0] || '$and';
-    const conditions = rule.condition[type];
+    const run = (condition) => {
+      const type = Object.keys(condition)[0] || '$and';
+      const conditions = condition[type];
 
-    return conditions
-      .map((condition) => {
-        const path = getTargetField(condition).join('.');
-        return getValuesByPath(formValues, path);
-      })
-      .filter(Boolean);
+      return conditions
+        .map((condition) => {
+          // fix https://nocobase.height.app/T-3251
+          if ('$and' in condition || '$or' in condition) {
+            return run(condition);
+          }
+
+          const path = getTargetField(condition).join('.');
+          return getValuesByPath(formValues, path);
+        })
+        .filter(Boolean);
+    };
+
+    return run(rule.condition);
   });
 }
 
