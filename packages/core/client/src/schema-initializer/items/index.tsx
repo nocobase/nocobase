@@ -42,7 +42,6 @@ export * from './SelectActionInitializer';
 export * from './SubmitActionInitializer';
 export * from './TableActionColumnInitializer';
 export * from './TableCollectionFieldInitializer';
-export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';

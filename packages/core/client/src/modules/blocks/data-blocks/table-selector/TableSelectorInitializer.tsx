@@ -1,9 +1,9 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
 
-import { useCollection_deprecated } from '../../collection-manager';
-import { createTableSelectorSchema } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollection_deprecated } from '../../../../collection-manager';
+import { createTableSelectorSchema } from '../../../../schema-initializer/utils';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 
 export const TableSelectorInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -14,7 +14,7 @@ export const TableSelectorInitializer = () => {
     <SchemaInitializerItem
       icon={<FormOutlined />}
       {...others}
-      onClick={async ({ item }) => {
+      onClick={async () => {
         insert(
           createTableSelectorSchema({
             rowKey: collection.filterTargetKey,
