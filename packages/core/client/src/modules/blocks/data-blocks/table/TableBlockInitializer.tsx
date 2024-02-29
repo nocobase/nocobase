@@ -1,9 +1,9 @@
-import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
-import { useCollectionManager_deprecated } from '../../collection-manager';
-import { DataBlockInitializer } from './DataBlockInitializer';
-import { createTableBlockSchema } from '../utils';
-import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application/schema-initializer/context';
+import { useCollectionManager_deprecated } from '../../../../collection-manager/hooks/useCollectionManager_deprecated';
+import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
+import { createTableBlockSchema } from '../../../../schema-initializer/utils';
+import React from 'react';
 
 export const TableBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
