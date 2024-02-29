@@ -35,6 +35,7 @@ import { FormBlockInitializer } from '../modules/blocks/data-blocks/form/FormBlo
 import { RecordFormBlockInitializer } from '../modules/blocks/data-blocks/form/RecordFormBlockInitializer';
 import { TableBlockInitializer } from '../modules/blocks/data-blocks/table/TableBlockInitializer';
 import { TableSelectorInitializer } from '../modules/blocks/data-blocks/table-selector/TableSelectorInitializer';
+import { RecordReadPrettyFormBlockInitializer } from '../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
 export * from './buttons';
 export * from './items';
 export {
@@ -65,6 +66,7 @@ export class SchemaInitializerPlugin extends Plugin {
       RecordFormBlockInitializer,
       TableBlockInitializer,
       TableSelectorInitializer,
+      RecordReadPrettyFormBlockInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);

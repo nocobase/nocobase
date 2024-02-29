@@ -33,7 +33,6 @@ export * from './RecordAssociationListBlockInitializer';
 export * from './RecordAssociationDetailsBlockInitializer';
 export * from './RecordAssociationFormBlockInitializer';
 export * from './RecordReadPrettyAssociationFormBlockInitializer';
-export * from './RecordReadPrettyFormBlockInitializer';
 export * from './RefreshActionInitializer';
 export * from './SelectActionInitializer';
 export * from './SubmitActionInitializer';
