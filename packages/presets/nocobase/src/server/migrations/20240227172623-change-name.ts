@@ -5,13 +5,9 @@ export default class extends Migration {
   appVersion = '<0.19.0-alpha.10';
 
   async up() {
-    await this.pm.repository.update({
+    await this.pm.repository.destroy({
       filter: {
         packageName: '@nocobase/plugin-workflow-form-trigger',
-      },
-      values: {
-        name: 'workflow-action-trigger',
-        packageName: '@nocobase/plugin-workflow-action-trigger',
       },
     });
   }
