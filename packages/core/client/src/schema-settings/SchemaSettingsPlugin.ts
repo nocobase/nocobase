@@ -19,7 +19,6 @@ import { subformComponentFieldSettings } from '../modules/form-creation/schema-s
 import { subformPopoverComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/subformPopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/tagComponentFieldSettings';
 import { uploadAttachmentComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/uploadAttachmentComponentFieldSettings';
-import { formItemSettings } from '../modules/blocks/data-blocks/form/formItemSettings';
 import { createSubmitActionSettings } from '../modules/form-creation/schema-settings/createSubmitActionSettings';
 import {
   updateSubmitActionSettings,
@@ -46,6 +45,7 @@ import { tableColumnSettings } from '../modules/blocks/data-blocks/table/fieldSe
 import { viewActionSettings } from '../modules/table/schemaSettings/viewActionSettings';
 import { addChildActionSettings } from '../modules/table/schemaSettings/addChildActionSettings';
 import { expendableActionSettings } from '../modules/table/schemaSettings/expendableActionSettings';
+import { fieldSettingsFormItem } from '../modules/blocks/data-blocks/form/fieldSettingsFormItem';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -84,7 +84,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(expendableActionSettings);
 
     // field settings
-    this.schemaSettingsManager.add(formItemSettings);
+    this.schemaSettingsManager.add(fieldSettingsFormItem);
     this.schemaSettingsManager.add(tableColumnSettings);
     this.schemaSettingsManager.add(filterCollapseItemFieldSettings);
 

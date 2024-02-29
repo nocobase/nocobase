@@ -1,15 +1,19 @@
 import { Plugin } from '../application/Plugin';
+import { formActionInitializers } from '../modules/blocks/data-blocks/form/formActionInitializers';
+import { createFormActionInitializers } from '../modules/blocks/data-blocks/form/createFormActionInitializers';
+import { formItemInitializers } from '../modules/blocks/data-blocks/form/formItemInitializers';
+import { updateFormActionInitializers } from '../modules/blocks/data-blocks/form/updateFormActionInitializers';
+import { tableActionColumnInitializers } from '../modules/blocks/data-blocks/table/TableActionColumnInitializers';
+import { tableActionInitializers } from '../modules/blocks/data-blocks/table/TableActionInitializers';
+import { tableColumnInitializers } from '../modules/blocks/data-blocks/table/TableColumnInitializers';
 import {
   blockInitializers,
-  createFormActionInitializers,
   createFormBlockInitializers,
   cusomeizeCreateFormBlockInitializers,
   customFormItemInitializers,
   detailsActionInitializers,
   filterFormActionInitializers,
   filterFormItemInitializers,
-  formActionInitializers,
-  formItemInitializers,
   gridCardActionInitializers,
   gridCardItemActionInitializers,
   listActionInitializers,
@@ -22,11 +26,7 @@ import {
   tabPaneInitializers,
   tabPaneInitializersForBulkEditFormBlock,
   tabPaneInitializersForRecordBlock,
-  tableActionColumnInitializers,
-  tableActionInitializers,
-  tableColumnInitializers,
   tableSelectorInitializers,
-  updateFormActionInitializers,
 } from './buttons';
 import * as initializerComponents from './components';
 import * as items from './items';

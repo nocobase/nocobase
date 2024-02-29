@@ -19,6 +19,7 @@ import {
 } from '../../../../schema-settings';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ArrayItems } from '@formily/antd-v5';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',

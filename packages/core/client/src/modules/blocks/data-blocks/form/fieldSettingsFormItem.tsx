@@ -9,17 +9,14 @@ import { useFormBlockContext } from '../../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useDesignable, useValidateSchema } from '../../../../schema-component';
-import {
-  useIsAssociationField,
-  useIsFormReadPretty,
-} from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { useIsFormReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { getTempFieldState } from '../../../../schema-component/antd/form-v2/utils';
 import { isPatternDisabled } from '../../../../schema-settings';
 import { ActionType } from '../../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 
-export const formItemSettings = new SchemaSettings({
+export const fieldSettingsFormItem = new SchemaSettings({
   name: 'fieldSettings:FormItem',
   items: [
     {
