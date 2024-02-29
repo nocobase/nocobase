@@ -2,7 +2,7 @@ import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { ActionSchemaToolbar } from '../modules/schema-toolbar/ActionSchemaToolbar';
 import { CollapseItemSchemaToolbar } from '../modules/schema-toolbar/CollapseItemSchemaToolbar';
-import { FormItemSchemaToolbar } from '../modules/schema-toolbar/FormItemSchemaToolbar';
+import { FormItemSchemaToolbar } from '../modules/blocks/data-blocks/form/FormItemSchemaToolbar';
 import { TableColumnSchemaToolbar } from '../modules/blocks/data-blocks/table/TableColumnSchemaToolbar';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
