@@ -23,7 +23,6 @@ export * from './ExpandableActionInitializer';
 export * from './FilterActionInitializer';
 export * from './FilterCollapseBlockInitializer';
 export * from './FilterFormBlockInitializer';
-export * from './FormBlockInitializer';
 export * from './G2PlotInitializer';
 export * from './GridCardBlockInitializer';
 export * from './InitializerWithSwitch';
