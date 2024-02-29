@@ -1,23 +1,25 @@
 import { ISchema } from '@formily/react';
 import { useContext, useEffect } from 'react';
-import { useFormBlockContext, useFilterOptions, VariableInput, useFilterFieldOptions } from '@nocobase/client';
+import { useFormBlockContext, VariableInput, useFilterFieldOptions } from '@nocobase/client';
 import { RoleResourceCollectionContext } from '../RolesResourcesActions';
 
-export const rolesResourcesScopesCollection = {
-  name: 'rolesResourcesScopes',
-  fields: [
-    {
-      type: 'string',
-      name: 'name',
-      interface: 'input',
-      uiSchema: {
-        title: '{{t("Scope name")}}',
+export const rolesResourcesScopesCollection = (dataSourceKey = 'main') => {
+  return {
+    name: `dataSources/${dataSourceKey}/rolesResourcesScopes`,
+    fields: [
+      {
         type: 'string',
-        'x-component': 'Input',
-        required: true,
-      } as ISchema,
-    },
-  ],
+        name: 'name',
+        interface: 'input',
+        uiSchema: {
+          title: '{{t("Scope name")}}',
+          type: 'string',
+          'x-component': 'Input',
+          required: true,
+        } as ISchema,
+      },
+    ],
+  };
 };
 
 const useFormBlockProps = () => {
@@ -34,6 +36,7 @@ const useFormBlockProps = () => {
 };
 
 export const getScopesSchema = (dataSourceKey) => {
+  const collection = rolesResourcesScopesCollection(dataSourceKey);
   return {
     type: 'object',
     properties: {
@@ -64,7 +67,7 @@ export const getScopesSchema = (dataSourceKey) => {
                 type: 'void',
                 'x-decorator': 'TableSelectorProvider',
                 'x-decorator-props': {
-                  collection: rolesResourcesScopesCollection,
+                  collection,
                   resource: `dataSources/${dataSourceKey}/rolesResourcesScopes`,
                   action: 'list',
                   params: {
@@ -115,7 +118,7 @@ export const getScopesSchema = (dataSourceKey) => {
                                 'x-decorator': 'FormBlockProvider',
                                 'x-decorator-props': {
                                   resource: `dataSources/${dataSourceKey}/rolesResourcesScopes`,
-                                  collection: rolesResourcesScopesCollection,
+                                  collection,
                                 },
                                 'x-component': 'CardItem',
                                 properties: {
@@ -241,7 +244,7 @@ export const getScopesSchema = (dataSourceKey) => {
                                         'x-decorator': 'FormBlockProvider',
                                         'x-decorator-props': {
                                           resource: `dataSources/${dataSourceKey}/rolesResourcesScopes`,
-                                          collection: rolesResourcesScopesCollection,
+                                          collection,
                                           action: 'get',
                                           useParams: '{{ useParamsFromRecord }}',
                                         },
