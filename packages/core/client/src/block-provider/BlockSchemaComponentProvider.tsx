@@ -3,7 +3,7 @@ import { Plugin } from '../application/Plugin';
 import { ActionSchemaToolbar } from '../modules/schema-toolbar/ActionSchemaToolbar';
 import { CollapseItemSchemaToolbar } from '../modules/schema-toolbar/CollapseItemSchemaToolbar';
 import { FormItemSchemaToolbar } from '../modules/schema-toolbar/FormItemSchemaToolbar';
-import { TableColumnSchemaToolbar } from '../modules/schema-toolbar/TableColumnSchemaToolbar';
+import { TableColumnSchemaToolbar } from '../modules/blocks/data-blocks/table/TableColumnSchemaToolbar';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
