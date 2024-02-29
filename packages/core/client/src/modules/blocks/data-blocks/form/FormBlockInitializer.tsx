@@ -1,8 +1,8 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
-import { useSchemaInitializerItem } from '../../application';
-import { createFormBlockSchema } from '../utils';
-import { DataBlockInitializer } from './DataBlockInitializer';
+import { useSchemaInitializerItem } from '../../../../application';
+import { createFormBlockSchema } from '../../../../schema-initializer/utils';
+import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 
 export const FormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();

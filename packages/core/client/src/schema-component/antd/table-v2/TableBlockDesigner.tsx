@@ -23,9 +23,9 @@ import {
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FixedBlockDesignerItem } from '../page';
 import { useCompile } from '../../';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { FixedBlockDesignerItem } from '../page/FixedBlockDesignerItem';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();
