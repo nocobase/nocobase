@@ -18,7 +18,6 @@ import {
   gridCardItemActionInitializers,
   listActionInitializers,
   listItemActionInitializers,
-  readPrettyFormActionInitializers,
   readPrettyFormItemInitializers,
   recordBlockInitializers,
   recordFormBlockInitializers,
@@ -36,6 +35,7 @@ import { RecordFormBlockInitializer } from '../modules/blocks/data-blocks/form/R
 import { TableBlockInitializer } from '../modules/blocks/data-blocks/table/TableBlockInitializer';
 import { TableSelectorInitializer } from '../modules/blocks/data-blocks/table-selector/TableSelectorInitializer';
 import { RecordReadPrettyFormBlockInitializer } from '../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
+import { readPrettyFormActionInitializers } from '../modules/blocks/data-blocks/details-single/ReadPrettyFormActionInitializers';
 export * from './buttons';
 export * from './items';
 export {
