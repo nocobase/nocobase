@@ -2,7 +2,7 @@ import { Plugin } from '../application/Plugin';
 import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSettings/filterCollapseBlockSettings';
 import { filterCollapseItemFieldSettings } from '../modules/collapse-filter/schemaSettings/filterCollapseItemFieldSettings';
 import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings/multiDataDetailsBlockSettings';
-import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings/singleDataDetailsBlockSettings';
+import { singleDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-single/singleDataDetailsBlockSettings';
 import {
   creationFormBlockSettings,
   createFormBlockSettings,
