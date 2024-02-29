@@ -363,6 +363,7 @@ export const AddFieldAction = (props) => {
               isDialect,
               disabledJSONB: false,
               scopeKeyOptions,
+              createMainOnly: true,
               ...scope,
             }}
           />
