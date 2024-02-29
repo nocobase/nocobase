@@ -51,7 +51,14 @@ export const calendar: ICollectionTemplate = {
   availableFieldInterfaces: {
     include: [],
   },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category', 'description'),
+  configurableProperties: getConfigurableProperties(
+    'title',
+    'name',
+    'inherits',
+    'category',
+    'description',
+    'presetFields',
+  ),
 };
 
 export class CalendarCollectionTemplate extends CollectionTemplate {
@@ -104,5 +111,12 @@ export class CalendarCollectionTemplate extends CollectionTemplate {
   availableFieldInterfaces = {
     include: [],
   };
-  configurableProperties = getConfigurableProperties('title', 'name', 'inherits', 'category', 'description');
+  configurableProperties = getConfigurableProperties(
+    'title',
+    'name',
+    'inherits',
+    'category',
+    'description',
+    'presetFields',
+  );
 }

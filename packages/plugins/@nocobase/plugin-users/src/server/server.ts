@@ -4,6 +4,7 @@ import { parse } from '@nocobase/utils';
 import { resolve } from 'path';
 
 import * as actions from './actions/users';
+import { Cache } from '@nocobase/cache';
 
 export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
@@ -105,8 +106,12 @@ export default class PluginUsersServer extends Plugin {
     });
 
     const loggedInActions = ['updateProfile'];
-
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.*`,
+      actions: ['users:listExcludeRole'],
+    });
   }
 
   async load() {
@@ -118,6 +123,23 @@ export default class PluginUsersServer extends Plugin {
       context: {
         plugin: this,
       },
+    });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      await next();
+      const { associatedName, resourceName, actionName, values } = ctx.action.params;
+      const cache = ctx.app.cache as Cache;
+      if (
+        associatedName === 'roles' &&
+        resourceName === 'users' &&
+        ['add', 'remove', 'set'].includes(actionName) &&
+        values?.length
+      ) {
+        // Delete cache when the members of a department changed
+        for (const userId of values) {
+          await cache.del(`roles:${userId}`);
+        }
+      }
     });
   }
 
