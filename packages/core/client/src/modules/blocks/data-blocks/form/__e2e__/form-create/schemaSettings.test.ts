@@ -9,7 +9,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2165, T2174 } from './templatesOfBug';
+import { T2165, T2174, T3251 } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
@@ -211,7 +211,7 @@ test.describe('creation form block schema settings', () => {
       ).toHaveValue('123');
     });
 
-    // fix https://nocobase.height.app/T-2165
+    // https://nocobase.height.app/T-2165
     test('variable labels should be displayed normally', async ({ page, mockPage }) => {
       await mockPage(T2165).goto();
 
@@ -221,6 +221,38 @@ test.describe('creation form block schema settings', () => {
 
       await expect(page.getByText('Current form / Nickname')).toBeVisible();
       await expect(page.getByText('Current form / Phone')).toBeVisible();
+    });
+
+    // https://nocobase.height.app/T-3251
+    test('nested conditions', async ({ page, mockPage }) => {
+      await mockPage(T3251).goto();
+
+      // 一开始 email 字段是可编辑的
+      await expect(
+        page.getByLabel('block-item-CollectionField-users-form-users.email-Email').getByRole('textbox'),
+      ).toBeEditable();
+
+      // 满足联动规则条件时，email 字段应该是禁用的
+      await page
+        .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+        .getByRole('textbox')
+        .fill('nickname');
+      await page
+        .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+        .getByRole('textbox')
+        .fill('username');
+      await expect(
+        page.getByLabel('block-item-CollectionField-users-form-users.email-Email').getByRole('textbox'),
+      ).toBeDisabled();
+
+      // 再次改成不满足条件时，email 字段应该是可编辑的
+      await page
+        .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+        .getByRole('textbox')
+        .clear();
+      await expect(
+        page.getByLabel('block-item-CollectionField-users-form-users.email-Email').getByRole('textbox'),
+      ).toBeEditable();
     });
   });
 
