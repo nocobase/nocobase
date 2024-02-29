@@ -14,6 +14,35 @@ describe('has many field', () => {
     await db.close();
   });
 
+  it('should check has one association keys type', async () => {
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [{ type: 'bigInt', name: 'content' }],
+    });
+
+    let error;
+    try {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'hasOne',
+            name: 'profile',
+            foreignKey: 'content', // wrong type
+            sourceKey: 'name',
+          },
+        ],
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.message).toBe(
+      'Foreign key "content" type "BIGINT" does not match source key "name" type "STRING" in has one relation "profile" of collection "users"',
+    );
+  });
   it('association undefined', async () => {
     const User = db.collection({
       name: 'users',

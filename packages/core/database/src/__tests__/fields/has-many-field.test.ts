@@ -14,6 +14,32 @@ describe('has many field', () => {
     await db.close();
   });
 
+  it('should check association keys type', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'bigInt', name: 'title' }],
+    });
+
+    let error;
+    try {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'hasMany',
+            name: 'posts',
+            foreignKey: 'title', // wrong type
+            sourceKey: 'name',
+          },
+        ],
+      });
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeDefined();
+  });
+
   it('association undefined', async () => {
     const collection = db.collection({
       name: 'posts',

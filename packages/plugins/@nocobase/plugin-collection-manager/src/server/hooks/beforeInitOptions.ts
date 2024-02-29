@@ -138,6 +138,7 @@ export const beforeCheckOptions = {
       );
     }
   },
+
   hasMany(model: Model, { database }) {
     const target = model.get('target');
     const source = model.get('collectionName');
@@ -162,6 +163,7 @@ export const beforeCheckOptions = {
       );
     }
   },
+
   hasOne(model: Model, { database }) {
     const target = model.get('target');
     const source = model.get('collectionName');

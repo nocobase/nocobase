@@ -8,7 +8,7 @@ export function beforeCreateForValidateField(db: Database) {
       }
     }
 
-    const isPrimaryKey = model.get('isPrimaryKey');
+    const isPrimaryKey = model.get('primaryKey');
     if (isPrimaryKey) {
       const collection = db.getCollection(model.get('collectionName'));
       const primaryKey = collection.model.primaryKeyAttribute;
