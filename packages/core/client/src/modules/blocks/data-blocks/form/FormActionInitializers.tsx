@@ -1,5 +1,5 @@
-import { SchemaInitializerItemType } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { SchemaInitializerItemType } from '../../../../application';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 
 const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
   name: 'submitToWorkflow',
