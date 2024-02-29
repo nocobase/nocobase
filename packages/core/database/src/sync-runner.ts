@@ -120,6 +120,7 @@ export class SyncRunner {
         const attribute = this.findAttributeByColumnName(columnName);
         return (attribute && attribute.primaryKey) || column.primaryKey;
       };
+
       if (isPrimaryKey()) continue;
 
       if (await this.isParentColumn(columnName, options)) continue;

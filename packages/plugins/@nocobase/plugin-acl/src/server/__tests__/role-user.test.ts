@@ -11,7 +11,7 @@ describe('role', () => {
 
   beforeEach(async () => {
     api = await createMockServer({
-      plugins: ['users', 'acl', 'auth'],
+      plugins: ['users', 'acl', 'auth', 'data-source-manager'],
     });
     db = api.db;
     usersPlugin = api.getPlugin('users');

@@ -363,6 +363,7 @@ const MyTable = () => {
   const columns = useMemo(() => {
     return collection.getFields().map((collectionField) => {
 +      const tableFieldSchema = {
+      name: collectionField.name,
 +        type: 'void',
 +        title: collectionField.uiSchema?.title || collectionField.name,
 +        'x-component': 'TableColumn',
@@ -479,6 +480,7 @@ function useTableProps(): TableProps<any> {
   const columns = useMemo(() => {
     return collection.getFields().map((collectionField) => {
       const tableFieldSchema = {
+      name: collectionField.name,
         type: 'void',
         title: collectionField.uiSchema?.title || collectionField.name,
         'x-component': 'TableColumn',
@@ -832,6 +834,89 @@ class MyPlugin extends Plugin {
 
 目前的操作按钮只能添加，不能删除或者配置 ，我们可以通过 `SchemaSettings` 来配置。
 
+这里以 `Add New` 按钮为例。首先我们修改 `CreateActionInitializer`。
+
+```diff
+const CreateActionInitializer = () => {
+  const { insert } = useSchemaInitializer();
+  const handleClick = () => {
+    insert({
+      type: 'void',
+      'x-component': 'CreateAction',
++     'x-settings': 'createActionSettings',
+    });
+  };
+  return <SchemaInitializerItem title={'Add New'} onClick={handleClick}></SchemaInitializerItem>;
+};
+```
+
+然后我们实现 `createActionSettings`。
+
+```tsx | pure
+const createActionSettings = new SchemaSettings({
+  name: 'createActionSettings',
+  items: [
+    {
+      type: 'remove',
+      name: 'remove',
+    },
+  ],
+})
+```
+
+然后我们将 `createActionSettings` 注册到 NocoBase 应用中。
+
+```diff
+class MyPlugin extends Plugin {
+  async load() {
+    // ...
++   this.app.schemaSettingsManager.add(createActionSettings);
+  }
+}
+```
+
+最后将 `createActionSettings` 渲染出来。
+
+```diff
+const CreateAction = () => {
+  const [open, setOpen] = useState(false);
+
+  const showDrawer = () => {
+    setOpen(true);
+  };
+
+  const onClose = () => {
+    setOpen(false);
+  };
+
+  const compile = useCompile();
+  const collection = useCollection();
+  const title = compile(collection.title);
+
++ const fieldSchema = useFieldSchema();
++ const { render } = useSchemaToolbarRender(fieldSchema);
+
+  return (
+    <>
+-     <Button type="primary" onClick={showDrawer}>
+-       Add New
+-     </Button>
++     <div>
++       {render()}
++       <Button type="primary" onClick={showDrawer}>
++         Add New
++       </Button>
++     </div>
+      <Drawer title={`${title} | Add New`} onClose={onClose} open={open}>
+        <p>Some contents...</p>
+      </Drawer>
+    </>
+  );
+};
+```
+
+需要注意的是，要将 `render()` 和 `Add New` 包裹在一个 `div` 中，这样 `render()` 才能正确的渲染。
+
 <code src="./tmp-demos/demo10.tsx"></code>
 
 ### 11. 动态配置 table 列
@@ -877,43 +962,52 @@ const tableColumnInitializers = new SchemaInitializer({
 
 const useTableColumnInitializerFields = () => {
   const collection = useCollection();
-  return collection.fields.map((field) => {
-    return {
-      type: 'item',
-      name: field.name,
-      title: field?.uiSchema?.title || field.name,
-      'x-collection-field': `${collection.name}.${field.name}`,
-      Component: 'TableCollectionFieldInitializer',
-      schema: {
-        type: 'string',
-        name: field.name,
-        title: field?.uiSchema?.title || field.name,
-        'x-component': 'CollectionField',
-        'x-read-pretty': true,
-        'x-decorator-props': {
-          labelStyle: {
-            display: 'none',
+  return collection.fields.map((collectionField) => {
+    const tableFieldSchema = {
+      name: collectionField.name,
+      type: 'void',
+      title: collectionField.uiSchema?.title || collectionField.name,
+      'x-component': 'TableColumn',
+      properties: {
+        [collectionField.name]: {
+          'x-component': 'CollectionField',
+          'x-read-pretty': true,
+          'x-decorator-props': {
+            labelStyle: {
+              display: 'none',
+            },
           },
         },
-      }
-    }
+      },
+    };
+    return {
+      type: 'item',
+      name: collectionField.name,
+      title: collectionField?.uiSchema?.title || collectionField.name,
+      Component: 'TableCollectionFieldInitializer',
+      schema: tableFieldSchema,
+    };
   });
-}
+};
 
 export const TableCollectionFieldInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const { exists, remove } = useCurrentSchema(itemConfig['x-collection-field'], 'x-collection-field');
-  return <SchemaInitializerSwitch
-    checked={exists}
-    title={itemConfig.title}
-    onClick={() => {
-      if (exists) {
-        return remove();
-      }
-      insert(itemConfig.schema);
-    }}
-  />;
+  const { remove } = useDesignable();
+  const schema = useFieldSchema();
+  const exists = !!schema.properties?.[itemConfig.name];
+  return (
+    <SchemaInitializerSwitch
+      checked={exists}
+      title={itemConfig.title}
+      onClick={() => {
+        if (exists) {
+          return remove(schema.properties?.[itemConfig.name]);
+        }
+        insert(itemConfig.schema);
+      }}
+    />
+  );
 };
 ```
 
@@ -938,23 +1032,21 @@ function useTableProps(): TableProps<any> {
 ```tsx | pure
 function useTableColumns() {
   const schema = useFieldSchema();
+  const filed = useField();
   const { designable } = useDesignable();
   const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const columns = schema.mapProperties((field: any, name) => {
+  const columns = schema.mapProperties((tableField: any, name) => {
     return {
-      title: field.title || name,
+      title: <RecursionField name={tableField.name} schema={tableField} onlyRenderSelf />,
       dataIndex: name,
       key: name,
+      width: 200,
       render(value, record, index) {
-        return (
-          <RecursionField
-            name={`${index}.${field.name}`}
-            schema={field}
-          />
-        );
+        return <RecursionField basePath={filed.address.concat(index)} onlyRenderProperties schema={tableField} />;
       },
-    }
+    };
   });
+
   const tableColumns = useMemo(() => {
     return [
       ...columns,
@@ -962,8 +1054,9 @@ function useTableColumns() {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
+        width: 200,
         render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
-      }
+      },
     ];
   }, [columns, render, designable]);
 
@@ -986,5 +1079,71 @@ class MyPlugin extends Plugin {
 <code src="./tmp-demos/demo11.tsx"></code>
 
 ### 12. 增加操作列
+
+修改 `useTableColumns`：
+
+```diff
+function useTableColumns() {
+  // ...
+  const tableColumns = useMemo(() => {
+    return [
+      ...columns,
++     {
++       title: 'Actions',
++       dataIndex: 'actions',
++       key: 'actions',
++       render: (value, record) => {
++         return (
++           <RecordProvider record={record}>
++             <Space>
++               <ColumnView />
++             </Space>
++           </RecordProvider>
++         );
++       },
++     },
+      {
+        title: render(),
+        dataIndex: 'TABLE_COLUMN_INITIALIZER',
+        key: 'TABLE_COLUMN_INITIALIZER',
+        render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
+      },
+    ];
+  }, [columns, render, designable]);
+
+  return tableColumns;
+}
+```
+
+然后我们实现 `ColumnView`。
+
+```tsx | pure
+
+const ColumnView = observer(
+  () => {
+    const record = useRecord();
+    const [open, setOpen] = useState(false);
+
+    const showDrawer = () => {
+      setOpen(true);
+    };
+
+    const onClose = () => {
+      setOpen(false);
+    };
+    return (
+      <>
+        <Button type="link" onClick={showDrawer}>
+          view
+        </Button>
+        <Drawer onClose={onClose} open={open}>
+          <pre>{JSON.stringify(record, null, 2)}</pre>
+        </Drawer>
+      </>
+    );
+  },
+  { displayName: 'ColumnView' },
+);
+```
 
 <code src="./tmp-demos/demo12.tsx"></code>

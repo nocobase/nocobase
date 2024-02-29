@@ -137,7 +137,7 @@ export class PluginACL extends Plugin {
   async writeRoleToACL(role: RoleModel, options: any = {}) {
     const transaction = options?.transaction;
 
-    role.writeToAcl({ acl: this.acl });
+    role.writeToAcl({ acl: this.acl, withOutStrategy: true });
 
     if (options.withOutResources) {
       return;
@@ -244,9 +244,21 @@ export class PluginACL extends Plugin {
     this.app.db.on('roles.afterSaveWithAssociations', async (model, options) => {
       const { transaction } = options;
 
-      await this.writeRoleToACL(model, transaction);
+      await this.writeRoleToACL(model, {
+        withOutResources: true,
+      });
 
-      // model is default
+      await this.app.db.getRepository('dataSourcesRoles').updateOrCreate({
+        values: {
+          roleName: model.get('name'),
+          dataSourceKey: 'main',
+          strategy: model.get('strategy'),
+        },
+        filterKeys: ['roleName', 'dataSourceKey'],
+        transaction,
+      });
+
+      //  role is default
       if (model.get('default')) {
         await this.app.db.getRepository('roles').update({
           values: {
@@ -279,19 +291,12 @@ export class PluginACL extends Plugin {
       await this.writeResourceToACL(resource, transaction);
     });
 
-    this.app.db.on('rolesResources.afterDestroy', async (model, options) => {
-      const role = this.acl.getRole(model.get('roleName'));
-
-      if (role) {
-        role.revokeResource(model.get('name'));
-      }
-    });
-
     this.app.db.on('collections.afterDestroy', async (model, options) => {
       const { transaction } = options;
-      await this.app.db.getRepository('rolesResources').destroy({
+      await this.app.db.getRepository('dataSourcesRolesResources').destroy({
         filter: {
           name: model.get('name'),
+          dataSourceKey: 'main',
         },
         transaction,
       });
@@ -304,20 +309,21 @@ export class PluginACL extends Plugin {
 
       const fieldName = model.get('name');
 
-      const resourceActions = (await this.app.db.getRepository('rolesResourcesActions').find({
+      const resourceActions = await this.app.db.getRepository('dataSourcesRolesResourcesActions').find({
         filter: {
           'resource.name': collectionName,
+          'resource.dataSourceKey': 'main',
         },
         transaction,
         appends: ['resource'],
-      })) as RoleResourceActionModel[];
+      });
 
       for (const resourceAction of resourceActions) {
         const fields = resourceAction.get('fields') as string[];
         const newFields = [...fields, fieldName];
 
-        await this.app.db.getRepository('rolesResourcesActions').update({
-          filterByTk: resourceAction.get('id') as number,
+        await this.app.db.getRepository('dataSourcesRolesResourcesActions').update({
+          filterByTk: resourceAction.get('id'),
           values: {
             fields: newFields,
           },
@@ -333,10 +339,11 @@ export class PluginACL extends Plugin {
         const collectionName = model.get('collectionName');
         const fieldName = model.get('name');
 
-        const resourceActions = await this.app.db.getRepository('rolesResourcesActions').find({
+        const resourceActions = await this.app.db.getRepository('dataSourcesRolesResourcesActions').find({
           filter: {
             'resource.name': collectionName,
             'fields.$anyOf': [fieldName],
+            'resource.dataSourceKey': 'main',
           },
           transaction: options.transaction,
         });
@@ -345,7 +352,7 @@ export class PluginACL extends Plugin {
           const fields = resourceAction.get('fields') as string[];
           const newFields = fields.filter((field) => field != fieldName);
 
-          await this.app.db.getRepository('rolesResourcesActions').update({
+          await this.app.db.getRepository('dataSourcesRolesResourcesActions').update({
             filterByTk: resourceAction.get('id') as number,
             values: {
               fields: newFields,
@@ -437,7 +444,8 @@ export class PluginACL extends Plugin {
           },
         ],
       });
-      const rolesResourcesScopes = this.app.db.getRepository('rolesResourcesScopes');
+
+      const rolesResourcesScopes = this.app.db.getRepository('dataSourcesRolesResourcesScopes');
       await rolesResourcesScopes.createMany({
         records: [
           {

@@ -6,6 +6,11 @@ export default defineCollection({
   model: 'DataSourcesRolesResourcesModel',
   fields: [
     {
+      name: 'dataSourceKey',
+      type: 'string',
+      defaultValue: 'main',
+    },
+    {
       type: 'belongsTo',
       name: 'dataSources',
       foreignKey: 'dataSourceKey',

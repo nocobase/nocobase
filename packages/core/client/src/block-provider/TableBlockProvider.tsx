@@ -77,7 +77,7 @@ export const TableBlockProvider = (props) => {
   const params = useMemo(() => ({ ...props.params }), [props.params]);
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager_deprecated(props.dataSource);
-  const collection = getCollection(props.collection);
+  const collection = getCollection(props.collection, props.dataSource);
   const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort && dragSortBy) {
     params['sort'] = dragSortBy;

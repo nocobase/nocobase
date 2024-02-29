@@ -47,6 +47,7 @@ const MyTable = () => {
   const columns = useMemo(() => {
     return collection.getFields().map((collectionField) => {
       const tableFieldSchema = {
+        name: collectionField.name,
         type: 'void',
         title: collectionField.uiSchema?.title || collectionField.name,
         'x-component': 'TableColumn',

@@ -24,15 +24,16 @@ import {
   useDataBlock,
   useDataBlockProps,
   useDataBlockRequest,
-  useDataSource,
   useDataSourceManager,
   useSchemaInitializer,
   useSchemaInitializerRender,
+  useSchemaToolbar,
+  useSchemaToolbarRender,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Application } from '@nocobase/client';
 import { uid } from '@formily/shared';
-import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { mainCollections, TestDBCollections } from './collections';
 import { mock } from './mockData';
 
@@ -57,6 +58,7 @@ function useTableProps(): TableProps<any> {
   const columns = useMemo(() => {
     return collection.getFields().map((collectionField) => {
       const tableFieldSchema = {
+        name: collectionField.name,
         type: 'void',
         title: collectionField.uiSchema?.title || collectionField.name,
         'x-component': 'TableColumn',
@@ -178,12 +180,17 @@ const CreateAction = () => {
   const compile = useCompile();
   const collection = useCollection();
   const title = compile(collection.title);
+  const fieldSchema = useFieldSchema();
 
+  const { render } = useSchemaToolbarRender(fieldSchema);
   return (
     <>
-      <Button type="primary" onClick={showDrawer}>
-        Add New
-      </Button>
+      <div>
+        {render()}
+        <Button type="primary" onClick={showDrawer}>
+          Add New
+        </Button>
+      </div>
       <Drawer title={`${title} | Add New`} onClose={onClose} open={open}>
         <p>Some contents...</p>
       </Drawer>
@@ -218,12 +225,23 @@ const ActionBar = ({ children }) => {
   );
 };
 
+const createActionSettings = new SchemaSettings({
+  name: 'createActionSettings',
+  items: [
+    {
+      type: 'remove',
+      name: 'remove',
+    },
+  ],
+});
+
 const CreateActionInitializer = () => {
   const { insert } = useSchemaInitializer();
   const handleClick = () => {
     insert({
       type: 'void',
       'x-component': 'CreateAction',
+      'x-settings': 'createActionSettings',
     });
   };
   return <SchemaInitializerItem title={'Add New'} onClick={handleClick}></SchemaInitializerItem>;
@@ -331,6 +349,7 @@ class MyPlugin extends Plugin {
     this.app.addComponents({ MyTable, TableColumn, MyToolbar, ActionBar, CreateAction, RefreshAction });
     this.app.schemaInitializerManager.add(myInitializer);
     this.app.schemaSettingsManager.add(myTableSettings);
+    this.app.schemaSettingsManager.add(createActionSettings);
     this.app.addScopes({ useTableProps });
     this.app.schemaInitializerManager.add(tableActionInitializers);
   }

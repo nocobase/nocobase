@@ -9,6 +9,7 @@ import { CollectionRepository } from '.';
 import {
   afterCreateForForeignKeyField,
   afterCreateForReverseField,
+  beforeCheckOptions,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
   beforeInitOptions,
@@ -119,6 +120,10 @@ export class CollectionManagerPlugin extends Plugin {
       const fn = beforeInitOptions[type];
       if (fn) {
         await fn(model, { database: this.app.db });
+        const checkFn = beforeCheckOptions[type];
+        if (checkFn) {
+          checkFn(model, { database: this.app.db });
+        }
       }
     });
 

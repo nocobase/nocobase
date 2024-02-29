@@ -134,7 +134,7 @@ describe('middleware', () => {
   });
 
   it('should parse template value on action params', async () => {
-    const res = await adminAgent.resource('rolesResourcesScopes').create({
+    const res = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
       values: {
         name: 'own',
         scope: {

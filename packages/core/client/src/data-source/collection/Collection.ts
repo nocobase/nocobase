@@ -151,7 +151,7 @@ export class Collection {
       return this.options.targetKey;
     }
     const field = this.getFields({ primaryKey: true })[0];
-    this.primaryKey = field ? field.name : 'id';
+    this.primaryKey = field?.name;
 
     return this.primaryKey;
   }

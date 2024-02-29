@@ -77,6 +77,7 @@ const ColumnView = observer(
 
 function useTableColumns() {
   const schema = useFieldSchema();
+  const filed = useField();
   const { designable } = useDesignable();
   const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const columns = schema.mapProperties((tableField: any, name) => {
@@ -85,7 +86,7 @@ function useTableColumns() {
       dataIndex: name,
       key: name,
       render(value, record, index) {
-        return <RecursionField basePath={tableField.address.concat(index)} onlyRenderProperties schema={tableField} />;
+        return <RecursionField basePath={filed.address.concat(index)} onlyRenderProperties schema={tableField} />;
       },
     };
   });
@@ -349,25 +350,30 @@ const TableDataBlockInitializer = () => {
 
 const useTableColumnInitializerFields = () => {
   const collection = useCollection();
-  return collection.fields.map((field) => {
-    return {
-      type: 'item',
-      name: field.name,
-      title: field?.uiSchema?.title || field.name,
-      'x-collection-field': `${collection.name}.${field.name}`,
-      Component: 'TableCollectionFieldInitializer',
-      schema: {
-        type: 'string',
-        name: field.name,
-        title: field?.uiSchema?.title || field.name,
-        'x-component': 'CollectionField',
-        'x-read-pretty': true,
-        'x-decorator-props': {
-          labelStyle: {
-            display: 'none',
+  return collection.fields.map((collectionField) => {
+    const tableFieldSchema = {
+      name: collectionField.name,
+      type: 'void',
+      title: collectionField.uiSchema?.title || collectionField.name,
+      'x-component': 'TableColumn',
+      properties: {
+        [collectionField.name]: {
+          'x-component': 'CollectionField',
+          'x-read-pretty': true,
+          'x-decorator-props': {
+            labelStyle: {
+              display: 'none',
+            },
           },
         },
       },
+    };
+    return {
+      type: 'item',
+      name: collectionField.name,
+      title: collectionField?.uiSchema?.title || collectionField.name,
+      Component: 'TableCollectionFieldInitializer',
+      schema: tableFieldSchema,
     };
   });
 };
@@ -375,14 +381,16 @@ const useTableColumnInitializerFields = () => {
 export const TableCollectionFieldInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const { exists, remove } = useCurrentSchema(itemConfig['x-collection-field'], 'x-collection-field');
+  const { remove } = useDesignable();
+  const schema = useFieldSchema();
+  const exists = !!schema.properties?.[itemConfig.name];
   return (
     <SchemaInitializerSwitch
       checked={exists}
       title={itemConfig.title}
       onClick={() => {
         if (exists) {
-          return remove();
+          return remove(schema.properties?.[itemConfig.name]);
         }
         insert(itemConfig.schema);
       }}

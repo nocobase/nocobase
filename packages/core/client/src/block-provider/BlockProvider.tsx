@@ -10,11 +10,13 @@ import {
   DataBlockProvider,
   TableFieldResource,
   WithoutTableFieldResource,
+  useCollectionManager,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockResource,
   useDesignable,
   useParentRecord,
+  useParentRecordData,
   useRecord,
   useRecord_deprecated,
 } from '../';
@@ -229,8 +231,8 @@ export const BlockProvider = (props: {
   /** @deprecated */
   useParams?: any;
 }) => {
-  const { name, dataSource, association, useSourceId, useParams, parentRecord } = props;
-  const sourceId = useDataBlockSourceId({ association, useSourceId });
+  const { name, dataSource, association, useParams, parentRecord } = props;
+  const sourceId = useDataBlockSourceId({ association });
   const paramsFromHook = useParams?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
@@ -244,7 +246,15 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <DataBlockProvider {...(props as any)} params={params} sourceId={sourceId} parentRecord={parentRecord}>
+      <DataBlockProvider
+        {...(props as any)}
+        params={params}
+        sourceId={sourceId}
+        // 此处是针对树表格的 Add child 按钮优化的，因为点击 Add child 打开的表单中需要用到父级的数据；
+        // 但是当是关系区块时，在 DataBlockProvider 中会自动请求父级数据，所以这里不需要再传 parentRecord。
+        // 具体问题记录在这里：https://nocobase.height.app/T-3235/description
+        parentRecord={association ? undefined : parentRecord}
+      >
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
           <DataBlockCollector {...props} params={params}>
             {props.children}
@@ -297,12 +307,16 @@ export const useSourceIdFromRecord = () => {
 };
 
 export const useSourceIdFromParentRecord = () => {
-  const record = useRecord_deprecated();
+  const cm = useCollectionManager();
+  const parentRecordData = useParentRecordData();
   const { getCollectionField } = useCollectionManager_deprecated();
   const association = useBlockAssociationContext();
   if (association) {
     const collectionField = getCollectionField(association);
-    return record?.__parent?.[collectionField.sourceKey || 'id'];
+    const collection = cm.getCollection(collectionField.collectionName);
+    return parentRecordData?.[
+      collectionField.sourceKey || collection.filterTargetKey || collection.getPrimaryKey() || 'id'
+    ];
   }
 };
 

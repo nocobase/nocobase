@@ -52,7 +52,11 @@ export class M2MFieldInterface extends CollectionFieldInterface {
       value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
     };
     schema['x-component-props'].fieldNames.label =
-      targetCollection?.titleField || field?.targetKey || targetCollection?.getPrimaryKey() || 'id';
+      schema['x-component-props'].fieldNames?.label ||
+      targetCollection?.titleField ||
+      field?.targetKey ||
+      targetCollection?.getPrimaryKey() ||
+      'id';
 
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
