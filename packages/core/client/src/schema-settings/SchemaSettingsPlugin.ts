@@ -31,7 +31,7 @@ import { filterFormItemFieldSettings } from '../modules/form-filter/schemaSettin
 import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings/gridCardBlockSettings';
 import { listBlockSettings } from '../modules/list/schemaSettings/listBlockSettings';
 import { markdownBlockSettings } from '../modules/markdown/schemaSettings/markdownBlockSettings';
-import { dataSelectorBlockSettings } from '../modules/table-data-selector/schemaSettings/dataSelectorBlockSettings';
+import { dataSelectorBlockSettings } from '../modules/blocks/data-blocks/table-selector/blockSettings:tableSelector';
 import { addNewActionSettings } from '../modules/table/schemaSettings/addNewActionSettings';
 import { bulkDeleteActionSettings } from '../modules/table/schemaSettings/bulkDeleteActionSettings';
 import { customizeAddRecordActionSettings } from '../modules/table/schemaSettings/customizeAddRecordActionSettings';
