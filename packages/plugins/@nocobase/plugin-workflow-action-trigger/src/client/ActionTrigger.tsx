@@ -5,7 +5,7 @@ import { Trigger, CollectionBlockInitializer, getCollectionFieldOptions } from '
 import { NAMESPACE, useLang } from '../locale';
 
 export default class extends Trigger {
-  title = `{{t("Record action event", { ns: "${NAMESPACE}" })}}`;
+  title = `{{t("Action event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t("Triggers after specific operations on data are submitted, such as create, update, delete, etc., or directly submitting a record to the workflow.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
