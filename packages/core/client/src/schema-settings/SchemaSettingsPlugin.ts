@@ -28,7 +28,7 @@ import { editFormBlockSettings } from '../modules/blocks/data-blocks/form/blockS
 import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings/filterFormBlockSettings';
 import { filterFormItemFieldSettings } from '../modules/form-filter/schemaSettings/filterFormItemFieldSettings';
 import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings/gridCardBlockSettings';
-import { listBlockSettings } from '../modules/list/schemaSettings/listBlockSettings';
+import { listBlockSettings } from '../modules/blocks/data-blocks/list/listBlockSettings';
 import { markdownBlockSettings } from '../modules/markdown/schemaSettings/markdownBlockSettings';
 import { dataSelectorBlockSettings } from '../modules/blocks/data-blocks/table-selector/blockSettings:tableSelector';
 import { addNewActionSettings } from '../modules/table/schemaSettings/addNewActionSettings';
