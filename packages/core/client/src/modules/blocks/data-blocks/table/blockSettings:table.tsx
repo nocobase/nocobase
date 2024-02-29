@@ -1,22 +1,22 @@
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
-import { useAPIClient } from 'packages/core/client/src/api-client';
-import { SchemaSettings } from 'packages/core/client/src/application';
-import { useTableBlockContext, useFormBlockContext } from 'packages/core/client/src/block-provider';
+import { useAPIClient } from '../../../../api-client';
+import { SchemaSettings } from '../../../../application';
+import { useTableBlockContext, useFormBlockContext } from '../../../../block-provider';
 import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
   useSortFields,
-} from 'packages/core/client/src/collection-manager';
-import { mergeFilter, FilterBlockType } from 'packages/core/client/src/filter-provider';
-import { useDesignable, FixedBlockDesignerItem, removeNullCondition } from 'packages/core/client/src/schema-component';
+} from '../../../../collection-manager';
+import { mergeFilter, FilterBlockType } from '../../../../filter-provider';
+import { useDesignable, FixedBlockDesignerItem, removeNullCondition } from '../../../../schema-component';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsSortField,
   SchemaSettingsDataScope,
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsTemplate,
-} from 'packages/core/client/src/schema-settings';
+} from '../../../../schema-settings';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 

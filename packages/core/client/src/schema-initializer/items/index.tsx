@@ -41,7 +41,6 @@ export * from './RefreshActionInitializer';
 export * from './SelectActionInitializer';
 export * from './SubmitActionInitializer';
 export * from './TableActionColumnInitializer';
-export * from './TableBlockInitializer';
 export * from './TableCollectionFieldInitializer';
 export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';

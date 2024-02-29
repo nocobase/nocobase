@@ -1,7 +1,6 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { ActionSchemaToolbar } from '../modules/schema-toolbar/ActionSchemaToolbar';
-import { BlockSchemaToolbar } from '../modules/schema-toolbar/BlockSchemaToolbar';
 import { CollapseItemSchemaToolbar } from '../modules/schema-toolbar/CollapseItemSchemaToolbar';
 import { FormItemSchemaToolbar } from '../modules/schema-toolbar/FormItemSchemaToolbar';
 import { TableColumnSchemaToolbar } from '../modules/schema-toolbar/TableColumnSchemaToolbar';
@@ -15,6 +14,7 @@ import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
+import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
