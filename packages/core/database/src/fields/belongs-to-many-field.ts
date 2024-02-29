@@ -1,5 +1,5 @@
 import { omit } from 'lodash';
-import { BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
+import { AssociationScope, BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
 import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
@@ -101,7 +101,12 @@ export class BelongsToManyField extends RelationField {
       constraints: false,
       ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
-      through: Through.model,
+      through: {
+        model: Through.model,
+        scope: this.options.throughScope,
+        paranoid: this.options.throughParanoid,
+        unique: this.options.throughUnique,
+      },
     };
 
     const association = collection.model.belongsToMany(Target, belongsToManyOptions);
@@ -165,4 +170,7 @@ export interface BelongsToManyFieldOptions
   type: 'belongsToMany';
   target?: string;
   through?: string;
+  throughScope?: AssociationScope;
+  throughUnique?: boolean;
+  throughParanoid?: boolean;
 }

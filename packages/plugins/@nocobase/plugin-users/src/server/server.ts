@@ -105,8 +105,12 @@ export default class PluginUsersServer extends Plugin {
     });
 
     const loggedInActions = ['updateProfile'];
-
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.*`,
+      actions: ['users:listExcludeRole'],
+    });
   }
 
   async load() {

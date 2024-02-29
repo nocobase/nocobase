@@ -20,12 +20,12 @@ export class PMPlugin extends Plugin {
   }
 
   addSettings() {
-    this.app.pluginSettingsManager.add('acl', {
-      title: '{{t("Access control")}}',
-      icon: 'LockOutlined',
-      Component: ACLPane,
-      aclSnippet: 'pm.acl.roles',
-    });
+    // this.app.pluginSettingsManager.add('acl', {
+    //   title: '{{t("Access control")}}',
+    //   icon: 'LockOutlined',
+    //   Component: ACLPane,
+    //   aclSnippet: 'pm.acl.roles',
+    // });
     this.app.pluginSettingsManager.add('ui-schema-storage', {
       title: '{{t("Block templates")}}',
       icon: 'LayoutOutlined',
