@@ -78,6 +78,21 @@ export default {
 
       const mainDb = ctx.app.db;
 
+      const name = values.name;
+      if (
+        await mainDb.getRepository('dataSourcesFields').findOne({
+          filter: {
+            name,
+            collectionName,
+            dataSourceKey,
+          },
+        })
+      ) {
+        throw new Error(
+          `Field name ${name} already exists in collection ${collectionName} of data source ${dataSourceKey}`,
+        );
+      }
+
       const fieldRecord = await mainDb.getRepository('dataSourcesFields').create({
         values: {
           ...values,

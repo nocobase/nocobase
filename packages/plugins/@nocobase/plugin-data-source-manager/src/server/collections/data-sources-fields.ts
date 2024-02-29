@@ -6,6 +6,12 @@ export default defineCollection({
   shared: true,
   autoGenId: false,
   timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['name', 'collectionName', 'dataSourceKey'],
+    },
+  ],
   fields: [
     {
       type: 'uid',
