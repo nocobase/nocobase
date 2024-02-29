@@ -42,7 +42,7 @@ import { editActionSettings } from '../modules/table/schemaSettings/editActionSe
 import { filterActionSettings } from '../modules/table/schemaSettings/filterActionSettings';
 import { refreshActionSettings } from '../modules/table/schemaSettings/refreshActionSettings';
 import { tableBlockSettings } from '../modules/blocks/data-blocks/table/blockSettings:table';
-import { tableColumnSettings } from '../modules/table/schemaSettings/tableColumnSettings';
+import { tableColumnSettings } from '../modules/blocks/data-blocks/table/fieldSettings:TableColumn';
 import { viewActionSettings } from '../modules/table/schemaSettings/viewActionSettings';
 import { addChildActionSettings } from '../modules/table/schemaSettings/addChildActionSettings';
 import { expendableActionSettings } from '../modules/table/schemaSettings/expendableActionSettings';

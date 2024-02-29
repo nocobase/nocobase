@@ -1,15 +1,13 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema } from '@formily/json-schema';
+import { useField, useFieldSchema } from '@formily/react';
+import { SchemaSettings, useApp } from 'packages/core/client/src/application';
+import { useCollectionManager_deprecated } from 'packages/core/client/src/collection-manager';
+import { useDesignable } from 'packages/core/client/src/schema-component';
+import { useAssociationFieldContext } from 'packages/core/client/src/schema-component/antd/association-field/hooks';
+import { useColumnSchema } from 'packages/core/client/src/schema-component/antd/table-v2/Table.Column.Decorator';
+import { SchemaSettingsDefaultValue, isPatternDisabled } from 'packages/core/client/src/schema-settings';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '../../../application';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCollectionManager_deprecated } from '../../../collection-manager';
-import { useAssociationFieldContext } from '../../../schema-component/antd/association-field/hooks';
-import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useDesignable } from '../../../schema-component/hooks';
-import { isPatternDisabled } from '../../../schema-settings';
-import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
-import { useFieldComponentName } from './utils';
-import { useIsAssociationField } from '../../../schema-component/antd/form-item/FormItem.Settings';
+import { useFieldComponentName } from '../../../table/schemaSettings/utils';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
