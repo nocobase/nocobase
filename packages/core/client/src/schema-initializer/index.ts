@@ -30,6 +30,11 @@ import {
 } from './buttons';
 import * as initializerComponents from './components';
 import * as items from './items';
+import { CreateFormBlockInitializer } from '../modules/blocks/data-blocks/form/CreateFormBlockInitializer';
+import { FormBlockInitializer } from '../modules/blocks/data-blocks/form/FormBlockInitializer';
+import { RecordFormBlockInitializer } from '../modules/blocks/data-blocks/form/RecordFormBlockInitializer';
+import { TableBlockInitializer } from '../modules/blocks/data-blocks/table/TableBlockInitializer';
+import { TableSelectorInitializer } from '../modules/blocks/data-blocks/table-selector/TableSelectorInitializer';
 export * from './buttons';
 export * from './items';
 export {
@@ -55,6 +60,11 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.addComponents({
       ...initializerComponents,
       ...items,
+      CreateFormBlockInitializer,
+      FormBlockInitializer,
+      RecordFormBlockInitializer,
+      TableBlockInitializer,
+      TableSelectorInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);
