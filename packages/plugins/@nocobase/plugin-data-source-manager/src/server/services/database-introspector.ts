@@ -161,9 +161,11 @@ export class DatabaseIntrospector {
     name: string;
     schema?: string;
     tableName: string;
+    title?: string;
   } {
     return {
       name: tableInfo.tableName,
+      title: tableInfo.tableName,
       schema: tableInfo.schema,
       tableName: tableInfo.tableName,
     };
