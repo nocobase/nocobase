@@ -19,7 +19,7 @@ import { subformComponentFieldSettings } from '../modules/form-creation/schema-s
 import { subformPopoverComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/subformPopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/tagComponentFieldSettings';
 import { uploadAttachmentComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/uploadAttachmentComponentFieldSettings';
-import { formItemSettings } from '../modules/form-creation/schema-settings/formItemSettings';
+import { formItemSettings } from '../modules/blocks/data-blocks/form/formItemSettings';
 import { createSubmitActionSettings } from '../modules/form-creation/schema-settings/createSubmitActionSettings';
 import {
   updateSubmitActionSettings,
