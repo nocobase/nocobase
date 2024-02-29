@@ -41,7 +41,7 @@ import { deleteActionSettings } from '../modules/table/schemaSettings/deleteActi
 import { editActionSettings } from '../modules/table/schemaSettings/editActionSettings';
 import { filterActionSettings } from '../modules/table/schemaSettings/filterActionSettings';
 import { refreshActionSettings } from '../modules/table/schemaSettings/refreshActionSettings';
-import { tableBlockSettings } from '../modules/table/schemaSettings/tableBlockSettings';
+import { tableBlockSettings } from '../modules/blocks/data-blocks/table/blockSettings:table';
 import { tableColumnSettings } from '../modules/table/schemaSettings/tableColumnSettings';
 import { viewActionSettings } from '../modules/table/schemaSettings/viewActionSettings';
 import { addChildActionSettings } from '../modules/table/schemaSettings/addChildActionSettings';

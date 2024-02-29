@@ -1,23 +1,24 @@
-import { ArrayItems } from '@formily/antd-v5';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../../api-client';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
-import { mergeFilter } from '../../../';
-import { useCollection_deprecated, useCollectionManager_deprecated, useSortFields } from '../../../collection-manager';
-import { FilterBlockType } from '../../../filter-provider';
-import { removeNullCondition } from '../../../schema-component/antd/filter/useFilterActionProps';
-import { FixedBlockDesignerItem } from '../../../schema-component/antd/page/FixedBlock';
-import { useDesignable } from '../../../schema-component/hooks';
+import { ISchema } from '@formily/json-schema';
+import { useField, useFieldSchema } from '@formily/react';
+import { useAPIClient } from 'packages/core/client/src/api-client';
+import { SchemaSettings } from 'packages/core/client/src/application';
+import { useTableBlockContext, useFormBlockContext } from 'packages/core/client/src/block-provider';
+import {
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
+  useSortFields,
+} from 'packages/core/client/src/collection-manager';
+import { mergeFilter, FilterBlockType } from 'packages/core/client/src/filter-provider';
+import { useDesignable, FixedBlockDesignerItem, removeNullCondition } from 'packages/core/client/src/schema-component';
 import {
   SchemaSettingsBlockTitleItem,
+  SchemaSettingsSortField,
+  SchemaSettingsDataScope,
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsTemplate,
-  SchemaSettingsSortField,
-} from '../../../schema-settings';
-import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+} from 'packages/core/client/src/schema-settings';
+import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
