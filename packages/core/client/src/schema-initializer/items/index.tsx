@@ -10,7 +10,6 @@ export * from './CollectionFieldInitializer';
 export * from './CreateActionInitializer';
 export * from './CreateChildInitializer';
 export * from './CreateFilterActionInitializer';
-export * from './CreateFormBlockInitializer';
 export * from './CreateResetActionInitializer';
 export * from './CreateSubmitActionInitializer';
 export * from './CustomizeActionInitializer';
