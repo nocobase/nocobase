@@ -87,23 +87,23 @@ export const userCollection = {
         },
       },
     },
-    {
-      name: 'departments',
-      type: 'belongsToMany',
-      interface: 'm2m',
-      target: 'departments',
-      foreignKey: 'userId',
-      otherKey: 'departmentId',
-      onDelete: 'CASCADE',
-      sourceKey: 'id',
-      targetKey: 'id',
-      through: 'departmentsUsers',
-      uiSchema: {
-        type: 'array',
-        title: '{{t("Departments")}}',
-        'x-component': 'DepartmentField',
-      },
-    },
+    // {
+    //   name: 'departments',
+    //   type: 'belongsToMany',
+    //   interface: 'm2m',
+    //   target: 'departments',
+    //   foreignKey: 'userId',
+    //   otherKey: 'departmentId',
+    //   onDelete: 'CASCADE',
+    //   sourceKey: 'id',
+    //   targetKey: 'id',
+    //   through: 'departmentsUsers',
+    //   uiSchema: {
+    //     type: 'array',
+    //     title: '{{t("Departments")}}',
+    //     'x-component': 'DepartmentField',
+    //   },
+    // },
   ],
 };
 
@@ -114,7 +114,7 @@ export const usersSchema: ISchema = {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
-        collection: 'users',
+        collection: userCollection,
         resourceName: 'users',
         request: {
           resource: 'users',
@@ -127,7 +127,7 @@ export const usersSchema: ISchema = {
       },
       'x-component': 'CollectionProvider',
       'x-component-props': {
-        collection: 'users',
+        collection: userCollection,
       },
       properties: {
         actions: {
@@ -139,6 +139,17 @@ export const usersSchema: ISchema = {
             },
           },
           properties: {
+            filter: {
+              type: 'void',
+              title: '{{ t("Filter") }}',
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-component-props': {
+                icon: 'FilterOutlined',
+                useProps: '{{ useFilterActionProps }}',
+              },
+              'x-align': 'left',
+            },
             delete: {
               type: 'void',
               title: '{{ t("Delete") }}',

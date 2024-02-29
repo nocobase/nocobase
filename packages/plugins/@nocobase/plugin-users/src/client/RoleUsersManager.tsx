@@ -1,14 +1,12 @@
 import React, { useContext, useRef } from 'react';
 import { App } from 'antd';
 import {
-  CollectionProvider,
   CollectionProvider_deprecated,
   ResourceActionContext,
   ResourceActionProvider,
   SchemaComponent,
   useAPIClient,
   useActionContext,
-  useRecord,
   useRecord_deprecated,
   useRequest,
   useResourceActionContext,
@@ -16,6 +14,7 @@ import {
 import { RolesManagerContext } from '@nocobase/plugin-acl/client';
 import { useUsersTranslation } from './locale';
 import { roleUsersSchema, userCollection } from './schemas/users';
+import { useFilterActionProps } from './hooks';
 
 const useRemoveUser = () => {
   const api = useAPIClient();
@@ -118,6 +117,7 @@ export const RoleUsersManager: React.FC = () => {
             useRemoveUser,
             handleSelectRoleUsers,
             useAddRoleUsers,
+            useFilterActionProps,
             t,
           }}
         />
