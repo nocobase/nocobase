@@ -1,14 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerChildren } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCompile } from '../../schema-component';
+import { SchemaInitializerChildren } from '../../../../application';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { useCompile } from '../../../../schema-component';
 import {
   gridRowColWrap,
   useAssociatedFormItemInitializerFields,
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
-} from '../utils';
+} from '../../../../schema-initializer/utils';
 
 const ParentCollectionFields = () => {
   const inheritFields = useInheritsFormItemInitializerFields();
