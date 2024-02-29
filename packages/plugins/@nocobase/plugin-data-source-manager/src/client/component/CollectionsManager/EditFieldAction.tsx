@@ -69,6 +69,7 @@ const getSchema = ({
         },
       },
     };
+    properties['defaultValue']['x-disabled'] = true;
   }
 
   return {
