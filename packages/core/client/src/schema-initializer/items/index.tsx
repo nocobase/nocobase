@@ -32,7 +32,6 @@ export * from './RecordAssociationGridCardBlockInitializer';
 export * from './RecordAssociationListBlockInitializer';
 export * from './RecordAssociationDetailsBlockInitializer';
 export * from './RecordAssociationFormBlockInitializer';
-export * from './RecordFormBlockInitializer';
 export * from './RecordReadPrettyAssociationFormBlockInitializer';
 export * from './RecordReadPrettyFormBlockInitializer';
 export * from './RefreshActionInitializer';
