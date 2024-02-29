@@ -6,7 +6,7 @@ import { singleDataDetailsBlockSettings } from '../modules/details-single-data/s
 import {
   creationFormBlockSettings,
   createFormBlockSettings,
-} from '../modules/form-creation/schema-settings/createFormBlockSettings';
+} from '../modules/blocks/data-blocks/form/createFormBlockSettings';
 import { customizeSaveRecordActionSettings } from '../modules/form-creation/schema-settings/customizeSaveRecordActionSettings';
 import { customizeSubmitToWorkflowActionSettings } from '../modules/form-creation/schema-settings/customizeSubmitToWorkflowActionSettings';
 import { cascadeSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/cascadeSelectComponentFieldSettings';
