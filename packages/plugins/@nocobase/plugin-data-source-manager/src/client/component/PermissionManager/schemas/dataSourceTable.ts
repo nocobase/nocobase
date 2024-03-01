@@ -46,7 +46,6 @@ export const dataSourceSchema: ISchema = {
           params: {
             pageSize: 50,
             showAnonymous: true,
-            sort: ['createdAt'],
             appends: [],
           },
         },
