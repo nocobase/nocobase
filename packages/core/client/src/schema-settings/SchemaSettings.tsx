@@ -159,14 +159,14 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
   const [, startTransition] = useReactTransition();
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
 
-  const changeMenu: DropdownProps['onOpenChange'] = (nextOpen: boolean, info) => {
+  const changeMenu: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
       startTransition(() => {
         setVisible(nextOpen);
       });
     }
-  };
+  }, []);
 
   const items = getMenuItems(() => props.children);
 
@@ -175,9 +175,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
       <Component />
       <Dropdown
         open={visible}
-        onOpenChange={(open, info) => {
-          changeMenu(open, info);
-        }}
+        onOpenChange={changeMenu}
         overlayClassName={css`
           .ant-dropdown-menu-item-group-list {
             max-height: 300px;

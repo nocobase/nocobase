@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 /**
  * 通过鼠标的位置计算出最佳的 dropdown 的高度，以尽量避免出现滚动条
  * @param deps 类似于 useEffect 的第二个参数，如果不传则默认为 []
  */
 export const useNiceDropdownMaxHeight = (deps: any[] = []) => {
-  const [maxHeight, setMaxHeight] = useState(0);
   const heightRef = useRef(0);
 
   useEffect(() => {
@@ -22,9 +21,5 @@ export const useNiceDropdownMaxHeight = (deps: any[] = []) => {
     };
   }, []);
 
-  useEffect(() => {
-    setMaxHeight(heightRef.current);
-  }, deps);
-
-  return maxHeight - 40;
+  return useMemo(() => heightRef.current - 40, deps);
 };

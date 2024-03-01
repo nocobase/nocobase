@@ -1,4 +1,4 @@
-import React, { FC, useMemo } from 'react';
+import React, { FC, memo, useMemo } from 'react';
 
 import { useFindComponent } from '../../../schema-component';
 import { SchemaInitializerItemContext } from '../context';
@@ -28,7 +28,7 @@ const typeComponentMap: Record<string, string> = {
 const useChildrenDefault = () => undefined;
 const useVisibleDefault = () => true;
 const useComponentPropsDefault = () => undefined;
-export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => {
+export const SchemaInitializerChild: FC<SchemaInitializerItemType> = memo((props) => {
   const {
     type,
     Component,
@@ -78,4 +78,5 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => 
       </C>
     </SchemaInitializerItemContext.Provider>
   );
-};
+});
+SchemaInitializerChild.displayName = 'SchemaInitializerChild';

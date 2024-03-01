@@ -112,6 +112,7 @@ export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
   options?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>,
 ) {
   const app = useApp();
+  const renderCache = React.useRef<Record<string, React.FunctionComponentElement<any>>>({});
   const initializer = useMemo(
     () => app.schemaInitializerManager.get<P1, P2>(name),
     [app.schemaInitializerManager, name],
@@ -133,8 +134,17 @@ export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
     }
     return {
       exists: true,
-      render: (props?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>) =>
-        React.createElement(InitializerComponent, { ...initializer.options, ...options, ...props }),
+      render: (props?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>) => {
+        const key = JSON.stringify(props) || '{}';
+        if (renderCache.current[key]) {
+          return renderCache.current[key];
+        }
+        return (renderCache.current[key] = React.createElement(InitializerComponent, {
+          ...initializer.options,
+          ...options,
+          ...props,
+        }));
+      },
     };
   }, [initializer, name, options]);
 

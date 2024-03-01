@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useMemo, useRef } from 'react';
+import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
 
 import { useFindComponent } from '../../../schema-component';
 import {
@@ -17,7 +17,6 @@ import {
 } from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingItemContext } from '../context';
 import { SchemaSettingsItemType } from '../types';
-import { uid } from '@formily/shared';
 import { useFieldComponentName } from '../../../common/useFieldComponentName';
 
 export interface SchemaSettingsChildrenProps {
@@ -71,7 +70,7 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
 const useChildrenDefault = () => undefined;
 const useComponentPropsDefault = () => undefined;
 const useVisibleDefault = () => true;
-export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
+export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
   const {
     useVisible = useVisibleDefault,
     useChildren = useChildrenDefault,
@@ -111,4 +110,5 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
       </C>
     </SchemaSettingItemContext.Provider>
   );
-};
+});
+SchemaSettingsChild.displayName = 'SchemaSettingsChild';
