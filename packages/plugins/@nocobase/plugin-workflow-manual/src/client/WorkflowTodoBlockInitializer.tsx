@@ -17,7 +17,7 @@ export const WorkflowTodoBlockInitializer: FC<any> = () => {
           'x-decorator-props': {},
           'x-component': 'CardItem',
           // 'x-designer': 'TableBlockDesigner',
-          'x-toolbar': 'blockSchemaToolbar',
+          'x-toolbar': 'BlockSchemaToolbar',
           'x-settings': 'blockSettings:table',
           properties: {
             todos: {
