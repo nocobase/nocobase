@@ -1,9 +1,9 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
-import { useSchemaInitializerItem } from '../../application';
-import { createFilterFormBlockSchema } from '../utils';
-import { FilterBlockInitializer } from './FilterBlockInitializer';
-import { Collection } from '../../data-source';
+import { useSchemaInitializerItem } from '../../../../application';
+import { createFilterFormBlockSchema } from '../../../../schema-initializer/utils';
+import { FilterBlockInitializer } from '../../../../schema-initializer/items/FilterBlockInitializer';
+import { Collection } from '../../../../data-source';
 
 export const FilterFormBlockInitializer = ({
   filterMenuItemChildren,

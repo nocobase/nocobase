@@ -1,13 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerChildren } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useCompile } from '../../schema-component';
 import {
-  gridRowColWrap,
   useAssociatedFormItemInitializerFields,
   useFilterAssociatedFormItemInitializerFields,
-  useFilterFormItemInitializerFields,
   useFilterInheritsFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
@@ -79,35 +76,3 @@ export const FilterAssociatedFields = () => {
   ];
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
-
-export const filterFormItemInitializers = new SchemaInitializer({
-  name: 'FilterFormItemInitializers',
-  wrap: gridRowColWrap,
-  icon: 'SettingOutlined',
-  title: '{{t("Configure fields")}}',
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'displayFields',
-      title: '{{t("Display fields")}}',
-      useChildren: useFilterFormItemInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: FilterParentCollectionFields,
-    },
-    {
-      name: 'associationFields',
-      Component: FilterAssociatedFields,
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      title: '{{t("Add text")}}',
-      Component: 'MarkdownFormItemInitializer',
-      name: 'addText',
-    },
-  ],
-});

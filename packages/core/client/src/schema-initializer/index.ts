@@ -11,8 +11,6 @@ import {
   createFormBlockInitializers,
   cusomeizeCreateFormBlockInitializers,
   customFormItemInitializers,
-  filterFormActionInitializers,
-  filterFormItemInitializers,
   recordBlockInitializers,
   recordFormBlockInitializers,
   subTableActionInitializers,
@@ -39,6 +37,9 @@ import { listItemActionInitializers } from '../modules/blocks/data-blocks/list/l
 import { GridCardBlockInitializer } from '../modules/blocks/data-blocks/grid-card/GridCardBlockInitializer';
 import { gridCardActionInitializers } from '../modules/blocks/data-blocks/grid-card/GridCardActionInitializers';
 import { gridCardItemActionInitializers } from '../modules/blocks/data-blocks/grid-card/gridCardItemActionInitializers';
+import { FilterFormBlockInitializer } from '../modules/blocks/filter-blocks/form/FilterFormBlockInitializer';
+import { filterFormActionInitializers } from '../modules/blocks/filter-blocks/form/FilterFormActionInitializers';
+import { filterFormItemInitializers } from '../modules/blocks/filter-blocks/form/filterFormItemInitializers';
 export * from './buttons';
 export * from './items';
 export {
@@ -73,6 +74,7 @@ export class SchemaInitializerPlugin extends Plugin {
       DetailsBlockInitializer,
       ListBlockInitializer,
       GridCardBlockInitializer,
+      FilterFormBlockInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);

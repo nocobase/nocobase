@@ -20,7 +20,6 @@ export * from './DestroyActionInitializer';
 export * from './ExpandableActionInitializer';
 export * from './FilterActionInitializer';
 export * from './FilterCollapseBlockInitializer';
-export * from './FilterFormBlockInitializer';
 export * from './G2PlotInitializer';
 export * from './InitializerWithSwitch';
 export * from './MarkdownBlockInitializer';

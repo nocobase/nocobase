@@ -3,11 +3,11 @@ import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '../../../application';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
-import { useFieldComponentName } from '../../../common/useFieldComponentName';
-import { EditOperator, useDesignable, useIsAssociationField, useValidateSchema } from '../../../schema-component';
+import { useApp } from '../../../../application';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
+import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { EditOperator, useDesignable, useValidateSchema } from '../../../../schema-component';
 
 export const filterFormItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterFormItem',

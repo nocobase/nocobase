@@ -25,8 +25,8 @@ import {
   submitActionSettings,
 } from '../modules/form-creation/schema-settings/updateSubmitActionSettings';
 import { editFormBlockSettings } from '../modules/blocks/data-blocks/form/blockSettings:editForm';
-import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings/filterFormBlockSettings';
-import { filterFormItemFieldSettings } from '../modules/form-filter/schemaSettings/filterFormItemFieldSettings';
+import { filterFormBlockSettings } from '../modules/blocks/filter-blocks/form/filterFormBlockSettings';
+import { filterFormItemFieldSettings } from '../modules/blocks/filter-blocks/form/filterFormItemFieldSettings';
 import { gridCardBlockSettings } from '../modules/blocks/data-blocks/grid-card/gridCardBlockSettings';
 import { listBlockSettings } from '../modules/blocks/data-blocks/list/listBlockSettings';
 import { markdownBlockSettings } from '../modules/markdown/schemaSettings/markdownBlockSettings';
