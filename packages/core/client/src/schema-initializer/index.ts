@@ -13,8 +13,6 @@ import {
   customFormItemInitializers,
   filterFormActionInitializers,
   filterFormItemInitializers,
-  gridCardActionInitializers,
-  gridCardItemActionInitializers,
   recordBlockInitializers,
   recordFormBlockInitializers,
   subTableActionInitializers,
@@ -38,6 +36,9 @@ import { detailsActionInitializers } from '../modules/blocks/data-blocks/details
 import { ListBlockInitializer } from '../modules/blocks/data-blocks/list/ListBlockInitializer';
 import { listActionInitializers } from '../modules/blocks/data-blocks/list/ListActionInitializers';
 import { listItemActionInitializers } from '../modules/blocks/data-blocks/list/listItemActionInitializers';
+import { GridCardBlockInitializer } from '../modules/blocks/data-blocks/grid-card/GridCardBlockInitializer';
+import { gridCardActionInitializers } from '../modules/blocks/data-blocks/grid-card/GridCardActionInitializers';
+import { gridCardItemActionInitializers } from '../modules/blocks/data-blocks/grid-card/gridCardItemActionInitializers';
 export * from './buttons';
 export * from './items';
 export {
@@ -71,6 +72,7 @@ export class SchemaInitializerPlugin extends Plugin {
       RecordReadPrettyFormBlockInitializer,
       DetailsBlockInitializer,
       ListBlockInitializer,
+      GridCardBlockInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);

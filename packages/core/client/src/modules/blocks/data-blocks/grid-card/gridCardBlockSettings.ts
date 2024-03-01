@@ -4,20 +4,20 @@ import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../block-provider';
-import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
-import { removeNullCondition, useDesignable } from '../../../schema-component';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext } from '../../../../block-provider';
+import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
+import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import {
   defaultColumnCount,
   gridSizes,
   pageSizeOptions,
   screenSizeMaps,
   screenSizeTitleMaps,
-} from '../../../schema-component/antd/grid-card/options';
-import { SchemaSettingsTemplate } from '../../../schema-settings';
-import { columnCountMarks } from './utils';
-import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+} from '../../../../schema-component/antd/grid-card/options';
+import { SchemaSettingsTemplate } from '../../../../schema-settings';
+import { columnCountMarks } from '../../../grid-card/schemaSettings/utils';
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 
 export const gridCardBlockSettings = new SchemaSettings({
   name: 'blockSettings:gridCard',

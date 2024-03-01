@@ -22,7 +22,6 @@ export * from './FilterActionInitializer';
 export * from './FilterCollapseBlockInitializer';
 export * from './FilterFormBlockInitializer';
 export * from './G2PlotInitializer';
-export * from './GridCardBlockInitializer';
 export * from './InitializerWithSwitch';
 export * from './MarkdownBlockInitializer';
 export * from './RecordAssociationBlockInitializer';
