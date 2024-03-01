@@ -21,6 +21,42 @@ describe('role', () => {
     await api.destroy();
   });
 
+  it('should create user with roles', async () => {
+    const role1 = await db.getRepository('roles').create({
+      values: {
+        name: 'test1',
+        title: 'Admin User',
+      },
+    });
+
+    const role2 = await db.getRepository('roles').create({
+      values: {
+        name: 'test2',
+        title: 'test2 user',
+      },
+    });
+
+    const resp = await api
+      .agent()
+      .resource('users')
+      .create({
+        values: {
+          username: 'testUser',
+          roles: [
+            {
+              name: 'test1',
+            },
+            {
+              name: 'test2',
+            },
+          ],
+        },
+      });
+    console.log('resp.body', JSON.stringify(resp.body, null, 2));
+
+    expect(resp.body.data.roles[0].name).toBeDefined();
+  });
+
   it('should set default role', async () => {
     await db.getRepository('roles').create({
       values: {
