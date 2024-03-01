@@ -446,6 +446,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.pm.load(options);
 
+    if (options.sync) {
+      await this.db.sync();
+    }
+
     this.setMaintainingMessage('emit afterLoad');
     if (options?.hooks !== false) {
       await this.emitAsync('afterLoad', this, options);
@@ -854,8 +858,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await migrator3.beforeLoad.up();
     // load other plugins
     // TODO：改成约定式
-    await this.load();
-    await this.db.sync();
+    await this.load({ sync: true });
+    // await this.db.sync();
     await migrator3.afterSync.up();
     // upgrade plugins
     await this.pm.upgrade();
