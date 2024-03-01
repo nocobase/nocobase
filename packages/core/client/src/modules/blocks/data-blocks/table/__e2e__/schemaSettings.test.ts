@@ -270,21 +270,19 @@ test.describe('table block schema settings', () => {
       // 点击左边 Table 的某一行
       await page.getByLabel('block-item-CardItem-roles-table').getByRole('cell', { name: 'Root', exact: true }).click();
       await expect(
-        page
-          .getByLabel('block-item-CardItem-users-table')
-          .getByRole('row', { name: 'Member' })
-          .filter({ hasNotText: 'Root' }),
-      ).toHaveCount(0, { timeout: 1000 * 10 });
+        page.getByLabel('block-item-CardItem-users-table').getByRole('row').filter({ hasNotText: 'Root' }),
+      ).toHaveCount(1, {
+        timeout: 1000 * 10,
+      });
       await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
 
       // 再次点击，会取消筛选效果
       await page.getByLabel('block-item-CardItem-roles-table').getByRole('cell', { name: 'Root', exact: true }).click();
       await expect(
-        page
-          .getByLabel('block-item-CardItem-users-table')
-          .getByRole('row', { name: 'Member' })
-          .filter({ hasNotText: 'Root' }),
-      ).toHaveCount(3, { timeout: 1000 * 10 });
+        page.getByLabel('block-item-CardItem-users-table').getByRole('row').filter({ hasNotText: 'Root' }),
+      ).toHaveCount(4, {
+        timeout: 1000 * 10,
+      });
       await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
     });
 
