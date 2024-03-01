@@ -1,5 +1,5 @@
 import { Table } from 'antd';
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   CardItem,
   Plugin,
@@ -50,11 +50,14 @@ const MyTable = () => {
   return <Table dataSource={dataSource} columns={columns} />;
 };
 
-const AddBlockButton = observer(() => {
-  const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializerRender(fieldSchema['x-initializer']);
-  return render();
-});
+const AddBlockButton = observer(
+  () => {
+    const fieldSchema = useFieldSchema();
+    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer']);
+    return render();
+  },
+  { displayName: 'AddBlockButton' },
+);
 
 const Page = observer(
   (props) => {
@@ -71,20 +74,23 @@ const Page = observer(
 const TableDataBlockInitializer = () => {
   const { insert, setVisible } = useSchemaInitializer();
 
-  const handleClick = ({ item }) => {
-    const tableSchema = {
-      type: 'void',
-      'x-component': 'CardItem',
-      properties: {
-        [uid()]: {
-          type: 'array',
-          'x-component': 'MyTable',
+  const handleClick = useCallback(
+    ({ item }) => {
+      const tableSchema = {
+        type: 'void',
+        'x-component': 'CardItem',
+        properties: {
+          [uid()]: {
+            type: 'array',
+            'x-component': 'MyTable',
+          },
         },
-      },
-    };
-    insert(tableSchema);
-    setVisible(false);
-  };
+      };
+      insert(tableSchema);
+      setVisible(false);
+    },
+    [insert, setVisible],
+  );
 
   return <SchemaInitializerItem title={'Table'} onClick={handleClick} />;
 };

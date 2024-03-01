@@ -88,6 +88,7 @@ function useTableProps(): TableProps<any> {
     loading,
     dataSource,
     columns,
+    rowKey: 'id',
   };
 }
 
@@ -99,7 +100,6 @@ const myTableSettings = new SchemaSettings({
       type: 'switch',
       useComponentProps() {
         const { props: blockSettingsProps, dn } = useDataBlock();
-
         return {
           title: 'Bordered',
           checked: !!blockSettingsProps.tableProps?.bordered,
@@ -117,11 +117,14 @@ const myTableSettings = new SchemaSettings({
   ],
 });
 
-const AddBlockButton = observer(() => {
-  const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializerRender(fieldSchema['x-initializer']);
-  return render();
-});
+const AddBlockButton = observer(
+  () => {
+    const fieldSchema = useFieldSchema();
+    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer']);
+    return render();
+  },
+  { displayName: 'AddBlockButton' },
+);
 
 const Page = observer(
   (props) => {
@@ -192,7 +195,6 @@ const TableDataBlockInitializer = () => {
   };
 
   const menuItems = useCollectionMenuItems();
-
   return <SchemaInitializerItem title={'Table'} items={menuItems} onClick={handleClick} />;
 };
 

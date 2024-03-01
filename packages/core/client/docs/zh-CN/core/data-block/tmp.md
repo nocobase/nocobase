@@ -120,7 +120,7 @@ const AddBlockButton = observer(() => {
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializerRender(fieldSchema['x-initializer']);
   return render();
-});
+}, { displayName: 'AddBlockButton' });
 
 const Page = observer(
   (props) => {
@@ -147,7 +147,7 @@ const Page = observer(
 const TableDataBlockInitializer = () => {
   const { insert, setVisible } = useSchemaInitializer();
 
-  const handleClick = ({ item }) => {
+  const handleClick = useCallback(({ item }) => {
     const tableSchema = {
       type: 'void',
       'x-component': 'CardItem',
@@ -157,10 +157,10 @@ const TableDataBlockInitializer = () => {
           'x-component': 'MyTable',
         },
       },
-    }
+    };
     insert(tableSchema);
     setVisible(false);
-  };
+  }, [insert, setVisible]);
 
   return <SchemaInitializerItem title={'Table'} onClick={handleClick} />;
 };
