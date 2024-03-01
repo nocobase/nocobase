@@ -14,6 +14,37 @@ describe('belongs to field', () => {
     await db.close();
   });
 
+  it('should throw error when associated with item that null with target key', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'name', unique: true }],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      autoGenId: true,
+      timestamps: false,
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'user',
+          target: 'users',
+          foreignKey: 'userName',
+          targetKey: 'name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await expect(
+      Profile.repository.create({
+        values: {
+          user: {},
+        },
+      }),
+    ).rejects.toThrow('The target key name is not set in users');
+  });
   it('should check association keys type', async () => {
     const User = db.collection({
       name: 'users',

@@ -14,6 +14,48 @@ describe('has many field', () => {
     await db.close();
   });
 
+  it('should throw error when associated with item that null with source key', async () => {
+    const User = db.collection({
+      name: 'users',
+      autoGenId: true,
+      timestamps: false,
+      fields: [
+        { type: 'string', name: 'name', unique: true },
+        {
+          type: 'hasMany',
+          name: 'profiles',
+          target: 'profiles',
+          foreignKey: 'userName',
+          sourceKey: 'name',
+        },
+      ],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        {
+          type: 'string',
+          name: 'address',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await expect(
+      User.repository.create({
+        values: {
+          profiles: [
+            {
+              address: 'address1',
+            },
+          ],
+        },
+      }),
+    ).rejects.toThrow('The source key name is not set in users');
+  });
+
   it('should check association keys type', async () => {
     const Post = db.collection({
       name: 'posts',

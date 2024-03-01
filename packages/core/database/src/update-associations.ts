@@ -286,6 +286,22 @@ export async function updateSingleAssociation(
     return await removeAssociation();
   }
 
+  // @ts-ignore
+  if (association.associationType === 'HasOne' && !model.get(association.sourceKeyAttribute)) {
+    // @ts-ignore
+    throw new Error(`The source key ${association.sourceKeyAttribute} is not set in ${model.constructor.name}`);
+  }
+
+  const checkBelongsToTargetKey = () => {
+    // @ts-ignore
+    if (association.associationType === 'BelongsTo' && !model.get(association.targetKey)) {
+      throw new Error(
+        // @ts-ignore
+        `The target key ${association.targetKey} is not set in ${association.target.name}`,
+      );
+    }
+  };
+
   if (isStringOrNumber(value)) {
     await model[setAccessor](value, { context, transaction });
     return true;
@@ -353,6 +369,8 @@ export async function updateSingleAssociation(
   if (association.targetKey) {
     model.setDataValue(association.foreignKey, instance[dataKey]);
   }
+
+  checkBelongsToTargetKey();
 }
 
 /**
@@ -389,6 +407,12 @@ export async function updateMultipleAssociation(
     await model[setAccessor](null, { transaction, context, individualHooks: true });
     model.setDataValue(key, null);
     return;
+  }
+
+  // @ts-ignore
+  if (association.associationType === 'HasMany' && !model.get(association.sourceKeyAttribute)) {
+    // @ts-ignore
+    throw new Error(`The source key ${association.sourceKeyAttribute} is not set in ${model.constructor.name}`);
   }
 
   if (isStringOrNumber(value)) {
