@@ -6,12 +6,16 @@ import { BreadcumbTitle } from './component/BreadcumbTitle';
 import { CollectionManagerPage } from './component/CollectionsManager';
 import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionManager';
 import { MainDataSourceManager } from './component/MainDataSourceManager';
-import { PermissionManager } from './component/PermissionManager';
+import { DataSourcePermissionManager } from './component/PermissionManager';
 import { NAMESPACE } from './locale';
 
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();
   async load() {
+    // 注册组件
+    this.app.addComponents({
+      DataSourcePermissionManager,
+    });
     this.app.use(DatabaseConnectionProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
@@ -42,24 +46,24 @@ export class PluginDataSourceManagerClient extends Plugin {
       topLevelName: `${NAMESPACE}/main`,
       pluginKey: NAMESPACE,
     });
-    this.app.pluginSettingsManager.add(`${NAMESPACE}/main.permissions`, {
-      title: `{{t("Permissions", { ns: "${NAMESPACE}" })}}`,
-      Component: PermissionManager,
-      topLevelName: `${NAMESPACE}/main`,
-      pluginKey: NAMESPACE,
-    });
+    // this.app.pluginSettingsManager.add(`${NAMESPACE}/main.permissions`, {
+    //   title: `{{t("Permissions", { ns: "${NAMESPACE}" })}}`,
+    //   Component: PermissionManager,
+    //   topLevelName: `${NAMESPACE}/main`,
+    //   pluginKey: NAMESPACE,
+    // });
     this.app.pluginSettingsManager.add(`${NAMESPACE}/:name.collections`, {
       title: `{{t("Collections", { ns: "${NAMESPACE}" })}}`,
       Component: CollectionManagerPage,
       topLevelName: `${NAMESPACE}/:name`,
       pluginKey: NAMESPACE,
     });
-    this.app.pluginSettingsManager.add(`${NAMESPACE}/:name.permissions`, {
-      title: `{{t("Permissions", { ns: "${NAMESPACE}" })}}`,
-      Component: PermissionManager,
-      topLevelName: `${NAMESPACE}/:name`,
-      pluginKey: NAMESPACE,
-    });
+    // this.app.pluginSettingsManager.add(`${NAMESPACE}/:name.permissions`, {
+    //   title: `{{t("Permissions", { ns: "${NAMESPACE}" })}}`,
+    //   Component: PermissionManager,
+    //   topLevelName: `${NAMESPACE}/:name`,
+    //   pluginKey: NAMESPACE,
+    // });
 
     this.app.dataSourceManager.addDataSources(this.getThirdDataSource.bind(this), ThirdDataSource);
     // this.setDataSources();

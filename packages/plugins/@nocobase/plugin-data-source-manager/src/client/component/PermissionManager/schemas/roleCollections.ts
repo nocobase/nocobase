@@ -71,164 +71,170 @@ const collection = {
 
 export const roleCollectionsSchema: ISchema = {
   type: 'void',
-  'x-decorator': 'ResourceActionProvider',
-  'x-decorator-props': {
-    collection,
-    association: {
-      sourceKey: 'name',
-      targetKey: 'name',
-    },
-    resourceName: 'roles.dataSourcesCollections',
-    request: {
-      resource: 'roles.dataSourcesCollections',
-      action: 'list',
-      params: {
-        pageSize: 20,
-        filter: { hidden: { $isFalsy: true }, dataSourceKey: '{{dataSourceKey}}' },
-        sort: ['sort'],
-        appends: ['fields'],
-      },
-    },
-  },
+  'x-decorator': 'RoleRecordProvider',
   properties: {
-    [uid()]: {
+    block: {
       type: 'void',
-      'x-component': 'ActionBar',
-      'x-component-props': {
-        style: {
-          marginBottom: 16,
+      'x-decorator': 'ResourceActionProvider',
+      'x-decorator-props': {
+        collection,
+        association: {
+          sourceKey: 'name',
+          targetKey: 'name',
+        },
+        resourceName: 'roles.dataSourcesCollections',
+        request: {
+          resource: 'roles.dataSourcesCollections',
+          action: 'list',
+          params: {
+            pageSize: 20,
+            filter: { hidden: { $isFalsy: true }, dataSourceKey: '{{dataSourceKey}}' },
+            sort: ['sort'],
+            appends: ['fields'],
+          },
         },
       },
       properties: {
-        filter: {
+        [uid()]: {
           type: 'void',
-          title: '{{ t("Filter") }}',
-          default: {
-            $and: [{ title: { $includes: '' } }, { name: { $includes: '' } }],
-          },
-          'x-action': 'filter',
-          'x-component': 'Filter.Action',
+          'x-component': 'ActionBar',
           'x-component-props': {
-            icon: 'FilterOutlined',
-            useProps: '{{ cm.useFilterActionProps }}',
-          },
-          'x-align': 'left',
-        },
-      },
-    },
-    table1: {
-      type: 'void',
-      'x-uid': 'input',
-      'x-component': 'Table.Void',
-      'x-component-props': {
-        rowKey: 'name',
-        useDataSource: '{{ cm.useDataSourceFromRAC }}',
-      },
-      properties: {
-        column0: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            title: {
-              type: 'number',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
+            style: {
+              marginBottom: 16,
             },
           },
-        },
-        column2: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
           properties: {
-            name: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-            },
-          },
-        },
-        column3: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            usingConfig: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-            },
-          },
-        },
-        column4: {
-          type: 'void',
-          title: '{{t("Actions")}}',
-          'x-component': 'Table.Column',
-          properties: {
-            actions: {
+            filter: {
               type: 'void',
-              'x-component': 'Space',
-              'x-component-props': {
-                split: '|',
+              title: '{{ t("Filter") }}',
+              default: {
+                $and: [{ title: { $includes: '' } }, { name: { $includes: '' } }],
               },
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-component-props': {
+                icon: 'FilterOutlined',
+                useProps: '{{ cm.useFilterActionProps }}',
+              },
+              'x-align': 'left',
+            },
+          },
+        },
+        table1: {
+          type: 'void',
+          'x-uid': 'input',
+          'x-component': 'Table.Void',
+          'x-component-props': {
+            rowKey: 'name',
+            useDataSource: '{{ cm.useDataSourceFromRAC }}',
+          },
+          properties: {
+            column0: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
               properties: {
-                configure: {
+                title: {
+                  type: 'number',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column2: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                name: {
+                  type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column3: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                usingConfig: {
+                  type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column4: {
+              type: 'void',
+              title: '{{t("Actions")}}',
+              'x-component': 'Table.Column',
+              properties: {
+                actions: {
                   type: 'void',
-                  title: '{{t("Configure")}}',
-                  'x-component': 'Action.Link',
+                  'x-component': 'Space',
                   'x-component-props': {
-                    type: 'primary',
+                    split: '|',
                   },
                   properties: {
-                    drawer: {
+                    configure: {
                       type: 'void',
-                      'x-component': 'Action.Drawer',
-                      'x-decorator': 'Form',
-                      'x-decorator-props': {
-                        useValues: useRoleResourceValues,
+                      title: '{{t("Configure")}}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        type: 'primary',
                       },
-                      title: '{{t("Configure permission")}}',
                       properties: {
-                        usingActionsConfig: {
-                          title: '{{t("Permission policy")}}',
-                          'x-component': 'Radio.Group',
-                          'x-decorator': 'FormItem',
-                          default: false,
-                          enum: [
-                            { value: false, label: '{{t("General")}}' },
-                            { value: true, label: '{{t("Individual")}}' },
-                          ],
-                          'x-reactions': {
-                            target: 'actions',
-                            fulfill: {
-                              state: {
-                                hidden: '{{!$self.value}}',
-                              },
-                            },
-                          },
-                        },
-                        actions: {
-                          'x-component': 'RolesResourcesActions',
-                          'x-decorator': 'FormItem',
-                        },
-                        footer: {
+                        drawer: {
                           type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
+                          'x-component': 'Action.Drawer',
+                          'x-decorator': 'Form',
+                          'x-decorator-props': {
+                            useValues: useRoleResourceValues,
+                          },
+                          title: '{{t("Configure permission")}}',
                           properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
+                            usingActionsConfig: {
+                              title: '{{t("Permission policy")}}',
+                              'x-component': 'Radio.Group',
+                              'x-decorator': 'FormItem',
+                              default: false,
+                              enum: [
+                                { value: false, label: '{{t("General")}}' },
+                                { value: true, label: '{{t("Individual")}}' },
+                              ],
+                              'x-reactions': {
+                                target: 'actions',
+                                fulfill: {
+                                  state: {
+                                    hidden: '{{!$self.value}}',
+                                  },
+                                },
                               },
                             },
-                            submit: {
-                              title: '{{t("Submit")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: useSaveRoleResourceAction,
+                            actions: {
+                              'x-component': 'RolesResourcesActions',
+                              'x-decorator': 'FormItem',
+                            },
+                            footer: {
+                              type: 'void',
+                              'x-component': 'Action.Drawer.Footer',
+                              properties: {
+                                cancel: {
+                                  title: '{{t("Cancel")}}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    useAction: '{{ cm.useCancelAction }}',
+                                  },
+                                },
+                                submit: {
+                                  title: '{{t("Submit")}}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    type: 'primary',
+                                    useAction: useSaveRoleResourceAction,
+                                  },
+                                },
                               },
                             },
                           },

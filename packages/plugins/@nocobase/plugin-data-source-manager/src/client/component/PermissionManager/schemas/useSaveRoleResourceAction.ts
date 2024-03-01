@@ -1,6 +1,7 @@
 import { useForm } from '@formily/react';
+import { useContext } from 'react';
 import { useActionContext, useAPIClient, useRecord_deprecated, useResourceActionContext } from '@nocobase/client';
-import { useParams } from 'react-router-dom';
+import { PermissionContext } from '../PermisionProvider';
 
 export const useSaveRoleResourceAction = () => {
   const form = useForm();
@@ -8,19 +9,19 @@ export const useSaveRoleResourceAction = () => {
   const record = useRecord_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { name } = useParams();
+  const { currentDataSource } = useContext(PermissionContext);
   return {
     async run() {
       await api.resource('roles.dataSourceResources', record.roleName)[record.exists ? 'update' : 'create']({
         filterByTk: record.name,
         filter: {
-          dataSourceKey: name || 'main',
+          dataSourceKey: currentDataSource.key,
           name: record.name,
         },
         values: {
           ...form.values,
           name: record.name,
-          dataSourceKey: name || 'main',
+          dataSourceKey: currentDataSource.key,
         },
       });
       ctx.setVisible(false);

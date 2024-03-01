@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useContext } from 'react';
 import { useActionContext, useRecord_deprecated, useRequest } from '@nocobase/client';
-import { useParams } from 'react-router-dom';
+import { PermissionContext } from '../PermisionProvider';
 
 export const useRoleResourceValues = (options) => {
   const record = useRecord_deprecated();
   const { visible } = useActionContext();
-  const { name } = useParams();
+  const { currentDataSource } = useContext(PermissionContext);
 
   const result = useRequest(
     {
@@ -16,7 +16,7 @@ export const useRoleResourceValues = (options) => {
         appends: ['actions', 'actions.scope'],
         filterByTk: record.name,
         filter: {
-          dataSourceKey: name || 'main',
+          dataSourceKey: currentDataSource.key,
           name: record.name,
         },
       },

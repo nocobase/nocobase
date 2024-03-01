@@ -4,7 +4,7 @@ import { Checkbox, Select, Table, Tag } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '@nocobase/client';
-import { useAvailableActions } from './RoleTable';
+import { useAvailableActions } from './DataSourceTable';
 
 const toScopes = (value) => {
   if (!value) {

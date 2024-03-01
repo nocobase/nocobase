@@ -1,7 +1,6 @@
 import { createForm } from '@formily/core';
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { FormProvider, SchemaComponent } from '@nocobase/client';
-import { useParams } from 'react-router-dom';
+import { FormProvider, SchemaComponent, useRecord_deprecated } from '@nocobase/client';
 import { getScopesSchema } from './schemas/scopes';
 
 const RolesResourcesScopesSelectedRowKeysContext = createContext(null);
@@ -29,8 +28,9 @@ export const ScopeSelect = (props) => {
       }),
     [],
   );
-  const { name } = useParams();
-  const scopesSchema = getScopesSchema(name);
+
+  const { key } = useRecord_deprecated();
+  const scopesSchema = getScopesSchema(key);
   return (
     <FormProvider form={form}>
       <SchemaComponent

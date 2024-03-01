@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useMemo } from 'react';
 import { Tabs } from 'antd';
+import { useApp } from '@nocobase/client';
 import { useACLTranslation } from '../locale';
 import { GeneralPermissions } from './GeneralPermissions';
 import { AvailableActionsProvider } from './AvailableActions';
@@ -18,6 +19,9 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
   const [activeKey, setActiveKey] = React.useState('general');
   const { role } = useContext(RolesManagerContext);
   const pm = role?.snippets?.includes('pm.*');
+  const app = useApp();
+  const DataSourcePermissionManager = app.getComponent('DataSourcePermissionManager');
+
   const items = useMemo(
     () => [
       {
@@ -53,6 +57,19 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
             },
           ]
         : []),
+      DataSourcePermissionManager
+        ? {
+            key: 'dataSource',
+            label: t('Data source permissions'),
+            children: (
+              <TabLayout>
+                <MenuItemsProvider>
+                  <DataSourcePermissionManager role={role} active={activeKey === 'dataSource' && active} />
+                </MenuItemsProvider>
+              </TabLayout>
+            ),
+          }
+        : {},
     ],
     [pm, activeKey, active, t],
   );
@@ -60,7 +77,7 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
   useEffect(() => {
     setActiveKey('general');
   }, [role?.name]);
-
+  console.log(items);
   return (
     <AvailableActionsProvider>
       <Tabs type="card" activeKey={activeKey} onChange={(key) => setActiveKey(key)} items={items} />

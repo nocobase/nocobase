@@ -1,8 +1,8 @@
 import { message } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useRecord_deprecated } from '@nocobase/client';
+import { useAPIClient, useRecord_deprecated, RecordContext_deprecated, SchemaComponentOptions } from '@nocobase/client';
+import { CurrentRolesContext } from './';
 
 export const SettingCenterPermissionProvider = (props) => {
   const { currentRecord } = useContext(PermissionContext);
@@ -18,23 +18,24 @@ export const PermissionProvider = (props) => {
   const api = useAPIClient();
   const record = useRecord_deprecated();
   const { t } = useTranslation();
-  const { snippets } = record;
-  const { name: dataSourceKey } = useParams();
+  const role = useContext(CurrentRolesContext);
+  const { snippets } = role;
   snippets?.forEach((key) => {
-    record[key] = true;
+    role[key] = true;
   });
-  const [currentRecord, setCurrentRecord] = useState(record);
+  const [currentRecord, setCurrentRecord] = useState(role);
 
   return (
     <PermissionContext.Provider
       value={{
+        currentDataSource: record,
         currentRecord,
         update: async (field, form) => {
           await api.request({
-            url: `dataSources/${dataSourceKey || 'main'}/roles:update`,
+            url: `dataSources/${record.key}/roles:update`,
             data: form.values,
             method: 'post',
-            params: { filterByTk: record.name },
+            params: { filterByTk: role.name },
           });
           setCurrentRecord({ ...currentRecord, ...form.values });
           message.success(t('Saved successfully'));
@@ -43,5 +44,15 @@ export const PermissionProvider = (props) => {
     >
       {props.children}
     </PermissionContext.Provider>
+  );
+};
+
+export const RoleRecordProvider = (props) => {
+  const role = useContext(CurrentRolesContext);
+  const record = useRecord_deprecated();
+  return (
+    <RecordContext_deprecated.Provider value={{ ...role }}>
+      <SchemaComponentOptions scope={{ dataSourceKey: record.key }}>{props.children}</SchemaComponentOptions>
+    </RecordContext_deprecated.Provider>
   );
 };

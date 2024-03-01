@@ -1,14 +1,13 @@
 import { onFieldChange } from '@formily/core';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
-import { useAPIClient, useRequest, SchemaComponent } from '@nocobase/client';
+import { useAPIClient, useRequest, SchemaComponent, useRecord_deprecated } from '@nocobase/client';
 import { PermissionContext } from './PermisionProvider';
 
 export const RoleConfigure = () => {
   const { update, currentRecord } = useContext(PermissionContext);
   const { t } = useTranslation();
-  const { name: dataSourceKey } = useParams();
+  const { key } = useRecord_deprecated();
 
   return (
     <SchemaComponent
@@ -22,7 +21,7 @@ export const RoleConfigure = () => {
             return useRequest(
               () =>
                 api
-                  .resource(`dataSources/${dataSourceKey || 'main'}/roles`)
+                  .resource(`dataSources/${key}/roles`)
                   .get({
                     filterByTk: currentRecord.name,
                   })
