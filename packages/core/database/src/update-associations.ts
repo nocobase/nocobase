@@ -292,9 +292,9 @@ export async function updateSingleAssociation(
     throw new Error(`The source key ${association.sourceKeyAttribute} is not set in ${model.constructor.name}`);
   }
 
-  const checkBelongsToTargetKey = () => {
+  const checkBelongsToForeignKeyValue = () => {
     // @ts-ignore
-    if (association.associationType === 'BelongsTo' && !model.get(association.targetKey)) {
+    if (association.associationType === 'BelongsTo' && !model.get(association.foreignKey)) {
       throw new Error(
         // @ts-ignore
         `The target key ${association.targetKey} is not set in ${association.target.name}`,
@@ -370,7 +370,8 @@ export async function updateSingleAssociation(
     model.setDataValue(association.foreignKey, instance[dataKey]);
   }
 
-  checkBelongsToTargetKey();
+  // must have foreign key value
+  checkBelongsToForeignKeyValue();
 }
 
 /**
