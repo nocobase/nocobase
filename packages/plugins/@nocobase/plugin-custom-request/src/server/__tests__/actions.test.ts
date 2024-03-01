@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
 import Database, { Repository } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('actions', () => {
   let app: MockServer;
@@ -13,7 +13,7 @@ describe('actions', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'custom-request'],
+      plugins: ['users', 'auth', 'acl', 'custom-request', 'data-source-manager'],
     });
     db = app.db;
     repo = db.getRepository('customRequests');
