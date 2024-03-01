@@ -12,6 +12,9 @@ BlockRequestContext.displayName = 'BlockRequestContext';
 function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
+  if (params.filterByTk === undefined) {
+    delete params.filterByTk;
+  }
   const request = useRequest<T>(
     requestService
       ? requestService
@@ -21,9 +24,6 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
             throw new Error(
               `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
             );
-          }
-          if (params.filterByTk === undefined) {
-            delete params.filterByTk;
           }
           return resource[action]({ ...params, ...customParams }).then((res) => res.data);
         },
