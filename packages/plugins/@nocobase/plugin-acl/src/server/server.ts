@@ -239,6 +239,15 @@ export class PluginACL extends Plugin {
       await this.writeRoleToACL(roleModel, {
         withOutResources: true,
       });
+
+      await this.app.db.getRepository('dataSourcesRoles').updateOrCreate({
+        values: {
+          roleName: roleModel.get('name'),
+          dataSourceKey: 'main',
+          strategy: roleModel.get('strategy'),
+        },
+        filterKeys: ['roleName', 'dataSourceKey'],
+      });
     });
 
     this.app.db.on('roles.afterSaveWithAssociations', async (model, options) => {
