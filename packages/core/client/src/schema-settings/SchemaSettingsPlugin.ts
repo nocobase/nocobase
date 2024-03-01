@@ -1,6 +1,6 @@
 import { Plugin } from '../application/Plugin';
-import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSettings/filterCollapseBlockSettings';
-import { filterCollapseItemFieldSettings } from '../modules/collapse-filter/schemaSettings/filterCollapseItemFieldSettings';
+import { filterCollapseBlockSettings } from '../modules/blocks/filter-blocks/collapse/filterCollapseBlockSettings';
+import { filterCollapseItemFieldSettings } from '../modules/blocks/filter-blocks/collapse/filterCollapseItemFieldSettings';
 import { multiDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-multi/multiDataDetailsBlockSettings';
 import { singleDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-single/singleDataDetailsBlockSettings';
 import {

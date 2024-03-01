@@ -14,8 +14,8 @@ import { useSchemaInitializerRender } from '../../../application';
 import { Plugin } from '../../../application/Plugin';
 import {
   associationFilterFilterBlockInitializer,
-  associationFilterInitializers,
-} from './AssociationFilter.FilterBlockInitializer';
+  filterCollapseItemInitializer,
+} from '../../../modules/blocks/filter-blocks/collapse/filterCollapseItemInitializer';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
 
 export const AssociationFilter = (props) => {
@@ -104,7 +104,7 @@ AssociationFilter.useAssociationField = () => {
 export class AssociationFilterPlugin extends Plugin {
   async load() {
     this.app.schemaInitializerManager.add(associationFilterFilterBlockInitializer);
-    this.app.schemaInitializerManager.add(associationFilterInitializers);
+    this.app.schemaInitializerManager.add(filterCollapseItemInitializer);
     this.app.schemaInitializerManager.add(associationFilterInitializer);
   }
 }

@@ -1,13 +1,13 @@
 import { useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCollection_deprecated } from '../../../collection-manager';
-import { FilterBlockType } from '../../../filter-provider';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useCollection_deprecated } from '../../../../collection-manager';
+import { FilterBlockType } from '../../../../filter-provider';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsTemplate,
-} from '../../../schema-settings';
+} from '../../../../schema-settings';
 
 export const filterCollapseBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterCollapse',

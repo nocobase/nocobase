@@ -40,6 +40,7 @@ import { gridCardItemActionInitializers } from '../modules/blocks/data-blocks/gr
 import { FilterFormBlockInitializer } from '../modules/blocks/filter-blocks/form/FilterFormBlockInitializer';
 import { filterFormActionInitializers } from '../modules/blocks/filter-blocks/form/FilterFormActionInitializers';
 import { filterFormItemInitializers } from '../modules/blocks/filter-blocks/form/filterFormItemInitializers';
+import { FilterCollapseBlockInitializer } from '../modules/blocks/filter-blocks/collapse/FilterCollapseBlockInitializer';
 export * from './buttons';
 export * from './items';
 export {
@@ -75,6 +76,7 @@ export class SchemaInitializerPlugin extends Plugin {
       ListBlockInitializer,
       GridCardBlockInitializer,
       FilterFormBlockInitializer,
+      FilterCollapseBlockInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);

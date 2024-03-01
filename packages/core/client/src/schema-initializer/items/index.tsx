@@ -19,7 +19,6 @@ export * from './DeleteEventActionInitializer';
 export * from './DestroyActionInitializer';
 export * from './ExpandableActionInitializer';
 export * from './FilterActionInitializer';
-export * from './FilterCollapseBlockInitializer';
 export * from './G2PlotInitializer';
 export * from './InitializerWithSwitch';
 export * from './MarkdownBlockInitializer';

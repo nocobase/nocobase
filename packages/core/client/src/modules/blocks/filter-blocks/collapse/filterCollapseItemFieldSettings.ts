@@ -1,12 +1,12 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../block-provider';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
-import { useCompile, useDesignable } from '../../../schema-component';
-import { SchemaSettingsDefaultSortingRules } from '../../../schema-settings';
-import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext } from '../../../../block-provider';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
+import { useCompile, useDesignable } from '../../../../schema-component';
+import { SchemaSettingsDefaultSortingRules } from '../../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 
 export const filterCollapseItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterCollapseItem',

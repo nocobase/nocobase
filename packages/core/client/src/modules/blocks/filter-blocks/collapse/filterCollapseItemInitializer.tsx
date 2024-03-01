@@ -1,8 +1,7 @@
-import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
-import { useOptionalFieldList } from '../../../block-provider/hooks';
-import { useCollectionManager_deprecated } from '../../../collection-manager';
-import { useCollectionManager } from '../../../data-source';
-import { useAssociatedFields } from '../../../filter-provider/utils';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { useOptionalFieldList } from '../../../../block-provider/hooks';
+import { useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useAssociatedFields } from '../../../../filter-provider/utils';
 
 /**
  * @deprecated
@@ -81,7 +80,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
   ],
 });
 
-export const associationFilterInitializers = new SchemaInitializer({
+export const filterCollapseItemInitializer = new SchemaInitializer({
   // name: 'AssociationFilter.FilterBlockInitializer',
   name: 'AssociationFilterInitializers',
   style: { marginTop: 16 },
