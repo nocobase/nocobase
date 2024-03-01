@@ -1,5 +1,3 @@
-import { faker } from '@faker-js/faker';
-
 export const sort = {
   options: () => ({
     type: 'sort',
