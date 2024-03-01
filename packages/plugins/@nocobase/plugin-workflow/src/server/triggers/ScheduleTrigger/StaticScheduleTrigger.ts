@@ -3,6 +3,8 @@ import parser from 'cron-parser';
 import type Plugin from '../../Plugin';
 import { SCHEDULE_MODE, parseDateWithoutMs } from './utils';
 
+const MAX_SAFE_INTERVAL = 2147483647;
+
 export default class StaticScheduleTrigger {
   private timers: Map<string, NodeJS.Timeout | null> = new Map();
 
@@ -80,7 +82,17 @@ export default class StaticScheduleTrigger {
     if (toggle) {
       if (!this.timers.has(key)) {
         const interval = Math.max(nextTime - Date.now(), 0);
-        this.timers.set(key, setTimeout(this.trigger.bind(this, workflow, nextTime), interval));
+        if (interval > MAX_SAFE_INTERVAL) {
+          this.timers.set(
+            key,
+            setTimeout(() => {
+              this.timers.delete(key);
+              this.schedule(workflow, nextTime);
+            }, MAX_SAFE_INTERVAL),
+          );
+        } else {
+          this.timers.set(key, setTimeout(this.trigger.bind(this, workflow, nextTime), interval));
+        }
       }
     } else {
       const timer = this.timers.get(key);
