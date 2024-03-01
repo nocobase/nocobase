@@ -9,7 +9,7 @@ describe('createdBy/updatedBy', () => {
 
   beforeEach(async () => {
     api = await createMockServer({
-      plugins: ['acl', 'users', 'collection-manager', 'error-handler'],
+      plugins: ['acl', 'users', 'collection-manager', 'error-handler', 'data-source-manager'],
     });
     db = api.db;
 

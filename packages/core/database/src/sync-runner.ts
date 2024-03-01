@@ -94,6 +94,11 @@ export class SyncRunner {
         })
         .sort();
 
+      if (columnsWillBePrimaryKey.length == 0) {
+        // skip if no primary key
+        return;
+      }
+
       if (JSON.stringify(columnsBePrimaryKey) != JSON.stringify(columnsWillBePrimaryKey)) {
         await this.queryInterface.addConstraint(this.tableName, {
           type: 'primary key',
