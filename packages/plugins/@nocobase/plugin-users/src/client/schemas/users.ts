@@ -198,12 +198,16 @@ export const usersSchema: ISchema = {
                       'x-decorator': 'FormItem',
                     },
                     email: {
-                      'x-component': 'CollectionField',
+                      title: '{{t("Email")}}',
+                      'x-component': 'Input',
+                      'x-validator': 'email',
                       'x-decorator': 'FormItem',
                       required: false,
                     },
                     phone: {
-                      'x-component': 'CollectionField',
+                      title: '{{t("Phone")}}',
+                      'x-component': 'Input',
+                      'x-validator': 'phone',
                       'x-decorator': 'FormItem',
                       required: false,
                     },
@@ -318,7 +322,7 @@ export const usersSchema: ISchema = {
                   properties: {
                     update: {
                       type: 'void',
-                      title: '{{t("Edit")}}',
+                      title: '{{t("Edit profile")}}',
                       'x-decorator': 'ACLActionProvider',
                       'x-acl-action': 'users:update',
                       'x-component': 'Action.Link',
@@ -346,7 +350,7 @@ export const usersSchema: ISchema = {
                               return result;
                             },
                           },
-                          title: '{{t("Edit user")}}',
+                          title: '{{t("Edit profile")}}',
                           properties: {
                             nickname: {
                               'x-component': 'CollectionField',
@@ -357,12 +361,16 @@ export const usersSchema: ISchema = {
                               'x-decorator': 'FormItem',
                             },
                             email: {
-                              'x-component': 'CollectionField',
+                              title: '{{t("Email")}}',
+                              'x-component': 'Input',
+                              'x-validator': 'email',
                               'x-decorator': 'FormItem',
                               required: false,
                             },
                             phone: {
-                              'x-component': 'CollectionField',
+                              title: '{{t("Phone")}}',
+                              'x-component': 'Input',
+                              'x-validator': 'phone',
                               'x-decorator': 'FormItem',
                               required: false,
                             },
@@ -370,6 +378,55 @@ export const usersSchema: ISchema = {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                               'x-collection-field': 'users.roles',
+                            },
+                            footer: {
+                              type: 'void',
+                              'x-component': 'Action.Drawer.Footer',
+                              properties: {
+                                cancel: {
+                                  title: '{{t("Cancel")}}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    useAction: '{{ cm.useCancelAction }}',
+                                  },
+                                },
+                                submit: {
+                                  title: '{{t("Submit")}}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    type: 'primary',
+                                    useAction: '{{ cm.useUpdateAction }}',
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    changePassword: {
+                      type: 'void',
+                      title: '{{t("Change password")}}',
+                      'x-decorator': 'ACLActionProvider',
+                      'x-acl-action': 'users:update',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        type: 'primary',
+                      },
+                      properties: {
+                        drawer: {
+                          type: 'void',
+                          'x-component': 'Action.Drawer',
+                          'x-decorator': 'Form',
+                          title: '{{t("Change password")}}',
+                          properties: {
+                            password: {
+                              'x-component': 'CollectionField',
+                              'x-component-props': {
+                                component: 'PasswordField',
+                              },
+                              'x-decorator': 'FormItem',
+                              required: true,
                             },
                             footer: {
                               type: 'void',

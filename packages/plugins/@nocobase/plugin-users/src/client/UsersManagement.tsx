@@ -5,12 +5,17 @@ import { Card } from 'antd';
 import { UserRolesField } from './UserRolesField';
 import { useUsersTranslation } from './locale';
 import { useFilterActionProps } from './hooks';
+import { PasswordField } from './PasswordField';
 
 export const UsersManagement: React.FC = () => {
   const { t } = useUsersTranslation();
   return (
     <Card>
-      <SchemaComponent schema={usersSchema} scope={{ t, useFilterActionProps }} components={{ UserRolesField }} />
+      <SchemaComponent
+        schema={usersSchema}
+        scope={{ t, useFilterActionProps }}
+        components={{ UserRolesField, PasswordField }}
+      />
     </Card>
   );
 };
