@@ -15,5 +15,8 @@ export const sort = {
       'x-validator': 'integer',
     },
   }),
-  mock: () => faker.number.int({ max: 10000 }),
+  mock: () => {
+    // 返回一个 undefined，由后端自动生成
+    return;
+  },
 };
