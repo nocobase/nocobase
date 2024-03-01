@@ -446,7 +446,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.pm.load(options);
 
-    if (options.sync) {
+    if (options?.sync) {
       await this.db.sync();
     }
 
