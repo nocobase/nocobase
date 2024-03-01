@@ -798,5 +798,6 @@
   "Specific properties": "Specific properties",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Used for drag and drop sorting scenarios, supporting grouping sorting",
   "Group sorting": "Group sorting",
-  "When a field is selected as a group, it will be grouped first and then sorted": "When a field is selected as a group, it will be grouped first and then sorted"
+  "When a field is selected as a group, it will be grouped first and then sorted": "When a field is selected as a group, it will be grouped first and then sorted",
+  "Departments": "Departments"
 }
