@@ -397,20 +397,23 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.on('acl:writeResources', async ({ roleName }) => {
+    this.app.on('acl:writeResources', async ({ roleName, transaction }) => {
       const dataSource = this.app.dataSourceManager.dataSources.get('main');
       const pluginACL: any = this.app.pm.get('acl');
+
       const dataSourceRole = await this.app.db.getRepository('dataSourcesRoles').findOne({
         filter: {
           dataSourceKey: 'main',
           roleName,
         },
+        transaction,
       });
 
       await dataSourceRole.writeToAcl({
         grantHelper: pluginACL.grantHelper,
         associationFieldsActions: pluginACL.associationFieldsActions,
         acl: dataSource.acl,
+        transaction,
       });
     });
 

@@ -257,6 +257,7 @@ export class PluginACL extends Plugin {
         withOutResources: true,
       });
 
+      // this will update or create a record in dataSourcesRoles
       await this.app.db.getRepository('dataSourcesRoles').updateOrCreate({
         values: {
           roleName: model.get('name'),
@@ -264,6 +265,11 @@ export class PluginACL extends Plugin {
           strategy: model.get('strategy'),
         },
         filterKeys: ['roleName', 'dataSourceKey'],
+        transaction,
+      });
+
+      await this.app.emitAsync('acl:writeResources', {
+        roleName: model.get('name'),
         transaction,
       });
 
