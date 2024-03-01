@@ -1,14 +1,12 @@
 import { uid } from '@formily/shared';
 import classNames from 'classnames';
-import React, { ReactNode, memo } from 'react';
+import React, { ReactNode, memo, useMemo } from 'react';
 import { Icon } from '../../../icon';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
 import { useAriaAttributeOfMenuItem, useSchemaInitializerMenuItems } from '../hooks';
 import { SchemaInitializerMenu } from './SchemaInitializerSubMenu';
 import { useSchemaInitializerStyles } from './style';
-import { MenuProps } from 'antd';
-import { useWhyDidYouUpdate } from 'ahooks';
 
 export interface SchemaInitializerItemProps {
   style?: React.CSSProperties;
@@ -30,25 +28,26 @@ export const SchemaInitializerItem = memo(
     const { componentCls, hashId } = useSchemaInitializerStyles();
     const { attribute } = useAriaAttributeOfMenuItem();
 
+    const menuItems = useMemo(() => {
+      if (!(items && items.length > 0)) return undefined;
+      return [
+        {
+          key: name,
+          style: style,
+          className: className,
+          label: children || compile(title),
+          onClick: (info) => {
+            if (info.key !== name) return;
+            onClick?.({ ...info, item: props });
+          },
+          icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
+          children: childrenItems,
+        },
+      ];
+    }, [name, style, className, children, title, onClick, icon, childrenItems]);
+
     if (items && items.length > 0) {
-      return (
-        <SchemaInitializerMenu
-          items={[
-            {
-              key: name,
-              style: style,
-              className: className,
-              label: children || compile(title),
-              onClick: (info) => {
-                if (info.key !== name) return;
-                onClick?.({ ...info, item: props });
-              },
-              icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-              children: childrenItems,
-            },
-          ]}
-        ></SchemaInitializerMenu>
-      );
+      return <SchemaInitializerMenu items={menuItems}></SchemaInitializerMenu>;
     }
 
     return (

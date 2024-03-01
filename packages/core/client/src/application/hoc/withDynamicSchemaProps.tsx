@@ -39,7 +39,11 @@ export function withDynamicSchemaProps<T = any>(Component: ComponentType<T>, opt
     }, [scope, useComponentPropsStr]);
     const schemaProps = useSchemaProps(props);
 
-    return <Component {...merge(omit(schemaProps, 'children'), omit(props, 'children'))}>{props.children}</Component>;
+    const memoProps = useMemo(() => {
+      return merge(omit(schemaProps, 'children'), omit(props, 'children'));
+    }, [schemaProps, props]);
+
+    return <Component {...memoProps}>{props.children}</Component>;
   };
 
   Component.displayName = displayName;

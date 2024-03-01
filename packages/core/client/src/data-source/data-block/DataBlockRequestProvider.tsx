@@ -1,5 +1,5 @@
 import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
-import React, { FC, createContext, useContext } from 'react';
+import React, { FC, createContext, useContext, useMemo } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, Record } from '../record';
@@ -12,9 +12,6 @@ BlockRequestContext.displayName = 'BlockRequestContext';
 function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
-  if (params.filterByTk === undefined) {
-    delete params.filterByTk;
-  }
   const request = useRequest<T>(
     requestService
       ? requestService
@@ -24,6 +21,9 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
             throw new Error(
               `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
             );
+          }
+          if (params.filterByTk === undefined) {
+            delete params.filterByTk;
           }
           return resource[action]({ ...params, ...customParams }).then((res) => res.data);
         },
@@ -103,22 +103,22 @@ export const BlockRequestProvider: FC = ({ children }) => {
     parentRecord,
   });
 
+  const memoizedParentRecord = useMemo(() => {
+    return parentRequest.data?.data && new Record({ isNew: false, data: parentRequest.data?.data });
+  }, [parentRequest.data?.data]);
+
   return (
     <BlockRequestContext.Provider value={currentRequest}>
       {action !== 'list' ? (
         <RecordProvider
           isNew={action === undefined}
           record={currentRequest.data?.data}
-          parentRecord={parentRequest.data?.data && new Record({ isNew: false, data: parentRequest.data?.data })}
+          parentRecord={memoizedParentRecord}
         >
           {children}
         </RecordProvider>
       ) : (
-        <RecordProvider
-          isNew={false}
-          record={null}
-          parentRecord={parentRequest.data?.data && new Record({ isNew: false, data: parentRequest.data?.data })}
-        >
+        <RecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord}>
           {children}
         </RecordProvider>
       )}

@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, createContext, useContext } from 'react';
+import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { useFieldSchema, type SchemaKey } from '@formily/react';
 import type { CollectionFieldOptions } from '../collection';
@@ -20,14 +20,20 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
   const collectionManager = useCollectionManager();
+
+  const value = useMemo(() => {
+    if (!collection || allowNull) return null;
+    const field = fieldSchema?.['x-component-props']?.['field'];
+    return (
+      collectionManager.getCollectionField(fieldSchema?.['x-collection-field']) ||
+      field ||
+      collection.getField(field?.name || name)
+    );
+  }, [collection, fieldSchema, name, collectionManager]);
+
   if (!collection || allowNull) {
     return <>{children}</>;
   }
-  const field = fieldSchema?.['x-component-props']?.['field'];
-  const value =
-    collectionManager.getCollectionField(fieldSchema?.['x-collection-field']) ||
-    field ||
-    collection.getField(field?.name || name);
 
   if (!value) {
     return <CollectionDeletedPlaceholder type="Field" name={name} />;
