@@ -1,7 +1,8 @@
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
-import { SchemaSettings, useApp } from '../../../../application';
+import { useApp } from '../../../../application';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
