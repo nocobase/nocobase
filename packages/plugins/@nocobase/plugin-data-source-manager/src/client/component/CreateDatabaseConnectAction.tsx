@@ -99,8 +99,8 @@ export const CreateDatabaseConnectAction = () => {
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                         description={
                           <>
-                            {t('No external data source plugin installed')}
-                            <br /> <a>{t('View more')}</a>
+                            {t('No external data source plugin installed', { ns: NAMESPACE })}
+                            <br /> <a>{t('View more', { ns: NAMESPACE })}</a>
                           </>
                         }
                       />

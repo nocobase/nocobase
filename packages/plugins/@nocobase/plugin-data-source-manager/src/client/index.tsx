@@ -1,26 +1,26 @@
 import { Plugin } from '@nocobase/client';
-import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
-import { NAMESPACE } from './locale';
-import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionManager';
-import { CollectionManagerPage } from './component/CollectionsManager';
-import { PermissionManager } from './component/PermissionManager';
-import { BreadcumbTitle } from './component/BreadcumbTitle';
-import { MainDataSourceManager } from './component/MainDataSourceManager';
 import React from 'react';
+import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
 import { ThirdDataSource } from './ThridDataSource';
+import { BreadcumbTitle } from './component/BreadcumbTitle';
+import { CollectionManagerPage } from './component/CollectionsManager';
+import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionManager';
+import { MainDataSourceManager } from './component/MainDataSourceManager';
+import { PermissionManager } from './component/PermissionManager';
+import { NAMESPACE } from './locale';
 
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();
   async load() {
     this.app.use(DatabaseConnectionProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Data source manager", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       icon: 'ClusterOutlined',
       showTabs: false,
       aclSnippet: 'pm.database-connections.manager',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.list`, {
-      title: `{{t("Data source manager", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       Component: DatabaseConnectionManagerPane,
       sort: 1,
     });
