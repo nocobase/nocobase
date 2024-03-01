@@ -41,6 +41,8 @@ import { FilterFormBlockInitializer } from '../modules/blocks/filter-blocks/form
 import { filterFormActionInitializers } from '../modules/blocks/filter-blocks/form/FilterFormActionInitializers';
 import { filterFormItemInitializers } from '../modules/blocks/filter-blocks/form/filterFormItemInitializers';
 import { FilterCollapseBlockInitializer } from '../modules/blocks/filter-blocks/collapse/FilterCollapseBlockInitializer';
+import { MarkdownBlockInitializer } from '../modules/blocks/other-blocks/markdown/MarkdownBlockInitializer';
+import { MarkdownFormItemInitializer } from '../modules/blocks/other-blocks/markdown/MarkdownFormItemInitializer';
 export * from './buttons';
 export * from './items';
 export {
@@ -77,6 +79,8 @@ export class SchemaInitializerPlugin extends Plugin {
       GridCardBlockInitializer,
       FilterFormBlockInitializer,
       FilterCollapseBlockInitializer,
+      MarkdownBlockInitializer,
+      MarkdownFormItemInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);

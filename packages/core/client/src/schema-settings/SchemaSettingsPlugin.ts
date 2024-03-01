@@ -29,7 +29,7 @@ import { filterFormBlockSettings } from '../modules/blocks/filter-blocks/form/fi
 import { filterFormItemFieldSettings } from '../modules/blocks/filter-blocks/form/filterFormItemFieldSettings';
 import { gridCardBlockSettings } from '../modules/blocks/data-blocks/grid-card/gridCardBlockSettings';
 import { listBlockSettings } from '../modules/blocks/data-blocks/list/listBlockSettings';
-import { markdownBlockSettings } from '../modules/markdown/schemaSettings/markdownBlockSettings';
+import { markdownBlockSettings } from '../modules/blocks/other-blocks/markdown/markdownBlockSettings';
 import { dataSelectorBlockSettings } from '../modules/blocks/data-blocks/table-selector/blockSettings:tableSelector';
 import { addNewActionSettings } from '../modules/table/schemaSettings/addNewActionSettings';
 import { bulkDeleteActionSettings } from '../modules/table/schemaSettings/bulkDeleteActionSettings';
