@@ -3,7 +3,7 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { useParentRecord } from '../data-source/record/RecordProvider';
+import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider_deprecated } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
@@ -21,7 +21,7 @@ const InternalDetailsBlockProvider = (props) => {
     [],
   );
   const { resource, service } = useBlockRequestContext();
-  const parentRecord = useParentRecord();
+  const parentRecord = useCollectionParentRecord();
   const currentRecord = service?.data?.data?.[0] || {};
   const detailsBLockValue = useMemo(() => {
     return {

@@ -19,7 +19,7 @@ import {
   RecordIndexProvider,
   RecordProvider_deprecated,
   useCollection_deprecated,
-  useParentRecordData,
+  useCollectionParentRecordData,
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
@@ -29,7 +29,7 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { isNewRecord } from '../../../data-source/record/isNewRecord';
+import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -43,7 +43,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {

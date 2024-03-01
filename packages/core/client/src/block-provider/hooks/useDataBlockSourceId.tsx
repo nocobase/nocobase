@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection, useCollectionManager, useParentRecordData, useRecordData } from '../..';
+import { useCollection, useCollectionManager, useCollectionParentRecordData, useCollectionRecordData } from '../..';
 
 /**
  * 注意：这里有一个需要更改 schema 才能解决的问题，就是在获取 sourceId 的时候无法确定（在关系字段和当前表同表时）
@@ -9,8 +9,8 @@ import { useCollection, useCollectionManager, useParentRecordData, useRecordData
  * @returns
  */
 export const useDataBlockSourceId = ({ association }: { association: string }) => {
-  const recordData = useRecordData();
-  const parentRecordData = useParentRecordData();
+  const recordData = useCollectionRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   const cm = useCollectionManager();
   const collectionOutsideBlock = useCollection();
 

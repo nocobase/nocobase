@@ -6,7 +6,7 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useParentRecordData } from '../../data-source';
+import { useCollectionParentRecordData } from '../../data-source';
 import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useCompile } from '../../schema-component';
 import { useCollectionManager_deprecated } from '../hooks';
@@ -70,7 +70,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 export const ViewCollectionField = (props) => {
   const record = useRecord_deprecated();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   return <ViewFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 

@@ -8,7 +8,7 @@ import {
   useCollection_deprecated,
   useCompile,
   useFilterAPI,
-  useParentRecordData,
+  useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -360,7 +360,7 @@ export const GoogleMapsBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const schema: Schema = useMemo(
     () =>

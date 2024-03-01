@@ -6,7 +6,7 @@ import {
   RecordProvider_deprecated,
   CollectionProvider,
   FormBlockContext,
-  RecordProvider,
+  CollectionRecordProvider,
   fetchTemplateData,
   useAPIClient,
   useActionContext,
@@ -15,9 +15,9 @@ import {
   useCollection_deprecated,
   useDesignable,
   useFormBlockContext,
-  useParentRecordData,
+  useCollectionParentRecordData,
   useRecord_deprecated,
-  useRecord,
+  useCollectionRecord,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
 import React, { useState } from 'react';
@@ -77,7 +77,7 @@ export const DuplicateAction = observer(
     const { service, __parent, block } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord_deprecated();
-    const parentRecordData = useParentRecordData();
+    const parentRecordData = useCollectionParentRecordData();
     const { id, __collection } = record;
     const ctx = useActionContext();
     const { name } = useCollection_deprecated();

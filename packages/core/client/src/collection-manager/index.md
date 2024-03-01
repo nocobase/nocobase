@@ -138,7 +138,7 @@ const { name, fields, getField, findField, resource } = useCollection();
 const { name, uiSchema, resource } = useCollectionField();
 ```
 
-resource 需要与 `<RecordProvider/>` 搭配使用，用于提供当前数据表行记录的上下文。如：
+resource 需要与 `<CollectionRecordProvider/>` 搭配使用，用于提供当前数据表行记录的上下文。如：
 
 <code src="./demos/demo3.tsx"></code>
 <code src="./demos/demo4.tsx"></code>

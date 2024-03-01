@@ -5,13 +5,13 @@ import React from 'react';
 import { css, cx } from '@emotion/css';
 import { useDesignable } from '../../hooks';
 
-import { useParentRecordData } from '../../../data-source/record/RecordProvider';
+import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider_deprecated } from '../../../record-provider';
 
 export const ListItem = (props) => {
   const field = useField<ObjectField>();
   const { designable } = useDesignable();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   return (
     <div
       className={cx(classnames(props.className), [

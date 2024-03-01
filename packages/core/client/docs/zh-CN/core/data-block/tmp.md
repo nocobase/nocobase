@@ -1094,11 +1094,11 @@ function useTableColumns() {
 +       key: 'actions',
 +       render: (value, record) => {
 +         return (
-+           <RecordProvider record={record}>
++           <CollectionRecordProvider record={record}>
 +             <Space>
 +               <ColumnView />
 +             </Space>
-+           </RecordProvider>
++           </CollectionRecordProvider>
 +         );
 +       },
 +     },
@@ -1121,7 +1121,7 @@ function useTableColumns() {
 
 const ColumnView = observer(
   () => {
-    const record = useRecord();
+    const record = useCollectionRecord();
     const [open, setOpen] = useState(false);
 
     const showDrawer = () => {

@@ -5,7 +5,7 @@ import {
   useCollectionManager,
   useCollectionManager_deprecated,
   useCompile,
-  useRecord,
+  useCollectionRecord,
   useRecord_deprecated,
 } from '@nocobase/client';
 import { Checkbox, Table, Tag } from 'antd';

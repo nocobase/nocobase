@@ -6,7 +6,7 @@ import {
   useAPIClient,
   useBlockRequestContext,
   useCurrentAppInfo,
-  useParentRecordData,
+  useCollectionParentRecordData,
   useTableBlockContext,
   useToken,
 } from '@nocobase/client';
@@ -40,7 +40,7 @@ export const DeleteEventContext = React.createContext({
 });
 const GanttRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.properties.detail;
   const close = useCallback(() => {

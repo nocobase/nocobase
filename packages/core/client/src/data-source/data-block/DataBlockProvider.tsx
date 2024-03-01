@@ -5,7 +5,7 @@ import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { withDynamicSchemaProps } from '../../application/hoc';
 import { Designable, useDesignable } from '../../schema-component';
 import { AssociationProvider, CollectionManagerProvider, CollectionOptions, CollectionProvider } from '../collection';
-import { Record } from '../record';
+import { CollectionRecord } from '../collection-record';
 import { BlockRequestProvider } from './DataBlockRequestProvider';
 import { DataBlockResourceProvider } from './DataBlockResourceProvider';
 
@@ -15,21 +15,21 @@ export interface AllDataBlockProps {
   dataSource?: string;
   sourceId?: string | number;
   filterByTk: string | number;
-  record: Record;
+  record: CollectionRecord;
   action?: 'list' | 'get';
   params?: {
     filterByTk?: string | number;
     [index: string]: any;
   };
-  parentRecord?: Record;
+  parentRecord?: CollectionRecord;
   requestService?: UseRequestService<any>;
   requestOptions?: UseRequestOptions;
   [index: string]: any;
 }
 
-type CollectionCreate = Pick<AllDataBlockProps, 'collection' | 'dataSource'>;
+type CollectionCreateProps = Pick<AllDataBlockProps, 'collection' | 'dataSource'>;
 
-interface CollectionGet
+interface CollectionGetProps
   extends Pick<
     AllDataBlockProps,
     'collection' | 'dataSource' | 'filterByTk' | 'params' | 'requestService' | 'requestOptions'
@@ -37,19 +37,19 @@ interface CollectionGet
   action: 'get';
 }
 
-interface CollectionList
+interface CollectionListProps
   extends Pick<AllDataBlockProps, 'collection' | 'dataSource' | 'params' | 'requestService' | 'requestOptions'> {
   action: 'list';
 }
 
-type CollectionRecord = Pick<
+type CollectionRecordProps = Pick<
   AllDataBlockProps,
   'collection' | 'dataSource' | 'record' | 'requestService' | 'requestOptions'
 >;
 
-type AssociationCreate = Pick<AllDataBlockProps, 'association' | 'dataSource' | 'sourceId' | 'parentRecord'>;
+type AssociationCreateProps = Pick<AllDataBlockProps, 'association' | 'dataSource' | 'sourceId' | 'parentRecord'>;
 
-interface AssociationGet
+interface AssociationGetProps
   extends Pick<
     AllDataBlockProps,
     | 'association'
@@ -64,7 +64,7 @@ interface AssociationGet
   action: 'get';
 }
 
-interface AssociationList
+interface AssociationListProps
   extends Pick<
     AllDataBlockProps,
     'association' | 'dataSource' | 'sourceId' | 'parentRecord' | 'params' | 'requestService' | 'requestOptions'
@@ -72,20 +72,20 @@ interface AssociationList
   action: 'list';
 }
 
-type AssociationRecord = Pick<
+type AssociationRecordProps = Pick<
   AllDataBlockProps,
   'association' | 'dataSource' | 'record' | 'parentRecord' | 'requestService' | 'requestOptions'
 >;
 
 type AllDataBlockType = {
-  CollectionCreate: CollectionCreate;
-  CollectionGet: CollectionGet;
-  CollectionList: CollectionList;
-  CollectionRecord: CollectionRecord;
-  AssociationCreate: AssociationCreate;
-  AssociationGet: AssociationGet;
-  AssociationList: AssociationList;
-  AssociationRecord: AssociationRecord;
+  CollectionCreate: CollectionCreateProps;
+  CollectionGet: CollectionGetProps;
+  CollectionList: CollectionListProps;
+  CollectionRecord: CollectionRecordProps;
+  AssociationCreate: AssociationCreateProps;
+  AssociationGet: AssociationGetProps;
+  AssociationList: AssociationListProps;
+  AssociationRecord: AssociationRecordProps;
 };
 
 export type DataBlockProviderProps = AllDataBlockType[keyof AllDataBlockType];

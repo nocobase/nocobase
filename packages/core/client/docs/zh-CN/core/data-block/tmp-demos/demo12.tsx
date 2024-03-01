@@ -14,7 +14,7 @@ import {
   InputNumber,
   NumberFieldInterface,
   Plugin,
-  RecordProvider,
+  CollectionRecordProvider,
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItem,
@@ -30,7 +30,7 @@ import {
   useDataSource,
   useDataSourceManager,
   useDesignable,
-  useRecord,
+  useCollectionRecord,
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaInitializerRender,
@@ -52,7 +52,7 @@ const TableColumn = observer(() => {
 
 const ColumnView = observer(
   () => {
-    const record = useRecord();
+    const record = useCollectionRecord();
     const [open, setOpen] = useState(false);
 
     const showDrawer = () => {
@@ -100,11 +100,11 @@ function useTableColumns() {
         key: 'actions',
         render: (value, record) => {
           return (
-            <RecordProvider record={record}>
+            <CollectionRecordProvider record={record}>
               <Space>
                 <ColumnView />
               </Space>
-            </RecordProvider>
+            </CollectionRecordProvider>
           );
         },
       },

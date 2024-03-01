@@ -15,9 +15,9 @@ import {
   useDataBlockRequest,
   useDataBlockResource,
   useDesignable,
-  useParentRecord,
-  useParentRecordData,
-  useRecord,
+  useCollectionParentRecord,
+  useCollectionParentRecordData,
+  useCollectionRecord,
   useRecord_deprecated,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
@@ -102,8 +102,8 @@ export const BlockRequestProvider_deprecated = (props) => {
   const resource = useDataBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
   const service = useDataBlockRequest();
-  const record = useRecord();
-  const parentRecord = useParentRecord();
+  const record = useCollectionRecord();
+  const parentRecord = useCollectionParentRecord();
 
   // Infinite scroll support
   const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
@@ -308,7 +308,7 @@ export const useSourceIdFromRecord = () => {
 
 export const useSourceIdFromParentRecord = () => {
   const cm = useCollectionManager();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   const { getCollectionField } = useCollectionManager_deprecated();
   const association = useBlockAssociationContext();
   if (association) {

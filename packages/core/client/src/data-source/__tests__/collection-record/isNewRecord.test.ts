@@ -1,4 +1,4 @@
-import { isNewRecord, markRecordAsNew } from '../../record/isNewRecord';
+import { isNewRecord, markRecordAsNew } from '../../collection-record/isNewRecord';
 
 describe('recordUtilities', () => {
   let record: any;

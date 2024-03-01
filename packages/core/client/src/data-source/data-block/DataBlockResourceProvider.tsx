@@ -4,7 +4,7 @@ import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react'
 import { useCollectionManager } from '../collection';
 import { useDataBlockProps } from './DataBlockProvider';
 import { useAPIClient } from '../../api-client';
-import { Record } from '../record';
+import { CollectionRecord } from '../collection-record';
 import { useDataSourceHeaders } from '../utils';
 
 export const DataBlockResourceContext = createContext<IResource>(null);
@@ -25,7 +25,7 @@ export const DataBlockResourceProvider: FC<{ children?: ReactNode }> = ({ childr
     if (association && parentRecord) {
       const associationCollection = cm.getCollection(association);
       if (associationCollection) {
-        const parentRecordData = parentRecord instanceof Record ? parentRecord.data : parentRecord;
+        const parentRecordData = parentRecord instanceof CollectionRecord ? parentRecord.data : parentRecord;
         return parentRecordData[associationCollection.sourceKey || 'id'];
       }
     }

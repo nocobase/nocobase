@@ -19,7 +19,7 @@ import { useCreateActionProps } from '../../../block-provider/hooks';
 import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
 import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider_deprecated } from '../../../collection-manager';
-import { RecordProvider, useRecord } from '../../../data-source';
+import { CollectionRecordProvider, useCollectionRecord } from '../../../data-source';
 import { FlagProvider } from '../../../flag-provider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
@@ -27,7 +27,7 @@ import { Table } from '../table-v2/Table';
 import { useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
-import { markRecordAsNew } from '../../../data-source/record/isNewRecord';
+import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 
 export const SubTable: any = observer(
   (props: any) => {
@@ -40,7 +40,7 @@ export const SubTable: any = observer(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-    const recordV2 = useRecord();
+    const recordV2 = useCollectionRecord();
 
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
@@ -138,7 +138,7 @@ export const SubTable: any = observer(
         `}
       >
         <FlagProvider isInSubTable>
-          <RecordProvider record={null} parentRecord={recordV2}>
+          <CollectionRecordProvider record={null} parentRecord={recordV2}>
             <FormActiveFieldsProvider name="nester">
               <Table
                 className={css`
@@ -202,7 +202,7 @@ export const SubTable: any = observer(
                 isSubTable={true}
               />
             </FormActiveFieldsProvider>
-          </RecordProvider>
+          </CollectionRecordProvider>
         </FlagProvider>
         <ActionContextProvider
           value={{

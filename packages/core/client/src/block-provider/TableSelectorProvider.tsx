@@ -4,7 +4,7 @@ import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
-import { useParentRecordData } from '../data-source/record/RecordProvider';
+import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider_deprecated, useRecord_deprecated } from '../record-provider';
@@ -50,7 +50,7 @@ const InternalTableSelectorProvider = (props) => {
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   // if (service.loading) {
   //   return <Spin />;
   // }

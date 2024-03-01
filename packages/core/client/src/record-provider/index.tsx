@@ -1,13 +1,13 @@
 import React, { createContext, useContext } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
-import { RecordProvider } from '../data-source';
+import { CollectionRecordProvider } from '../data-source';
 import { useCurrentUserContext } from '../user';
 
 export const RecordContext_deprecated = createContext({});
 export const RecordIndexContext = createContext(null);
 
 /**
- * @deprecated use `RecordProvider` instead
+ * @deprecated use `CollectionRecordProvider` instead
  */
 export const RecordProvider_deprecated: React.FC<{
   record: any;
@@ -22,9 +22,9 @@ export const RecordProvider_deprecated: React.FC<{
   value['__collectionName'] = __collectionName;
   return (
     <RecordContext_deprecated.Provider value={value}>
-      <RecordProvider isNew={isNew} record={record} parentRecord={parent}>
+      <CollectionRecordProvider isNew={isNew} record={record} parentRecord={parent}>
         {children}
-      </RecordProvider>
+      </CollectionRecordProvider>
     </RecordContext_deprecated.Provider>
   );
 };
@@ -39,7 +39,7 @@ export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
 };
 
 /**
- * @deprecated use `useRecord` instead
+ * @deprecated use `useCollectionRecord` instead
  */
 export function useRecord_deprecated<D = any>() {
   return useContext(RecordContext_deprecated) as D;

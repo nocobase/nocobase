@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
-import { useRecord } from '../../../data-source/record/RecordProvider';
+import { useCollectionRecord } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -48,7 +48,7 @@ export const useRecordVariable = (props: Props) => {
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const { isInSubForm, isInSubTable } = useFlag() || {};
-  const record = useRecord();
+  const record = useCollectionRecord();
   const recordData = isInSubForm || isInSubTable ? record?.parentRecord?.data : record?.data;
   const { name: collectionName } = useCollection() || {};
   const currentRecordSettings = useBaseVariable({

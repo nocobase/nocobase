@@ -2,7 +2,7 @@ import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
 import React, { FC, createContext, useContext, useMemo } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider, Record } from '../record';
+import { CollectionRecordProvider, CollectionRecord } from '../collection-record';
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
 
@@ -104,23 +104,23 @@ export const BlockRequestProvider: FC = ({ children }) => {
   });
 
   const memoizedParentRecord = useMemo(() => {
-    return parentRequest.data?.data && new Record({ isNew: false, data: parentRequest.data?.data });
+    return parentRequest.data?.data && new CollectionRecord({ isNew: false, data: parentRequest.data?.data });
   }, [parentRequest.data?.data]);
 
   return (
     <BlockRequestContext.Provider value={currentRequest}>
       {action !== 'list' ? (
-        <RecordProvider
+        <CollectionRecordProvider
           isNew={action === undefined}
           record={currentRequest.data?.data}
           parentRecord={memoizedParentRecord}
         >
           {children}
-        </RecordProvider>
+        </CollectionRecordProvider>
       ) : (
-        <RecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord}>
+        <CollectionRecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord}>
           {children}
-        </RecordProvider>
+        </CollectionRecordProvider>
       )}
     </BlockRequestContext.Provider>
   );

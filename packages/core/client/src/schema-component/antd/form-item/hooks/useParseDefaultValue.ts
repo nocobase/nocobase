@@ -6,7 +6,7 @@ import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
 import { useRecordIndex } from '../../../../../src/record-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
-import { useRecord } from '../../../../data-source/record/RecordProvider';
+import { useCollectionRecord } from '../../../../data-source/collection-record/CollectionRecordProvider';
 import { useFlag } from '../../../../flag-provider';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/utils/getPath';
@@ -24,7 +24,7 @@ const useParseDefaultValue = () => {
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const recordV2 = useRecord();
+  const recordV2 = useCollectionRecord();
   const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable, isInSubForm } =
     useFlag() || {};
   const { getField } = useCollection_deprecated();

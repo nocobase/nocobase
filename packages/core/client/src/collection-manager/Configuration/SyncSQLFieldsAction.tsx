@@ -7,7 +7,7 @@ import { Button } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
-import { useParentRecordData } from '../../data-source/record/RecordProvider';
+import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, FormProvider, SchemaComponent, useActionContext } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -127,7 +127,7 @@ export const SyncSQLFieldsAction: React.FC<{
   refreshCMList: any;
 }> = ({ refreshCMList }) => {
   const record = useRecord_deprecated();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const form = useMemo(

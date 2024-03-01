@@ -4,7 +4,7 @@ import { autorun } from '@formily/reactive';
 import { forEach } from '@nocobase/utils/client';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { useParentRecordData } from '../data-source/record/RecordProvider';
+import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider_deprecated } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
@@ -14,7 +14,7 @@ export const FormFieldContext = createContext<any>({});
 const InternalFormFieldProvider = (props) => {
   const { action, readPretty, fieldName } = props;
   const formBlockCtx = useFormBlockContext();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
 
   if (!formBlockCtx?.updateAssociationValues?.includes(fieldName)) {
     formBlockCtx?.updateAssociationValues?.push(fieldName);

@@ -4,7 +4,7 @@ import {
   SchemaComponent,
   UseDataBlockProps,
   useDataBlockResource,
-  useRecordData,
+  useCollectionRecordData,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
@@ -45,7 +45,7 @@ const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const data = useRecordData<DemoFormFieldType>();
+  const data = useCollectionRecordData<DemoFormFieldType>();
   const resource = useDataBlockResource();
 
   const [form] = Form.useForm();

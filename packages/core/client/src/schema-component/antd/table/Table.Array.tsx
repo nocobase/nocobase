@@ -18,8 +18,8 @@ import { DndContext } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider_deprecated,
-  useParentRecordData,
-  useRecordData,
+  useCollectionParentRecordData,
+  useCollectionRecordData,
   useRequest,
   useSchemaInitializerRender,
 } from '../../../';
@@ -34,8 +34,8 @@ const useTableColumns = () => {
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const scope = useContext(SchemaExpressionScopeContext);
-  const parentRecordData = useParentRecordData();
-  const recordData = useRecordData();
+  const parentRecordData = useCollectionParentRecordData();
+  const recordData = useCollectionRecordData();
 
   const columns = schema
     .reduceProperties((buf, s) => {

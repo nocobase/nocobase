@@ -3,7 +3,7 @@ import { uniq } from 'lodash';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStyles } from './style';
-import { useAPIClient, useRecord, useRequest } from '@nocobase/client';
+import { useAPIClient, useCollectionRecord, useRequest } from '@nocobase/client';
 import { RolesManagerContext } from '../RolesManagerProvider';
 import { useMenuItems } from './MenuItemsProvider';
 

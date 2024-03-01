@@ -1,5 +1,5 @@
 import { uid } from '@formily/shared';
-import { useActionContext, useRecord, useRecord_deprecated, useRequest } from '@nocobase/client';
+import { useActionContext, useCollectionRecord, useRecord_deprecated, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
 import pick from 'lodash/pick';
 import { ISchema } from '@formily/react';

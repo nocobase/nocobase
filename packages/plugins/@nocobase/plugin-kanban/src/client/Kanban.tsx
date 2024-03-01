@@ -4,7 +4,7 @@ import {
   RecordProvider_deprecated,
   SchemaComponentOptions,
   useCreateActionProps as useCAP,
-  useParentRecordData,
+  useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { Spin, Tag } from 'antd';
@@ -60,7 +60,7 @@ export const Kanban: any = observer(
   (props: any) => {
     const { styles } = useStyles();
     const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
-    const parentRecordData = useParentRecordData();
+    const parentRecordData = useCollectionParentRecordData();
     const field = useField<ArrayField>();
     const fieldSchema = useFieldSchema();
     const [disableCardDrag, setDisableCardDrag] = useState(false);

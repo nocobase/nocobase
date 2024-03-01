@@ -8,7 +8,7 @@ import {
   useActionContext,
   useFilterFieldOptions,
   useFilterFieldProps,
-  useRecord,
+  useCollectionRecord,
   useRecord_deprecated,
   useRequest,
   useResourceActionContext,

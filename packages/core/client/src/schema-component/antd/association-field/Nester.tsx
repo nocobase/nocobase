@@ -10,7 +10,10 @@ import _ from 'lodash';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
-import { useRecord, useRecordData } from '../../../data-source/record/RecordProvider';
+import {
+  useCollectionRecord,
+  useCollectionRecordData,
+} from '../../../data-source/collection-record/CollectionRecordProvider';
 import { FlagProvider } from '../../../flag-provider';
 import { RecordIndexProvider, RecordProvider_deprecated } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
@@ -21,7 +24,7 @@ import {
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { AssociationFieldContext } from './context';
 import { SubFormProvider, useAssociationFieldContext } from './hooks';
-import { isNewRecord, markRecordAsNew } from '../../../data-source/record/isNewRecord';
+import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -44,7 +47,7 @@ export const Nester = (props) => {
 
 const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
-  const recordV2 = useRecord();
+  const recordV2 = useCollectionRecord();
 
   const isAllowToSetDefaultValue = useCallback(
     ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
@@ -97,7 +100,7 @@ const ToManyNester = observer(
     const fieldSchema = useFieldSchema();
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
-    const recordData = useRecordData();
+    const recordData = useCollectionRecordData();
 
     if (!Array.isArray(field.value)) {
       field.value = [];

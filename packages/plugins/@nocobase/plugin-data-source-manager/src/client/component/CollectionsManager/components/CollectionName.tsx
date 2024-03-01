@@ -3,14 +3,14 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Input as AntdInput } from 'antd';
 import cls from 'classnames';
-import { useRecord } from '@nocobase/client';
+import { useCollectionRecord } from '@nocobase/client';
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 
 const ReadPretty = (props) => {
   const prefixCls = usePrefixCls('description-input', props);
   const {
     data: { name, tableName },
-  } = useRecord() as any;
+  } = useCollectionRecord() as any;
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {name !== tableName ? (

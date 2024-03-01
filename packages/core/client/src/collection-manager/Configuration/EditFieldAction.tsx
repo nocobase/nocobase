@@ -7,7 +7,7 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useParentRecordData } from '../../data-source/record/RecordProvider';
+import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -161,7 +161,7 @@ const useUpdateCollectionField = () => {
 
 export const EditCollectionField = (props) => {
   const record = useRecord_deprecated();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 

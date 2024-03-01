@@ -4,7 +4,7 @@ import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { FormBlockContext } from '../../block-provider';
 import { useCollectionManager_deprecated } from '../../collection-manager';
-import { useParentRecordData } from '../../data-source/record/RecordProvider';
+import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider_deprecated } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
@@ -41,7 +41,7 @@ export const FormLinkageRules = observer(
     const { options, defaultValues, collectionName, form, formBlockType, variables, localVariables, record } =
       useProps();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
-    const parentRecordData = useParentRecordData();
+    const parentRecordData = useCollectionParentRecordData();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(

@@ -1,20 +1,27 @@
 import React from 'react';
 import { render, screen } from '@nocobase/test/client';
-import { RecordProvider, Record, useParentRecordData, useParentRecord, useRecordData, useRecord } from '../../record';
+import {
+  CollectionRecordProvider,
+  CollectionRecord,
+  useCollectionParentRecordData,
+  useCollectionParentRecord,
+  useCollectionRecordData,
+  useCollectionRecord,
+} from '../../collection-record';
 
-describe('RecordProvider', () => {
+describe('CollectionRecordProvider', () => {
   describe('record and parentRecord', () => {
     test('record parameter is a `Record` instance', () => {
       const Demo = () => {
-        const record = useRecord();
+        const record = useCollectionRecord();
         return <pre data-testid="content">{JSON.stringify(record)}</pre>;
       };
-      const record = new Record({ data: { id: 1, name: 'foo' } });
+      const record = new CollectionRecord({ data: { id: 1, name: 'foo' } });
 
       render(
-        <RecordProvider record={record}>
+        <CollectionRecordProvider record={record}>
           <Demo />
-        </RecordProvider>,
+        </CollectionRecordProvider>,
       );
 
       expect(screen.getByTestId('content')).toHaveTextContent(JSON.stringify({ id: 1, name: 'foo' }));
@@ -22,14 +29,14 @@ describe('RecordProvider', () => {
 
     test('record parameter is a `plain object`', () => {
       const Demo = () => {
-        const record = useRecord();
+        const record = useCollectionRecord();
         return <pre data-testid="content">{JSON.stringify(record)}</pre>;
       };
 
       render(
-        <RecordProvider record={{ id: 1, name: 'foo' }}>
+        <CollectionRecordProvider record={{ id: 1, name: 'foo' }}>
           <Demo />
-        </RecordProvider>,
+        </CollectionRecordProvider>,
       );
 
       expect(screen.getByTestId('content')).toHaveTextContent(JSON.stringify({ id: 1, name: 'foo' }));
@@ -37,17 +44,17 @@ describe('RecordProvider', () => {
 
     test('record parameter is a `Record` instance with parent record', () => {
       const Demo = () => {
-        const record = useRecord();
+        const record = useCollectionRecord();
         return <pre data-testid="content">{JSON.stringify(record)}</pre>;
       };
 
-      const parentRecord = new Record({ data: { id: 1, role: 'admin' } });
-      const record = new Record({ data: { id: 1, name: 'foo' }, parentRecord });
+      const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
+      const record = new CollectionRecord({ data: { id: 1, name: 'foo' }, parentRecord });
 
       render(
-        <RecordProvider record={record}>
+        <CollectionRecordProvider record={record}>
           <Demo />
-        </RecordProvider>,
+        </CollectionRecordProvider>,
       );
 
       expect(screen.getByTestId('content')).toHaveTextContent(
@@ -68,17 +75,17 @@ describe('RecordProvider', () => {
 
     test('record parameter is a `Record` instance, parent record is passed through parentRecord parameter', () => {
       const Demo = () => {
-        const record = useRecord();
+        const record = useCollectionRecord();
         return <pre data-testid="content">{JSON.stringify(record)}</pre>;
       };
 
-      const parentRecord = new Record({ data: { id: 1, role: 'admin' } });
-      const record = new Record({ data: { id: 1, name: 'foo' } });
+      const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
+      const record = new CollectionRecord({ data: { id: 1, name: 'foo' } });
 
       render(
-        <RecordProvider record={record} parentRecord={parentRecord}>
+        <CollectionRecordProvider record={record} parentRecord={parentRecord}>
           <Demo />
-        </RecordProvider>,
+        </CollectionRecordProvider>,
       );
 
       expect(screen.getByTestId('content')).toHaveTextContent(
@@ -99,14 +106,14 @@ describe('RecordProvider', () => {
 
     test('record parameter is a `plain object`, parent record is also a `plain object`', () => {
       const Demo = () => {
-        const record = useRecord();
+        const record = useCollectionRecord();
         return <pre data-testid="content">{JSON.stringify(record)}</pre>;
       };
 
       render(
-        <RecordProvider record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }}>
+        <CollectionRecordProvider record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }}>
           <Demo />
-        </RecordProvider>,
+        </CollectionRecordProvider>,
       );
 
       expect(screen.getByTestId('content')).toHaveTextContent(
@@ -127,35 +134,35 @@ describe('RecordProvider', () => {
   });
 
   describe('hooks', () => {
-    test('useRecordData()', () => {
+    test('useCollectionRecordData()', () => {
       const Demo = () => {
-        const data = useRecordData();
+        const data = useCollectionRecordData();
         return <pre data-testid="content">{JSON.stringify(data)}</pre>;
       };
-      const parentRecord = new Record({ data: { id: 1, role: 'admin' } });
-      const record = new Record({ data: { id: 1, name: 'foo' }, parentRecord });
+      const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
+      const record = new CollectionRecord({ data: { id: 1, name: 'foo' }, parentRecord });
 
       render(
-        <RecordProvider record={record}>
+        <CollectionRecordProvider record={record}>
           <Demo />
-        </RecordProvider>,
+        </CollectionRecordProvider>,
       );
 
       expect(screen.getByTestId('content')).toHaveTextContent(JSON.stringify({ id: 1, name: 'foo' }));
     });
 
-    test('useParentRecord()', () => {
+    test('useCollectionParentRecord()', () => {
       const Demo = () => {
-        const data = useParentRecord();
+        const data = useCollectionParentRecord();
         return <pre data-testid="content">{JSON.stringify(data)}</pre>;
       };
-      const parentRecord = new Record({ data: { id: 1, role: 'admin' } });
-      const record = new Record({ data: { id: 1, name: 'foo' }, parentRecord });
+      const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
+      const record = new CollectionRecord({ data: { id: 1, name: 'foo' }, parentRecord });
 
       render(
-        <RecordProvider record={record}>
+        <CollectionRecordProvider record={record}>
           <Demo />
-        </RecordProvider>,
+        </CollectionRecordProvider>,
       );
 
       expect(screen.getByTestId('content')).toHaveTextContent(
@@ -168,18 +175,18 @@ describe('RecordProvider', () => {
       );
     });
 
-    test('useParentRecordData()', () => {
+    test('useCollectionParentRecordData()', () => {
       const Demo = () => {
-        const data = useParentRecordData();
+        const data = useCollectionParentRecordData();
         return <pre data-testid="content">{JSON.stringify(data)}</pre>;
       };
-      const parentRecord = new Record({ data: { id: 1, role: 'admin' } });
-      const record = new Record({ data: { id: 1, name: 'foo' }, parentRecord });
+      const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
+      const record = new CollectionRecord({ data: { id: 1, name: 'foo' }, parentRecord });
 
       render(
-        <RecordProvider record={record}>
+        <CollectionRecordProvider record={record}>
           <Demo />
-        </RecordProvider>,
+        </CollectionRecordProvider>,
       );
 
       expect(screen.getByTestId('content')).toHaveTextContent(

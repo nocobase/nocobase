@@ -3,7 +3,7 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
-import { useParentRecordData, useRecord } from '../data-source';
+import { useCollectionParentRecordData, useCollectionRecord } from '../data-source';
 import { RecordProvider_deprecated, useRecord_deprecated } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
@@ -26,7 +26,7 @@ const InternalFormBlockProvider = (props) => {
   );
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
-  const record = useRecord();
+  const record = useCollectionRecord();
   const formBlockValue = useMemo(() => {
     return {
       ...ctx,
@@ -76,7 +76,7 @@ export const useIsDetailBlock = () => {
 
 export const FormBlockProvider = (props) => {
   const record = useRecord_deprecated();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   const { collection, isCusomeizeCreate } = props;
   const { __collection } = record;
   const currentCollection = useCollection_deprecated();

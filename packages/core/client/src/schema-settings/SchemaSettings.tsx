@@ -46,7 +46,7 @@ import {
   Designable,
   FormDialog,
   FormProvider,
-  RecordProvider,
+  CollectionRecordProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
@@ -63,7 +63,7 @@ import {
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
-  useRecord,
+  useCollectionRecord,
   useRecord_deprecated,
   useSchemaSettingsItem,
   useSortFields,
@@ -964,7 +964,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const { locale } = useContext(ConfigProvider.ConfigContext);
   const dm = useDataSourceManager();
   const dataSourceKey = useDataSourceKey();
-  const record = useRecord();
+  const record = useCollectionRecord();
   const { association } = useDataBlockProps() || {};
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
@@ -984,7 +984,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           { title: schema.title || title, width },
           () => {
             return (
-              <RecordProvider record={record}>
+              <CollectionRecordProvider record={record}>
                 <SubFormProvider value={subFormValue}>
                   <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                     <Router location={location} navigator={null}>
@@ -1023,7 +1023,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                     </Router>
                   </FormActiveFieldsProvider>
                 </SubFormProvider>
-              </RecordProvider>
+              </CollectionRecordProvider>
             );
           },
           theme,

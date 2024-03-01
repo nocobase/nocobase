@@ -1,4 +1,4 @@
-import { useAPIClient, useApp, useCompile, useRecord, useRequest } from '@nocobase/client';
+import { useAPIClient, useApp, useCompile, useCollectionRecord, useRequest } from '@nocobase/client';
 import { Checkbox, message, Table } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -185,11 +185,11 @@ export default defineConfig({
             },
             {
               title: 'Record',
-              link: '/core/data-block/record',
+              link: '/core/data-block/collection-record',
             },
             {
-              title: 'RecordProvider',
-              link: '/core/data-block/record-provider',
+              title: 'CollectionRecordProvider',
+              link: '/core/data-block/collection-record-provider',
             },
             {
               title: 'DataBlockProvider',

@@ -6,7 +6,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useParentRecordData } from '../../data-source';
+import { useCollectionParentRecordData } from '../../data-source';
 import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -124,7 +124,7 @@ const useOverridingCollectionField = () => {
 
 export const OverridingCollectionField = (props) => {
   const record = useRecord_deprecated();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   return <OverridingFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 

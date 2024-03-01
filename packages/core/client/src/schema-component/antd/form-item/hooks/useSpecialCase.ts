@@ -8,7 +8,7 @@ import {
   useCollectionManager_deprecated,
 } from '../../../../collection-manager';
 import { isSubMode } from '../../association-field/util';
-import { markRecordAsNew } from '../../../../data-source/record/isNewRecord';
+import { markRecordAsNew } from '../../../../data-source/collection-record/isNewRecord';
 
 /**
  * #### 处理 `子表单` 和 `子表格` 中的特殊情况

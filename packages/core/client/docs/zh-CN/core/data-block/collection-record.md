@@ -1,32 +1,32 @@
-# Record
+# CollectionRecord
 
 数据表中的一条记录。
 
 ## 类型
 
 ```tsx | pure
-interface RecordOptions<DataType = {}, ParentDataType = {}> {
+interface CollectionRecordOptions<DataType = {}, ParentDataType = {}> {
   isNew?: boolean;
   data?: DataType;
-  parentRecord?: Record<ParentDataType>;
+  parentRecord?: CollectionRecord<ParentDataType>;
   /**
    * 当前记录所属的 collection name
    */
   collectionName?: string;
 }
 
-class Record<DataType = {}, ParentDataType = {}> {
+class CollectionRecord<DataType = {}, ParentDataType = {}> {
   public isNew?: boolean;
   public data?: DataType;
-  public parentRecord?: Record<ParentDataType>;
+  public parentRecord?: CollectionRecord<ParentDataType>;
   public collectionName?: string;
-  constructor(options: RecordOptions<DataType, ParentDataType>) {}
+  constructor(options: CollectionRecordOptions<DataType, ParentDataType>) {}
 
   setData(data: DataType) {
     this.data = data;
   }
 
-  setParentRecord(parentRecord: Record<ParentDataType>) {
+  setParentRecord(parentRecord: CollectionRecord<ParentDataType>) {
     this.parentRecord = parentRecord;
   }
 }
@@ -34,12 +34,12 @@ class Record<DataType = {}, ParentDataType = {}> {
 
 ## 详解
 
-### Record 基本概念
+### CollectionRecord 基本概念
 
-Record 类用于提供数据记录，通常情况下对应着后端数据表中的一条记录。以用户表为例，其一条数据对应的 Record 类如下：
+CollectionRecord 类用于提供数据记录，通常情况下对应着后端数据表中的一条记录。以用户表为例，其一条数据对应的 CollectionRecord 类如下：
 
 ```tsx | pure
-const useRecord = new Record({
+const useCollectionRecord = new CollectionRecord({
   data: {
     "id": 1,
     "roleId": 10,
@@ -57,9 +57,9 @@ const useRecord = new Record({
 });
 ```
 
-### Record 和 Collection 的关系
+### CollectionRecord 和 Collection 的关系
 
-Record 是指的数据，而 Collection 则是表结构。对于上面的用户表，其对应的 Collection 如下：
+CollectionRecord 是指的数据，而 Collection 则是表结构。对于上面的用户表，其对应的 Collection 如下：
 
 ```tsx | pure
 const usersCollection = new Collection({
@@ -97,7 +97,7 @@ GET /api/users/1/roles:get/10
 其中 `1` 为用户的 `id`，`10` 为角色的 `id`，我们可以得到用户的角色数据：
 
 ```tsx | pure
-const roleRecord = new Record({
+const roleRecord = new CollectionRecord({
   data: {
     "id": 10,
     "name": "member",
@@ -127,7 +127,7 @@ roleRecord.setParentRecord(userRecord);
 对于新表单，我们可以通过 `isNew` 属性来标识：
 
 ```tsx | pure
-const record = new Record({
+const record = new CollectionRecord({
   isNew: true,
 });
 ```
@@ -137,9 +137,9 @@ const record = new Record({
 ### 基本使用
 
 ```tsx | pure
-import { Record } from '@nocobase/client';
+import { CollectionRecord } from '@nocobase/client';
 
-const record = new Record({
+const record = new CollectionRecord({
   data: {
     name: 'foo',
   }
@@ -149,9 +149,9 @@ const record = new Record({
 ### 创建空记录
 
 ```tsx | pure
-import { Record } from '@nocobase/client';
+import { CollectionRecord } from '@nocobase/client';
 
-const record = new Record({
+const record = new CollectionRecord({
   isNew: true,
 });
 ```
@@ -161,13 +161,13 @@ const record = new Record({
 方式1: 通过构造函数设置
 
 ```tsx | pure
-const parentRecord = new Record({
+const parentRecord = new CollectionRecord({
   data: {
     foo: 'foo',
   }
 });
 
-const record = new Record({
+const record = new CollectionRecord({
   data: {
     name: 'bar',
   },
@@ -178,13 +178,13 @@ const record = new Record({
 方式2: 通过 `setParentRecord` 方法设置
 
 ```tsx | pure
-const parentRecord = new Record({
+const parentRecord = new CollectionRecord({
   data: {
     foo: 'foo',
   }
 });
 
-const record = new Record({
+const record = new CollectionRecord({
   data: {
     name: 'bar',
   }

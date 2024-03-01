@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { useActionContext, useRecord, useRecord_deprecated, useRequest } from '@nocobase/client';
+import { useActionContext, useCollectionRecord, useRecord_deprecated, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
 
 export const userCollection = {

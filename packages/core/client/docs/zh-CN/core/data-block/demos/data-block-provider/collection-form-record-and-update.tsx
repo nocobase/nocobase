@@ -1,11 +1,11 @@
 import React, { FC, useEffect } from 'react';
 import { Button, Form, FormProps, Input, InputNumber, notification } from 'antd';
 import {
-  RecordProvider,
+  CollectionRecordProvider,
   SchemaComponent,
   UseDataBlockProps,
   useDataBlockResource,
-  useRecordData,
+  useCollectionRecordData,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
@@ -45,7 +45,7 @@ const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const data = useRecordData<DemoFormFieldType>();
+  const data = useCollectionRecordData<DemoFormFieldType>();
   const resource = useDataBlockResource();
 
   const [form] = Form.useForm();
@@ -73,7 +73,7 @@ function useDemoFormProps(): DemoFormProps {
   };
 }
 const useFormBlockDecoratorProps: UseDataBlockProps<'CollectionRecord'> = () => {
-  const record = useRecordData();
+  const record = useCollectionRecordData();
   return {
     record,
   };
@@ -110,9 +110,9 @@ const recordData = {
 const Demo = () => {
   return (
     <>
-      <RecordProvider record={recordData}>
+      <CollectionRecordProvider record={recordData}>
         <SchemaComponent schema={schema}></SchemaComponent>
-      </RecordProvider>
+      </CollectionRecordProvider>
     </>
   );
 };

@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { useDataSourceManager, useRecordData } from '../../data-source';
+import { useDataSourceManager, useCollectionRecordData } from '../../data-source';
 import { useCompile } from '../../schema-component';
 
 export const CollectionTitle = (props) => {
-  const { dataSourceKey = 'main', collectionName } = useRecordData();
+  const { dataSourceKey = 'main', collectionName } = useCollectionRecordData();
   const dataSourceManager = useDataSourceManager();
   const compile = useCompile();
   const [title1, title2] = useMemo(() => {

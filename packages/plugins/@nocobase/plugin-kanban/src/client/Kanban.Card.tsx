@@ -6,7 +6,7 @@ import {
   DndContext,
   RecordProvider_deprecated,
   SchemaComponentOptions,
-  useParentRecordData,
+  useCollectionParentRecordData,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import cls from 'classnames';
@@ -17,7 +17,7 @@ export const KanbanCard: any = observer(
   (props: any) => {
     const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
       useContext(KanbanCardContext);
-    const parentRecordData = useParentRecordData();
+    const parentRecordData = useCollectionParentRecordData();
     const fieldSchema = useFieldSchema();
     const [visible, setVisible] = useState(false);
     return (

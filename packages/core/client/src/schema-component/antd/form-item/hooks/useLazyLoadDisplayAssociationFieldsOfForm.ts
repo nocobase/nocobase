@@ -5,7 +5,7 @@ import _ from 'lodash';
 import { useEffect, useMemo, useRef } from 'react';
 import { useAssociationNames } from '../../../../block-provider/hooks';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
-import { useRecordData } from '../../../../data-source/record/RecordProvider';
+import { useCollectionRecordData } from '../../../../data-source/collection-record/CollectionRecordProvider';
 import { useFlag } from '../../../../flag-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
@@ -22,7 +22,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { name } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const form = useForm();
-  const recordData = useRecordData();
+  const recordData = useCollectionRecordData();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();

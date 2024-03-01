@@ -3,7 +3,7 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
-import { markRecordAsNew } from '../../../data-source/record/isNewRecord';
+import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 
 export const AssociationFieldProvider = observer(
   (props) => {

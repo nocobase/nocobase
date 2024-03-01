@@ -60,7 +60,7 @@ const MyTable = () => {
 
 ### Get 请求
 
-对于 `get` 请求，当获取到 `data` 数据后，会通过 `RecordProvider` 提供 `record` 对象，用于获取当前区块的数据。
+对于 `get` 请求，当获取到 `data` 数据后，会通过 `CollectionRecordProvider` 提供 `record` 对象，用于获取当前区块的数据。
 
 ```ts | pure
 const schema = {
@@ -82,11 +82,11 @@ const useDynamicDataBlockProps: UseDataBlockProps<'CollectionGet'>  = () => {
 }
 ```
 
-会自动调用 `resource.get()` 获取数据，发起 `GET /api/users:get/1` 的请求，并通过 `RecordProvider` 提供上下文。
+会自动调用 `resource.get()` 获取数据，发起 `GET /api/users:get/1` 的请求，并通过 `CollectionRecordProvider` 提供上下文。
 
 ```tsx | pure
 const { data } = useDataBlockRequest();
-const record = useRecord(); // record 上下文数据
+const record = useCollectionRecord(); // record 上下文数据
 
 // 相等
 record.data === data;
@@ -94,7 +94,7 @@ record.data === data;
 
 ### List 请求
 
-对于 `list` 请求则不会提供 `record` 对象，需要自己通过 `<RecordProvider />` 设置上下文。
+对于 `list` 请求则不会提供 `record` 对象，需要自己通过 `<CollectionRecordProvider />` 设置上下文。
 
 ```tsx | pure
 const MyTable = () => {
@@ -112,9 +112,9 @@ const MyTable = () => {
           title: 'Action',
           render: (v, record) => {
             return (
-              <RecordProvider record={record}>
+              <CollectionRecordProvider record={record}>
                 <MyAction />
-              </RecordProvider>
+              </CollectionRecordProvider>
             )
           },
         },
@@ -129,7 +129,7 @@ const MyTable = () => {
 }
 
 const MyAction = () => {
-  const record = useRecord();
+  const record = useCollectionRecord();
   return (
     <Button onClick={() => {
       console.log(record.data);

@@ -5,5 +5,5 @@ export * from './collection-template';
 export * from './components';
 export * from './data-block';
 export * from './data-source';
-export * from './record';
+export * from './collection-record';
 export * from './utils';

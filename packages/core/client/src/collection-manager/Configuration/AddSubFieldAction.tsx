@@ -7,7 +7,7 @@ import { cloneDeep } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { useRecordData } from '../../data-source';
+import { useCollectionRecordData } from '../../data-source';
 import { RecordProvider_deprecated } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager_deprecated } from '../hooks';
@@ -128,7 +128,7 @@ export const AddSubFieldAction = () => {
       items,
     };
   }, [items]);
-  const recordData = useRecordData();
+  const recordData = useCollectionRecordData();
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>

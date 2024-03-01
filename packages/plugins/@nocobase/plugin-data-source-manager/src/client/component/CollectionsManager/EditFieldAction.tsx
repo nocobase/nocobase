@@ -21,7 +21,7 @@ import {
   useCancelAction,
   useCollectionManager_deprecated,
   useCurrentAppInfo,
-  useParentRecordData,
+  useCollectionParentRecordData,
   useDataSourceManager,
 } from '@nocobase/client';
 import { useRemoteCollectionContext } from './CollectionFields';
@@ -171,7 +171,7 @@ const useUpdateCollectionField = () => {
 
 export const EditCollectionField = (props) => {
   const record = useRecord_deprecated();
-  const parentRecordData = useParentRecordData();
+  const parentRecordData = useCollectionParentRecordData();
   return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
