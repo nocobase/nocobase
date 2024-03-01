@@ -27,7 +27,7 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
       'x-validator': 'integer',
     },
   };
-  availableTypes = ['bigInt', 'integer'];
+  availableTypes = ['bigInt', 'integer', 'sort'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
