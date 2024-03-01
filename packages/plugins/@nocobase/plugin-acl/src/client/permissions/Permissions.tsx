@@ -57,19 +57,21 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
             },
           ]
         : []),
-      DataSourcePermissionManager
-        ? {
-            key: 'dataSource',
-            label: t('Data source permissions'),
-            children: (
-              <TabLayout>
-                <MenuItemsProvider>
-                  <DataSourcePermissionManager role={role} active={activeKey === 'dataSource' && active} />
-                </MenuItemsProvider>
-              </TabLayout>
-            ),
-          }
-        : {},
+      ...(DataSourcePermissionManager
+        ? [
+            {
+              key: 'dataSource',
+              label: t('Data source permissions'),
+              children: (
+                <TabLayout>
+                  <MenuItemsProvider>
+                    <DataSourcePermissionManager role={role} active={activeKey === 'dataSource' && active} />
+                  </MenuItemsProvider>
+                </TabLayout>
+              ),
+            },
+          ]
+        : []),
     ],
     [pm, activeKey, active, t],
   );
@@ -77,7 +79,6 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
   useEffect(() => {
     setActiveKey('general');
   }, [role?.name]);
-  console.log(items);
   return (
     <AvailableActionsProvider>
       <Tabs type="card" activeKey={activeKey} onChange={(key) => setActiveKey(key)} items={items} />
