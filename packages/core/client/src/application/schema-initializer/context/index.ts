@@ -4,8 +4,8 @@ import { InsertType, SchemaInitializerItemType, SchemaInitializerOptions } from 
 export const SchemaInitializerContext = createContext<{
   insert: InsertType;
   options: SchemaInitializerOptions<any>;
-  visible?: boolean;
-  setVisible?: (v: boolean) => void;
+  visible: boolean;
+  setVisible: (v: boolean) => void;
 }>({} as any);
 SchemaInitializerContext.displayName = 'SchemaInitializerContext';
 

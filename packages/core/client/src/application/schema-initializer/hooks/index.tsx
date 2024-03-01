@@ -32,7 +32,7 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
         }
 
         if (item.type === 'divider') {
-          return { type: 'divider', key: `divider-${indexA}` };
+          return { type: 'divider', key: item.key || `divider-${indexA}` };
         }
         if (item.type === 'item' && ItemComponent) {
           if (!item.key) {
@@ -45,7 +45,7 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
         }
         if (item.type === 'itemGroup') {
           const label = typeof compiledTitle === 'string' ? compiledTitle : item.title;
-          const key = `${parentKey}-item-group-${indexA}`;
+          const key = item.key || `${parentKey}-item-group-${indexA}`;
           return {
             type: 'group',
             key,
@@ -56,7 +56,7 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
         }
         if (item.type === 'subMenu') {
           const label = compiledTitle;
-          const key = item.name || `${parentKey}-sub-menu-${indexA}`;
+          const key = item.key || item.name || `${parentKey}-sub-menu-${indexA}`;
           return {
             key,
             label,
@@ -69,7 +69,7 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
         }
 
         const label = element || compiledTitle || item.label;
-        const key = `${parentKey}-${compiledTitle}-${indexA}`;
+        const key = item.key || `${parentKey}-${compiledTitle}-${indexA}`;
         return {
           key,
           label,
