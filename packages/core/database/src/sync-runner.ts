@@ -66,9 +66,9 @@ export class SyncRunner {
     const syncResult = await this.performSync(options);
     const columns = await this.queryInterface.describeTable(this.tableName, options);
 
-    await this.handleUniqueIndex(options);
     await this.handlePrimaryKey(columns, options);
     await this.handleDefaultValues(columns, options);
+    await this.handleUniqueIndex(options);
 
     return syncResult;
   }
@@ -141,7 +141,7 @@ export class SyncRunner {
 
       if (columnDefaultValue === null && attributeDefaultValue === undefined) continue;
 
-      if (columnDefaultValue !== attributeDefaultValue) {
+      if (columnDefaultValue != attributeDefaultValue) {
         const changeAttribute = {
           ...currentAttribute,
           defaultValue: attributeDefaultValue,

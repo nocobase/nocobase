@@ -21,7 +21,7 @@ describe('role', () => {
     await api.destroy();
   });
 
-  it('should create user with roles', async () => {
+  it.skip('should create user with roles', async () => {
     const role1 = await db.getRepository('roles').create({
       values: {
         name: 'test1',

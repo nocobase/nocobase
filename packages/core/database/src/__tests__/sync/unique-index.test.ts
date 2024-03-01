@@ -13,6 +13,51 @@ describe('unique index', () => {
     await db.close();
   });
 
+  it('should sync multiple column unique index', async () => {
+    const User = db.collection({
+      name: 'users',
+      indexes: [
+        {
+          unique: true,
+          fields: ['userName', 'userEmail'],
+        },
+      ],
+      fields: [
+        { type: 'string', name: 'userName', defaultValue: 0 },
+        { type: 'string', name: 'userEmail' },
+      ],
+    });
+
+    await db.sync();
+
+    expect(async () => {
+      await User.repository.create({
+        values: {
+          userName: 'test',
+          userEmail: 'test@nocobase.com',
+        },
+      });
+    }).not.toThrow();
+
+    expect(async () => {
+      await User.repository.create({
+        values: {
+          userName: 'test',
+          userEmail: 'test123@nocobase.com',
+        },
+      });
+    }).not.toThrow();
+
+    await expect(
+      User.repository.create({
+        values: {
+          userName: 'test',
+          userEmail: 'test@nocobase.com',
+        },
+      }),
+    ).rejects.toThrow();
+  });
+
   it('should sync unique index', async () => {
     const User = db.collection({
       name: 'users',
