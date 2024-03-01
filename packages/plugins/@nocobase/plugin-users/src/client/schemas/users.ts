@@ -136,10 +136,6 @@ export const usersSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider',
-      'x-component-props': {
-        collection: userCollection,
-      },
       properties: {
         actions: {
           type: 'void',
@@ -457,6 +453,7 @@ export const usersSchema: ISchema = {
                       type: 'void',
                       title: '{{ t("Delete") }}',
                       'x-acl-action': 'users:destroy',
+                      'x-action': 'destroy',
                       'x-decorator': 'ACLActionProvider',
                       'x-component': 'Action.Link',
                       'x-component-props': {

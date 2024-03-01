@@ -142,8 +142,8 @@ const getIgnoreScope = (options: any = {}) => {
 
 const useAllowedActions = () => {
   const service = useResourceActionContext();
-  const result = useBlockRequestContext() || { service };
-  return result?.allowedActions ?? result?.service?.data?.meta?.allowedActions;
+  const result = useBlockRequestContext();
+  return result?.allowedActions ?? service?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
@@ -236,6 +236,7 @@ export const ACLActionProvider = (props) => {
     return <>{props.children}</>;
   }
   const params = parseAction(actionPath, { schema, recordPkValue });
+  console.log(params, actionPath, recordPkValue, 'params');
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
