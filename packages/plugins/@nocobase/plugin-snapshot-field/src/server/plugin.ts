@@ -31,10 +31,10 @@ export class SnapshotFieldPlugin extends Plugin {
         transaction,
       });
 
-      await fieldsHistoryRepository.createMany({
-        records: collectionDoc.fields ?? [],
-        transaction,
-      });
+      // await fieldsHistoryRepository.createMany({
+      //   records: collectionDoc.fields ?? [],
+      //   transaction,
+      // });
     };
 
     this.app.db.on('collections.afterCreateWithAssociations', collectionHandler);
