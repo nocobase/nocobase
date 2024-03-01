@@ -23,7 +23,7 @@ export default class extends Migration {
           scope: oldScope.scope,
           dataSourceKey: 'main',
         },
-        filterKeys: ['key'],
+        filterKeys: ['key', 'dataSourceKey'],
         hooks: false,
         transaction,
       });
