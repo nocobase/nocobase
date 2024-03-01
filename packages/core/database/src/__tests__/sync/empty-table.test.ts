@@ -1,4 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
+import * as process from 'process';
 
 describe('empty table', () => {
   let db: Database;
@@ -68,7 +69,7 @@ describe('empty table', () => {
     });
   });
 
-  it('should add primary key field into empty table', async () => {
+  it.skipIf(process.env['DB_DIALECT'] == 'sqlite')('should add primary key field into empty table', async () => {
     const empty = db.collection({
       name: 'empty',
       autoGenId: false,

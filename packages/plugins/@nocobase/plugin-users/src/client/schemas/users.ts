@@ -64,6 +64,17 @@ export const userCollection = {
       },
     },
     {
+      interface: 'password',
+      type: 'password',
+      name: 'password',
+      hidden: true,
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Password")}}',
+        'x-component': 'Password',
+      },
+    },
+    {
       interface: 'm2m',
       type: 'belongsToMany',
       name: 'roles',
