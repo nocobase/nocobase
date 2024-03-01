@@ -28,8 +28,8 @@ const rolesRemoteCollectionsResourcer = {
       const filterByTitle = filterItem?.find((item) => item.title);
       const filterByName = filterItem?.find((item) => item.name);
 
-      const filterTitle = lodash.get(filterByTitle, 'title.$includes');
-      const filterName = lodash.get(filterByName, 'name.$includes');
+      const filterTitle = lodash.get(filterByTitle, 'title.$includes')?.toLowerCase();
+      const filterName = lodash.get(filterByName, 'name.$includes')?.toLowerCase();
 
       const roleResources = await ctx.app.db.getRepository('dataSourcesRolesResources').find({
         filter: {
@@ -49,8 +49,8 @@ const rolesRemoteCollectionsResourcer = {
         collections
           .filter((collection) => {
             return (
-              (!filterTitle || lodash.get(collection, 'options.title')?.includes(filterTitle)) &&
-              (!filterName || collection.options.name.includes(filterName))
+              (!filterTitle || lodash.get(collection, 'options.title')?.toLowerCase().includes(filterTitle)) &&
+              (!filterName || collection.options.name.toLowerCase().includes(filterName))
             );
           })
           .map((collection, i) => {
