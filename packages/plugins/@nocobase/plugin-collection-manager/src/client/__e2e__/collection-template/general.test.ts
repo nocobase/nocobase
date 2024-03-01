@@ -109,7 +109,7 @@ test.describe('configure fields', () => {
     await mockCollections([
       {
         name: targetCollectionName,
-        fields: [{ name: targetKey, interface: 'input' }],
+        fields: [{ name: targetKey, unique: true, interface: 'input' }],
       },
       {
         name: collectionName,

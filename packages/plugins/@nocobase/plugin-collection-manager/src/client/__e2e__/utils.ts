@@ -513,7 +513,7 @@ export class FieldSettings {
     await this.page.getByRole('option', { name: value }).click();
   }
   private async ['Target key'](value: string) {
-    await this.page.getByLabel('block-item-TargetKey-fields').click();
+    await this.page.getByLabel('block-item-TargetKey-fields').locator('.ant-select-selector').click();
     await this.page.getByRole('option', { name: value }).click();
   }
   private async ['Expression'](value: string) {
