@@ -11,6 +11,10 @@ export function beforeCreateForValidateField(db: Database) {
     const isPrimaryKey = model.get('primaryKey');
     if (isPrimaryKey) {
       const collection = db.getCollection(model.get('collectionName'));
+      if (!collection) {
+        return;
+      }
+
       const primaryKey = collection.model.primaryKeyAttribute;
 
       if (primaryKey !== model.get('name') && collection.model.rawAttributes[primaryKey]) {
