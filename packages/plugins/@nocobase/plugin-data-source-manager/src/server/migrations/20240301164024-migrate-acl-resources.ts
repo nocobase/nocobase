@@ -1,4 +1,5 @@
 import { Migration } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 
 export default class extends Migration {
   on = 'afterSync'; // 'beforeLoad' or 'afterLoad'
@@ -7,6 +8,14 @@ export default class extends Migration {
   async up() {
     const transaction = await this.db.sequelize.transaction();
 
+    try {
+      await this.doUp(transaction);
+      await transaction.commit();
+    } catch (e) {
+      throw e;
+    }
+  }
+  async doUp(transaction) {
     const scopeMap = {};
 
     const oldScopes = await this.db.getRepository('rolesResourcesScopes').find({
@@ -15,7 +24,7 @@ export default class extends Migration {
 
     for (const oldScope of oldScopes) {
       const key = oldScope.key;
-      const newScope = await this.db.getRepository('scopes').firstOrCreate({
+      const newScope = await this.db.getRepository('dataSourcesRolesResourcesScopes').firstOrCreate({
         values: {
           key,
           name: oldScope.name,
@@ -41,6 +50,7 @@ export default class extends Migration {
           roleName: role.get('name'),
           dataSourceKey: 'main',
           strategy: role.get('strategy'),
+          id: uid(),
         },
         filterKeys: ['roleName', 'dataSourceKey'],
         hooks: false,
@@ -65,7 +75,7 @@ export default class extends Migration {
         continue;
       }
 
-      const newResource = await this.db.getRepository('resources').firstOrCreate({
+      const newResource = await this.db.getRepository('dataSourcesRolesResources').firstOrCreate({
         values: {
           name: oldResource.name,
           roleName: oldResource.roleName,
@@ -88,7 +98,7 @@ export default class extends Migration {
           newActionValues.scope = scopeMap[oldAction.scope];
         }
 
-        await this.db.getRepository('roleResourcesActions').create({
+        await this.db.getRepository('dataSourcesRolesResourcesActions').create({
           values: newActionValues,
           hooks: false,
           transaction,
