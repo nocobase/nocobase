@@ -1,7 +1,6 @@
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useAPIClient } from '../../../../api-client';
-import { SchemaSettings } from '../../../../application';
 import { useTableBlockContext, useFormBlockContext } from '../../../../block-provider';
 import {
   useCollectionManager_deprecated,
@@ -21,6 +20,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';
 import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
