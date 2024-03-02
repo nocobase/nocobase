@@ -20,10 +20,9 @@ import { createKanbanBlockSchema } from './utils';
 import { CreateAndSelectSort } from './CreateAndSelectSort';
 import { NAMESPACE } from './locale';
 
-const CreateKanbanForm = ({ item, sortFields, collectionFields, fields }) => {
+const CreateKanbanForm = ({ item, sortFields, collectionFields, fields, options }) => {
   const form = useForm();
   const { t } = useTranslation();
-  const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
 
   return (
@@ -108,6 +107,7 @@ export const KanbanBlockInitializer = () => {
   const { getCollectionFields } = useCollectionManager_deprecated();
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();
+  const options = useContext(SchemaOptionsContext);
   return (
     <DataBlockInitializer
       {...itemConfig}
@@ -142,7 +142,13 @@ export const KanbanBlockInitializer = () => {
           });
         const values = await FormDialog(
           t('Create kanban block'),
-          <CreateKanbanForm item={item} sortFields={sortFields} collectionFields={collectionFields} fields={fields} />,
+          <CreateKanbanForm
+            item={item}
+            sortFields={sortFields}
+            collectionFields={collectionFields}
+            fields={fields}
+            options={options}
+          />,
           // () => {
           //   const form = useForm();
           //   return (
