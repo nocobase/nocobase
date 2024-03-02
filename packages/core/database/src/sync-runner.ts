@@ -141,6 +141,8 @@ export class SyncRunner {
 
       if (columnDefaultValue === null && attributeDefaultValue === undefined) continue;
 
+      if (columnDefaultValue === 'NULL' && attributeDefaultValue === null) continue;
+
       if (columnDefaultValue != attributeDefaultValue) {
         const changeAttribute = {
           ...currentAttribute,
