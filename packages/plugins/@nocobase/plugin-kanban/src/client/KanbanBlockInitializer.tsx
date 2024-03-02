@@ -20,10 +20,9 @@ import { createKanbanBlockSchema } from './utils';
 import { CreateAndSelectSort } from './CreateAndSelectSort';
 import { NAMESPACE } from './locale';
 
-const CreateKanbanForm = ({ item, sortFields, collectionFields, fields, options }) => {
+const CreateKanbanForm = ({ item, sortFields, collectionFields, fields, options, api }) => {
   const form = useForm();
   const { t } = useTranslation();
-  const api = useAPIClient();
 
   return (
     <APIClientProvider apiClient={api}>
@@ -108,6 +107,7 @@ export const KanbanBlockInitializer = () => {
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();
   const options = useContext(SchemaOptionsContext);
+  const api = useAPIClient();
   return (
     <DataBlockInitializer
       {...itemConfig}
@@ -148,84 +148,8 @@ export const KanbanBlockInitializer = () => {
             collectionFields={collectionFields}
             fields={fields}
             options={options}
+            api={api}
           />,
-          // () => {
-          //   const form = useForm();
-          //   return (
-          //     <APIClientProvider apiClient={api}>
-          //       <SchemaComponentOptions
-          //         scope={{
-          //           ...options.scope,
-          //         }}
-          //         components={{ ...options.components }}
-          //       >
-          //         <FormLayout layout={'vertical'}>
-          //           <SchemaComponent
-          //             schema={{
-          //               properties: {
-          //                 groupField: {
-          //                   title: t('Grouping field'),
-          //                   enum: fields,
-          //                   required: true,
-          //                   description: t('Single select and radio fields can be used as the grouping field'),
-          //                   'x-component': 'Select',
-          //                   'x-component-props': {
-          //                     objectValue: true,
-          //                     fieldNames: { label: 'label', value: 'value' },
-          //                     onChange: () => {
-          //                       form.setValuesIn('dragSortBy', null);
-          //                     },
-          //                   },
-          //                   'x-decorator': 'FormItem',
-          //                 },
-          //                 dragSortBy: {
-          //                   title: t('Sorting field'),
-          //                   required: true,
-          //                   description: t(
-          //                     'Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected',
-          //                     { ns: NAMESPACE },
-          //                   ),
-          //                   'x-component': CreateAndSelectSort,
-          //                   'x-component-props': {
-          //                     objectValue: true,
-          //                     fieldNames: { label: 'label', value: 'value' },
-          //                     sortFields,
-          //                   },
-          //                   'x-decorator': 'FormItem',
-          //                   'x-reactions': [
-          //                     (field) => {
-          //                       field.dataSource = sortFields.map((v) => {
-          //                         return {
-          //                           ...v,
-          //                           disabled: v.scopeKey !== field.form.values?.groupField?.value,
-          //                         };
-          //                       });
-          //                       field.groupField = field.form.values?.groupField;
-          //                       field.setComponentProps({
-          //                         dataSource: item.dataSource,
-          //                         collectionName: item.name,
-          //                         collectionFields,
-          //                         sortFields,
-          //                       });
-          //                     },
-          //                     {
-          //                       dependencies: ['.groupField'],
-          //                       fulfill: {
-          //                         schema: {
-          //                           'x-component-props': '{{$form.values}}',
-          //                         },
-          //                       },
-          //                     },
-          //                   ],
-          //                 },
-          //               },
-          //             }}
-          //           />
-          //         </FormLayout>
-          //       </SchemaComponentOptions>
-          //     </APIClientProvider>
-          //   );
-          // },
           theme,
         ).open({
           initialValues: {},
