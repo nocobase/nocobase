@@ -112,7 +112,7 @@ export const CreateAndSelectSort = (props) => {
                   properties: {
                     field: {
                       type: 'string',
-                      title: `{{t("Convert the following integer fields to sorting fields",{ns:${NAMESPACE}})}}`,
+                      title: t('Convert the following integer fields to sorting fields', { ns: NAMESPACE }),
                       required: true,
                       'x-decorator': 'FormItem',
                       'x-component': 'Select',
@@ -143,18 +143,16 @@ export const CreateAndSelectSort = (props) => {
     ).open({
       initialValues: {},
     });
-    const { data } = await api.resource('collections.fields', collectionName).update({
-      filterByTk: values.field.value,
-      values: {
-        type: 'sort',
-        interface: 'sort',
-        ...values,
-      },
+    const { data } = await api.request({
+      url: `dataSourcesCollections/${dataSource}.${collectionName}/fields:update?filterByTk=${values.field}`,
+      method: 'post',
+      data: { type: 'sort', interface: 'sort', ...values },
     });
+    const result = data.data;
     field.dataSource = sortFields.concat([
-      { ...data.data, value: data.data.name, label: compile(data.data['uiSchema']?.['title']) },
+      { ...result, value: result.name, label: compile(result['uiSchema']?.['title']) },
     ]);
-    field.value = data.data.name;
+    field.value = result.name;
   };
   return (
     <Space.Compact style={{ width: '100%' }}>
