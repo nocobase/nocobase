@@ -1,4 +1,5 @@
 import { list } from './default-actions/list';
+import { move } from './default-actions/move';
 import { proxyToRepository } from './default-actions/proxy-to-repository';
 import { DataSource } from './data-source';
 
@@ -71,5 +72,6 @@ export function loadDefaultActions(dataSource: DataSource) {
       return carry;
     }, {}),
     list,
+    move,
   };
 }
