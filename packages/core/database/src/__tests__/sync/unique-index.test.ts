@@ -1,4 +1,5 @@
 import { Database, mockDatabase } from '../../index';
+import { waitSecond } from '@nocobase/test';
 
 describe('unique index', () => {
   let db: Database;
@@ -39,6 +40,7 @@ describe('unique index', () => {
       });
     }).not.toThrow();
 
+    await waitSecond(1000);
     expect(async () => {
       await User.repository.create({
         values: {
@@ -47,6 +49,8 @@ describe('unique index', () => {
         },
       });
     }).not.toThrow();
+
+    await waitSecond(1000);
 
     await expect(
       User.repository.create({
