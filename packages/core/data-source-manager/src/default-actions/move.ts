@@ -14,6 +14,7 @@ export async function move(ctx: Context, next) {
   }
 
   if (repository.database) {
+    ctx.databaseRepository = repository;
     return databaseMoveAction(ctx, next);
   }
 
