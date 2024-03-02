@@ -5,7 +5,7 @@ import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import set from 'lodash/set';
-import React, { ComponentType, useContext, useMemo } from 'react';
+import React, { ComponentType, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
@@ -711,8 +711,16 @@ export function useDesignable() {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { t } = useTranslation();
-  const dn = createDesignable({ t, api, refresh, current: fieldSchema, model: field });
-  dn.loadAPIClientEvents();
+  const dn = useMemo(() => {
+    if (field?.data?.dn) {
+      return field?.data?.dn;
+    }
+    const d = createDesignable({ t, api, refresh, current: fieldSchema, model: field });
+    d.loadAPIClientEvents();
+    field.data = field.data || {};
+    field.data.dn = d;
+    return d;
+  }, [fieldSchema, field]);
   return {
     dn,
     designable,
@@ -799,3 +807,15 @@ export function useDesignable() {
     },
   };
 }
+
+export const useDesignableMonitor = (options) => {
+  const { dn } = useDesignable();
+  useEffect(() => {
+    if (options.onInsertAdjacent) {
+      dn.on('insertAdjacent', options.onInsertAdjacent);
+    }
+    if (options.onRemove) {
+      dn.on('remove', options.onRemove);
+    }
+  }, [dn]);
+};
