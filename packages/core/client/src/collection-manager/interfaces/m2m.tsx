@@ -49,12 +49,11 @@ export class M2MFieldInterface extends CollectionFieldInterface {
     // schema['type'] = 'array';
     schema['x-component-props'] = schema['x-component-props'] || {};
     schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: field?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+      value: targetCollection?.getPrimaryKey() || 'id',
     };
     schema['x-component-props'].fieldNames.label =
       schema['x-component-props'].fieldNames?.label ||
       targetCollection?.titleField ||
-      field?.targetKey ||
       targetCollection?.getPrimaryKey() ||
       'id';
 

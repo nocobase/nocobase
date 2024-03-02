@@ -273,7 +273,6 @@ export const useInheritsTableColumnInitializerFields = () => {
 };
 
 export const useFormItemInitializerFields = (options?: any) => {
-  const { type: formType } = useFormBlockContext();
   const { name, currentFields } = useCollection_deprecated();
   const { getInterface, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
