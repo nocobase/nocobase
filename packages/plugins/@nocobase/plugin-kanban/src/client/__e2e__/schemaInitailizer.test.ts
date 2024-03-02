@@ -108,6 +108,9 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Created at' }).getByRole('switch').click();
     await page.getByRole('menuitem', { name: 'Single Select' }).getByRole('switch').click();
+
+    await page.mouse.move(300, 0);
+
     await expect(page.getByLabel('block-item-Kanban.Card-general-kanban')).toBeVisible();
   });
 });
