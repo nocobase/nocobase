@@ -52,7 +52,7 @@ const CreateKanbanForm = ({ item, sortFields, collectionFields, fields, options,
                   'x-decorator': 'FormItem',
                 },
                 dragSortBy: {
-                  title: t('Sorting field'),
+                  title: t('Sorting field', { ns: NAMESPACE }),
                   required: true,
                   description: t(
                     'Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected',

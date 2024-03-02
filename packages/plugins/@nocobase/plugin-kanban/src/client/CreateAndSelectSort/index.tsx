@@ -28,13 +28,16 @@ export const CreateAndSelectSort = (props) => {
   const integerfields = collectionFields?.filter((v) => {
     return v.interface === 'integer';
   });
-  console.log(props);
   const ScopekeyDescription = ({ scopeKey }) => {
     const field = scopeKey && collectionFields.find((v) => v.name === scopeKey);
-    const result = scopeKey ? compile(field['uiSchema']?.['title']) : t('Global sorting', { ns: NAMESPACE });
+    const result = scopeKey && compile(field['uiSchema']?.['title']);
     return (
       <span style={{ color: 'GrayText' }}>
-        ({t('Grouping sorting based on', { ns: NAMESPACE }) + `「 ${result} 」`})
+        (
+        {result
+          ? t('Group sorting based on', { ns: NAMESPACE }) + `「${result}」`
+          : t('Global sorting', { ns: NAMESPACE })}
+        )
       </span>
     );
   };
