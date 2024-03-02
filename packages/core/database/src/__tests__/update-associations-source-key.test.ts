@@ -158,3 +158,76 @@ describe('update associations', () => {
     expect(await Post.repository.count()).toBe(2);
   });
 });
+
+describe('update associations', () => {
+  let db: Database;
+  let Table: Collection;
+  let Field: Collection;
+
+  beforeEach(async () => {
+    db = mockDatabase();
+    await db.clean({ drop: true });
+    Table = db.collection({
+      name: 'table',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        { type: 'string', name: 'key', primaryKey: true },
+        { type: 'string', name: 'name', unique: true },
+        {
+          type: 'hasMany',
+          name: 'fields',
+          target: 'field',
+          foreignKey: 'table_name',
+          sourceKey: 'name',
+          targetKey: 'name',
+        },
+      ],
+    });
+
+    Field = db.collection({
+      name: 'field',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        { type: 'string', name: 'key', primaryKey: true },
+        { type: 'string', name: 'name', unique: true },
+      ],
+    });
+    await db.sync();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should create table with fields', async () => {
+    await Field.repository.create({
+      values: {
+        key: 'f1',
+        name: 'n1',
+      },
+    });
+    await Field.repository.create({
+      values: {
+        key: 'f2',
+        name: 'n2',
+      },
+    });
+    await Table.repository.create({
+      values: {
+        key: 'tk1',
+        name: 'tn1',
+        fields: [
+          {
+            key: 'f1',
+            name: 'n1',
+          },
+        ],
+      },
+    });
+    const field = await Field.repository.findById('f1');
+    expect(await Table.repository.count()).toBe(1);
+    expect(field.table_name).toBe('tn1');
+  });
+});
