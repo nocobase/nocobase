@@ -32,7 +32,7 @@ export const CreateAndSelectSort = (props) => {
     const field = scopeKey && collectionFields.find((v) => v.name === scopeKey);
     const result = scopeKey && compile(field['uiSchema']?.['title']);
     return (
-      <span style={{ color: 'GrayText' }}>
+      <span style={{ color: 'rgba(0, 0, 0, 0.25)' }}>
         (
         {result
           ? t('Group sorting based on', { ns: NAMESPACE }) + `「${result}」`
