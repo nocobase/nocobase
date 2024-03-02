@@ -28,6 +28,7 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField<any>();
+  console.log(props);
   const { resource, service } = useBlockRequestContext();
   const groupField = useGroupField(props);
   if (!groupField) {
@@ -157,7 +158,7 @@ export const useKanbanBlockProps = () => {
       const targetCard = destinationColumn?.cards?.[toPosition];
       const values = {
         sourceId: sourceCard.id,
-        sortField: ctx?.sortField?.value || `${groupField.name}_sort`,
+        sortField: ctx?.sortField || `${groupField.name}_sort`,
       };
       if (targetCard) {
         values['targetId'] = targetCard.id;
