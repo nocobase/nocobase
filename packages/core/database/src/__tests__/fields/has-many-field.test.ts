@@ -14,6 +14,66 @@ describe('has many field', () => {
     await db.close();
   });
 
+  it('should create has many association', async () => {
+    const syncOptions = {
+      force: false,
+      alter: {
+        drop: false,
+      },
+    };
+    const A = db.collection({
+      name: 'a',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'field1',
+          primaryKey: true,
+          defaultValue: null,
+        },
+        {
+          type: 'string',
+          name: 'name',
+          unique: true,
+          defaultValue: null,
+        },
+      ],
+    });
+
+    await db.sync(syncOptions);
+
+    const B = db.collection({
+      name: 'b',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'key1',
+          primaryKey: true,
+          unique: false,
+          defaultValue: null,
+        },
+        {
+          type: 'string',
+          name: 'field2',
+        },
+      ],
+    });
+
+    await db.sync(syncOptions);
+
+    A.setField('fields', {
+      type: 'hasMany',
+      target: 'b',
+      sourceKey: 'name',
+      foreignKey: 'ttt_name',
+    });
+
+    await db.sync(syncOptions);
+  });
+
   it('should throw error when associated with item that null with source key', async () => {
     const User = db.collection({
       name: 'users',

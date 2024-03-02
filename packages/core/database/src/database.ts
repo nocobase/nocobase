@@ -706,6 +706,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       options.field = snakeCase(options.field);
     }
 
+    if (Object.prototype.hasOwnProperty.call(options, 'defaultValue') && options.defaultValue === null) {
+      delete options.defaultValue;
+    }
+
     return new Field(options, context);
   }
 
