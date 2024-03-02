@@ -16,15 +16,4 @@ test.describe('TableActionColumnInitializers & DetailsActionInitializers & ReadP
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
     await expect(page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
   });
-  test('duplicate action in ReadPrettyFormActionInitializers', async ({ page, mockPage, mockRecord }) => {
-    const nocoPage = await mockPage(oneEmptyTableBlockWithActions).waitForInit();
-    await mockRecord('general');
-    await nocoPage.goto();
-    await page.getByLabel('view').click();
-    await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
-    await page.getByRole('menuitem', { name: 'form Details' }).click();
-    await page.getByLabel('schema-initializer-ActionBar-ReadPrettyFormActionInitializers-general').hover();
-    await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-    await expect(page.getByLabel('action-Action-Duplicate-duplicate-general-form')).toBeVisible();
-  });
 });

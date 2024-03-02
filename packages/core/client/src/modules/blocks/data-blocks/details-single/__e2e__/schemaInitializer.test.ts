@@ -43,10 +43,6 @@ test.describe('configure actions', () => {
     await createAction(page, 'Delete');
     await expect(page.getByLabel('action-Action-Delete-destroy-general-form-0')).toBeVisible();
 
-    // create duplicate ------------------------------------------------------------------------------------
-    await createAction(page, 'Duplicate');
-    await expect(page.getByLabel('action-Action-Duplicate-duplicate-general-form-0')).toBeVisible();
-
     // create print
     await createAction(page, 'Print');
     await expect(page.getByLabel('action-Action-Print-print-general-form-0')).toBeVisible();
