@@ -5,7 +5,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
     timeout: 5 * 60 * 1000,
 
     expect: {
-      timeout: 30 * 1000,
+      timeout: 10 * 1000,
     },
 
     // Look for test files in the "tests" directory, relative to this configuration file.
