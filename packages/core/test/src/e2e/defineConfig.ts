@@ -2,10 +2,10 @@ import { devices, defineConfig as playwrightDefineConfig, type PlaywrightTestCon
 
 export const defineConfig = (config?: PlaywrightTestConfig) => {
   return playwrightDefineConfig({
-    timeout: process.env.CI ? 2 * 60 * 1000 : 2 * 60 * 1000,
+    timeout: 2 * 60 * 1000,
 
     expect: {
-      timeout: process.env.CI ? 20 * 1000 : 20 * 1000,
+      timeout: 20 * 1000,
     },
 
     // Look for test files in the "tests" directory, relative to this configuration file.

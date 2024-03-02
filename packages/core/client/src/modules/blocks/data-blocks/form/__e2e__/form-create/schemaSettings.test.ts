@@ -363,6 +363,11 @@ test.describe('creation form block schema settings', () => {
     await page.goto('/admin/settings/ui-schema-storage');
     await expect(page.getByRole('row', { name: 'new_form_template' })).toBeVisible();
 
+    // 最后需要把保存的模板删除掉，以免影响其它测试
+    await page.getByLabel('action-Action.Link-Delete-').click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.getByRole('row', { name: 'new_form_template' })).toBeHidden();
+
     async function showSettingsMenu(page) {
       await page.getByLabel('block-item-CardItem-general-form').hover();
       await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
