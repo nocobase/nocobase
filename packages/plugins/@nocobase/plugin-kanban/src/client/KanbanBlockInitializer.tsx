@@ -30,9 +30,9 @@ const CreateKanbanForm = ({ item, sortFields, collectionFields, fields }) => {
     <APIClientProvider apiClient={api}>
       <SchemaComponentOptions
         scope={{
-          ...options.scope,
+          ...options?.scope,
         }}
-        components={{ ...options.components }}
+        components={{ ...options?.components }}
       >
         <FormLayout layout={'vertical'}>
           <SchemaComponent
