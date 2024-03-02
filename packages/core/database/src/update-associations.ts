@@ -454,8 +454,15 @@ export async function updateMultipleAssociation(
 
   const newItems = [];
   const pk = association.target.primaryKeyAttribute;
-  const targetKey = association?.['options']?.['targetKey'] || association.target.primaryKeyAttribute;
-
+  const tmpKey = association['options']?.['targetKey'];
+  let targetKey = pk;
+  const db = model.constructor['database'] as Database;
+  if (tmpKey !== pk) {
+    const targetKeyFieldOptions = db.getFieldByPath(`${association.target.name}.${tmpKey}`)?.options;
+    if (targetKeyFieldOptions?.unique) {
+      targetKey = tmpKey;
+    }
+  }
   for (const item of objectItems) {
     const through = (<any>association).through ? (<any>association).through.model.name : null;
 
@@ -486,16 +493,6 @@ export async function updateMultipleAssociation(
       const where = {
         [targetKey]: item[targetKey],
       };
-      if (association.associationType === 'HasMany') {
-        const db = model.constructor['database'] as Database;
-        const fieldOptions = db.getFieldByPath(`${model.constructor.name}.${key}`).options;
-        const targetKeyFieldOptions = db.getFieldByPath(`${association.target.name}.${targetKey}`)?.options;
-        const foreignKey = fieldOptions['foreignKey'];
-        const sourceKey = fieldOptions['sourceKey'];
-        if (targetKey !== pk && !targetKeyFieldOptions?.unique) {
-          where[foreignKey] = model.get(sourceKey);
-        }
-      }
       let instance = await association.target.findOne<any>({
         where,
         transaction,
