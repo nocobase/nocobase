@@ -13,7 +13,7 @@ import {
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 
-export const dataSelectorBlockSettings = new SchemaSettings({
+export const tableSelectorBlockSettings = new SchemaSettings({
   name: 'blockSettings:tableSelector',
   items: [
     {

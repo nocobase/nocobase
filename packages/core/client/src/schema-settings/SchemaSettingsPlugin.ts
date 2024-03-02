@@ -6,7 +6,7 @@ import { singleDataDetailsBlockSettings } from '../modules/blocks/data-blocks/de
 import {
   creationFormBlockSettings,
   createFormBlockSettings,
-} from '../modules/blocks/data-blocks/form/blockSettings:createForm';
+} from '../modules/blocks/data-blocks/form/createFormBlockSettings';
 import { customizeSaveRecordActionSettings } from '../modules/form-creation/schema-settings/customizeSaveRecordActionSettings';
 import { customizeSubmitToWorkflowActionSettings } from '../modules/form-creation/schema-settings/customizeSubmitToWorkflowActionSettings';
 import { cascadeSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/cascadeSelectComponentFieldSettings';
@@ -24,13 +24,13 @@ import {
   updateSubmitActionSettings,
   submitActionSettings,
 } from '../modules/form-creation/schema-settings/updateSubmitActionSettings';
-import { editFormBlockSettings } from '../modules/blocks/data-blocks/form/blockSettings:editForm';
+import { editFormBlockSettings } from '../modules/blocks/data-blocks/form/editFormBlockSettings';
 import { filterFormBlockSettings } from '../modules/blocks/filter-blocks/form/filterFormBlockSettings';
 import { filterFormItemFieldSettings } from '../modules/blocks/filter-blocks/form/filterFormItemFieldSettings';
 import { gridCardBlockSettings } from '../modules/blocks/data-blocks/grid-card/gridCardBlockSettings';
 import { listBlockSettings } from '../modules/blocks/data-blocks/list/listBlockSettings';
 import { markdownBlockSettings } from '../modules/blocks/other-blocks/markdown/markdownBlockSettings';
-import { dataSelectorBlockSettings } from '../modules/blocks/data-blocks/table-selector/blockSettings:tableSelector';
+import { tableSelectorBlockSettings } from '../modules/blocks/data-blocks/table-selector/tableSelectorBlockSettings';
 import { addNewActionSettings } from '../modules/table/schemaSettings/addNewActionSettings';
 import { bulkDeleteActionSettings } from '../modules/table/schemaSettings/bulkDeleteActionSettings';
 import { customizeAddRecordActionSettings } from '../modules/table/schemaSettings/customizeAddRecordActionSettings';
@@ -40,8 +40,8 @@ import { deleteActionSettings } from '../modules/table/schemaSettings/deleteActi
 import { editActionSettings } from '../modules/table/schemaSettings/editActionSettings';
 import { filterActionSettings } from '../modules/table/schemaSettings/filterActionSettings';
 import { refreshActionSettings } from '../modules/table/schemaSettings/refreshActionSettings';
-import { tableBlockSettings } from '../modules/blocks/data-blocks/table/blockSettings:table';
-import { tableColumnSettings } from '../modules/blocks/data-blocks/table/fieldSettings:TableColumn';
+import { tableBlockSettings } from '../modules/blocks/data-blocks/table/tableBlockSettings';
+import { tableColumnSettings } from '../modules/blocks/data-blocks/table/tableColumnSettings';
 import { viewActionSettings } from '../modules/table/schemaSettings/viewActionSettings';
 import { addChildActionSettings } from '../modules/table/schemaSettings/addChildActionSettings';
 import { expendableActionSettings } from '../modules/table/schemaSettings/expendableActionSettings';
@@ -58,7 +58,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(filterFormItemFieldSettings);
     this.schemaSettingsManager.add(multiDataDetailsBlockSettings);
     this.schemaSettingsManager.add(singleDataDetailsBlockSettings);
-    this.schemaSettingsManager.add(dataSelectorBlockSettings);
+    this.schemaSettingsManager.add(tableSelectorBlockSettings);
     this.schemaSettingsManager.add(listBlockSettings);
     this.schemaSettingsManager.add(gridCardBlockSettings);
     this.schemaSettingsManager.add(filterCollapseBlockSettings);

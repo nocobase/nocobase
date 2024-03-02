@@ -1,2 +1,2 @@
 export * from './TableSelectorInitializer';
-export * from './blockSettings:tableSelector';
+export * from './tableSelectorBlockSettings';
