@@ -78,8 +78,8 @@ export default class StaticScheduleTrigger {
   }
 
   schedule(workflow, nextTime, toggle = true) {
-    const key = `${workflow.id}@${nextTime}`;
     if (toggle) {
+      const key = `${workflow.id}@${nextTime}`;
       if (!this.timers.has(key)) {
         const interval = Math.max(nextTime - Date.now(), 0);
         if (interval > MAX_SAFE_INTERVAL) {
@@ -95,9 +95,12 @@ export default class StaticScheduleTrigger {
         }
       }
     } else {
-      const timer = this.timers.get(key);
-      clearTimeout(timer);
-      this.timers.delete(key);
+      for (const [key, timer] of this.timers.entries()) {
+        if (key.startsWith(`${workflow.id}@`)) {
+          clearTimeout(timer);
+          this.timers.delete(key);
+        }
+      }
     }
   }
 
