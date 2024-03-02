@@ -241,6 +241,45 @@ describe('workflow > action-trigger', () => {
     });
   });
 
+  describe('destroy', () => {
+    it('trigger after destroyed', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({
+        values: { title: 't1' },
+      });
+      const p2 = await PostRepo.create({
+        values: { title: 't2' },
+      });
+      const res1 = await userAgents[0].resource('posts').destroy({
+        filterByTk: p1.id,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(0);
+
+      const res2 = await userAgents[0].resource('posts').destroy({
+        filterByTk: p2.id,
+        triggerWorkflows: `${workflow.key}`,
+      });
+
+      await sleep(500);
+
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2.context.data).toBe(1);
+    });
+  });
+
   describe('directly trigger', () => {
     it('trigger data', async () => {
       const workflow = await WorkflowModel.create({
