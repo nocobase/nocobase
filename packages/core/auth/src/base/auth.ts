@@ -37,7 +37,7 @@ export class BaseAuth extends Auth {
   }
 
   getCacheKey(userId: number) {
-    return `auth:${userId}`;
+    return `profile:${userId}`;
   }
 
   validateUsername(username: string) {

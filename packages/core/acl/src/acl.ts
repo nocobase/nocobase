@@ -9,6 +9,7 @@ import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
+import { Context } from '@nocobase/actions';
 
 interface CanResult {
   role: string;
@@ -274,6 +275,48 @@ export class ACL extends EventEmitter {
     return json;
   }
 
+  collectCanResult(ctx: Context, options: Omit<CanArgs, 'role'>): CanResult | null {
+    const role = ctx.state.currentRole || 'anonymous';
+    let canResult = this.can({ role, ...options });
+    console.log(canResult, role, options);
+    const attachRoles = ctx.state.attachRoles || [];
+    attachRoles.forEach((attachRole) => {
+      if (role === attachRole) {
+        return;
+      }
+      const attachCanResult = this.can({ role: attachRole, ...options });
+      console.log(attachCanResult, attachRole, options);
+      if (!attachCanResult) {
+        return;
+      }
+      if (!canResult) {
+        canResult = attachCanResult;
+      }
+      if (!attachCanResult.params) {
+        return;
+      }
+      canResult.params = assign(canResult?.params || {}, attachCanResult.params, {
+        filter: 'orMerge',
+        fields: (x, y) => {
+          if (lodash.isEmpty(x)) {
+            return x;
+          }
+          if (lodash.isEmpty(y)) {
+            return y;
+          }
+          return mergeStrategies.get('union')(x, y);
+        },
+        appends: 'union',
+        except: 'intersect',
+        whitelist: 'union',
+        blacklist: 'intersect',
+        own: (x, y) => (x === false ? x : y),
+      });
+    });
+    console.log(canResult);
+    return canResult;
+  }
+
   middleware() {
     const acl = this;
 
@@ -282,9 +325,7 @@ export class ACL extends EventEmitter {
       const { resourceName, actionName } = ctx.action;
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
-        const canResult = acl.can({ role: roleName, ...options });
-
-        return canResult;
+        return acl.collectCanResult(ctx, options);
       };
 
       ctx.permission = {
@@ -300,7 +341,7 @@ export class ACL extends EventEmitter {
     const { resourceName, actionName } = ctx.action;
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
-      const can = this.can({ role: roleName, ...options });
+      const can = this.collectCanResult(ctx, options);
       if (!can) {
         return null;
       }
