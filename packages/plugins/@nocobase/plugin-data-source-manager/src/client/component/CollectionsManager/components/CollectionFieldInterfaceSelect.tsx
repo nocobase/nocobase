@@ -18,7 +18,12 @@ const getInterfaceOptions = (data, type) => {
       children: options,
     });
   });
-  return interfaceOptions.filter((v) => v.children.length > 0);
+  return interfaceOptions.filter((v) => {
+    if (type === 'sort') {
+      return v.key === 'advanced';
+    }
+    return v.children.length > 0;
+  });
 };
 
 export const CollectionFieldInterfaceSelect = observer(
