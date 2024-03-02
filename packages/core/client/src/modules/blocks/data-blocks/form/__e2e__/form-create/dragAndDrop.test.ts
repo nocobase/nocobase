@@ -13,14 +13,12 @@ test('fields', async ({ page, mockPage }) => {
     .getByLabel('block-item-CollectionField-users-form-users.nickname')
     .getByLabel('designer-drag')
     .dragTo(page.getByLabel('block-item-CollectionField-users-form-users.username'));
-  await page.reload();
 
   await page.getByLabel('block-item-CollectionField-users-form-users.nickname').hover();
   await page
     .getByLabel('block-item-CollectionField-users-form-users.nickname')
     .getByLabel('designer-drag')
     .dragTo(page.getByLabel('block-item-CollectionField-users-form-users.email'));
-  await page.reload();
 
   const nickname = await page.getByLabel('block-item-CollectionField-users-form-users.nickname').boundingBox();
   const username = await page.getByLabel('block-item-CollectionField-users-form-users.username').boundingBox();

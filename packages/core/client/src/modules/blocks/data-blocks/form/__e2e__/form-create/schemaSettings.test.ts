@@ -364,7 +364,7 @@ test.describe('creation form block schema settings', () => {
     await expect(page.getByRole('row', { name: 'new_form_template' })).toBeVisible();
 
     // 最后需要把保存的模板删除掉，以免影响其它测试
-    await page.getByLabel('action-Action.Link-Delete-').click();
+    await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-new_form_template').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByRole('row', { name: 'new_form_template' })).toBeHidden();
 
