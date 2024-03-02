@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
+import { Collection } from '../../data-source';
 
 export class O2MFieldInterface extends CollectionFieldInterface {
   name = 'o2m';
@@ -48,13 +49,12 @@ export class O2MFieldInterface extends CollectionFieldInterface {
     // schema['type'] = 'array';
     schema['x-component-props'] = schema['x-component-props'] || {};
     schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: targetCollection?.getPrimaryKey() || 'id',
+      value: getUniqueKeyFromCollection(targetCollection),
     };
     schema['x-component-props'].fieldNames.label =
       schema['x-component-props'].fieldNames?.label ||
       targetCollection?.titleField ||
-      targetCollection?.getPrimaryKey() ||
-      'id';
+      getUniqueKeyFromCollection(targetCollection);
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
@@ -204,4 +204,8 @@ export class O2MFieldInterface extends CollectionFieldInterface {
       // },
     ],
   };
+}
+
+export function getUniqueKeyFromCollection(collection: Collection) {
+  return collection?.filterTargetKey || collection?.getPrimaryKey() || 'id';
 }

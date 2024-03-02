@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
+import { getUniqueKeyFromCollection } from './o2m';
 
 export class O2OFieldInterface extends CollectionFieldInterface {
   name = 'o2o';
@@ -55,10 +56,10 @@ export class O2OFieldInterface extends CollectionFieldInterface {
     }
     schema['x-component-props'] = schema['x-component-props'] || {};
     schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: targetCollection?.getPrimaryKey() || 'id',
+      value: getUniqueKeyFromCollection(targetCollection),
     };
     schema['x-component-props'].fieldNames.label =
-      targetCollection?.titleField || targetCollection?.getPrimaryKey() || 'id';
+      targetCollection?.titleField || getUniqueKeyFromCollection(targetCollection);
   }
   properties = {
     'uiSchema.title': {
@@ -241,13 +242,12 @@ export class OHOFieldInterface extends CollectionFieldInterface {
     }
     schema['x-component-props'] = schema['x-component-props'] || {};
     schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: targetCollection?.getPrimaryKey() || 'id',
+      value: getUniqueKeyFromCollection(targetCollection),
     };
     schema['x-component-props'].fieldNames.label =
       schema['x-component-props'].fieldNames?.label ||
       targetCollection?.titleField ||
-      targetCollection?.getPrimaryKey() ||
-      'id';
+      getUniqueKeyFromCollection(targetCollection);
   }
   properties = {
     'uiSchema.title': {
@@ -421,13 +421,12 @@ export class OBOFieldInterface extends CollectionFieldInterface {
 
     schema['x-component-props'] = schema['x-component-props'] || {};
     schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: targetCollection?.getPrimaryKey() || 'id',
+      value: getUniqueKeyFromCollection(targetCollection),
     };
     schema['x-component-props'].fieldNames.label =
       schema['x-component-props'].fieldNames?.label ||
       targetCollection?.titleField ||
-      targetCollection?.getPrimaryKey() ||
-      'id';
+      getUniqueKeyFromCollection(targetCollection);
   }
   properties = {
     'uiSchema.title': {

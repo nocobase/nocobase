@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
+import { getUniqueKeyFromCollection } from './o2m';
 
 export class M2OFieldInterface extends CollectionFieldInterface {
   name = 'm2o';
@@ -48,13 +49,12 @@ export class M2OFieldInterface extends CollectionFieldInterface {
     // schema['type'] = 'object';
     schema['x-component-props'] = schema['x-component-props'] || {};
     schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: targetCollection?.getPrimaryKey() || 'id',
+      value: getUniqueKeyFromCollection(targetCollection),
     };
     schema['x-component-props'].fieldNames.label =
       schema['x-component-props'].fieldNames?.label ||
       targetCollection?.titleField ||
-      targetCollection?.getPrimaryKey() ||
-      'id';
+      getUniqueKeyFromCollection(targetCollection);
 
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};

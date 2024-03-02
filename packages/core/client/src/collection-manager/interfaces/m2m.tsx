@@ -2,6 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
+import { getUniqueKeyFromCollection } from './o2m';
 
 export class M2MFieldInterface extends CollectionFieldInterface {
   name = 'm2m';
@@ -49,13 +50,12 @@ export class M2MFieldInterface extends CollectionFieldInterface {
     // schema['type'] = 'array';
     schema['x-component-props'] = schema['x-component-props'] || {};
     schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: targetCollection?.getPrimaryKey() || 'id',
+      value: getUniqueKeyFromCollection(targetCollection),
     };
     schema['x-component-props'].fieldNames.label =
       schema['x-component-props'].fieldNames?.label ||
       targetCollection?.titleField ||
-      targetCollection?.getPrimaryKey() ||
-      'id';
+      getUniqueKeyFromCollection(targetCollection);
 
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
