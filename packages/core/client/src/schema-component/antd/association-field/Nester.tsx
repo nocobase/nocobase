@@ -44,6 +44,10 @@ const ToOneNester = (props) => {
 
   const isAllowToSetDefaultValue = useCallback(
     ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
+      // 表单非新建状态下，不允许设置默认值
+      if (formBlockType !== 'create') {
+        return false;
+      }
       if (!collectionField) {
         if (process.env.NODE_ENV !== 'production') {
           console.error(`collectionField should not be ${collectionField}`);
@@ -57,11 +61,6 @@ const ToOneNester = (props) => {
         fieldSchema['x-component-props']?.mode &&
         !['Picker', 'Select'].includes(fieldSchema['x-component-props'].mode)
       ) {
-        return false;
-      }
-
-      // hasOne 和 belongsTo 类型的字段只能有一个值，不会新增值，所以在编辑状态下不允许设置默认值
-      if (formBlockType === 'update') {
         return false;
       }
 
@@ -93,35 +92,41 @@ const ToManyNester = observer(
     const fieldSchema = useFieldSchema();
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
-
     if (!Array.isArray(field.value)) {
       field.value = [];
     }
 
-    const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, getInterface }) => {
-      if (!collectionField) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.error(`collectionField should not be ${collectionField}`);
+    const isAllowToSetDefaultValue = useCallback(
+      ({ form, fieldSchema, collectionField, getInterface, formBlockType }) => {
+        // 表单非新建状态下，不允许设置默认值
+        if (formBlockType !== 'create') {
+          return false;
         }
-        return false;
-      }
+        if (!collectionField) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.error(`collectionField should not be ${collectionField}`);
+          }
+          return false;
+        }
 
-      // 当 Field component 不是下列组件时，不允许设置默认值
-      if (
-        collectionField.target &&
-        fieldSchema['x-component-props']?.mode &&
-        !['Picker', 'Select'].includes(fieldSchema['x-component-props'].mode)
-      ) {
-        return false;
-      }
+        // 当 Field component 不是下列组件时，不允许设置默认值
+        if (
+          collectionField.target &&
+          fieldSchema['x-component-props']?.mode &&
+          !['Picker', 'Select'].includes(fieldSchema['x-component-props'].mode)
+        ) {
+          return false;
+        }
 
-      return (
-        !form?.readPretty &&
-        !isPatternDisabled(fieldSchema) &&
-        !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
-        !isSystemField(collectionField, getInterface)
-      );
-    }, []);
+        return (
+          !form?.readPretty &&
+          !isPatternDisabled(fieldSchema) &&
+          !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
+          !isSystemField(collectionField, getInterface)
+        );
+      },
+      [],
+    );
 
     return field.value.length > 0 ? (
       <Card

@@ -92,12 +92,15 @@ function _isAllowToSetDefaultValue({
   isSubTableColumn,
 }: IsAllowToSetDefaultValueParams) {
   if (isSubTableColumn) {
+    // 表单非新建状态下，不允许设置默认值
+    if (formBlockType !== 'create') {
+      return false;
+    }
     return (
       !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
       !isSystemField(collectionField, getInterface)
     );
   }
-
   if (!collectionField) {
     if (process.env.NODE_ENV !== 'production') {
       console.error(`collectionField should not be ${collectionField}`);
