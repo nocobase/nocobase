@@ -39,7 +39,7 @@ export default class extends Trigger {
       'x-component-props': {
         title: 'Preload associations',
         multiple: true,
-        useCollection_deprecated() {
+        useCollection() {
           const { values } = useForm();
           return values?.collection;
         },

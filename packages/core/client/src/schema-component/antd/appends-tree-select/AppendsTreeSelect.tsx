@@ -99,7 +99,7 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
 
   const loadData = useCallback(
     async (option) => {
-      if (propsLoadData !== null) {
+      if (propsLoadData != null) {
         return propsLoadData(option);
       }
       if (!option.isLeaf && option.loadChildren) {
