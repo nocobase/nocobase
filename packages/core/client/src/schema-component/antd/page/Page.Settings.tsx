@@ -9,6 +9,9 @@ function useNotDisableHeader() {
   return !fieldSchema['x-component-props']?.disablePageHeader;
 }
 
+/**
+ * @deprecated
+ */
 export const pageSettings = new SchemaSettings({
   name: 'PageSettings',
   items: [

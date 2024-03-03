@@ -2,6 +2,9 @@ import { SchemaSettings } from '../../../application/schema-settings';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettings';
 
+/**
+ * @deprecated
+ */
 export const formV1Settings = new SchemaSettings({
   name: 'FormV1Settings',
   items: [
