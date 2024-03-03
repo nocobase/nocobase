@@ -1,23 +1,22 @@
 import React from 'react';
-import { useSchemaInitializerItem } from '../../application';
-import { BlockInitializer } from './BlockInitializer';
 
-export const CustomizeAddRecordActionInitializer = () => {
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
+
+export const ViewActionInitializer = (props) => {
   const schema = {
     type: 'void',
-    title: '{{t("Add record")}}',
+    title: '{{ t("View") }}',
+    'x-action': 'view',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:addRecord',
+    'x-settings': 'actionSettings:view',
     'x-component': 'Action',
-    'x-action': 'customize:create',
     'x-component-props': {
       openMode: 'drawer',
-      icon: 'PlusOutlined',
     },
     properties: {
       drawer: {
         type: 'void',
-        title: '{{t("Add record")}}',
+        title: '{{ t("View record") }}',
         'x-component': 'Action.Container',
         'x-component-props': {
           className: 'nb-action-popup',
@@ -27,14 +26,11 @@ export const CustomizeAddRecordActionInitializer = () => {
             type: 'void',
             'x-component': 'Tabs',
             'x-component-props': {},
-            'x-initializer': 'TabPaneInitializersForCreateFormBlock',
-            'x-initializer-props': {
-              gridInitializer: 'CusomeizeCreateFormBlockInitializers',
-            },
+            'x-initializer': 'TabPaneInitializers',
             properties: {
               tab1: {
                 type: 'void',
-                title: '{{t("Add record")}}',
+                title: '{{t("Details")}}',
                 'x-component': 'Tabs.TabPane',
                 'x-designer': 'Tabs.Designer',
                 'x-component-props': {},
@@ -42,7 +38,7 @@ export const CustomizeAddRecordActionInitializer = () => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'CusomeizeCreateFormBlockInitializers',
+                    'x-initializer': 'RecordBlockInitializers',
                     properties: {},
                   },
                 },
@@ -53,7 +49,5 @@ export const CustomizeAddRecordActionInitializer = () => {
       },
     },
   };
-  const itemConfig = useSchemaInitializerItem();
-
-  return <BlockInitializer {...itemConfig} schema={schema} item={itemConfig} />;
+  return <ActionInitializer {...props} schema={schema} />;
 };

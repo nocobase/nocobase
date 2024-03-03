@@ -1,8 +1,8 @@
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { gridRowColWrap } from '../utils';
+import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
+import { gridRowColWrap } from '../../../schema-initializer/utils';
 
-export const createFormBlockInitializers = new SchemaInitializer({
-  name: 'CreateFormBlockInitializers',
+export const customizeCreateFormBlockInitializers = new SchemaInitializer({
+  name: 'CusomeizeCreateFormBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
@@ -15,7 +15,8 @@ export const createFormBlockInitializers = new SchemaInitializer({
         {
           name: 'form',
           title: '{{t("Form")}}',
-          Component: 'CreateFormBlockInitializer',
+          Component: 'FormBlockInitializer',
+          isCusomeizeCreate: true,
         },
       ],
     },

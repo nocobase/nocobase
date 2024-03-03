@@ -1,19 +1,17 @@
 import React from 'react';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
-import { ActionInitializer } from './ActionInitializer';
-
-export const UpdateSubmitActionInitializer = (props) => {
+export const CreateSubmitActionInitializer = (props) => {
   const schema = {
     title: '{{ t("Submit") }}',
     'x-action': 'submit',
     'x-component': 'Action',
-    // 'x-designer': 'Action.Designer',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:updateSubmit',
+    'x-settings': 'actionSettings:createSubmit',
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',
-      useProps: '{{ useUpdateActionProps }}',
+      useProps: '{{ useCreateActionProps }}',
     },
     'x-action-settings': {
       triggerWorkflows: [],

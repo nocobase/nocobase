@@ -1,6 +1,6 @@
 import React from 'react';
-import { BlockInitializer } from '.';
-import { useSchemaInitializerItem } from '../../application';
+import { BlockInitializer } from '../../../schema-initializer/items';
+import { useSchemaInitializerItem } from '../../../application';
 
 export const SaveRecordActionInitializer = () => {
   const schema = {

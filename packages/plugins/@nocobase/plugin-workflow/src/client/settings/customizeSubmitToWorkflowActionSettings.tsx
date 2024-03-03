@@ -1,16 +1,16 @@
 import { useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { useSchemaToolbar } from '../../../application';
-import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import {
   AfterSuccess,
   AssignedFieldValues,
   ButtonEditor,
   RemoveButton,
+  SchemaSettings,
   SecondConFirm,
   SkipValidation,
   WorkflowConfig,
-} from '../../../schema-component/antd/action/Action.Designer';
+  useSchemaToolbar,
+} from '@nocobase/client';
 
 export const customizeSubmitToWorkflowActionSettings = new SchemaSettings({
   name: 'actionSettings:submitToWorkflow',

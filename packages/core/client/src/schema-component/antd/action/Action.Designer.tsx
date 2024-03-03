@@ -8,18 +8,18 @@ import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
-import { SchemaSettingOptions, SchemaSettings, SchemaSettingsChildren } from '../../../application/schema-settings';
+import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
+import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
   SchemaSettingsActionModalItem,
   SchemaSettingsDivider,
   SchemaSettingsEnableChildCollections,
-  SchemaSettingsItemGroup,
   SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -28,7 +28,6 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { SaveMode } from '../../../modules/form-creation/schema-settings/createSubmitActionSettings';
 
 const MenuGroup = (props) => {
   return props.children;

@@ -34,6 +34,7 @@ import { useTriggerWorkflowsActionProps } from './hooks/useTriggerWorkflowAction
 import { FormTriggerWorkflowActionInitializerV2 } from './components/FormTriggerWorkflowActionInitializerV2';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 import { NAMESPACE } from './locale';
+import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
 
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
@@ -82,6 +83,8 @@ export default class PluginWorkflowClient extends Plugin {
       Component: WorkflowPane,
       aclSnippet: 'pm.workflow.workflows',
     });
+
+    this.app.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
 
     this.registerTrigger('collection', CollectionTrigger);
     this.registerTrigger('schedule', ScheduleTrigger);

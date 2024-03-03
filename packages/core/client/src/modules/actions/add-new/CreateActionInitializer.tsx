@@ -1,6 +1,6 @@
 import React from 'react';
-import { useSchemaInitializerItem } from '../../application';
-import { ActionInitializer } from './ActionInitializer';
+import { useSchemaInitializerItem } from '../../../application';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const CreateActionInitializer = () => {
   const schema = {

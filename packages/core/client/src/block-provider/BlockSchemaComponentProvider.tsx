@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
-import { ActionSchemaToolbar } from '../modules/schema-toolbar/ActionSchemaToolbar';
+import { ActionSchemaToolbar } from '../modules/actions/ActionSchemaToolbar';
 import { CollapseItemSchemaToolbar } from '../modules/blocks/filter-blocks/collapse/CollapseItemSchemaToolbar';
 import { FormItemSchemaToolbar } from '../modules/blocks/data-blocks/form/FormItemSchemaToolbar';
 import { TableColumnSchemaToolbar } from '../modules/blocks/data-blocks/table/TableColumnSchemaToolbar';

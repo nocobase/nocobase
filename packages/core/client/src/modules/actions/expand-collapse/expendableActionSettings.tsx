@@ -1,11 +1,11 @@
-import { useField, useFieldSchema, ISchema } from '@formily/react';
-import { useTranslation } from 'react-i18next';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { useDesignable } from '../../..';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsModalItem } from '../../../schema-settings';
-import { useDesignable } from '../../../';
 
 function ButtonEditor() {
   const field = useField();

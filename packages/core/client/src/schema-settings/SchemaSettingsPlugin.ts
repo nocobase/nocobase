@@ -1,51 +1,47 @@
 import { Plugin } from '../application/Plugin';
-import { filterCollapseBlockSettings } from '../modules/blocks/filter-blocks/collapse/filterCollapseBlockSettings';
-import { filterCollapseItemFieldSettings } from '../modules/blocks/filter-blocks/collapse/filterCollapseItemFieldSettings';
+import { addChildActionSettings } from '../modules/actions/add-child/addChildActionSettings';
+import { addNewActionSettings } from '../modules/actions/add-new/addNewActionSettings';
+import { customizeAddRecordActionSettings } from '../modules/actions/add-record/customizeAddRecordActionSettings';
+import { bulkDeleteActionSettings } from '../modules/actions/bulk-destroy/bulkDeleteActionSettings';
+import { deleteActionSettings } from '../modules/actions/delete/deleteActionSettings';
+import { expendableActionSettings } from '../modules/actions/expand-collapse/expendableActionSettings';
+import { filterActionSettings } from '../modules/actions/filter/filterActionSettings';
+import { refreshActionSettings } from '../modules/actions/refresh/refreshActionSettings';
+import { customizeSaveRecordActionSettings } from '../modules/actions/save-record/customizeSaveRecordActionSettings';
+import { createSubmitActionSettings } from '../modules/actions/submit/createSubmitActionSettings';
+import { submitActionSettings, updateSubmitActionSettings } from '../modules/actions/submit/updateSubmitActionSettings';
+import { customizeUpdateRecordActionSettings } from '../modules/actions/update-record/customizeUpdateRecordActionSettings';
+import { customizePopupActionSettings } from '../modules/actions/view-edit-popup/customizePopupActionSettings';
+import { editActionSettings } from '../modules/actions/view-edit-popup/editActionSettings';
+import { viewActionSettings } from '../modules/actions/view-edit-popup/viewActionSettings';
 import { multiDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-multi/multiDataDetailsBlockSettings';
 import { singleDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-single/singleDataDetailsBlockSettings';
 import {
-  creationFormBlockSettings,
   createFormBlockSettings,
+  creationFormBlockSettings,
 } from '../modules/blocks/data-blocks/form/createFormBlockSettings';
-import { customizeSaveRecordActionSettings } from '../modules/form-creation/schema-settings/customizeSaveRecordActionSettings';
-import { customizeSubmitToWorkflowActionSettings } from '../modules/form-creation/schema-settings/customizeSubmitToWorkflowActionSettings';
+import { editFormBlockSettings } from '../modules/blocks/data-blocks/form/editFormBlockSettings';
+import { fieldSettingsFormItem } from '../modules/blocks/data-blocks/form/fieldSettingsFormItem';
+import { gridCardBlockSettings } from '../modules/blocks/data-blocks/grid-card/gridCardBlockSettings';
+import { listBlockSettings } from '../modules/blocks/data-blocks/list/listBlockSettings';
+import { tableSelectorBlockSettings } from '../modules/blocks/data-blocks/table-selector/tableSelectorBlockSettings';
+import { tableBlockSettings } from '../modules/blocks/data-blocks/table/tableBlockSettings';
+import { tableColumnSettings } from '../modules/blocks/data-blocks/table/tableColumnSettings';
+import { filterCollapseBlockSettings } from '../modules/blocks/filter-blocks/collapse/filterCollapseBlockSettings';
+import { filterCollapseItemFieldSettings } from '../modules/blocks/filter-blocks/collapse/filterCollapseItemFieldSettings';
+import { filterFormBlockSettings } from '../modules/blocks/filter-blocks/form/filterFormBlockSettings';
+import { filterFormItemFieldSettings } from '../modules/blocks/filter-blocks/form/filterFormItemFieldSettings';
+import { markdownBlockSettings } from '../modules/blocks/other-blocks/markdown/markdownBlockSettings';
 import { cascadeSelectComponentFieldSettings } from '../modules/fields/component/CascadeSelect/cascadeSelectComponentFieldSettings';
 import { datePickerComponentFieldSettings } from '../modules/fields/component/DatePicker/datePickerComponentFieldSettings';
 import { fileManagerComponentFieldSettings } from '../modules/fields/component/FileManager/fileManagerComponentFieldSettings';
+import { uploadAttachmentComponentFieldSettings } from '../modules/fields/component/FileManager/uploadAttachmentComponentFieldSettings';
+import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
 import { recordPickerComponentFieldSettings } from '../modules/fields/component/Picker/recordPickerComponentFieldSettings';
+import { subformPopoverComponentFieldSettings } from '../modules/fields/component/PopoverNester/subformPopoverComponentFieldSettings';
 import { selectComponentFieldSettings } from '../modules/fields/component/Select/selectComponentFieldSettings';
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
-import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
-import { subformPopoverComponentFieldSettings } from '../modules/fields/component/PopoverNester/subformPopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
-import { uploadAttachmentComponentFieldSettings } from '../modules/fields/component/FileManager/uploadAttachmentComponentFieldSettings';
-import { createSubmitActionSettings } from '../modules/form-creation/schema-settings/createSubmitActionSettings';
-import {
-  updateSubmitActionSettings,
-  submitActionSettings,
-} from '../modules/form-creation/schema-settings/updateSubmitActionSettings';
-import { editFormBlockSettings } from '../modules/blocks/data-blocks/form/editFormBlockSettings';
-import { filterFormBlockSettings } from '../modules/blocks/filter-blocks/form/filterFormBlockSettings';
-import { filterFormItemFieldSettings } from '../modules/blocks/filter-blocks/form/filterFormItemFieldSettings';
-import { gridCardBlockSettings } from '../modules/blocks/data-blocks/grid-card/gridCardBlockSettings';
-import { listBlockSettings } from '../modules/blocks/data-blocks/list/listBlockSettings';
-import { markdownBlockSettings } from '../modules/blocks/other-blocks/markdown/markdownBlockSettings';
-import { tableSelectorBlockSettings } from '../modules/blocks/data-blocks/table-selector/tableSelectorBlockSettings';
-import { addNewActionSettings } from '../modules/table/schemaSettings/addNewActionSettings';
-import { bulkDeleteActionSettings } from '../modules/table/schemaSettings/bulkDeleteActionSettings';
-import { customizeAddRecordActionSettings } from '../modules/table/schemaSettings/customizeAddRecordActionSettings';
-import { customizePopupActionSettings } from '../modules/table/schemaSettings/customizePopupActionSettings';
-import { customizeUpdateRecordActionSettings } from '../modules/table/schemaSettings/customizeUpdateRecordActionSettings';
-import { deleteActionSettings } from '../modules/table/schemaSettings/deleteActionSettings';
-import { editActionSettings } from '../modules/table/schemaSettings/editActionSettings';
-import { filterActionSettings } from '../modules/table/schemaSettings/filterActionSettings';
-import { refreshActionSettings } from '../modules/table/schemaSettings/refreshActionSettings';
-import { tableBlockSettings } from '../modules/blocks/data-blocks/table/tableBlockSettings';
-import { tableColumnSettings } from '../modules/blocks/data-blocks/table/tableColumnSettings';
-import { viewActionSettings } from '../modules/table/schemaSettings/viewActionSettings';
-import { addChildActionSettings } from '../modules/table/schemaSettings/addChildActionSettings';
-import { expendableActionSettings } from '../modules/table/schemaSettings/expendableActionSettings';
-import { fieldSettingsFormItem } from '../modules/blocks/data-blocks/form/fieldSettingsFormItem';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -79,7 +75,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(updateSubmitActionSettings);
     this.schemaSettingsManager.add(submitActionSettings);
     this.schemaSettingsManager.add(customizeSaveRecordActionSettings);
-    this.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
     this.schemaSettingsManager.add(addChildActionSettings);
     this.schemaSettingsManager.add(expendableActionSettings);
 

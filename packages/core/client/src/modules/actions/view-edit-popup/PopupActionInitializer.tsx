@@ -1,22 +1,22 @@
 import React from 'react';
+import { BlockInitializer } from '../../../schema-initializer/items';
+import { useSchemaInitializerItem } from '../../../application';
 
-import { ActionInitializer } from './ActionInitializer';
-
-export const ViewActionInitializer = (props) => {
+export const PopupActionInitializer = (props) => {
   const schema = {
     type: 'void',
-    title: '{{ t("View") }}',
-    'x-action': 'view',
+    title: '{{ t("Popup") }}',
+    'x-action': 'customize:popup',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:view',
-    'x-component': 'Action',
+    'x-settings': 'actionSettings:popup',
+    'x-component': props?.['x-component'] || 'Action.Link',
     'x-component-props': {
       openMode: 'drawer',
     },
     properties: {
       drawer: {
         type: 'void',
-        title: '{{ t("View record") }}',
+        title: '{{ t("Popup") }}',
         'x-component': 'Action.Container',
         'x-component-props': {
           className: 'nb-action-popup',
@@ -49,5 +49,7 @@ export const ViewActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+
+  const itemConfig = useSchemaInitializerItem();
+  return <BlockInitializer {...itemConfig} schema={schema} item={itemConfig} />;
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { ActionInitializer } from './ActionInitializer';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const UpdateActionInitializer = (props) => {
   const schema = {

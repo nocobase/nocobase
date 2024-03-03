@@ -1,5 +1,5 @@
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { gridRowColWrap } from '../utils';
+import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
+import { gridRowColWrap } from '../../../schema-initializer/utils';
 
 export const recordFormBlockInitializers = new SchemaInitializer({
   name: 'RecordFormBlockInitializers',
