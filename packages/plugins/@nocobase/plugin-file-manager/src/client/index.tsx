@@ -24,7 +24,7 @@ export class FileManagerPlugin extends Plugin {
       this.registerStorageType(storageType.name, storageType);
     });
 
-    const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
+    const tableActionInitializers = this.app.schemaInitializerManager.get('actionInitializers:tableAction');
     tableActionInitializers?.add('enableActions.upload', {
       title: "{{t('Upload')}}",
       Component: 'UploadActionInitializer',

@@ -16,7 +16,7 @@ import { uid } from '@formily/shared';
 export const createSnapshotBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'ReadPrettyFormActionInitializers',
+    actionInitializers = 'actionInitializers:detailsSingle',
     collection,
     association,
     resource,
@@ -78,7 +78,7 @@ export const SnapshotBlockInitializersDetailItem = () => {
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
-    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
+    block !== 'TableField' ? itemConfig.actionInitializers || 'actionInitializers:detailsSingle' : null;
 
   return (
     <SchemaInitializerItem

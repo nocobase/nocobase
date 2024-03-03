@@ -810,7 +810,7 @@ test.describe('creation form block schema settings', () => {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
                                 type: 'void',
-                                'x-initializer': 'FormActionInitializers',
+                                'x-initializer': 'actionInitializers:form',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   layout: 'one-column',
@@ -919,7 +919,7 @@ test.describe('creation form block schema settings', () => {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'TableActionInitializers',
+                            'x-initializer': 'actionInitializers:tableAction',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
@@ -1033,7 +1033,7 @@ test.describe('creation form block schema settings', () => {
                                 'x-decorator': 'TableV2.Column.ActionBar',
                                 'x-component': 'TableV2.Column',
                                 'x-designer': 'TableV2.ActionColumnDesigner',
-                                'x-initializer': 'TableActionColumnInitializers',
+                                'x-initializer': 'actionInitializers:tableColumnAction',
                                 properties: {
                                   actions: {
                                     _isJSONSchemaObject: true,

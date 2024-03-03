@@ -31,7 +31,7 @@ export default {
       _isJSONSchemaObject: true,
       version: '2.0',
       type: 'void',
-      'x-initializer': 'TableActionInitializers',
+      'x-initializer': 'actionInitializers:tableAction',
       'x-component': 'ActionBar',
       'x-component-props': { style: { marginBottom: 16 } },
       properties: {

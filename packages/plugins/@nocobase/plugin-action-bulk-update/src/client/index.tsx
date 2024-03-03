@@ -25,9 +25,13 @@ export class PluginBulkUpdateClient extends Plugin {
       },
     };
 
-    this.app.schemaInitializerManager.addItem('TableActionInitializers', 'customize.bulkUpdate', initializerData);
-    this.app.schemaInitializerManager.addItem('GanttActionInitializers', 'customize.bulkUpdate', initializerData);
-    this.app.schemaInitializerManager.addItem('MapActionInitializers', 'customize.bulkUpdate', initializerData);
+    this.app.schemaInitializerManager.addItem(
+      'actionInitializers:tableAction',
+      'customize.bulkUpdate',
+      initializerData,
+    );
+    this.app.schemaInitializerManager.addItem('actionInitializers:gantt', 'customize.bulkUpdate', initializerData);
+    this.app.schemaInitializerManager.addItem('actionInitializers:map', 'customize.bulkUpdate', initializerData);
   }
 }
 
