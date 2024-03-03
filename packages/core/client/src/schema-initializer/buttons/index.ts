@@ -1,4 +1,3 @@
-export * from './BlockInitializers';
 export * from './CustomFormItemInitializers';
 export * from './FormItemInitializers';
 export * from './RecordBlockInitializers';

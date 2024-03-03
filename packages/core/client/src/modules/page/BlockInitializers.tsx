@@ -1,5 +1,5 @@
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { gridRowColWrap } from '../utils';
+import { gridRowColWrap } from '../../schema-initializer/utils';
 
 export const blockInitializers = new SchemaInitializer({
   name: 'BlockInitializers',

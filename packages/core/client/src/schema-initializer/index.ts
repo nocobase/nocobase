@@ -50,8 +50,8 @@ import { tableSelectorInitializers } from '../modules/fields/component/Picker/Ta
 import { CollectionFieldInitializer } from '../modules/fields/initializer/CollectionFieldInitializer';
 import { TableCollectionFieldInitializer } from '../modules/fields/initializer/TableCollectionFieldInitializer';
 import { menuItemInitializer } from '../modules/menu/menuItemInitializer';
+import { blockInitializers } from '../modules/page/BlockInitializers';
 import {
-  blockInitializers,
   customFormItemInitializers,
   recordBlockInitializers,
   subTableActionInitializers,
