@@ -1,6 +1,6 @@
-import { getRepositoryFromParams } from './utils';
 import lodash from 'lodash';
-import { DataSource } from '@nocobase/data-source-manager';
+import { DataSource } from '../data-source';
+import { getRepositoryFromParams } from './utils';
 
 export function proxyToRepository(paramKeys: string[] | ((ctx: any) => object), repositoryMethod: string) {
   return async function (ctx, next) {

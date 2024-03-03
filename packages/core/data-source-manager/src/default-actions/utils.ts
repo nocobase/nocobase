@@ -1,5 +1,5 @@
 import { Context } from '@nocobase/actions';
-import { DataSource, IRepository } from '@nocobase/data-source-manager';
+import { DataSource, IRepository } from '../';
 
 export function pageArgsToLimitArgs(
   page: number,
