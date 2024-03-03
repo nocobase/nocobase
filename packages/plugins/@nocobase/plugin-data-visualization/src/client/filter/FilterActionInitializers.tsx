@@ -125,8 +125,54 @@ const ChartFilterCollapseInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const chartFilterActionInitializers: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ */
+export const chartFilterActionInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
   name: 'ChartFilterActionInitializers',
+  'data-testid': 'configure-actions-button-of-chart-filter',
+  title: '{{t("Configure actions")}}',
+  icon: 'SettingOutlined',
+  items: [
+    {
+      name: 'enbaleActions',
+      type: 'itemGroup',
+      title: '{{t("Enable actions")}}',
+      children: [
+        {
+          name: 'filter',
+          type: 'item',
+          title: '{{t("Filter")}}',
+          component: ChartFilterActionInitializer,
+          schema: {
+            'x-action-settings': {},
+          },
+        },
+        {
+          name: 'reset',
+          type: 'item',
+          title: '{{t("Reset")}}',
+          component: ChartFilterResetInitializer,
+          schema: {
+            'x-action-settings': {},
+          },
+        },
+        {
+          name: 'collapse',
+          type: 'item',
+          title: '{{t("Collapse")}}',
+          component: ChartFilterCollapseInitializer,
+          schema: {
+            'x-action-settings': {},
+          },
+        },
+      ],
+    },
+  ],
+});
+
+export const chartFilterActionInitializers: SchemaInitializer = new SchemaInitializer({
+  name: 'actionInitializers:chartFilterAction',
   'data-testid': 'configure-actions-button-of-chart-filter',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',

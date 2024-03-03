@@ -28,7 +28,7 @@ const mySettings = new SchemaSettings({
 });
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   //  按钮标题标题
   title: 'Button Text',
   wrap: Grid.wrap,
@@ -80,7 +80,7 @@ const HelloPage = () => {
           name: 'hello',
           type: 'void',
           'x-component': 'Grid',
-          'x-initializer': 'MyInitializer',
+          'x-initializer': 'myInitializer',
         }}
       />
     </div>

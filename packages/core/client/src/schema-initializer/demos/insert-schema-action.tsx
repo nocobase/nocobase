@@ -12,7 +12,7 @@ import {
 import React from 'react';
 
 const addActionInitializer = new SchemaInitializer({
-  name: 'AddAction',
+  name: 'addAction',
   title: 'Configure actions',
   // 插入位置
   insertPosition: 'beforeEnd',
@@ -65,7 +65,7 @@ const Root = () => {
             // 指定初始化的按钮组件，
             // Table、Form、Details、Calendar、Kanban 等等不同区块
             // 可以根据情况组装自己的 initializer
-            'x-initializer': 'AddAction',
+            'x-initializer': 'addAction',
             properties: {
               action1: {
                 type: 'void',
