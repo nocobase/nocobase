@@ -43,7 +43,7 @@ export const CreateActionInitializer = () => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'CreateFormBlockInitializers',
+                    'x-initializer': 'blockInitializers:createForm',
                     properties: {},
                   },
                 },

@@ -13,7 +13,7 @@ export class IframeBlockPlugin extends Plugin {
       Component: 'IframeBlockInitializer',
     });
 
-    const createFormBlockInitializers = this.app.schemaInitializerManager.get('CreateFormBlockInitializers');
+    const createFormBlockInitializers = this.app.schemaInitializerManager.get('blockInitializers:createForm');
     createFormBlockInitializers?.add('otherBlocks.iframe', {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',

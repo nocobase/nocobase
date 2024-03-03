@@ -1315,7 +1315,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             'x-uid': 'k0zm3uifn6v',
                                             'x-async': false,
                                             'x-index': 1,
@@ -1720,7 +1720,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'CreateFormBlockInitializers',
+                                                    'x-initializer': 'blockInitializers:createForm',
                                                     'x-uid': 'vtcnkzcaeec',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -1922,7 +1922,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               '7tcjyx5gipn': {
                                                 _isJSONSchemaObject: true,
@@ -4003,7 +4003,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               '7soqvrflnps': {
                                                 _isJSONSchemaObject: true,
@@ -6381,7 +6381,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               xgwlijx7tl0: {
                                                 _isJSONSchemaObject: true,
@@ -7818,7 +7818,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               q5fy0fkcotq: {
                                                 _isJSONSchemaObject: true,
@@ -8910,7 +8910,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               '54z7u3t354f': {
                                                 _isJSONSchemaObject: true,
@@ -9889,7 +9889,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               '8yo09nilrra': {
                                                 _isJSONSchemaObject: true,
@@ -11514,7 +11514,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               jykx4mc4tan: {
                                                 _isJSONSchemaObject: true,
@@ -12728,7 +12728,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               zmbofsdker4: {
                                                 _isJSONSchemaObject: true,
@@ -15516,7 +15516,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             'x-uid': 'ezrqm7whaxk',
                                             'x-async': false,
                                             'x-index': 1,
@@ -17232,7 +17232,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             'x-uid': 'hhhjt2axsd2',
                                             'x-async': false,
                                             'x-index': 1,
@@ -18246,7 +18246,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               ec8k6t8hyfd: {
                                                 _isJSONSchemaObject: true,

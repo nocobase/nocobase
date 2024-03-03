@@ -465,7 +465,7 @@ export const oneEmptyTableBlockWithDuplicateActions: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'CreateFormBlockInitializers',
+                                                    'x-initializer': 'blockInitializers:createForm',
                                                     'x-uid': 'vtcnkzcaeec',
                                                     'x-async': false,
                                                     'x-index': 1,
