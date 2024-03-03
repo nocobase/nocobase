@@ -21,7 +21,7 @@ export const PasswordField: React.FC = () => {
 
   return (
     <Row gutter={10}>
-      <Col span={19}>
+      <Col span={18}>
         <Password
           checkStrength={true}
           visibilityToggle={{
