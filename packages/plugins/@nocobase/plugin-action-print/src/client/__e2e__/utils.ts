@@ -503,7 +503,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                 type: 'void',
                                                 version: '2.0',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'CreateFormBlockInitializers',
+                                                'x-initializer': 'blockInitializers:createForm',
                                                 _isJSONSchemaObject: true,
                                                 properties: {
                                                   '7e9xtqdm96x': {

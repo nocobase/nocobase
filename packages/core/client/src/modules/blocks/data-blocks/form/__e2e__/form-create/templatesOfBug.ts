@@ -1830,7 +1830,7 @@ export const T2993: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               kvyqrrxvggn: {
                                                 _isJSONSchemaObject: true,
@@ -2412,7 +2412,7 @@ export const T2615: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             properties: {
                                               '8ei3tsaojf6': {
                                                 _isJSONSchemaObject: true,
@@ -3325,7 +3325,7 @@ export const T2845: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'blockInitializers:createForm',
                                             'x-index': 1,
                                             properties: {
                                               '8ei3tsaojf6': {
