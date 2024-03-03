@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Tag } from 'antd';
-import { useTranslation } from 'react-i18next';
 import { observer, useForm } from '@formily/react';
-import { useCompile } from '../../../';
+import { Table, Tag } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../';
+import { useCompile } from '../../../';
 
 const getDefaultCollectionFields = (presetFields, values) => {
   if (values?.template === 'view' || values?.template === 'sql') {
@@ -186,6 +186,7 @@ export const PresetFields = observer((props: any) => {
       pagination={false}
       rowKey="name"
       bordered
+      scroll={{ x: 600 }}
       dataSource={dataSource}
       columns={column}
       rowSelection={{

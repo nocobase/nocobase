@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
+import { Collection } from '../../data-source';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
-import { Collection } from '../../data-source';
 
 export class O2MFieldInterface extends CollectionFieldInterface {
   name = 'o2m';
@@ -129,7 +129,7 @@ export class O2MFieldInterface extends CollectionFieldInterface {
                 sourceKey: {
                   type: 'string',
                   title: '{{t("Source key")}}',
-                  description: "{{t('The field must be a primary key or have a unique index set')}}",
+                  description: "{{t('Field values must be unique.')}}",
                   default: 'id',
                   enum: [{ label: 'ID', value: 'id' }],
                   'x-decorator': 'FormItem',
@@ -176,6 +176,7 @@ export class O2MFieldInterface extends CollectionFieldInterface {
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
                   'x-disabled': '{{ !createOnly }}',
+                  description: "{{t('Field values must be unique.')}}",
                 },
               },
             },

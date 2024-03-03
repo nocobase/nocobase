@@ -1,21 +1,20 @@
-import React, { useContext } from 'react';
-import { Button, Space } from 'antd';
-import { useTranslation } from 'react-i18next';
-import {
-  useCompile,
-  Select,
-  FormDialog,
-  SchemaComponentOptions,
-  SchemaComponent,
-  useGlobalTheme,
-  useAPIClient,
-  useRequest,
-} from '@nocobase/client';
-import { useForm, SchemaOptionsContext, useField } from '@formily/react';
 import { FormLayout } from '@formily/antd-v5';
+import { SchemaOptionsContext, useField } from '@formily/react';
+import {
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  Select,
+  useAPIClient,
+  useCompile,
+  useGlobalTheme,
+} from '@nocobase/client';
+import { Button, Space } from 'antd';
+import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { NAMESPACE } from '../locale';
 import { uid } from '@formily/shared';
+import { NAMESPACE } from '../locale';
 
 export const CreateAndSelectSort = (props) => {
   const { sortFields, collectionFields, groupField, collectionName, dataSource, ...others } = props;
@@ -35,7 +34,7 @@ export const CreateAndSelectSort = (props) => {
       <span style={{ color: 'rgba(0, 0, 0, 0.25)' }}>
         (
         {result
-          ? t('Group sorting based on', { ns: NAMESPACE }) + `「${result}」`
+          ? t('Grouped sorting based on', { ns: NAMESPACE }) + `「${result}」`
           : t('Global sorting', { ns: NAMESPACE })}
         )
       </span>
@@ -72,7 +71,7 @@ export const CreateAndSelectSort = (props) => {
                     },
                     scopeKey: {
                       type: 'string',
-                      title: '{{t("Group sorting")}}',
+                      title: '{{t("Grouped sorting")}}',
                       default: groupField.value,
                       'x-disabled': true,
                       'x-decorator': 'FormItem',
@@ -128,7 +127,7 @@ export const CreateAndSelectSort = (props) => {
                     },
                     scopeKey: {
                       type: 'string',
-                      title: '{{t("Group sorting")}}',
+                      title: '{{t("Grouped sorting")}}',
                       default: groupField.value,
                       'x-disabled': true,
                       'x-decorator': 'FormItem',

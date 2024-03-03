@@ -1,6 +1,6 @@
-import { defaultProps, operators } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
+import { defaultProps, operators } from './properties';
 export class SortFieldInterface extends CollectionFieldInterface {
   name = 'sort';
   type = 'object';
@@ -28,12 +28,12 @@ export class SortFieldInterface extends CollectionFieldInterface {
     ...defaultProps,
     scopeKey: {
       type: 'string',
-      title: '{{t("Group sorting")}}',
+      title: '{{t("Grouped sorting")}}',
       'x-disabled': '{{ !createOnly }}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       enum: '{{scopeKeyOptions}}',
-      description: "{{t('When a field is selected as a group, it will be grouped first and then sorted')}}",
+      description: "{{t('When a field is selected for grouping, it will be grouped first before sorting.')}}",
     },
   };
   filterable = {
