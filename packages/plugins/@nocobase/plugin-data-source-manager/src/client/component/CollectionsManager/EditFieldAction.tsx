@@ -177,7 +177,7 @@ export const EditCollectionField = (props) => {
 
 const EditFieldAction = (props) => {
   const { scope, getContainer, item: record, parentItem: parentRecord, children, ...otherProps } = props;
-  const { getInterface, collections } = useCollectionManager_deprecated();
+  const { getInterface, collections, getCollection } = useCollectionManager_deprecated();
   const {
     data: { database: currentDatabase },
   } = useCurrentAppInfo();
@@ -196,6 +196,21 @@ const EditFieldAction = (props) => {
       };
     });
   }, []);
+  const scopeKeyOptions = useMemo(() => {
+    return (
+      record?.fields ||
+      getCollection(record.collectionName, name)
+        ?.options?.fields.filter((v) => {
+          return v.interface === 'select';
+        })
+        .map((k) => {
+          return {
+            value: k.name,
+            label: compile(k.uiSchema?.title),
+          };
+        })
+    );
+  }, [record.name]);
   return (
     <RecordProvider_deprecated record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -240,6 +255,7 @@ const EditFieldAction = (props) => {
             showReverseFieldConfig: false,
             collections: currentCollections,
             isDialect,
+            scopeKeyOptions,
             disabledJSONB: true,
             ...scope,
             createOnly: false,
