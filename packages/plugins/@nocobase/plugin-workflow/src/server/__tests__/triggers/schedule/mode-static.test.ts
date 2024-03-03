@@ -218,6 +218,33 @@ describe('workflow > triggers > schedule > static mode', () => {
     });
   });
 
+  describe('status', () => {
+    it('should not trigger after turned off', async () => {
+      const start = await sleepToEvenSecond();
+      const future = new Date();
+      future.setSeconds(future.getSeconds() + 2);
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 0,
+          startsOn: future.toISOString(),
+          repeat: 1000,
+        },
+      });
+
+      await sleep(1000);
+
+      await workflow.update({ enabled: false });
+
+      await sleep(3000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+  });
+
   describe('dispatch', () => {
     it('missed non-repeated scheduled time should not be triggered', async () => {
       await sleepToEvenSecond();

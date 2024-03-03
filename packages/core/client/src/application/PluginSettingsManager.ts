@@ -103,6 +103,7 @@ export class PluginSettingsManager {
   }
 
   hasAuth(name: string) {
+    if (this.aclSnippets.includes(`!${this.getAclSnippet('*')}`)) return false;
     return this.aclSnippets.includes(`!${this.getAclSnippet(name)}`) === false;
   }
 
