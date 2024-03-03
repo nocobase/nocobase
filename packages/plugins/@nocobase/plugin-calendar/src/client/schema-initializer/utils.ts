@@ -62,7 +62,7 @@ export const createCalendarBlockSchema = (options) => {
                     'x-component-props': {},
                     'x-initializer': 'TabPaneInitializers',
                     'x-initializer-props': {
-                      gridInitializer: 'blockInitializers:record',
+                      gridInitializer: 'RecordBlockInitializers',
                     },
                     properties: {
                       tab1: {
@@ -78,7 +78,7 @@ export const createCalendarBlockSchema = (options) => {
                             'x-initializer-props': {
                               actionInitializers: 'CalendarFormActionInitializers',
                             },
-                            'x-initializer': 'blockInitializers:record',
+                            'x-initializer': 'RecordBlockInitializers',
                             properties: {},
                           },
                         },

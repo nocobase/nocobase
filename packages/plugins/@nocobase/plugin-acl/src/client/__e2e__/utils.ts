@@ -14,7 +14,7 @@ export const oneTableBlock: PageConfig = {
         type: 'void',
         version: '2.0',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         _isJSONSchemaObject: true,
         properties: {
           hxf5h572bwc: {
@@ -850,7 +850,7 @@ export const oneTableBlock: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     _isJSONSchemaObject: true,
                                                     properties: {
                                                       yyehsjjoo8e: {
@@ -1180,7 +1180,7 @@ export const oneTableBlock: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     _isJSONSchemaObject: true,
                                                     'x-uid': '9be5zlgowvl',
                                                     'x-async': false,
@@ -1254,7 +1254,7 @@ export const oneTableBlock: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     _isJSONSchemaObject: true,
                                                     properties: {
                                                       pk40wwnw0cp: {
@@ -1843,7 +1843,7 @@ export const oneTableBlock: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     _isJSONSchemaObject: true,
                                                     properties: {
                                                       h9gq1awpz33: {

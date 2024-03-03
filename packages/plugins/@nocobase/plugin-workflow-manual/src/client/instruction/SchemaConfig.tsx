@@ -544,7 +544,7 @@ export function SchemaConfig({ value, onChange }) {
                 'x-component-props': {},
                 'x-initializer': 'TabPaneInitializers',
                 'x-initializer-props': {
-                  gridInitializer: 'blockInitializers:workflowManual',
+                  gridInitializer: 'AddBlockButton',
                 },
                 properties: value ?? {
                   tab1: {
@@ -556,7 +556,7 @@ export function SchemaConfig({ value, onChange }) {
                       grid: {
                         type: 'void',
                         'x-component': 'Grid',
-                        'x-initializer': 'blockInitializers:workflowManual',
+                        'x-initializer': 'AddBlockButton',
                         properties: {},
                       },
                     },

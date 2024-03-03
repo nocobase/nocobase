@@ -90,7 +90,7 @@ const recordPickerViewer = {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'blockInitializers:snapshot',
+              'x-initializer': 'SnapshotBlockInitializers',
               properties: {},
             },
           },

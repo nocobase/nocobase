@@ -119,7 +119,7 @@ export const ChartV2BlockInitializer: React.FC = () => {
               type: 'void',
               'x-component': 'Grid',
               'x-decorator': 'ChartV2Block',
-              'x-initializer': 'blockInitializers:chart',
+              'x-initializer': 'ChartInitializers',
             },
           },
         });

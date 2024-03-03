@@ -12,7 +12,7 @@ export const T2165 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         properties: {
           psn8ekavlq6: {
             _isJSONSchemaObject: true,
@@ -291,7 +291,7 @@ export const T2174 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         'x-index': 1,
         properties: {
           ppgwx2drpng: {
@@ -438,7 +438,7 @@ export const T2174 = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     'x-index': 1,
                                                     properties: {
                                                       g8w7wq09bgo: {
@@ -722,7 +722,7 @@ export const T2174 = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'blockInitializers:record',
+                                                'x-initializer': 'RecordBlockInitializers',
                                                 'x-index': 1,
                                                 'x-uid': 'roog7uz0d2o',
                                                 'x-async': false,
@@ -888,7 +888,7 @@ export const T2614: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         properties: {
           vv0l8wohslb: {
             _isJSONSchemaObject: true,
@@ -1024,7 +1024,7 @@ export const T2614: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     properties: {
                                                       qbl84fadyr0: {
                                                         _isJSONSchemaObject: true,
@@ -1355,7 +1355,7 @@ export const T2614: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     properties: {
                                                       z79dioevb4n: {
                                                         _isJSONSchemaObject: true,
@@ -1724,7 +1724,7 @@ export const T2993: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         'x-index': 1,
         properties: {
           vv0l8wohslb: {
@@ -2311,7 +2311,7 @@ export const T2615: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         properties: {
           '1valv0kj8vs': {
             _isJSONSchemaObject: true,
@@ -2693,7 +2693,7 @@ export const T2615: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     properties: {
                                                       l79xm6sfjst: {
                                                         _isJSONSchemaObject: true,
@@ -2936,7 +2936,7 @@ export const T2615: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     properties: {
                                                       nlnfd9hnl53: {
                                                         _isJSONSchemaObject: true,
@@ -3215,7 +3215,7 @@ export const T2845: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         'x-index': 1,
         properties: {
           '1valv0kj8vs': {
@@ -3564,7 +3564,7 @@ export const T2845: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'blockInitializers:record',
+                                                                                                                    'RecordBlockInitializers',
                                                                                                                   'x-uid':
                                                                                                                     'fen65isdi05',
                                                                                                                   'x-async':
@@ -3650,7 +3650,7 @@ export const T2845: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'RecordBlockInitializers',
                                                                                             properties: {
                                                                                               dksoesw9cnq: {
                                                                                                 _isJSONSchemaObject:
@@ -3967,7 +3967,7 @@ export const T2845: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     'x-index': 1,
                                                     properties: {
                                                       l79xm6sfjst: {
@@ -4336,7 +4336,7 @@ export const T2845: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     'x-index': 1,
                                                     properties: {
                                                       nlnfd9hnl53: {
@@ -4697,7 +4697,7 @@ export const T2200 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         properties: {
           ai6ojrzwkiv: {
             _isJSONSchemaObject: true,
@@ -4832,7 +4832,7 @@ export const T2200 = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     properties: {
                                                       dv88ljcl0qw: {
                                                         _isJSONSchemaObject: true,
@@ -5039,7 +5039,7 @@ export const T3106: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         'x-index': 1,
         properties: {
           cxk2aa058lc: {
@@ -5259,7 +5259,7 @@ export const T3251: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         properties: {
           xovhjqo0uig: {
             _isJSONSchemaObject: true,

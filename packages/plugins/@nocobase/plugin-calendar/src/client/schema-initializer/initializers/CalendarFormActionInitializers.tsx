@@ -111,7 +111,7 @@ export const CalendarFormActionInitializers_deprecated: SchemaInitializer = new 
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'blockInitializers:record',
+                            'x-initializer': 'RecordBlockInitializers',
                             properties: {},
                           },
                         },
@@ -272,7 +272,7 @@ export const calendarFormActionInitializers: SchemaInitializer = new SchemaIniti
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'blockInitializers:record',
+                            'x-initializer': 'RecordBlockInitializers',
                             properties: {},
                           },
                         },

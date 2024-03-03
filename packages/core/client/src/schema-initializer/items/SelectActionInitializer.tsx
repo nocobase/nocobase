@@ -23,7 +23,7 @@ export const SelectActionInitializer = (props) => {
           grid: {
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'blockInitializers:tableSelector',
+            'x-initializer': 'TableSelectorInitializers',
             properties: {},
           },
           footer: {

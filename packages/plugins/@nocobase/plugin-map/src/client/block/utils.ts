@@ -65,7 +65,7 @@ export const createMapBlockSchema = (options) => {
                       grid: {
                         type: 'void',
                         'x-component': 'Grid',
-                        'x-initializer': 'blockInitializers:record',
+                        'x-initializer': 'RecordBlockInitializers',
                         properties: {},
                       },
                     },

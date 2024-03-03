@@ -75,7 +75,7 @@ export const PageMenuItem = () => {
             [uid()]: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'blockInitializers:page',
+              'x-initializer': 'BlockInitializers',
               properties: {},
             },
           },

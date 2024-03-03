@@ -719,7 +719,7 @@ test.describe('creation form block schema settings', () => {
             version: '2.0',
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'blockInitializers:page',
+            'x-initializer': 'BlockInitializers',
             properties: {
               gdj0ceke8ac: {
                 _isJSONSchemaObject: true,
@@ -879,7 +879,7 @@ test.describe('creation form block schema settings', () => {
             version: '2.0',
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'blockInitializers:page',
+            'x-initializer': 'BlockInitializers',
             properties: {
               ibb0kjq3kyl: {
                 _isJSONSchemaObject: true,
@@ -1094,7 +1094,7 @@ test.describe('creation form block schema settings', () => {
                                                         version: '2.0',
                                                         type: 'void',
                                                         'x-component': 'Grid',
-                                                        'x-initializer': 'blockInitializers:record',
+                                                        'x-initializer': 'RecordBlockInitializers',
                                                         'x-uid': 's49vs6v3qs0',
                                                         'x-async': false,
                                                         'x-index': 1,

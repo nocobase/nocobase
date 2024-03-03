@@ -140,7 +140,7 @@ export const oneEmptyGantt: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         properties: {
           gl57m4hyewf: {
             _isJSONSchemaObject: true,
@@ -296,7 +296,7 @@ export const oneEmptyGantt: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'blockInitializers:record',
+                                            'x-initializer': 'RecordBlockInitializers',
                                             'x-uid': 'gxtfjqzxbfu',
                                             'x-async': false,
                                             'x-index': 1,
@@ -367,7 +367,7 @@ export const oneEmptyTableBlockWithCustomizeUpdate: PageConfig = {
         type: 'void',
         version: '2.0',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         _isJSONSchemaObject: true,
         properties: {
           btrf53i4lpi: {

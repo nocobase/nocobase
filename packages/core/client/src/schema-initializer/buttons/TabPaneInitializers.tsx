@@ -16,11 +16,11 @@ export const TabPaneInitializers = (props?: any) => {
     const ctx = useActionContext();
     let initializer = gridInitializer;
     if (!initializer) {
-      initializer = 'blockInitializers:record';
+      initializer = 'RecordBlockInitializers';
       if (isCreate || !record) {
         initializer = 'blockInitializers:createForm';
       } else if (isBulkEdit) {
-        initializer = 'blockInitializers:bulkEdit';
+        initializer = 'BulkEditBlockInitializers';
       }
     }
     return {

@@ -73,7 +73,7 @@ export class ChartsPlugin extends Plugin {
   }
   async load() {
     // Chart (Old) 老的不需要了
-    // const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
+    // const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     // blockInitializers?.add('data-blocks.chart-old', {
     //   icon: 'PieChartOutlined',
     //   title: '{{t("Chart (Old)",{ns:"charts"})}}',

@@ -34,7 +34,7 @@ export default class extends Plugin {
     this.app.schemaInitializerManager.add(addCustomFormField_deprecated);
     this.app.schemaInitializerManager.add(addCustomFormField);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     blockInitializers.add('otherBlocks.workflowTodos', {
       title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
       Component: 'WorkflowTodoBlockInitializer',

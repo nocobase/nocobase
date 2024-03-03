@@ -13,7 +13,7 @@ export const T2797: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         'x-index': 1,
         properties: {
           '921il71tsii': {
@@ -161,7 +161,7 @@ export const T2797: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     'x-index': 1,
                                                     properties: {
                                                       uq6k35ibdum: {
@@ -286,7 +286,7 @@ export const T2797: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'RecordBlockInitializers',
                                                                                             'x-index': 1,
                                                                                             properties: {
                                                                                               i7919iug0zf: {
@@ -594,7 +594,7 @@ export const T2838: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'BlockInitializers',
         'x-index': 1,
         properties: {
           ocvzef7y4nh: {
@@ -740,7 +740,7 @@ export const T2838: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'RecordBlockInitializers',
                                                     'x-index': 1,
                                                     properties: {
                                                       w9u8i9nzh10: {
@@ -856,7 +856,7 @@ export const T2838: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'RecordBlockInitializers',
                                                                                             'x-index': 1,
                                                                                             properties: {
                                                                                               nclrn6m8w40: {
@@ -1039,7 +1039,7 @@ export const T2838: PageConfig = {
                                                                                                                                                       'x-component':
                                                                                                                                                         'Grid',
                                                                                                                                                       'x-initializer':
-                                                                                                                                                        'blockInitializers:record',
+                                                                                                                                                        'RecordBlockInitializers',
                                                                                                                                                       'x-index': 1,
                                                                                                                                                       properties:
                                                                                                                                                         {
