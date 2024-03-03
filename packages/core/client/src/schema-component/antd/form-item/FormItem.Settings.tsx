@@ -32,9 +32,6 @@ import { getTempFieldState } from '../form-v2/utils';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 
-/**
- * @deprecated
- */
 export const formItemSettings = new SchemaSettings({
   name: 'FormItemSettings',
   items: [

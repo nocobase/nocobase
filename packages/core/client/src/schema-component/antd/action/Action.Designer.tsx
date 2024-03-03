@@ -745,10 +745,6 @@ export function SecondConFirm() {
     />
   );
 }
-
-/**
- * @deprecated
- */
 export const actionSettings = new SchemaSettings({
   name: 'ActionSettings',
   items: actionSettingsItems,
