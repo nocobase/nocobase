@@ -468,7 +468,7 @@ export const T2187 = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:createForm',
+                                                    'x-initializer': 'CreateFormBlockInitializers',
                                                     properties: {
                                                       qvyfk3a9a2g: {
                                                         _isJSONSchemaObject: true,

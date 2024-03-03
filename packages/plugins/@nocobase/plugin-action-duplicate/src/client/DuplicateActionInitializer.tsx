@@ -38,7 +38,7 @@ export const DuplicateActionInitializer = (props) => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'blockInitializers:createForm',
+                    'x-initializer': 'CreateFormBlockInitializers',
                     properties: {},
                   },
                 },

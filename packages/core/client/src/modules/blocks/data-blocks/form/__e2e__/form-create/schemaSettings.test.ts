@@ -980,7 +980,7 @@ test.describe('creation form block schema settings', () => {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'blockInitializers:createForm',
+                                                'x-initializer': 'CreateFormBlockInitializers',
                                                 'x-uid': 'w224zhqyair',
                                                 'x-async': false,
                                                 'x-index': 1,

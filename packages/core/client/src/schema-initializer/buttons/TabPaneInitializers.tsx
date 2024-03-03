@@ -18,7 +18,7 @@ export const TabPaneInitializers = (props?: any) => {
     if (!initializer) {
       initializer = 'RecordBlockInitializers';
       if (isCreate || !record) {
-        initializer = 'blockInitializers:createForm';
+        initializer = 'CreateFormBlockInitializers';
       } else if (isBulkEdit) {
         initializer = 'BulkEditBlockInitializers';
       }
