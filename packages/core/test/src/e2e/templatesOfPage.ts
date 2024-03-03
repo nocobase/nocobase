@@ -1434,7 +1434,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'blockInitializers:customizeCreateForm',
+                                            'x-initializer': 'CusomeizeCreateFormBlockInitializers',
                                             'x-uid': '60wmk833o7b',
                                             'x-async': false,
                                             'x-index': 1,
@@ -2127,7 +2127,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'blockInitializers:customizeCreateForm',
+                                            'x-initializer': 'CusomeizeCreateFormBlockInitializers',
                                             properties: {
                                               vdhd3r5uw3r: {
                                                 _isJSONSchemaObject: true,
