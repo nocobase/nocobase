@@ -9,16 +9,16 @@ import {
 } from '../modules/blocks/data-blocks/form/createFormBlockSettings';
 import { customizeSaveRecordActionSettings } from '../modules/form-creation/schema-settings/customizeSaveRecordActionSettings';
 import { customizeSubmitToWorkflowActionSettings } from '../modules/form-creation/schema-settings/customizeSubmitToWorkflowActionSettings';
-import { cascadeSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/cascadeSelectComponentFieldSettings';
-import { datePickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/datePickerComponentFieldSettings';
-import { fileManagerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/fileManagerComponentFieldSettings';
-import { recordPickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/recordPickerComponentFieldSettings';
-import { selectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/selectComponentFieldSettings';
-import { subTablePopoverComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/subTablePopoverComponentFieldSettings';
-import { subformComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/subformComponentFieldSettings';
-import { subformPopoverComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/subformPopoverComponentFieldSettings';
-import { tagComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/tagComponentFieldSettings';
-import { uploadAttachmentComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/uploadAttachmentComponentFieldSettings';
+import { cascadeSelectComponentFieldSettings } from '../modules/fields/component/CascadeSelect/cascadeSelectComponentFieldSettings';
+import { datePickerComponentFieldSettings } from '../modules/fields/component/DatePicker/datePickerComponentFieldSettings';
+import { fileManagerComponentFieldSettings } from '../modules/fields/component/FileManager/fileManagerComponentFieldSettings';
+import { recordPickerComponentFieldSettings } from '../modules/fields/component/Picker/recordPickerComponentFieldSettings';
+import { selectComponentFieldSettings } from '../modules/fields/component/Select/selectComponentFieldSettings';
+import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
+import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
+import { subformPopoverComponentFieldSettings } from '../modules/fields/component/PopoverNester/subformPopoverComponentFieldSettings';
+import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
+import { uploadAttachmentComponentFieldSettings } from '../modules/fields/component/FileManager/uploadAttachmentComponentFieldSettings';
 import { createSubmitActionSettings } from '../modules/form-creation/schema-settings/createSubmitActionSettings';
 import {
   updateSubmitActionSettings,

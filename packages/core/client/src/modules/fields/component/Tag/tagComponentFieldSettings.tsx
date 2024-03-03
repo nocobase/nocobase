@@ -5,34 +5,63 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import {
-  useIsFieldReadPretty,
-  useTitleFieldOptions,
-} from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useCollectionField } from './utils';
+import { useCollectionField } from '../utils';
 
-export const titleField: any = {
+const enableLink = {
+  name: 'enableLink',
+  type: 'switch',
+  useVisible() {
+    const field = useField();
+    return field.readPretty;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn } = useDesignable();
+    return {
+      title: t('Enable link'),
+      checked: fieldSchema['x-component-props']?.enableLink !== false,
+      onChange(flag) {
+        fieldSchema['x-component-props'] = {
+          ...fieldSchema?.['x-component-props'],
+          enableLink: flag,
+        };
+        field.componentProps['enableLink'] = flag;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema?.['x-component-props'],
+            },
+          },
+        });
+        dn.refresh();
+      },
+    };
+  },
+};
+
+const titleField: any = {
   name: 'titleField',
   type: 'select',
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const { uiSchema, fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
-    const options = useTitleFieldOptions();
+    const { fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
     const schema = useFieldSchema();
     const fieldSchema = tableColumnSchema || schema;
+    const options = useTitleFieldOptions();
     const targetCollectionField = useCollectionField();
     const collectionField = tableColumnField || targetCollectionField;
     const { dn } = useDesignable();
-    const fieldNames =
-      field?.componentProps?.fieldNames ||
-      fieldSchema?.['x-component-props']?.['fieldNames'] ||
-      uiSchema?.['x-component-props']?.['fieldNames'];
     return {
       title: t('Title field'),
       options,
-      value: fieldNames?.label,
+      value: field?.componentProps?.fieldNames?.label,
       onChange(label) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -55,56 +84,20 @@ export const titleField: any = {
   },
 };
 
-export const allowMultiple: any = {
-  name: 'allowMultiple',
-  type: 'switch',
-  useVisible() {
-    const isFieldReadPretty = useIsFieldReadPretty();
-    const collectionField = useCollectionField();
-    return !isFieldReadPretty && ['hasMany', 'belongsToMany'].includes(collectionField?.type);
-  },
-  useComponentProps() {
-    const { t } = useTranslation();
-    const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn, refresh } = useDesignable();
-    return {
-      title: t('Allow multiple'),
-      checked:
-        fieldSchema['x-component-props']?.multiple === undefined ? true : fieldSchema['x-component-props'].multiple,
-      onChange(value) {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        field.componentProps = field.componentProps || {};
-
-        fieldSchema['x-component-props'].multiple = value;
-        field.componentProps.multiple = value;
-
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        dn.emit('patch', {
-          schema,
-        });
-        refresh();
-      },
-    };
-  },
-};
-
-export const fieldComponent: any = {
+const fieldComponent: any = {
   name: 'fieldComponent',
   type: 'select',
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
     const isAddNewForm = useIsAddNewForm();
-    const fieldComponentName = useFieldComponentName();
     const { fieldSchema: tableColumnSchema, collectionField } = useColumnSchema();
+    const fieldModeOptions = useFieldModeOptions({ fieldSchema: tableColumnSchema, collectionField });
     const schema = useFieldSchema();
     const fieldSchema = tableColumnSchema || schema;
-    const fieldModeOptions = useFieldModeOptions({ fieldSchema: tableColumnSchema, collectionField });
+    const fieldComponentName = useFieldComponentName();
     const { dn } = useDesignable();
+
     return {
       title: t('Field component'),
       options: fieldModeOptions,
@@ -124,8 +117,8 @@ export const fieldComponent: any = {
           // @ts-ignore
           schema.default = null;
           fieldSchema.default = null;
-          field?.setInitialValue?.(null);
-          field?.setValue?.(null);
+          field.setInitialValue(null);
+          field.setValue(null);
         }
 
         void dn.emit('patch', {
@@ -137,49 +130,42 @@ export const fieldComponent: any = {
   },
 };
 
-export const recordPickerComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:Picker',
+export const tagComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:Tag',
   items: [
     fieldComponent,
     {
-      name: 'popupSize',
+      name: 'tagColorField',
       type: 'select',
-      useVisible() {
-        const isFieldReadPretty = useIsFieldReadPretty();
-        return !isFieldReadPretty;
-      },
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
-        const { fieldSchema: tableColumnSchema } = useColumnSchema();
-        const schema = useFieldSchema();
-        const fieldSchema = tableColumnSchema || schema;
+        const fieldSchema = useFieldSchema();
         const { dn } = useDesignable();
+        const collectionField = useCollectionField();
+        const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
         return {
-          title: t('Popup size'),
-          options: [
-            { label: t('Small'), value: 'small' },
-            { label: t('Middle'), value: 'middle' },
-            { label: t('Large'), value: 'large' },
-          ],
-          value:
-            fieldSchema?.['x-component-props']?.['openSize'] ??
-            (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle'),
-          onChange: (value) => {
-            field.componentProps.openSize = value;
-            fieldSchema['x-component-props'] = { ...fieldSchema['x-component-props'], openSize: value };
+          title: t('Tag color field'),
+          options: colorFieldOptions,
+          value: field?.componentProps?.tagColorField,
+          onChange(tagColorField) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['tagColorField'] = tagColorField;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps.tagColorField = tagColorField;
             dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-component-props': fieldSchema['x-component-props'],
-              },
+              schema,
             });
             dn.refresh();
           },
         };
       },
     },
-    allowMultiple,
     titleField,
+    enableLink,
   ],
 });

@@ -10,7 +10,7 @@ import {
   useIsAssociationField,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { allowMultiple } from './selectComponentFieldSettings';
+import { allowMultiple } from '../Select/selectComponentFieldSettings';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 
 const fieldComponent: any = {

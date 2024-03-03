@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 import React from 'react';
 
-import { InitializerWithSwitch } from './InitializerWithSwitch';
-import { useSchemaInitializerItem } from '../../application';
+import { InitializerWithSwitch } from '../../../schema-initializer/items/InitializerWithSwitch';
+import { useSchemaInitializerItem } from '../../../application';
 
 export const CollectionFieldInitializer = () => {
   const schema: ISchema = {};

@@ -17,7 +17,6 @@ import {
   tabPaneInitializers,
   tabPaneInitializersForBulkEditFormBlock,
   tabPaneInitializersForRecordBlock,
-  tableSelectorInitializers,
 } from './buttons';
 import * as initializerComponents from './components';
 import * as items from './items';
@@ -43,6 +42,9 @@ import { filterFormItemInitializers } from '../modules/blocks/filter-blocks/form
 import { FilterCollapseBlockInitializer } from '../modules/blocks/filter-blocks/collapse/FilterCollapseBlockInitializer';
 import { MarkdownBlockInitializer } from '../modules/blocks/other-blocks/markdown/MarkdownBlockInitializer';
 import { MarkdownFormItemInitializer } from '../modules/blocks/other-blocks/markdown/MarkdownFormItemInitializer';
+import { TableCollectionFieldInitializer } from '../modules/fields/initializer/TableCollectionFieldInitializer';
+import { CollectionFieldInitializer } from '../modules/fields/initializer/CollectionFieldInitializer';
+import { tableSelectorInitializers } from '../modules/fields/component/Picker/TableSelectorInitializers';
 export * from './buttons';
 export * from './items';
 export {
@@ -81,6 +83,8 @@ export class SchemaInitializerPlugin extends Plugin {
       FilterCollapseBlockInitializer,
       MarkdownBlockInitializer,
       MarkdownFormItemInitializer,
+      TableCollectionFieldInitializer,
+      CollectionFieldInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);

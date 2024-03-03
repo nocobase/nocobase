@@ -20,12 +20,12 @@ import { VariableInput, getShouldChange } from '../../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useLocalVariables, useVariables } from '../../../../variables';
-import { useCollectionField } from './utils';
+import { useCollectionField } from '../utils';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 
-export const enableLink = {
+const enableLink = {
   name: 'enableLink',
   type: 'switch',
   useVisible() {
@@ -64,7 +64,7 @@ export const enableLink = {
   },
 };
 
-export const titleField: any = {
+const titleField: any = {
   name: 'titleField',
   type: 'select',
   useComponentProps() {
@@ -146,7 +146,7 @@ export const allowMultiple: any = {
   },
 };
 
-export const quickCreate: any = {
+const quickCreate: any = {
   name: 'quickCreate',
   type: 'select',
   useComponentProps() {
@@ -207,12 +207,12 @@ export const quickCreate: any = {
   },
 };
 
-export const setDefaultSortingRules = {
+const setDefaultSortingRules = {
   name: 'setDefaultSortingRules',
   Component: SchemaSettingsSortingRule,
 };
 
-export const setTheDataScope: any = {
+const setTheDataScope: any = {
   name: 'setTheDataScope',
   Component: SchemaSettingsDataScope,
   useComponentProps() {
@@ -264,7 +264,7 @@ export const setTheDataScope: any = {
   },
 };
 
-export const fieldComponent: any = {
+const fieldComponent: any = {
   name: 'fieldComponent',
   type: 'select',
   useComponentProps() {

@@ -1,6 +1,6 @@
-import { useCollection_deprecated } from '../..';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { gridRowColWrap } from '../utils';
+import { useCollection_deprecated } from '../../../..';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { gridRowColWrap } from '../../../../schema-initializer/utils';
 
 export const tableSelectorInitializers = new SchemaInitializer({
   name: 'TableSelectorInitializers',

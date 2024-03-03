@@ -5,14 +5,12 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import {
-  useIsFieldReadPretty,
-  useIsFormReadPretty,
-} from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useCollectionField } from './utils';
-import { useFormBlockType } from '../../../../block-provider';
+import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { useCollectionField } from '../utils';
+import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { titleField } from '../Picker/recordPickerComponentFieldSettings';
 
-export const allowMultiple: any = {
+const allowMultiple: any = {
   name: 'allowMultiple',
   type: 'switch',
   useVisible() {
@@ -49,21 +47,23 @@ export const allowMultiple: any = {
   },
 };
 
-export const fieldComponent: any = {
+const fieldComponent: any = {
   name: 'fieldComponent',
   type: 'select',
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const fieldModeOptions = useFieldModeOptions();
-    const isAddNewForm = useIsAddNewForm();
-    const fieldComponentName = useFieldComponentName();
+    const { fieldSchema: tableColumnSchema, collectionField } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
+    const fieldModeOptions = useFieldModeOptions({ fieldSchema: tableColumnSchema, collectionField });
     const { dn } = useDesignable();
+    const isAddNewForm = useIsAddNewForm();
+    const fieldMode = useFieldComponentName();
     return {
       title: t('Field component'),
       options: fieldModeOptions,
-      value: fieldComponentName,
+      value: fieldMode,
       onChange(mode) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -92,44 +92,7 @@ export const fieldComponent: any = {
   },
 };
 
-export const subformComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:Nester',
-  items: [
-    fieldComponent,
-    allowMultiple,
-    {
-      name: 'allowDissociate',
-      type: 'switch',
-      useVisible() {
-        const { type } = useFormBlockType();
-        return !useIsFormReadPretty() && type === 'update';
-      },
-      useComponentProps() {
-        const { t } = useTranslation();
-        const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
-        const { dn, refresh } = useDesignable();
-        return {
-          title: t('Allow dissociate'),
-          checked: fieldSchema['x-component-props']?.allowDissociate !== false,
-          onChange(value) {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            field.componentProps = field.componentProps || {};
-
-            fieldSchema['x-component-props'].allowDissociate = value;
-            field.componentProps.allowDissociate = value;
-
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          },
-        };
-      },
-    },
-  ],
+export const subformPopoverComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:PopoverNester',
+  items: [fieldComponent, allowMultiple, titleField],
 });

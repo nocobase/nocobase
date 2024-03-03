@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 
 /**
  * 获取字段相关的配置信息

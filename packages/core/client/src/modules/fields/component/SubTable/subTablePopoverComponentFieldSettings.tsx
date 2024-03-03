@@ -5,8 +5,6 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useCollectionField } from './utils';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -19,6 +17,7 @@ const fieldComponent: any = {
     const isAddNewForm = useIsAddNewForm();
     const fieldComponentName = useFieldComponentName();
     const { dn } = useDesignable();
+
     return {
       title: t('Field component'),
       options: fieldModeOptions,
@@ -51,44 +50,7 @@ const fieldComponent: any = {
   },
 };
 
-export const titleField: any = {
-  name: 'titleField',
-  type: 'select',
-  useComponentProps() {
-    const { t } = useTranslation();
-    const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
-    const options = useTitleFieldOptions();
-    const collectionField = useCollectionField();
-
-    return {
-      title: t('Title field'),
-      options,
-      value: field?.componentProps?.fieldNames?.label,
-      onChange(label) {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        const fieldNames = {
-          ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-          ...field.componentProps.fieldNames,
-          label,
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      },
-    };
-  },
-};
-
-export const cascadeSelectComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:CascadeSelect',
-  items: [fieldComponent, titleField],
+export const subTablePopoverComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:SubTable',
+  items: [fieldComponent],
 });
