@@ -42,3 +42,5 @@ tsconfig.paths.json
 ncc-cache/
 yarn--**
 v8-compile-cache-**
+packages/pro-plugins
+packages/pro-plugins/*
