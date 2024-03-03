@@ -5,6 +5,9 @@ import { useDesignable } from '../../hooks';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 
+/**
+ * @deprecated
+ */
 export const pageTabSettings = new SchemaSettings({
   name: 'PageTabSettings',
   items: [
