@@ -46,36 +46,8 @@ const ChartInitializer = () => {
   );
 };
 
-/**
- * @deprecated
- */
-export const chartInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
-  name: 'ChartInitializers',
-  icon: 'PlusOutlined',
-  title: '{{t("Add block")}}',
-  items: [
-    {
-      name: 'chart',
-      title: lang('Chart'),
-      Component: ChartInitializer,
-    },
-    {
-      name: 'otherBlocks',
-      type: 'itemGroup',
-      title: lang('Other blocks'),
-      children: [
-        {
-          name: 'filter',
-          title: lang('Filter'),
-          Component: FilterBlockInitializer,
-        },
-      ],
-    },
-  ],
-});
-
 export const chartInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'blockInitializers:chart',
+  name: 'ChartInitializers',
   icon: 'PlusOutlined',
   title: '{{t("Add block")}}',
   items: [

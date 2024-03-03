@@ -40,7 +40,7 @@ const schema: ISchema = {
       type: 'void',
       'x-component': Grid,
       'x-read-pretty': true,
-      'x-initializer': 'addFieldButton',
+      'x-initializer': 'AddFieldButton',
       'x-uid': uid(),
       properties: {},
     },
@@ -124,7 +124,7 @@ const FormItemInitializer = () => {
 };
 
 const addFieldButton = new SchemaInitializer({
-  name: 'addFieldButton',
+  name: 'AddFieldButton',
   // 正常情况下这个值为 false，通过点击页面左上角的设计按钮切换，这里为了显示设置为 true
   designable: true,
   //  按钮标题标题

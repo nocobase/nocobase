@@ -38,44 +38,8 @@ export const CreateFormBulkEditBlockInitializers: SchemaInitializer = new Schema
   ],
 });
 
-/**
- * @deprecated
- */
-export const BulkEditBlockInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
+export const BulkEditBlockInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'BulkEditBlockInitializers',
-  wrap: gridRowColWrap,
-  title: '{{t("Add block")}}',
-  icon: 'PlusOutlined',
-  items: [
-    {
-      type: 'itemGroup',
-      title: '{{t("Data blocks")}}',
-      name: 'dataBlocks',
-      children: [
-        {
-          name: 'form',
-          title: '{{t("Form")}}',
-          Component: CreateFormBulkEditBlockInitializer,
-        },
-      ],
-    },
-    {
-      type: 'itemGroup',
-      title: '{{t("Other blocks")}}',
-      name: 'otherBlocks',
-      children: [
-        {
-          name: 'markdown',
-          title: '{{t("Markdown")}}',
-          Component: 'MarkdownBlockInitializer',
-        },
-      ],
-    },
-  ],
-});
-
-export const bulkEditBlockInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'blockInitializers:bulkEdit',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',

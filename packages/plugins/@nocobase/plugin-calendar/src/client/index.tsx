@@ -3,12 +3,7 @@ import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { CalendarCollectionTemplate } from './collection-templates/calendar';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
-import {
-  CalendarActionInitializers_deprecated,
-  CalendarFormActionInitializers_deprecated,
-  calendarActionInitializers,
-  calendarFormActionInitializers,
-} from './schema-initializer/initializers';
+import { CalendarActionInitializers, CalendarFormActionInitializers } from './schema-initializer/initializers';
 import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } from './schema-initializer/items';
 import { calendarBlockSettings } from './calendar/Calender.Settings';
 
@@ -27,10 +22,8 @@ export class PluginCalendarClient extends Plugin {
     });
     this.app.addScopes({ useCalendarBlockProps });
     this.schemaSettingsManager.add(calendarBlockSettings);
-    this.app.schemaInitializerManager.add(CalendarActionInitializers_deprecated);
-    this.app.schemaInitializerManager.add(calendarActionInitializers);
-    this.app.schemaInitializerManager.add(CalendarFormActionInitializers_deprecated);
-    this.app.schemaInitializerManager.add(calendarFormActionInitializers);
+    this.app.schemaInitializerManager.add(CalendarActionInitializers);
+    this.app.schemaInitializerManager.add(CalendarFormActionInitializers);
   }
 }
 

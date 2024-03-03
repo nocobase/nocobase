@@ -44,55 +44,8 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-/**
- * @deprecated
- */
-export const auditLogsTableColumnInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
-  name: 'AuditLogsTableColumnInitializers',
-  insertPosition: 'beforeEnd',
-  icon: 'SettingOutlined',
-  title: '{{t("Configure columns")}}',
-  wrap(s) {
-    if (s['x-action-column']) {
-      return s;
-    }
-    return {
-      type: 'void',
-      'x-decorator': 'TableV2.Column.Decorator',
-      'x-designer': 'TableV2.Column.Designer',
-      'x-component': 'TableV2.Column',
-      properties: {
-        [s.name]: {
-          ...s,
-        },
-      },
-    };
-  },
-  items: [
-    {
-      name: 'displayFields',
-      type: 'itemGroup',
-      title: '{{t("Display fields")}}',
-      useChildren: useTableColumnInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: ParentCollectionFields,
-    },
-    {
-      name: 'associationFields',
-      Component: AssociatedFields,
-    },
-    {
-      name: 'actionColumn',
-      title: '{{t("Action column")}}',
-      Component: 'AuditLogsTableActionColumnInitializer',
-    },
-  ],
-});
-
 export const auditLogsTableColumnInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'fieldInitializers:AuditLogsTableColumn',
+  name: 'AuditLogsTableColumnInitializers',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
   title: '{{t("Configure columns")}}',

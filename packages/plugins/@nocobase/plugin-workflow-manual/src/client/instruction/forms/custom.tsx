@@ -322,19 +322,8 @@ const CustomItemsComponent = (props) => {
   );
 };
 
-/**
- * @deprecated
- */
-export const addCustomFormField_deprecated: SchemaInitializer = new SchemaInitializer({
-  name: 'AddCustomFormField',
-  wrap: gridRowColWrap,
-  insertPosition: 'beforeEnd',
-  title: "{{t('Configure fields')}}",
-  ItemsComponent: CustomItemsComponent,
-});
-
 export const addCustomFormField: SchemaInitializer = new SchemaInitializer({
-  name: 'fieldInitializers:workflowManualCustomForm',
+  name: 'AddCustomFormField',
   wrap: gridRowColWrap,
   insertPosition: 'beforeEnd',
   title: "{{t('Configure fields')}}",

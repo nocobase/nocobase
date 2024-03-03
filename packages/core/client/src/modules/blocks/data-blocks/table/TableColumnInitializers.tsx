@@ -47,71 +47,8 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-/**
- * @deprecated
- */
-export const tableColumnInitializers_deprecated = new SchemaInitializer({
-  name: 'TableColumnInitializers',
-  insertPosition: 'beforeEnd',
-  icon: 'SettingOutlined',
-  title: '{{t("Configure columns")}}',
-  wrap: (s, { isInSubTable }) => {
-    if (s['x-action-column']) {
-      return s;
-    }
-    return {
-      type: 'void',
-      'x-decorator': 'TableV2.Column.Decorator',
-      // 'x-designer': 'TableV2.Column.Designer',
-      'x-toolbar': 'TableColumnSchemaToolbar',
-      'x-settings': 'fieldSettings:TableColumn',
-      'x-component': 'TableV2.Column',
-      properties: {
-        [s.name]: {
-          ...s,
-        },
-      },
-    };
-  },
-  items: [
-    {
-      name: 'displayFields',
-      type: 'itemGroup',
-      title: '{{t("Display fields")}}',
-      // children: DisplayFields,
-      useChildren: useTableColumnInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: ParentCollectionFields,
-    },
-    {
-      name: 'associationFields',
-      Component: AssociatedFields,
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return fieldSchema['x-component'] !== 'AssociationField.SubTable';
-      },
-    },
-    {
-      type: 'item',
-      name: 'add',
-      title: '{{t("Action column")}}',
-      Component: 'TableActionColumnInitializer',
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return fieldSchema['x-component'] !== 'AssociationField.SubTable';
-      },
-    },
-  ],
-});
-
 export const tableColumnInitializers = new SchemaInitializer({
-  name: 'fieldInitializers:tableColumn',
+  name: 'TableColumnInitializers',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
   title: '{{t("Configure columns")}}',

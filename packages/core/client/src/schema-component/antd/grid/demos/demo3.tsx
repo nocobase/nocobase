@@ -30,7 +30,7 @@ const gridRowColWrap = (schema) => {
 };
 
 export const addBlockButton = new SchemaInitializer({
-  name: 'addBlockButton',
+  name: 'AddBlockButton',
   title: 'Add block',
   wrap: gridRowColWrap,
   items: [
@@ -55,7 +55,7 @@ const schema: ISchema = {
     grid: {
       type: 'void',
       'x-component': 'Grid',
-      'x-initializer': 'addBlockButton',
+      'x-initializer': 'AddBlockButton',
       'x-uid': uid(),
       properties: {},
     },

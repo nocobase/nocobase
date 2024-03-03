@@ -122,76 +122,8 @@ function SimpleDesigner() {
   );
 }
 
-/**
- * @deprecated
- */
-export const addBlockButton_deprecated: SchemaInitializer = new SchemaInitializer({
-  name: 'AddBlockButton',
-  wrap: gridRowColWrap,
-  title: '{{t("Add block")}}',
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'dataBlocks',
-      title: '{{t("Data blocks")}}',
-      hideIfNoChildren: true,
-      useChildren() {
-        const workflowPlugin = usePlugin(WorkflowPlugin);
-        const current = useNodeContext();
-        const nodes = useAvailableUpstreams(current);
-        const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
-        const nodeBlockInitializers = nodes
-          .map((node) => {
-            const instruction = workflowPlugin.instructions.get(node.type);
-            return instruction?.useInitializers?.(node);
-          })
-          .filter(Boolean);
-        const dataBlockInitializers: any = [
-          ...triggerInitializers,
-          ...(nodeBlockInitializers.length
-            ? [
-                {
-                  name: 'nodes',
-                  type: 'subMenu',
-                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-                  children: nodeBlockInitializers,
-                },
-              ]
-            : []),
-        ].filter(Boolean);
-        return dataBlockInitializers;
-      },
-    },
-    {
-      type: 'itemGroup',
-      name: 'form',
-      title: '{{t("Form")}}',
-      useChildren() {
-        const dm = useDataSourceManager();
-        const allCollections = dm.getAllCollections();
-        return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
-          const { useInitializer: getInitializer } = item.config;
-          return getInitializer({ allCollections });
-        });
-      },
-    },
-    {
-      type: 'itemGroup',
-      name: 'otherBlocks',
-      title: '{{t("Other blocks")}}',
-      children: [
-        {
-          name: 'markdown',
-          title: '{{t("Markdown")}}',
-          Component: 'MarkdownBlockInitializer',
-        },
-      ],
-    },
-  ],
-});
-
 export const addBlockButton: SchemaInitializer = new SchemaInitializer({
-  name: 'blockInitializers:workflowManual',
+  name: 'AddBlockButton',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   items: [
@@ -433,42 +365,8 @@ function ActionInitializer() {
   );
 }
 
-/**
- * @deprecated
- */
-export const addActionButton_deprecated: SchemaInitializer = new SchemaInitializer({
-  name: 'AddActionButton',
-  title: '{{t("Configure actions")}}',
-  items: [
-    {
-      name: 'jobStatusResolved',
-      title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
-      Component: ContinueInitializer,
-      action: JOB_STATUS.RESOLVED,
-      actionProps: {
-        type: 'primary',
-      },
-    },
-    {
-      name: 'jobStatusRejected',
-      title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
-      Component: ActionInitializer,
-      action: JOB_STATUS.REJECTED,
-      actionProps: {
-        danger: true,
-      },
-    },
-    {
-      name: 'jobStatusPending',
-      title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
-      Component: ActionInitializer,
-      action: JOB_STATUS.PENDING,
-    },
-  ],
-});
-
 export const addActionButton: SchemaInitializer = new SchemaInitializer({
-  name: 'actionInitializers:workflowManual',
+  name: 'AddActionButton',
   title: '{{t("Configure actions")}}',
   items: [
     {

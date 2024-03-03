@@ -67,7 +67,7 @@ const TextInitializer: FC = () => {
 };
 
 const addFormItemInitializer = new SchemaInitializer({
-  name: 'addFormItem',
+  name: 'AddFormItem',
   title: 'Configure actions',
   insertPosition: 'beforeEnd',
   items: [
@@ -91,7 +91,7 @@ const addFormItemInitializer = new SchemaInitializer({
 });
 
 const Page = (props) => {
-  const { render } = useSchemaInitializerRender('addFormItem');
+  const { render } = useSchemaInitializerRender('AddFormItem');
   return (
     <div>
       {props.children}

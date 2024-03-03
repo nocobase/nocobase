@@ -24,30 +24,8 @@ const ParentCollectionFields = () => {
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
-/**
- * @deprecated
- */
-export const customFormItemInitializers_deprecated = new SchemaInitializer({
-  name: 'CustomFormItemInitializers',
-  wrap: gridRowColWrap,
-  icon: 'SettingOutlined',
-  title: '{{t("Configure fields")}}',
-  items: [
-    {
-      type: 'itemGroup',
-      title: '{{t("Configure fields")}}',
-      name: 'configureFields',
-      useChildren: useCustomFormItemInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: ParentCollectionFields,
-    },
-  ],
-});
-
 export const customFormItemInitializers = new SchemaInitializer({
-  name: 'fieldInitializers:customFormItem',
+  name: 'CustomFormItemInitializers',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
   title: '{{t("Configure fields")}}',

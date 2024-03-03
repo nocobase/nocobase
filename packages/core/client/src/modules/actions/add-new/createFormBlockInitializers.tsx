@@ -1,44 +1,8 @@
 import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../../../schema-initializer/utils';
 
-/**
- * @deprecated
- */
-export const createFormBlockInitializers_deprecated = new SchemaInitializer({
-  name: 'CreateFormBlockInitializers',
-  wrap: gridRowColWrap,
-  title: '{{t("Add block")}}',
-  icon: 'PlusOutlined',
-  items: [
-    {
-      type: 'itemGroup',
-      title: '{{t("Data blocks")}}',
-      name: 'dataBlocks',
-      children: [
-        {
-          name: 'form',
-          title: '{{t("Form")}}',
-          Component: 'CreateFormBlockInitializer',
-        },
-      ],
-    },
-    {
-      type: 'itemGroup',
-      title: '{{t("Other blocks")}}',
-      name: 'otherBlocks',
-      children: [
-        {
-          name: 'markdown',
-          title: '{{t("Markdown")}}',
-          Component: 'MarkdownBlockInitializer',
-        },
-      ],
-    },
-  ],
-});
-
 export const createFormBlockInitializers = new SchemaInitializer({
-  name: 'blockInitializers:createForm',
+  name: 'CreateFormBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',

@@ -13,7 +13,7 @@ import {
 import React from 'react';
 
 const addActionButton = new SchemaInitializer({
-  name: 'addActionButton',
+  name: 'AddActionButton',
   designable: true,
   title: 'Configure actions',
   style: {
@@ -58,7 +58,7 @@ const schema: ISchema = {
     actions: {
       type: 'void',
       'x-component': 'ActionBar',
-      'x-initializer': 'addActionButton',
+      'x-initializer': 'AddActionButton',
       'x-uid': uid(),
       properties: {
         a1: {

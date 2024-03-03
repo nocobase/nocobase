@@ -2,7 +2,7 @@ import { ActionBar, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } fro
 import React from 'react';
 import { GanttDesigner } from './Gantt.Designer';
 import { ganttSettings, oldGanttSettings } from './Gantt.Settings';
-import { GanttActionInitializers_deprecated, ganttActionInitializers } from './GanttActionInitializers';
+import { GanttActionInitializers } from './GanttActionInitializers';
 import { GanttBlockInitializer } from './GanttBlockInitializer';
 import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
 import { Event } from './components/gantt/Event';
@@ -34,8 +34,7 @@ export class GanttPlugin extends Plugin {
     this.app.use(GanttProvider);
     this.app.schemaSettingsManager.add(oldGanttSettings);
     this.app.schemaSettingsManager.add(ganttSettings);
-    this.app.schemaInitializerManager.add(GanttActionInitializers_deprecated);
-    this.app.schemaInitializerManager.add(ganttActionInitializers);
+    this.app.schemaInitializerManager.add(GanttActionInitializers);
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     blockInitializers?.add('dataBlocks.gantt', {
       title: "{{t('Gantt')}}",

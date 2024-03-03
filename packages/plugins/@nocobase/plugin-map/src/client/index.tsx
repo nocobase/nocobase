@@ -1,7 +1,7 @@
 import { CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { MapBlockOptions } from './block';
-import { mapActionInitializers, mapActionInitializers_deprecated } from './block/MapActionInitializers';
+import { mapActionInitializers } from './block/MapActionInitializers';
 import { Configuration, Map } from './components';
 import { fields } from './fields';
 import { generateNTemplate } from './locale';
@@ -29,7 +29,6 @@ export class MapPlugin extends Plugin {
         order: 51,
       },
     });
-    this.app.schemaInitializerManager.add(mapActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(mapActionInitializers);
     this.schemaSettingsManager.add(mapBlockSettings);
 

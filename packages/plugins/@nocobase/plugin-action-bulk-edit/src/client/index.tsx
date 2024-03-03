@@ -1,15 +1,8 @@
 import { Plugin, useCollection_deprecated } from '@nocobase/client';
 import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './BulkEditAction.Settings';
-import { BulkEditFormItemInitializers_deprecated, bulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
-import {
-  CreateFormBulkEditBlockInitializers,
-  BulkEditBlockInitializers_deprecated,
-  bulkEditBlockInitializers,
-} from './BulkEditBlockInitializers';
-import {
-  BulkEditFormActionInitializers_deprecated,
-  bulkEditFormActionInitializers,
-} from './BulkEditFormActionInitializers';
+import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
+import { CreateFormBulkEditBlockInitializers, BulkEditBlockInitializers } from './BulkEditBlockInitializers';
+import { BulkEditFormActionInitializers } from './BulkEditFormActionInitializers';
 import { BulkEditActionInitializer } from './BulkEditActionInitializer';
 import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
 import { BulkEditField } from './component/BulkEditField';
@@ -21,13 +14,10 @@ export class BulkEditPlugin extends Plugin {
     this.app.schemaSettingsManager.add(deprecatedBulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditFormItemSettings);
-    this.app.schemaInitializerManager.add(BulkEditFormItemInitializers_deprecated);
-    this.app.schemaInitializerManager.add(bulkEditFormItemInitializers);
+    this.app.schemaInitializerManager.add(BulkEditFormItemInitializers);
     this.app.schemaInitializerManager.add(CreateFormBulkEditBlockInitializers);
-    this.app.schemaInitializerManager.add(BulkEditBlockInitializers_deprecated);
-    this.app.schemaInitializerManager.add(bulkEditBlockInitializers);
-    this.app.schemaInitializerManager.add(BulkEditFormActionInitializers_deprecated);
-    this.app.schemaInitializerManager.add(bulkEditFormActionInitializers);
+    this.app.schemaInitializerManager.add(BulkEditBlockInitializers);
+    this.app.schemaInitializerManager.add(BulkEditFormActionInitializers);
 
     const initializerData = {
       type: 'item',
