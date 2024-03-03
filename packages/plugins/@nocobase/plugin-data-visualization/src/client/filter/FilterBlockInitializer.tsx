@@ -31,7 +31,7 @@ const createFilterSchema = () => {
           grid: {
             type: 'void',
             'x-component': 'ChartFilterGrid',
-            'x-initializer': 'ChartFilterItemInitializers',
+            'x-initializer': 'fieldInitializers:chartFilterItem',
             properties: {},
           },
           actions: {

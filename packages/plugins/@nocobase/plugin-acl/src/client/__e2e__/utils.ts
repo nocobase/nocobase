@@ -161,7 +161,7 @@ export const oneTableBlock: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'fieldInitializers:formItem',
                                                                 _isJSONSchemaObject: true,
                                                                 properties: {
                                                                   ddz3kqt5kpf: {
@@ -240,7 +240,7 @@ export const oneTableBlock: PageConfig = {
                                                                                     version: '2.0',
                                                                                     'x-component': 'Grid',
                                                                                     'x-initializer':
-                                                                                      'FormItemInitializers',
+                                                                                      'fieldInitializers:formItem',
                                                                                     _isJSONSchemaObject: true,
                                                                                     properties: {
                                                                                       yhxqnl03mak: {
@@ -767,7 +767,7 @@ export const oneTableBlock: PageConfig = {
                         type: 'array',
                         version: '2.0',
                         'x-component': 'TableV2',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'fieldInitializers:tableColumn',
                         'x-component-props': {
                           rowKey: 'id',
                           useProps: '{{ useTableBlockProps }}',
@@ -898,7 +898,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'fieldInitializers:formItem',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           q3s02k44o3o: {
@@ -1303,7 +1303,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'fieldInitializers:formItem',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           '7043nizntd8': {
@@ -1345,7 +1345,7 @@ export const oneTableBlock: PageConfig = {
                                                                                             version: '2.0',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'fieldInitializers:formItem',
                                                                                             _isJSONSchemaObject: true,
                                                                                             properties: {
                                                                                               dtxjb31ls31: {
@@ -1909,7 +1909,7 @@ export const oneTableBlock: PageConfig = {
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                          'fieldInitializers:detailsSingle',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           hnzs6hajxl8: {

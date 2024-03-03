@@ -213,7 +213,7 @@ export const oneEmptyGantt: PageConfig = {
                                 maxWidth: '35%',
                               },
                             },
-                            'x-initializer': 'TableColumnInitializers',
+                            'x-initializer': 'fieldInitializers:tableColumn',
                             'x-component': 'TableV2',
                             'x-component-props': {
                               rowKey: 'id',
@@ -457,7 +457,7 @@ export const oneEmptyTableBlockWithCustomizeUpdate: PageConfig = {
                         type: 'array',
                         version: '2.0',
                         'x-component': 'TableV2',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'fieldInitializers:tableColumn',
                         'x-component-props': {
                           rowKey: 'id',
                           useProps: '{{ useTableBlockProps }}',

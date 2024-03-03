@@ -68,7 +68,7 @@ export const createGanttBlockSchema = (options) => {
               },
             },
 
-            'x-initializer': 'TableColumnInitializers',
+            'x-initializer': 'fieldInitializers:tableColumn',
             'x-component': 'TableV2',
             'x-component-props': {
               rowKey: 'id',

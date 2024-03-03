@@ -265,7 +265,7 @@ function AssignedFieldValues() {
     fieldSchema?.['x-action-settings']?.assignedValues?.schema ?? {
       type: 'void',
       'x-component': 'Grid',
-      'x-initializer': 'CustomFormItemInitializers',
+      'x-initializer': 'fieldInitializers:customFormItem',
       properties: {},
     },
   );
