@@ -45,6 +45,7 @@ export const updateSubmitActionSettings = new SchemaSettings({
   ],
 });
 
+// TODO: 0.20 发版之前后移除
 export const submitActionSettings = new SchemaSettings({
   name: 'actionSettings:submit',
   items: [
