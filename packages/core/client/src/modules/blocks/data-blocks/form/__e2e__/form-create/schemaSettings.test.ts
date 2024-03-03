@@ -292,11 +292,15 @@ test.describe('creation form block schema settings', () => {
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).not.toBeVisible();
 
-    // 删除创建的模板，以免影响其它测试
+    // 保存为模板之后，应该在 ui-schema-storage 页面显示出来
     await page.goto('/admin/settings/ui-schema-storage');
-    await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-General_Form').click();
+    await expect(page.getByRole('row', { name: 'General_Form' }).first()).toBeVisible();
+
+    // 删除创建的模板，以免影响其它测试
+    await page.getByLabel('Select all').check();
+    await page.getByLabel('action-Action-Delete-destroy-').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await expect(page.getByRole('row', { name: 'General_Form' })).toBeHidden();
+    await expect(page.getByRole('row', { name: 'General_Form' }).first()).toBeHidden();
   });
 
   test('delete', async ({ page, mockPage }) => {
@@ -367,12 +371,13 @@ test.describe('creation form block schema settings', () => {
 
     // 保存为模板之后，应该在 ui-schema-storage 页面显示出来 -----------------------------------------
     await page.goto('/admin/settings/ui-schema-storage');
-    await expect(page.getByRole('row', { name: 'new_form_template' })).toBeVisible();
+    await expect(page.getByRole('row', { name: 'new_form_template' }).first()).toBeVisible();
 
     // 最后需要把保存的模板删除掉，以免影响其它测试
-    await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-new_form_template').click();
+    await page.getByLabel('Select all').check();
+    await page.getByLabel('action-Action-Delete-destroy-').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await expect(page.getByRole('row', { name: 'new_form_template' })).toBeHidden();
+    await expect(page.getByRole('row', { name: 'new_form_template' }).first()).toBeHidden();
 
     async function showSettingsMenu(page) {
       await page.getByLabel('block-item-CardItem-general-form').hover();
@@ -1199,7 +1204,8 @@ test.describe('creation form block schema settings', () => {
     await page.getByTestId('plugin-settings-button').click();
     await page.getByRole('link', { name: 'Block templates' }).click();
     await page.getByRole('menuitem', { name: 'layout Block templates' }).click();
-    await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-Users_Form').click();
+    await page.getByLabel('Select all').check();
+    await page.getByLabel('action-Action-Delete-destroy-').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
   });
 });

@@ -113,6 +113,16 @@ test.describe('edit form block schema settings', () => {
     await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).not.toBeVisible();
+
+    // 保存为模板之后，应该在 ui-schema-storage 页面显示出来
+    await page.goto('/admin/settings/ui-schema-storage');
+    await expect(page.getByRole('row', { name: 'General_Form' }).first()).toBeVisible();
+
+    // 删除创建的模板，以免影响其它测试
+    await page.getByLabel('Select all').check();
+    await page.getByLabel('action-Action-Delete-destroy-').click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.getByRole('row', { name: 'General_Form' }).first()).toBeHidden();
   });
 
   test('Delete', async ({ page, mockPage, mockRecord }) => {
