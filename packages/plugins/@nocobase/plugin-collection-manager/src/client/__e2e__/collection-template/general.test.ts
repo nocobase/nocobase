@@ -74,7 +74,7 @@ test.describe('create collection', () => {
     await collectionManagerPage.deleteItem(collectionName);
   });
 
-  test('uncheck more options', async ({ page }) => {
+  test('uncheck presetFields', async ({ page }) => {
     const collectionDisplayName = uid();
     // 避免以数字开头，会报错
     const collectionName = `t_${uid()}`;
@@ -84,7 +84,7 @@ test.describe('create collection', () => {
     const collectionSettings = await collectionManagerPage.createCollection('General collection');
     await collectionSettings.change('Collection display name', collectionDisplayName);
     await collectionSettings.change('Collection name', collectionName);
-    await collectionSettings.change('Generate ID field automatically', false);
+    await collectionSettings.change('Primary key, unique identifier, self growth', false);
     await collectionSettings.change('Store the creation user of each record', false);
     await collectionSettings.change('Store the last update user of each record', false);
     await collectionSettings.change('Store the creation time of each record', false);
@@ -105,9 +105,11 @@ test.describe('configure fields', () => {
     const collectionName = `t_${uid()}`;
     const collectionManagerPage = new CollectionManagerPage(page);
     const targetCollectionName = `t_${uid()}`;
+    const targetKey = `f_${uid()}`;
     await mockCollections([
       {
         name: targetCollectionName,
+        fields: [{ name: targetKey, unique: true, interface: 'input' }],
       },
       {
         name: collectionName,
@@ -168,6 +170,7 @@ test.describe('configure fields', () => {
     const belongsToSettings = await fieldsSettings.addField('One to one (belongs to)');
     await belongsToSettings.change('Field display name', belongsToDisplayName);
     await belongsToSettings.change('Target collection', targetCollectionName);
+    await belongsToSettings.change('Target key', targetKey);
     await belongsToSettings.submit();
     await expect(page.getByRole('cell', { name: belongsToDisplayName, exact: true })).toBeVisible();
     // One to one (has one)
@@ -182,6 +185,7 @@ test.describe('configure fields', () => {
     const oneToManySettings = await fieldsSettings.addField('One to many');
     await oneToManySettings.change('Field display name', oneToManyDisplayName);
     await oneToManySettings.change('Target collection', targetCollectionName);
+    await belongsToSettings.change('Target key', targetKey);
     await oneToManySettings.submit();
     await expect(page.getByRole('cell', { name: oneToManyDisplayName, exact: true })).toBeVisible();
     // Many to one
@@ -189,6 +193,7 @@ test.describe('configure fields', () => {
     const manyToOneSettings = await fieldsSettings.addField('Many to one');
     await manyToOneSettings.change('Field display name', manyToOneDisplayName);
     await manyToOneSettings.change('Target collection', targetCollectionName);
+    await belongsToSettings.change('Target key', targetKey);
     await manyToOneSettings.submit();
     await expect(page.getByRole('cell', { name: manyToOneDisplayName, exact: true })).toBeVisible();
     // Many to many
@@ -198,6 +203,7 @@ test.describe('configure fields', () => {
     await manyToManySettings.change('Field display name', manyToManyDisplayName);
     await manyToManySettings.change('Field name', manyToManyName);
     await manyToManySettings.change('Target collection', targetCollectionName);
+    await belongsToSettings.change('Target key', targetKey);
     await manyToManySettings.submit();
     await expect(page.getByRole('cell', { name: manyToManyDisplayName, exact: true })).toBeVisible();
     // 在这里测一下 many to many 字段的编辑和删除，其它字段先不测了

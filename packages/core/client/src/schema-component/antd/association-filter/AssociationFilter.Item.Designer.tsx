@@ -3,10 +3,9 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
-  SchemaSettingsDataScope,
   SchemaSettingsDefaultSortingRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -14,6 +13,7 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
@@ -21,12 +21,12 @@ export const AssociationFilterItemDesigner = (props) => {
 
   const field = useField();
   const { t } = useTranslation();
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
 
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
 
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { dn } = useDesignable();
 

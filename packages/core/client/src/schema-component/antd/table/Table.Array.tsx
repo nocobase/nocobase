@@ -15,7 +15,14 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useContext, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
-import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializerRender } from '../../../';
+import {
+  RecordIndexProvider,
+  RecordProvider,
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+  useRequest,
+  useSchemaInitializerRender,
+} from '../../../';
 import { useToken } from '../__builtins__';
 
 const isColumnComponent = (schema: Schema) => {
@@ -27,6 +34,8 @@ const useTableColumns = () => {
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const scope = useContext(SchemaExpressionScopeContext);
+  const parentRecordData = useCollectionParentRecordData();
+  const recordData = useCollectionRecordData();
 
   const columns = schema
     .reduceProperties((buf, s) => {
@@ -42,10 +51,11 @@ const useTableColumns = () => {
         key: s.name,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
-              <RecordProvider record={record}>
+              {/* fix https://nocobase.height.app/T-3232/description */}
+              {/* 如果作为关系表格区块，则 parentRecordData 应该有值；如果作为普通表格使用（如数据源管理页面的表格）则应该使用 recordData，且 parentRecordData 为空 */}
+              <RecordProvider record={record} parent={parentRecordData || recordData}>
                 <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>

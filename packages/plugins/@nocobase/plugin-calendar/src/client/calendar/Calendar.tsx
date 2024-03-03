@@ -1,6 +1,6 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { createForm } from '@formily/core';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
+import { ActionContextProvider, RecordProvider, useCollectionParentRecordData, useProps } from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -8,14 +8,13 @@ import get from 'lodash/get';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
+import { i18nt, useTranslation } from '../../locale';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import GlobalStyle from './global.style';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { ActionContextProvider, RecordProvider, useProps, i18n } from '@nocobase/client';
-import { i18nt, useTranslation } from '../../locale';
 
 const Weeks = ['month', 'week', 'day'] as View[];
 const localizer = dayjsLocalizer(dayjs);
@@ -142,7 +141,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
 
 const CalendarRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  const form = useMemo(() => createForm(), [record]);
+  const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = useMemo(
     () =>
@@ -163,7 +162,7 @@ const CalendarRecordViewer = (props) => {
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <RecordProvider record={record}>
+          <RecordProvider record={record} parent={parentRecordData}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
           </RecordProvider>
         </ActionContextProvider>

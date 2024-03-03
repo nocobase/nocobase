@@ -11,7 +11,7 @@ describe('role', () => {
 
   beforeEach(async () => {
     api = await createMockServer({
-      plugins: ['users', 'acl', 'auth'],
+      plugins: ['users', 'acl', 'auth', 'data-source-manager'],
     });
     db = api.db;
     usersPlugin = api.getPlugin('users');
@@ -19,6 +19,42 @@ describe('role', () => {
 
   afterEach(async () => {
     await api.destroy();
+  });
+
+  it.skip('should create user with roles', async () => {
+    const role1 = await db.getRepository('roles').create({
+      values: {
+        name: 'test1',
+        title: 'Admin User',
+      },
+    });
+
+    const role2 = await db.getRepository('roles').create({
+      values: {
+        name: 'test2',
+        title: 'test2 user',
+      },
+    });
+
+    const resp = await api
+      .agent()
+      .resource('users')
+      .create({
+        values: {
+          username: 'testUser',
+          roles: [
+            {
+              name: 'test1',
+            },
+            {
+              name: 'test2',
+            },
+          ],
+        },
+      });
+    console.log('resp.body', JSON.stringify(resp.body, null, 2));
+
+    expect(resp.body.data.roles[0].name).toBeDefined();
   });
 
   it('should set default role', async () => {

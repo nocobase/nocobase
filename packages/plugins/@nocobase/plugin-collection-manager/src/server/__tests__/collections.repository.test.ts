@@ -746,7 +746,7 @@ describe('collections repository', () => {
         name: 'c1Z',
         fields: [
           {
-            type: 'string',
+            type: 'integer',
             name: 'a',
           },
         ],
@@ -809,7 +809,7 @@ describe('collections repository', () => {
     await Field.repository.create({
       values: {
         name: 'a',
-        type: 'string',
+        type: 'integer',
         collectionName: 'c1Z',
       },
       context: {},

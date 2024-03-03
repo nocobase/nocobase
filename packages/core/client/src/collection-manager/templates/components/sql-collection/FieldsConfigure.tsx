@@ -4,9 +4,9 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Cascader, Input, Select, Spin, Table, Tag } from 'antd';
 import { observer, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
-import { getOptions } from '../../../Configuration/interfaces';
+import { useFieldInterfaceOptions } from '../../../Configuration/interfaces';
 import { useCompile } from '../../../../schema-component';
-import { useCollectionManager } from '../../../hooks';
+import { useCollectionManager_deprecated } from '../../../hooks';
 import dayjs from 'dayjs';
 import { FieldOptions } from '@nocobase/database';
 import { ResourceActionContext } from '../../../ResourceActionProvider';
@@ -34,7 +34,7 @@ const useSourceFieldsOptions = () => {
   const form = useForm();
   const { sources = [] } = form.values;
   const { t } = useTranslation();
-  const { getCollection, getInheritCollections, getParentCollectionFields } = useCollectionManager();
+  const { getCollection, getInheritCollections, getParentCollectionFields } = useCollectionManager_deprecated();
   const data = [];
   sources.forEach((item: string) => {
     const collection = getCollection(item);
@@ -81,10 +81,12 @@ export const FieldsConfigure = observer(() => {
   const field: ArrayField = useField();
   const { data: curFields } = useContext(ResourceActionContext);
   const compile = useCompile();
-  const { getInterface, getCollectionField } = useCollectionManager();
+  const { getInterface, getCollectionField } = useCollectionManager_deprecated();
+  const options = useFieldInterfaceOptions();
+
   const interfaceOptions = useMemo(
     () =>
-      getOptions()
+      options
         .filter((v) => !['relation'].includes(v.key))
         .map((options, index) => ({
           ...options,

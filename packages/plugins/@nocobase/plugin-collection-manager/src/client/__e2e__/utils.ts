@@ -2,7 +2,7 @@ import { Page, expect } from '@nocobase/test/e2e';
 
 export async function showSettingsMenu(page: Page, fieldName: string) {
   await page.getByRole('columnheader', { name: fieldName, exact: true }).hover();
-  await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.Column.Designer-').hover();
+  await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general').hover();
 }
 
 export async function createColumnItem(page: Page, fieldName: string) {
@@ -193,7 +193,7 @@ export class CollectionManagerPage {
   }
 
   async goto() {
-    await this.page.goto('admin/settings/collection-manager/collections');
+    await this.page.goto('admin/settings/data-source-manager/main/collections');
   }
 
   async createCollection(
@@ -272,7 +272,7 @@ export class CollectionSettings {
   async change(name: 'Inherits', value: string[]);
   async change(name: 'Categories', value: string[]);
   async change(name: 'Description', value: string);
-  async change(name: 'Generate ID field automatically', value: boolean);
+  async change(name: 'Primary key, unique identifier, self growth', value: boolean);
   async change(name: 'Store the creation user of each record', value: boolean);
   async change(name: 'Store the last update user of each record', value: boolean);
   async change(name: 'Store the creation time of each record', value: boolean);
@@ -336,28 +336,39 @@ export class CollectionSettings {
     await this.page.getByLabel('block-item-Input.TextArea-').getByRole('textbox').fill(value);
   }
 
-  private async ['Generate ID field automatically'](value: boolean) {
-    await this.page.getByLabel('Generate ID field').setChecked(value);
+  private async ['Primary key, unique identifier, self growth'](value: boolean) {
+    await this.page
+      .getByRole('row', { name: 'Primary key, unique identifier, self growth' })
+      .getByLabel('')
+      .setChecked(value);
   }
 
   private async ['Store the creation user of each record'](value: boolean) {
-    await this.page.getByLabel('Store the creation user of').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Store the creation user of each record' })
+      .getByLabel('')
+      .setChecked(value);
   }
 
   private async ['Store the last update user of each record'](value: boolean) {
-    await this.page.getByLabel('Store the last update user of').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Store the last update user of each record' })
+      .getByLabel('')
+      .setChecked(value);
   }
 
   private async ['Store the creation time of each record'](value: boolean) {
-    await this.page.getByLabel('Store the creation time of').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Store the creation time of each record' })
+      .getByLabel('')
+      .setChecked(value);
   }
 
   private async ['Store the last update time of each record'](value: boolean) {
-    await this.page.getByLabel('Store the last update time of').setChecked(value);
-  }
-
-  private async ['Records can be sorted'](value: boolean) {
-    await this.page.getByLabel('Records can be sorted').setChecked(value);
+    await this.page
+      .getByRole('row', { name: 'Store the last update time of each record' })
+      .getByLabel('')
+      .setChecked(value);
   }
 }
 
@@ -471,6 +482,7 @@ export class FieldSettings {
   async change(name: 'GMT', value: boolean);
   async change(name: 'Time format', value: '12 hour' | '24 hour');
   async change(name: 'Target collection', value: string);
+  async change(name: 'Target key', value: string);
   async change(name: 'Foreign key', value: string);
   async change(name: 'ON DELETE', value: string);
   async change(name: 'Create inverse field in the target collection', value: boolean);
@@ -500,7 +512,10 @@ export class FieldSettings {
     await this.page.getByLabel('block-item-Select-fields-Target collection').getByTestId('select-single').click();
     await this.page.getByRole('option', { name: value }).click();
   }
-
+  private async ['Target key'](value: string) {
+    await this.page.getByLabel('block-item-TargetKey-fields').locator('.ant-select-selector').click();
+    await this.page.getByRole('option', { name: value }).click();
+  }
   private async ['Expression'](value: string) {
     await this.page.getByLabel('block-item-Formula.Expression').getByLabel('textbox').fill(value);
   }

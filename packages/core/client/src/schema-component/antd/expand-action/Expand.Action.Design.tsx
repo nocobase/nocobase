@@ -9,6 +9,11 @@ import {
   SchemaSettingsRemove,
 } from '../../../schema-settings';
 
+/**
+ *
+ * @deprecated
+ * @returns
+ */
 export const ExpandActionDesign = (props) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();

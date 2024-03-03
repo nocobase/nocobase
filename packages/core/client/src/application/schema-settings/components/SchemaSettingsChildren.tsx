@@ -1,7 +1,6 @@
-import React, { FC, useMemo, useRef, useEffect } from 'react';
+import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
 
 import { useFindComponent } from '../../../schema-component';
-import { SchemaSettingsItemType } from '../types';
 import {
   SchemaSettingsActionModalItem,
   SchemaSettingsCascaderItem,
@@ -17,6 +16,8 @@ import {
   useSchemaSettings,
 } from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingItemContext } from '../context';
+import { SchemaSettingsItemType } from '../types';
+import { useFieldComponentName } from '../../../common/useFieldComponentName';
 
 export interface SchemaSettingsChildrenProps {
   children: SchemaSettingsItemType[];
@@ -40,6 +41,8 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
   const { children } = props;
   const { visible } = useSchemaSettings();
   const firstVisible = useRef<boolean>(false);
+  const fieldComponentName = useFieldComponentName();
+
   useEffect(() => {
     if (visible) {
       firstVisible.current = true;
@@ -52,9 +55,14 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
     <>
       {children
         .sort((a, b) => (a.sort || 0) - (b.sort || 0))
-        .map((item) => (
-          <SchemaSettingsChild key={item.name} {...item} />
-        ))}
+        .map((item) => {
+          // 当动态切换 SchemaSettings 列表时（比如切换 field component 时，列表会动态变化），切换前和切换后的 item.name 可能相同，
+          // 此时如果使用 item.name 作为 key，会导致 React 认为其前后是同一个组件；因为 SchemaSettingsChild 的某些 hooks 是通过 props 传入的，
+          // 两次渲染之间 props 可能发生变化，就可能报 hooks 调用顺序的错误。所以这里使用 fieldComponentName 和 item.name 拼成
+          // 一个不会重复的 key，保证每次渲染都是新的组件。
+          const key = `${fieldComponentName ? fieldComponentName + '-' : ''}${item.name}`;
+          return <SchemaSettingsChild key={key} {...item} />;
+        })}
     </>
   );
 };
@@ -62,7 +70,7 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
 const useChildrenDefault = () => undefined;
 const useComponentPropsDefault = () => undefined;
 const useVisibleDefault = () => true;
-export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
+export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
   const {
     useVisible = useVisibleDefault,
     useChildren = useChildrenDefault,
@@ -70,7 +78,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
     type,
     Component,
     children,
-    checkChildrenLength,
+    hideIfNoChildren = true,
     componentProps,
   } = props as any;
   const useChildrenRes = useChildren();
@@ -89,7 +97,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
   if (!C) {
     return null;
   }
-  if (checkChildrenLength && Array.isArray(componentChildren) && componentChildren.length === 0) {
+  if (hideIfNoChildren && Array.isArray(componentChildren) && componentChildren.length === 0) {
     return null;
   }
 
@@ -102,4 +110,5 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
       </C>
     </SchemaSettingItemContext.Provider>
   );
-};
+});
+SchemaSettingsChild.displayName = 'SchemaSettingsChild';

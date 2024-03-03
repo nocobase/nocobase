@@ -5,11 +5,10 @@ import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
 import {
-  CollectionFieldProvider,
-  useCollection,
-  useCollectionField,
+  useCollection_deprecated,
+  useCollectionField_deprecated,
   useCollectionFilterOptions,
-  useCollectionManager,
+  useCollectionManager_deprecated,
 } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { useCompile, useComponent } from '../../../schema-component';
@@ -17,7 +16,7 @@ import { VariableInput, getShouldChange } from '../../../schema-settings/Variabl
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-import { DeletedField } from '../DeletedField';
+import { CollectionFieldProvider } from '../../../data-source';
 
 interface AssignedFieldProps {
   value: any;
@@ -28,7 +27,7 @@ interface AssignedFieldProps {
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema } = useCollectionField();
+  const { uiSchema } = useCollectionField_deprecated();
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -82,7 +81,7 @@ const InternalField: React.FC = (props) => {
 const CollectionField = (props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
+    <CollectionFieldProvider name={fieldSchema.name}>
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
@@ -95,8 +94,8 @@ export enum AssignedFieldValueType {
 
 export const AssignedField = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
-  const { getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
-  const collection = useCollection();
+  const { getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
+  const collection = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const fieldSchema = useFieldSchema();
   const record = useRecord();

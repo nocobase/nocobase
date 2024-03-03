@@ -69,7 +69,7 @@ export const roleSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider',
+      'x-component': 'CollectionProvider_deprecated',
       'x-component-props': {
         collection,
       },
@@ -257,15 +257,15 @@ export const roleSchema: ISchema = {
                                     },
                                   },
                                 },
-                                tab2: {
-                                  type: 'void',
-                                  title: '{{t("Action permissions")}}',
-                                  'x-component': 'Tabs.TabPane',
-                                  'x-component-props': {},
-                                  properties: {
-                                    roleCollectionsSchema,
-                                  },
-                                },
+                                // tab2: {
+                                //   type: 'void',
+                                //   title: '{{t("Action permissions")}}',
+                                //   'x-component': 'Tabs.TabPane',
+                                //   'x-component-props': {},
+                                //   properties: {
+                                //     roleCollectionsSchema,
+                                //   },
+                                // },
                                 tab3: {
                                   type: 'void',
                                   title: '{{t("Menu permissions")}}',

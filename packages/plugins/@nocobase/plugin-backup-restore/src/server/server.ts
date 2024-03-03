@@ -3,7 +3,10 @@ import backupFilesResourcer from './resourcers/backup-files';
 
 export default class Duplicator extends Plugin {
   beforeLoad() {
-    // addRestoreCommand(this.app);
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}`,
+      actions: ['backupFiles:*'],
+    });
   }
 
   async load() {

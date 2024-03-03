@@ -4,7 +4,7 @@ import flat, { unflatten } from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import { useCallback, useContext, useEffect, useMemo } from 'react';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { FilterContext } from './context';
 
 interface UseValuesReturn {
@@ -35,8 +35,8 @@ const findOption = (dataIndex = [], options) => {
 };
 
 export const useValues = (): UseValuesReturn => {
-  const { name } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name } = useCollection_deprecated();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const field = useField<any>();
   const { options, collectionName, field: ctxField } = useContext(FilterContext) || {};
   const values: object = flat(field.value || {});

@@ -5,7 +5,11 @@ import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
+import {
+  CollectionProvider_deprecated,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+} from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
@@ -52,50 +56,59 @@ export const actionDesignerCss = css`
   }
 `;
 
-const actionAclCheck = function useAclCheck(actionPath) {
+export function useAclCheck(actionPath) {
+  const aclCheck = useAclCheckFn();
+  return aclCheck(actionPath);
+}
+
+function useAclCheckFn() {
   const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
-  const collection = useCollection();
-  const resource = collection.resource;
-  const parseAction = (actionPath: string, options: any = {}) => {
-    const [resourceName] = actionPath.split(':');
-    if (data?.allowAll) {
-      return {};
+  const collection = useCollection_deprecated();
+  function actionAclCheck(actionPath: string) {
+    const resource = collection.resource;
+    const parseAction = (actionPath: string, options: any = {}) => {
+      const [resourceName] = actionPath.split(':');
+      if (data?.allowAll) {
+        return {};
+      }
+      if (inResources(resourceName)) {
+        return getResourceActionParams(actionPath);
+      }
+      return getStrategyActionParams(actionPath);
+    };
+    if (!actionPath && resource) {
+      actionPath = `${resource}:create}`;
     }
-    if (inResources(resourceName)) {
-      return getResourceActionParams(actionPath);
+    if (!actionPath?.includes(':')) {
+      actionPath = `${resource}:${actionPath}`;
     }
-    return getStrategyActionParams(actionPath);
-  };
-  if (!actionPath && resource) {
-    actionPath = `${resource}:create}`;
-  }
-  if (!actionPath?.includes(':')) {
-    actionPath = `${resource}:${actionPath}`;
-  }
-  if (!actionPath) {
+    if (!actionPath) {
+      return true;
+    }
+    const params = parseAction(actionPath, { recordPkValue });
+    if (!params) {
+      return false;
+    }
     return true;
   }
-  const params = parseAction(actionPath, { recordPkValue });
-  if (!params) {
-    return false;
-  }
-  return true;
-};
+
+  return actionAclCheck;
+}
 
 export const CreateRecordAction = observer(
   (props: any) => {
     const [visible, setVisible] = useState(false);
-    const collection = useCollection();
+    const collection = useCollection_deprecated();
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const [currentCollection, setCurrentCollection] = useState(collection.name);
+    const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
     const values = useRecord();
     const ctx = useActionContext();
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values } as any });
-
     useEffect(() => {
       field.stateOfLinkageRules = {};
       linkageRules
@@ -117,14 +130,15 @@ export const CreateRecordAction = observer(
         <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
           <CreateAction
             {...props}
-            onClick={(name) => {
+            onClick={(collectionData) => {
               setVisible(true);
-              setCurrentCollection(name);
+              setCurrentCollection(collectionData.name);
+              setCurrentCollectionDataSource(collectionData.dataSource);
             }}
           />
-          <CollectionProvider name={currentCollection}>
+          <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-          </CollectionProvider>
+          </CollectionProvider_deprecated>
         </ActionContextProvider>
       </div>
     );
@@ -148,18 +162,19 @@ function getLinkageCollection(str, form, field) {
 export const CreateAction = observer(
   (props: any) => {
     const { onClick } = props;
-    const collection = useCollection();
+    const collection = useCollection_deprecated();
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const form = useForm();
     const variables = useVariables();
+    const aclCheck = useAclCheckFn();
 
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
     const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
     // antd v5 danger type is deprecated
     const componentType = field.componentProps.type === 'danger' ? undefined : field.componentProps.type || 'primary';
-    const { getChildrenCollections } = useCollectionManager();
+    const { getChildrenCollections } = useCollectionManager_deprecated();
     const totalChildCollections = getChildrenCollections(collection.name);
     const inheritsCollections = useMemo(() => {
       return enableChildren
@@ -172,12 +187,12 @@ export const CreateAction = observer(
             return;
           }
           return {
-            ...childCollection,
+            ...childCollection.getOptions(),
             title: k.title || childCollection.title,
           };
         })
         .filter((v) => {
-          return v && actionAclCheck(`${v.name}:create`);
+          return v && aclCheck(`${v.name}:create`);
         });
     }, [enableChildren, totalChildCollections]);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
@@ -190,7 +205,7 @@ export const CreateAction = observer(
       return inheritsCollections.map((option) => ({
         key: option.name,
         label: compile(option.title),
-        onClick: () => onClick?.(option.name),
+        onClick: () => onClick?.(option),
       }));
     }, [inheritsCollections, onClick]);
 
@@ -267,6 +282,7 @@ function FinallyButton({
   form;
   designable: boolean;
 }) {
+  const { getCollection } = useCollectionManager_deprecated();
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
@@ -281,7 +297,7 @@ function FinallyButton({
           ]}
           menu={menu}
           onClick={(info) => {
-            onClick?.(collection.name);
+            onClick?.(collection);
           }}
         >
           {icon}
@@ -306,9 +322,10 @@ function FinallyButton({
         icon={icon}
         onClick={(info) => {
           const collectionName = getLinkageCollection(linkageFromForm, form, field);
-          const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
+          const targetCollectionName = inheritsCollections.find((v) => v.name === collectionName)
             ? collectionName
             : collection.name;
+          const targetCollection = getCollection(targetCollectionName);
           onClick?.(targetCollection);
         }}
         style={{
@@ -329,7 +346,7 @@ function FinallyButton({
       danger={props.danger}
       icon={icon}
       onClick={(info) => {
-        onClick?.(collection.name);
+        onClick?.(collection);
       }}
       style={{
         display: !designable && field?.data?.hidden && 'none',

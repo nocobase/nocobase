@@ -14,6 +14,71 @@ describe('belongs to field', () => {
     await db.close();
   });
 
+  it('should throw error when associated with item that null with target key', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'name', unique: true }],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      autoGenId: true,
+      timestamps: false,
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'user',
+          target: 'users',
+          foreignKey: 'userName',
+          targetKey: 'name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await expect(
+      Profile.repository.create({
+        values: {
+          user: {},
+        },
+      }),
+    ).rejects.toThrow('The target key name is not set in users');
+  });
+  it('should check association keys type', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'bigInt', name: 'description' },
+      ],
+    });
+
+    let error;
+    try {
+      const Post = db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'string', name: 'userName' },
+          {
+            type: 'belongsTo',
+            name: 'user',
+            foreignKey: 'userName',
+            targetKey: 'description', // wrong type
+          },
+        ],
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.message).toBe(
+      'Foreign key "userName" type "STRING" does not match target key "description" type "BIGINT" in belongs to relation "user" of collection "posts"',
+    );
+  });
+
   it('association undefined', async () => {
     const Comment = db.collection({
       name: 'comments',

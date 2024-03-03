@@ -2,7 +2,7 @@ import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
-  useCollection,
+  useCollection_deprecated,
   BlockProvider,
   useBlockRequestContext,
   TableBlockProvider,
@@ -17,6 +17,7 @@ const formatData = (
   projectId: any = undefined,
   hideChildren = false,
   checkPermassion?: (any) => boolean,
+  primaryKey?: string,
 ) => {
   data.forEach((item: any) => {
     const disable = checkPermassion(item);
@@ -26,7 +27,7 @@ const formatData = (
         start: new Date(item[fieldNames.start] ?? undefined),
         end: new Date(item[fieldNames.end] ?? undefined),
         name: item[fieldNames.title],
-        id: item.id + '',
+        id: item[primaryKey] + '',
         type: 'project',
         progress: percent > 100 ? 100 : percent || 0,
         hideChildren: hideChildren,
@@ -40,7 +41,7 @@ const formatData = (
         start: item[fieldNames.start] ? new Date(item[fieldNames.start]) : undefined,
         end: new Date(item[fieldNames.end] || item[fieldNames.start]),
         name: item[fieldNames.title],
-        id: item.id + '',
+        id: item[primaryKey] + '',
         type: fieldNames.end ? 'task' : 'milestone',
         progress: percent > 100 ? 100 : percent || 0,
         project: projectId,
@@ -74,7 +75,12 @@ const InternalGanttBlockProvider = (props) => {
 };
 
 export const GanttBlockProvider = (props) => {
-  const params = { filter: props.params.filter, tree: true, paginate: false, sort: props.fieldNames.start };
+  const params = { filter: props.params.filter, paginate: false, sort: props.fieldNames.start };
+  const collection = useCollection_deprecated();
+
+  if (collection?.tree) {
+    params['tree'] = true;
+  }
   return (
     <div aria-label="block-item-gantt" role="button">
       <BlockProvider name="gantt" {...props} params={params}>
@@ -93,7 +99,7 @@ export const useGanttBlockContext = () => {
 export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
   const [tasks, setTasks] = useState<any>([]);
-  const { getPrimaryKey, name, template, writableView } = useCollection();
+  const { getPrimaryKey, name, template, writableView } = useCollection_deprecated();
   const { parseAction } = useACLRoleContext();
   const primaryKey = getPrimaryKey();
   const checkPermission = (record) => {
@@ -111,13 +117,21 @@ export const useGanttBlockProps = () => {
     ctx.field.data = tasksData;
   };
   const expandAndCollapseAll = (flag) => {
-    const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, flag, checkPermission);
+    const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, flag, checkPermission, primaryKey);
     setTasks(data);
     ctx.field.data = data;
   };
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, false, checkPermission);
+      const data = formatData(
+        ctx.service.data?.data,
+        ctx.fieldNames,
+        [],
+        undefined,
+        false,
+        checkPermission,
+        primaryKey,
+      );
       setTasks(data);
       ctx.field.data = data;
     }

@@ -6,8 +6,8 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/action-print",
   "displayName": "Action: Print",
   "displayName.zh-CN": "操作：打印",
-  "description": "Provides print action",
-  "description.zh-CN": "提供打印操作",
+  "description": "Calls the browser's print function to print a record.",
+  "description.zh-CN": "调用浏览器的打印功能实现单条数据的打印。",
   "license": "AGPL-3.0",
   "peerDependencies": {
     "@nocobase/client": "0.x",

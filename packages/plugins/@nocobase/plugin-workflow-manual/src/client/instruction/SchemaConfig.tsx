@@ -24,8 +24,8 @@ import {
   VariableScopeProvider,
   css,
   gridRowColWrap,
-  useCollectionManager,
   useCompile,
+  useDataSourceManager,
   useFormActiveFields,
   useFormBlockContext,
   usePlugin,
@@ -68,7 +68,7 @@ export type FormType = {
 export type ManualFormType = {
   title: string;
   config: {
-    useInitializer: ({ collections }?: { collections: any[] }) => SchemaInitializerItemType;
+    useInitializer: ({ allCollections }?: { allCollections: any[] }) => SchemaInitializerItemType;
     initializers?: {
       [key: string]: React.FC;
     };
@@ -131,7 +131,7 @@ export const addBlockButton: SchemaInitializer = new SchemaInitializer({
       type: 'itemGroup',
       name: 'dataBlocks',
       title: '{{t("Data blocks")}}',
-      checkChildrenLength: true,
+      hideIfNoChildren: true,
       useChildren() {
         const workflowPlugin = usePlugin(WorkflowPlugin);
         const current = useNodeContext();
@@ -164,10 +164,11 @@ export const addBlockButton: SchemaInitializer = new SchemaInitializer({
       name: 'form',
       title: '{{t("Form")}}',
       useChildren() {
-        const { collections } = useCollectionManager();
+        const dm = useDataSourceManager();
+        const allCollections = dm.getAllCollections();
         return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
           const { useInitializer: getInitializer } = item.config;
-          return getInitializer({ collections });
+          return getInitializer({ allCollections });
         });
       },
     },
@@ -412,7 +413,6 @@ export function SchemaConfig({ value, onChange }) {
   const form = useForm();
   const { workflow } = useFlowContext();
 
-  const nodeInitializers = {};
   const nodeComponents = {};
   nodes.forEach((item) => {
     const instruction = workflowPlugin.instructions.get(item.type);

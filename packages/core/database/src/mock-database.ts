@@ -1,7 +1,7 @@
-import { merge, uid } from '@nocobase/utils';
+import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
-import path, { resolve } from 'path';
+import path from 'path';
 import { Database, IDatabaseOptions } from './database';
 
 export class MockDatabase extends Database {
@@ -23,7 +23,7 @@ export function getConfigByEnv() {
     port: process.env.DB_PORT,
     dialect: process.env.DB_DIALECT || 'sqlite',
     logging: process.env.DB_LOGGING === 'on' ? customLogger : false,
-    storage: resolve(process.cwd(), `storage/db-test/db-${uid()}.sqlite`),
+    storage: process.env.DB_STORAGE,
     define: {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',

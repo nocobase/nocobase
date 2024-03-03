@@ -7,14 +7,6 @@ const useStyles = genStyleHook('nb-action', (token) => {
     [componentCls]: {
       position: 'relative',
       '&:hover': { '> .general-schema-designer': { display: 'block' } },
-      '&.nb-action-link': {
-        '> .general-schema-designer': {
-          top: '-10px',
-          bottom: '-10px',
-          left: '-10px',
-          right: '-10px',
-        },
-      },
       '> .general-schema-designer': {
         position: 'absolute',
         zIndex: 999,

@@ -1,13 +1,14 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
+import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 
 export const AssociationFieldProvider = observer(
   (props) => {
     const field = useField<Field>();
-    const { getCollectionJoinField, getCollection } = useCollectionManager();
+    const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
     const fieldSchema = useFieldSchema();
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
@@ -55,10 +56,10 @@ export const AssociationFieldProvider = observer(
         }
       }
       if (field.value !== null && field.value !== undefined) {
-        // Nester 子表单时，如果没数据初始化一个 [null] 的占位
+        // Nester 子表单时，如果没数据初始化一个 [{}] 的占位
         if (['Nester', 'PopoverNester'].includes(currentMode) && Array.isArray(field.value)) {
           if (field.value.length === 0 && ['belongsToMany', 'hasMany'].includes(collectionField.type)) {
-            field.value = [{}];
+            field.value = [markRecordAsNew({})];
           }
         }
         setLoading(false);
@@ -68,7 +69,7 @@ export const AssociationFieldProvider = observer(
         if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
           field.value = {};
         } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
-          field.value = [{}];
+          field.value = [markRecordAsNew({})];
         }
       }
       if (currentMode === 'SubTable') {

@@ -74,9 +74,8 @@ test.describe('form item & create form', () => {
     });
   });
 
-  test('pattern', async ({ page, mockPage }) => {
-    // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
-    test.fail();
+  // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
+  test.skip('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
       gotoPage: () =>
@@ -174,9 +173,8 @@ test.describe('form item & edit form', () => {
     });
   });
 
-  test('pattern', async ({ page, mockPage, mockRecord }) => {
-    // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
-    test.fail();
+  // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
+  test.skip('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
       page,

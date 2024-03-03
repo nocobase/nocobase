@@ -1,13 +1,14 @@
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   RecordProvider,
   css,
-  useCollection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCompile,
   useFilterAPI,
+  useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -15,14 +16,14 @@ import { Button, Space } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
-import { AMapComponent, AMapForwardedRefProps } from './Map';
 import { getSource } from '../../utils';
+import { AMapComponent, AMapForwardedRefProps } from './Map';
 
 export const AMapBlock = (props) => {
   const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
     useProps(props);
-  const { name, getPrimaryKey } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name, getPrimaryKey } = useCollection_deprecated();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const primaryKey = getPrimaryKey();
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
@@ -310,6 +311,7 @@ export const AMapBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
+  const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const schema = useMemo(
     () =>
@@ -325,7 +327,7 @@ const MapBlockDrawer = (props) => {
   return (
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
-        <RecordProvider record={record}>
+        <RecordProvider record={record} parent={parentRecordData}>
           <RecursionField schema={schema} name={schema.name} />
         </RecordProvider>
       </ActionContextProvider>

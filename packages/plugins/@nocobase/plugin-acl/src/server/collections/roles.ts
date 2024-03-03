@@ -74,9 +74,9 @@ export default defineCollection({
     {
       type: 'hasMany',
       name: 'resources',
-      target: 'rolesResources',
+      target: 'dataSourcesRolesResources',
       sourceKey: 'name',
-      targetKey: 'name',
+      foreignKey: 'roleName',
     },
     {
       type: 'set',

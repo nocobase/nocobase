@@ -1,10 +1,17 @@
-import { Plugin, useCollection } from '@nocobase/client';
+import { Plugin, useCollection_deprecated } from '@nocobase/client';
+import { DuplicateAction } from './DuplicateAction';
+import { deprecatedDuplicateActionSettings, duplicateActionSettings } from './DuplicateAction.Settings';
+import { DuplicateActionInitializer } from './DuplicateActionInitializer';
 import { DuplicatePluginProvider } from './DuplicatePluginProvider';
-import { duplicateActionSettings } from './DuplicateAction.Settings';
 
-export class DuplicatePlugin extends Plugin {
+export class PluginDuplicateClient extends Plugin {
   async load() {
     this.app.use(DuplicatePluginProvider);
+    this.app.addComponents({
+      DuplicateActionInitializer,
+      DuplicateAction,
+    });
+    this.app.schemaSettingsManager.add(deprecatedDuplicateActionSettings);
     this.app.schemaSettingsManager.add(duplicateActionSettings);
 
     const initializerData = {
@@ -13,13 +20,15 @@ export class DuplicatePlugin extends Plugin {
       schema: {
         'x-component': 'Action',
         'x-action': 'duplicate',
+        'x-toolbar': 'ActionSchemaToolbar',
+        'x-settings': 'actionSettings:duplicate',
         'x-decorator': 'ACLActionProvider',
         'x-component-props': {
           type: 'primary',
         },
       },
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return (
           (collection.template !== 'view' || collection?.writableView) &&
           collection.template !== 'file' &&
@@ -34,15 +43,15 @@ export class DuplicatePlugin extends Plugin {
       schema: {
         'x-component': 'Action.Link',
         'x-action': 'duplicate',
-        'x-designer': 'Action.Designer',
-        'x-settings': 'ActionSettings:duplicate',
+        'x-toolbar': 'ActionSchemaToolbar',
+        'x-settings': 'actionSettings:duplicate',
         'x-decorator': 'ACLActionProvider',
         'x-component-props': {
           type: 'primary',
         },
       },
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return (
           (collection.template !== 'view' || collection?.writableView) &&
           collection.template !== 'file' &&
@@ -51,14 +60,13 @@ export class DuplicatePlugin extends Plugin {
       },
     };
 
-    const tableActionColumnInitializers = this.app.schemaInitializerManager.get('TableActionColumnInitializers');
-    tableActionColumnInitializers?.add('actions.duplicate', initializerTableData);
-    const detailsActionInitializers = this.app.schemaInitializerManager.get('DetailsActionInitializers');
-    detailsActionInitializers?.add('enableActions.duplicate', initializerData);
-    const ReadPrettyFormActionInitializers = this.app.schemaInitializerManager.get('ReadPrettyFormActionInitializers');
-    ReadPrettyFormActionInitializers?.add('enableActions.duplicate', initializerData);
+    this.app.schemaInitializerManager.addItem(
+      'TableActionColumnInitializers',
+      'actions.duplicate',
+      initializerTableData,
+    );
   }
 }
 
-export default DuplicatePlugin;
+export default PluginDuplicateClient;
 export * from './DuplicateAction';

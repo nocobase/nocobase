@@ -74,9 +74,11 @@ describe('field defaultValue', () => {
           type: 'string',
           defaultValue: null,
         },
+        context: {},
       });
 
-    const response2 = await app.agent().resource('test1').create();
-    expect(response2.body.data.field1).toBeNull();
+    await app.agent().resource('test1').create();
+    const item = await app.agent().resource('test1').get();
+    expect(item.body.data.field1).toBeNull();
   });
 });

@@ -1,38 +1,30 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import {
   TableFieldResource,
-  getFormValues,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
+  useCollection_deprecated,
   useCompile,
-  useFilterByTk,
-  useFormActiveFields,
   useRecord,
 } from '@nocobase/client';
 import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
 import { useNavigate } from 'react-router-dom';
-import { useGetCustomRequest } from './useGetCustomRequest';
-import { useTranslation } from '../locale';
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
   const navigate = useNavigate();
-  const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { getPrimaryKey } = useCollection();
+  const { getPrimaryKey } = useCollection_deprecated();
   const { resource, __parent, service } = useBlockRequestContext();
   const record = useRecord();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
-  const { t } = useTranslation();
-
   return {
     async onClick() {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
@@ -55,7 +47,7 @@ export const useCustomizeRequestActionProps = () => {
           data: {
             currentRecord: {
               id: record[getPrimaryKey()],
-              appends: service.params[0].appends,
+              appends: service.params[0]?.appends,
               data: formValues,
             },
           },

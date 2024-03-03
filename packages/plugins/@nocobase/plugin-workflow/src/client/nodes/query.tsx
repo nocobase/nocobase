@@ -4,7 +4,7 @@ import {
   SchemaComponentContext,
   SchemaInitializerItemType,
   useCollectionDataSource,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCompile,
 } from '@nocobase/client';
 
@@ -61,7 +61,7 @@ export default class extends Instruction {
     useCollectionDataSource,
     useSortableFields() {
       const compile = useCompile();
-      const { getCollectionFields, getInterface } = useCollectionManager();
+      const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
       const { values } = useForm();
       const fields = getCollectionFields(values.collection);
       return fields
@@ -93,7 +93,7 @@ export default class extends Instruction {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     // const depth = config?.params?.appends?.length
     //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
     //   : 0;

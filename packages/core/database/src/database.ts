@@ -299,6 +299,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.sequelize.beforeDefine((model, opts) => {
       if (this.options.tablePrefix) {
+        if (opts.tableName && opts.tableName.startsWith(this.options.tablePrefix)) {
+          return;
+        }
         opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
       }
     });
@@ -577,7 +580,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   hasCollection(name: string): boolean {
-    return this.collections.has(name);
+    return !!this.getCollection(name);
   }
 
   removeCollection(name: string) {
@@ -701,6 +704,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     if (options.field && collection.options.underscored && !collection.isView()) {
       options.field = snakeCase(options.field);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(options, 'defaultValue') && options.defaultValue === null) {
+      delete options.defaultValue;
     }
 
     return new Field(options, context);

@@ -14,10 +14,11 @@ const useOverridingCollectionField = (record) => {
   };
 };
 
-export const OverrideFieldAction = ({ item: record }) => {
+export const OverrideFieldAction = ({ item: record, parentItem: parentRecord }) => {
   return (
     <OverridingCollectionFieldAction
       item={{ ...record }}
+      parentItem={parentRecord}
       scope={{
         useCancelAction,
         useOverridingCollectionField: () => useOverridingCollectionField(record),

@@ -1,7 +1,7 @@
 import { useField, useForm } from '@formily/react';
 import React from 'react';
 
-import { useCollectionDataSource, useCollectionManager } from '@nocobase/client';
+import { useCollectionDataSource, useCollectionManager_deprecated } from '@nocobase/client';
 
 import CollectionFieldset from '../components/CollectionFieldset';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
@@ -13,7 +13,7 @@ import { isValidFilter } from '../utils';
 import { Instruction } from '.';
 
 function IndividualHooksRadioWithTooltip({ onChange, ...props }) {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const form = useForm();
   const { collection } = form.values;
   const fields = getCollectionFields(collection);

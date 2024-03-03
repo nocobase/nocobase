@@ -9,7 +9,7 @@ import { message } from 'antd';
 import { getWorkflowDetailPath } from '../constant';
 
 export const executionCollection = {
-  name: 'executions',
+  name: 'execution-executions',
   fields: [
     {
       interface: 'id',

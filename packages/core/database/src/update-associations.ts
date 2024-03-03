@@ -9,6 +9,7 @@ import {
   ModelStatic,
   Transactionable,
 } from 'sequelize';
+import Database from './database';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
 
@@ -285,6 +286,22 @@ export async function updateSingleAssociation(
     return await removeAssociation();
   }
 
+  // @ts-ignore
+  if (association.associationType === 'HasOne' && !model.get(association.sourceKeyAttribute)) {
+    // @ts-ignore
+    throw new Error(`The source key ${association.sourceKeyAttribute} is not set in ${model.constructor.name}`);
+  }
+
+  const checkBelongsToForeignKeyValue = () => {
+    // @ts-ignore
+    if (association.associationType === 'BelongsTo' && !model.get(association.foreignKey)) {
+      throw new Error(
+        // @ts-ignore
+        `The target key ${association.targetKey} is not set in ${association.target.name}`,
+      );
+    }
+  };
+
   if (isStringOrNumber(value)) {
     await model[setAccessor](value, { context, transaction });
     return true;
@@ -352,6 +369,9 @@ export async function updateSingleAssociation(
   if (association.targetKey) {
     model.setDataValue(association.foreignKey, instance[dataKey]);
   }
+
+  // must have foreign key value
+  checkBelongsToForeignKeyValue();
 }
 
 /**
@@ -388,6 +408,12 @@ export async function updateMultipleAssociation(
     await model[setAccessor](null, { transaction, context, individualHooks: true });
     model.setDataValue(key, null);
     return;
+  }
+
+  // @ts-ignore
+  if (association.associationType === 'HasMany' && !model.get(association.sourceKeyAttribute)) {
+    // @ts-ignore
+    throw new Error(`The source key ${association.sourceKeyAttribute} is not set in ${model.constructor.name}`);
   }
 
   if (isStringOrNumber(value)) {
@@ -427,10 +453,17 @@ export async function updateMultipleAssociation(
   await model[setAccessor](setItems, { transaction, context, individualHooks: true });
 
   const newItems = [];
-
+  const pk = association.target.primaryKeyAttribute;
+  const tmpKey = association['options']?.['targetKey'];
+  let targetKey = pk;
+  const db = model.constructor['database'] as Database;
+  if (tmpKey !== pk) {
+    const targetKeyFieldOptions = db.getFieldByPath(`${association.target.name}.${tmpKey}`)?.options;
+    if (targetKeyFieldOptions?.unique) {
+      targetKey = tmpKey;
+    }
+  }
   for (const item of objectItems) {
-    const pk = association.target.primaryKeyAttribute;
-
     const through = (<any>association).through ? (<any>association).through.model.name : null;
 
     const accessorOptions = {
@@ -444,7 +477,7 @@ export async function updateMultipleAssociation(
       accessorOptions['through'] = throughValue;
     }
 
-    if (isUndefinedOrNull(item[pk])) {
+    if (isUndefinedOrNull(item[targetKey])) {
       // create new record
       const instance = await model[createAccessor](item, accessorOptions);
 
@@ -457,15 +490,28 @@ export async function updateMultipleAssociation(
       newItems.push(instance);
     } else {
       // set & update record
-      const instance = await association.target.findByPk<any>(item[pk], {
+      const where = {
+        [targetKey]: item[targetKey],
+      };
+      let instance = await association.target.findOne<any>({
+        where,
         transaction,
       });
       if (!instance) {
+        // create new record
+        instance = await model[createAccessor](item, accessorOptions);
+        await updateAssociations(instance, item, {
+          ...options,
+          transaction,
+          associationContext: association,
+          updateAssociationValues: keys,
+        });
+        newItems.push(instance);
         continue;
       }
       const addAccessor = association.accessors.add;
 
-      await model[addAccessor](item[pk], accessorOptions);
+      await model[addAccessor](instance[association.target.primaryKeyAttribute], accessorOptions);
 
       if (!recursive) {
         continue;

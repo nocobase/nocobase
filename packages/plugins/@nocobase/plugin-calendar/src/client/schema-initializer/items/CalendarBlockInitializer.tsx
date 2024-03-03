@@ -6,7 +6,7 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useGlobalTheme,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -18,7 +18,7 @@ import { useTranslation } from '../../../locale';
 export const CalendarBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getCollectionField, getCollectionFieldsOptions } = useCollectionManager();
+  const { getCollectionField, getCollectionFieldsOptions } = useCollectionManager_deprecated();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();
@@ -29,9 +29,10 @@ export const CalendarBlockInitializer = () => {
       componentType={'Calendar'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string');
+        const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string', { dataSource: item.dataSource });
         const dateFieldsOptions = getCollectionFieldsOptions(item.name, 'date', {
           association: ['o2o', 'obo', 'oho', 'm2o'],
+          dataSource: item.dataSource,
         });
 
         const values = await FormDialog(
@@ -78,9 +79,11 @@ export const CalendarBlockInitializer = () => {
         insert(
           createCalendarBlockSchema({
             collection: item.name,
+            dataSource: item.dataSource,
             fieldNames: {
               ...values,
             },
+            settings: 'blockSettings:calendar',
           }),
         );
       }}

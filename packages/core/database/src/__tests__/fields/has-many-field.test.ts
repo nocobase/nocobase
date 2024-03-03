@@ -14,6 +14,134 @@ describe('has many field', () => {
     await db.close();
   });
 
+  it('should create has many association', async () => {
+    const syncOptions = {
+      force: false,
+      alter: {
+        drop: false,
+      },
+    };
+    const A = db.collection({
+      name: 'a',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'field1',
+          primaryKey: true,
+          defaultValue: null,
+        },
+        {
+          type: 'string',
+          name: 'name',
+          unique: true,
+          defaultValue: null,
+        },
+      ],
+    });
+
+    await db.sync(syncOptions);
+
+    const B = db.collection({
+      name: 'b',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'key1',
+          primaryKey: true,
+          unique: false,
+          defaultValue: null,
+        },
+        {
+          type: 'string',
+          name: 'field2',
+        },
+      ],
+    });
+
+    await db.sync(syncOptions);
+
+    A.setField('fields', {
+      type: 'hasMany',
+      target: 'b',
+      sourceKey: 'name',
+      foreignKey: 'ttt_name',
+    });
+
+    await db.sync(syncOptions);
+  });
+
+  it('should throw error when associated with item that null with source key', async () => {
+    const User = db.collection({
+      name: 'users',
+      autoGenId: true,
+      timestamps: false,
+      fields: [
+        { type: 'string', name: 'name', unique: true },
+        {
+          type: 'hasMany',
+          name: 'profiles',
+          target: 'profiles',
+          foreignKey: 'userName',
+          sourceKey: 'name',
+        },
+      ],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        {
+          type: 'string',
+          name: 'address',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await expect(
+      User.repository.create({
+        values: {
+          profiles: [
+            {
+              address: 'address1',
+            },
+          ],
+        },
+      }),
+    ).rejects.toThrow('The source key name is not set in users');
+  });
+
+  it('should check association keys type', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'bigInt', name: 'title' }],
+    });
+
+    let error;
+    try {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'hasMany',
+            name: 'posts',
+            foreignKey: 'title', // wrong type
+            sourceKey: 'name',
+          },
+        ],
+      });
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeDefined();
+  });
+
   it('association undefined', async () => {
     const collection = db.collection({
       name: 'posts',

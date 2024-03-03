@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
@@ -9,8 +9,8 @@ export default function useServiceOptions(props) {
   const { action = 'list', service, fieldNames } = props;
   const params = service?.params || {};
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionFields } = useCollectionManager();
+  const { getField } = useCollection_deprecated();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const record = useRecord();
 
   const normalizeValues = useCallback(

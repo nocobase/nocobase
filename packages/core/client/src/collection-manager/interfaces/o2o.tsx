@@ -1,16 +1,17 @@
 import { ISchema } from '@formily/react';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import { getUniqueKeyFromCollection } from './o2m';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
-import { IField } from './types';
 
-export const o2o: IField = {
-  name: 'o2o',
-  type: 'object',
-  group: 'relation',
-  order: 3,
-  title: '{{t("One to one")}}',
-  description: '{{t("One to one description")}}',
-  isAssociation: true,
-  default: {
+export class O2OFieldInterface extends CollectionFieldInterface {
+  name = 'o2o';
+  type = 'object';
+  group = 'relation';
+  order = 3;
+  title = '{{t("One to one")}}';
+  description = '{{t("One to one description")}}';
+  isAssociation = true;
+  default = {
     type: 'hasOne',
     // name,
     uiSchema: {
@@ -19,10 +20,10 @@ export const o2o: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -36,16 +37,16 @@ export const o2o: IField = {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
-  },
-  availableTypes: ['hasOne'],
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+  };
+  availableTypes = ['hasOne'];
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
@@ -53,8 +54,14 @@ export const o2o: IField = {
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
-  },
-  properties: {
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: getUniqueKeyFromCollection(targetCollection),
+    };
+    schema['x-component-props'].fieldNames.label =
+      targetCollection?.titleField || getUniqueKeyFromCollection(targetCollection);
+  }
+  properties = {
     'uiSchema.title': {
       type: 'string',
       title: '{{t("Field display name")}}',
@@ -120,8 +127,9 @@ export const o2o: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Source key")}}',
+                  description: "{{t('Field values must be unique.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
                 },
@@ -139,7 +147,7 @@ export const o2o: IField = {
                   description:
                     "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'ForeignKey',
                   'x-validator': 'uid',
                   'x-disabled': '{{ !createOnly }}',
                 },
@@ -159,8 +167,8 @@ export const o2o: IField = {
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
-  },
-  filterable: {
+  };
+  filterable = {
     nested: true,
     children: [
       // {
@@ -177,18 +185,18 @@ export const o2o: IField = {
       //   },
       // },
     ],
-  },
-};
+  };
+}
 
-export const oho: IField = {
-  name: 'oho',
-  type: 'object',
-  group: 'relation',
-  order: 3,
-  title: '{{t("One to one (has one)")}}',
-  description: '{{t("One to one description")}}',
-  isAssociation: true,
-  default: {
+export class OHOFieldInterface extends CollectionFieldInterface {
+  name = 'oho';
+  type = 'object';
+  group = 'relation';
+  order = 3;
+  title = '{{t("One to one (has one)")}}';
+  description = '{{t("One to one description")}}';
+  isAssociation = true;
+  default = {
     type: 'hasOne',
     // name,
     uiSchema: {
@@ -197,10 +205,10 @@ export const oho: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -214,15 +222,16 @@ export const oho: IField = {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
-  },
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+  };
+  availableTypes = ['hasOne'];
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
@@ -231,8 +240,16 @@ export const oho: IField = {
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
-  },
-  properties: {
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: getUniqueKeyFromCollection(targetCollection),
+    };
+    schema['x-component-props'].fieldNames.label =
+      schema['x-component-props'].fieldNames?.label ||
+      targetCollection?.titleField ||
+      getUniqueKeyFromCollection(targetCollection);
+  }
+  properties = {
     'uiSchema.title': {
       type: 'string',
       title: '{{t("Field display name")}}',
@@ -298,8 +315,9 @@ export const oho: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Source key")}}',
+                  description: "{{t('Field values must be unique.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
                 },
@@ -317,7 +335,7 @@ export const oho: IField = {
                   description:
                     "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'ForeignKey',
                   'x-validator': 'uid',
                   'x-disabled': '{{ !createOnly }}',
                 },
@@ -329,8 +347,8 @@ export const oho: IField = {
     },
     ...constraintsProps,
     ...reverseFieldProperties,
-  },
-  filterable: {
+  };
+  filterable = {
     nested: true,
     children: [
       // {
@@ -347,18 +365,18 @@ export const oho: IField = {
       //   },
       // },
     ],
-  },
-};
+  };
+}
 
-export const obo: IField = {
-  name: 'obo',
-  type: 'object',
-  group: 'relation',
-  order: 3,
-  title: '{{t("One to one (belongs to)")}}',
-  description: '{{t("One to one description")}}',
-  isAssociation: true,
-  default: {
+export class OBOFieldInterface extends CollectionFieldInterface {
+  name = 'obo';
+  type = 'object';
+  group = 'relation';
+  order = 3;
+  title = '{{t("One to one (belongs to)")}}';
+  description = '{{t("One to one description")}}';
+  isAssociation = true;
+  default = {
     type: 'belongsTo',
     // name,
     uiSchema: {
@@ -367,10 +385,10 @@ export const obo: IField = {
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -383,14 +401,15 @@ export const obo: IField = {
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+          // fieldNames: {
+          //   label: 'id',
+          //   value: 'id',
+          // },
         },
       },
     },
-  },
+  };
+  availableTypes = ['hasOne'];
   schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {
@@ -400,13 +419,16 @@ export const obo: IField = {
       schema['x-component-props']['size'] = 'small';
     }
 
-    if (targetCollection?.titleField) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
-      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
-    }
-  },
-  properties: {
+    schema['x-component-props'] = schema['x-component-props'] || {};
+    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+      value: getUniqueKeyFromCollection(targetCollection),
+    };
+    schema['x-component-props'].fieldNames.label =
+      schema['x-component-props'].fieldNames?.label ||
+      targetCollection?.titleField ||
+      getUniqueKeyFromCollection(targetCollection);
+  }
+  properties = {
     'uiSchema.title': {
       type: 'string',
       title: '{{t("Field display name")}}',
@@ -479,7 +501,7 @@ export const obo: IField = {
                   description:
                     "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'ForeignKey',
                   'x-validator': 'uid',
                   'x-disabled': '{{ !createOnly }}',
                 },
@@ -490,8 +512,9 @@ export const obo: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Target key")}}',
+                  description: "{{t('Field values must be unique.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
                   'x-disabled': '{{ !createOnly }}',
@@ -504,8 +527,8 @@ export const obo: IField = {
     },
     ...constraintsProps,
     ...reverseFieldProperties,
-  },
-  filterable: {
+  };
+  filterable = {
     nested: true,
     children: [
       // {
@@ -522,5 +545,5 @@ export const obo: IField = {
       //   },
       // },
     ],
-  },
-};
+  };
+}

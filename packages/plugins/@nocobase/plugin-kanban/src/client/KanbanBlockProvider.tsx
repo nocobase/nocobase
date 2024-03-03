@@ -5,8 +5,8 @@ import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   FixedBlockWrapper,
   BlockProvider,
   useBlockRequestContext,
@@ -16,7 +16,7 @@ import { toColumns } from './Kanban';
 export const KanbanBlockContext = createContext<any>({});
 
 const useGroupField = (props) => {
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const { groupField } = props;
   if (typeof groupField === 'string') {
     return getField(groupField);
@@ -49,6 +49,7 @@ const InternalKanbanBlockProvider = (props) => {
           resource,
           groupField,
           fixedBlock: field?.decoratorProps?.fixedBlock,
+          sortField: props?.sortField,
         }}
       >
         {props.children}
@@ -75,7 +76,7 @@ const recursiveProperties = (schema: Schema, component = 'CollectionField', asso
 };
 
 const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated(collection.dataSource);
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
@@ -136,10 +137,11 @@ export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
+  const primaryKey = useCollection_deprecated().getPrimaryKey();
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      field.value = toColumns(ctx.groupField, ctx?.service?.data?.data);
-      setDataSource(toColumns(ctx.groupField, ctx?.service?.data?.data));
+      field.value = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
+      setDataSource(toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey));
     }
     // field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
@@ -155,7 +157,7 @@ export const useKanbanBlockProps = () => {
       const targetCard = destinationColumn?.cards?.[toPosition];
       const values = {
         sourceId: sourceCard.id,
-        sortField: `${groupField.name}_sort`,
+        sortField: ctx?.sortField || `${groupField.name}_sort`,
       };
       if (targetCard) {
         values['targetId'] = targetCard.id;

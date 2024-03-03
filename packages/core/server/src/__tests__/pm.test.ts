@@ -2,6 +2,7 @@ import Plugin from '../plugin';
 import { PluginManager } from '../plugin-manager';
 import { vi } from 'vitest';
 import { MockServer, mockServer } from '@nocobase/test';
+
 describe('pm', () => {
   let app: MockServer;
   afterEach(async () => {
@@ -454,7 +455,7 @@ describe('pm', () => {
     await app.cleanDb();
     await app.load();
     await app.install();
-    await app.pm.repository.create({
+    const plugin = await app.pm.repository.create({
       values: {
         name: 'Plugin1',
       },

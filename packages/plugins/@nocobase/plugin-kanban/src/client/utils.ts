@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export const createKanbanBlockSchema = (options) => {
-  const { collection, resource, groupField, ...others } = options;
+  const { collection, resource, groupField, sortField, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -12,6 +12,7 @@ export const createKanbanBlockSchema = (options) => {
       resource: resource || collection,
       action: 'list',
       groupField,
+      sortField,
       params: {
         paginate: false,
       },
