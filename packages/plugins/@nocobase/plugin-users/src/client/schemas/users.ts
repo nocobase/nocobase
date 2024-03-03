@@ -458,7 +458,7 @@ export const usersSchema: ISchema = {
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         confirm: {
-                          title: "{{t('Delete user')}}",
+                          title: "{{t('Delete')}}",
                           content: "{{t('Are you sure you want to delete it?')}}",
                         },
                         useAction: '{{cm.useDestroyAction}}',

@@ -599,7 +599,7 @@
   "Global action permissions": "全局操作权限",
   "General action permissions": "通用操作权限",
   "Plugin settings permissions": "插件配置权限",
-  "Data source permissions":"数据源权限",
+  "Data source permissions": "数据源权限",
   "Allow to desgin pages": "允许界面配置",
   "Allow to manage plugins": "允许管理插件",
   "Allow to configure plugins": "允许管理配置中心",
@@ -884,5 +884,9 @@
   "Main": "主数据源",
   "Index": "索引",
   "The field must be a primary key or have a unique index set": "字段必须是主键或者设置了唯一索引",
-  "Departments": "部门"
+  "Departments": "部门",
+  "Main department": "主属部门",
+  "Department name": "部门名称",
+  "Superior department": "上级部门",
+  "Owners": "负责人"
 }
