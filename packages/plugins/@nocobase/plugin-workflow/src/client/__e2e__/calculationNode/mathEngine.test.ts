@@ -641,7 +641,7 @@ test.skip('Collection event add data trigger, get front manual node add form sin
                                   _isJSONSchemaObject: true,
                                   version: '2.0',
                                   type: 'void',
-                                  'x-initializer': 'AddActionButton',
+                                  'x-initializer': 'actionInitializers:workflowManual',
                                   'x-component': 'ActionBar',
                                   'x-component-props': {
                                     layout: 'one-column',

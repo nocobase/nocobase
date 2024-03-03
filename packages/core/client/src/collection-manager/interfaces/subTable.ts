@@ -42,7 +42,7 @@ export class SubTableFieldInterface extends CollectionFieldInterface {
         properties: {
           actions: {
             type: 'void',
-            'x-initializer': 'SubTableActionInitializers',
+            'x-initializer': 'actionInitializers:subTable',
             'x-component': 'TableField.ActionBar',
             'x-component-props': {},
           },

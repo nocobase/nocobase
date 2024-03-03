@@ -25,7 +25,7 @@ export const createMapBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': 'MapActionInitializers',
+        'x-initializer': 'actionInitializers:map',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {

@@ -56,7 +56,7 @@ export const oneTableBlock: PageConfig = {
                         type: 'void',
                         version: '2.0',
                         'x-component': 'ActionBar',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component-props': {
                           style: {
                             marginBottom: 'var(--nb-spacing)',
@@ -435,7 +435,7 @@ export const oneTableBlock: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'ActionBar',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component-props': {
                                                                   style: {
                                                                     marginTop: 24,
@@ -785,7 +785,7 @@ export const oneTableBlock: PageConfig = {
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-component': 'TableV2.Column',
                             'x-decorator': 'TableV2.Column.ActionBar',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             'x-action-column': 'actions',
                             'x-component-props': {
                               width: 400,
@@ -1054,7 +1054,8 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginTop: 24,
@@ -1739,7 +1740,8 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginTop: 24,
@@ -1891,7 +1893,7 @@ export const oneTableBlock: PageConfig = {
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginBottom: 24,

@@ -193,7 +193,7 @@ export const oneEmptyTable: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -227,7 +227,7 @@ export const oneEmptyTable: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -349,7 +349,7 @@ export const oneEmptyForm: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'actionInitializers:form',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -459,7 +459,7 @@ export const oneEmptyFormWithActions: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'actionInitializers:form',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -619,7 +619,7 @@ export const oneEmptyDetailsBlock: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'DetailsActionInitializers',
+                            'x-initializer': 'actionInitializers:detailsMulti',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
@@ -738,7 +738,7 @@ export const oneEmptyListBlock: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'ListActionInitializers',
+                        'x-initializer': 'actionInitializers:list',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -786,7 +786,7 @@ export const oneEmptyListBlock: PageConfig = {
                                 version: '2.0',
                                 type: 'void',
                                 'x-align': 'left',
-                                'x-initializer': 'ListItemActionInitializers',
+                                'x-initializer': 'actionInitializers:listItem',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   useProps: '{{ useListActionBarProps }}',
@@ -890,7 +890,7 @@ export const oneEmptyGridCardBlock: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'GridCardActionInitializers',
+                        'x-initializer': 'actionInitializers:gridCard',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -938,7 +938,7 @@ export const oneEmptyGridCardBlock: PageConfig = {
                                 version: '2.0',
                                 type: 'void',
                                 'x-align': 'left',
-                                'x-initializer': 'GridCardItemActionInitializers',
+                                'x-initializer': 'actionInitializers:gridCardItem',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   useProps: '{{ useGridCardActionBarProps }}',
@@ -1052,7 +1052,7 @@ export const oneEmptyFilterFormBlock: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FilterFormActionInitializers',
+                            'x-initializer': 'actionInitializers:filterForm',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -1237,7 +1237,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -1487,7 +1487,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -1844,7 +1844,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -1976,7 +1976,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -2182,7 +2182,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'FormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:form',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -2267,7 +2267,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -2373,7 +2373,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -2546,7 +2546,8 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -2703,7 +2704,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -2818,7 +2819,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -3044,7 +3045,7 @@ export const oneFormBlockWithRolesFieldBasedUsers: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'actionInitializers:form',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -3673,7 +3674,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'actionInitializers:form',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -3780,7 +3781,7 @@ export const oneDetailBlockWithM2oFieldToGeneral: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'DetailsActionInitializers',
+                            'x-initializer': 'actionInitializers:detailsMulti',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
@@ -3942,7 +3943,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -4449,7 +4450,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -4556,7 +4557,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -4662,7 +4663,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -5713,7 +5714,8 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -5911,7 +5913,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -5945,7 +5947,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -6162,7 +6164,8 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -6320,7 +6323,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -6661,7 +6664,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -6768,7 +6771,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -6876,7 +6879,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -7577,7 +7580,8 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -7757,7 +7761,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -7981,7 +7985,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -8088,7 +8092,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -8196,7 +8200,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -8669,7 +8673,8 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -8849,7 +8854,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -9036,7 +9041,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -9143,7 +9148,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -9251,7 +9256,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -9648,7 +9653,8 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -9828,7 +9834,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -10122,7 +10128,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -10229,7 +10235,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -10337,7 +10343,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -10950,7 +10956,8 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -11349,7 +11356,7 @@ export const oneFilterFormBlockWithAllAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FilterFormActionInitializers',
+                            'x-initializer': 'actionInitializers:filterForm',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -11453,7 +11460,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -11717,7 +11724,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -11824,7 +11831,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -11932,7 +11939,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -12487,7 +12494,8 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -12667,7 +12675,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -13113,7 +13121,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -13220,7 +13228,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -13328,7 +13336,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -14279,7 +14287,8 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -14452,7 +14461,7 @@ export const oneEmptyTableWithTreeCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -14486,7 +14495,7 @@ export const oneEmptyTableWithTreeCollection: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -14735,7 +14744,7 @@ export const oneCollapseAndOneTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -15015,7 +15024,7 @@ export const oneFormWithMultiLevelAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'actionInitializers:form',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -15332,7 +15341,7 @@ export const oneSubformWithMultiLevelAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'actionInitializers:form',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -15455,7 +15464,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -15569,7 +15578,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -15677,7 +15686,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -16994,7 +17003,8 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -17171,7 +17181,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -17285,7 +17295,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -17393,7 +17403,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                          'actionInitializers:detailsSingle',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -18008,7 +18018,8 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer':
+                                                                          'actionInitializers:updateForm',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -18185,7 +18196,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -18375,7 +18386,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'actionInitializers:createForm',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -18460,7 +18471,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -18732,7 +18743,7 @@ export const oneFormBlockBasedOnUsers: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'actionInitializers:form',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -18882,7 +18893,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FilterFormActionInitializers',
+                            'x-initializer': 'actionInitializers:filterForm',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -18986,7 +18997,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19177,7 +19188,7 @@ export const twoTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19285,7 +19296,7 @@ export const twoTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19442,7 +19453,7 @@ export const twoTableWithAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19549,7 +19560,7 @@ export const twoTableWithAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19707,7 +19718,7 @@ export const oneEmptyTableBlockBasedOnUsers = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19741,7 +19752,7 @@ export const oneEmptyTableBlockBasedOnUsers = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -19860,7 +19871,7 @@ export const checkboxForTableRow = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19922,7 +19933,7 @@ export const checkboxForTableRow = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,

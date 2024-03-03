@@ -197,7 +197,7 @@ export const oneEmptyGantt: PageConfig = {
                                 marginBottom: 24,
                               },
                             },
-                            'x-initializer': 'GanttActionInitializers',
+                            'x-initializer': 'actionInitializers:gantt',
                             'x-uid': 'guwovmwt4c0',
                             'x-async': false,
                             'x-index': 1,
@@ -233,7 +233,7 @@ export const oneEmptyGantt: PageConfig = {
                                 'x-decorator': 'TableV2.Column.ActionBar',
                                 'x-component': 'TableV2.Column',
                                 'x-designer': 'TableV2.ActionColumnDesigner',
-                                'x-initializer': 'TableActionColumnInitializers',
+                                'x-initializer': 'actionInitializers:tableColumnAction',
                                 properties: {
                                   actions: {
                                     _isJSONSchemaObject: true,
@@ -408,7 +408,7 @@ export const oneEmptyTableBlockWithCustomizeUpdate: PageConfig = {
                         type: 'void',
                         version: '2.0',
                         'x-component': 'ActionBar',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'actionInitializers:tableAction',
                         'x-component-props': {
                           style: {
                             marginBottom: 'var(--nb-spacing)',
@@ -474,7 +474,7 @@ export const oneEmptyTableBlockWithCustomizeUpdate: PageConfig = {
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-component': 'TableV2.Column',
                             'x-decorator': 'TableV2.Column.ActionBar',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'actionInitializers:tableColumnAction',
                             'x-action-column': 'actions',
                             _isJSONSchemaObject: true,
                             properties: {
