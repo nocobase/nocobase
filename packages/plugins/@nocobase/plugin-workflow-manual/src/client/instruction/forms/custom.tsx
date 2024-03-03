@@ -103,7 +103,7 @@ function CustomFormBlockInitializer() {
                 grid: {
                   type: 'void',
                   'x-component': 'Grid',
-                  'x-initializer': 'AddCustomFormField',
+                  'x-initializer': 'fieldInitializers:workflowManualCustomForm',
                 },
                 actions: {
                   type: 'void',

@@ -32,7 +32,7 @@ export const ActionBarAssociationFilterAction = (props) => {
   const schema = {
     type: 'void',
     'x-action': 'associateFilter',
-    'x-initializer': 'AssociationFilter.Initializer',
+    'x-initializer': 'fieldInitializers:associationFilter',
     'x-component': 'AssociationFilter',
     properties: {},
   };

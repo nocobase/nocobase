@@ -48,7 +48,7 @@ export class SubTableFieldInterface extends CollectionFieldInterface {
           },
           [field.name]: {
             type: 'array',
-            'x-initializer': 'TableColumnInitializers',
+            'x-initializer': 'fieldInitializers:tableColumn',
             'x-component': 'TableV2',
             'x-component-props': {
               rowSelection: {

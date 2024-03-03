@@ -58,7 +58,7 @@ export const T2165 = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'fieldInitializers:formItem',
                             'x-linkage-rules': [
                               {
                                 condition: {
@@ -350,7 +350,7 @@ export const T2174 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'fieldInitializers:tableColumn',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -492,7 +492,7 @@ export const T2174 = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'fieldInitializers:formItem',
                                                                         'x-index': 1,
                                                                         properties: {
                                                                           s3hhb0ohnv1: {
@@ -944,7 +944,7 @@ export const T2614: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'fieldInitializers:tableColumn',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -1088,7 +1088,7 @@ export const T2614: PageConfig = {
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                          'fieldInitializers:detailsSingle',
                                                                         properties: {
                                                                           i39cn9ve66b: {
                                                                             _isJSONSchemaObject: true,
@@ -1129,7 +1129,7 @@ export const T2614: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'fieldInitializers:formItem',
                                                                                             properties: {
                                                                                               e5kqdzyj562: {
                                                                                                 _isJSONSchemaObject:
@@ -1404,7 +1404,7 @@ export const T2614: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'fieldInitializers:formItem',
                                                                         properties: {
                                                                           j9egu0k0tkq: {
                                                                             _isJSONSchemaObject: true,
@@ -1445,7 +1445,7 @@ export const T2614: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'fieldInitializers:formItem',
                                                                                             properties: {
                                                                                               esgv9d2n3jl: {
                                                                                                 _isJSONSchemaObject:
@@ -1877,7 +1877,7 @@ export const T2993: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'fieldInitializers:formItem',
                                                                 properties: {
                                                                   itg7al9oxaw: {
                                                                     _isJSONSchemaObject: true,
@@ -1919,7 +1919,7 @@ export const T2993: PageConfig = {
                                                                                     type: 'void',
                                                                                     'x-component': 'Grid',
                                                                                     'x-initializer':
-                                                                                      'FormItemInitializers',
+                                                                                      'fieldInitializers:formItem',
                                                                                     properties: {
                                                                                       um4p1ariq2x: {
                                                                                         _isJSONSchemaObject: true,
@@ -2019,7 +2019,7 @@ export const T2993: PageConfig = {
                                                                                                           'x-component':
                                                                                                             'Grid',
                                                                                                           'x-initializer':
-                                                                                                            'FormItemInitializers',
+                                                                                                            'fieldInitializers:formItem',
                                                                                                           properties: {
                                                                                                             uscd5l8tu2t:
                                                                                                               {
@@ -2203,7 +2203,7 @@ export const T2993: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'fieldInitializers:tableColumn',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -2459,7 +2459,7 @@ export const T2615: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'fieldInitializers:formItem',
                                                                 properties: {
                                                                   i7cb2o172ey: {
                                                                     _isJSONSchemaObject: true,
@@ -2614,7 +2614,7 @@ export const T2615: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'fieldInitializers:tableColumn',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -2743,7 +2743,7 @@ export const T2615: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'fieldInitializers:formItem',
                                                                         properties: {
                                                                           '7eayo28dgzo': {
                                                                             _isJSONSchemaObject: true,
@@ -3002,7 +3002,7 @@ export const T2615: PageConfig = {
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                          'fieldInitializers:detailsSingle',
                                                                         properties: {
                                                                           j9mxulol74m: {
                                                                             _isJSONSchemaObject: true,
@@ -3378,7 +3378,7 @@ export const T2845: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'fieldInitializers:formItem',
                                                                 'x-index': 1,
                                                                 properties: {
                                                                   i7cb2o172ey: {
@@ -3466,7 +3466,7 @@ export const T2845: PageConfig = {
                                                                                     type: 'void',
                                                                                     'x-component': 'Grid',
                                                                                     'x-initializer':
-                                                                                      'FormItemInitializers',
+                                                                                      'fieldInitializers:formItem',
                                                                                     properties: {
                                                                                       '3wg2gga1tgx': {
                                                                                         _isJSONSchemaObject: true,
@@ -3731,7 +3731,7 @@ export const T2845: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'FormItemInitializers',
+                                                                                                                    'fieldInitializers:formItem',
                                                                                                                   'x-uid':
                                                                                                                     'slesgjv4uxx',
                                                                                                                   'x-async':
@@ -3883,7 +3883,7 @@ export const T2845: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'fieldInitializers:tableColumn',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -4023,7 +4023,7 @@ export const T2845: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'fieldInitializers:formItem',
                                                                         'x-index': 1,
                                                                         properties: {
                                                                           '7eayo28dgzo': {
@@ -4110,7 +4110,7 @@ export const T2845: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'fieldInitializers:formItem',
                                                                                             properties: {
                                                                                               ddo3fvkz6hw: {
                                                                                                 _isJSONSchemaObject:
@@ -4408,7 +4408,7 @@ export const T2845: PageConfig = {
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
                                                                         'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                          'fieldInitializers:detailsSingle',
                                                                         'x-index': 2,
                                                                         properties: {
                                                                           j9mxulol74m: {
@@ -4495,7 +4495,7 @@ export const T2845: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'fieldInitializers:formItem',
                                                                                             properties: {
                                                                                               c5mcb8foh05: {
                                                                                                 _isJSONSchemaObject:
@@ -4756,7 +4756,7 @@ export const T2200 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'fieldInitializers:tableColumn',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -4884,7 +4884,7 @@ export const T2200 = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'fieldInitializers:formItem',
                                                                         properties: {
                                                                           '3i87cpmv87x': {
                                                                             _isJSONSchemaObject: true,
@@ -5094,7 +5094,7 @@ export const T3106: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'fieldInitializers:formItem',
                             'x-index': 1,
                             properties: {
                               wbvuzjzl83g: {
@@ -5128,7 +5128,7 @@ export const T3106: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'AssociationField.SubTable',
-                                            'x-initializer': 'TableColumnInitializers',
+                                            'x-initializer': 'fieldInitializers:tableColumn',
                                             'x-initializer-props': {
                                               action: false,
                                             },
@@ -5310,7 +5310,7 @@ export const T3251: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'fieldInitializers:formItem',
                             'x-linkage-rules': [
                               {
                                 condition: {
