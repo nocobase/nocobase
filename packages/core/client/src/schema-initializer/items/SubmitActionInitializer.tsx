@@ -9,7 +9,7 @@ export const SubmitActionInitializer = (props) => {
     'x-component': 'Action',
     // 'x-designer': 'Action.Designer',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:updateSubmit',
+    'x-settings': 'actionSettings:submit',
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',
