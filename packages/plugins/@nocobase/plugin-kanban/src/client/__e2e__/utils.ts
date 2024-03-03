@@ -96,7 +96,7 @@ export const oneEmptyKanbanBlock: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'blockInitializers:page',
         properties: {
           '4io56n1mje4': {
             _isJSONSchemaObject: true,
@@ -227,7 +227,7 @@ export const oneEmptyKanbanBlock: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'RecordBlockInitializers',
+                                            'x-initializer': 'blockInitializers:record',
                                             'x-uid': '2hsi7zy93g6',
                                             'x-async': false,
                                             'x-index': 1,

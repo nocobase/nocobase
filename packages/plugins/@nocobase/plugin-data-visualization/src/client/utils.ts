@@ -17,7 +17,7 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-component-props': {
       size: 'small',
     },
-    'x-initializer': 'ChartInitializers',
+    'x-initializer': 'blockInitializers:chart',
     properties: {
       [uid()]: {
         type: 'void',

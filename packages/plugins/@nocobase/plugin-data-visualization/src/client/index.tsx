@@ -36,7 +36,7 @@ class DataVisualizationPlugin extends Plugin {
     this.app.schemaInitializerManager.add(chartFilterActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(chartFilterActionInitializers);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
     blockInitializers?.add('dataBlocks.chartV2', {
       title: lang('Charts'),
       Component: 'ChartV2BlockInitializer',

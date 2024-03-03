@@ -55,7 +55,7 @@ export default {
       grid: {
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'TableSelectorInitializers',
+        'x-initializer': 'blockInitializers:tableSelector',
         properties: {},
       },
       footer: {
@@ -110,7 +110,7 @@ export default {
               grid: {
                 type: 'void',
                 'x-component': 'Grid',
-                'x-initializer': 'RecordBlockInitializers',
+                'x-initializer': 'blockInitializers:record',
                 properties: {},
               },
             },

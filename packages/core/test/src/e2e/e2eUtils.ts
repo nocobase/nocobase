@@ -526,7 +526,7 @@ const createPage = async (options?: CreatePageOptions) => {
                 version: '2.0',
                 type: 'void',
                 'x-component': 'Grid',
-                'x-initializer': 'BlockInitializers',
+                'x-initializer': 'blockInitializers:page',
                 'x-uid': uid(),
                 name: gridName,
               },

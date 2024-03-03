@@ -140,7 +140,7 @@ export const oneEmptyGantt: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'blockInitializers:page',
         properties: {
           gl57m4hyewf: {
             _isJSONSchemaObject: true,
@@ -296,7 +296,7 @@ export const oneEmptyGantt: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'RecordBlockInitializers',
+                                            'x-initializer': 'blockInitializers:record',
                                             'x-uid': 'gxtfjqzxbfu',
                                             'x-async': false,
                                             'x-index': 1,

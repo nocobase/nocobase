@@ -15,7 +15,7 @@ import { calendarBlockSettings } from './calendar/Calender.Settings';
 export class PluginCalendarClient extends Plugin {
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
-    this.app.schemaInitializerManager.addItem('BlockInitializers', 'dataBlocks.calendar', {
+    this.app.schemaInitializerManager.addItem('blockInitializers:page', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',
     });

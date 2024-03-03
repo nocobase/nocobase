@@ -33,7 +33,7 @@ export class MapPlugin extends Plugin {
     this.app.schemaInitializerManager.add(mapActionInitializers);
     this.schemaSettingsManager.add(mapBlockSettings);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
     blockInitializers?.add('dataBlocks.map', {
       title: generateNTemplate('Map'),
       Component: 'MapBlockInitializer',

@@ -36,7 +36,7 @@ export class GanttPlugin extends Plugin {
     this.app.schemaSettingsManager.add(ganttSettings);
     this.app.schemaInitializerManager.add(GanttActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(ganttActionInitializers);
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
     blockInitializers?.add('dataBlocks.gantt', {
       title: "{{t('Gantt')}}",
       Component: 'GanttBlockInitializer',

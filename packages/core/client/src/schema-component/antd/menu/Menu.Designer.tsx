@@ -147,7 +147,7 @@ const InsertMenuItems = (props) => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'BlockInitializers',
+                    'x-initializer': 'blockInitializers:page',
                     properties: {},
                   },
                 },
