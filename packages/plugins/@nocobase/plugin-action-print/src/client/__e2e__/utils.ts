@@ -152,7 +152,7 @@ export const oneTableWithViewAction: PageConfig = {
                         type: 'array',
                         version: '2.0',
                         'x-component': 'TableV2',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'TableColumnInitializers',
                         'x-component-props': {
                           rowKey: 'id',
                           useProps: '{{ useTableBlockProps }}',
@@ -293,7 +293,7 @@ export const oneTableWithViewAction: PageConfig = {
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
                                                                         'x-initializer':
-                                                                          'fieldInitializers:detailsSingle',
+                                                                          'ReadPrettyFormItemInitializers',
                                                                         _isJSONSchemaObject: true,
                                                                         'x-uid': 'kum0xpsh9se',
                                                                         'x-async': false,
@@ -548,7 +548,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                     type: 'void',
                                                                     version: '2.0',
                                                                     'x-component': 'Grid',
-                                                                    'x-initializer': 'fieldInitializers:formItem',
+                                                                    'x-initializer': 'FormItemInitializers',
                                                                     _isJSONSchemaObject: true,
                                                                     properties: {
                                                                       ikh538659hb: {
@@ -856,7 +856,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:detailsSingle',
+                                                                'x-initializer': 'ReadPrettyFormItemInitializers',
                                                                 _isJSONSchemaObject: true,
                                                                 'x-uid': 'br7bq2ddccy',
                                                                 'x-async': false,

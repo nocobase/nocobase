@@ -87,7 +87,7 @@ export const T2183 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'TableColumnInitializers',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -246,7 +246,7 @@ export const T2186 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'TableColumnInitializers',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -383,7 +383,7 @@ export const T2187 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'TableColumnInitializers',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -513,7 +513,7 @@ export const T2187 = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'FormItemInitializers',
                                                                         properties: {
                                                                           h191s1ni4am: {
                                                                             _isJSONSchemaObject: true,

@@ -18,7 +18,7 @@ export const AuditLogsBlockInitializer = () => {
     collection: 'auditLogs',
     rowKey: 'id',
     tableActionInitializers: 'actionInitializers:auditLogsTable',
-    tableColumnInitializers: 'fieldInitializers:auditLogsTableColumn',
+    tableColumnInitializers: 'AuditLogsTableColumnInitializers',
     tableActionColumnInitializers: 'actionInitializers:auditLogsTableColumn',
     tableBlockProvider: 'AuditLogsBlockProvider',
     disableTemplate: true,

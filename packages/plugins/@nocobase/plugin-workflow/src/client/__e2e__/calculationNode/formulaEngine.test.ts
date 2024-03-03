@@ -608,7 +608,7 @@ test.skip('Collection event add data trigger, get front manual node add form sin
                                   version: '2.0',
                                   type: 'void',
                                   'x-component': 'Grid',
-                                  'x-initializer': 'fieldInitializers:formItem',
+                                  'x-initializer': 'FormItemInitializers',
                                   name: 'grid',
                                   properties: {
                                     yt2rbpepdsl: {

@@ -74,7 +74,7 @@ export const T2797: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'TableColumnInitializers',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -214,7 +214,7 @@ export const T2797: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'FormItemInitializers',
                                                                         'x-index': 1,
                                                                         'x-uid': '1d3zru9pi2o',
                                                                         'x-async': false,
@@ -368,7 +368,7 @@ export const T2797: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'fieldInitializers:formItem',
+                                                                                                                    'FormItemInitializers',
                                                                                                                   'x-index': 1,
                                                                                                                   'x-uid':
                                                                                                                     'k9p2rqt49v1',
@@ -654,7 +654,7 @@ export const T2838: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'TableColumnInitializers',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -1134,7 +1134,7 @@ export const T2838: PageConfig = {
                                                                                                                                                                                             'x-component':
                                                                                                                                                                                               'Grid',
                                                                                                                                                                                             'x-initializer':
-                                                                                                                                                                                              'fieldInitializers:formItem',
+                                                                                                                                                                                              'FormItemInitializers',
                                                                                                                                                                                             'x-index': 1,
                                                                                                                                                                                             properties:
                                                                                                                                                                                               {
@@ -1345,7 +1345,7 @@ export const T2838: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'fieldInitializers:detailsSingle',
+                                                                                                                    'ReadPrettyFormItemInitializers',
                                                                                                                   'x-index': 2,
                                                                                                                   'x-uid':
                                                                                                                     '1et421zrsz4',
@@ -1402,7 +1402,7 @@ export const T2838: PageConfig = {
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
                                                                         'x-initializer':
-                                                                          'fieldInitializers:detailsSingle',
+                                                                          'ReadPrettyFormItemInitializers',
                                                                         'x-index': 2,
                                                                         'x-uid': 'j4qxeoy1pqw',
                                                                         'x-async': false,

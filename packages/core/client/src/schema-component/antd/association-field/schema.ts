@@ -6,7 +6,7 @@ export default {
       grid: {
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'fieldInitializers:formItem',
+        'x-initializer': 'FormItemInitializers',
       },
     },
   },
@@ -122,7 +122,7 @@ export default {
   SubTable: {
     type: 'void',
     'x-component': 'AssociationField.SubTable',
-    'x-initializer': 'fieldInitializers:tableColumn',
+    'x-initializer': 'TableColumnInitializers',
     'x-initializer-props': {
       action: false,
     },

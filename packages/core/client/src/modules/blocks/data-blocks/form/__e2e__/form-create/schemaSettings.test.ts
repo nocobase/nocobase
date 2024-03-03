@@ -764,7 +764,7 @@ test.describe('creation form block schema settings', () => {
                                 version: '2.0',
                                 type: 'void',
                                 'x-component': 'Grid',
-                                'x-initializer': 'fieldInitializers:formItem',
+                                'x-initializer': 'FormItemInitializers',
                                 properties: {
                                   gnw25oyqe56: {
                                     _isJSONSchemaObject: true,
@@ -1014,7 +1014,7 @@ test.describe('creation form block schema settings', () => {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'array',
-                            'x-initializer': 'fieldInitializers:tableColumn',
+                            'x-initializer': 'TableColumnInitializers',
                             'x-component': 'TableV2',
                             'x-component-props': {
                               rowKey: 'id',

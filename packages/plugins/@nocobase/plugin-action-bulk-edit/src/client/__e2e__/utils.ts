@@ -170,7 +170,7 @@ export const oneEmptyGantt: PageConfig = {
                                 maxWidth: '35%',
                               },
                             },
-                            'x-initializer': 'fieldInitializers:tableColumn',
+                            'x-initializer': 'TableColumnInitializers',
                             'x-component': 'TableV2',
                             'x-component-props': {
                               rowKey: 'id',
@@ -464,7 +464,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'TableColumnInitializers',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',

@@ -48,7 +48,7 @@ function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
             grid: template || {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'fieldInitializers:detailsSingle',
+              'x-initializer': 'ReadPrettyFormItemInitializers',
               properties: {},
             },
           },

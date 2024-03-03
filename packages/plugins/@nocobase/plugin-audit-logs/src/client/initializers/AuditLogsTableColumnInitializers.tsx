@@ -92,7 +92,7 @@ export const auditLogsTableColumnInitializers_deprecated: SchemaInitializer = ne
 });
 
 export const auditLogsTableColumnInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'fieldInitializers:auditLogsTableColumn',
+  name: 'fieldInitializers:AuditLogsTableColumn',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
   title: '{{t("Configure columns")}}',
