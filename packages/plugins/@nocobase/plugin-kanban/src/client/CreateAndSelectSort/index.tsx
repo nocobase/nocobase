@@ -97,7 +97,7 @@ export const CreateAndSelectSort = (props) => {
         ...values,
       },
     });
-    field.dataSource = sortFields.concat([
+    field.dataSource = field.dataSource.concat([
       { ...data.data, value: data.data.name, label: compile(data.data['uiSchema']?.['title']) },
     ]);
     field.value = data.data.name;
@@ -152,7 +152,7 @@ export const CreateAndSelectSort = (props) => {
       data: { type: 'sort', interface: 'sort', ...values },
     });
     const result = data.data;
-    field.dataSource = sortFields.concat([
+    field.dataSource = field.dataSource.concat([
       { ...result, value: result.name, label: compile(result['uiSchema']?.['title']) },
     ]);
     field.value = result.name;
