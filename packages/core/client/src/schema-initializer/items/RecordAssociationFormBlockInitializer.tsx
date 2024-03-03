@@ -23,8 +23,8 @@ export const RecordAssociationFormBlockInitializer = () => {
       onClick={async ({ item }) => {
         const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
         const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
-          ? 'actionInitializers:updateForm'
-          : 'actionInitializers:createForm';
+          ? 'UpdateFormActionInitializers'
+          : 'CreateFormActionInitializers';
 
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);

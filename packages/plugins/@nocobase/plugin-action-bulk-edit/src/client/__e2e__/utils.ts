@@ -154,7 +154,7 @@ export const oneEmptyGantt: PageConfig = {
                                 marginBottom: 24,
                               },
                             },
-                            'x-initializer': 'actionInitializers:gantt',
+                            'x-initializer': 'GanttActionInitializers',
                             'x-uid': 'guwovmwt4c0',
                             'x-async': false,
                             'x-index': 1,
@@ -190,7 +190,7 @@ export const oneEmptyGantt: PageConfig = {
                                 'x-decorator': 'TableV2.Column.ActionBar',
                                 'x-component': 'TableV2.Column',
                                 'x-designer': 'TableV2.ActionColumnDesigner',
-                                'x-initializer': 'actionInitializers:tableColumnAction',
+                                'x-initializer': 'TableActionColumnInitializers',
                                 properties: {
                                   actions: {
                                     _isJSONSchemaObject: true,
@@ -368,7 +368,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -483,7 +483,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,

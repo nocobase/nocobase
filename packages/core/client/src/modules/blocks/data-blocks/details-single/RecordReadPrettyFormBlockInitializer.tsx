@@ -26,7 +26,7 @@ export const RecordReadPrettyFormBlockInitializer = () => {
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
-    block !== 'TableField' ? itemConfig.actionInitializers || 'actionInitializers:detailsSingle' : null;
+    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
     <SchemaInitializerItem

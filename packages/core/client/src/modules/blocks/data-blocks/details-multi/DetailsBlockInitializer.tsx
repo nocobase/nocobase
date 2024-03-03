@@ -23,7 +23,7 @@ export const DetailsBlockInitializer = () => {
           actionInitializers:
             (collection.template !== 'view' || collection?.writableView) &&
             collection.template !== 'sql' &&
-            'actionInitializers:detailsMulti',
+            'DetailsActionInitializers',
           settings: 'blockSettings:multiDataDetails',
         });
         insert(schema);

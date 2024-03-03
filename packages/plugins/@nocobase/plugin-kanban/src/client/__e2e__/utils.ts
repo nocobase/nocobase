@@ -133,7 +133,7 @@ export const oneEmptyKanbanBlock: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:kanban',
+                        'x-initializer': 'KanbanActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {

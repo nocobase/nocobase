@@ -437,7 +437,7 @@ function ActionInitializer() {
  * @deprecated
  */
 export const addActionButton_deprecated: SchemaInitializer = new SchemaInitializer({
-  name: 'actionInitializers:workflowManual',
+  name: 'AddActionButton',
   title: '{{t("Configure actions")}}',
   items: [
     {

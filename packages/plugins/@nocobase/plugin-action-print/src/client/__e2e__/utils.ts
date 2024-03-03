@@ -137,7 +137,7 @@ export const oneTableWithViewAction: PageConfig = {
                         type: 'void',
                         version: '2.0',
                         'x-component': 'ActionBar',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component-props': {
                           style: {
                             marginBottom: 'var(--nb-spacing)',
@@ -169,7 +169,7 @@ export const oneTableWithViewAction: PageConfig = {
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-component': 'TableV2.Column',
                             'x-decorator': 'TableV2.Column.ActionBar',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             'x-action-column': 'actions',
                             _isJSONSchemaObject: true,
                             properties: {
@@ -277,7 +277,7 @@ export const oneTableWithViewAction: PageConfig = {
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
                                                                         'x-initializer':
-                                                                          'actionInitializers:detailsSingle',
+                                                                          'ReadPrettyFormActionInitializers',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginBottom: 24,
@@ -443,7 +443,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                             type: 'void',
                             version: '2.0',
                             'x-component': 'CalendarV2.ActionBar',
-                            'x-initializer': 'actionInitializers:calendar',
+                            'x-initializer': 'CalendarActionInitializers',
                             'x-component-props': {
                               style: {
                                 marginBottom: 24,
@@ -668,7 +668,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                     type: 'void',
                                                                     version: '2.0',
                                                                     'x-component': 'ActionBar',
-                                                                    'x-initializer': 'actionInitializers:createForm',
+                                                                    'x-initializer': 'CreateFormActionInitializers',
                                                                     'x-component-props': {
                                                                       style: {
                                                                         marginTop: 24,
@@ -795,7 +795,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                             'x-initializer': 'blockInitializers:record',
                                             _isJSONSchemaObject: true,
                                             'x-initializer-props': {
-                                              actionInitializers: 'actionInitializers:calendarForm',
+                                              actionInitializers: 'CalendarFormActionInitializers',
                                             },
                                             properties: {
                                               '0j7rb0bivys': {
@@ -841,7 +841,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'ActionBar',
-                                                                'x-initializer': 'actionInitializers:calendarForm',
+                                                                'x-initializer': 'CalendarFormActionInitializers',
                                                                 'x-component-props': {
                                                                   style: {
                                                                     marginBottom: 24,

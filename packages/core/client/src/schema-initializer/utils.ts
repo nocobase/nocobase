@@ -859,7 +859,7 @@ export const useCollectionDataSourceItems = (
 export const createDetailsBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'actionInitializers:detailsMulti',
+    actionInitializers = 'DetailsActionInitializers',
     collection,
     dataSource,
     association,
@@ -932,8 +932,8 @@ export const createDetailsBlockSchema = (options) => {
 export const createListBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'actionInitializers:list',
-    itemActionInitializers = 'actionInitializers:listItem',
+    actionInitializers = 'ListActionInitializers',
+    itemActionInitializers = 'ListItemActionInitializers',
     collection,
     dataSource,
     association,
@@ -1022,8 +1022,8 @@ export const createListBlockSchema = (options) => {
 export const createGridCardBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'actionInitializers:gridCard',
-    itemActionInitializers = 'actionInitializers:gridCardItem',
+    actionInitializers = 'GridCardActionInitializers',
+    itemActionInitializers = 'GridCardItemActionInitializers',
     collection,
     association,
     resource,
@@ -1114,7 +1114,7 @@ export const createGridCardBlockSchema = (options) => {
 export const createFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'FormItemInitializers',
-    actionInitializers = 'actionInitializers:form',
+    actionInitializers = 'FormActionInitializers',
     collection,
     resource,
     dataSource,
@@ -1187,7 +1187,7 @@ export const createFormBlockSchema = (options) => {
 export const createFilterFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'FilterFormItemInitializers',
-    actionInitializers = 'actionInitializers:filterForm',
+    actionInitializers = 'FilterFormActionInitializers',
     collection,
     resource,
     association,
@@ -1252,7 +1252,7 @@ export const createFilterFormBlockSchema = (options) => {
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'actionInitializers:detailsSingle',
+    actionInitializers = 'ReadPrettyFormActionInitializers',
     collection,
     association,
     dataSource,
@@ -1354,7 +1354,7 @@ export const createTableBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': tableActionInitializers ?? 'actionInitializers:tableAction',
+        'x-initializer': tableActionInitializers ?? 'TableActionInitializers',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -1382,7 +1382,7 @@ export const createTableBlockSchema = (options) => {
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
             'x-designer': 'TableV2.ActionColumnDesigner',
-            'x-initializer': tableActionColumnInitializers ?? 'actionInitializers:tableColumnAction',
+            'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
             properties: {
               [uid()]: {
                 type: 'void',
@@ -1458,7 +1458,7 @@ export const createTableSelectorSchema = (options) => {
     properties: {
       [uid()]: {
         type: 'void',
-        'x-initializer': 'actionInitializers:tableAction',
+        'x-initializer': 'TableActionInitializers',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {

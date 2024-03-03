@@ -55,7 +55,7 @@ export const createGanttBlockSchema = (options) => {
                 marginBottom: 24,
               },
             },
-            'x-initializer': 'actionInitializers:gantt',
+            'x-initializer': 'GanttActionInitializers',
             properties: {},
           },
           table: {
@@ -86,7 +86,7 @@ export const createGanttBlockSchema = (options) => {
                 'x-decorator': 'TableV2.Column.ActionBar',
                 'x-component': 'TableV2.Column',
                 'x-designer': 'TableV2.ActionColumnDesigner',
-                'x-initializer': 'actionInitializers:tableColumnAction',
+                'x-initializer': 'TableActionColumnInitializers',
                 properties: {
                   actions: {
                     type: 'void',

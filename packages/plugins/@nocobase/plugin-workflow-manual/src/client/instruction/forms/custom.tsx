@@ -116,7 +116,7 @@ function CustomFormBlockInitializer() {
                       flexWrap: 'wrap',
                     },
                   },
-                  'x-initializer': 'actionInitializers:workflowManual',
+                  'x-initializer': 'AddActionButton',
                   properties: {
                     resolve: {
                       type: 'void',

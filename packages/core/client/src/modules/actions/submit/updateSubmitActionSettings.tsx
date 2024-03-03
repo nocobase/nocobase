@@ -76,7 +76,7 @@ export const submitActionSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         return (
           fieldSchema['x-action'] === 'submit' &&
-          fieldSchema.parent?.['x-initializer'] === 'actionInitializers:createForm'
+          fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
         );
       },
     },

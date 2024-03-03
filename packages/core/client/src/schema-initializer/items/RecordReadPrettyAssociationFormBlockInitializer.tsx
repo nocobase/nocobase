@@ -20,7 +20,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
 
   const resource = `${field.collectionName}.${field.name}`;
   const { block } = useBlockRequestContext();
-  const actionInitializers = block !== 'TableField' ? 'actionInitializers:detailsSingle' : null;
+  const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
 
   return (
     <SchemaInitializerItem

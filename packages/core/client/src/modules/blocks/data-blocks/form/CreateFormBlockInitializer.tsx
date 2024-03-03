@@ -24,7 +24,7 @@ export const CreateFormBlockInitializer = () => {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
             const blockSchema = createFormBlockSchema({
-              actionInitializers: 'actionInitializers:createForm',
+              actionInitializers: 'CreateFormActionInitializers',
               association,
               dataSource: collection.dataSource,
               collection: collection.name,
@@ -41,7 +41,7 @@ export const CreateFormBlockInitializer = () => {
         } else {
           insert(
             createFormBlockSchema({
-              actionInitializers: 'actionInitializers:createForm',
+              actionInitializers: 'CreateFormActionInitializers',
               association,
               dataSource: collection.dataSource,
               collection: collection.name,

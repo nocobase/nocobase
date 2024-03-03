@@ -235,7 +235,7 @@ export const T2165 = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'FormActionInitializers',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -335,7 +335,7 @@ export const T2174 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -370,7 +370,7 @@ export const T2174 = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             'x-index': 1,
                             properties: {
                               actions: {
@@ -543,8 +543,7 @@ export const T2174 = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:createForm',
+                                                                        'x-initializer': 'CreateFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -929,7 +928,7 @@ export const T2614: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -963,7 +962,7 @@ export const T2614: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -1071,7 +1070,7 @@ export const T2614: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'actionInitializers:detailsSingle',
+                                                                          'ReadPrettyFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -1582,8 +1581,7 @@ export const T2614: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:updateForm',
+                                                                        'x-initializer': 'UpdateFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -1770,7 +1768,7 @@ export const T2993: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -2138,7 +2136,7 @@ export const T2993: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'actionInitializers:createForm',
+                                                                'x-initializer': 'CreateFormActionInitializers',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -2223,7 +2221,7 @@ export const T2993: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             'x-index': 1,
                             properties: {
                               actions: {
@@ -2353,7 +2351,7 @@ export const T2615: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -2548,7 +2546,7 @@ export const T2615: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'actionInitializers:createForm',
+                                                                'x-initializer': 'CreateFormActionInitializers',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -2633,7 +2631,7 @@ export const T2615: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -2832,8 +2830,7 @@ export const T2615: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:updateForm',
+                                                                        'x-initializer': 'UpdateFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -2985,7 +2982,7 @@ export const T2615: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'actionInitializers:detailsSingle',
+                                                                          'ReadPrettyFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -3262,7 +3259,7 @@ export const T2845: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -3746,7 +3743,7 @@ export const T2845: PageConfig = {
                                                                                                                       '2.0',
                                                                                                                     type: 'void',
                                                                                                                     'x-initializer':
-                                                                                                                      'actionInitializers:updateForm',
+                                                                                                                      'UpdateFormActionInitializers',
                                                                                                                     'x-component':
                                                                                                                       'ActionBar',
                                                                                                                     'x-component-props':
@@ -3827,7 +3824,7 @@ export const T2845: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'actionInitializers:createForm',
+                                                                'x-initializer': 'CreateFormActionInitializers',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -3903,7 +3900,7 @@ export const T2845: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             'x-index': 1,
                             properties: {
                               actions: {
@@ -4238,8 +4235,7 @@ export const T2845: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:updateForm',
+                                                                        'x-initializer': 'UpdateFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -4391,7 +4387,7 @@ export const T2845: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'actionInitializers:detailsSingle',
+                                                                          'ReadPrettyFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -4741,7 +4737,7 @@ export const T2200 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -4775,7 +4771,7 @@ export const T2200 = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -4930,8 +4926,7 @@ export const T2200 = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:updateForm',
+                                                                        'x-initializer': 'UpdateFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -5192,7 +5187,7 @@ export const T3106: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'FormActionInitializers',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -5453,7 +5448,7 @@ export const T3251: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'FormActionInitializers',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',

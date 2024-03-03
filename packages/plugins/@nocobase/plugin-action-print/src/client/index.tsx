@@ -19,15 +19,11 @@ export class PrintPlugin extends Plugin {
     };
 
     this.app.schemaInitializerManager.addItem(
-      'actionInitializers:detailsSingle',
+      'ReadPrettyFormActionInitializers',
       'enableActions.print',
       initializerData,
     );
-    this.app.schemaInitializerManager.addItem(
-      'actionInitializers:calendarForm',
-      'enableActions.print',
-      initializerData,
-    );
+    this.app.schemaInitializerManager.addItem('CalendarFormActionInitializers', 'enableActions.print', initializerData);
   }
 }
 

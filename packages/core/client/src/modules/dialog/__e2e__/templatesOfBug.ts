@@ -59,7 +59,7 @@ export const T2797: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -94,7 +94,7 @@ export const T2797: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             'x-index': 1,
                             properties: {
                               actions: {
@@ -223,8 +223,7 @@ export const T2797: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:updateForm',
+                                                                        'x-initializer': 'UpdateFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -383,7 +382,7 @@ export const T2797: PageConfig = {
                                                                                                                       '2.0',
                                                                                                                     type: 'void',
                                                                                                                     'x-initializer':
-                                                                                                                      'actionInitializers:updateForm',
+                                                                                                                      'UpdateFormActionInitializers',
                                                                                                                     'x-component':
                                                                                                                       'ActionBar',
                                                                                                                     'x-component-props':
@@ -639,7 +638,7 @@ export const T2838: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'TableActionInitializers',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -674,7 +673,7 @@ export const T2838: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'TableActionColumnInitializers',
                             'x-index': 1,
                             properties: {
                               actions: {
@@ -793,7 +792,7 @@ export const T2838: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-initializer':
-                                                                          'actionInitializers:detailsSingle',
+                                                                          'ReadPrettyFormActionInitializers',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -936,7 +935,7 @@ export const T2838: PageConfig = {
                                                                                                                       '2.0',
                                                                                                                     type: 'void',
                                                                                                                     'x-initializer':
-                                                                                                                      'actionInitializers:detailsSingle',
+                                                                                                                      'ReadPrettyFormActionInitializers',
                                                                                                                     'x-component':
                                                                                                                       'ActionBar',
                                                                                                                     'x-component-props':
@@ -1223,7 +1222,7 @@ export const T2838: PageConfig = {
                                                                                                                                                                                                 '2.0',
                                                                                                                                                                                               type: 'void',
                                                                                                                                                                                               'x-initializer':
-                                                                                                                                                                                                'actionInitializers:updateForm',
+                                                                                                                                                                                                'UpdateFormActionInitializers',
                                                                                                                                                                                               'x-component':
                                                                                                                                                                                                 'ActionBar',
                                                                                                                                                                                               'x-component-props':

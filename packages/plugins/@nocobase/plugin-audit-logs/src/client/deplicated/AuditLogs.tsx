@@ -170,7 +170,7 @@ export const AuditLogs: any = () => {
                 'x-decorator': 'TableV2.Column.ActionBar',
                 'x-component': 'TableV2.Column',
                 'x-designer': 'TableV2.ActionColumnDesigner',
-                'x-initializer': 'actionInitializers:tableColumnAction',
+                'x-initializer': 'TableActionColumnInitializers',
                 properties: {
                   actions: {
                     type: 'void',

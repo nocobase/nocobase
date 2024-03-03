@@ -126,7 +126,7 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
               marginTop: '1.5em',
             },
           },
-          'x-initializer': 'actionInitializers:workflowManual',
+          'x-initializer': 'AddActionButton',
           properties: schema.actions,
         },
       },

@@ -41,7 +41,7 @@ export const createCalendarBlockSchema = (options) => {
                 marginBottom: 24,
               },
             },
-            'x-initializer': 'actionInitializers:calendar',
+            'x-initializer': 'CalendarActionInitializers',
             properties: {},
           },
           event: {
@@ -76,7 +76,7 @@ export const createCalendarBlockSchema = (options) => {
                             type: 'void',
                             'x-component': 'Grid',
                             'x-initializer-props': {
-                              actionInitializers: 'actionInitializers:calendarForm',
+                              actionInitializers: 'CalendarFormActionInitializers',
                             },
                             'x-initializer': 'blockInitializers:record',
                             properties: {},

@@ -29,7 +29,7 @@ export const RecordFormBlockInitializer = () => {
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
-              actionInitializers: 'actionInitializers:updateForm',
+              actionInitializers: 'UpdateFormActionInitializers',
               template: s,
               settings: 'blockSettings:editForm',
             });
@@ -49,7 +49,7 @@ export const RecordFormBlockInitializer = () => {
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
-              actionInitializers: 'actionInitializers:updateForm',
+              actionInitializers: 'UpdateFormActionInitializers',
               settings: 'blockSettings:editForm',
             }),
           );

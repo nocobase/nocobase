@@ -22,7 +22,7 @@ function InternalFormBlockInitializer({ schema, ...others }) {
   async function onConfirm({ item }) {
     const template = item.template ? await getTemplateSchemaByMode(item) : null;
     const result = createFormBlockSchema({
-      actionInitializers: 'actionInitializers:workflowManual',
+      actionInitializers: 'AddActionButton',
       actions: {
         resolve: {
           type: 'void',
