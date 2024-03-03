@@ -38,7 +38,7 @@ const CustomListGridMenu: FC<SchemaInitializerItemsProps<ButtonProps, ListProps<
 };
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   designable: true,
   title: 'Button Text',
   ItemsComponent: CustomItemsMenu,
@@ -58,7 +58,7 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const { exists, render } = useSchemaInitializerRender('MyInitializer');
+  const { exists, render } = useSchemaInitializerRender('myInitializer');
   if (!exists) return null;
   return (
     <div>

@@ -63,8 +63,170 @@ export const Resizable = () => {
   );
 };
 
-export const tableActionColumnInitializers = new SchemaInitializer({
+/**
+ * @deprecated
+ */
+export const tableActionColumnInitializers_deprecated = new SchemaInitializer({
   name: 'TableActionColumnInitializers',
+  insertPosition: 'beforeEnd',
+  useInsert: function useInsert() {
+    const { refresh } = useDesignable();
+    const fieldSchema = useFieldSchema();
+    const api = useAPIClient();
+    const { t } = useTranslation();
+
+    return function insert(schema) {
+      const spaceSchema = fieldSchema.reduceProperties((buf, schema) => {
+        if (schema['x-component'] === 'Space') {
+          return schema;
+        }
+        return buf;
+      }, null);
+      if (!spaceSchema) {
+        return;
+      }
+      _.set(schema, 'x-designer-props.linkageAction', true);
+      const dn = createDesignable({
+        t,
+        api,
+        refresh,
+        current: spaceSchema,
+      });
+      dn.loadAPIClientEvents();
+      dn.insertBeforeEnd(schema);
+    };
+  },
+  Component: (props: any) => {
+    const { getAriaLabel } = useGetAriaLabelOfDesigner();
+    return (
+      <MenuOutlined
+        {...props}
+        role="button"
+        aria-label={getAriaLabel('schema-settings')}
+        style={{ cursor: 'pointer' }}
+      />
+    );
+  },
+  items: [
+    {
+      type: 'itemGroup',
+      name: 'actions',
+      title: '{{t("Enable actions")}}',
+      children: [
+        {
+          type: 'item',
+          title: '{{t("View")}}',
+          name: 'view',
+          Component: 'ViewActionInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'view',
+            'x-decorator': 'ACLActionProvider',
+          },
+        },
+        {
+          type: 'item',
+          name: 'edit',
+          title: '{{t("Edit")}}',
+          Component: 'UpdateActionInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'update',
+            'x-decorator': 'ACLActionProvider',
+          },
+          useVisible() {
+            const collection = useCollection_deprecated();
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+          },
+        },
+        {
+          type: 'item',
+          title: '{{t("Delete")}}',
+          name: 'delete',
+          Component: 'DestroyActionInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'destroy',
+            'x-decorator': 'ACLActionProvider',
+          },
+          useVisible() {
+            const collection = useCollection_deprecated();
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+          },
+        },
+        {
+          type: 'item',
+          title: '{{t("Add child")}}',
+          name: 'addChildren',
+          Component: 'CreateChildInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'create',
+            'x-decorator': 'ACLActionProvider',
+          },
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            const collection = useCollection_deprecated();
+            const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
+            return collection.tree && treeTable !== false;
+          },
+        },
+      ],
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      type: 'subMenu',
+      title: '{{t("Customize")}}',
+      name: 'customize',
+      children: [
+        {
+          type: 'item',
+          title: '{{t("Popup")}}',
+          name: 'popup',
+          Component: 'PopupActionInitializer',
+        },
+        {
+          type: 'item',
+          title: '{{t("Update record")}}',
+          name: 'updateRecord',
+          Component: 'UpdateRecordActionInitializer',
+          useVisible() {
+            const collection = useCollection_deprecated();
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+          },
+        },
+        {
+          name: 'customRequest',
+          title: '{{t("Custom request")}}',
+          Component: 'CustomRequestInitializer',
+          schema: {
+            'x-action': 'customize:table:request',
+          },
+          useVisible() {
+            const collection = useCollection_deprecated();
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+          },
+        },
+      ],
+    },
+    {
+      name: 'divider2',
+      type: 'divider',
+    },
+    {
+      type: 'item',
+      name: 'columnWidth',
+      title: 't("Column width")',
+      Component: Resizable,
+    },
+  ],
+});
+
+export const tableActionColumnInitializers = new SchemaInitializer({
+  name: 'actionInitializers:tableColumnAction',
   insertPosition: 'beforeEnd',
   useInsert: function useInsert() {
     const { refresh } = useDesignable();

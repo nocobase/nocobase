@@ -8,7 +8,7 @@ import {
 import React from 'react';
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   // 正常情况下这个值为 false，通过点击页面左上角的设计按钮切换，这里为了显示设置为 true
   designable: true,
   //  按钮标题标题
@@ -27,7 +27,7 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const { render } = useSchemaInitializerRender('MyInitializer');
+  const { render } = useSchemaInitializerRender('myInitializer');
   return <div>{render()}</div>;
 };
 
@@ -45,7 +45,7 @@ class MyPlugin extends Plugin {
 
 class MyPlugin2 extends Plugin {
   async load() {
-    const myInitializer = this.app.schemaInitializerManager.get('MyInitializer');
+    const myInitializer = this.app.schemaInitializerManager.get('myInitializer');
 
     // 添加或者修改 schema initializer 的 items
     myInitializer.add('demo3', {

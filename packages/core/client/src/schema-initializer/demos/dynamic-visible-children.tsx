@@ -8,7 +8,7 @@ import {
 import React from 'react';
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   designable: true,
   title: 'Button Text',
   items: [
@@ -59,7 +59,7 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const { render } = useSchemaInitializerRender('MyInitializer');
+  const { render } = useSchemaInitializerRender('myInitializer');
   return <div>{render()}</div>;
 };
 
