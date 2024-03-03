@@ -11,7 +11,10 @@ export interface AppComponentProps {
 export const AppComponent: FC<AppComponentProps> = observer((props) => {
   const { app } = props;
   const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
-    console.error(error, info);
+    console.error(error);
+    const err = new Error();
+    err.stack = info.componentStack.trim();
+    console.error(err);
   }, []);
   useEffect(() => {
     app.load();

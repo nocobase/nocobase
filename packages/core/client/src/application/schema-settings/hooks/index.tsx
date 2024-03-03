@@ -18,6 +18,7 @@ type UseSchemaSettingsRenderOptions<T = {}> = Omit<SchemaSettingOptions<T>, 'nam
 export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchemaSettingsRenderOptions<T>) {
   const app = useApp();
   const schemaSetting = useMemo(() => app.schemaSettingsManager.get<T>(name), [app.schemaSettingsManager, name]);
+  const renderCache = React.useRef<Record<string, React.FunctionComponentElement<any>>>({});
   if (!name) {
     return {
       exists: false,
@@ -34,7 +35,16 @@ export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchem
   }
   return {
     exists: true,
-    render: (options2?: UseSchemaSettingsRenderOptions) =>
-      React.createElement(SchemaSettingsWrapper, { ...schemaSetting.options, ...options, ...options2 }),
+    render: (options2?: UseSchemaSettingsRenderOptions) => {
+      const key = JSON.stringify(options) || '{}';
+      if (renderCache.current[key]) {
+        return renderCache.current[key];
+      }
+      return (renderCache.current[key] = React.createElement(SchemaSettingsWrapper, {
+        ...schemaSetting.options,
+        ...options,
+        ...options2,
+      }));
+    },
   };
 }

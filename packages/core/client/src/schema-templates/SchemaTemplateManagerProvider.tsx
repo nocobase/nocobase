@@ -6,8 +6,9 @@ import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application/Plugin';
 import { useAppSpin } from '../application/hooks/useAppSpin';
-import { useCollectionManager } from '../collection-manager';
+import { useCollectionManager_deprecated } from '../collection-manager';
 import { BlockTemplate } from './BlockTemplate';
+import { DEFAULT_DATA_SOURCE_KEY } from '../data-source';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
 
@@ -37,7 +38,7 @@ export const useSchemaTemplate = () => {
 };
 
 export const useSchemaTemplateManager = () => {
-  const { getInheritCollections } = useCollectionManager();
+  const { getInheritCollections } = useCollectionManager_deprecated();
   const { refresh, templates = [] } = useContext(SchemaTemplateManagerContext);
   const api = useAPIClient();
   return {
@@ -103,10 +104,14 @@ export const useSchemaTemplateManager = () => {
     getTemplateById(key) {
       return templates?.find((template) => template.key === key);
     },
-    getTemplatesByCollection(collectionName: string, resourceName: string = null) {
-      const parentCollections = getInheritCollections(collectionName);
+    getTemplatesByCollection(dataSource: string, collectionName: string) {
+      const parentCollections = getInheritCollections(collectionName, dataSource);
       const totalCollections = parentCollections.concat([collectionName]);
-      const items = templates?.filter?.((template) => totalCollections.includes(template.collectionName));
+      const items = templates?.filter?.(
+        (template) =>
+          (template.dataSourceKey || DEFAULT_DATA_SOURCE_KEY) === dataSource &&
+          totalCollections.includes(template.collectionName),
+      );
       return items || [];
     },
     getTemplatesByComponentName(componentName: string): Array<any> {
@@ -123,7 +128,7 @@ const Internal = (props) => {
     resource: 'uiSchemaTemplates',
     action: 'list',
     params: {
-      appends: ['collection'],
+      // appends: ['collection'],
       paginate: false,
     },
   };
@@ -169,10 +174,6 @@ export class RemoteSchemaTemplateManagerPlugin extends Plugin {
   }
 
   addRoutes() {
-    this.app.router.add('admin.plugins.block-templates', {
-      path: '/admin/plugins/block-templates',
-      Component: 'BlockTemplatePage',
-    });
     this.app.router.add('admin.plugins.block-templates-key', {
       path: '/admin/plugins/block-templates/:key',
       Component: 'BlockTemplateDetails',

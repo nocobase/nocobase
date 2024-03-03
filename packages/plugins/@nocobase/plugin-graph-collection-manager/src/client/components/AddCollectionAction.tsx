@@ -5,7 +5,7 @@ import React from 'react';
 import { useCancelAction } from '../action-hooks';
 import { getPopupContainer } from '../utils';
 
-export const AddCollectionAction = ({ item: record }) => {
+export const AddCollectionAction = ({ item: recordData }) => {
   return (
     <AddCollection
       trigger={['click']}
@@ -14,7 +14,7 @@ export const AddCollectionAction = ({ item: record }) => {
           adjustY: false, // 关闭溢出位置调整
         },
       }}
-      item={record}
+      item={recordData}
       scope={{
         useCancelAction,
       }}

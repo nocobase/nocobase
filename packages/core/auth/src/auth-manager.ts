@@ -96,7 +96,7 @@ export class AuthManager {
   middleware() {
     return async (ctx: Context & { auth: Auth }, next: Next) => {
       const token = ctx.getBearerToken();
-      if (token && (await ctx.app.authManager.jwt.blacklist.has(token))) {
+      if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
         return ctx.throw(401, ctx.t('token is not available'));
       }
 

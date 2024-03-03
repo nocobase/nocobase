@@ -1,10 +1,11 @@
 import { merge } from '@formily/shared';
 import { useRequest as useReq, useSetState } from 'ahooks';
-import { Options } from 'ahooks/es/useRequest/src/types';
+import { Options, Result } from 'ahooks/es/useRequest/src/types';
 import { AxiosRequestConfig } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
 import { assign } from './assign';
 import { useAPIClient } from './useAPIClient';
+import { SetState } from 'ahooks/lib/useSetState';
 
 type FunctionService = (...args: any[]) => Promise<any>;
 
@@ -15,12 +16,17 @@ export type ResourceActionOptions<P = any> = {
   resourceOf?: any;
   action?: string;
   params?: P;
+  url?: string;
 };
 
-export function useRequest<P>(
-  service: AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService,
-  options: Options<any, any> & { uid?: string } = {},
-) {
+export type UseRequestService<P> = AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService;
+export type UseRequestOptions = Options<any, any> & { uid?: string };
+export interface UseRequestResult<P> extends Result<P, any> {
+  state: any;
+  setState: SetState<{}>;
+}
+
+export function useRequest<P>(service: UseRequestService<P>, options: UseRequestOptions = {}): UseRequestResult<P> {
   // 缓存用途
   const [state, setState] = useSetState({});
   const api = useAPIClient();
@@ -31,9 +37,9 @@ export function useRequest<P>(
     tempService = service;
   } else if (service) {
     tempService = async (params = {}) => {
-      const { resource } = service as ResourceActionOptions;
+      const { resource, url } = service as ResourceActionOptions;
       let args = cloneDeep(service);
-      if (resource) {
+      if (resource || url) {
         args.params = args.params || {};
         assign(args.params, params);
       } else {

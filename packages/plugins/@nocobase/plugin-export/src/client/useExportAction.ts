@@ -2,8 +2,8 @@ import { useFieldSchema } from '@formily/react';
 import {
   useAPIClient,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useCompile,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -15,8 +15,8 @@ export const useExportAction = () => {
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { getCollectionJoinField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { name, title, getField } = useCollection_deprecated();
   const { t } = useTranslation();
   return {
     async onClick() {

@@ -4,6 +4,7 @@ import { parse } from '@nocobase/utils';
 import { resolve } from 'path';
 
 import * as actions from './actions/users';
+import { Cache } from '@nocobase/cache';
 
 export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
@@ -24,6 +25,29 @@ export default class PluginUsersServer extends Plugin {
           [Op.eq]: obj.val,
         };
       },
+    });
+
+    this.db.on('field.afterAdd', ({ collection, field }) => {
+      if (field.options.interface === 'createdBy') {
+        collection.setField('createdById', {
+          type: 'context',
+          dataType: 'bigInt',
+          dataIndex: 'state.currentUser.id',
+          createOnly: true,
+          visible: true,
+          index: true,
+        });
+      }
+
+      if (field.options.interface === 'updatedBy') {
+        collection.setField('updatedById', {
+          type: 'context',
+          dataType: 'bigInt',
+          dataIndex: 'state.currentUser.id',
+          visible: true,
+          index: true,
+        });
+      }
     });
 
     this.db.on('afterDefineCollection', (collection: Collection) => {
@@ -82,8 +106,12 @@ export default class PluginUsersServer extends Plugin {
     });
 
     const loggedInActions = ['updateProfile'];
-
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.*`,
+      actions: ['users:listExcludeRole', 'users:list'],
+    });
   }
 
   async load() {
@@ -95,6 +123,23 @@ export default class PluginUsersServer extends Plugin {
       context: {
         plugin: this,
       },
+    });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      await next();
+      const { associatedName, resourceName, actionName, values } = ctx.action.params;
+      const cache = ctx.app.cache as Cache;
+      if (
+        associatedName === 'roles' &&
+        resourceName === 'users' &&
+        ['add', 'remove', 'set'].includes(actionName) &&
+        values?.length
+      ) {
+        // Delete cache when the members of a department changed
+        for (const userId of values) {
+          await cache.del(`roles:${userId}`);
+        }
+      }
     });
   }
 

@@ -1,8 +1,14 @@
 import { ArrayField } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
+import {
+  RecordProvider,
+  SchemaComponentOptions,
+  useCreateActionProps as useCAP,
+  useCollectionParentRecordData,
+  useProps,
+} from '@nocobase/client';
 import { Spin, Tag } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
-import { SchemaComponentOptions, RecordProvider, useCreateActionProps as useCAP, useProps } from '@nocobase/client';
 import { Board } from './board';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 import { useStyles } from './style';
@@ -19,7 +25,7 @@ const useCreateActionProps = () => {
   };
 };
 
-export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
+export const toColumns = (groupField: any, dataSource: Array<any> = [], primaryKey) => {
   const columns = {
     __unknown__: {
       id: '__unknown__',
@@ -39,7 +45,7 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
   dataSource.forEach((ds) => {
     const value = ds[groupField.name];
     if (value && columns[value]) {
-      columns[value].cards.push(ds);
+      columns[value].cards.push({ ...ds, id: ds[primaryKey] });
     } else {
       columns.__unknown__.cards.push(ds);
     }
@@ -54,6 +60,7 @@ export const Kanban: any = observer(
   (props: any) => {
     const { styles } = useStyles();
     const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
+    const parentRecordData = useCollectionParentRecordData();
     const field = useField<ArrayField>();
     const fieldSchema = useFieldSchema();
     const [disableCardDrag, setDisableCardDrag] = useState(false);
@@ -105,7 +112,7 @@ export const Kanban: any = observer(
             const cardIndex = column?.cards?.indexOf(card);
             return (
               schemas.card && (
-                <RecordProvider record={card}>
+                <RecordProvider record={card} parent={parentRecordData}>
                   <KanbanCardContext.Provider
                     value={{
                       setDisableCardDrag,

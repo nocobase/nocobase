@@ -174,7 +174,7 @@ export const appends = {
   'x-component-props': {
     title: 'Preload associations',
     multiple: true,
-    useCollection() {
+    useCollection_deprecated() {
       const { values } = useForm();
       return values?.collection;
     },

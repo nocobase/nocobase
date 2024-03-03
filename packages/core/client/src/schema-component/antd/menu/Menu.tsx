@@ -11,7 +11,7 @@ import {
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
@@ -287,6 +287,11 @@ const SideMenu = ({
 }) => {
   const { Component, getMenuItems } = useMenuItem();
 
+  // fix https://nocobase.height.app/T-3331/description
+  // 使用 ref 用来防止闭包问题
+  const sideMenuSchemaRef = useRef(sideMenuSchema);
+  sideMenuSchemaRef.current = sideMenuSchema;
+
   const items = useMemo(() => {
     const result = getMenuItems(() => {
       return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
@@ -303,7 +308,7 @@ const SideMenu = ({
               t,
               api,
               refresh,
-              current: sideMenuSchema,
+              current: sideMenuSchemaRef.current,
             });
             dn.loadAPIClientEvents();
             dn.insertAdjacent('beforeEnd', s);

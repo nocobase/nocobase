@@ -1,14 +1,15 @@
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { operators } from './properties';
-import { IField } from './types';
 
-export const id: IField = {
-  name: 'id',
-  type: 'object',
-  group: 'systemInfo',
-  order: 0,
-  title: '{{t("ID")}}',
-  sortable: true,
-  default: {
+export class IdFieldInterface extends CollectionFieldInterface {
+  name = 'id';
+  type = 'object';
+  group = 'systemInfo';
+  order = 0;
+  title = '{{t("ID")}}';
+  hidden = true;
+  sortable = true;
+  default = {
     name: 'id',
     type: 'bigInt',
     autoIncrement: true,
@@ -20,9 +21,9 @@ export const id: IField = {
       'x-component': 'InputNumber',
       'x-read-pretty': true,
     },
-  },
-  availableTypes: ['bigInt', 'integer', 'string'],
-  properties: {
+  };
+  availableTypes = ['bigInt', 'integer', 'string'];
+  properties = {
     'uiSchema.title': {
       type: 'string',
       title: '{{t("Field display name")}}',
@@ -41,9 +42,9 @@ export const id: IField = {
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.id,
-  },
-  titleUsable: true,
-};
+  };
+  titleUsable = true;
+}

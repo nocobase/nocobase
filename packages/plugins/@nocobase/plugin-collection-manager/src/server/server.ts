@@ -122,7 +122,7 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.beforeCreate', beforeCreateForValidateField());
+    this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
@@ -245,20 +245,7 @@ export class CollectionManagerPlugin extends Plugin {
       });
     };
 
-    // this.app.on('loadCollections', loadCollections);
     this.app.on('beforeStart', loadCollections);
-    // this.app.on('beforeUpgrade', async () => {
-    //   const syncOptions = {
-    //     alter: {
-    //       drop: false,
-    //     },
-    //     force: false,
-    //   };
-    //   await this.db.getCollection('collections').sync(syncOptions);
-    //   await this.db.getCollection('fields').sync(syncOptions);
-    //   await this.db.getCollection('collectionCategories').sync(syncOptions);
-    //   await loadCollections();
-    // });
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
@@ -364,6 +351,22 @@ export class CollectionManagerPlugin extends Plugin {
       dumpRules: 'required',
       origin: this.options.packageName,
     });
+  }
+  async install() {
+    const dataSourcesCollection = this.app.db.getCollection('dataSources');
+
+    if (dataSourcesCollection) {
+      await dataSourcesCollection.repository.firstOrCreate({
+        filterKeys: ['key'],
+        values: {
+          key: 'main',
+          type: 'main',
+          displayName: '{{t("Main")}}',
+          fixed: true,
+          options: {},
+        },
+      });
+    }
   }
 }
 

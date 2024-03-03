@@ -6,11 +6,11 @@ import { SchemaComponentOptions } from '../core';
 import { useFilterActionProps } from './filter/useFilterActionProps';
 import { requestChartData } from './g2plot/requestChartData';
 
-import { pageTabSettings, pageSettings } from './page';
-import { formSettings, readPrettyFormSettings, formDetailsSettings, formFilterSettings } from './form-v2';
-import { formV1Settings } from './form';
-import { formItemSettings, filterFormItemSettings } from './form-item';
 import { actionSettings } from './action';
+import { formV1Settings } from './form';
+import { filterFormItemSettings, formItemSettings } from './form-item';
+import { formDetailsSettings, formSettings, readPrettyFormSettings } from './form-v2';
+import { pageSettings, pageTabSettings } from './page';
 
 // TODO: delete this, replaced by `AntdSchemaComponentPlugin`
 export const AntdSchemaComponentProvider = (props) => {
@@ -60,7 +60,6 @@ export class AntdSchemaComponentPlugin extends Plugin {
 
     // form-v2
     this.app.schemaSettingsManager.add(formSettings);
-    this.app.schemaSettingsManager.add(formFilterSettings);
     this.app.schemaSettingsManager.add(readPrettyFormSettings);
     this.app.schemaSettingsManager.add(formDetailsSettings);
 

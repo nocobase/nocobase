@@ -2,8 +2,8 @@ import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@fo
 import { onFieldValueChange } from '@formily/core';
 import { ISchema, SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
 import {
+  CollectionFieldInterface,
   Cron,
-  IField,
   SchemaComponent,
   SchemaComponentOptions,
   css,
@@ -256,28 +256,28 @@ export function RuleConfigForm() {
   ) : null;
 }
 
-export const sequence: IField = {
-  name: 'sequence',
-  type: 'object',
-  group: 'advanced',
-  order: 3,
-  title: `{{t("Sequence", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.", { ns: "${NAMESPACE}" })}}`,
-  sortable: true,
-  default: {
+export class SequenceFieldInterface extends CollectionFieldInterface {
+  name = 'sequence';
+  type = 'object';
+  group = 'advanced';
+  order = 3;
+  title = `{{t("Sequence", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.", { ns: "${NAMESPACE}" })}}`;
+  sortable = true;
+  default = {
     type: 'sequence',
     uiSchema: {
       type: 'string',
       'x-component': 'Input',
       'x-component-props': {},
     },
-  },
-  availableTypes: ['string'],
-  hasDefaultValue: false,
-  filterable: {
+  };
+  availableTypes = ['string'];
+  hasDefaultValue = false;
+  filterable = {
     operators: interfacesProperties.operators.string,
-  },
-  titleUsable: true,
+  };
+  titleUsable = true;
   schemaInitialize(schema: ISchema, { block, field }) {
     if (block === 'Form') {
       Object.assign(schema['x-component-props'], {
@@ -285,8 +285,8 @@ export const sequence: IField = {
       });
     }
     return schema;
-  },
-  properties: {
+  }
+  properties = {
     ...interfacesProperties.defaultProps,
     unique: interfacesProperties.unique,
     patterns: {
@@ -402,5 +402,5 @@ export const sequence: IField = {
         },
       },
     },
-  },
-};
+  };
+}

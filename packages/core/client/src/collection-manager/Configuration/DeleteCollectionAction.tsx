@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
-import { css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
-import { Button, message } from 'antd';
-import { useForm } from '@formily/react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { css } from '@emotion/css';
+import { useForm } from '@formily/react';
+import { Button, message } from 'antd';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  useActionContext,
+  useCollectionManager_deprecated,
+  useResourceActionContext,
+  useResourceContext,
+} from '../../';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent } from '../../schema-component';
-import * as components from './components';
-import { useCollectionManager, useResourceActionContext, useResourceContext, useActionContext } from '../../';
 import { useCancelAction } from '../action-hooks';
+import * as components from './components';
 
 export const DeleteCollection = (props) => {
   const record = useRecord();
@@ -17,7 +22,7 @@ export const DeleteCollection = (props) => {
 
 export const useDestroyActionAndRefreshCM = () => {
   const { run } = useDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();
@@ -27,7 +32,7 @@ export const useDestroyActionAndRefreshCM = () => {
 };
 export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();
@@ -39,13 +44,11 @@ export const useDestroyAction = () => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
-  const ctx = useActionContext();
   const form = useForm();
   const { cascade } = form?.values || {};
   return {
     async run() {
       await resource.destroy({ filterByTk, cascade });
-      ctx?.setVisible?.(false);
       refresh();
     },
   };

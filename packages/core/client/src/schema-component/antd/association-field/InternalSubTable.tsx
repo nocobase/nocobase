@@ -3,7 +3,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { RecursionField, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
-import { CollectionProvider } from '../../../collection-manager';
+import { CollectionProvider_deprecated } from '../../../collection-manager';
 import { FormItem, useSchemaOptionsContext } from '../../../schema-component';
 import Select from '../select/Select';
 import { useAssociationFieldContext, useInsertSchema } from './hooks';
@@ -34,7 +34,7 @@ export const InternalSubTable = observer(
       'Checkbox.Group': (props) => <Select multiple={true} mode="multiple" {...props} />,
     };
     return (
-      <CollectionProvider name={options.target}>
+      <CollectionProvider_deprecated name={options.target}>
         <ACLCollectionProvider actionPath={`${options.target}:${actionName || 'view'}`}>
           <FormLayout
             className={css`
@@ -71,7 +71,7 @@ export const InternalSubTable = observer(
             </SchemaOptionsContext.Provider>
           </FormLayout>
         </ACLCollectionProvider>
-      </CollectionProvider>
+      </CollectionProvider_deprecated>
     );
   },
   { displayName: 'InternalSubTable' },

@@ -24,7 +24,10 @@ interface SchemaSettingsItemCommon<T = {}> {
   useVisible?: () => boolean;
   children?: SchemaSettingsItemType[];
   useChildren?: () => SchemaSettingsItemType[];
-  checkChildrenLength?: boolean;
+  /**
+   * @default true
+   */
+  hideIfNoChildren?: boolean;
   componentProps?: Omit<T, 'children'>;
   useComponentProps?: () => Omit<T, 'children'>;
 }

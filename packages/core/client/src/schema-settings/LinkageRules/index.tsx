@@ -3,7 +3,8 @@ import { Form } from '@formily/core';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { FormBlockContext } from '../../block-provider';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
+import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
@@ -39,7 +40,8 @@ export const FormLinkageRules = observer(
     const { useProps, dynamicComponent } = props;
     const { options, defaultValues, collectionName, form, formBlockType, variables, localVariables, record } =
       useProps();
-    const { getAllCollectionsInheritChain } = useCollectionManager();
+    const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
+    const parentRecordData = useCollectionParentRecordData();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(
@@ -166,7 +168,7 @@ export const FormLinkageRules = observer(
 
     return (
       <FormBlockContext.Provider value={{ form, type: formBlockType }}>
-        <RecordProvider record={record}>
+        <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
             <SchemaComponent components={components} schema={schema} />
           </FilterContext.Provider>

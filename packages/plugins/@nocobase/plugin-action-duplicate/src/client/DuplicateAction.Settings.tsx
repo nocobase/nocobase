@@ -1,22 +1,23 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { onFieldInputValueChange } from '@formily/core';
+import { ISchema, connect, mapProps, useField, useFieldSchema, useForm } from '@formily/react';
 import {
-  SchemaSettings,
   ActionDesigner,
-  useSchemaToolbar,
-  useDesignable,
   SchemaSettingOpenModeSchemaItems,
-  useCollection,
+  useCollection_deprecated,
   useRecord,
   SchemaSettingsModalItem,
+  SchemaSettingsItemType,
   SchemaSettingsLinkageRules,
   useCollectionState,
+  useDesignable,
+  useSchemaToolbar,
   useSyncFromForm,
+  SchemaSettings,
 } from '@nocobase/client';
-import { onFieldInputValueChange } from '@formily/core';
-import { cloneDeep } from 'lodash';
 import { Tree as AntdTree } from 'antd';
+import { cloneDeep } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useField, useFieldSchema, ISchema, useForm, connect, mapProps } from '@formily/react';
 
 const Tree = connect(
   AntdTree,
@@ -81,7 +82,7 @@ function DuplicationMode() {
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
   const record = useRecord();
@@ -307,76 +308,87 @@ function DuplicationMode() {
   );
 }
 
-const duplicateActionSettings = new SchemaSettings({
-  name: 'ActionSettings:duplicate',
-  items: [
-    {
-      name: 'Customize',
-      Component: (props): any => {
-        return props.children;
-      },
-      children: [
-        {
-          name: 'editButton',
-          Component: ActionDesigner.ButtonEditor,
-          useComponentProps() {
-            const { buttonEditorProps } = useSchemaToolbar();
-            return buttonEditorProps;
-          },
-        },
-        {
-          name: 'linkageRules',
-          Component: SchemaSettingsLinkageRules,
-          useComponentProps() {
-            const { name } = useCollection();
-            const { linkageRulesProps } = useSchemaToolbar();
-            return {
-              ...linkageRulesProps,
-              collectionName: name,
-            };
-          },
-        },
-        {
-          name: 'duplicationMode',
-          Component: DuplicationMode,
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
-            return isDuplicateAction;
-          },
-        },
-        {
-          name: 'openMode',
-          Component: SchemaSettingOpenModeSchemaItems,
-          useComponentProps() {
-            const fieldSchema = useFieldSchema();
-            const isPopupAction = [
-              'create',
-              'update',
-              'view',
-              'customize:popup',
-              'duplicate',
-              'customize:create',
-            ].includes(fieldSchema['x-action'] || '');
-
-            return {
-              openMode: isPopupAction,
-              openSize: isPopupAction,
-            };
-          },
-        },
-        {
-          name: 'remove',
-          sort: 100,
-          Component: ActionDesigner.RemoveButton as any,
-          useComponentProps() {
-            const { removeButtonProps } = useSchemaToolbar();
-            return removeButtonProps;
-          },
-        },
-      ],
+const schemaSettingsItems: SchemaSettingsItemType[] = [
+  {
+    name: 'Customize',
+    Component: (props): any => {
+      return props.children;
     },
-  ],
+    children: [
+      {
+        name: 'editButton',
+        Component: ActionDesigner.ButtonEditor,
+        useComponentProps() {
+          const { buttonEditorProps } = useSchemaToolbar();
+          return buttonEditorProps;
+        },
+      },
+      {
+        name: 'linkageRules',
+        Component: SchemaSettingsLinkageRules,
+        useComponentProps() {
+          const { name } = useCollection_deprecated();
+          const { linkageRulesProps } = useSchemaToolbar();
+          return {
+            ...linkageRulesProps,
+            collectionName: name,
+          };
+        },
+      },
+      {
+        name: 'duplicationMode',
+        Component: DuplicationMode,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
+          return isDuplicateAction;
+        },
+      },
+      {
+        name: 'openMode',
+        Component: SchemaSettingOpenModeSchemaItems,
+        useComponentProps() {
+          const fieldSchema = useFieldSchema();
+          const isPopupAction = [
+            'create',
+            'update',
+            'view',
+            'customize:popup',
+            'duplicate',
+            'customize:create',
+          ].includes(fieldSchema['x-action'] || '');
+
+          return {
+            openMode: isPopupAction,
+            openSize: isPopupAction,
+          };
+        },
+      },
+      {
+        name: 'remove',
+        sort: 100,
+        Component: ActionDesigner.RemoveButton as any,
+        useComponentProps() {
+          const { removeButtonProps } = useSchemaToolbar();
+          return removeButtonProps;
+        },
+      },
+    ],
+  },
+];
+
+/**
+ * @deprecated
+ * 用于兼容之前的 name
+ */
+const deprecatedDuplicateActionSettings = new SchemaSettings({
+  name: 'ActionSettings:duplicate',
+  items: schemaSettingsItems,
 });
 
-export { duplicateActionSettings };
+const duplicateActionSettings = new SchemaSettings({
+  name: 'actionSettings:duplicate',
+  items: schemaSettingsItems,
+});
+
+export { deprecatedDuplicateActionSettings, duplicateActionSettings };

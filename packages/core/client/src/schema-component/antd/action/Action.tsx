@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
+import { useACLActionParamsContext } from '../../../acl';
 import { Icon } from '../../../icon';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
@@ -25,7 +26,6 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
-import { useACLActionParamsContext } from '../../../acl';
 
 export const Action: ComposedAction = observer(
   (props: any) => {
@@ -43,6 +43,9 @@ export const Action: ComposedAction = observer(
       style,
       openSize,
       disabled: propsDisabled,
+      actionCallback,
+      /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
+      addChild,
       ...others
     } = useProps(props);
     const aclCtx = useACLActionParamsContext();
@@ -52,7 +55,7 @@ export const Action: ComposedAction = observer(
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
-    const { run, element } = useAction();
+    const { run, element } = useAction(actionCallback);
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
@@ -69,11 +72,6 @@ export const Action: ComposedAction = observer(
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
-
-    // fix https://nocobase.height.app/T-2259
-    const shouldResetRecord = ['create', 'customize:bulkUpdate', 'customize:bulkEdit', 'customize:create'].includes(
-      fieldSchema['x-action'],
-    );
 
     useEffect(() => {
       field.stateOfLinkageRules = {};
@@ -172,15 +170,16 @@ export const Action: ComposedAction = observer(
       </ActionContextProvider>
     );
 
-    return wrapSSR(
-      shouldResetRecord ? (
-        <RecordProvider parent={record} record={{}}>
+    // fix https://nocobase.height.app/T-3235/description
+    if (addChild) {
+      return wrapSSR(
+        <RecordProvider record={null} parent={record}>
           {result}
-        </RecordProvider>
-      ) : (
-        result
-      ),
-    );
+        </RecordProvider>,
+      );
+    }
+
+    return wrapSSR(result);
   },
   { displayName: 'Action' },
 );

@@ -1,6 +1,11 @@
 import type { Field } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
-import { IField, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
+import {
+  CollectionFieldInterface,
+  interfacesProperties,
+  useCollectionManager_deprecated,
+  useRecord,
+} from '@nocobase/client';
 import lodash from 'lodash';
 import { NAMESPACE } from './locale';
 
@@ -19,7 +24,7 @@ export const useTopRecord = () => {
 };
 
 function useRecordCollection() {
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField } = useCollectionManager_deprecated();
   const record = useTopRecord();
   const formValues = useForm().values;
   return getCollectionField(`${record.name}.${formValues.targetField}`)?.target;
@@ -34,7 +39,7 @@ const onTargetFieldChange = (field: Field) => {
 };
 
 function MakeFieldsPathOptions(fields, appends = []) {
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const options = [];
   fields.forEach((field) => {
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)) {
@@ -95,13 +100,13 @@ const recordPickerViewer = {
   },
 };
 
-export const snapshot: IField = {
-  name: 'snapshot',
-  type: 'object',
-  group: 'advanced',
-  title: `{{t('Snapshot', {ns: '${NAMESPACE}'})}}`,
-  description: `{{t('When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.', {ns: '${NAMESPACE}'})}}`,
-  default: {
+export class SnapshotFieldInterface extends CollectionFieldInterface {
+  name = 'snapshot';
+  type = 'object';
+  group = 'advanced';
+  title = `{{t('Snapshot', {ns: '${NAMESPACE}'})}}`;
+  description = `{{t('When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.', {ns: '${NAMESPACE}'})}}`;
+  default = {
     type: 'snapshot',
     // name,
     uiSchema: {
@@ -115,16 +120,17 @@ export const snapshot: IField = {
         },
       },
     },
-  },
+  };
   schemaInitialize(schema: ISchema, { field, readPretty, action, block }) {
     schema['properties'] = {
       viewer: lodash.cloneDeep(recordPickerViewer),
     };
-  },
-  initialize: (values: any) => {},
+  }
+  initialize(values: any) {}
   usePathOptions(field) {
     const { appends = [], targetCollection } = field;
-    const { getCollection } = useCollectionManager();
+    // eslint-disable-next-line
+    const { getCollection } = useCollectionManager_deprecated();
     const { fields } = getCollection(targetCollection);
 
     const result = MakeFieldsPathOptions(fields, appends);
@@ -136,8 +142,8 @@ export const snapshot: IField = {
         children: result,
       },
     ];
-  },
-  properties: {
+  }
+  properties = {
     ...defaultProps,
     [TARGET_FIELD]: {
       type: 'string',
@@ -170,7 +176,7 @@ export const snapshot: IField = {
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
         multiple: true,
-        useCollection: useRecordCollection,
+        useCollection_deprecated: useRecordCollection,
       },
       'x-reactions': [
         {
@@ -182,5 +188,5 @@ export const snapshot: IField = {
         },
       ],
     },
-  },
-};
+  };
+}

@@ -27,6 +27,8 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByText('Form').click();
     await page.getByText('Markdown').click();
 
+    await page.mouse.move(300, 0);
+
     await expect(page.getByLabel('block-item-CardItem-general-form')).toBeVisible();
     await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
   });
@@ -49,6 +51,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Grid-CusomeizeCreateFormBlockInitializers-general').hover();
     await page.getByText('Form').hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
+
+    // add Markdown
+    await page.getByLabel('schema-initializer-Grid-CusomeizeCreateFormBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
 
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
@@ -84,17 +89,19 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 删除已创建的 blocks，腾出页面空间
     // delete details block
     await page.getByText('GeneralConfigure actionsConfigure fields').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:singleDataDetails-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete form block
     await page.getByLabel('block-item-CardItem-general-form').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:editForm-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete markdown block
     await page.getByLabel('block-item-Markdown.Void-general-markdown').hover();
-    await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer-general').hover();
+    await page
+      .getByRole('button', { name: 'designer-schema-settings-Markdown.Void-blockSettings:markdown-general' })
+      .hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
@@ -117,6 +124,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
 
     await page.getByText('Table').click();
+    await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
   });
 
@@ -133,9 +141,10 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test1')).toBeVisible();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-CreateFormBulkEditBlockInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-BulkEditBlockInitializers-general').hover();
     await page.getByText('Form').click();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
+    await page.mouse.move(300, 0);
 
     await expect(page.getByLabel('block-item-CardItem-general-form')).toBeVisible();
     await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
@@ -165,34 +174,19 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('menuitem', { name: 'Details' }).click();
     await page.getByText('Form').first().click();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
+    await page.mouse.move(300, 0);
 
     await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
     await expect(page.getByText('GeneralConfigure fieldsConfigure actions')).toBeVisible();
     await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
 
-    // 删除已创建的 blocks，腾出页面空间
-    // delete details block
-    await page.getByText('GeneralConfigure actionsConfigure fields').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
-    // delete form block
-    await page.getByLabel('block-item-CardItem-general-form').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
-    // delete markdown block
-    await page.getByLabel('block-item-Markdown.Void-general-markdown').hover();
-    await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer-general').hover();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
-
     // add relationship blocks
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
-
     await page.mouse.move(300, 0);
+
+    await expect(page.getByLabel('block-item-CardItem-general-').nth(2)).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'One to many' }).hover();
@@ -206,7 +200,11 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
 
     await page.getByText('Table').click();
+    await page.mouse.move(300, 0);
+
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
+    // 屏幕上没有显示错误提示
+    await expect(page.locator('.ant-notification-notice').first()).toBeHidden({ timeout: 1000 });
   });
 
   test('data picker', async ({ page, mockPage }) => {
@@ -216,15 +214,20 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByTestId('select-data-picker').click();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-TableSelectorInitializers-roles').hover();
-    await page.getByRole('menuitem', { name: 'form Table' }).click();
-    await page.getByText('Form').click();
-    await page.getByRole('menuitem', { name: 'Collapse' }).click();
-    await page.getByRole('menuitem', { name: 'Add text' }).click();
+    await addBlock('form Table');
+    await addBlock('form Form');
+    await addBlock('Collapse');
+    await addBlock('Add text');
 
     await expect(page.getByLabel('block-item-CardItem-roles-table-selector')).toBeVisible();
     await expect(page.getByLabel('block-item-CardItem-roles-filter-form')).toBeVisible();
     await expect(page.getByLabel('block-item-CardItem-roles-filter-collapse')).toBeVisible();
     await expect(page.getByLabel('block-item-Markdown.Void-roles-form')).toBeVisible();
+
+    async function addBlock(name: string) {
+      await page.getByLabel('schema-initializer-Grid-TableSelectorInitializers-roles').hover();
+      await page.getByRole('menuitem', { name }).click();
+      await page.mouse.move(300, 0);
+    }
   });
 });

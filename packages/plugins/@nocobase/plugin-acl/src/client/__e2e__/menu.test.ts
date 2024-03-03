@@ -21,8 +21,13 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   await expect(page.getByLabel('page1')).toBeVisible();
   await expect(page.getByLabel('page2')).not.toBeVisible();
   await page.getByTestId('plugin-settings-button').hover();
-  await page.getByLabel('acl').click();
-  await page.getByLabel(`action-Action.Link-Configure-roles-${roleData.name}`).click();
+  await page.getByRole('link', { name: 'Users & Permissions' }).click();
+  await page.getByText('Roles & Permissions').click();
+  await page
+    .getByRole('menuitem', { name: `${roleData.name}` })
+    .locator('span')
+    .nth(1)
+    .click();
   await page.getByRole('tab').getByText('Menu permissions').click();
   await page.waitForSelector('.ant-table');
   await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input')).toBeChecked({ checked: true });
@@ -33,8 +38,14 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   await expect(page.getByLabel('page2')).toBeVisible();
   await expect(page.getByLabel('page1')).not.toBeVisible();
   await page.getByTestId('plugin-settings-button').hover();
-  await page.getByLabel('acl').click();
-  await page.getByLabel(`action-Action.Link-Configure-roles-${roleData.name}`).click();
+  await page.getByRole('link', { name: 'Users & Permissions' }).click();
+  await page.getByText('Roles & Permissions').click();
+  await page.getByText(`${roleData.name}`).click();
+  await page
+    .getByRole('menuitem', { name: `${roleData.name}` })
+    .locator('span')
+    .nth(1)
+    .click();
   await page.getByRole('tab').getByText('Menu permissions').click();
   await page.waitForSelector('.ant-table');
   await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input')).toBeChecked({ checked: false });

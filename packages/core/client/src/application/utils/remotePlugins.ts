@@ -10,27 +10,24 @@ export function defineDevPlugins(plugins: Record<string, typeof Plugin>) {
 }
 
 export function definePluginClient(packageName: string) {
-  window.define(`${packageName}/client`, ['exports', packageName], function (_exports: any, _plugin: any) {
+  window.define(`${packageName}/client`, ['exports', packageName], function (_exports: any, _pluginExports: any) {
     Object.defineProperty(_exports, '__esModule', {
       value: true,
     });
-    Object.keys(_plugin).forEach(function (key) {
+    Object.keys(_pluginExports).forEach(function (key) {
       if (key === '__esModule') return;
-      if (key in _exports && _exports[key] === _plugin[key]) return;
+      if (key in _exports && _exports[key] === _pluginExports[key]) return;
       Object.defineProperty(_exports, key, {
         enumerable: true,
         get: function () {
-          return _plugin[key];
+          return _pluginExports[key];
         },
       });
     });
   });
 }
 
-export function getRemotePlugins(
-  requirejs: any,
-  pluginData: PluginData[] = [],
-): Promise<Array<[string, typeof Plugin]>> {
+export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
   requirejs.requirejs.config({
     waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((acc, cur) => {
@@ -38,34 +35,42 @@ export function getRemotePlugins(
       return acc;
     }, {}),
   });
+}
+
+export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins: [string, typeof Plugin][]) => void) {
+  return (...pluginModules: (typeof Plugin & { default?: typeof Plugin })[]) => {
+    const res: [string, typeof Plugin][] = pluginModules
+      .map<[string, typeof Plugin]>((item, index) => [pluginData[index].name, item?.default || item])
+      .filter((item) => item[1]);
+    resolve(res);
+
+    const emptyPlugins = pluginModules
+      .map((item, index) => (!item ? index : null))
+      .filter((i) => i !== null)
+      .map((i) => pluginData[i].packageName);
+
+    if (emptyPlugins.length > 0) {
+      console.error(
+        '[nocobase load plugin error]: These plugins do not have an `export.default` exported content or there is an error in the plugins. error plugins: \r\n%s',
+        emptyPlugins.join(', \r\n'),
+      );
+    }
+  };
+}
+
+export function getRemotePlugins(
+  requirejs: any,
+  pluginData: PluginData[] = [],
+): Promise<Array<[string, typeof Plugin]>> {
+  configRequirejs(requirejs, pluginData);
 
   const packageNames = pluginData.map((item) => item.packageName);
   packageNames.forEach((packageName) => {
     definePluginClient(packageName);
   });
+
   return new Promise((resolve, reject) => {
-    requirejs.requirejs(
-      packageNames,
-      (...pluginModules: (typeof Plugin & { default?: typeof Plugin })[]) => {
-        const res = pluginModules
-          .map<[string, typeof Plugin]>((item, index) => [pluginData[index].name, item.default || item])
-          .filter((item) => item[1]);
-        resolve(res);
-
-        const emptyPlugins = pluginModules
-          .map((item, index) => (!item ? index : null))
-          .filter((i) => i !== null)
-          .map((i) => pluginData[i].packageName);
-
-        if (emptyPlugins.length > 0) {
-          console.error(
-            '[nocobase load plugin error]: These plugins do not have an `export.default` exported content or there is an error in the plugins. error plugins: \r\n%s',
-            emptyPlugins.join(', \r\n'),
-          );
-        }
-      },
-      reject,
-    );
+    requirejs.requirejs(packageNames, processRemotePlugins(pluginData, resolve), reject);
   });
 }
 

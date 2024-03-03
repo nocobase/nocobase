@@ -7,19 +7,18 @@ import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
 import {
-  GeneralSchemaDesigner,
-  SchemaSettingsDataScope,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
-  isPatternDisabled,
-} from '../../../schema-settings';
-import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+} from '../../../schema-settings/SchemaSettings';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -27,6 +26,7 @@ import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import useServiceOptions from './useServiceOptions';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -99,8 +99,8 @@ export const AssociationSelect = InternalAssociationSelect as unknown as Associa
 
 AssociationSelect.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection, isTitleField } =
-    useCollectionManager();
-  const { getField } = useCollection();
+    useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -348,7 +348,9 @@ AssociationSelect.Designer = function Designer() {
               description: fieldSchema['description'],
               default: fieldSchema['default'],
               'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
+              // 'x-designer': 'FormItem.Designer',
+              'x-toolbar': 'FormItemSchemaToolbar',
+              'x-settings': 'fieldSettings:FormItem',
               'x-component': type,
               'x-validator': fieldSchema['x-validator'],
               'x-collection-field': fieldSchema['x-collection-field'],
@@ -612,8 +614,8 @@ AssociationSelect.Designer = function Designer() {
  * @returns
  */
 AssociationSelect.FilterDesigner = function FilterDesigner() {
-  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();

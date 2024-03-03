@@ -1,16 +1,16 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { defaultProps, operators, recordPickerViewer } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const updatedBy: IField = {
-  name: 'updatedBy',
-  type: 'object',
-  group: 'systemInfo',
-  order: 4,
-  title: '{{t("Last updated by")}}',
-  isAssociation: true,
-  default: {
+export class UpdatedByFieldInterface extends CollectionFieldInterface {
+  name = 'updatedBy';
+  type = 'object';
+  group = 'systemInfo';
+  order = 4;
+  title = '{{t("Last updated by")}}';
+  isAssociation = true;
+  default = {
     type: 'belongsTo',
     target: 'users',
     foreignKey: 'updatedById',
@@ -26,12 +26,12 @@ export const updatedBy: IField = {
       },
       'x-read-pretty': true,
     },
-  },
-  availableTypes: ['belongsTo'],
-  properties: {
+  };
+  availableTypes = ['belongsTo'];
+  properties = {
     ...defaultProps,
-  },
-  filterable: {
+  };
+  filterable = {
     children: [
       {
         name: 'id',
@@ -54,7 +54,7 @@ export const updatedBy: IField = {
         },
       },
     ],
-  },
+  };
   schemaInitialize(schema: ISchema, { block }) {
     schema['properties'] = {
       viewer: cloneDeep(recordPickerViewer),
@@ -63,5 +63,5 @@ export const updatedBy: IField = {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
-  },
-};
+  }
+}

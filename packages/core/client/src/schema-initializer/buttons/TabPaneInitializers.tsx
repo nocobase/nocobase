@@ -20,7 +20,7 @@ export const TabPaneInitializers = (props?: any) => {
       if (isCreate || !record) {
         initializer = 'CreateFormBlockInitializers';
       } else if (isBulkEdit) {
-        initializer = 'CreateFormBulkEditBlockInitializers';
+        initializer = 'BulkEditBlockInitializers';
       }
     }
     return {

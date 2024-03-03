@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
 import { useToken } from '../__builtins__';
@@ -12,7 +12,10 @@ import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer
 import { AssociationFilterProvider } from './AssociationFilterProvider';
 import { useSchemaInitializerRender } from '../../../application';
 import { Plugin } from '../../../application/Plugin';
-import { associationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
+import {
+  associationFilterFilterBlockInitializer,
+  filterCollapseItemInitializer,
+} from '../../../modules/blocks/filter-blocks/collapse/filterCollapseItemInitializer';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
 
 export const AssociationFilter = (props) => {
@@ -94,13 +97,14 @@ AssociationFilter.BlockDesigner = AssociationFilterBlockDesigner;
 
 AssociationFilter.useAssociationField = () => {
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   return React.useMemo(() => getField(fieldSchema.name as any), [fieldSchema.name]);
 };
 
 export class AssociationFilterPlugin extends Plugin {
   async load() {
     this.app.schemaInitializerManager.add(associationFilterFilterBlockInitializer);
+    this.app.schemaInitializerManager.add(filterCollapseItemInitializer);
     this.app.schemaInitializerManager.add(associationFilterInitializer);
   }
 }

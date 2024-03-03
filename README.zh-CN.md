@@ -8,6 +8,7 @@ NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生�
 
 ## 最近重要更新
 
+- [v0.20：支持多数据源 - 2024/03/03](https://docs-cn.nocobase.com/welcome/release/v0200-changelog)
 - [v0.19：应用流程优化 - 2024/01/08](https://blog-cn.nocobase.com/posts/release-v019/)
 - [v0.18：建立健全的测试体系 - 2023/12/21](https://blog-cn.nocobase.com/posts/release-v018/)
 - [v0.17：全新的 SchemaInitializer 和 SchemaSettings - 2023/12/11](https://blog-cn.nocobase.com/posts/release-v017/)

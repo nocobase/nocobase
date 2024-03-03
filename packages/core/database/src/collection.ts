@@ -151,12 +151,14 @@ export class Collection<
   }
 
   get filterTargetKey() {
-    const targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
-    if (!targetKey && this.model.rawAttributes['id']) {
-      return 'id';
+    const targetKey = this.options?.filterTargetKey;
+    if (targetKey && this.model.getAttributes()[targetKey]) {
+      return targetKey;
     }
-
-    return targetKey;
+    if (this.model.primaryKeyAttributes.length > 1) {
+      return null;
+    }
+    return this.model.primaryKeyAttribute;
   }
 
   get name() {
@@ -270,6 +272,9 @@ export class Collection<
     return this.fields.get(name);
   }
 
+  getFields() {
+    return [...this.fields.values()];
+  }
   addField(name: string, options: FieldOptions): Field {
     return this.setField(name, options);
   }
@@ -300,6 +305,12 @@ export class Collection<
     }
   }
 
+  correctOptions(options) {
+    if (options.primaryKey && options.autoIncrement) {
+      delete options.defaultValue;
+    }
+  }
+
   @EnsureAtomicity
   setField(name: string, options: FieldOptions): Field {
     checkIdentifier(name);
@@ -327,6 +338,7 @@ export class Collection<
       }
     }
 
+    this.correctOptions(options);
     this.emit('field.beforeAdd', name, options, { collection: this });
 
     const field = database.buildField(
@@ -352,6 +364,11 @@ export class Collection<
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
+
+    this.db.emit('field.afterAdd', {
+      collection: this,
+      field,
+    });
 
     // refresh children models
     if (this.isParent()) {
@@ -423,11 +440,6 @@ export class Collection<
       return;
     }
 
-    if (this.model.primaryKeyAttributes.includes(this.name)) {
-      // 主键不能删除
-      return;
-    }
-
     if (this.model.options.timestamps !== false) {
       // timestamps 相关字段不删除
       let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
@@ -469,14 +481,27 @@ export class Collection<
       })) &&
       columnReferencesCount == 1
     ) {
-      const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.removeColumn(this.getTableNameWithSchema(), field.columnName(), options);
+      const columns = await this.model.sequelize
+        .getQueryInterface()
+        .describeTable(this.getTableNameWithSchema(), options);
+
+      if (Object.keys(columns).length == 1) {
+        // remove table if only one column left
+        await this.removeFromDb({
+          ...options,
+          cascade: true,
+          dropCollection: false,
+        });
+      } else {
+        const queryInterface = this.db.sequelize.getQueryInterface();
+        await queryInterface.removeColumn(this.getTableNameWithSchema(), field.columnName(), options);
+      }
     }
 
     field.remove();
   }
 
-  async removeFromDb(options?: QueryInterfaceDropTableOptions) {
+  async removeFromDb(options?: QueryInterfaceDropTableOptions & { dropCollection?: boolean }) {
     if (
       !this.isView() &&
       (await this.existsInDb({
@@ -487,7 +512,9 @@ export class Collection<
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
 
-    return this.remove();
+    if (options?.dropCollection !== false) {
+      return this.remove();
+    }
   }
 
   async existsInDb(options?: Transactionable) {

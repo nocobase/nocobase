@@ -29,7 +29,7 @@ export interface SchemaInitializerItemComponentType<T = {}> {
   useComponentProps?: () => Omit<T, 'children'>;
   useVisible?: () => boolean;
   children?: SchemaInitializerItemType[];
-  checkChildrenLength?: boolean;
+  hideIfNoChildren?: boolean;
   useChildren?: () => SchemaInitializerItemType[];
   [index: string]: any;
 }
@@ -57,14 +57,14 @@ export type SchemaInitializerItemActionModalType = {
 export type SchemaInitializerItemGroupType = {
   type: 'itemGroup';
   children?: SchemaInitializerItemType[];
-  checkChildrenLength?: boolean;
+  hideIfNoChildren?: boolean;
   useChildren?: () => SchemaInitializerItemType[];
 } & SchemaInitializerItemBuiltInType<SchemaInitializerItemGroupProps>;
 
 export type SchemaInitializerSubMenuType = {
   type: 'subMenu';
   children?: SchemaInitializerItemType[];
-  checkChildrenLength?: boolean;
+  hideIfNoChildren?: boolean;
   useChildren?: () => SchemaInitializerItemType[];
 } & SchemaInitializerItemBuiltInType<SchemaInitializerSubMenuProps>;
 
@@ -100,7 +100,7 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
 
   insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
   designable?: boolean;
-  wrap?: (s: ISchema) => ISchema;
+  wrap?: (s: ISchema, options?: any) => ISchema;
   onSuccess?: (data: any) => void;
   insert?: InsertType;
   useInsert?: () => InsertType;

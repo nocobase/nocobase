@@ -4,7 +4,7 @@ import { merge } from '@formily/shared';
 import {
   SchemaInitializerSwitch,
   css,
-  useCollection,
+  useCollection_deprecated,
   useDesignable,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -50,7 +50,7 @@ export const ImportActionInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', itemConfig.find, itemConfig.remove);
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const fields = useFields(name);
   const schema: ISchema = {
     type: 'void',
@@ -59,7 +59,8 @@ export const ImportActionInitializer = () => {
     'x-action-settings': {
       importSettings: { importColumns: [], explain: '' },
     },
-    'x-designer': 'ImportDesigner',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:import',
     'x-component': 'Action',
     'x-component-props': {
       icon: 'CloudUploadOutlined',

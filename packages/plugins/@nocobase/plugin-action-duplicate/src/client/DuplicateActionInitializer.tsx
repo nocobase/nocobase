@@ -1,5 +1,5 @@
-import React from 'react';
 import { ActionInitializer } from '@nocobase/client';
+import React from 'react';
 
 export const DuplicateActionInitializer = (props) => {
   const schema = {
@@ -7,7 +7,6 @@ export const DuplicateActionInitializer = (props) => {
     'x-action': 'duplicate',
     'x-acl-action': 'create',
     title: '{{ t("Duplicate") }}',
-    'x-designer': 'Action.Designer',
     'x-component': 'Action.Link',
     'x-decorator': 'ACLActionProvider',
     'x-component-props': {

@@ -18,6 +18,7 @@ indexGenerator.generate();
 
 export default defineConfig({
   title: 'Loading...',
+  devtool: process.env.NODE_ENV === 'development' ? 'source-map' : false,
   favicons: ['/favicon/favicon.ico'],
   metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
   links: [

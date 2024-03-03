@@ -3,28 +3,6 @@ import { oneEmptyKanbanBlock } from './utils';
 
 //看板的区块参数配置
 test.describe('configure setting', () => {
-  test('fix block ', async ({ page, mockPage, mockRecords }) => {
-    const nocoPage = await mockPage(oneEmptyKanbanBlock).waitForInit();
-    await mockRecords('general', 100);
-    await nocoPage.goto();
-    await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
-    //固定区块
-    await page.getByLabel('block-item-CardItem-general-kanban').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-Kanban.Designer-general').hover();
-    await page.getByRole('menuitem', { name: 'Fix block' }).click();
-    // 等待重渲染完成
-    await page.waitForTimeout(1000);
-    const kanbanBoard = page.getByLabel('block-item-CardItem-general-kanban');
-    const kanbanBoardHeight = await kanbanBoard.evaluate((element) => {
-      const computedStyle = window.getComputedStyle(element);
-      return parseInt(computedStyle.height, 10);
-    });
-    const windowHeight = await page.evaluate(() => {
-      return window.innerHeight;
-    });
-    const expectedHeight = windowHeight - 147;
-    expect(kanbanBoardHeight).toBe(expectedHeight);
-  });
   test('set the data scope', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(oneEmptyKanbanBlock).waitForInit();
     await mockRecords('general', 10);

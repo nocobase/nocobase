@@ -3,8 +3,9 @@ import { useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
 import { DragHandler, useDesignable } from '../..';
+import { useSchemaSettingsRender } from '../../../application/schema-settings/hooks';
+import { SchemaToolbarProvider } from '../../../application/schema-toolbar/context';
 import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
-import { SchemaToolbarProvider, useSchemaSettingsRender } from '../../../application';
 
 export const PageDesigner = ({ title }) => {
   const { designable } = useDesignable();

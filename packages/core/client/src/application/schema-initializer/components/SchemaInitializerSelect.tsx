@@ -14,10 +14,13 @@ export const SchemaInitializerSelect: FC<SchemaInitializerSelectItemProps> = (pr
   const { title, options, value, onChange, openOnHover, onClick: _onClick, ...others } = props;
   const [open, setOpen] = useState(false);
 
-  const onClick = (...args) => {
-    setOpen(false);
-    _onClick?.(...args);
-  };
+  const onClick = useCallback(
+    (...args) => {
+      setOpen(false);
+      _onClick?.(...args);
+    },
+    [setOpen, _onClick],
+  );
   const onMouseEnter = useCallback(() => setOpen(true), []);
 
   // 鼠标 hover 时，打开下拉框

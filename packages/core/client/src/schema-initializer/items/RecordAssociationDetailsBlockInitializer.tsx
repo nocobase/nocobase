@@ -1,17 +1,17 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 
-import { useCollectionManager } from '../../collection-manager';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const RecordAssociationDetailsBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const field = itemConfig.field;
   const collection = getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
@@ -28,8 +28,10 @@ export const RecordAssociationDetailsBlockInitializer = () => {
             createDetailsBlockSchema({
               collection: field.target,
               resource,
+              dataSource: collection.dataSource,
               association: resource,
               rowKey: collection.filterTargetKey || 'id',
+              settings: 'blockSettings:multiDataDetails',
             }),
           );
         }

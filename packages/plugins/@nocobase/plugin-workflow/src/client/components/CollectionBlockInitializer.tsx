@@ -1,10 +1,10 @@
 import React from 'react';
 
 import {
-  CollectionProvider,
+  CollectionProvider_deprecated,
   SchemaInitializerItem,
   SchemaInitializerItemType,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -16,7 +16,7 @@ import { traverseSchema } from '../utils';
 function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemType[];
   const resolvedCollection = getCollection(collection);
 
@@ -69,8 +69,8 @@ function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
 export function CollectionBlockInitializer() {
   const itemConfig = useSchemaInitializerItem();
   return (
-    <CollectionProvider collection={itemConfig.collection}>
+    <CollectionProvider_deprecated collection={itemConfig.collection}>
       <InnerCollectionBlockInitializer {...itemConfig} />
-    </CollectionProvider>
+    </CollectionProvider_deprecated>
   );
 }

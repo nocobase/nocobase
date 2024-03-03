@@ -14,6 +14,8 @@ export default defineCollection({
     {
       type: 'belongsTo',
       name: 'role',
+      foreignKey: 'roleName',
+      targetKey: 'name',
     },
     {
       type: 'string',

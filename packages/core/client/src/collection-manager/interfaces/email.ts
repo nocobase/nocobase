@@ -1,38 +1,36 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const email: IField = {
-  name: 'email',
-  type: 'object',
-  group: 'basic',
-  order: 4,
-  title: '{{t("Email")}}',
-  sortable: true,
-  default: {
+export class EmailFieldInterface extends CollectionFieldInterface {
+  name = 'email';
+  type = 'object';
+  group = 'basic';
+  order = 4;
+  title = '{{t("Email")}}';
+  sortable = true;
+  default = {
     type: 'string',
-    // name,
     uiSchema: {
       type: 'string',
-      // title,
       'x-component': 'Input',
       'x-validator': 'email',
     },
-  },
-  availableTypes: ['string'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['string'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
     unique,
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.string,
-  },
-  titleUsable: true,
+  };
+  titleUsable = true;
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
-  },
-};
+  }
+}

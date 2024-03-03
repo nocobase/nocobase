@@ -7,6 +7,7 @@ import { ResourceType } from './resource';
 export interface ParseRequest {
   path: string;
   method: string;
+  namespace?: string;
   // 资源类型
   type?: ResourceType;
 }
@@ -58,7 +59,8 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
   };
   const keys = [];
   const regexp = pathToRegexp('/resourcer/{:associatedName.}?:resourceName{\\::actionName}', keys);
-  const matches = regexp.exec(request.path);
+  const reqPath = decodeURI(request.path);
+  const matches = regexp.exec(reqPath);
   if (matches) {
     const params = {};
     keys.forEach((obj, index) => {
@@ -162,7 +164,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
   for (const path in defaults[type]) {
     const keys = [];
     const regexp = pathToRegexp(`${prefix}${path}`, keys, {});
-    const matches = regexp.exec(request.path);
+    const matches = regexp.exec(reqPath);
     if (!matches) {
       continue;
     }

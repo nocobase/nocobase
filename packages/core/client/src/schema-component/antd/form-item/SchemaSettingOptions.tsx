@@ -6,13 +6,9 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
-import {
-  SchemaSettingsModalItem,
-  SchemaSettingsSelectItem,
-  SchemaSettingsSwitchItem,
-  isPatternDisabled,
-} from '../../../schema-settings';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { SchemaSettingsModalItem, SchemaSettingsSelectItem, SchemaSettingsSwitchItem } from '../../../schema-settings';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
@@ -40,8 +36,8 @@ const divWrap = (schema: ISchema) => {
 };
 
 export const EditTitle = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -194,8 +190,8 @@ export const EditRequired = () => {
 };
 
 export const EditValidationRules = () => {
-  const { getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getInterface, getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -330,8 +326,8 @@ export const EditValidationRules = () => {
 };
 
 export const EditDefaultValue = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -377,8 +373,8 @@ export const EditDefaultValue = () => {
 };
 
 export const EditComponent = () => {
-  const { getCollectionJoinField, getCollection } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -414,8 +410,8 @@ export const EditComponent = () => {
 };
 
 export const EditPattern = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -568,8 +564,8 @@ export const EditOperator = () => {
 };
 
 export const EditTitleField = () => {
-  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionFields, getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();

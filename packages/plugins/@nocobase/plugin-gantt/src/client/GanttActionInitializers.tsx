@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { SchemaInitializer, useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection_deprecated } from '@nocobase/client';
 
 export const GanttActionInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'GanttActionInitializers',
@@ -36,7 +36,7 @@ export const GanttActionInitializers: SchemaInitializer = new SchemaInitializer(
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -50,7 +50,7 @@ export const GanttActionInitializers: SchemaInitializer = new SchemaInitializer(
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -66,13 +66,13 @@ export const GanttActionInitializers: SchemaInitializer = new SchemaInitializer(
         {
           name: 'toggle',
           title: "{{t('Expand/Collapse')}}",
-          Component: 'ExpandActionInitializer',
+          Component: 'ExpandableActionInitializer',
           schema: {
             'x-align': 'right',
           },
           useVisible() {
             const schema = useFieldSchema();
-            const collection = useCollection();
+            const collection = useCollection_deprecated();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
             return collection.tree && treeTable !== false;
           },
@@ -83,7 +83,7 @@ export const GanttActionInitializers: SchemaInitializer = new SchemaInitializer(
       name: 'divider',
       type: 'divider',
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
@@ -140,7 +140,7 @@ export const GanttActionInitializers: SchemaInitializer = new SchemaInitializer(
         },
       ],
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
