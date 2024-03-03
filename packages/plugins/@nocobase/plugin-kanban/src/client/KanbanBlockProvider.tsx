@@ -28,7 +28,6 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField<any>();
-  console.log(props);
   const { resource, service } = useBlockRequestContext();
   const groupField = useGroupField(props);
   if (!groupField) {

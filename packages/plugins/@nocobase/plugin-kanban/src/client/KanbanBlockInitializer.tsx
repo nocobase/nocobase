@@ -67,18 +67,19 @@ const CreateKanbanForm = ({ item, sortFields, collectionFields, fields, options,
                   'x-decorator': 'FormItem',
                   'x-reactions': [
                     (field) => {
-                      field.dataSource = sortFields.map((v) => {
+                      const options = sortFields.map((v) => {
                         return {
                           ...v,
                           disabled: v.scopeKey !== field.form.values?.groupField?.value,
                         };
                       });
+                      field.dataSource = options;
                       field.groupField = field.form.values?.groupField;
                       field.setComponentProps({
                         dataSource: item.dataSource,
                         collectionName: item.name,
                         collectionFields,
-                        sortFields,
+                        sortFields: options,
                       });
                     },
                     {
@@ -114,7 +115,9 @@ export const KanbanBlockInitializer = () => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const collectionFields = getCollectionFields(item.name, item.dataSource);
+        const { data } = await api.resource('collections.fields', item.name).list();
+        const targetFields = getCollectionFields(item.name, item.dataSource);
+        const collectionFields = item.dataSource === 'main' ? data.data : targetFields;
         const fields = collectionFields
           ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
           ?.map((field) => {
