@@ -7,7 +7,7 @@ export class IframeBlockPlugin extends Plugin {
     this.app.schemaSettingsManager.add(iframeBlockSchemaSettings_deprecated);
     this.app.schemaSettingsManager.add(iframeBlockSchemaSettings);
     this.app.use(IframeBlockProvider);
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
     blockInitializers?.add('otherBlocks.iframe', {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',
@@ -19,13 +19,13 @@ export class IframeBlockPlugin extends Plugin {
       Component: 'IframeBlockInitializer',
     });
 
-    const recordBlockInitializers = this.app.schemaInitializerManager.get('RecordBlockInitializers');
+    const recordBlockInitializers = this.app.schemaInitializerManager.get('blockInitializers:record');
     recordBlockInitializers?.add('otherBlocks.iframe', {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',
     });
 
-    const recordFormBlockInitializers = this.app.schemaInitializerManager.get('RecordFormBlockInitializers');
+    const recordFormBlockInitializers = this.app.schemaInitializerManager.get('blockInitializers:recordForm');
     recordFormBlockInitializers?.add('otherBlocks.iframe', {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',

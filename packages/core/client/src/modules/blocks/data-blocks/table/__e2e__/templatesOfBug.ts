@@ -10,7 +10,7 @@ export const T2183 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'blockInitializers:page',
         properties: {
           '1n5r9s23amo': {
             _isJSONSchemaObject: true,
@@ -169,7 +169,7 @@ export const T2186 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'blockInitializers:page',
         properties: {
           '0r1mwh6fgdj': {
             _isJSONSchemaObject: true,
@@ -328,7 +328,7 @@ export const T2187 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'blockInitializers:page',
         properties: {
           zp24b63pujf: {
             _isJSONSchemaObject: true,

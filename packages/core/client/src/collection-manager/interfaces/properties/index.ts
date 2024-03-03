@@ -398,7 +398,7 @@ export const recordPickerViewer = {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'RecordBlockInitializers',
+              'x-initializer': 'blockInitializers:record',
               properties: {},
             },
           },

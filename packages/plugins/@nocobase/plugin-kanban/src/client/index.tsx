@@ -41,7 +41,7 @@ class KanbanPlugin extends Plugin {
     this.app.schemaInitializerManager.add(kanbanActionInitializers);
     this.app.schemaSettingsManager.add(kanbanSettings);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
     blockInitializers?.add('dataBlocks.kanban', {
       title: '{{t("Kanban")}}',
       Component: 'KanbanBlockInitializer',

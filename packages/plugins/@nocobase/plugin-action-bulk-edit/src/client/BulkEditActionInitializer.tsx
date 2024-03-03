@@ -39,7 +39,7 @@ export const BulkEditActionInitializer = () => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'BulkEditBlockInitializers',
+                    'x-initializer': 'blockInitializers:bulkEdit',
                     properties: {},
                   },
                 },

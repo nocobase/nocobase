@@ -146,7 +146,7 @@ export const Page = (props) => {
                                 title,
                                 'x-icon': icon,
                                 'x-component': 'Grid',
-                                'x-initializer': 'BlockInitializers',
+                                'x-initializer': 'blockInitializers:page',
                                 properties: {},
                               });
                             }}
