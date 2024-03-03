@@ -9,8 +9,7 @@ import {
   SchemaSettingsLinkageRules,
 } from '../../../../schema-settings';
 
-//历史数据
-// TODO: 0.20 发版之前删除
+// TODO: 0.20 版之后可以删除
 export const creationFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:creationForm',
   items: [
