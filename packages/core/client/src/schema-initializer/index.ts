@@ -49,6 +49,7 @@ import { MarkdownFormItemInitializer } from '../modules/blocks/other-blocks/mark
 import { tableSelectorInitializers } from '../modules/fields/component/Picker/TableSelectorInitializers';
 import { CollectionFieldInitializer } from '../modules/fields/initializer/CollectionFieldInitializer';
 import { TableCollectionFieldInitializer } from '../modules/fields/initializer/TableCollectionFieldInitializer';
+import { menuItemInitializer } from '../modules/menu/menuItemInitializer';
 import {
   blockInitializers,
   customFormItemInitializers,
@@ -146,5 +147,6 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(tabPaneInitializersForRecordBlock);
     this.app.schemaInitializerManager.add(tabPaneInitializersForBulkEditFormBlock);
     this.app.schemaInitializerManager.add(createFormBlockInitializers);
+    this.app.schemaInitializerManager.add(menuItemInitializer);
   }
 }

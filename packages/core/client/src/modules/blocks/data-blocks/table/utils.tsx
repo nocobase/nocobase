@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import { useIsFileField } from '../../../schema-component';
-import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { useIsFileField } from '../../../../schema-component';
+import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 
 export function useFieldComponentName(): string {
   const { fieldSchema: tableColumnSchema, collectionField } = useColumnSchema();

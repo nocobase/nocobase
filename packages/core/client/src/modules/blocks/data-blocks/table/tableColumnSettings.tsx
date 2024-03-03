@@ -1,14 +1,14 @@
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
-import { useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { SchemaSettingsDefaultValue, isPatternDisabled } from '../../../../schema-settings';
-import { useTranslation } from 'react-i18next';
-import { useFieldComponentName } from '../../../table/schemaSettings/utils';
+import { useFieldComponentName } from './utils';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',

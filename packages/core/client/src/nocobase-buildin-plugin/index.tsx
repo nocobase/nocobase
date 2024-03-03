@@ -14,7 +14,7 @@ import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
-import { AntdSchemaComponentPlugin, SchemaComponentPlugin, menuItemInitializer } from '../schema-component';
+import { AntdSchemaComponentPlugin, SchemaComponentPlugin } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
 import { SchemaSettingsPlugin } from '../schema-settings';
@@ -263,8 +263,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
 
     this.app.use(CurrentUserProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
-
-    this.app.schemaInitializerManager.add(menuItemInitializer);
   }
 
   addRoutes() {
