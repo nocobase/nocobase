@@ -10,7 +10,7 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
   useDesignable,
-  useRecord_deprecated,
+  useRecord,
 } from '..';
 import { useFormBlockContext, useTableBlockContext } from '../block-provider';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
@@ -43,7 +43,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const collection = useCollection_deprecated();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { form } = useFormBlockContext();
   const { getFields } = useCollectionFilterOptionsV2(collection);
   const { isInSubForm, isInSubTable } = useFlag() || {};

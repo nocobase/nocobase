@@ -1,13 +1,13 @@
 import { onFieldChange } from '@formily/core';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useRequest, SchemaComponent, useRecord_deprecated } from '@nocobase/client';
+import { useAPIClient, useRequest, SchemaComponent, useRecord } from '@nocobase/client';
 import { PermissionContext } from './PermisionProvider';
 
 export const RoleConfigure = () => {
   const { update, currentRecord } = useContext(PermissionContext);
   const { t } = useTranslation();
-  const { key } = useRecord_deprecated();
+  const { key } = useRecord();
 
   return (
     <SchemaComponent

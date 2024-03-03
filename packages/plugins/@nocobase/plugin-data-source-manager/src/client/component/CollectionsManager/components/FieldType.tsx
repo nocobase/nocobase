@@ -1,12 +1,12 @@
 import { observer } from '@formily/react';
-import { useRecord_deprecated } from '@nocobase/client';
+import { useRecord } from '@nocobase/client';
 import { Select, Tag } from 'antd';
 import React from 'react';
 
 export const FieldType = observer(
   (props: any) => {
     const { value, handleFieldChange, onChange } = props;
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const item = record;
     return !item?.possibleTypes ? (
       <Tag>{value}</Tag>

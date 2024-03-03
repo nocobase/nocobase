@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 import {
   useAPIClient,
   useCurrentAppInfo,
-  useRecord_deprecated,
+  useRecord,
   SchemaComponent,
   SchemaComponentContext,
   useCompile,
@@ -52,7 +52,7 @@ const useSelectedRowKeys = () => {
 };
 
 const useDestroySubField = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const form = useForm();
   return {
     async run() {

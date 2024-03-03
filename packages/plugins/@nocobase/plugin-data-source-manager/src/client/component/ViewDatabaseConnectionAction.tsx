@@ -1,4 +1,4 @@
-import { useRecord_deprecated } from '@nocobase/client';
+import { useRecord } from '@nocobase/client';
 import React from 'react';
 import { Button } from 'antd';
 import { css } from '@emotion/css';
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { getConnectionCollectionPath } from '../constant';
 
 export const ViewDatabaseConnectionAction = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const navigate = useNavigate();
   const { t } = useTranslation();
   return (

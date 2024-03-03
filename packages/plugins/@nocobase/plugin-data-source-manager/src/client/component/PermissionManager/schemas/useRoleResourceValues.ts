@@ -1,9 +1,9 @@
 import { useEffect, useContext } from 'react';
-import { useActionContext, useRecord_deprecated, useRequest } from '@nocobase/client';
+import { useActionContext, useRecord, useRequest } from '@nocobase/client';
 import { PermissionContext } from '../PermisionProvider';
 
 export const useRoleResourceValues = (options) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { visible } = useActionContext();
   const { currentDataSource } = useContext(PermissionContext);
 

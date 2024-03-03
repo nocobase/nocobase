@@ -2,14 +2,14 @@ import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { Select, AutoComplete } from 'antd';
 import React, { useState, useEffect } from 'react';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager_deprecated } from '../../hooks';
 
 const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
 export const SourceForeignKey = observer(
   () => {
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const { getCollection } = useCollectionManager_deprecated();
     const collection = record?.collectionName ? getCollection(record.collectionName) : record;
     const field = useField<Field>();
@@ -95,7 +95,7 @@ export const TargetForeignKey = observer(
 
 export const SourceCollection = observer(
   () => {
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const { getCollection } = useCollectionManager_deprecated();
     const collection = record?.collectionName ? getCollection(record.collectionName) : record;
     const compile = useCompile();
@@ -115,7 +115,7 @@ export const SourceCollection = observer(
 
 export const SourceKey = observer(
   (props: any) => {
-    const { sourceKey, collectionName, name } = useRecord_deprecated();
+    const { sourceKey, collectionName, name } = useRecord();
     const { getCollection } = useCollectionManager_deprecated();
     const field: any = useField();
     const compile = useCompile();
@@ -149,7 +149,7 @@ export const SourceKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { targetKey, target, type } = useRecord_deprecated();
+    const { targetKey, target, type } = useRecord();
     const { getCollection } = useCollectionManager_deprecated();
     const [options, setOptions] = useState([]);
     const [initialValue, setInitialValue] = useState(value || targetKey);
@@ -219,7 +219,7 @@ export const ForeignKey = observer(
     const { disabled } = props;
     const [options, setOptions] = useState([]);
     const { getCollection } = useCollectionManager_deprecated();
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const field: any = useField();
     const { collectionName, target, type, through, name } = record;
     const value = record[field.props.name];
@@ -299,7 +299,7 @@ export const ThroughCollection = observer(
     const { getCollections } = useCollectionManager_deprecated();
     const [options, setOptions] = useState([]);
     const field: any = useField();
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const value = record[field.props.name];
     const [initialValue, setInitialValue] = useState(value || field.initialValue);
 

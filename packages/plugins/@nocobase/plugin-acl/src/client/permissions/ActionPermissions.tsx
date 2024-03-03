@@ -9,7 +9,7 @@ import {
   useFilterFieldOptions,
   useFilterFieldProps,
   useCollectionRecord,
-  useRecord_deprecated,
+  useRecord,
   useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
@@ -100,7 +100,7 @@ const useFilterActionProps = () => {
 const useSaveRoleResourceAction = () => {
   const form = useForm();
   const api = useAPIClient();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   return {
@@ -119,7 +119,7 @@ const useSaveRoleResourceAction = () => {
 };
 
 const useRoleResourceValues = (options: any) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { visible } = useActionContext();
   const result = useRequest(
     {

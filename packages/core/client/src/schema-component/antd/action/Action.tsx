@@ -9,7 +9,7 @@ import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import { Icon } from '../../../icon';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../../record-provider';
+import { RecordProvider, useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -59,7 +59,7 @@ export const Action: ComposedAction = observer(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
@@ -173,9 +173,9 @@ export const Action: ComposedAction = observer(
     // fix https://nocobase.height.app/T-3235/description
     if (addChild) {
       return wrapSSR(
-        <RecordProvider_deprecated record={null} parent={record}>
+        <RecordProvider record={null} parent={record}>
           {result}
-        </RecordProvider_deprecated>,
+        </RecordProvider>,
       );
     }
 

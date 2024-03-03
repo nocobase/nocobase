@@ -9,7 +9,7 @@ import {
   useCollection_deprecated,
   useCollectionManager_deprecated,
 } from '../../../collection-manager';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../../record-provider';
+import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
@@ -34,7 +34,7 @@ export const ReadPrettyRecordPicker: React.FC = observer(
   (props: any) => {
     const { ellipsis } = props;
     const fieldSchema = useFieldSchema();
-    const recordCtx = useRecord_deprecated();
+    const recordCtx = useRecord();
     const { getCollectionJoinField } = useCollectionManager_deprecated();
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     // const field = useField<Field>();
@@ -102,13 +102,13 @@ export const ReadPrettyRecordPicker: React.FC = observer(
       const collectionFieldNames = fieldSchema?.['x-collection-field']?.split('.');
 
       return collectionFieldNames && collectionFieldNames.length > 2 ? (
-        <RecordProvider_deprecated record={record} parent={recordCtx[collectionFieldNames[1]]}>
+        <RecordProvider record={record} parent={recordCtx[collectionFieldNames[1]]}>
           {renderWithoutTableFieldResourceProvider()}
-        </RecordProvider_deprecated>
+        </RecordProvider>
       ) : (
-        <RecordProvider_deprecated record={record} parent={recordCtx}>
+        <RecordProvider record={record} parent={recordCtx}>
           {renderWithoutTableFieldResourceProvider()}
-        </RecordProvider_deprecated>
+        </RecordProvider>
       );
     };
 

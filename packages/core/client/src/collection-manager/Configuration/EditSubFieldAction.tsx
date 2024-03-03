@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord_deprecated } from '../../record-provider';
+import { useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent } from '../../schema-component';
 import { useUpdateAction } from '../action-hooks';
 import { useCollectionManager_deprecated } from '../hooks';
@@ -91,7 +91,7 @@ const useUpdateCollectionField = () => {
 };
 
 export const EditSubFieldAction = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { getInterface } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});

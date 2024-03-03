@@ -7,7 +7,7 @@ import { CollectionFieldsTable } from '.';
 import {
   useAPIClient,
   useCurrentAppInfo,
-  useRecord_deprecated,
+  useRecord,
   SchemaComponent,
   SchemaComponentContext,
   useCompile,
@@ -48,7 +48,7 @@ const useSelectedRowKeys = () => {
 };
 
 const useDestroySubField = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const form = useForm();
   return {
     async run() {
@@ -71,7 +71,7 @@ const useBulkDestroySubField = () => {
 
 // 获取当前字段列表
 const useCurrentFields = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { getCollectionFields } = useCollectionManager_deprecated();
 
   // 仅当当前字段为子表单时，从DataSourceContext中获取已配置的字段列表

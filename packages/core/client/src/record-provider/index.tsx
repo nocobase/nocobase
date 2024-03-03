@@ -9,7 +9,7 @@ export const RecordIndexContext = createContext(null);
 /**
  * @deprecated use `CollectionRecordProvider` instead
  */
-export const RecordProvider_deprecated: React.FC<{
+export const RecordProvider: React.FC<{
   record: any;
   parent?: any;
   isNew?: boolean;
@@ -41,7 +41,7 @@ export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
 /**
  * @deprecated use `useCollectionRecord` instead
  */
-export function useRecord_deprecated<D = any>() {
+export function useRecord<D = any>() {
   return useContext(RecordContext_deprecated) as D;
 }
 
@@ -50,7 +50,7 @@ export function useRecordIndex() {
 }
 
 export const useRecordIsOwn = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const ctx = useCurrentUserContext();
   if (!record?.createdById) {
     return false;

@@ -1,10 +1,10 @@
 import { useForm } from '@formily/react';
-import { useActionContext, useAPIClient, useRecord_deprecated, useResourceActionContext } from '../../../';
+import { useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../../';
 
 export const useSaveRoleResourceAction = () => {
   const form = useForm();
   const api = useAPIClient();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   return {

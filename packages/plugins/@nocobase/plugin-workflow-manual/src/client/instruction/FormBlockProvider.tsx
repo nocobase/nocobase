@@ -8,18 +8,18 @@ import {
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
-  RecordProvider_deprecated,
+  RecordProvider,
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
   useDataSourceHeaders,
   useDesignable,
-  useRecord_deprecated,
+  useRecord,
 } from '@nocobase/client';
 import React, { useMemo, useRef } from 'react';
 
 export function FormBlockProvider(props) {
-  const userJob = useRecord_deprecated();
+  const userJob = useRecord();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
@@ -75,7 +75,7 @@ export function FormBlockProvider(props) {
   return !userJob.status || values ? (
     <CollectionManagerProvider dataSource={dataSource}>
       <CollectionProvider_deprecated collection={props.collection}>
-        <RecordProvider_deprecated record={values} parent={null}>
+        <RecordProvider record={values} parent={null}>
           <FormActiveFieldsProvider name="form">
             <BlockRequestContext_deprecated.Provider
               value={{ block: 'form', props, field, service, resource, __parent }}
@@ -90,7 +90,7 @@ export function FormBlockProvider(props) {
               </FormBlockContext.Provider>
             </BlockRequestContext_deprecated.Provider>
           </FormActiveFieldsProvider>
-        </RecordProvider_deprecated>
+        </RecordProvider>
       </CollectionProvider_deprecated>
     </CollectionManagerProvider>
   ) : null;

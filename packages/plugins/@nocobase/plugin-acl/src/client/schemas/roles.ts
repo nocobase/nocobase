@@ -1,5 +1,5 @@
 import { uid } from '@formily/shared';
-import { useActionContext, useCollectionRecord, useRecord_deprecated, useRequest } from '@nocobase/client';
+import { useActionContext, useCollectionRecord, useRecord, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
 import pick from 'lodash/pick';
 import { ISchema } from '@formily/react';
@@ -13,7 +13,7 @@ export const roleEditSchema = {
       'x-decorator': 'Form',
       'x-decorator-props': {
         useValues: (options: any) => {
-          const record = useRecord_deprecated();
+          const record = useRecord();
           const result = useRequest(() => Promise.resolve({ data: pick(record, ['title', 'name', 'default']) }), {
             ...options,
             manual: true,

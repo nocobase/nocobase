@@ -3,7 +3,7 @@ import { uid } from '@formily/shared';
 import {
   SchemaComponentOptions,
   useActionContext,
-  useRecord_deprecated,
+  useRecord,
   useRequest,
   useResourceActionContext,
   useResourceContext,
@@ -76,7 +76,7 @@ const collection = {
 export const useDestroy = () => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   return {
     async run() {
       await resource.destroy({ filterByTk });

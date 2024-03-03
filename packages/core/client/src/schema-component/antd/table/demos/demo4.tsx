@@ -7,7 +7,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   Table,
-  useRecord_deprecated,
+  useRecord,
   useRequest,
 } from '@nocobase/client';
 import React, { createContext, useContext, useState } from 'react';
@@ -65,7 +65,7 @@ const useBulkDestroyAction = () => {
 };
 
 const useUpdateAction = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const ctx = useContext(DataSourceContext);
   return {
     async run() {
@@ -84,7 +84,7 @@ const useUpdateAction = () => {
 };
 
 const useDestroyAction = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const ctx = useContext(DataSourceContext);
   return {
     async run() {

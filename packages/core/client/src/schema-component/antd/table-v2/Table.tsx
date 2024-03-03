@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
-  RecordProvider_deprecated,
+  RecordProvider,
   useCollection_deprecated,
   useCollectionParentRecordData,
   useSchemaInitializerRender,
@@ -70,7 +70,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           return (
             <SubFormProvider value={record}>
               <RecordIndexProvider index={record.__index || index}>
-                <RecordProvider_deprecated isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
+                <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
                     <span
                       role="button"
@@ -89,7 +89,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
                       />
                     </span>
                   </ColumnFieldProvider>
-                </RecordProvider_deprecated>
+                </RecordProvider>
               </RecordIndexProvider>
             </SubFormProvider>
           );

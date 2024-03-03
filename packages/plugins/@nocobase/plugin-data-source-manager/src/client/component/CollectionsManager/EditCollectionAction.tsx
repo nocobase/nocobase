@@ -10,9 +10,9 @@ import {
   useAPIClient,
   useRequest,
   IField,
-  RecordProvider_deprecated,
+  RecordProvider,
   useCollectionManager_deprecated,
-  useRecord_deprecated,
+  useRecord,
   ActionContextProvider,
   SchemaComponent,
   useActionContext,
@@ -84,7 +84,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 };
 
 export const useValuesFromRecord = (options) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const result = useRequest(
     () =>
       Promise.resolve({
@@ -114,7 +114,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const { name } = useParams();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   const api = useAPIClient();
   return {
     async run() {
@@ -135,7 +135,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
 };
 
 export const EditCollection = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   return <EditCollectionAction item={record} {...props} />;
 };
 
@@ -148,7 +148,7 @@ const EditCollectionAction = (props) => {
   const compile = useCompile();
 
   return (
-    <RecordProvider_deprecated record={record}>
+    <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -181,6 +181,6 @@ const EditCollectionAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };

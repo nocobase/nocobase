@@ -2,7 +2,7 @@ import { useField } from '@formily/react';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager_deprecated } from '.';
-import { CollectionProvider_deprecated, useRecord_deprecated } from '..';
+import { CollectionProvider_deprecated, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
 export const ResourceActionContext = createContext<
@@ -22,7 +22,7 @@ const ResourceContext = createContext<any>(null);
 const CollectionResourceActionProvider = (props) => {
   const { collection, request, uid, dragSort } = props;
   const api = useAPIClient();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const actionName = request?.action;
   const others = {};
   if (actionName === 'get') {
@@ -59,7 +59,7 @@ const CollectionResourceActionProvider = (props) => {
 const AssociationResourceActionProvider = (props) => {
   const { collection, association, request, uid, dragSort } = props;
   const api = useAPIClient();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const resourceOf = record[association.sourceKey];
   const appends = request?.params?.appends || [];
   const service = useRequest(

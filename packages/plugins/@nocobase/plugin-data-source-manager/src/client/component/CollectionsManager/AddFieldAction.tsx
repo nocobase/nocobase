@@ -9,9 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
   useRequest,
-  RecordProvider_deprecated,
+  RecordProvider,
   IField,
-  useRecord_deprecated,
+  useRecord,
   ActionContextProvider,
   SchemaComponent,
   useActionContext,
@@ -155,7 +155,7 @@ const useCreateCollectionField = () => {
   const { refresh } = useResourceActionContext();
   const field = useField();
   const api = useAPIClient();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { name: dataSourceKey } = useParams();
   return {
     async run() {
@@ -187,7 +187,7 @@ const useCreateCollectionField = () => {
 };
 
 export const AddCollectionField = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   return <AddFieldAction item={record} {...props} />;
 };
 
@@ -309,7 +309,7 @@ const AddFieldAction = (props) => {
   }, [getInterface, items, record]);
   return (
     record.template !== 'sql' && (
-      <RecordProvider_deprecated record={record}>
+      <RecordProvider record={record}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
             {children || (
@@ -339,7 +339,7 @@ const AddFieldAction = (props) => {
             }}
           />
         </ActionContextProvider>
-      </RecordProvider_deprecated>
+      </RecordProvider>
     )
   );
 };

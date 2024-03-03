@@ -4,7 +4,7 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   DndContext,
-  RecordProvider_deprecated,
+  RecordProvider,
   SchemaComponentOptions,
   useCollectionParentRecordData,
 } from '@nocobase/client';
@@ -100,13 +100,13 @@ export const KanbanCard: any = observer(
               setVisible,
             }}
           >
-            <RecordProvider_deprecated record={card} parent={parentRecordData}>
+            <RecordProvider record={card} parent={parentRecordData}>
               <RecursionField
                 basePath={cardField.address.concat(`${columnIndex}.cardViewer.${cardIndex}`)}
                 schema={cardViewerSchema}
                 onlyRenderProperties
               />
-            </RecordProvider_deprecated>
+            </RecordProvider>
           </ActionContextProvider>
         )}
       </SchemaComponentOptions>

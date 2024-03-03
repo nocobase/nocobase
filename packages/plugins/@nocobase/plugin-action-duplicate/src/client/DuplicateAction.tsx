@@ -3,7 +3,7 @@ import { RecursionField, observer, useField, useFieldSchema } from '@formily/rea
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
-  RecordProvider_deprecated,
+  RecordProvider,
   CollectionProvider,
   FormBlockContext,
   CollectionRecordProvider,
@@ -16,7 +16,7 @@ import {
   useDesignable,
   useFormBlockContext,
   useCollectionParentRecordData,
-  useRecord_deprecated,
+  useRecord,
   useCollectionRecord,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
@@ -76,7 +76,7 @@ export const DuplicateAction = observer(
     const [loading, setLoading] = useState(false);
     const { service, __parent, block } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const parentRecordData = useCollectionParentRecordData();
     const { id, __collection } = record;
     const ctx = useActionContext();
@@ -186,14 +186,14 @@ export const DuplicateAction = observer(
               </Button>
             )}
             <CollectionProvider_deprecated name={duplicateCollection || name}>
-              <RecordProvider_deprecated
+              <RecordProvider
                 record={{ ...record, __collection: duplicateCollection || __collection }}
                 parent={parentRecordData}
               >
                 <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
                   <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
                 </ActionContextProvider>
-              </RecordProvider_deprecated>
+              </RecordProvider>
             </CollectionProvider_deprecated>
           </div>
         </FormBlockContext.Provider>

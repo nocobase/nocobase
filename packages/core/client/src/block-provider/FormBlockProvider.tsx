@@ -4,7 +4,7 @@ import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
 import { useCollectionParentRecordData, useCollectionRecord } from '../data-source';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../record-provider';
+import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -50,11 +50,11 @@ const InternalFormBlockProvider = (props) => {
 
   return (
     <FormBlockContext.Provider value={formBlockValue}>
-      <RecordProvider_deprecated isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
+      <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
         <div ref={formBlockRef}>
           <RenderChildrenWithDataTemplates form={form} />
         </div>
-      </RecordProvider_deprecated>
+      </RecordProvider>
     </FormBlockContext.Provider>
   );
 };
@@ -75,7 +75,7 @@ export const useIsDetailBlock = () => {
 };
 
 export const FormBlockProvider = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
   const { collection, isCusomeizeCreate } = props;
   const { __collection } = record;
@@ -113,7 +113,7 @@ export const useFormBlockContext = () => {
 
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { fieldSchema } = useActionContext();
   const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {

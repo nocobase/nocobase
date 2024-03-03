@@ -6,7 +6,7 @@ import { css, cx } from '@emotion/css';
 import { useDesignable } from '../../hooks';
 
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
-import { RecordProvider_deprecated } from '../../../record-provider';
+import { RecordProvider } from '../../../record-provider';
 
 export const ListItem = (props) => {
   const field = useField<ObjectField>();
@@ -24,9 +24,9 @@ export const ListItem = (props) => {
         `,
       ])}
     >
-      <RecordProvider_deprecated record={field.value} parent={parentRecordData}>
+      <RecordProvider record={field.value} parent={parentRecordData}>
         {props.children}
-      </RecordProvider_deprecated>
+      </RecordProvider>
     </div>
   );
 };

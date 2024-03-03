@@ -1,9 +1,9 @@
-import { useRecord_deprecated } from '@nocobase/client';
+import { useRecord } from '@nocobase/client';
 import { Table } from 'antd';
 import React from 'react';
 
 export const ConfigureFields = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   return (
     <Table
       columns={[

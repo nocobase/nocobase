@@ -8,7 +8,7 @@ import { useFormBlockContext, useTableBlockContext } from '../../../block-provid
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { FilterBlockType, mergeFilter } from '../../../filter-provider/utils';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsBlockTitleItem,
@@ -75,7 +75,7 @@ export const TableBlockDesigner = () => {
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const record = useRecord_deprecated();
+  const record = useRecord();
 
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;

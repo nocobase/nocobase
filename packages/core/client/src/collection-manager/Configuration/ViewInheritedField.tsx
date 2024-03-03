@@ -7,7 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollectionParentRecordData } from '../../data-source';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useCompile } from '../../schema-component';
 import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
@@ -69,7 +69,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 };
 
 export const ViewCollectionField = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
   return <ViewFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
@@ -92,7 +92,7 @@ export const ViewFieldAction = (props) => {
     });
   }, []);
   return (
-    <RecordProvider_deprecated record={record} parent={parentRecord}>
+    <RecordProvider record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
@@ -136,6 +136,6 @@ export const ViewFieldAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };

@@ -4,7 +4,7 @@ import {
   usePlugin,
   useResourceActionContext,
   useResourceContext,
-  useRecord_deprecated,
+  useRecord,
   useDataSourceManager,
 } from '@nocobase/client';
 import { Card } from 'antd';
@@ -67,7 +67,7 @@ export const DatabaseConnectionManagerPane = () => {
   const useDestroyAction = () => {
     const { refresh } = useResourceActionContext();
     const { resource } = useResourceContext();
-    const { key: filterByTk } = useRecord_deprecated();
+    const { key: filterByTk } = useRecord();
     return {
       async run() {
         await resource.destroy({ filterByTk });
@@ -77,7 +77,7 @@ export const DatabaseConnectionManagerPane = () => {
     };
   };
   const useIsAbleDelete = ($self) => {
-    const { key } = useRecord_deprecated();
+    const { key } = useRecord();
     $self.visible = key !== 'main';
   };
   return (

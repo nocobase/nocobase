@@ -1,5 +1,5 @@
 import { ISchema, useForm } from '@formily/react';
-import { useActionContext, useRecord_deprecated, useResourceActionContext, useResourceContext } from '@nocobase/client';
+import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../locale';
@@ -305,7 +305,7 @@ export const workflowSchema: ISchema = {
                   'x-decorator': 'OpenDrawer',
                   'x-decorator-props': {
                     component: function Com(props) {
-                      const record = useRecord_deprecated();
+                      const record = useRecord();
                       return React.createElement('a', {
                         'aria-label': `executed-${record.title}`,
                         ...props,
@@ -418,7 +418,7 @@ export const workflowSchema: ISchema = {
                                       const { refresh } = useResourceActionContext();
                                       const { resource, targetKey } = useResourceContext();
                                       const { setVisible } = useActionContext();
-                                      const { [targetKey]: filterByTk } = useRecord_deprecated();
+                                      const { [targetKey]: filterByTk } = useRecord();
                                       const { values } = useForm();
                                       return {
                                         async run() {

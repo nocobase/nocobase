@@ -4,7 +4,7 @@ import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
-import { RecordProvider_deprecated } from '../record-provider';
+import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
@@ -49,9 +49,9 @@ const InternalDetailsBlockProvider = (props) => {
 
   return (
     <DetailsBlockContext.Provider value={detailsBLockValue}>
-      <RecordProvider_deprecated isNew={false} record={currentRecord} parent={parentRecord?.data}>
+      <RecordProvider isNew={false} record={currentRecord} parent={parentRecord?.data}>
         {props.children}
-      </RecordProvider_deprecated>
+      </RecordProvider>
     </DetailsBlockContext.Provider>
   );
 };

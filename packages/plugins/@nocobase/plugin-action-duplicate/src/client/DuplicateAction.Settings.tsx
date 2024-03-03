@@ -4,7 +4,7 @@ import {
   ActionDesigner,
   SchemaSettingOpenModeSchemaItems,
   useCollection_deprecated,
-  useRecord_deprecated,
+  useRecord,
   SchemaSettingsModalItem,
   SchemaSettingsItemType,
   SchemaSettingsLinkageRules,
@@ -85,7 +85,7 @@ function DuplicationMode() {
   const { name } = useCollection_deprecated();
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const syncCallBack = useCallback((treeData, selectFields, form) => {
     form.query('duplicateFields').take((f) => {
       f.componentProps.treeData = treeData;

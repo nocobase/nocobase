@@ -4,7 +4,7 @@ import { Tag } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useCollectionManager_deprecated, useCompile, useRecord_deprecated, Variable } from '@nocobase/client';
+import { useCollectionManager_deprecated, useCompile, useRecord, Variable } from '@nocobase/client';
 import { getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
@@ -40,7 +40,7 @@ const InternalExpression = observer(
 
 function Result(props) {
   const { t } = useTranslation();
-  const values = useRecord_deprecated();
+  const values = useRecord();
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager_deprecated();
   const options = useMemo(

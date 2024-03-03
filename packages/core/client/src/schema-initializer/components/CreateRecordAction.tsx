@@ -10,7 +10,7 @@ import {
   useCollection_deprecated,
   useCollectionManager_deprecated,
 } from '../../collection-manager';
-import { useRecord_deprecated } from '../../record-provider';
+import { useRecord } from '../../record-provider';
 import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
@@ -105,7 +105,7 @@ export const CreateRecordAction = observer(
     const [currentCollection, setCurrentCollection] = useState(collection.name);
     const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
-    const values = useRecord_deprecated();
+    const values = useRecord();
     const ctx = useActionContext();
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values } as any });
@@ -196,7 +196,7 @@ export const CreateAction = observer(
         });
     }, [enableChildren, totalChildCollections]);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
-    const values = useRecord_deprecated();
+    const values = useRecord();
     const localVariables = useLocalVariables({ currentForm: { values } as any });
     const compile = useCompile();
     const { designable } = useDesignable();

@@ -6,7 +6,7 @@ import omit from 'lodash/omit';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
@@ -77,7 +77,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 };
 
 export const useValuesFromRecord = (options) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const result = useRequest(
     () =>
       Promise.resolve({
@@ -106,7 +106,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk, template } = useRecord_deprecated();
+  const { [targetKey]: filterByTk, template } = useRecord();
   const api = useAPIClient();
   const collectionResource = template === 'sql' ? api.resource('sqlCollection') : resource;
   return {
@@ -125,7 +125,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
 };
 
 export const EditCollection = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   return <EditCollectionAction item={record} {...props} />;
 };
 
@@ -138,7 +138,7 @@ export const EditCollectionAction = (props) => {
   const compile = useCompile();
 
   return (
-    <RecordProvider_deprecated record={record}>
+    <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -171,6 +171,6 @@ export const EditCollectionAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };

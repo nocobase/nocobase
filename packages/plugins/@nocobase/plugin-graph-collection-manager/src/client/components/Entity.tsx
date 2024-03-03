@@ -12,7 +12,7 @@ import {
   useCollectionManager_deprecated,
   useCompile,
   useCurrentAppInfo,
-  useRecord_deprecated,
+  useRecord,
 } from '@nocobase/client';
 import { Badge, Tag } from 'antd';
 import lodash from 'lodash';
@@ -56,7 +56,7 @@ const OperationButton: any = React.memo((props: any) => {
   };
   // 获取当前字段列表
   const useCurrentFields = () => {
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const { getCollectionFields } = useCollectionManager_deprecated();
     const fields = getCollectionFields(record.collectionName || record.name) as any[];
     return fields;

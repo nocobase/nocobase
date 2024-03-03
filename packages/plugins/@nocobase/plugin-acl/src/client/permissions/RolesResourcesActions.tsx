@@ -6,7 +6,7 @@ import {
   useCollectionManager_deprecated,
   useCompile,
   useCollectionRecord,
-  useRecord_deprecated,
+  useRecord,
 } from '@nocobase/client';
 import { Checkbox, Table, Tag } from 'antd';
 import { isEmpty } from 'lodash';
@@ -42,7 +42,7 @@ export const RolesResourcesActions = connect((props) => {
     props.onChange(items);
   };
   const form = useForm();
-  const roleCollection = useRecord_deprecated();
+  const roleCollection = useRecord();
   const availableActions = useAvailableActions();
   const { getCollection, getCollectionFields } = useCollectionManager_deprecated();
   const collection = getCollection(roleCollection.collectionName);

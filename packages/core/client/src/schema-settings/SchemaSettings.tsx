@@ -64,7 +64,7 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useCollectionRecord,
-  useRecord_deprecated,
+  useRecord,
   useSchemaSettingsItem,
   useSortFields,
 } from '..';
@@ -1220,7 +1220,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const { getTemplateById } = useSchemaTemplateManager();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { type: formBlockType } = useFormBlockType();
   const type = props?.type || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;

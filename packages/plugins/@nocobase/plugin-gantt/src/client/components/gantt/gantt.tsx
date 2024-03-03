@@ -2,7 +2,7 @@ import { css, cx } from '@emotion/css';
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  RecordProvider_deprecated,
+  RecordProvider,
   useAPIClient,
   useBlockRequestContext,
   useCurrentAppInfo,
@@ -51,9 +51,9 @@ const GanttRecordViewer = (props) => {
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <RecordProvider_deprecated record={record} parent={parentRecordData}>
+          <RecordProvider record={record} parent={parentRecordData}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
-          </RecordProvider_deprecated>
+          </RecordProvider>
         </ActionContextProvider>
       </DeleteEventContext.Provider>
     )

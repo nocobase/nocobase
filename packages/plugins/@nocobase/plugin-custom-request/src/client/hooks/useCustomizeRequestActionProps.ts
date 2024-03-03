@@ -6,7 +6,7 @@ import {
   useBlockRequestContext,
   useCollection_deprecated,
   useCompile,
-  useRecord_deprecated,
+  useRecord,
 } from '@nocobase/client';
 import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
@@ -20,7 +20,7 @@ export const useCustomizeRequestActionProps = () => {
   const form = useForm();
   const { getPrimaryKey } = useCollection_deprecated();
   const { resource, __parent, service } = useBlockRequestContext();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
   const { setVisible } = useActionContext();

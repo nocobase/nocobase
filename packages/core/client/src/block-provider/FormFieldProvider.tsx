@@ -5,7 +5,7 @@ import { forEach } from '@nocobase/utils/client';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
-import { RecordProvider_deprecated } from '../record-provider';
+import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
@@ -57,7 +57,7 @@ const InternalFormFieldProvider = (props) => {
   }
 
   return (
-    <RecordProvider_deprecated record={service?.data?.data} parent={parentRecordData}>
+    <RecordProvider record={service?.data?.data} parent={parentRecordData}>
       <FormFieldContext.Provider
         value={{
           action,
@@ -70,7 +70,7 @@ const InternalFormFieldProvider = (props) => {
       >
         {props.children}
       </FormFieldContext.Provider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };
 

@@ -7,12 +7,12 @@ import {
   CollectionManagerProvider,
   FormBlockContext,
   MaybeCollectionProvider,
-  RecordProvider_deprecated,
+  RecordProvider,
   useBlockRequestContext,
   useBlockResource,
   useCollectionManager_deprecated,
   useDesignable,
-  useRecord_deprecated,
+  useRecord,
   useResource,
 } from '@nocobase/client';
 import { Spin } from 'antd';
@@ -46,9 +46,9 @@ const InternalFormBlockProvider = (props) => {
       }}
     >
       {readPretty ? (
-        <RecordProvider_deprecated record={service?.data?.data}>
+        <RecordProvider record={service?.data?.data}>
           <div ref={formBlockRef}>{props.children}</div>
-        </RecordProvider_deprecated>
+        </RecordProvider>
       ) : (
         <div ref={formBlockRef}>{props.children}</div>
       )}
@@ -62,7 +62,7 @@ const BlockRequestProvider_deprecated = (props) => {
   const service = {
     loading: false,
     data: {
-      data: useRecord_deprecated(),
+      data: useRecord(),
     },
   };
   const __parent = useBlockRequestContext();
@@ -91,7 +91,7 @@ const BlockProvider = (props) => {
 };
 
 export const SnapshotBlockProvider = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { __tableName } = record;
   const { getInheritCollections } = useCollectionManager_deprecated(props.dataSource);
   const inheritCollections = getInheritCollections(__tableName);

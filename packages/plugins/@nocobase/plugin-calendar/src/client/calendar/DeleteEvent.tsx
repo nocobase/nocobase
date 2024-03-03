@@ -5,14 +5,14 @@ import React, { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DeleteEventContext } from './Calendar';
 import { formatDate } from './utils';
-import { useActionContext, useRecord_deprecated, useFilterByTk, useBlockRequestContext } from '@nocobase/client';
+import { useActionContext, useRecord, useFilterByTk, useBlockRequestContext } from '@nocobase/client';
 import { useTranslation } from '../../locale';
 const { Text } = Typography;
 
 export const DeleteEvent = observer(
   () => {
     const { visible, setVisible } = useActionContext();
-    const { exclude = [], cron, ...record } = useRecord_deprecated();
+    const { exclude = [], cron, ...record } = useRecord();
     const { close } = useContext(DeleteEventContext);
     const startDate = formatDate(dayjs(record.__parent.__event.start));
     const filterByTk = useFilterByTk();

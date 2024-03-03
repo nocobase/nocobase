@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import { FormBlockContext } from '../../block-provider';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
-import { RecordProvider_deprecated } from '../../record-provider';
+import { RecordProvider } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
@@ -168,11 +168,11 @@ export const FormLinkageRules = observer(
 
     return (
       <FormBlockContext.Provider value={{ form, type: formBlockType }}>
-        <RecordProvider_deprecated record={record} parent={parentRecordData}>
+        <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
             <SchemaComponent components={components} schema={schema} />
           </FilterContext.Provider>
-        </RecordProvider_deprecated>
+        </RecordProvider>
       </FormBlockContext.Provider>
     );
   },

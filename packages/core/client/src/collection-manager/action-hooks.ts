@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '.';
 import { useRequest } from '../api-client';
-import { useRecord_deprecated } from '../record-provider';
+import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
@@ -24,7 +24,7 @@ export const useCancelAction = () => {
 };
 
 export const useValuesFromRecord = (options) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const result = useRequest(
     () => Promise.resolve({ data: omit(cloneDeep(record), ['__parent', '__collectionName']) }),
     {
@@ -432,7 +432,7 @@ export const useUpdateViewAction = (actionCallback?: (filterByTk: string, values
   const ctx = useActionContext();
   // const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   return {
     async run() {
       await form.submit();
@@ -464,7 +464,7 @@ export const useUpdateAction = (actionCallback?: (key: string, values: any) => v
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   return {
     async run() {
       await form.submit();
@@ -488,7 +488,7 @@ export const useUpdateAction = (actionCallback?: (key: string, values: any) => v
 export const useDestroyAction = (actionCallback?: (key: string) => void) => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   return {
     async run() {
       await resource.destroy({ filterByTk });
@@ -559,7 +559,7 @@ export const useDestroyActionAndRefreshCM = () => {
 };
 
 export const useDeleteButtonDisabled = (record?: any) => {
-  const recordFromProvider = useRecord_deprecated();
+  const recordFromProvider = useRecord();
   return isDeleteButtonDisabled(record || recordFromProvider);
 };
 

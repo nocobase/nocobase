@@ -6,7 +6,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -36,7 +36,7 @@ export const GridCardDesigner = () => {
   const field = useField();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const columnCount = field.decoratorProps.columnCount || defaultColumnCount;

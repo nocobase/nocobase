@@ -11,7 +11,7 @@ import {
   Input,
   isDeleteButtonDisabled,
   OverridingCollectionField,
-  RecordProvider_deprecated,
+  RecordProvider,
   ResourceActionContext,
   ResourceActionProvider,
   SchemaComponent,
@@ -23,7 +23,7 @@ import {
   useCompile,
   useCurrentAppInfo,
   useDestroyActionAndRefreshCM,
-  useRecord_deprecated,
+  useRecord,
   useResourceActionContext,
   useResourceContext,
   ViewCollectionField,
@@ -67,7 +67,7 @@ const CurrentFields = (props) => {
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { resource, targetKey } = props.collectionResource || {};
-  const parentRecordData = useRecord_deprecated();
+  const parentRecordData = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
   const { [targetKey]: filterByTk, titleField, template } = parentRecordData;
@@ -139,12 +139,12 @@ const CurrentFields = (props) => {
         };
 
         return (
-          <RecordProvider_deprecated record={record} parent={parentRecordData}>
+          <RecordProvider record={record} parent={parentRecordData}>
             <Space>
               <EditCollectionField role="button" aria-label={`edit-button-${record.name}`} type="primary" />
               <Action.Link {...deleteProps} />
             </Space>
-          </RecordProvider_deprecated>
+          </RecordProvider>
         );
       },
     },
@@ -182,7 +182,7 @@ const InheritFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager_deprecated();
   const { resource, targetKey } = props.collectionResource || {};
-  const parentRecord = useRecord_deprecated();
+  const parentRecord = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
   const { refreshCM, isTitleField } = useCollectionManager_deprecated();
@@ -247,12 +247,12 @@ const InheritFields = (props) => {
         };
 
         return (
-          <RecordProvider_deprecated record={record} parent={parentRecord}>
+          <RecordProvider record={record} parent={parentRecord}>
             <Space>
               <OverridingCollectionField {...overrideProps} />
               <ViewCollectionField {...viewCollectionProps} />
             </Space>
-          </RecordProvider_deprecated>
+          </RecordProvider>
         );
       },
     },
@@ -271,7 +271,7 @@ const InheritFields = (props) => {
 export const CollectionFields = () => {
   const compile = useCompile();
   const field = useField<Field>();
-  const { name, template } = useRecord_deprecated();
+  const { name, template } = useRecord();
   const {
     data: { database },
   } = useCurrentAppInfo();

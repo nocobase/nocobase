@@ -7,7 +7,7 @@ import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
@@ -127,7 +127,7 @@ const useSyncFromDatabase = () => {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   const api = useAPIClient();
   const field = useField();
   return {
@@ -153,7 +153,7 @@ const useSyncFromDatabase = () => {
 };
 
 export const SyncFieldsAction = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   return <SyncFieldsActionCom item={record} {...props} />;
 };
 
@@ -165,7 +165,7 @@ export const SyncFieldsActionCom = (props) => {
   const { t } = useTranslation();
   return (
     record.template === 'view' && (
-      <RecordProvider_deprecated record={record}>
+      <RecordProvider record={record}>
         <ActionContextProvider value={{ visible, setVisible, drawerProps: { width: 900 } }}>
           {children || (
             <Button
@@ -195,7 +195,7 @@ export const SyncFieldsActionCom = (props) => {
             }}
           />
         </ActionContextProvider>
-      </RecordProvider_deprecated>
+      </RecordProvider>
     )
   );
 };

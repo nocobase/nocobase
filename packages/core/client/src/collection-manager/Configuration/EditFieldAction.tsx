@@ -8,7 +8,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
@@ -139,7 +139,7 @@ const useUpdateCollectionField = () => {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   return {
     async run() {
       await form.submit();
@@ -160,7 +160,7 @@ const useUpdateCollectionField = () => {
 };
 
 export const EditCollectionField = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
   return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
@@ -201,7 +201,7 @@ export const EditFieldAction = (props) => {
   }, []);
 
   return (
-    <RecordProvider_deprecated record={record} parent={parentRecord}>
+    <RecordProvider record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -251,6 +251,6 @@ export const EditFieldAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };

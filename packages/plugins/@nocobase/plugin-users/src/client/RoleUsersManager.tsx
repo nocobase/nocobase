@@ -7,7 +7,7 @@ import {
   SchemaComponent,
   useAPIClient,
   useActionContext,
-  useRecord_deprecated,
+  useRecord,
   useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
@@ -19,7 +19,7 @@ import { useFilterActionProps } from './hooks';
 const useRemoveUser = () => {
   const api = useAPIClient();
   const { role } = useContext(RolesManagerContext);
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { refresh } = useResourceActionContext();
   return {
     async run() {

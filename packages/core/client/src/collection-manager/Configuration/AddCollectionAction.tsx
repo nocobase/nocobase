@@ -7,7 +7,7 @@ import { cloneDeep } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
@@ -136,7 +136,7 @@ const useCreateCollection = (schema?: any) => {
 };
 
 export const AddCollection = (props) => {
-  const recordData = useRecord_deprecated();
+  const recordData = useRecord();
   return <AddCollectionAction item={recordData} {...props} />;
 };
 
@@ -181,7 +181,7 @@ export const AddCollectionAction = (props) => {
   }, [category, items]);
 
   return (
-    <RecordProvider_deprecated record={record}>
+    <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
           {children || (
@@ -204,6 +204,6 @@ export const AddCollectionAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };

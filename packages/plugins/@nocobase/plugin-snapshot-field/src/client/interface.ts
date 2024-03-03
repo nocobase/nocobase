@@ -4,7 +4,7 @@ import {
   CollectionFieldInterface,
   interfacesProperties,
   useCollectionManager_deprecated,
-  useRecord_deprecated,
+  useRecord,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { NAMESPACE } from './locale';
@@ -15,7 +15,7 @@ const APPENDS = 'appends';
 const TARGET_FIELD = 'targetField';
 
 export const useTopRecord = () => {
-  let record = useRecord_deprecated();
+  let record = useRecord();
 
   while (record && Object.keys(record.__parent).length > 0) {
     record = record.__parent;

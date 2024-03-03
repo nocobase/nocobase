@@ -7,7 +7,7 @@ import {
   useCollection_deprecated,
   useCompile,
   useLocalVariables,
-  useRecord_deprecated,
+  useRecord,
   useTableBlockContext,
   useVariables,
 } from '@nocobase/client';
@@ -31,7 +31,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionField: any = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { name, getField } = useCollection_deprecated();
   const localVariables = useLocalVariables();
 

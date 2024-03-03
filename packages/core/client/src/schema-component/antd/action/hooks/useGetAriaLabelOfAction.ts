@@ -2,7 +2,7 @@ import { useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
 import { useBlockContext } from '../../../../block-provider/BlockProvider';
 import { useCollection_deprecated } from '../../../../collection-manager';
-import { useRecord_deprecated, useRecordIndex } from '../../../../record-provider';
+import { useRecord, useRecordIndex } from '../../../../record-provider';
 import { useCompile } from '../../../hooks';
 
 /**
@@ -11,7 +11,7 @@ import { useCompile } from '../../../hooks';
  * @returns
  */
 export const useGetAriaLabelOfAction = (title: string) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const recordIndex = useRecordIndex();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();

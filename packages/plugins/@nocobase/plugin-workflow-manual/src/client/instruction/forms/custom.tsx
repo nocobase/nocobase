@@ -9,7 +9,7 @@ import {
   ActionContextProvider,
   CollectionProvider_deprecated,
   FormBlockContext,
-  RecordProvider_deprecated,
+  RecordProvider,
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItem,
@@ -18,7 +18,7 @@ import {
   gridRowColWrap,
   useCollectionManager_deprecated,
   useCollection_deprecated,
-  useRecord_deprecated,
+  useRecord,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
@@ -31,7 +31,7 @@ import { findSchema } from '../utils';
 
 function CustomFormBlockProvider(props) {
   const [fields, setCollectionFields] = useState(props.collection?.fields ?? []);
-  const userJob = useRecord_deprecated();
+  const userJob = useRecord();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
@@ -52,7 +52,7 @@ function CustomFormBlockProvider(props) {
         fields,
       }}
     >
-      <RecordProvider_deprecated record={values} parent={null}>
+      <RecordProvider record={values} parent={null}>
         <FormBlockContext.Provider
           value={{
             form,
@@ -62,7 +62,7 @@ function CustomFormBlockProvider(props) {
         >
           {props.children}
         </FormBlockContext.Provider>
-      </RecordProvider_deprecated>
+      </RecordProvider>
     </CollectionProvider_deprecated>
   ) : null;
 }

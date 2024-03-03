@@ -3,7 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 
 export default function useServiceOptions(props) {
   const { action = 'list', service, fieldNames } = props;
@@ -11,7 +11,7 @@ export default function useServiceOptions(props) {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection_deprecated();
   const { getCollectionFields } = useCollectionManager_deprecated();
-  const record = useRecord_deprecated();
+  const record = useRecord();
 
   const normalizeValues = useCallback(
     (obj) => {

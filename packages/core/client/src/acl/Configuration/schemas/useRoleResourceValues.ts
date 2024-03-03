@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useActionContext, useRecord_deprecated, useRequest } from '../../../';
+import { useActionContext, useRecord, useRequest } from '../../../';
 
 export const useRoleResourceValues = (options) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { visible } = useActionContext();
   const result = useRequest(
     {

@@ -1,7 +1,7 @@
 import { message } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useRecord_deprecated, RecordContext_deprecated, SchemaComponentOptions } from '@nocobase/client';
+import { useAPIClient, useRecord, RecordContext_deprecated, SchemaComponentOptions } from '@nocobase/client';
 import { CurrentRolesContext } from './';
 
 export const SettingCenterPermissionProvider = (props) => {
@@ -16,7 +16,7 @@ export const PermissionContext = createContext<any>(null);
 
 export const PermissionProvider = (props) => {
   const api = useAPIClient();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { t } = useTranslation();
   const role = useContext(CurrentRolesContext);
   const { snippets } = role;
@@ -49,7 +49,7 @@ export const PermissionProvider = (props) => {
 
 export const RoleRecordProvider = (props) => {
   const role = useContext(CurrentRolesContext);
-  const record = useRecord_deprecated();
+  const record = useRecord();
   return (
     <RecordContext_deprecated.Provider value={{ ...role }}>
       <SchemaComponentOptions scope={{ dataSourceKey: record.key }}>{props.children}</SchemaComponentOptions>

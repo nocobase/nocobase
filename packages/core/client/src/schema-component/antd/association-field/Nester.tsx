@@ -15,7 +15,7 @@ import {
   useCollectionRecordData,
 } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { FlagProvider } from '../../../flag-provider';
-import { RecordIndexProvider, RecordProvider_deprecated } from '../../../record-provider';
+import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
   DefaultValueProvider,
@@ -85,11 +85,11 @@ const ToOneNester = (props) => {
   return (
     <FormActiveFieldsProvider name="nester">
       <SubFormProvider value={field.value}>
-        <RecordProvider_deprecated isNew={recordV2?.isNew} record={field.value} parent={recordV2?.data}>
+        <RecordProvider isNew={recordV2?.isNew} record={field.value} parent={recordV2?.data}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
           </DefaultValueProvider>
-        </RecordProvider_deprecated>
+        </RecordProvider>
       </SubFormProvider>
     </FormActiveFieldsProvider>
   );
@@ -194,7 +194,7 @@ const ToManyNester = observer(
               </div>
               <FormActiveFieldsProvider name="nester">
                 <SubFormProvider value={value}>
-                  <RecordProvider_deprecated isNew={isNewRecord(value)} record={value} parent={recordData}>
+                  <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
                         <RecursionField
@@ -204,7 +204,7 @@ const ToManyNester = observer(
                         />
                       </DefaultValueProvider>
                     </RecordIndexProvider>
-                  </RecordProvider_deprecated>
+                  </RecordProvider>
                 </SubFormProvider>
               </FormActiveFieldsProvider>
               <Divider />

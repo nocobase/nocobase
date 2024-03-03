@@ -1,5 +1,5 @@
 import { connect } from '@formily/react';
-import { css, useCollectionManager_deprecated, useRecord_deprecated, useRequest, useToken } from '@nocobase/client';
+import { css, useCollectionManager_deprecated, useRecord, useRequest, useToken } from '@nocobase/client';
 import { CollectionsGraph, lodash } from '@nocobase/utils/client';
 import { App, Col, Input, Row, Select, Spin, Table, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -40,7 +40,7 @@ const useCollectionsGraph = ({ removed = [] }) => {
 };
 
 const useCollections = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const [selected, setSelected] = useState<any>([]);
 
   const res1 = useRequest(

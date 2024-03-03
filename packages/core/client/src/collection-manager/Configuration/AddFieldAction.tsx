@@ -7,7 +7,7 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
@@ -189,7 +189,7 @@ const useCreateCollectionField = () => {
 };
 
 export const AddCollectionField = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   return <AddFieldAction item={record} {...props} />;
 };
 
@@ -337,7 +337,7 @@ export const AddFieldAction = (props) => {
   }, [fields?.length]);
   return (
     record.template !== 'sql' && (
-      <RecordProvider_deprecated record={record}>
+      <RecordProvider record={record}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
             {children || (
@@ -368,7 +368,7 @@ export const AddFieldAction = (props) => {
             }}
           />
         </ActionContextProvider>
-      </RecordProvider_deprecated>
+      </RecordProvider>
     )
   );
 };

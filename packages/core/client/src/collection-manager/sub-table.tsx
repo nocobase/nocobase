@@ -6,7 +6,7 @@ import {
   CollectionProvider_deprecated,
   useActionContext,
   useCollectionManager_deprecated,
-  useRecord_deprecated,
+  useRecord,
   useRecordIndex,
   useRequest,
 } from '../';
@@ -170,7 +170,7 @@ export const SubFieldDataSourceProvider_deprecated = observer(
   (props) => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [dataSource, setDataSource] = useState([]);
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const api = useAPIClient();
     const service = useRequest(
       () => {
@@ -228,7 +228,7 @@ export const DataSourceProvider_deprecated = observer(
     const { rowKey, collection, association } = props;
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [dataSource, setDataSource] = useState([]);
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const api = useAPIClient();
     const { getCollection } = useCollectionManager_deprecated();
     const coll = getCollection(collection);

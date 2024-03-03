@@ -4,7 +4,7 @@ import { useField } from '@formily/react';
 import { Card } from 'antd';
 import React from 'react';
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
-import { RecordProvider_deprecated } from '../../../record-provider';
+import { RecordProvider } from '../../../record-provider';
 
 const itemCss = css`
   display: flex;
@@ -34,9 +34,9 @@ export const GridCardItem = (props) => {
       `}
     >
       <div className={itemCss}>
-        <RecordProvider_deprecated record={field.value} parent={parentRecordData}>
+        <RecordProvider record={field.value} parent={parentRecordData}>
           {props.children}
-        </RecordProvider_deprecated>
+        </RecordProvider>
       </div>
     </Card>
   );

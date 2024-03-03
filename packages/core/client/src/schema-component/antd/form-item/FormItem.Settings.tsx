@@ -12,7 +12,7 @@ import {
   useCollectionField_deprecated,
   useCollectionManager_deprecated,
 } from '../../../collection-manager';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
@@ -324,7 +324,7 @@ export const formItemSettings = new SchemaSettings({
         const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
         const { getField } = useCollection_deprecated();
         const { form } = useFormBlockContext();
-        const record = useRecord_deprecated();
+        const record = useRecord();
         const field = useField();
         const fieldSchema = useFieldSchema();
         const collectionField =
@@ -926,7 +926,7 @@ export const formItemSettings = new SchemaSettings({
 });
 
 export function useIsAddNewForm() {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const isAddNewForm = _.isEmpty(_.omit(record, ['__parent', '__collectionName']));
 
   return isAddNewForm;

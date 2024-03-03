@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { getWorkflowDetailPath } from './constant';
-import { useActionContext, useGetAriaLabelOfAction, useRecord_deprecated } from '@nocobase/client';
+import { useActionContext, useGetAriaLabelOfAction, useRecord } from '@nocobase/client';
 
 export const WorkflowLink = () => {
   const { t } = useTranslation();
-  const { id } = useRecord_deprecated();
+  const { id } = useRecord();
   const { setVisible } = useActionContext();
   const { getAriaLabel } = useGetAriaLabelOfAction('Configure');
 

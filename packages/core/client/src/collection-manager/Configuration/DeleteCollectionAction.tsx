@@ -10,13 +10,13 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '../../';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import * as components from './components';
 
 export const DeleteCollection = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   return <DeleteCollectionAction item={record} {...props} />;
 };
 
@@ -43,7 +43,7 @@ export const useBulkDestroyActionAndRefreshCM = () => {
 export const useDestroyAction = () => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   const form = useForm();
   const { cascade } = form?.values || {};
   return {
@@ -101,7 +101,7 @@ export const DeleteCollectionAction = (props) => {
   };
 
   return (
-    <RecordProvider_deprecated record={record}>
+    <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         {isBulk ? (
           <Button icon={<DeleteOutlined />} onClick={() => setVisible(true)}>
@@ -186,7 +186,7 @@ export const DeleteCollectionAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };
 DeleteCollectionAction.displayName = 'DeleteCollectionAction';

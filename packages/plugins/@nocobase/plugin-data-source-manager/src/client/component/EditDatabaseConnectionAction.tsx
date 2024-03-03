@@ -4,7 +4,7 @@ import {
   SchemaComponent,
   useCompile,
   usePlugin,
-  useRecord_deprecated,
+  useRecord,
   useActionContext,
   useResourceActionContext,
   useResourceContext,
@@ -18,7 +18,7 @@ import PluginDatabaseConnectionsClient from '../';
 import { NAMESPACE } from '../locale';
 
 export const EditDatabaseConnectionAction = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const [schema, setSchema] = useState({});
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const compile = useCompile();
@@ -32,7 +32,7 @@ export const EditDatabaseConnectionAction = () => {
     const ctx = useActionContext();
     const { refresh } = useResourceActionContext();
     const { resource } = useResourceContext();
-    const { key: filterByTk } = useRecord_deprecated();
+    const { key: filterByTk } = useRecord();
     return {
       async run() {
         await form.submit();

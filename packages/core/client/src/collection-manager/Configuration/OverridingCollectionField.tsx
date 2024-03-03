@@ -7,7 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollectionParentRecordData } from '../../data-source';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
@@ -123,7 +123,7 @@ const useOverridingCollectionField = () => {
 };
 
 export const OverridingCollectionField = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
   return <OverridingFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
@@ -164,7 +164,7 @@ export const OverridingFieldAction = (props) => {
     });
   }, []);
   return (
-    <RecordProvider_deprecated record={{ ...record, collectionName: parentRecord.name }} parent={parentRecord}>
+    <RecordProvider record={{ ...record, collectionName: parentRecord.name }} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           //@ts-ignore
@@ -218,6 +218,6 @@ export const OverridingFieldAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };

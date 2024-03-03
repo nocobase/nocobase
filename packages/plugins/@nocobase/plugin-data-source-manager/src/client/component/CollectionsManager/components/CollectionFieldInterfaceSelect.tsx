@@ -1,12 +1,7 @@
 import { observer, useForm, useField } from '@formily/react';
 import { Select, Tag } from 'antd';
 import React, { useState } from 'react';
-import {
-  useCompile,
-  useCollectionManager_deprecated,
-  useRecord_deprecated,
-  useFieldInterfaceOptions,
-} from '@nocobase/client';
+import { useCompile, useCollectionManager_deprecated, useRecord, useFieldInterfaceOptions } from '@nocobase/client';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -29,7 +24,7 @@ const getInterfaceOptions = (data, type) => {
 export const CollectionFieldInterfaceSelect = observer(
   (props: any) => {
     const { value, handleFieldChange } = props;
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const { getInterface } = useCollectionManager_deprecated();
     const compile = useCompile();
     const initOptions = useFieldInterfaceOptions();

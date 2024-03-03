@@ -7,7 +7,7 @@ import { useFormBlockContext, useTableSelectorContext } from '../../../block-pro
 import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import {
   GeneralSchemaDesigner,
@@ -52,7 +52,7 @@ export const TableSelectorDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection_deprecated();
   const { dragSort } = field.decoratorProps;
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const variables = useVariables();
   const { currentFormCollection } = useContext(RecordPickerContext);
   const localVariables = useLocalVariables({ collectionName: currentFormCollection });

@@ -8,7 +8,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { useCollectionRecordData } from '../../data-source';
-import { RecordProvider_deprecated } from '../../record-provider';
+import { RecordProvider } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
@@ -137,13 +137,13 @@ export const AddSubFieldAction = () => {
           {t('Add field')}
         </Button>
       </Dropdown>
-      <RecordProvider_deprecated record={{}} parent={recordData}>
+      <RecordProvider record={{}} parent={recordData}>
         <SchemaComponent
           schema={schema}
           components={{ ...components, ArrayTable }}
           scope={{ createOnly: true, useCreateSubField }}
         />
-      </RecordProvider_deprecated>
+      </RecordProvider>
     </ActionContextProvider>
   );
 };

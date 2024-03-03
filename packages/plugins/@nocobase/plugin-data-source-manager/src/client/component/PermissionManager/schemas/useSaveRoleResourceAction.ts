@@ -1,12 +1,12 @@
 import { useForm } from '@formily/react';
 import { useContext } from 'react';
-import { useActionContext, useAPIClient, useRecord_deprecated, useResourceActionContext } from '@nocobase/client';
+import { useActionContext, useAPIClient, useRecord, useResourceActionContext } from '@nocobase/client';
 import { PermissionContext } from '../PermisionProvider';
 
 export const useSaveRoleResourceAction = () => {
   const form = useForm();
   const api = useAPIClient();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { currentDataSource } = useContext(PermissionContext);

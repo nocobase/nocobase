@@ -1,5 +1,5 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { css, useRecord_deprecated } from '@nocobase/client';
+import { css, useRecord } from '@nocobase/client';
 import { useBoolean } from 'ahooks';
 import { DatePicker, Select, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
@@ -55,7 +55,7 @@ const InternalExpiresSelect = (props) => {
 };
 
 const ReadPretty = () => {
-  const { expiresIn, createdAt } = useRecord_deprecated();
+  const { expiresIn, createdAt } = useRecord();
   const { t } = useTranslation();
   const expiresDate = useMemo(() => {
     if (expiresIn === 'never') return t('Never expires');

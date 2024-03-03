@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { useActionContext, useCollectionRecord, useRecord_deprecated, useRequest } from '@nocobase/client';
+import { useActionContext, useCollectionRecord, useRecord, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
 
 export const userCollection = {
@@ -332,7 +332,7 @@ export const usersSchema: ISchema = {
                           'x-decorator': 'Form',
                           'x-decorator-props': {
                             useValues: (options) => {
-                              const record = useRecord_deprecated();
+                              const record = useRecord();
                               const result = useRequest(() => Promise.resolve({ data: record }), {
                                 ...options,
                                 manual: true,

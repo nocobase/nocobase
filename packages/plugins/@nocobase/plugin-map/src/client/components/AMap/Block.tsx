@@ -2,7 +2,7 @@ import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/
 import { RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  RecordProvider_deprecated,
+  RecordProvider,
   css,
   useCollectionManager_deprecated,
   useCollection_deprecated,
@@ -327,9 +327,9 @@ const MapBlockDrawer = (props) => {
   return (
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
-        <RecordProvider_deprecated record={record} parent={parentRecordData}>
+        <RecordProvider record={record} parent={parentRecordData}>
           <RecursionField schema={schema} name={schema.name} />
-        </RecordProvider_deprecated>
+        </RecordProvider>
       </ActionContextProvider>
     )
   );

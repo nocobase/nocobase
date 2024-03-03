@@ -3,7 +3,7 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { SettingsCenterContext } from '../../pm';
-import { useRecord_deprecated } from '../../record-provider';
+import { useRecord } from '../../record-provider';
 import { useStyles } from '../style';
 import { useApp } from '../../application';
 import { useCompile } from '../../schema-component';
@@ -40,7 +40,7 @@ export const SettingCenterProvider = (props) => {
 export const SettingsCenterConfigure = () => {
   const app = useApp();
   const { styles } = useStyles();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const api = useAPIClient();
   const compile = useCompile();
   const settings = app.pluginSettingsManager.getList(false);

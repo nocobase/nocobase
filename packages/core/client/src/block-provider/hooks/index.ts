@@ -20,7 +20,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
-import { useRecord_deprecated } from '../../record-provider';
+import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
@@ -113,7 +113,7 @@ export function useCollectValuesToSubmit() {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord_deprecated();
+  const currentRecord = useRecord();
 
   return useCallback(async () => {
     const { assignedValues: originalAssignedValues = {}, overwriteValues } = actionSchema?.['x-action-settings'] ?? {};
@@ -263,7 +263,7 @@ export const useAssociationCreateActionProps = () => {
   const { fields, getField, getTreeParentField, name } = useCollection_deprecated();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
-  const currentRecord = useRecord_deprecated();
+  const currentRecord = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { getActiveFieldsName } = useFormActiveFields() || {};
@@ -582,7 +582,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionField = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { name, getField } = useCollection_deprecated();
   const localVariables = useLocalVariables();
 
@@ -694,7 +694,7 @@ export const useCustomizeRequestActionProps = () => {
   const form = useForm();
   const { fields, getField } = useCollection_deprecated();
   const { field, resource, __parent, service } = useBlockRequestContext();
-  const currentRecord = useRecord_deprecated();
+  const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();

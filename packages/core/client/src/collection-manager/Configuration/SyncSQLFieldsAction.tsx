@@ -8,7 +8,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, FormProvider, SchemaComponent, useActionContext } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
@@ -94,7 +94,7 @@ const useSyncFromDB = (refreshCMList?: any) => {
   const { refreshCM } = useCollectionManager_deprecated();
   const { refresh } = useResourceActionContext();
   const { targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord_deprecated();
+  const { [targetKey]: filterByTk } = useRecord();
   const api = useAPIClient();
   const field = useField();
   return {
@@ -126,7 +126,7 @@ const useSyncFromDB = (refreshCMList?: any) => {
 export const SyncSQLFieldsAction: React.FC<{
   refreshCMList: any;
 }> = ({ refreshCMList }) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
@@ -140,7 +140,7 @@ export const SyncSQLFieldsAction: React.FC<{
 
   return (
     record.template === 'sql' && (
-      <RecordProvider_deprecated record={record} parent={parentRecordData}>
+      <RecordProvider record={record} parent={parentRecordData}>
         <FormProvider form={form}>
           <ActionContextProvider value={{ visible, setVisible }}>
             <Button icon={<SyncOutlined />} onClick={(e) => setVisible(true)}>
@@ -156,7 +156,7 @@ export const SyncSQLFieldsAction: React.FC<{
             />
           </ActionContextProvider>
         </FormProvider>
-      </RecordProvider_deprecated>
+      </RecordProvider>
     )
   );
 };

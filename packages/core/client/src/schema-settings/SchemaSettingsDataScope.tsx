@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import React, { FC, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DatePickerProvider, useCollectionManager_deprecated, useRecord_deprecated } from '..';
+import { DatePickerProvider, useCollectionManager_deprecated, useRecord } from '..';
 import { useFormBlockContext } from '../block-provider';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { FlagProvider, useFlag } from '../flag-provider';
@@ -15,7 +15,7 @@ import { SchemaSettingsModalItem } from './SchemaSettings';
 export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeConfigure(props) {
   const { t } = useTranslation();
   const { getFields } = useCollectionFilterOptionsV2(props.collectionName);
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { form } = useFormBlockContext();
   const variables = useVariables();
   const localVariables = useLocalVariables();

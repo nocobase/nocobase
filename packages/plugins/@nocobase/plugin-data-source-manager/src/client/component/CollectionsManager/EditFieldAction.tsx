@@ -11,8 +11,8 @@ import {
   useAPIClient,
   IField,
   useRequest,
-  RecordProvider_deprecated,
-  useRecord_deprecated,
+  RecordProvider,
+  useRecord,
   ActionContextProvider,
   SchemaComponent,
   useActionContext,
@@ -144,7 +144,7 @@ const useUpdateCollectionField = () => {
   const { refresh } = useResourceActionContext();
   const { targetCollection } = useRemoteCollectionContext();
   const { name: dataSourceKey } = useParams();
-  const { name: filterByTk } = useRecord_deprecated();
+  const { name: filterByTk } = useRecord();
   const dm = useDataSourceManager();
   return {
     async run() {
@@ -170,7 +170,7 @@ const useUpdateCollectionField = () => {
 };
 
 export const EditCollectionField = (props) => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
   return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
@@ -212,7 +212,7 @@ const EditFieldAction = (props) => {
     );
   }, [record.name]);
   return (
-    <RecordProvider_deprecated record={record} parent={parentRecord}>
+    <RecordProvider record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -263,6 +263,6 @@ const EditFieldAction = (props) => {
           }}
         />
       </ActionContextProvider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };

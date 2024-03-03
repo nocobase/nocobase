@@ -3,7 +3,7 @@ import { SchemaComponent } from '@nocobase/client';
 import { Card, message } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { observer, useForm } from '@formily/react';
-import { useRecord_deprecated, FormItem, Input } from '@nocobase/client';
+import { useRecord, FormItem, Input } from '@nocobase/client';
 import { lang, useSamlTranslation } from './locale';
 import { getSubAppName } from '@nocobase/sdk';
 
@@ -70,7 +70,7 @@ const schema = {
 
 const Usage = observer(() => {
   const form = useForm();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { t } = useSamlTranslation();
 
   const app = getSubAppName() || 'main';

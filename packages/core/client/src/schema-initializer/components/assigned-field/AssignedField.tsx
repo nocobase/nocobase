@@ -10,7 +10,7 @@ import {
   useCollectionFilterOptions,
   useCollectionManager_deprecated,
 } from '../../../collection-manager';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 import { useCompile, useComponent } from '../../../schema-component';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { Option } from '../../../schema-settings/VariableInput/type';
@@ -98,7 +98,7 @@ export const AssignedField = (props: AssignedFieldProps) => {
   const collection = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const fieldSchema = useFieldSchema();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const currentFormFields = useCollectionFilterOptions(collection);

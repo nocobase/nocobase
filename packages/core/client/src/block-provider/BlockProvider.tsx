@@ -18,7 +18,7 @@ import {
   useCollectionParentRecord,
   useCollectionParentRecordData,
   useCollectionRecord,
-  useRecord_deprecated,
+  useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
 import {
@@ -27,7 +27,7 @@ import {
   useCollection_deprecated,
 } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
-import { RecordProvider_deprecated, useRecordIndex } from '../record-provider';
+import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
 
@@ -129,9 +129,9 @@ export const BlockRequestProvider_deprecated = (props) => {
       }}
     >
       {/* 用于兼容旧版 record.__parent 的写法 */}
-      <RecordProvider_deprecated isNew={record?.isNew} record={record?.data} parent={parentRecord?.data}>
+      <RecordProvider isNew={record?.isNew} record={record?.data} parent={parentRecord?.data}>
         {props.children}
-      </RecordProvider_deprecated>
+      </RecordProvider>
     </BlockRequestContext_deprecated.Provider>
   );
 };
@@ -273,7 +273,7 @@ export const useBlockAssociationContext = () => {
 export const useFilterByTk = () => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const collection = useCollection_deprecated();
   const { getCollectionField } = useCollectionManager_deprecated();
   const assoc = useBlockAssociationContext();
@@ -297,7 +297,7 @@ export const useFilterByTk = () => {
  * @returns
  */
 export const useSourceIdFromRecord = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { getCollectionField } = useCollectionManager_deprecated();
   const association = useBlockAssociationContext();
   if (association) {
@@ -322,7 +322,7 @@ export const useSourceIdFromParentRecord = () => {
 
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
@@ -353,7 +353,7 @@ export const useParamsFromRecord = () => {
 
 export const RecordLink = (props) => {
   const field = useField();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { title, to, ...others } = props;
   const compiled = template(to || '');
   return (

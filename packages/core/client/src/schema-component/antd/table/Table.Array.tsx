@@ -17,7 +17,7 @@ import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
 import {
   RecordIndexProvider,
-  RecordProvider_deprecated,
+  RecordProvider,
   useCollectionParentRecordData,
   useCollectionRecordData,
   useRequest,
@@ -55,9 +55,9 @@ const useTableColumns = () => {
             <RecordIndexProvider index={index}>
               {/* fix https://nocobase.height.app/T-3232/description */}
               {/* 如果作为关系表格区块，则 parentRecordData 应该有值；如果作为普通表格使用（如数据源管理页面的表格）则应该使用 recordData，且 parentRecordData 为空 */}
-              <RecordProvider_deprecated record={record} parent={parentRecordData || recordData}>
+              <RecordProvider record={record} parent={parentRecordData || recordData}>
                 <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
-              </RecordProvider_deprecated>
+              </RecordProvider>
             </RecordIndexProvider>
           );
         },

@@ -142,7 +142,7 @@ export function transformValue(
 
 /**
  * 判断一个 record 是否是从数据库中获取的，如果是则返回 true，否则返回 false
- * @param value useRecord_deprecated  返回的值
+ * @param value useRecord  返回的值
  * @returns boolean
  */
 export function isFromDatabase(value: Record<string, any>) {

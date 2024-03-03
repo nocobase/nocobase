@@ -5,7 +5,7 @@ import {
   SchemaComponent,
   SchemaComponentContext,
   SettingCenterPermissionProvider,
-  useRecord_deprecated,
+  useRecord,
 } from '@nocobase/client';
 import { dataSourceSchema } from './schemas/dataSourceTable';
 import { PermissionProvider } from './PermisionProvider';
@@ -30,7 +30,7 @@ export const useAvailableActions = () => {
 };
 
 export const DataSourceTable = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   console.log(record.key);
   return (
     <div>

@@ -9,12 +9,7 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
-import {
-  CollectionProvider_deprecated,
-  RecordProvider_deprecated,
-  useFormBlockContext,
-  useCollectionRecordData,
-} from '../../../';
+import { CollectionProvider_deprecated, RecordProvider, useFormBlockContext, useCollectionRecordData } from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -175,7 +170,7 @@ export const InternalPicker = observer(
             />
           </div>
           {isAllowAddNew && (
-            <RecordProvider_deprecated isNew record={null} parent={recordData}>
+            <RecordProvider isNew record={null} parent={recordData}>
               <RecursionField
                 onlyRenderProperties
                 basePath={field.address}
@@ -184,7 +179,7 @@ export const InternalPicker = observer(
                   return s['x-component'] === 'Action';
                 }}
               />
-            </RecordProvider_deprecated>
+            </RecordProvider>
           )}
         </Input.Group>
         <ActionContextProvider

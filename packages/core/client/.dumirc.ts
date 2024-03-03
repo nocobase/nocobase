@@ -179,10 +179,10 @@ export default defineConfig({
           title: 'DataBlock',
           type: 'group',
           children: [
-            {
-              title: '临时',
-              link: '/core/data-block/tmp',
-            },
+            // {
+            //   title: '临时',
+            //   link: '/core/data-block/tmp',
+            // },
             {
               title: 'Record',
               link: '/core/data-block/collection-record',

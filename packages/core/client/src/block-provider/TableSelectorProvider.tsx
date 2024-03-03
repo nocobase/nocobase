@@ -7,7 +7,7 @@ import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
-import { RecordProvider_deprecated, useRecord_deprecated } from '../record-provider';
+import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
@@ -55,7 +55,7 @@ const InternalTableSelectorProvider = (props) => {
   //   return <Spin />;
   // }
   return (
-    <RecordProvider_deprecated record={{}} parent={parentRecordData}>
+    <RecordProvider record={{}} parent={parentRecordData}>
       <TableSelectorContext.Provider
         value={{
           field,
@@ -72,7 +72,7 @@ const InternalTableSelectorProvider = (props) => {
       >
         <RenderChildrenWithAssociationFilter {...props} />
       </TableSelectorContext.Provider>
-    </RecordProvider_deprecated>
+    </RecordProvider>
   );
 };
 
@@ -143,7 +143,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { getCollection } = useCollectionManager_deprecated();
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');

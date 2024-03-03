@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 import { VariableInput, getShouldChange } from '../../../schema-settings';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useDesignable } from '../../hooks';
@@ -57,7 +57,7 @@ export const filterFormItemSettings = new SchemaSettings({
         const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
         const { getField } = useCollection_deprecated();
         const { form } = useFormBlockContext();
-        const record = useRecord_deprecated();
+        const record = useRecord();
         const field = useField();
         const fieldSchema = useFieldSchema();
         const collectionField =

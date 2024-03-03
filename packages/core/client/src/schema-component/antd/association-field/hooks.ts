@@ -8,7 +8,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 import { useParseDataScopeFilter } from '../../../schema-settings';
 import { DEBOUNCE_WAIT } from '../../../variables';
 import { getPath } from '../../../variables/utils/getPath';
@@ -53,7 +53,7 @@ export default function useServiceOptions(props) {
   const field = useField();
   const { getField } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const { parseFilter, findVariable } = useParseDataScopeFilter();
   const [fieldServiceFilter, setFieldServiceFilter] = useState(null);
 
@@ -186,7 +186,7 @@ export const SubFormProvider = SubFormContext.Provider;
  *
  * ## 为什么要有这个方法？
  * 1. 目前使用 useForm 方法获取到的是普通表单区块的 form 对象，无法通过简单的方法获取到子表单对应的 form 对象；
- * 2. 虽然现在 useRecord_deprecated  也可以获取到相同值的对象，但是这个对象不是响应式的（因其内部 copy 过一次），字段值变更时无法监听到；
+ * 2. 虽然现在 useRecord  也可以获取到相同值的对象，但是这个对象不是响应式的（因其内部 copy 过一次），字段值变更时无法监听到；
  * 3. 可能更好的方式是在 useForm 返回的 form 对象添加一个 parent 属性，但可能会影响其它部分的代码，所以暂时不做修改；
  * @returns
  */

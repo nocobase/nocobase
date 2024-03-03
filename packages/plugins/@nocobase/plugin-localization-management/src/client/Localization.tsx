@@ -11,7 +11,7 @@ import {
   locale,
   useAPIClient,
   useActionContext,
-  useRecord_deprecated,
+  useRecord,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
@@ -28,7 +28,7 @@ const useUpdateTranslationAction = () => {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { targetKey } = useResourceContext();
-  const { [targetKey]: textId } = useRecord_deprecated();
+  const { [targetKey]: textId } = useRecord();
   const api = useAPIClient();
   const locale = api.auth.getLocale();
   return {
@@ -60,7 +60,7 @@ const useUpdateTranslationAction = () => {
 const useDestroyTranslationAction = () => {
   const { refresh } = useResourceActionContext();
   const api = useAPIClient();
-  const { translationId: filterByTk } = useRecord_deprecated();
+  const { translationId: filterByTk } = useRecord();
   return {
     async run() {
       await api.resource('localizationTranslations').destroy({ filterByTk });

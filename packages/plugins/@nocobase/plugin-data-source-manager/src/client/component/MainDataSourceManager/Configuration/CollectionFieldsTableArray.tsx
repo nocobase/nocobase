@@ -3,11 +3,11 @@ import { ArrayField, Field } from '@formily/core';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import {
   RecordIndexProvider,
-  RecordProvider_deprecated,
+  RecordProvider,
   SchemaComponent,
   useCollectionManager_deprecated,
   useCompile,
-  useRecord_deprecated,
+  useRecord,
   useRequest,
   useSchemaInitializerRender,
 } from '@nocobase/client';
@@ -83,7 +83,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
   (props) => {
     const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
     const field = useField<ArrayField>();
-    const recordData = useRecord_deprecated();
+    const recordData = useRecord();
     const { name } = recordData;
     const { t } = useTranslation();
     const compile = useCompile();
@@ -175,9 +175,9 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
               const index = findIndex(field.value, record);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider_deprecated record={record} parent={recordData}>
+                  <RecordProvider record={record} parent={recordData}>
                     <RecursionField schema={s} name={index} onlyRenderProperties />
-                  </RecordProvider_deprecated>
+                  </RecordProvider>
                 </RecordIndexProvider>
               );
             },
@@ -206,14 +206,14 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
               const index = findIndex(field.value, record);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider_deprecated record={record} parent={recordData}>
+                  <RecordProvider record={record} parent={recordData}>
                     <SchemaComponent
                       scope={{ currentCollection: name }}
                       schema={overridingSchema as Schema}
                       name={index}
                       onlyRenderProperties
                     />
-                  </RecordProvider_deprecated>
+                  </RecordProvider>
                 </RecordIndexProvider>
               );
             },

@@ -18,7 +18,7 @@ interface Props {
   collectionField: CollectionFieldOptions_deprecated;
   form: Form;
   /**
-   * `useRecord_deprecated ` 返回的值
+   * `useRecord ` 返回的值
    */
   record?: Record<string, any>;
   /**

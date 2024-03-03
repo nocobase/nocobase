@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
 import { observer, useForm, useField } from '@formily/react';
 import { useParams } from 'react-router-dom';
-import { useRecord_deprecated, useCompile, useAPIClient, useCollectionManager_deprecated } from '@nocobase/client';
+import { useRecord, useCompile, useAPIClient, useCollectionManager_deprecated } from '@nocobase/client';
 import { useRemoteCollectionContext } from '../CollectionFields';
 
 const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
@@ -10,7 +10,7 @@ const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
 export const SourceKey = observer(
   (props: any) => {
     const { name: dataSourceKey } = useParams();
-    const { collectionName, sourceKey, name } = useRecord_deprecated();
+    const { collectionName, sourceKey, name } = useRecord();
     const field: any = useField();
     const compile = useCompile();
     const { getCollection } = useCollectionManager_deprecated();
@@ -48,7 +48,7 @@ export const ForeignKey = observer(
     const api = useAPIClient();
     const [options, setOptions] = useState([]);
     const { name: dataSourceKey } = useParams();
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const field: any = useField();
     const { collectionName, target, type, through, name } = record;
     const value = record[field.props.name];
@@ -137,7 +137,7 @@ export const ForeignKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { targetKey, target, type } = useRecord_deprecated();
+    const { targetKey, target, type } = useRecord();
     const { name: dataSourceKey } = useParams();
     const { getCollection } = useCollectionManager_deprecated();
     const api = useAPIClient();
@@ -242,7 +242,7 @@ export const ThroughCollection = observer(
     const { name: dataSourceKey } = useParams();
     const field: any = useField();
     const { getCollections } = useCollectionManager_deprecated(dataSourceKey);
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const value = record[field.props.name];
 
     const loadCollections = () => {

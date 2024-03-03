@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../../collection-manager';
-import { useRecord_deprecated } from '../../../../record-provider';
+import { useRecord } from '../../../../record-provider';
 import { removeNullCondition, useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { DynamicComponentProps } from '../../../../schema-component/antd/filter/DynamicComponent';
@@ -219,7 +219,7 @@ const setTheDataScope: any = {
     const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const { getField } = useCollection_deprecated();
     const { form } = useFormBlockContext();
-    const record = useRecord_deprecated();
+    const record = useRecord();
     const field = useField();
     const { fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
     const schema = useFieldSchema();

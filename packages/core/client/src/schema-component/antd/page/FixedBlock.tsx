@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { useRecord_deprecated } from '../../../record-provider';
+import { useRecord } from '../../../record-provider';
 
 const FixedBlockContext = React.createContext<{
   setFixedBlock: (value: string | false) => void;
@@ -40,7 +40,7 @@ export const useFixedBlock = () => {
 export const FixedBlockWrapper: React.FC = (props) => {
   const fixedBlock = useFixedSchema();
   const { height, fixedBlockUID } = useFixedBlock();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const isPopup = Object.keys(record).length;
   if (isPopup) {
     return <>{props.children}</>;

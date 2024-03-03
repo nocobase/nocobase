@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import {
-  RecordProvider_deprecated,
+  RecordProvider,
   SchemaComponentOptions,
   useCreateActionProps as useCAP,
   useCollectionParentRecordData,
@@ -112,7 +112,7 @@ export const Kanban: any = observer(
             const cardIndex = column?.cards?.indexOf(card);
             return (
               schemas.card && (
-                <RecordProvider_deprecated record={card} parent={parentRecordData}>
+                <RecordProvider record={card} parent={parentRecordData}>
                   <KanbanCardContext.Provider
                     value={{
                       setDisableCardDrag,
@@ -127,7 +127,7 @@ export const Kanban: any = observer(
                   >
                     <RecursionField name={schemas.card.name} schema={schemas.card} />
                   </KanbanCardContext.Provider>
-                </RecordProvider_deprecated>
+                </RecordProvider>
               )
             );
           }}

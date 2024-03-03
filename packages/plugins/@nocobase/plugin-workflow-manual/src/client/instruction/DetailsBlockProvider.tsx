@@ -4,7 +4,7 @@ import {
   BlockRequestContext_deprecated,
   CollectionProvider_deprecated,
   FormBlockContext,
-  RecordProvider_deprecated,
+  RecordProvider,
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
@@ -66,7 +66,7 @@ export function DetailsBlockProvider(props) {
 
   return (
     <CollectionProvider_deprecated collection={props.collection}>
-      <RecordProvider_deprecated record={values} parent={null}>
+      <RecordProvider record={values} parent={null}>
         <BlockRequestContext_deprecated.Provider value={{ block: 'form', field, service, resource, __parent }}>
           <FormBlockContext.Provider
             value={{
@@ -81,7 +81,7 @@ export function DetailsBlockProvider(props) {
             {props.children}
           </FormBlockContext.Provider>
         </BlockRequestContext_deprecated.Provider>
-      </RecordProvider_deprecated>
+      </RecordProvider>
     </CollectionProvider_deprecated>
   );
 }

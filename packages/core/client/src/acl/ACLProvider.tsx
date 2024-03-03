@@ -8,7 +8,7 @@ import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
-import { useRecord_deprecated } from '../record-provider';
+import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 import { useApp } from '../application';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
@@ -213,7 +213,7 @@ export const useACLActionParamsContext = () => {
 
 export const useRecordPkValue = () => {
   const { getPrimaryKey } = useCollection_deprecated();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const primaryKey = getPrimaryKey();
   return record?.[primaryKey];
 };

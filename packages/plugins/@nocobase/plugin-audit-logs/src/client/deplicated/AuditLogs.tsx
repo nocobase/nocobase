@@ -7,7 +7,7 @@ import {
   TableBlockProvider,
   useCollection_deprecated,
   useCompile,
-  useRecord_deprecated,
+  useRecord,
 } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
 import { AuditLogsDesigner } from './AuditLogsDesigner';
@@ -462,7 +462,7 @@ export const AuditLogs: any = () => {
 AuditLogs.Decorator = observer(
   (props: any) => {
     const parent = useCollection_deprecated();
-    const record = useRecord_deprecated();
+    const record = useRecord();
     let filter = props?.params?.filter;
     if (parent.name) {
       const filterByTk = record?.[parent.filterTargetKey || 'id'];

@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 import {
   useAPIClient,
   SchemaComponentOptions,
-  useRecord_deprecated,
+  useRecord,
   useAttach,
   ResourceActionContext,
   ResourceActionProvider,
@@ -48,7 +48,7 @@ export const CollectionFields = () => {
   const service = useContext(ResourceActionContext);
   const collectionResource = useResourceContext();
   const { targetKey } = collectionResource || {};
-  const targetCollection = useRecord_deprecated();
+  const targetCollection = useRecord();
   const { [targetKey]: filterByTk, titleField: targetField, name } = targetCollection;
   const [titleField, setTitleField] = useState(targetField);
   const useDataSource = (options) => {

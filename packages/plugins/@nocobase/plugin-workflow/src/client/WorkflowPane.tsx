@@ -1,4 +1,4 @@
-import { SchemaComponent, SchemaComponentContext, usePlugin, useRecord_deprecated } from '@nocobase/client';
+import { SchemaComponent, SchemaComponentContext, usePlugin, useRecord } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext, useEffect } from 'react';
 import { ExecutionLink } from './ExecutionLink';
@@ -13,7 +13,7 @@ import { useField, useFormEffects } from '@formily/react';
 
 function SyncOptionSelect(props) {
   const field = useField<any>();
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const workflowPlugin = usePlugin(WorkflowPlugin);
 
   useFormEffects((form) => {

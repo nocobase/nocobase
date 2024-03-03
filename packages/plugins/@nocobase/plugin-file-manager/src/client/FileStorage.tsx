@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { ActionContext, SchemaComponent, useCompile, usePlugin, useRecord_deprecated } from '@nocobase/client';
+import { ActionContext, SchemaComponent, useCompile, usePlugin, useRecord } from '@nocobase/client';
 import { Button, Card, Dropdown } from 'antd';
 import _ from 'lodash';
 import React, { useState } from 'react';
@@ -83,7 +83,7 @@ export const CreateStorage = () => {
 };
 
 export const EditStorage = () => {
-  const record = useRecord_deprecated();
+  const record = useRecord();
   const [schema, setSchema] = useState({});
   const plugin = usePlugin(FileManagerPlugin);
   const compile = useCompile();

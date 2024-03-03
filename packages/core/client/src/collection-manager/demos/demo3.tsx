@@ -5,7 +5,7 @@ import {
   CollectionFieldProvider,
   CollectionProvider_deprecated,
   compose,
-  RecordProvider_deprecated,
+  RecordProvider,
   useCollectionField_deprecated,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
@@ -41,7 +41,7 @@ const providers = [
   // API 客户端
   [APIClientProvider, { apiClient }],
   // 提供当前数据表行记录的上下文
-  [RecordProvider_deprecated, { record }],
+  [RecordProvider, { record }],
   // 提供数据表配置的上下文
   [CollectionProvider_deprecated, { collection }],
   // 提供字段配置上的下文
