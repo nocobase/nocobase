@@ -176,7 +176,7 @@ export class SnapshotFieldInterface extends CollectionFieldInterface {
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
         multiple: true,
-        useCollection_deprecated: useRecordCollection,
+        useCollection: useRecordCollection,
       },
       'x-reactions': [
         {
