@@ -1,8 +1,8 @@
-import React, { FC, useMemo } from 'react';
+import React, { FC, memo, useMemo } from 'react';
 
-import { SchemaInitializerItemType } from '../types';
-import { SchemaInitializerItemContext } from '../context';
 import { useFindComponent } from '../../../schema-component';
+import { SchemaInitializerItemContext } from '../context';
+import { SchemaInitializerItemType } from '../types';
 export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType[] }> = (props) => {
   const { children } = props;
   if (!children) return null;
@@ -28,7 +28,7 @@ const typeComponentMap: Record<string, string> = {
 const useChildrenDefault = () => undefined;
 const useVisibleDefault = () => true;
 const useComponentPropsDefault = () => undefined;
-export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => {
+export const SchemaInitializerChild: FC<SchemaInitializerItemType> = memo((props) => {
   const {
     type,
     Component,
@@ -37,7 +37,7 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => 
     useVisible = useVisibleDefault,
     useChildren = useChildrenDefault,
     useComponentProps = useComponentPropsDefault,
-    checkChildrenLength,
+    hideIfNoChildren,
     componentProps,
     sort: _unUse,
     ...others
@@ -67,7 +67,7 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => 
   if (!C) {
     return null;
   }
-  if (checkChildrenLength && Array.isArray(componentChildren) && componentChildren.length === 0) {
+  if (hideIfNoChildren && Array.isArray(componentChildren) && componentChildren.length === 0) {
     return null;
   }
 
@@ -78,4 +78,5 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => 
       </C>
     </SchemaInitializerItemContext.Provider>
   );
-};
+});
+SchemaInitializerChild.displayName = 'SchemaInitializerChild';

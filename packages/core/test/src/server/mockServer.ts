@@ -179,7 +179,7 @@ export class MockServer extends Application {
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const oldDatabase = this._db;
+    const oldDatabase = this.db;
 
     const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
     const database = mockDatabase(databaseOptions);
@@ -239,21 +239,17 @@ export async function createMockServer(
 ) {
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
   const app = mockServer(others);
-  try {
-    if (!skipInstall) {
-      if (beforeInstall) {
-        await beforeInstall(app);
-      }
-      await app.runCommand('install', '-f');
+  if (!skipInstall) {
+    if (beforeInstall) {
+      await beforeInstall(app);
     }
-    if (version) {
-      await app.version.update(version);
-    }
-    if (!skipStart) {
-      await app.runCommand('start');
-    }
-  } catch (e) {
-    throw e;
+    await app.runCommandThrowError('install', '-f');
+  }
+  if (version) {
+    await app.version.update(version);
+  }
+  if (!skipStart) {
+    await app.runCommandThrowError('start');
   }
 
   return app;

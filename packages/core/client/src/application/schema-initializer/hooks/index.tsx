@@ -5,33 +5,38 @@ import { useApp } from '../../hooks';
 import { SchemaInitializerChild, SchemaInitializerItems } from '../components';
 import { SchemaInitializerButton } from '../components/SchemaInitializerButton';
 import { withInitializer } from '../hoc';
-import { SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
+import { SchemaInitializerOptions } from '../types';
 
 export * from './useAriaAttributeOfMenuItem';
 
 export function useSchemaInitializerMenuItems(items: any[], name?: string, onClick?: (args: any) => void) {
+  const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
+  return getMenuItems(items, name);
+}
+
+export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) {
   const compile = useCompile();
 
   const getMenuItems = useCallback(
-    (items: SchemaInitializerItemType[], parentKey: string) => {
+    (items: any[], parentKey: string) => {
       if (!items?.length) {
         return [];
       }
       return items.map((item: any, indexA) => {
         const ItemComponent = item.component || item.Component;
         let element: ReactNode;
-        const compiledTitle = item.title ? compile(item.title) : undefined;
+        const compiledTitle = item.title || item.label ? compile(item.title || item.label) : undefined;
         if (ItemComponent) {
           element = React.createElement(SchemaInitializerChild, { ...item, title: compiledTitle });
           if (!element) return;
         }
 
         if (item.type === 'divider') {
-          return { type: 'divider', key: `divider-${indexA}` };
+          return { type: 'divider', key: item.key || `divider-${indexA}` };
         }
         if (item.type === 'item' && ItemComponent) {
           if (!item.key) {
-            item.key = `${item.title}-${indexA}`;
+            item.key = `${compiledTitle}-${indexA}`;
           }
           return {
             key: item.key,
@@ -39,8 +44,8 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
           };
         }
         if (item.type === 'itemGroup') {
-          const label = typeof item.title === 'string' ? compiledTitle : item.title;
-          const key = `${parentKey}-item-group-${indexA}`;
+          const label = typeof compiledTitle === 'string' ? compiledTitle : item.title;
+          const key = item.key || `${parentKey}-item-group-${indexA}`;
           return {
             type: 'group',
             key,
@@ -51,7 +56,7 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
         }
         if (item.type === 'subMenu') {
           const label = compiledTitle;
-          const key = `${parentKey}-sub-menu-${indexA}`;
+          const key = item.key || item.name || `${parentKey}-sub-menu-${indexA}`;
           return {
             key,
             label,
@@ -64,7 +69,7 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
         }
 
         const label = element || compiledTitle || item.label;
-        const key = `${parentKey}-${item.title}-${indexA}`;
+        const key = item.key || `${parentKey}-${compiledTitle}-${indexA}`;
         return {
           key,
           label,
@@ -82,7 +87,7 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
     [compile, onClick],
   );
 
-  return getMenuItems(items, name);
+  return getMenuItems;
 }
 
 const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo((options) => {
@@ -107,6 +112,7 @@ export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
   options?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>,
 ) {
   const app = useApp();
+  const renderCache = React.useRef<Record<string, React.FunctionComponentElement<any>>>({});
   const initializer = useMemo(
     () => app.schemaInitializerManager.get<P1, P2>(name),
     [app.schemaInitializerManager, name],
@@ -128,8 +134,17 @@ export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
     }
     return {
       exists: true,
-      render: (props?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>) =>
-        React.createElement(InitializerComponent, { ...initializer.options, ...options, ...props }),
+      render: (props?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>) => {
+        const key = JSON.stringify(props) || '{}';
+        if (renderCache.current[key]) {
+          return renderCache.current[key];
+        }
+        return (renderCache.current[key] = React.createElement(InitializerComponent, {
+          ...initializer.options,
+          ...options,
+          ...props,
+        }));
+      },
     };
   }, [initializer, name, options]);
 

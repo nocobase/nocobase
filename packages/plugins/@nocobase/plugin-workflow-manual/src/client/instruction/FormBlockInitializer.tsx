@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {
-  CollectionProvider,
+  CollectionProvider_deprecated,
   SchemaInitializerItem,
   SchemaInitializerItemType,
   createFormBlockSchema,
@@ -46,8 +46,12 @@ function InternalFormBlockInitializer({ schema, ...others }) {
     delete result['x-acl-action-props'];
     delete result['x-acl-action'];
     const [formKey] = Object.keys(result.properties);
-    result.properties[formKey].properties.actions['x-decorator'] = 'ActionBarProvider';
-    result.properties[formKey].properties.actions['x-component-props'].style = {
+    //获取actionBar的schemakey
+    const actionKey =
+      Object.entries(result.properties[formKey].properties).find(([key, f]) => f['x-component'] === 'ActionBar')?.[0] ||
+      'actions';
+    result.properties[formKey].properties[actionKey]['x-decorator'] = 'ActionBarProvider';
+    result.properties[formKey].properties[actionKey]['x-component-props'].style = {
       marginTop: '1.5em',
       flexWrap: 'wrap',
     };
@@ -65,8 +69,11 @@ function InternalFormBlockInitializer({ schema, ...others }) {
 export function FormBlockInitializer() {
   const itemConfig = useSchemaInitializerItem();
   return (
-    <CollectionProvider collection={itemConfig.schema?.collection}>
+    <CollectionProvider_deprecated
+      dataSource={itemConfig.schema?.dataSource}
+      collection={itemConfig.schema?.collection}
+    >
       <InternalFormBlockInitializer {...itemConfig} />
-    </CollectionProvider>
+    </CollectionProvider_deprecated>
   );
 }

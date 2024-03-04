@@ -43,11 +43,14 @@ const myInitializer = new SchemaInitializer({
   Component: MyInitializerComponent,
 });
 
-const AddBlockButton = observer(() => {
-  const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializerRender(fieldSchema['x-initializer']);
-  return render();
-});
+const AddBlockButton = observer(
+  () => {
+    const fieldSchema = useFieldSchema();
+    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer']);
+    return render();
+  },
+  { displayName: 'AddBlockButton' },
+);
 
 const Page = observer(
   (props) => {

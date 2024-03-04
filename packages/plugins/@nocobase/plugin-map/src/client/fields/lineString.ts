@@ -1,17 +1,16 @@
-import { IField } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
-import { commonSchema } from './schema';
+import { CommonSchema } from './schema';
 
-export const lineString: IField = {
-  name: 'lineString',
-  type: 'object',
-  group: 'map',
-  order: 2,
-  title: generateNTemplate('Line'),
-  description: generateNTemplate('Line'),
-  availableTypes: ['lineString'],
-  sortable: true,
-  default: {
+export class LineStringFieldInterface extends CommonSchema {
+  name = 'lineString';
+  type = 'object';
+  group = 'map';
+  order = 2;
+  title = generateNTemplate('Line');
+  description = generateNTemplate('Line');
+  availableTypes = ['lineString'];
+  sortable = true;
+  default = {
     type: 'lineString',
     uiSchema: {
       type: 'void',
@@ -19,6 +18,5 @@ export const lineString: IField = {
       'x-component-designer': 'Map.Designer',
       'x-component-props': {},
     },
-  },
-  ...commonSchema,
-};
+  };
+}

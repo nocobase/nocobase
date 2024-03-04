@@ -8,11 +8,13 @@ export default [
     createdBy: true,
     updatedBy: true,
     sortable: true,
+    template: 'general',
   },
   {
     key: '1s4aq7jbxdh',
     name: 'roles',
     title: '{{t("Roles")}}',
+    template: 'general',
     inherit: false,
     fields: [
       {
@@ -149,6 +151,7 @@ export default [
     key: 'nhng5sgypw8',
     name: 't_j6omof6tza8',
     title: '任务',
+    template: 'general',
     inherit: false,
     fields: [
       {
@@ -587,6 +590,7 @@ export default [
   {
     key: 'nlxapox70a3',
     name: 't_ab12qiwruwk',
+    template: 'general',
     title: null,
     inherit: true,
     fields: [
@@ -680,6 +684,7 @@ export default [
     key: 'oftbzt8nm2o',
     name: 'users',
     title: '{{t("Users")}}',
+    template: 'general',
     inherit: false,
     fields: [
       {
@@ -862,6 +867,7 @@ export default [
     key: 'tyztw0ulriv',
     name: 't_94rsj6kbzvn',
     title: '迭代',
+    template: 'general',
     inherit: false,
     fields: [
       {
@@ -969,6 +975,7 @@ export default [
   },
   {
     key: 'vv8umfa9592',
+    template: 'general',
     name: 'test_sheet',
     title: '测试表',
     inherit: false,

@@ -1,12 +1,12 @@
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
-import { onFieldChange, FormPath } from '@formily/core';
+import { onFieldChange } from '@formily/core';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
 import { isFunction } from 'mathjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RecordProvider, useAPIClient } from '../../../';
+import { RecordProvider, useAPIClient, useCollectionRecordData } from '../../../';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -58,6 +58,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const api = useAPIClient();
   const resource = api.resource(collectionField.target);
   const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter);
+  const recordData = useCollectionRecordData();
   useEffect(() => {
     const initValue = isVariable(field.value) ? undefined : field.value;
     const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
@@ -134,7 +135,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
         ></RemoteSelect>
 
         {(addMode === 'modalAdd' || isAllowAddNew) && (
-          <RecordProvider record={null}>
+          <RecordProvider isNew={true} record={null} parent={recordData}>
             <RecursionField
               onlyRenderProperties
               basePath={field.address}

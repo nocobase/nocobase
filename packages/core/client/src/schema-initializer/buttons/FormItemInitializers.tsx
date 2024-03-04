@@ -1,19 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerChildren } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useCompile } from '../../schema-component';
 import {
-  gridRowColWrap,
   useAssociatedFormItemInitializerFields,
   useFilterAssociatedFormItemInitializerFields,
-  useFilterFormItemInitializerFields,
   useFilterInheritsFormItemInitializerFields,
-  useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
 
-const ParentCollectionFields = () => {
+export const ParentCollectionFields = () => {
   const inheritFields = useInheritsFormItemInitializerFields();
   const { t } = useTranslation();
   const compile = useCompile();
@@ -31,7 +27,7 @@ const ParentCollectionFields = () => {
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
-const AssociatedFields = () => {
+export const AssociatedFields = () => {
   const associationFields = useAssociatedFormItemInitializerFields({
     readPretty: true,
     block: 'Form',
@@ -47,49 +43,6 @@ const AssociatedFields = () => {
   ];
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
-
-// 表单里配置字段
-export const formItemInitializers = new SchemaInitializer({
-  name: 'FormItemInitializers',
-  wrap: gridRowColWrap,
-  icon: 'SettingOutlined',
-  title: '{{t("Configure fields")}}',
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'displayFields',
-      title: '{{t("Display fields")}}',
-      useChildren: useFormItemInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: ParentCollectionFields,
-    },
-    {
-      name: 'associationFields',
-      Component: AssociatedFields,
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      name: 'addText',
-      title: '{{t("Add text")}}',
-      Component: 'BlockItemInitializer',
-      schema: {
-        type: 'void',
-        'x-editable': false,
-        'x-decorator': 'FormItem',
-        'x-designer': 'Markdown.Void.Designer',
-        'x-component': 'Markdown.Void',
-        'x-component-props': {
-          content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
-        },
-      },
-    },
-  ],
-});
 
 export const FilterParentCollectionFields = () => {
   const inheritFields = useFilterInheritsFormItemInitializerFields();
@@ -123,45 +76,3 @@ export const FilterAssociatedFields = () => {
   ];
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
-
-export const filterFormItemInitializers = new SchemaInitializer({
-  name: 'FilterFormItemInitializers',
-  wrap: gridRowColWrap,
-  icon: 'SettingOutlined',
-  title: '{{t("Configure fields")}}',
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'displayFields',
-      title: '{{t("Display fields")}}',
-      useChildren: useFilterFormItemInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: FilterParentCollectionFields,
-    },
-    {
-      name: 'associationFields',
-      Component: FilterAssociatedFields,
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      title: '{{t("Add text")}}',
-      Component: 'BlockItemInitializer',
-      name: 'addText',
-      schema: {
-        type: 'void',
-        'x-editable': false,
-        'x-decorator': 'FormItem',
-        'x-designer': 'Markdown.Void.Designer',
-        'x-component': 'Markdown.Void',
-        'x-component-props': {
-          content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
-        },
-      },
-    },
-  ],
-});

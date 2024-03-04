@@ -7,8 +7,7 @@ import lodash from 'lodash';
 
 import {
   ActionContextProvider,
-  CollectionContext,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
@@ -17,7 +16,8 @@ import {
   SchemaInitializerItemType,
   SchemaInitializerItems,
   gridRowColWrap,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useRecord,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -46,13 +46,13 @@ function CustomFormBlockProvider(props) {
   );
 
   return !userJob.status || values ? (
-    <CollectionProvider
+    <CollectionProvider_deprecated
       collection={{
         ...props.collection,
         fields,
       }}
     >
-      <RecordProvider record={values} parent={false}>
+      <RecordProvider record={values} parent={null}>
         <FormBlockContext.Provider
           value={{
             form,
@@ -63,7 +63,7 @@ function CustomFormBlockProvider(props) {
           {props.children}
         </FormBlockContext.Provider>
       </RecordProvider>
-    </CollectionProvider>
+    </CollectionProvider_deprecated>
   ) : null;
 }
 
@@ -183,7 +183,7 @@ function getOptions(interfaces) {
 }
 
 function useCommonInterfaceInitializers(): SchemaInitializerItemType[] {
-  const { interfaces } = useCollectionManager();
+  const { interfaces } = useCollectionManager_deprecated();
   const options = getOptions(interfaces);
 
   return options.map((group) => ({
@@ -206,7 +206,7 @@ const CustomItemsComponent = (props) => {
   const [interfaceOptions, setInterface] = useState<any>(null);
   const [insert, setCallback] = useState<any>();
   const items = useCommonInterfaceInitializers();
-  const collection = useContext(CollectionContext);
+  const collection = useCollection_deprecated();
   const { setCollectionFields } = useContext(FormBlockContext);
 
   return (
@@ -297,7 +297,9 @@ const CustomItemsComponent = (props) => {
                                   field: newField,
                                 },
                                 'x-collection-field': `${collection.name}.${options.name}`,
-                                'x-designer': 'FormItem.Designer',
+                                // 'x-designer': 'FormItem.Designer',
+                                'x-toolbar': 'FormItemSchemaToolbar',
+                                'x-settings': 'fieldSettings:FormItem',
                               });
                               setCallback(null);
                               setInterface(null);
@@ -332,7 +334,7 @@ function CustomFormFieldInitializer() {
   const itemConfig = useSchemaInitializerItem();
   const { insert, setVisible } = useSchemaInitializer();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
 
   const interfaceOptions = getInterface(itemConfig.fieldInterface);
 
@@ -378,10 +380,13 @@ export default {
         formBlock['x-decorator-props'].collection.fields = fields.map(
           (field) => field['x-component-props']?.field ?? field['x-interface-options'],
         );
+        //获取actionBar的schemakey
+        const actionKey =
+          Object.entries(formSchema.properties).find(([key, f]) => f['x-component'] === 'ActionBar')?.[0] || 'actions';
         forms[formKey] = {
           type: 'custom',
           title: formBlock['x-component-props']?.title || formKey,
-          actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
+          actions: findSchema(formSchema.properties[actionKey], (item) => item['x-component'] === 'Action').map(
             (item) => ({
               status: item['x-decorator-props'].value,
               values: item['x-action-settings']?.assignedValues?.values,

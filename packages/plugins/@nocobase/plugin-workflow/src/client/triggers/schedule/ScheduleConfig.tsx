@@ -65,7 +65,7 @@ const ModeFieldsets = {
       },
     },
   },
-  [SCHEDULE_MODE.COLLECTION_FIELD]: {
+  [SCHEDULE_MODE.DATE_FIELD]: {
     collection: {
       ...collection,
       'x-reactions': [
@@ -145,7 +145,7 @@ const ModeFieldsets = {
           dependencies: ['mode', 'collection'],
           fulfill: {
             state: {
-              visible: `{{$deps[0] === ${SCHEDULE_MODE.COLLECTION_FIELD} && $deps[1]}}`,
+              visible: `{{$deps[0] === ${SCHEDULE_MODE.DATE_FIELD} && $deps[1]}}`,
             },
           },
         },
@@ -157,7 +157,7 @@ const ModeFieldsets = {
 const scheduleModeOptions = [
   { value: SCHEDULE_MODE.STATIC, label: `{{t("Based on certain date", { ns: "${NAMESPACE}" })}}` },
   {
-    value: SCHEDULE_MODE.COLLECTION_FIELD,
+    value: SCHEDULE_MODE.DATE_FIELD,
     label: `{{t("Based on date field of collection", { ns: "${NAMESPACE}" })}}`,
   },
 ];

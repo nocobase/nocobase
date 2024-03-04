@@ -3,7 +3,7 @@ import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType, TreeSelectProps } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions, useCollectionManager, useCompile } from '../../..';
+import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated, useCompile } from '../../..';
 
 export type AppendsTreeSelectProps = {
   value: string[] | string;
@@ -27,7 +27,7 @@ function usePropsCollection({ collection }) {
 
 type CallScope = {
   compile?(value: string): string;
-  getCollectionFields?(name: any): CollectionFieldOptions[];
+  getCollectionFields?(name: any): CollectionFieldOptions_deprecated[];
   filter(field): boolean;
 };
 
@@ -84,7 +84,7 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
     loadData: propsLoadData,
     ...restProps
   } = props;
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { t } = useTranslation();
   const [optionsMap, setOptionsMap] = useState({});
@@ -99,7 +99,7 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
 
   const loadData = useCallback(
     async (option) => {
-      if (propsLoadData !== null) {
+      if (propsLoadData != null) {
         return propsLoadData(option);
       }
       if (!option.isLeaf && option.loadChildren) {

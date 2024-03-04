@@ -1,5 +1,5 @@
 import { set } from 'lodash';
-import { createElement } from 'react';
+import React, { createElement } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import { Icon } from '../icon';
@@ -11,7 +11,7 @@ export const ADMIN_SETTINGS_PATH = '/admin/settings/';
 export const SNIPPET_PREFIX = 'pm.';
 
 export interface PluginSettingOptions {
-  title: string;
+  title: string | React.ReactElement;
   /**
    * @default Outlet
    */
@@ -27,8 +27,8 @@ export interface PluginSettingOptions {
 }
 
 export interface PluginSettingsPageType {
-  label?: string;
-  title: string;
+  label?: string | React.ReactElement;
+  title: string | React.ReactElement;
   key: string;
   icon: any;
   path: string;
@@ -44,11 +44,9 @@ export interface PluginSettingsPageType {
 export class PluginSettingsManager {
   protected settings: Record<string, PluginSettingOptions> = {};
   protected aclSnippets: string[] = [];
+  public app: Application;
 
-  constructor(
-    _pluginSettings: Record<string, PluginSettingOptions>,
-    protected app: Application,
-  ) {
+  constructor(_pluginSettings: Record<string, PluginSettingOptions>, app: Application) {
     this.app = app;
     Object.entries(_pluginSettings || {}).forEach(([name, pluginSettingOptions]) => {
       this.add(name, pluginSettingOptions);
@@ -75,8 +73,13 @@ export class PluginSettingsManager {
   add(name: string, options: PluginSettingOptions) {
     const nameArr = name.split('.');
     const topLevelName = nameArr[0];
-    this.settings[name] = { Component: Outlet, ...options, name, topLevelName };
-
+    this.settings[name] = {
+      ...this.settings[name],
+      Component: Outlet,
+      ...options,
+      name,
+      topLevelName: options.topLevelName || topLevelName,
+    };
     // add children
     if (nameArr.length > 1) {
       set(this.settings, nameArr.join('.children.'), this.settings[name]);
@@ -100,6 +103,7 @@ export class PluginSettingsManager {
   }
 
   hasAuth(name: string) {
+    if (this.aclSnippets.includes(`!${this.getAclSnippet('*')}`)) return false;
     return this.aclSnippets.includes(`!${this.getAclSnippet(name)}`) === false;
   }
 

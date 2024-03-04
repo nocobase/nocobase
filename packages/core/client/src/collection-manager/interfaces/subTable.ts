@@ -1,26 +1,24 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const subTable: IField = {
-  name: 'subTable',
-  type: 'object',
-  group: 'relation',
-  order: 2,
-  title: '{{t("Sub-table")}}',
-  isAssociation: true,
-  default: {
+export class SubTableFieldInterface extends CollectionFieldInterface {
+  name = 'subTable';
+  type = 'object';
+  group = 'relation';
+  order = 2;
+  title = '{{t("Sub-table")}}';
+  isAssociation = true;
+  default = {
     type: 'hasMany',
-    // name,
     uiSchema: {
       type: 'void',
-      // title,
       'x-component': 'TableField',
       'x-component-props': {},
     },
-  },
-  availableTypes: ['hasMany'],
+  };
+  availableTypes = ['hasMany'];
   schemaInitialize(schema: ISchema, { field, readPretty }) {
     const association = `${field.collectionName}.${field.name}`;
     schema['type'] = 'void';
@@ -62,16 +60,16 @@ export const subTable: IField = {
         },
       },
     };
-  },
-  initialize: (values: any) => {
+  }
+  initialize = (values: any) => {
     if (!values.target) {
       values.target = `t_${uid()}`;
     }
     if (!values.foreignKey) {
       values.foreignKey = `f_${uid()}`;
     }
-  },
-  properties: {
+  };
+  properties = {
     ...defaultProps,
     subtable: {
       type: 'void',
@@ -207,5 +205,5 @@ export const subTable: IField = {
     //   'x-decorator': 'FormItem',
     //   'x-component': 'DatabaseField',
     // },
-  },
-};
+  };
+}

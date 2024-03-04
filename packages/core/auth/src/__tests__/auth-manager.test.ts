@@ -59,7 +59,7 @@ describe('auth-manager', () => {
       app = mockServer({
         registerActions: true,
         acl: true,
-        plugins: ['users', 'auth', 'acl'],
+        plugins: ['users', 'auth', 'acl', 'data-source-manager'],
       });
 
       // app.plugin(ApiKeysPlugin);

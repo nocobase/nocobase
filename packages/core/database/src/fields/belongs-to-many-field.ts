@@ -1,5 +1,5 @@
 import { omit } from 'lodash';
-import { BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
+import { AssociationScope, BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
 import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
@@ -50,6 +50,60 @@ export class BelongsToManyField extends RelationField {
     ];
   }
 
+  checkAssociationKeys(database) {
+    let { foreignKey, sourceKey, otherKey, targetKey } = this.options;
+
+    const through = this.through;
+    const throughCollection = database.getCollection(through);
+
+    if (!throughCollection) {
+      // skip check if through collection not found
+      return;
+    }
+
+    if (!sourceKey) {
+      sourceKey = this.collection.model.primaryKeyAttribute;
+    }
+
+    if (!foreignKey) {
+      foreignKey = Utils.camelize([Utils.singularize(this.collection.model.name), sourceKey].join('_'));
+    }
+
+    if (!targetKey) {
+      targetKey = this.TargetModel.primaryKeyAttribute;
+    }
+
+    if (!otherKey) {
+      otherKey = Utils.camelize([Utils.singularize(this.TargetModel.name), targetKey].join('_'));
+    }
+
+    const foreignKeyAttribute = throughCollection.model.rawAttributes[foreignKey];
+    const otherKeyAttribute = throughCollection.model.rawAttributes[otherKey];
+    const sourceKeyAttribute = this.collection.model.rawAttributes[sourceKey];
+    const targetKeyAttribute = this.TargetModel.rawAttributes[targetKey];
+
+    if (!foreignKeyAttribute || !otherKeyAttribute || !sourceKeyAttribute || !targetKeyAttribute) {
+      return;
+    }
+
+    const foreignKeyType = foreignKeyAttribute.type.constructor.toString();
+    const otherKeyType = otherKeyAttribute.type.constructor.toString();
+    const sourceKeyType = sourceKeyAttribute.type.constructor.toString();
+    const targetKeyType = targetKeyAttribute.type.constructor.toString();
+
+    if (!this.keyPairsTypeMatched(foreignKeyType, sourceKeyType)) {
+      throw new Error(
+        `Foreign key "${foreignKey}" type "${foreignKeyType}" does not match source key "${sourceKey}" type "${sourceKeyType}" in belongs to many relation "${this.name}" of collection "${this.collection.name}"`,
+      );
+    }
+
+    if (!this.keyPairsTypeMatched(otherKeyType, targetKeyType)) {
+      throw new Error(
+        `Other key "${otherKey}" type "${otherKeyType}" does not match target key "${targetKey}" type "${targetKeyType}" in belongs to many relation "${this.name}" of collection "${this.collection.name}"`,
+      );
+    }
+  }
+
   bind() {
     const { database, collection } = this.context;
 
@@ -59,6 +113,16 @@ export class BelongsToManyField extends RelationField {
       database.addPendingField(this);
       return false;
     }
+
+    if (!this.collection.model.primaryKeyAttribute) {
+      throw new Error(`Collection model ${this.collection.model.name} has no primary key attribute`);
+    }
+
+    if (!Target.primaryKeyAttribute) {
+      throw new Error(`Target model ${Target.name} has no primary key attribute`);
+    }
+
+    this.checkAssociationKeys(database);
 
     const through = this.through;
 
@@ -93,7 +157,12 @@ export class BelongsToManyField extends RelationField {
       constraints: false,
       ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
-      through: Through.model,
+      through: {
+        model: Through.model,
+        scope: this.options.throughScope,
+        paranoid: this.options.throughParanoid,
+        unique: this.options.throughUnique,
+      },
     };
 
     const association = collection.model.belongsToMany(Target, belongsToManyOptions);
@@ -111,6 +180,10 @@ export class BelongsToManyField extends RelationField {
 
     if (!this.options.otherKey) {
       this.options.otherKey = association.otherKey;
+    }
+
+    if (!this.options.targetKey) {
+      this.options.targetKey = association.targetKey;
     }
 
     try {
@@ -157,4 +230,7 @@ export interface BelongsToManyFieldOptions
   type: 'belongsToMany';
   target?: string;
   through?: string;
+  throughScope?: AssociationScope;
+  throughUnique?: boolean;
+  throughParanoid?: boolean;
 }

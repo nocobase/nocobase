@@ -10,7 +10,7 @@ test.describe('data will be updated && Assign field values && after successful s
     await mockPage(oneEmptyTableBlockWithCustomizeUpdate).goto();
     await mockRecords('general', 2);
     await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').hover();
-    await page.getByLabel('designer-schema-settings-Action-Action.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-Action-actionSettings:bulkUpdate-general').hover();
     //默认是选中的数据
     await expect(page.getByTitle('Data will be updated').getByText('Selected')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Data will be updated' }).click();
@@ -24,7 +24,7 @@ test.describe('data will be updated && Assign field values && after successful s
     await page.getByText('option3').click();
     await page.getByRole('button', { name: 'Submit' }).click();
     await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').hover();
-    await page.getByLabel('designer-schema-settings-Action-Action.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-Action-actionSettings:bulkUpdate-general').hover();
     await page.getByRole('menuitem', { name: 'After successful submission' }).click();
     await page.getByLabel('Manually close').check();
     await page.getByLabel('Redirect to').check();

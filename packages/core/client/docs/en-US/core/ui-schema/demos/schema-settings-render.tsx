@@ -28,7 +28,6 @@ class PluginHello extends Plugin {
 
 export const SchemaSettingsBlockTitleItem = function BlockTitleItem() {
   const { dn } = useSchemaSettings();
-  console.log(dn.current);
 
   return (
     <SchemaSettingsModalItem

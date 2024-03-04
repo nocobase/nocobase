@@ -1,4 +1,4 @@
-import { i18n, IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterface, i18n, interfacesProperties } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { lodash, Registry } from '@nocobase/utils/client';
 import { NAMESPACE } from '../locale';
@@ -54,15 +54,15 @@ const datetimeProperties = {
   },
 };
 
-export default {
-  name: 'formula',
-  type: 'object',
-  group: 'advanced',
-  order: 1,
-  title: `{{t("Formula", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.", { ns: "${NAMESPACE}" })}}`,
-  sortable: true,
-  default: {
+export class FormulaFieldInterface extends CollectionFieldInterface {
+  name = 'formula';
+  type = 'object';
+  group = 'advanced';
+  order = 1;
+  title = `{{t("Formula", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.", { ns: "${NAMESPACE}" })}}`;
+  sortable = true;
+  default = {
     type: 'formula',
     // name,
     uiSchema: {
@@ -75,8 +75,8 @@ export default {
       },
       'x-read-pretty': true,
     },
-  },
-  properties: {
+  };
+  properties = {
     ...defaultProps,
     dataType: {
       type: 'string',
@@ -193,9 +193,9 @@ export default {
         }
       },
     },
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.number,
-  },
-  titleUsable: true,
-} as IField;
+  };
+  titleUsable = true;
+}

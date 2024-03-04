@@ -4,7 +4,7 @@
   "displayName.zh-CN": "认证：短信",
   "description": "SMS authentication.",
   "description.zh-CN": "通过短信验证码认证身份。",
-  "version": "0.19.0-alpha.8",
+  "version": "0.20.0-alpha.3",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/sms-auth",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/sms-auth",

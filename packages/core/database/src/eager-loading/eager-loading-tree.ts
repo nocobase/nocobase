@@ -98,6 +98,12 @@ export class EagerLoadingTree {
           ? eagerLoadingTreeParent.model.associations[include.association]
           : include.association;
 
+        if (!association) {
+          throw new Error(
+            `Association "${include.association}" not found in model "${eagerLoadingTreeParent.model.name}"`,
+          );
+        }
+
         const associationType = association.associationType;
 
         const child = buildNode({

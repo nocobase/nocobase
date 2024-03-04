@@ -7,8 +7,8 @@ import {
   DatePicker,
   InputNumber,
   Input as InputString,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useFormBlockContext,
 } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
@@ -29,10 +29,10 @@ const TypedComponents = {
 
 function useTargetCollectionField() {
   const fieldSchema = useFieldSchema();
-  const providedCollection = useCollection();
-  const { getCollection, getCollectionField } = useCollectionManager();
+  const providedCollection = useCollection_deprecated();
+  const { getCollection, getCollectionField } = useCollectionManager_deprecated();
   const paths = (fieldSchema.name as string).split('.');
-  let collection: CollectionOptions = providedCollection;
+  let collection: any = providedCollection;
   for (let i = 0; i < paths.length - 1; i++) {
     const field = collection.getField(paths[i]);
     collection = getCollection(field.target);
@@ -88,7 +88,7 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      form.setValuesIn(fieldName, v);
+      v !== value && props.onChange(v);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;

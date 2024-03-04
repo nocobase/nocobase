@@ -4,9 +4,9 @@ import { reaction } from '@formily/reactive';
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
-import { useRecord, useRecordIndex } from '../../../../../src/record-provider';
-import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
-import { useCollection } from '../../../../collection-manager';
+import { useRecordIndex } from '../../../../../src/record-provider';
+import { useCollection_deprecated } from '../../../../collection-manager';
+import { useCollectionRecord } from '../../../../data-source/collection-record/CollectionRecordProvider';
 import { useFlag } from '../../../../flag-provider';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/utils/getPath';
@@ -14,7 +14,7 @@ import { getVariableName } from '../../../../variables/utils/getVariableName';
 import { isVariable } from '../../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { isSubMode } from '../../association-field/util';
-import { isFromDatabase, useSpecialCase } from './useSpecialCase';
+import { useSpecialCase } from './useSpecialCase';
 
 /**
  * 用于解析并设置 FormItem 的默认值
@@ -24,13 +24,12 @@ const useParseDefaultValue = () => {
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const record = useRecord();
+  const recordV2 = useCollectionRecord();
   const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable, isInSubForm } =
     useFlag() || {};
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
-  const { type: formBlockType } = useFormBlockType();
 
   /**
    * name: 如 $user
@@ -52,8 +51,7 @@ const useParseDefaultValue = () => {
       isInSetDefaultValueDialog ||
       isInFormDataTemplate ||
       isSubMode(fieldSchema) ||
-      // 编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
-      (formBlockType === 'update' && !isInSubTable && isFromDatabase(record) && !isInAssignFieldValues)
+      (!recordV2?.isNew && !isInAssignFieldValues)
     ) {
       return;
     }
@@ -140,7 +138,7 @@ const useParseDefaultValue = () => {
       // 解决子表格（或子表单）中新增一行数据时，默认值不生效的问题
       field.setValue(fieldSchema.default);
     }
-  }, [fieldSchema.default]);
+  }, [fieldSchema.default, localVariables]);
 };
 
 export default useParseDefaultValue;

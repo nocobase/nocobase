@@ -1,25 +1,31 @@
 import { createForm } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
-  BlockRequestContext,
-  CollectionProvider,
+  BlockRequestContext_deprecated,
+  CollectionManagerProvider,
+  CollectionProvider_deprecated,
+  DEFAULT_DATA_SOURCE_KEY,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
   RecordProvider,
   useAPIClient,
   useAssociationNames,
+  useBlockRequestContext,
+  useDataSourceHeaders,
   useDesignable,
   useRecord,
 } from '@nocobase/client';
-import React, { useContext, useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 
 export function FormBlockProvider(props) {
   const userJob = useRecord();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
-  const { getAssociationAppends } = useAssociationNames();
+  const dataSource = props.dataSource || DEFAULT_DATA_SOURCE_KEY;
+
+  const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
   const values = userJob?.result?.[formKey];
@@ -50,8 +56,10 @@ export function FormBlockProvider(props) {
     };
   }, [values]);
   const api = useAPIClient();
-  const resource = api.resource(props.collection);
-  const __parent = useContext(BlockRequestContext);
+  const headers = useDataSourceHeaders(dataSource);
+
+  const resource = api.resource(props.collection, undefined, headers);
+  const __parent = useBlockRequestContext();
 
   const formBlockValue = useMemo(() => {
     return {
@@ -65,21 +73,25 @@ export function FormBlockProvider(props) {
   }, [field, form, params, service, updateAssociationValues]);
 
   return !userJob.status || values ? (
-    <CollectionProvider collection={props.collection}>
-      <RecordProvider record={values} parent={false}>
-        <FormActiveFieldsProvider name="form">
-          <BlockRequestContext.Provider value={{ block: 'form', props, field, service, resource, __parent }}>
-            <FormBlockContext.Provider value={formBlockValue}>
-              <Component {...field.componentProps}>
-                <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
-                <div ref={formBlockRef}>
-                  <RecursionField schema={fieldSchema} onlyRenderProperties />
-                </div>
-              </Component>
-            </FormBlockContext.Provider>
-          </BlockRequestContext.Provider>
-        </FormActiveFieldsProvider>
-      </RecordProvider>
-    </CollectionProvider>
+    <CollectionManagerProvider dataSource={dataSource}>
+      <CollectionProvider_deprecated collection={props.collection}>
+        <RecordProvider record={values} parent={null}>
+          <FormActiveFieldsProvider name="form">
+            <BlockRequestContext_deprecated.Provider
+              value={{ block: 'form', props, field, service, resource, __parent }}
+            >
+              <FormBlockContext.Provider value={formBlockValue}>
+                <Component {...field.componentProps}>
+                  <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
+                  <div ref={formBlockRef}>
+                    <RecursionField schema={fieldSchema} onlyRenderProperties />
+                  </div>
+                </Component>
+              </FormBlockContext.Provider>
+            </BlockRequestContext_deprecated.Provider>
+          </FormActiveFieldsProvider>
+        </RecordProvider>
+      </CollectionProvider_deprecated>
+    </CollectionManagerProvider>
   ) : null;
 }

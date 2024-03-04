@@ -2,7 +2,6 @@ import React from 'react';
 import { ACLPane } from '../acl/ACLShortcut';
 import { ADMIN_SETTINGS_PATH } from '../application';
 import { Plugin } from '../application/Plugin';
-import { CollectionManagerPane } from '../collection-manager';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
 import { PluginManager } from './PluginManager';
@@ -21,12 +20,12 @@ export class PMPlugin extends Plugin {
   }
 
   addSettings() {
-    this.app.pluginSettingsManager.add('acl', {
-      title: '{{t("ACL")}}',
-      icon: 'LockOutlined',
-      Component: ACLPane,
-      aclSnippet: 'pm.acl.roles',
-    });
+    // this.app.pluginSettingsManager.add('acl', {
+    //   title: '{{t("Access control")}}',
+    //   icon: 'LockOutlined',
+    //   Component: ACLPane,
+    //   aclSnippet: 'pm.acl.roles',
+    // });
     this.app.pluginSettingsManager.add('ui-schema-storage', {
       title: '{{t("Block templates")}}',
       icon: 'LayoutOutlined',
@@ -38,16 +37,6 @@ export class PMPlugin extends Plugin {
       title: '{{t("System settings")}}',
       Component: SystemSettingsPane,
       aclSnippet: 'pm.system-settings.system-settings',
-    });
-
-    this.app.pluginSettingsManager.add('collection-manager', {
-      icon: 'DatabaseOutlined',
-      title: '{{t("Collection manager")}}',
-    });
-
-    this.app.pluginSettingsManager.add('collection-manager.collections', {
-      title: '{{t("Collections & Fields")}}',
-      Component: CollectionManagerPane,
     });
   }
 

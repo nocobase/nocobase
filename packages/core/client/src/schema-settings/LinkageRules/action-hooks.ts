@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 import { ActionType } from './type';
 
 export const useLinkageCollectionFieldOptions = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName).filter((v) => {
     return !['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'].includes(v.name);
   });

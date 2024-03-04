@@ -1,8 +1,8 @@
-import { ActionInitializer, useCollection } from '@nocobase/client';
+import { ActionInitializer, useCollection_deprecated } from '@nocobase/client';
 import React from 'react';
 
 export const UploadActionInitializer = (props) => {
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
 
   const schema = {
     type: 'void',
@@ -28,7 +28,7 @@ export const UploadActionInitializer = (props) => {
             'x-component': 'Upload.DraggerV2',
             'x-component-props': {
               height: '50vh',
-              action: `${collection.name}:create`,
+              // action: `${collection.name}:create`,
               useProps: '{{useUploadFiles}}',
               multiple: true,
               listType: 'picture',

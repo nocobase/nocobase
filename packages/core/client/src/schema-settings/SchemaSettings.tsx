@@ -40,13 +40,13 @@ import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
-  CollectionFieldOptions,
-  CollectionManagerContext,
-  CollectionProvider,
-  DatePickerProvider,
+  AssociationOrCollectionProvider,
+  CollectionFieldOptions_deprecated,
+  DataSourceApplicationProvider,
   Designable,
   FormDialog,
   FormProvider,
+  CollectionRecordProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
@@ -54,28 +54,36 @@ import {
   createDesignable,
   findFormBlock,
   useAPIClient,
-  useActionContext,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCompile,
+  useDataBlockProps,
   useDesignable,
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
+  useCollectionRecord,
   useRecord,
   useSchemaSettingsItem,
   useSortFields,
 } from '..';
-import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
+import {
+  BlockRequestContext_deprecated,
+  useFormBlockContext,
+  useFormBlockType,
+  useTableBlockContext,
+} from '../block-provider';
 import {
   FormActiveFieldsProvider,
   findFilterTargets,
   updateFilterTargets,
   useFormActiveFields,
 } from '../block-provider/hooks';
-import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
+import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
+import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -83,25 +91,18 @@ import {
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
-import { FlagProvider, useFlag } from '../flag-provider';
+import { FlagProvider } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
+import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
-import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { useLocalVariables, useVariables } from '../variables';
-import { isVariable } from '../variables/utils/isVariable';
 import { FormDataTemplates } from './DataTemplates';
-import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
 import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
-import { BaseVariableProvider, IsDisabledParams } from './VariableInput/hooks/useBaseVariable';
-import { Option } from './VariableInput/type';
-import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
-import { DataScopeProps } from './types';
 
 export interface SchemaSettingsProps {
   title?: any;
@@ -142,7 +143,7 @@ interface SchemaSettingsProviderProps {
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
   const { children, fieldSchema, ...others } = props;
   const { getTemplateBySchema } = useSchemaTemplateManager();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const template = getTemplateBySchema(fieldSchema);
   return (
     <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
@@ -156,19 +157,16 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
   const [, startTransition] = useReactTransition();
+  const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
 
-  const changeMenu: DropdownProps['onOpenChange'] = (nextOpen: boolean, info) => {
-    // 在 antd v5.8.6 版本中，点击菜单项不会触发菜单关闭，但是升级到 v5.12.2 后会触发关闭。查阅文档发现
-    // 在 v5.11.0 版本中增加了一个 info.source，可以通过这个来判断一下，如果是点击的是菜单项就不关闭菜单，
-    // 这样就可以和之前的行为保持一致了。
-    // 下面是模仿官方文档示例做的修改：https://ant.design/components/dropdown-cn
+  const changeMenu: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
       startTransition(() => {
         setVisible(nextOpen);
       });
     }
-  };
+  }, []);
 
   const items = getMenuItems(() => props.children);
 
@@ -177,16 +175,14 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
       <Component />
       <Dropdown
         open={visible}
-        onOpenChange={(open, info) => {
-          changeMenu(open, info);
-        }}
+        onOpenChange={changeMenu}
         overlayClassName={css`
           .ant-dropdown-menu-item-group-list {
             max-height: 300px;
             overflow-y: auto;
           }
         `}
-        menu={{ items }}
+        menu={{ items, style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' } }}
       >
         <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
@@ -197,7 +193,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
 export const SchemaSettingsTemplate = function Template(props) {
   const { componentName, collectionName, resourceName, needRender } = props;
   const { t } = useTranslation();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const compile = useCompile();
   const api = useAPIClient();
@@ -233,7 +229,7 @@ export const SchemaSettingsTemplate = function Template(props) {
       title="Save as template"
       onClick={async () => {
         setVisible(false);
-        const { title } = collectionName ? getCollection(collectionName) : { title: '' };
+        const collection = collectionName && getCollection(collectionName);
         const values = await FormDialog(
           t('Save as template'),
           () => {
@@ -247,7 +243,9 @@ export const SchemaSettingsTemplate = function Template(props) {
                       name: {
                         title: t('Template name'),
                         required: true,
-                        default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
+                        default: collection
+                          ? `${compile(collection?.title || collection?.name)}_${t(componentName)}`
+                          : t(componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                       },
@@ -270,6 +268,7 @@ export const SchemaSettingsTemplate = function Template(props) {
           collectionName,
           resourceName,
           componentName,
+          dataSourceKey: collection.dataSource,
           name: values.name,
           uid: fieldSchema['x-uid'],
         });
@@ -326,7 +325,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
   const compile = useCompile();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -378,7 +377,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
       title="Save as block template"
       onClick={async () => {
         setVisible(false);
-        const { title } = getCollection(collectionName);
+        const collection = collectionName && getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
           t('Save as template'),
@@ -397,7 +396,11 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
                       name: {
                         title: t('Template name'),
                         required: true,
-                        default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
+                        default: collection
+                          ? `${compile(collection?.title || collection?.name)}_${t(
+                              componentTitle[componentName] || componentName,
+                            )}`
+                          : t(componentTitle[componentName] || componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                       },
@@ -597,13 +600,13 @@ export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocks
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
   // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
 
   if (!inProvider) {
     return null;
@@ -953,13 +956,19 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
-  const cm = useContext(CollectionManagerContext);
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
-  const ctx = useContext(BlockRequestContext);
+  const ctx = useBlockRequestContext();
   const upLevelActiveFields = useFormActiveFields();
   const { locale } = useContext(ConfigProvider.ConfigContext);
+  const dm = useDataSourceManager();
+  const dataSourceKey = useDataSourceKey();
+  const record = useCollectionRecord();
+  const { association } = useDataBlockProps() || {};
+
+  // 解决变量`当前对象`值在弹窗中丢失的问题
+  const { formValue: subFormValue } = useSubFormValue();
 
   if (hidden) {
     return null;
@@ -975,38 +984,46 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           { title: schema.title || title, width },
           () => {
             return (
-              <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
-                <Router location={location} navigator={null}>
-                  <BlockRequestContext.Provider value={ctx}>
-                    <CollectionManagerContext.Provider value={cm}>
-                      <CollectionProvider collection={collection}>
-                        <SchemaComponentOptions scope={options.scope} components={options.components}>
-                          <FormLayout
-                            layout={'vertical'}
-                            className={css`
-                              // screen > 576px
-                              @media (min-width: 576px) {
-                                min-width: 520px;
-                              }
-
-                              // screen <= 576px
-                              @media (max-width: 576px) {
-                                min-width: 320px;
-                              }
-                            `}
+              <CollectionRecordProvider record={record}>
+                <SubFormProvider value={subFormValue}>
+                  <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
+                    <Router location={location} navigator={null}>
+                      <BlockRequestContext_deprecated.Provider value={ctx}>
+                        <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                          <AssociationOrCollectionProvider
+                            allowNull
+                            collection={collection.name}
+                            association={association}
                           >
-                            <APIClientProvider apiClient={apiClient}>
-                              <ConfigProvider locale={locale}>
-                                <SchemaComponent components={components} scope={scope} schema={schema} />
-                              </ConfigProvider>
-                            </APIClientProvider>
-                          </FormLayout>
-                        </SchemaComponentOptions>
-                      </CollectionProvider>
-                    </CollectionManagerContext.Provider>
-                  </BlockRequestContext.Provider>
-                </Router>
-              </FormActiveFieldsProvider>
+                            <SchemaComponentOptions scope={options.scope} components={options.components}>
+                              <FormLayout
+                                layout={'vertical'}
+                                className={css`
+                                  // screen > 576px
+                                  @media (min-width: 576px) {
+                                    min-width: 520px;
+                                  }
+
+                                  // screen <= 576px
+                                  @media (max-width: 576px) {
+                                    min-width: 320px;
+                                  }
+                                `}
+                              >
+                                <APIClientProvider apiClient={apiClient}>
+                                  <ConfigProvider locale={locale}>
+                                    <SchemaComponent components={components} scope={scope} schema={schema} />
+                                  </ConfigProvider>
+                                </APIClientProvider>
+                              </FormLayout>
+                            </SchemaComponentOptions>
+                          </AssociationOrCollectionProvider>
+                        </DataSourceApplicationProvider>
+                      </BlockRequestContext_deprecated.Provider>
+                    </Router>
+                  </FormActiveFieldsProvider>
+                </SubFormProvider>
+              </CollectionRecordProvider>
             );
           },
           theme,
@@ -1078,7 +1095,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
   const fieldSchema = useFieldSchema();
   const field = useField();
   const title = props.title || t('Set default sorting rules');
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const defaultSort = get(fieldSchema, path) || [];
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
@@ -1341,14 +1358,14 @@ export const SchemaSettingsDataTemplates = function DataTemplates(props) {
   );
 };
 
-export const SchemaSettingsEnableChildCollections = function EnableChildCollectionsItem(props) {
+export function SchemaSettingsEnableChildCollections(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const ctx = useBlockRequestContext();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
   const isAssocationAdd = fieldSchema?.parent?.['x-component'] === 'CollectionField';
@@ -1426,157 +1443,9 @@ export const SchemaSettingsEnableChildCollections = function EnableChildCollecti
       }}
     />
   );
-};
+}
 
-export const SchemaSettingsDateFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
-  const { fieldSchema } = props;
-  const field = useField();
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
-  const isShowTime = fieldSchema?.['x-component-props']?.showTime;
-  const dateFormatDefaultValue =
-    fieldSchema?.['x-component-props']?.dateFormat ||
-    collectionField?.uiSchema?.['x-component-props']?.dateFormat ||
-    'YYYY-MM-DD';
-  const timeFormatDefaultValue =
-    fieldSchema?.['x-component-props']?.timeFormat || collectionField?.uiSchema?.['x-component-props']?.timeFormat;
-  return (
-    <SchemaSettingsModalItem
-      title={t('Date display format')}
-      schema={
-        {
-          type: 'object',
-          properties: {
-            dateFormat: {
-              type: 'string',
-              title: '{{t("Date format")}}',
-              'x-component': ExpiresRadio,
-              'x-decorator': 'FormItem',
-              'x-decorator-props': {},
-              'x-component-props': {
-                className: css`
-                  .ant-radio-wrapper {
-                    display: flex;
-                    margin: 5px 0px;
-                  }
-                `,
-                defaultValue: 'dddd',
-                formats: ['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'],
-              },
-              default: dateFormatDefaultValue,
-              enum: [
-                {
-                  label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
-                  value: 'MMMMM Do YYYY',
-                },
-                {
-                  label: DateFormatCom({ format: 'YYYY-MM-DD' }),
-                  value: 'YYYY-MM-DD',
-                },
-                {
-                  label: DateFormatCom({ format: 'MM/DD/YY' }),
-                  value: 'MM/DD/YY',
-                },
-                {
-                  label: DateFormatCom({ format: 'YYYY/MM/DD' }),
-                  value: 'YYYY/MM/DD',
-                },
-                {
-                  label: DateFormatCom({ format: 'DD/MM/YYYY' }),
-                  value: 'DD/MM/YYYY',
-                },
-                {
-                  label: 'custom',
-                  value: 'custom',
-                },
-              ],
-            },
-            showTime: {
-              default:
-                isShowTime === undefined ? collectionField?.uiSchema?.['x-component-props']?.showTime : isShowTime,
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-              'x-component': 'Checkbox',
-              'x-content': '{{t("Show time")}}',
-              'x-reactions': [
-                `{{(field) => {
-              field.query('.timeFormat').take(f => {
-                f.display = field.value ? 'visible' : 'none';
-              });
-            }}}`,
-              ],
-            },
-            timeFormat: {
-              type: 'string',
-              title: '{{t("Time format")}}',
-              'x-component': ExpiresRadio,
-              'x-decorator': 'FormItem',
-              'x-decorator-props': {
-                className: css`
-                  margin-bottom: 0px;
-                `,
-              },
-              'x-component-props': {
-                className: css`
-                  color: red;
-                  .ant-radio-wrapper {
-                    display: flex;
-                    margin: 5px 0px;
-                  }
-                `,
-                defaultValue: 'h:mm a',
-                formats: ['hh:mm:ss a', 'HH:mm:ss'],
-                timeFormat: true,
-              },
-              default: timeFormatDefaultValue,
-              enum: [
-                {
-                  label: DateFormatCom({ format: 'hh:mm:ss a' }),
-                  value: 'hh:mm:ss a',
-                },
-                {
-                  label: DateFormatCom({ format: 'HH:mm:ss' }),
-                  value: 'HH:mm:ss',
-                },
-                {
-                  label: 'custom',
-                  value: 'custom',
-                },
-              ],
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={(data) => {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        schema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props'] = {
-          ...(fieldSchema['x-component-props'] || {}),
-          ...data,
-        };
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps = fieldSchema['x-component-props'];
-        //子表格/表格区块
-        const parts = (field.path.entire as string).split('.');
-        parts.pop();
-        const modifiedString = parts.join('.');
-        field.query(`${modifiedString}.*[0:].${fieldSchema.name}`).forEach((f) => {
-          f.setComponentProps({ ...data });
-        });
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      }}
-    />
-  );
-};
-
-const defaultInputStyle = css`
+export const defaultInputStyle = css`
   & > .nb-form-item {
     flex: 1;
   }
@@ -1592,425 +1461,51 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
-export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: { fieldSchema?: Schema }) {
-  const currentSchema = useFieldSchema();
-  const fieldSchema = props?.fieldSchema ?? currentSchema;
-  const field: Field = useField();
-  const { dn } = useDesignable();
+export const SchemaSettingsSortField = () => {
+  const { fields } = useCollection_deprecated();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const actionCtx = useActionContext();
-  let targetField;
+  const { dn } = useDesignable();
+  const compile = useCompile();
+  const { service } = useTableBlockContext();
 
-  const { getField } = useCollection();
-  const { getCollectionJoinField, getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
-  const variables = useVariables();
-  const localVariables = useLocalVariables();
-  const collection = useCollection();
-  const record = useRecord();
-  const { form } = useFormBlockContext();
-  const { getFields } = useCollectionFilterOptionsV2(collection);
-  const { isInSubForm, isInSubTable } = useFlag() || {};
-
-  const { name } = collection;
-  const collectionField = useMemo(
-    () => getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']),
-    [fieldSchema, getCollectionJoinField, getField],
-  );
-  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
-  if (collectionField?.target) {
-    targetField = getCollectionJoinField(
-      `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
-    );
-  }
-
-  const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
-  const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
-  const tableCtx = useTableBlockContext();
-  const isAllowContextVariable =
-    actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
-    (collectionField?.interface === 'm2m' ||
-      (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o'));
-
-  const returnScope = useCallback(
-    (scope: Option[]) => {
-      const currentForm = scope.find((item) => item.value === '$nForm');
-      const fields = getCollectionFields(name);
-
-      // fix https://nocobase.height.app/T-1355
-      // 工作流人工节点的 `自定义表单` 区块，与其它表单区块不同，根据它的数据表名称，获取到的字段列表为空，所以需要在这里特殊处理一下
-      if (!fields?.length && currentForm) {
-        currentForm.children = formatVariableScop(getFields());
-      }
-
-      return scope;
-    },
-    [getFields, name],
-  );
-
-  const DefaultValueComponent: any = useMemo(() => {
-    return {
-      ArrayCollapse,
-      FormLayout,
-      VariableInput: (props) => {
-        return (
-          <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
-            <VariableInput {...props} />
-          </FlagProvider>
-        );
-      },
-    };
-  }, [isInSubForm, isInSubTable]);
-
-  const schema = useMemo(() => {
-    return {
-      type: 'object',
-      title: t('Set default value'),
-      properties: {
-        default: {
-          'x-decorator': 'FormItem',
-          'x-component': 'VariableInput',
-          'x-component-props': {
-            ...(fieldSchema?.['x-component-props'] || {}),
-            collectionField,
-            contextCollectionName: isAllowContextVariable && tableCtx.collection,
-            schema: collectionField?.uiSchema,
-            targetFieldSchema: fieldSchema,
-            className: defaultInputStyle,
-            form,
-            record,
-            returnScope,
-            shouldChange: getShouldChange({
-              collectionField,
-              variables,
-              localVariables,
-              getAllCollectionsInheritChain,
-            }),
-            renderSchemaComponent: function Com(props) {
-              const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
-              s.title = '';
-              s.name = 'default';
-              s['x-read-pretty'] = false;
-              s['x-disabled'] = false;
-
-              const defaultValue = getFieldDefaultValue(s, collectionField);
-
-              if (collectionField.target && s['x-component-props']) {
-                s['x-component-props'].mode = 'Select';
-              }
-
-              if (collectionField?.uiSchema.type) {
-                s.type = collectionField.uiSchema.type;
-              }
-
-              if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
-                s['x-component-props'].defaultChecked = defaultValue;
-
-                // 在这里如果不设置 type 为 void，会导致设置的默认值不生效
-                // 但是我不知道为什么必须要设置为 void ？
-                s.type = 'void';
-              }
-
-              const schema = {
-                ...(s || {}),
-                'x-decorator': 'FormItem',
-                'x-component-props': {
-                  ...s['x-component-props'],
-                  collectionName: collectionField?.collectionName,
-                  targetField,
-                  onChange: props.onChange,
-                  defaultValue: isVariable(defaultValue) ? '' : defaultValue,
-                  style: {
-                    width: '100%',
-                    verticalAlign: 'top',
-                    minWidth: '200px',
-                  },
-                },
-                default: isVariable(defaultValue) ? '' : defaultValue,
-              } as ISchema;
-
-              return (
-                <FormProvider>
-                  <SchemaComponent schema={schema} />
-                </FormProvider>
-              );
-            },
-          },
-          title: t('Default value'),
-          default: getFieldDefaultValue(fieldSchema, collectionField),
-        },
-      },
-    } as ISchema;
-  }, [
-    collectionField,
-    fieldSchema,
-    fieldSchemaWithoutRequired,
-    form,
-    getAllCollectionsInheritChain,
-    isAllowContextVariable,
-    localVariables,
-    record,
-    returnScope,
-    t,
-    tableCtx.collection,
-    targetField,
-    variables,
-  ]);
-  const handleSubmit: (values: any) => void = useCallback(
-    (v) => {
-      const schema: ISchema = {
-        ['x-uid']: fieldSchema['x-uid'],
-      };
-      fieldSchema.default = v.default;
-      if (!v.default && v.default !== 0) {
-        field.value = null;
-      }
-      schema.default = v.default;
-      dn.emit('patch', {
-        schema,
-        currentSchema,
-      });
-    },
-    [currentSchema, dn, field, fieldSchema],
-  );
+  const options = fields
+    .filter((field) => !field?.target && field.interface === 'sort')
+    .map((field) => ({
+      value: field?.name,
+      label: compile(field?.uiSchema?.title) || field?.name,
+    }));
 
   return (
-    <SchemaSettingsModalItem
-      title={t('Set default value')}
-      components={DefaultValueComponent}
-      width={800}
-      schema={schema}
-      onSubmit={handleSubmit}
-    />
-  );
-};
-
-export const SchemaSettingsSortingRule = function SortRuleConfigure(props) {
-  const field = useField();
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const currentSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
-  const fieldSchema = props?.fieldSchema ?? currentSchema;
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const sortFields = useSortFields(collectionField?.target);
-  const defaultSort = fieldSchema['x-component-props']?.service?.params?.sort || [];
-  const sort = defaultSort?.map((item: string) => {
-    return item?.startsWith('-')
-      ? {
-          field: item.substring(1),
-          direction: 'desc',
-        }
-      : {
-          field: item,
-          direction: 'asc',
-        };
-  });
-  return (
-    <SchemaSettingsModalItem
-      title={t('Set default sorting rules')}
-      components={{ ArrayItems }}
-      schema={
-        {
-          type: 'object',
-          title: t('Set default sorting rules'),
-          properties: {
-            sort: {
-              type: 'array',
-              default: sort,
-              'x-component': 'ArrayItems',
-              'x-decorator': 'FormItem',
-              items: {
-                type: 'object',
-                properties: {
-                  space: {
-                    type: 'void',
-                    'x-component': 'Space',
-                    properties: {
-                      sort: {
-                        type: 'void',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'ArrayItems.SortHandle',
-                      },
-                      field: {
-                        type: 'string',
-                        enum: sortFields,
-                        required: true,
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Select',
-                        'x-component-props': {
-                          style: {
-                            width: 260,
-                          },
-                        },
-                      },
-                      direction: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Radio.Group',
-                        'x-component-props': {
-                          optionType: 'button',
-                        },
-                        enum: [
-                          {
-                            label: t('ASC'),
-                            value: 'asc',
-                          },
-                          {
-                            label: t('DESC'),
-                            value: 'desc',
-                          },
-                        ],
-                      },
-                      remove: {
-                        type: 'void',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'ArrayItems.Remove',
-                      },
-                    },
-                  },
-                },
-              },
-              properties: {
-                add: {
-                  type: 'void',
-                  title: t('Add sort field'),
-                  'x-component': 'ArrayItems.Addition',
-                },
-              },
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={({ sort }) => {
-        const sortArr = sort.map((item) => {
-          return item.direction === 'desc' ? `-${item.field}` : item.field;
-        });
-        _.set(field.componentProps, 'service.params.sort', sortArr);
-        props?.onSubmitCallBack?.(sortArr);
-        fieldSchema['x-component-props'] = field.componentProps;
+    <SchemaSettingsSelectItem
+      key="sort-field"
+      title={t('Drag and drop sorting field')}
+      options={options}
+      value={field.decoratorProps.dragSortBy}
+      onChange={(dragSortBy) => {
+        fieldSchema['x-decorator-props'].dragSortBy = dragSortBy;
+        service.run({ ...service.params?.[0], sort: dragSortBy });
+        field.decoratorProps.dragSortBy = dragSortBy;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': field.componentProps,
+            'x-decorator-props': fieldSchema['x-decorator-props'],
           },
         });
+        dn.refresh();
       }}
     />
   );
 };
 
-export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeConfigure(props) {
-  const { t } = useTranslation();
-  const { getFields } = useCollectionFilterOptionsV2(props.collectionName);
-  const record = useRecord();
-  const { form } = useFormBlockContext();
-  const variables = useVariables();
-  const localVariables = useLocalVariables();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
-  const { isInSubForm, isInSubTable } = useFlag() || {};
-
-  const dynamicComponent = useCallback(
-    (props: DynamicComponentProps) => {
-      return (
-        <DatePickerProvider value={{ utc: false }}>
-          <VariableInput
-            {...props}
-            form={form}
-            record={record}
-            shouldChange={getShouldChange({
-              collectionField: props.collectionField,
-              variables,
-              localVariables,
-              getAllCollectionsInheritChain,
-            })}
-          />
-        </DatePickerProvider>
-      );
-    },
-    [form, getAllCollectionsInheritChain, localVariables, record, variables],
-  );
-
-  const getSchema = () => {
-    return {
-      type: 'object',
-      title: t('Set the data scope'),
-      properties: {
-        filter: {
-          enum: props.collectionFilterOption || getFields(),
-          'x-decorator': (props) => (
-            <BaseVariableProvider {...props}>
-              <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable}>
-                {props.children}
-              </FlagProvider>
-            </BaseVariableProvider>
-          ),
-          'x-decorator-props': {
-            isDisabled,
-          },
-          'x-component': 'Filter',
-          'x-component-props': {
-            collectionName: props.collectionName,
-            dynamicComponent: props.dynamicComponent || dynamicComponent,
-          },
-        },
-      },
-    };
-  };
-
-  return (
-    <SchemaSettingsModalItem
-      title={t('Set the data scope')}
-      initialValues={{ filter: props.defaultFilter }}
-      schema={getSchema as () => ISchema}
-      onSubmit={props.onSubmit}
-    />
-  );
-};
-
 // 是否是系统字段
-export const isSystemField = (collectionField: CollectionFieldOptions, getInterface) => {
+export const isSystemField = (collectionField: CollectionFieldOptions_deprecated, getInterface) => {
   const i = getInterface?.(collectionField?.interface);
   return i?.group === 'systemInfo';
 };
 
-export const isPatternDisabled = (fieldSchema: Schema) => {
-  return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
-};
-
-function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
+export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions_deprecated) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
   return result;
-}
-
-function isDisabled(params: IsDisabledParams) {
-  const { option, collectionField, uiSchema } = params;
-
-  if (!uiSchema || !collectionField) {
-    return true;
-  }
-
-  // json 类型的字段，允许设置任意类型的值
-  if (collectionField.interface === 'json') {
-    return false;
-  }
-
-  // 数据范围支持选择 `对多` 、`对一` 的关系字段
-  if (option.target) {
-    return false;
-  }
-
-  if (['input', 'markdown', 'richText', 'textarea', 'username'].includes(collectionField.interface)) {
-    return !['string', 'number'].includes(option.schema?.type);
-  }
-
-  if (collectionField.interface && option.interface) {
-    return collectionField.interface !== option.interface;
-  }
-
-  if (uiSchema?.['x-component'] !== option.schema?.['x-component']) {
-    return true;
-  }
-
-  return false;
 }

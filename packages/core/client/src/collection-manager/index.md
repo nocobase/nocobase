@@ -8,10 +8,10 @@ group:
 
 ## Components
 
-### CollectionManagerProvider
+### CollectionManagerProvider_deprecated
 
 ```jsx | pure
-<CollectionManagerProvider interfaces={{}} collections={[]}></CollectionManagerProvider>
+<CollectionManagerProvider_deprecated interfaces={{}} collections={[]}></CollectionManagerProvider_deprecated>
 ```
 
 ### CollectionProvider
@@ -34,7 +34,7 @@ const collection = {
 <CollectionProvider collection={collection}></CollectionProvider>
 ```
 
-如果没有传 collection 参数，从 CollectionManagerProvider 里取对应 name 的 collection。
+如果没有传 collection 参数，从 CollectionManagerProvider_deprecated 里取对应 name 的 collection。
 
 ```jsx | pure
 const collections = [
@@ -53,9 +53,9 @@ const collections = [
     ],
   }
 ];
-<CollectionManagerProvider collections={collections}>
+<CollectionManagerProvider_deprecated collections={collections}>
   <CollectionProvider name={'tests'}></CollectionProvider>
-</CollectionManagerProvider>
+</CollectionManagerProvider_deprecated>
 ```
 
 ### CollectionFieldProvider
@@ -114,12 +114,12 @@ const collection = {
 
 ## Hooks
 
-### useCollectionManager()
+### useCollectionManager_deprecated()
 
-与 `<CollectionManagerProvider/>` 搭配使用
+与 `<CollectionManagerProvider_deprecated/>` 搭配使用
 
 ```jsx | pure
-const { collections, get } = useCollectionManager();
+const { collections, get } = useCollectionManager_deprecated();
 ```
 
 ### useCollection()
@@ -138,7 +138,7 @@ const { name, fields, getField, findField, resource } = useCollection();
 const { name, uiSchema, resource } = useCollectionField();
 ```
 
-resource 需要与 `<RecordProvider/>` 搭配使用，用于提供当前数据表行记录的上下文。如：
+resource 需要与 `<CollectionRecordProvider/>` 搭配使用，用于提供当前数据表行记录的上下文。如：
 
 <code src="./demos/demo3.tsx"></code>
 <code src="./demos/demo4.tsx"></code>

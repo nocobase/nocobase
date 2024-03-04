@@ -1,7 +1,7 @@
 import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
 
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createTableBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
@@ -11,7 +11,7 @@ export const RecordAssociationBlockInitializer = () => {
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const field = itemConfig.field;
   const collection = getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
@@ -28,6 +28,7 @@ export const RecordAssociationBlockInitializer = () => {
             createTableBlockSchema({
               rowKey: collection.filterTargetKey,
               collection: field.target,
+              dataSource: collection.dataSource,
               resource,
               association: resource,
             }),

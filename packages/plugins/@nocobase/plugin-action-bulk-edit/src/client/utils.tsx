@@ -1,6 +1,6 @@
 import {
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useRemoveGridFormItem,
   SchemaInitializerItemType,
   useBlockRequestContext,
@@ -20,8 +20,8 @@ import { useTranslation } from 'react-i18next';
 import { BulkEditFormItemValueType } from './component/BulkEditField';
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const { name, fields } = useCollection_deprecated();
+  const { getInterface, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
@@ -42,7 +42,8 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
             type: 'string',
             name: field.name,
             title: field?.uiSchema?.title || field.name,
-            'x-designer': 'FormItem.Designer',
+            'x-toolbar': 'FormItemSchemaToolbar',
+            'x-settings': 'fieldSettings:BulkEditFormItem',
             'x-component': 'BulkEditField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,

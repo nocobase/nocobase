@@ -3,9 +3,9 @@ import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useState } from 'react';
 import {
   CollectionOptions,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   useActionContext,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useRecord,
   useRecordIndex,
   useRequest,
@@ -68,15 +68,15 @@ const collection: CollectionOptions = {
   ],
 };
 
-export const DataSourceContext = createContext(null);
+export const DataSourceContext_deprecated = createContext(null);
 
 const useSelectedRowKeys = () => {
-  const ctx = useContext(DataSourceContext);
+  const ctx = useContext(DataSourceContext_deprecated);
   return [ctx.selectedRowKeys, ctx.setSelectedRowKeys];
 };
 
-const useDataSource = (options) => {
-  const ctx = useContext(DataSourceContext);
+const useDataSource_deprecated = (options) => {
+  const ctx = useContext(DataSourceContext_deprecated);
   return useRequest(
     () => {
       return Promise.resolve({
@@ -91,7 +91,7 @@ const useDataSource = (options) => {
 };
 
 const useCreateAction = () => {
-  const ctx = useContext(DataSourceContext);
+  const ctx = useContext(DataSourceContext_deprecated);
   const form = useForm();
   const { setVisible } = useActionContext();
   return {
@@ -107,7 +107,7 @@ const useCreateAction = () => {
 };
 
 const useBulkDestroyAction = () => {
-  const ctx = useContext(DataSourceContext);
+  const ctx = useContext(DataSourceContext_deprecated);
   const { selectedRowKeys, setSelectedRowKeys } = ctx;
   return {
     async run() {
@@ -126,7 +126,7 @@ const useUpdateAction = () => {
   const recordIndex = useRecordIndex();
   const form = useForm();
   const { setVisible } = useActionContext();
-  const ctx = useContext(DataSourceContext);
+  const ctx = useContext(DataSourceContext_deprecated);
   return {
     async run() {
       const dataSource: any[] = ctx?.dataSource || [];
@@ -144,7 +144,7 @@ const useUpdateAction = () => {
 
 const useDestroyAction = () => {
   const recordIndex = useRecordIndex();
-  const ctx = useContext(DataSourceContext);
+  const ctx = useContext(DataSourceContext_deprecated);
   return {
     async run() {
       const dataSource: any[] = ctx.dataSource || [];
@@ -159,14 +159,14 @@ const useDestroyAction = () => {
 
 export const ds = {
   useSelectedRowKeys,
-  useDataSource,
+  useDataSource_deprecated,
   useCreateAction,
   useBulkDestroyAction,
   useUpdateAction,
   useDestroyAction,
 };
 
-export const SubFieldDataSourceProvider = observer(
+export const SubFieldDataSourceProvider_deprecated = observer(
   (props) => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [dataSource, setDataSource] = useState([]);
@@ -204,8 +204,8 @@ export const SubFieldDataSourceProvider = observer(
       },
     );
     return (
-      <CollectionProvider collection={collection}>
-        <DataSourceContext.Provider
+      <CollectionProvider_deprecated collection={collection}>
+        <DataSourceContext_deprecated.Provider
           value={{
             rowKey: 'name',
             service,
@@ -216,21 +216,21 @@ export const SubFieldDataSourceProvider = observer(
           }}
         >
           {props.children}
-        </DataSourceContext.Provider>
-      </CollectionProvider>
+        </DataSourceContext_deprecated.Provider>
+      </CollectionProvider_deprecated>
     );
   },
-  { displayName: 'SubFieldDataSourceProvider' },
+  { displayName: 'SubFieldDataSourceProvider_deprecated' },
 );
 
-export const DataSourceProvider = observer(
+export const DataSourceProvider_deprecated = observer(
   (props: any) => {
     const { rowKey, collection, association } = props;
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [dataSource, setDataSource] = useState([]);
     const record = useRecord();
     const api = useAPIClient();
-    const { getCollection } = useCollectionManager();
+    const { getCollection } = useCollectionManager_deprecated();
     const coll = getCollection(collection);
     const resourceOf = record?.[association.targetKey || 'id'];
     const service = useRequest(
@@ -258,8 +258,8 @@ export const DataSourceProvider = observer(
       },
     );
     return (
-      <CollectionProvider collection={coll}>
-        <DataSourceContext.Provider
+      <CollectionProvider_deprecated collection={coll}>
+        <DataSourceContext_deprecated.Provider
           value={{
             rowKey,
             service,
@@ -270,9 +270,9 @@ export const DataSourceProvider = observer(
           }}
         >
           {props.children}
-        </DataSourceContext.Provider>
-      </CollectionProvider>
+        </DataSourceContext_deprecated.Provider>
+      </CollectionProvider_deprecated>
     );
   },
-  { displayName: 'DataSourceProvider' },
+  { displayName: 'DataSourceProvider_deprecated' },
 );

@@ -26,25 +26,12 @@
       "request": "launch",
       "name": "Debug Tests",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": ["run", "--inspect-brk", "test", "${file}"],
-      "skipFiles": ["<node_internals>/**"],
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "windows": {
-        "runtimeArgs": ["run", "--inspect-brk", "test", "/${fileBasename}"]
-      }
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug Client Tests",
-      "runtimeExecutable": "yarn",
-      "runtimeArgs": ["run", "test:client", "${file}"],
+      "runtimeArgs": ["run", "test", "${file}"],
       "skipFiles": ["<node_internals>/**", "**/node_modules/**", "**/dist/**", "**/lib/**", "**/es/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "windows": {
-        "runtimeArgs": ["run", "test:client", "${relativeFile}"]
+        "runtimeArgs": ["run", "test", "${relativeFile}"]
       }
     },
     {
@@ -52,12 +39,12 @@
       "request": "launch",
       "name": "Debug E2E Tests",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": ["test:e2e", "${file}"],
-      "skipFiles": ["<node_internals>/**"],
+      "runtimeArgs": ["e2e", "test", "${file}"],
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**", "**/dist/**", "**/lib/**", "**/es/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "windows": {
-        "runtimeArgs": ["test:e2e", "${fileBasename}"]
+        "runtimeArgs": ["e2e", "test", "${fileBasename}"]
       }
     },
     {

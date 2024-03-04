@@ -23,7 +23,7 @@ describe('actions', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'api-keys', 'acl'],
+      plugins: ['users', 'auth', 'api-keys', 'acl', 'data-source-manager'],
     });
 
     db = app.db;

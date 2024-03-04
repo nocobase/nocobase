@@ -1,26 +1,18 @@
-import { CollectionManagerContext, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import React from 'react';
 import { MapBlockOptions } from './block';
 import { mapActionInitializers } from './block/MapActionInitializers';
 import { Configuration, Map } from './components';
-import { interfaces } from './fields';
-import { MapInitializer } from './initialize';
+import { fields } from './fields';
 import { generateNTemplate } from './locale';
 import { NAMESPACE } from './locale';
-
+import { mapBlockSettings } from './block/MapBlock.Settings';
 const MapProvider = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
   return (
     <CurrentAppInfoProvider>
-      <MapInitializer>
-        <SchemaComponentOptions components={{ Map }}>
-          <MapBlockOptions>
-            <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, ...interfaces } }}>
-              {props.children}
-            </CollectionManagerContext.Provider>
-          </MapBlockOptions>
-        </SchemaComponentOptions>
-      </MapInitializer>
+      <SchemaComponentOptions components={{ Map }}>
+        <MapBlockOptions>{props.children}</MapBlockOptions>
+      </SchemaComponentOptions>
     </CurrentAppInfoProvider>
   );
 });
@@ -30,7 +22,15 @@ export class MapPlugin extends Plugin {
   async load() {
     this.app.use(MapProvider);
 
+    this.app.dataSourceManager.addFieldInterfaces(fields);
+    this.app.dataSourceManager.addFieldInterfaceGroups({
+      map: {
+        label: generateNTemplate('Map-based geometry'),
+        order: 51,
+      },
+    });
     this.app.schemaInitializerManager.add(mapActionInitializers);
+    this.schemaSettingsManager.add(mapBlockSettings);
 
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     blockInitializers?.add('dataBlocks.map', {

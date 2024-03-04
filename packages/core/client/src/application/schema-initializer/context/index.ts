@@ -4,8 +4,8 @@ import { InsertType, SchemaInitializerItemType, SchemaInitializerOptions } from 
 export const SchemaInitializerContext = createContext<{
   insert: InsertType;
   options: SchemaInitializerOptions<any>;
-  visible?: boolean;
-  setVisible?: (v: boolean) => void;
+  visible: boolean;
+  setVisible: (v: boolean) => void;
 }>({} as any);
 SchemaInitializerContext.displayName = 'SchemaInitializerContext';
 
@@ -16,14 +16,7 @@ export const useSchemaInitializer = () => {
 export const SchemaInitializerItemContext = createContext<
   Omit<
     SchemaInitializerItemType,
-    | 'type'
-    | 'Component'
-    | 'component'
-    | 'useVisible'
-    | 'useChildren'
-    | 'checkChildrenLength'
-    | 'sort'
-    | 'componentProps'
+    'type' | 'Component' | 'component' | 'useVisible' | 'useChildren' | 'hideIfNoChildren' | 'sort' | 'componentProps'
   >
 >({} as any);
 SchemaInitializerItemContext.displayName = 'SchemaInitializerItemContext';

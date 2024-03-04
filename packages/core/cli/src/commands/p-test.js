@@ -39,7 +39,7 @@ async function runApp(dir, index = 0) {
     stdio: 'inherit',
     env: {
       ...config,
-      CI: true,
+      CI: process.env.CI,
       __E2E__: true,
       APP_BASE_URL: undefined,
       LOGGER_LEVEL: 'error',

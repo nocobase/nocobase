@@ -1,4 +1,4 @@
-import { useCollectionManager } from '@nocobase/client';
+import { useCollectionManager_deprecated } from '@nocobase/client';
 
 const EXCLUDE_INTERFACES = [
   // 'icon',
@@ -15,7 +15,7 @@ const EXCLUDE_INTERFACES = [
 ];
 
 export const useFields = (collectionName: string) => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
     if (!field.interface || EXCLUDE_INTERFACES.includes(field.interface)) {

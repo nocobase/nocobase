@@ -1,16 +1,19 @@
 import { ISchema, useForm } from '@formily/react';
 import {
-  APIClientProvider,
   Action,
+  Application,
   CollectionField,
-  CollectionManagerProvider,
+  CollectionPlugin,
   CurrentUserProvider,
+  DEFAULT_DATA_SOURCE_KEY,
+  DEFAULT_DATA_SOURCE_TITLE,
   FormBlockProvider,
   FormItem,
   FormV2,
   Input,
+  Plugin,
+  LocalDataSource,
   SchemaComponent,
-  SchemaComponentProvider,
   useFormBlockContext,
 } from '@nocobase/client';
 import { notification } from 'antd';
@@ -83,16 +86,36 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Demo = () => {
   return (
-    <APIClientProvider apiClient={apiClient}>
-      <CurrentUserProvider>
-        <CollectionManagerProvider collections={collections}>
-          <SchemaComponentProvider components={{ FormBlockProvider, FormV2, FormItem, CollectionField, Action, Input }}>
-            <SchemaComponent schema={schema} />
-          </SchemaComponentProvider>
-        </CollectionManagerProvider>
-      </CurrentUserProvider>
-    </APIClientProvider>
+    <CurrentUserProvider>
+      <SchemaComponent schema={schema} />
+    </CurrentUserProvider>
   );
 };
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.dataSourceManager.addDataSource(LocalDataSource, {
+      key: DEFAULT_DATA_SOURCE_KEY,
+      displayName: DEFAULT_DATA_SOURCE_TITLE,
+      collections: collections as any,
+    });
+  }
+}
+
+const app = new Application({
+  apiClient,
+  plugins: [CollectionPlugin, MyPlugin],
+  components: {
+    FormBlockProvider,
+    FormV2,
+    FormItem,
+    CollectionField,
+    Action,
+    Input,
+  },
+  providers: [Demo],
+});
+
+export default app.getRootComponent();

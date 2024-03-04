@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export const createMapBlockSchema = (options) => {
-  const { collection, resource, fieldNames, ...others } = options;
+  const { collection, resource, fieldNames, settings, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -17,7 +17,8 @@ export const createMapBlockSchema = (options) => {
       },
       ...others,
     },
-    'x-designer': 'MapBlockDesigner',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': settings,
     'x-component': 'CardItem',
     // 保存当前筛选区块所能过滤的数据区块
     'x-filter-targets': [],

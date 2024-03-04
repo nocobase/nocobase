@@ -307,7 +307,7 @@ export default {
                                     drawer1: {
                                       _isJSONSchemaObject: true,
                                       version: '2.0',
-                                      'x-decorator': 'CollectionProvider',
+                                      'x-decorator': 'CollectionProvider_deprecated',
                                       'x-decorator-props': { name: 'attachments' },
                                       'x-component': 'Action.Drawer',
                                       'x-component-props': { className: 'nb-action-popup' },
@@ -561,7 +561,7 @@ export default {
                                     drawer1: {
                                       _isJSONSchemaObject: true,
                                       version: '2.0',
-                                      'x-decorator': 'CollectionProvider',
+                                      'x-decorator': 'CollectionProvider_deprecated',
                                       'x-decorator-props': { name: 't_94rsj6kbzvn' },
                                       'x-component': 'Action.Drawer',
                                       'x-component-props': { className: 'nb-action-popup' },
@@ -722,7 +722,7 @@ export default {
                                     drawer1: {
                                       _isJSONSchemaObject: true,
                                       version: '2.0',
-                                      'x-decorator': 'CollectionProvider',
+                                      'x-decorator': 'CollectionProvider_deprecated',
                                       'x-decorator-props': { name: 'users' },
                                       'x-component': 'Action.Drawer',
                                       'x-component-props': { className: 'nb-action-popup' },
@@ -950,7 +950,7 @@ export default {
                                     drawer1: {
                                       _isJSONSchemaObject: true,
                                       version: '2.0',
-                                      'x-decorator': 'CollectionProvider',
+                                      'x-decorator': 'CollectionProvider_deprecated',
                                       'x-decorator-props': { name: 't_j6omof6tza8' },
                                       'x-component': 'Action.Drawer',
                                       'x-component-props': { className: 'nb-action-popup' },
@@ -1222,7 +1222,7 @@ export default {
                                                                     drawer1: {
                                                                       _isJSONSchemaObject: true,
                                                                       version: '2.0',
-                                                                      'x-decorator': 'CollectionProvider',
+                                                                      'x-decorator': 'CollectionProvider_deprecated',
                                                                       'x-decorator-props': { name: 'users' },
                                                                       'x-component': 'Action.Drawer',
                                                                       'x-component-props': {
@@ -1413,7 +1413,7 @@ export default {
                                                                     drawer1: {
                                                                       _isJSONSchemaObject: true,
                                                                       version: '2.0',
-                                                                      'x-decorator': 'CollectionProvider',
+                                                                      'x-decorator': 'CollectionProvider_deprecated',
                                                                       'x-decorator-props': { name: 'attachments' },
                                                                       'x-component': 'Action.Drawer',
                                                                       'x-component-props': {
@@ -1854,7 +1854,7 @@ export default {
                                                     drawer1: {
                                                       _isJSONSchemaObject: true,
                                                       version: '2.0',
-                                                      'x-decorator': 'CollectionProvider',
+                                                      'x-decorator': 'CollectionProvider_deprecated',
                                                       'x-decorator-props': { name: 'users' },
                                                       'x-component': 'Action.Drawer',
                                                       'x-component-props': { className: 'nb-action-popup' },
@@ -2018,7 +2018,7 @@ export default {
                                                     drawer1: {
                                                       _isJSONSchemaObject: true,
                                                       version: '2.0',
-                                                      'x-decorator': 'CollectionProvider',
+                                                      'x-decorator': 'CollectionProvider_deprecated',
                                                       'x-decorator-props': { name: 'attachments' },
                                                       'x-component': 'Action.Drawer',
                                                       'x-component-props': { className: 'nb-action-popup' },
@@ -2478,7 +2478,8 @@ export default {
                                                                         drawer1: {
                                                                           _isJSONSchemaObject: true,
                                                                           version: '2.0',
-                                                                          'x-decorator': 'CollectionProvider',
+                                                                          'x-decorator':
+                                                                            'CollectionProvider_deprecated',
                                                                           'x-decorator-props': {
                                                                             name: 'attachments',
                                                                           },
@@ -2698,7 +2699,8 @@ export default {
                                                                         drawer1: {
                                                                           _isJSONSchemaObject: true,
                                                                           version: '2.0',
-                                                                          'x-decorator': 'CollectionProvider',
+                                                                          'x-decorator':
+                                                                            'CollectionProvider_deprecated',
                                                                           'x-decorator-props': {
                                                                             name: 't_94rsj6kbzvn',
                                                                           },
@@ -2847,7 +2849,8 @@ export default {
                                                                         drawer1: {
                                                                           _isJSONSchemaObject: true,
                                                                           version: '2.0',
-                                                                          'x-decorator': 'CollectionProvider',
+                                                                          'x-decorator':
+                                                                            'CollectionProvider_deprecated',
                                                                           'x-decorator-props': { name: 'users' },
                                                                           'x-component': 'Action.Drawer',
                                                                           'x-component-props': {
@@ -3306,7 +3309,7 @@ export default {
                                                                                           _isJSONSchemaObject: true,
                                                                                           version: '2.0',
                                                                                           'x-decorator':
-                                                                                            'CollectionProvider',
+                                                                                            'CollectionProvider_deprecated',
                                                                                           'x-decorator-props': {
                                                                                             name: 'users',
                                                                                           },
@@ -3708,7 +3711,7 @@ export default {
                                             drawer1: {
                                               _isJSONSchemaObject: true,
                                               version: '2.0',
-                                              'x-decorator': 'CollectionProvider',
+                                              'x-decorator': 'CollectionProvider_deprecated',
                                               'x-decorator-props': { name: 'attachments' },
                                               'x-component': 'Action.Drawer',
                                               'x-component-props': { className: 'nb-action-popup' },
@@ -3962,7 +3965,7 @@ export default {
                                             drawer1: {
                                               _isJSONSchemaObject: true,
                                               version: '2.0',
-                                              'x-decorator': 'CollectionProvider',
+                                              'x-decorator': 'CollectionProvider_deprecated',
                                               'x-decorator-props': { name: 't_94rsj6kbzvn' },
                                               'x-component': 'Action.Drawer',
                                               'x-component-props': { className: 'nb-action-popup' },
@@ -4124,7 +4127,7 @@ export default {
                                             drawer1: {
                                               _isJSONSchemaObject: true,
                                               version: '2.0',
-                                              'x-decorator': 'CollectionProvider',
+                                              'x-decorator': 'CollectionProvider_deprecated',
                                               'x-decorator-props': { name: 'users' },
                                               'x-component': 'Action.Drawer',
                                               'x-component-props': { className: 'nb-action-popup' },
@@ -4352,7 +4355,7 @@ export default {
                                             drawer1: {
                                               _isJSONSchemaObject: true,
                                               version: '2.0',
-                                              'x-decorator': 'CollectionProvider',
+                                              'x-decorator': 'CollectionProvider_deprecated',
                                               'x-decorator-props': { name: 't_j6omof6tza8' },
                                               'x-component': 'Action.Drawer',
                                               'x-component-props': { className: 'nb-action-popup' },
@@ -4630,7 +4633,8 @@ export default {
                                                                             drawer1: {
                                                                               _isJSONSchemaObject: true,
                                                                               version: '2.0',
-                                                                              'x-decorator': 'CollectionProvider',
+                                                                              'x-decorator':
+                                                                                'CollectionProvider_deprecated',
                                                                               'x-decorator-props': { name: 'users' },
                                                                               'x-component': 'Action.Drawer',
                                                                               'x-component-props': {
@@ -4827,7 +4831,8 @@ export default {
                                                                             drawer1: {
                                                                               _isJSONSchemaObject: true,
                                                                               version: '2.0',
-                                                                              'x-decorator': 'CollectionProvider',
+                                                                              'x-decorator':
+                                                                                'CollectionProvider_deprecated',
                                                                               'x-decorator-props': {
                                                                                 name: 'attachments',
                                                                               },
@@ -5165,7 +5170,7 @@ export default {
                                                                                       _isJSONSchemaObject: true,
                                                                                       version: '2.0',
                                                                                       'x-decorator':
-                                                                                        'CollectionProvider',
+                                                                                        'CollectionProvider_deprecated',
                                                                                       'x-decorator-props': {
                                                                                         name: 'users',
                                                                                       },
@@ -5376,7 +5381,7 @@ export default {
                                                                                       _isJSONSchemaObject: true,
                                                                                       version: '2.0',
                                                                                       'x-decorator':
-                                                                                        'CollectionProvider',
+                                                                                        'CollectionProvider_deprecated',
                                                                                       'x-decorator-props': {
                                                                                         name: 'attachments',
                                                                                       },
@@ -5631,7 +5636,7 @@ export default {
                                                             drawer1: {
                                                               _isJSONSchemaObject: true,
                                                               version: '2.0',
-                                                              'x-decorator': 'CollectionProvider',
+                                                              'x-decorator': 'CollectionProvider_deprecated',
                                                               'x-decorator-props': { name: 'users' },
                                                               'x-component': 'Action.Drawer',
                                                               'x-component-props': { className: 'nb-action-popup' },
@@ -6017,7 +6022,7 @@ export default {
                     drawer1: {
                       _isJSONSchemaObject: true,
                       version: '2.0',
-                      'x-decorator': 'CollectionProvider',
+                      'x-decorator': 'CollectionProvider_deprecated',
                       'x-decorator-props': { name: 't_94rsj6kbzvn' },
                       'x-component': 'Action.Drawer',
                       'x-component-props': { className: 'nb-action-popup' },
@@ -6202,7 +6207,7 @@ export default {
                     drawer1: {
                       _isJSONSchemaObject: true,
                       version: '2.0',
-                      'x-decorator': 'CollectionProvider',
+                      'x-decorator': 'CollectionProvider_deprecated',
                       'x-decorator-props': { name: 'users' },
                       'x-component': 'Action.Drawer',
                       'x-component-props': { className: 'nb-action-popup' },
