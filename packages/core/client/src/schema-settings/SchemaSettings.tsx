@@ -1358,7 +1358,7 @@ export const SchemaSettingsDataTemplates = function DataTemplates(props) {
   );
 };
 
-export const SchemaSettingsEnableChildCollections = function EnableChildCollectionsItem(props) {
+export function SchemaSettingsEnableChildCollections(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
@@ -1443,7 +1443,7 @@ export const SchemaSettingsEnableChildCollections = function EnableChildCollecti
       }}
     />
   );
-};
+}
 
 export const defaultInputStyle = css`
   & > .nb-form-item {
