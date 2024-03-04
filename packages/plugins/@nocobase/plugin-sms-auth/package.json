@@ -6,8 +6,8 @@
   "description.zh-CN": "通过短信验证码认证身份。",
   "version": "0.20.0-alpha.3",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/sms-auth",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/sms-auth",
+  "homepage": "https://docs.nocobase.com/handbook/auth-sms",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/auth-sms",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@formily/react": "2.x",
@@ -25,7 +25,7 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Authentication"
   ]

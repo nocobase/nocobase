@@ -1,14 +1,13 @@
-import React, { useContext, useEffect, useMemo } from 'react';
-import { Tabs } from 'antd';
 import { useApp } from '@nocobase/client';
-import { useACLTranslation } from '../locale';
-import { GeneralPermissions } from './GeneralPermissions';
-import { AvailableActionsProvider } from './AvailableActions';
-import { ActionPermissions } from './ActionPermissions';
-import { MenuPermissions } from './MenuPermissions';
-import { MenuItemsProvider } from './MenuItemsProvider';
-import { PluginPermissions } from './PluginPermissions';
+import { Tabs } from 'antd';
+import React, { useContext, useEffect, useMemo } from 'react';
 import { RolesManagerContext } from '../RolesManagerProvider';
+import { useACLTranslation } from '../locale';
+import { AvailableActionsProvider } from './AvailableActions';
+import { GeneralPermissions } from './GeneralPermissions';
+import { MenuItemsProvider } from './MenuItemsProvider';
+import { MenuPermissions } from './MenuPermissions';
+import { PluginPermissions } from './PluginPermissions';
 
 const TabLayout: React.FC = (props) => {
   return <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>{props.children}</div>;
@@ -26,7 +25,7 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
     () => [
       {
         key: 'general',
-        label: t('General permissions'),
+        label: t('General'),
         children: (
           <TabLayout>
             <GeneralPermissions active={activeKey === 'general' && active} />
@@ -35,7 +34,7 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
       },
       {
         key: 'menu',
-        label: t('Menu permissions'),
+        label: t('Menu'),
         children: (
           <TabLayout>
             <MenuItemsProvider>
@@ -48,7 +47,7 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
         ? [
             {
               key: 'plugin',
-              label: t('Plugin settings permissions'),
+              label: t('Plugin settings'),
               children: (
                 <TabLayout>
                   <PluginPermissions active={activeKey === 'plugin' && active} />
@@ -61,7 +60,7 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
         ? [
             {
               key: 'dataSource',
-              label: t('Data source permissions'),
+              label: t('Data sources'),
               children: (
                 <TabLayout>
                   <MenuItemsProvider>

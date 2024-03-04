@@ -7,8 +7,8 @@
   "description.zh-CN": "NocoBase HTTP API 的 OpenAPI 文档生成器。",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/api-doc",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/api-doc",
+  "homepage": "https://docs.nocobase.com/handbook/api-doc",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/api-doc",
   "types": "./dist/server/index.d.ts",
   "devDependencies": {
     "swagger-ui-dist": "^5.3.1"
@@ -23,5 +23,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/api-doc"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

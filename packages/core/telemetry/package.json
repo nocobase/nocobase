@@ -19,5 +19,6 @@
     "@opentelemetry/sdk-trace-base": "^1.19.0",
     "@opentelemetry/sdk-trace-node": "^1.19.0",
     "@opentelemetry/semantic-conventions": "^1.19.0"
-  }
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }
