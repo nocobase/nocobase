@@ -33,3 +33,9 @@
 .rc-virtual-list-scrollbar-thumb:active {
   background: var(--colorBgScrollBarActive) !important;
 }
+
+// fix https://nocobase.height.app/T-3333/description
+.ant-table-column-has-sorters .nb-sortable-designer {
+  margin-right: calc(0px - var(--margin) - var(--margin));
+  padding-right: calc(var(--padding) + var(--padding));
+}
