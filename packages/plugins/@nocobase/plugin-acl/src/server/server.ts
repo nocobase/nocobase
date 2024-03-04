@@ -654,6 +654,11 @@ export class PluginACL extends Plugin {
         if (action == 'destroy' && !ctx.action.resourceName.includes('.')) {
           const repository = actionUtils.getRepositoryFromParams(ctx);
 
+          if (!repository) {
+            await next();
+            return;
+          }
+
           // params after merge with fixed params
           const filteredCount = await repository.count(ctx.permission.mergedParams);
 
