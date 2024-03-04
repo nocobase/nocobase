@@ -12,7 +12,7 @@ export type AppendsTreeSelectProps = {
   multiple?: boolean;
   filter?(field): boolean;
   collection?: string;
-  useCollection_deprecated?(props: Pick<AppendsTreeSelectProps, 'collection'>): string;
+  useCollection?(props: Pick<AppendsTreeSelectProps, 'collection'>): string;
   rootOption?: {
     label: string;
     value: string;
@@ -78,7 +78,7 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
     value: propsValue,
     onChange,
     collection,
-    useCollection_deprecated = usePropsCollection,
+    useCollection = usePropsCollection,
     filter = trueFilter,
     rootOption,
     loadData: propsLoadData,
@@ -88,7 +88,7 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
   const compile = useCompile();
   const { t } = useTranslation();
   const [optionsMap, setOptionsMap] = useState({});
-  const baseCollection = useCollection_deprecated({ collection });
+  const baseCollection = useCollection({ collection });
   const treeData = Object.values(optionsMap);
   const value: string | DefaultOptionType[] = useMemo(() => {
     if (props.multiple) {
@@ -99,7 +99,7 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
 
   const loadData = useCallback(
     async (option) => {
-      if (propsLoadData !== null) {
+      if (propsLoadData != null) {
         return propsLoadData(option);
       }
       if (!option.isLeaf && option.loadChildren) {
