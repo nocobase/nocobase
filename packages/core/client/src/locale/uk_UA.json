@@ -758,6 +758,6 @@
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" може бути видалено. Будь ласка, видаліть цей {{blockType}}.",
   "DataSource": "Джерело даних",
   "Home page": "Домашня сторінка",
-  "User manual": "Посібник користувача",
+  "Handbook": "Посібник користувача",
   "License": "Ліцензія"
 }

@@ -7,8 +7,8 @@
   "description.zh-CN": "提供日历数据表模板和区块，用于管理日期数据，通常用于事件、约会、任务等与日期/时间相关的信息。",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/calendar",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/calendar",
+  "homepage": "https://docs.nocobase.com/handbook/calendar",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/calendar",
   "types": "./dist/server/index.d.ts",
   "devDependencies": {
     "@ant-design/icons": "5.x",
@@ -36,7 +36,7 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/calendar"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Collections",
     "Blocks"

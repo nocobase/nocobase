@@ -845,6 +845,6 @@
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" 可能已被刪除，請移除這個 {{blockType}}。",
   "Allow selection of existing records":"允許選擇已有資料",
   "Home page": "主頁",
-  "User manual": "使用手冊",
+  "Handbook": "使用手冊",
   "License": "許可證"
 }

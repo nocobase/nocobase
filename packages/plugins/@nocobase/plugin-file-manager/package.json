@@ -7,8 +7,8 @@
   "description.zh-CN": "提供文件存储服务，并提供了文件表模板和附件字段。",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/file-manager",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/file-manager",
+  "homepage": "https://docs.nocobase.com/handbook/file-manager",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/file-manager",
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
     "@formily/antd-v5": "1.x",
@@ -43,5 +43,5 @@
     "Collections",
     "Collection fields"
   ],
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

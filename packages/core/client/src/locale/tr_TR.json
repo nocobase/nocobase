@@ -550,6 +550,6 @@
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" silinmiş olabilir. Lütfen bu {{blockType}}'yi kaldırın.",
   "DataSource": "Veri Kaynağı",
   "Home page": "Anasayfa",
-  "User manual": "Kullanıcı kılavuzu",
+  "Handbook": "Kullanıcı kılavuzu",
   "License": "Lisans"
 }

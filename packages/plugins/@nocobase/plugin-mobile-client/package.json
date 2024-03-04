@@ -2,8 +2,8 @@
   "name": "@nocobase/plugin-mobile-client",
   "version": "0.20.0-alpha.3",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/mobile-client",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/mobile-client",
+  "homepage": "https://docs.nocobase.com/handbook/mobile-client",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile-client",
   "license": "AGPL-3.0",
   "displayName": "Mobile client",
   "displayName.zh-CN": "移动端",
@@ -33,5 +33,5 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }
