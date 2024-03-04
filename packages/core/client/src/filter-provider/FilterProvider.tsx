@@ -136,7 +136,12 @@ export const DataBlockCollector = ({
     };
   }, []);
 
-  return <div ref={container}>{children}</div>;
+  return (
+    // 高度 100% 是为了撑满固定区块的高度
+    <div ref={container} style={{ height: '100%' }}>
+      {children}
+    </div>
+  );
 };
 
 /**
