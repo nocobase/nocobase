@@ -31,7 +31,6 @@ test.describe('table block schema settings', () => {
     });
   });
 
-  // 现有固定区块功能会被废弃，现 skip 掉
   test('fix block', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).goto();
 
