@@ -13,7 +13,9 @@ test.describe('blockInitializers should add kanban block', () => {
     await page.getByRole('menuitem', { name: 'General' }).click();
     await page.getByLabel('block-item-Select-Grouping field').locator('.ant-select').click();
     await page.getByRole('option', { name: 'Single select' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByLabel('block-item-Sorting field').getByTestId('select-single').click();
+    await page.getByRole('option', { name: 'singleSelect_sort (Group' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
   });
 });
@@ -62,9 +64,7 @@ test.describe('configure fields', () => {
     //修改标题字段
     await page.getByLabel('schema-initializer-ActionBar-KanbanActionInitializers-general').click();
     await page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne').hover();
-    await page
-      .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToOne')
-      .hover();
+    await page.getByTestId('card-1').getByLabel('designer-schema-settings-').hover();
     await page.getByText('Title field').click();
     await page.getByRole('option', { name: 'Username' }).click();
     //显示新的标题字段符合预期
@@ -108,6 +108,9 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Created at' }).getByRole('switch').click();
     await page.getByRole('menuitem', { name: 'Single Select' }).getByRole('switch').click();
+
+    await page.mouse.move(300, 0);
+
     await expect(page.getByLabel('block-item-Kanban.Card-general-kanban')).toBeVisible();
   });
 });

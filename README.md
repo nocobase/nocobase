@@ -8,6 +8,7 @@ NocoBase is in early stage of development and is subject to frequent changes, pl
 
 ## Recent major updates
 
+- [v0.20：Support for multiple data sources - 2024/03/03](https://docs-cn.nocobase.com/welcome/release/v0200-changelog)
 - [v0.19: Application process optimization - 2024/01/08](https://blog.nocobase.com/posts/release-v019/)
 - [v0.18: Establish a sound testing system - 2023/12/21](https://blog.nocobase.com/posts/release-v018/)
 - [v0.17: New SchemaInitializer and SchemaSettings - 2023/12/11](https://blog.nocobase.com/posts/release-v017/)

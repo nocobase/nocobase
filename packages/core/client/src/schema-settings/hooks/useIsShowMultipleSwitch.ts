@@ -1,5 +1,6 @@
 import { useField, useFieldSchema } from '@formily/react';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
+import { useColumnSchema } from '../../schema-component/antd/table-v2/Table.Column.Decorator';
 
 /**
  * 是否显示 `允许多选` 开关
@@ -7,7 +8,7 @@ import { useCollectionManager } from '../../collection-manager';
 export function useIsShowMultipleSwitch() {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField } = useCollectionManager_deprecated();
 
   const collectionField = fieldSchema['x-collection-field']
     ? getCollectionField(fieldSchema['x-collection-field'])

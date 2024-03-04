@@ -31,67 +31,14 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   protected _changedWithAssociations = new Set();
   protected _previousDataValuesWithAssociations = {};
 
-  static async sync(options) {
-    if (this.collection.isView()) {
-      return;
-    }
-
-    if (this.collection.options.sync === false) {
-      return;
-    }
-
+  public get db(): Database {
     // @ts-ignore
-    const collectionSyncOptions = this.database.collectionFactory.collectionTypes.get(this.collection.constructor)
-      ?.onSync;
+    return this.constructor.database;
+  }
 
-    if (collectionSyncOptions) {
-      await collectionSyncOptions(this, options);
-      return;
-    }
-
-    const model = this as any;
-
-    const _schema = model._schema;
-
-    if (_schema && _schema != 'public') {
-      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${_schema}";`, {
-        raw: true,
-        transaction: options?.transaction,
-      });
-    }
-
-    // fix sequelize sync with model that not have any column
-    if (Object.keys(model.tableAttributes).length === 0) {
-      if (this.database.inDialect('sqlite', 'mysql', 'mariadb')) {
-        console.error(`Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`);
-        return;
-      }
-
-      // @ts-ignore
-      const queryInterface = this.sequelize.queryInterface;
-
-      if (!queryInterface.patched) {
-        const oldDescribeTable = queryInterface.describeTable;
-        queryInterface.describeTable = async function (...args) {
-          try {
-            return await oldDescribeTable.call(this, ...args);
-          } catch (err) {
-            if (err.message.includes('No description found for')) {
-              return [];
-            } else {
-              throw err;
-            }
-          }
-        };
-        queryInterface.patched = true;
-      }
-    }
-
-    if (this.collection.isInherited()) {
-      return SyncRunner.syncInheritModel(model, options);
-    }
-
-    return SequelizeModel.sync.call(this, options);
+  static async sync(options) {
+    const runner = new SyncRunner(this);
+    return runner.runSync(options);
   }
 
   // TODO

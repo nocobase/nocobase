@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：数据操作触发器",
   "description": "Bind action buttons to trigger workflow events when clicked.",
   "description.zh-CN": "可对数据操作按钮绑定，在点击后触发对应的工作流事件。",
-  "version": "0.19.0-alpha.9",
+  "version": "0.20.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/workflow-action-trigger",
@@ -21,7 +21,7 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Workflow"
   ]

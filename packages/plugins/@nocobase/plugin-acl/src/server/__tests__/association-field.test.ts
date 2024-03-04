@@ -265,7 +265,7 @@ describe('association field acl', () => {
       action: 'add',
     });
 
-    const viewAction = await db.getRepository('rolesResourcesActions').findOne({
+    const viewAction = await db.getRepository('dataSourcesRolesResourcesActions').findOne({
       filter: {
         name: 'view',
       },
@@ -274,7 +274,10 @@ describe('association field acl', () => {
     const actionId = viewAction.get('id') as number;
 
     const response = await adminAgent.resource('roles.resources', 'new').update({
-      filterByTk: 'users',
+      filter: {
+        name: 'users',
+        dataSourceKey: 'main',
+      },
       values: {
         name: 'users',
         usingActionsConfig: true,
@@ -383,7 +386,10 @@ describe('association field acl', () => {
 
   it('should revoke association action on field deleted', async () => {
     await adminAgent.resource('roles.resources', 'new').update({
-      filterByTk: 'users',
+      filter: {
+        name: 'users',
+        dataSourceKey: 'main',
+      },
       values: {
         name: 'users',
         usingActionsConfig: true,
@@ -411,14 +417,14 @@ describe('association field acl', () => {
       },
     });
 
-    const roleResource = await db.getRepository('rolesResources').findOne({
+    const roleResource = await db.getRepository('dataSourcesRolesResources').findOne({
       filter: {
         name: 'users',
       },
     });
 
     const action = await db
-      .getRepository<HasManyRepository>('rolesResources.actions', roleResource.get('id') as string)
+      .getRepository<HasManyRepository>('dataSourcesRolesResources.actions', roleResource.get('id') as string)
       .findOne({
         filter: {
           name: 'create',

@@ -4,11 +4,11 @@
   "displayName.zh-CN": "认证：API 密钥",
   "description": "Allows users to use API key to access application's HTTP API",
   "description.zh-CN": "允许用户使用 API 密钥访问应用的 HTTP API",
-  "version": "0.19.0-alpha.9",
+  "version": "0.20.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/api-keys",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/api-keys",
+  "homepage": "https://docs.nocobase.com/handbook/api-keys",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/api-keys",
   "keywords": [
     "Authentication"
   ],
@@ -32,5 +32,5 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

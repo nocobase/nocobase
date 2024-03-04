@@ -12,7 +12,7 @@ import {
 import { getRepositoryFromParams } from '../utils';
 
 export async function move(ctx: Context, next) {
-  const repository = getRepositoryFromParams(ctx);
+  const repository = ctx.databaseRepository || getRepositoryFromParams(ctx);
 
   const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params;
 

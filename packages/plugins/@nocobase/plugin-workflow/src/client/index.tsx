@@ -32,6 +32,7 @@ import UpdateInstruction from './nodes/update';
 import DestroyInstruction from './nodes/destroy';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 import { NAMESPACE } from './locale';
+import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
 
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
@@ -79,6 +80,8 @@ export default class PluginWorkflowClient extends Plugin {
       Component: WorkflowPane,
       aclSnippet: 'pm.workflow.workflows',
     });
+
+    this.app.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
 
     this.registerTrigger('collection', CollectionTrigger);
     this.registerTrigger('schedule', ScheduleTrigger);

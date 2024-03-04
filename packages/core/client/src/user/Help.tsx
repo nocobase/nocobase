@@ -46,14 +46,10 @@ const SettingsMenu: React.FC<{
       key: 'userManual',
       label: (
         <a
-          href={
-            isSimplifiedChinese
-              ? 'https://docs-cn.nocobase.com/manual/quick-start/the-first-app'
-              : 'https://docs.nocobase.com/manual/quick-start/the-first-app'
-          }
+          href={isSimplifiedChinese ? 'https://docs-cn.nocobase.com/handbook' : 'https://docs.nocobase.com/handbook'}
           target="__blank"
         >
-          {t('User manual')}
+          {t('Handbook')}
         </a>
       ),
     },

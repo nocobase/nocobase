@@ -1,0 +1,20 @@
+{
+  "name": "@nocobase/plugin-data-source-manager",
+  "version": "0.20.0-alpha.3",
+  "main": "dist/server/index.js",
+  "displayName": "Data source manager",
+  "displayName.zh-CN": "数据源管理",
+  "description": "Manage data sources, including the built-in Master database, external databases, APIs, etc.",
+  "description.zh-CN": "管理数据源，包括内置的 Master 数据库，外部的数据库、API。",
+  "homepage": "https://docs.nocobase.com/handbook/data-source-manager",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-manager",
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "keywords": [
+    "Data model tools"
+  ],
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+}

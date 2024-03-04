@@ -4,11 +4,11 @@
   "displayName.zh-CN": "工作流：并行分支节点",
   "description": "Could be used for parallel execution of branch processes in the workflow.",
   "description.zh-CN": "用于在工作流中需要并行执行的分支流程。",
-  "version": "0.19.0-alpha.9",
+  "version": "0.20.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/workflow-parallel",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/workflow-parallel",
+  "homepage": "https://docs.nocobase.com/handbook/workflow-parallel",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-parallel",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "antd": "5.x",
@@ -22,7 +22,7 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Workflow"
   ]

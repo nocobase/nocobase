@@ -232,6 +232,8 @@ describe('update associations', () => {
       await db.close();
     });
     it('user.posts', async () => {
+      await User.model.create<any>({ name: 'user01' });
+      await User.model.create<any>({ name: 'user02' });
       const user1 = await User.model.create<any>({ name: 'user1' });
       await updateAssociations(user1, {
         posts: {

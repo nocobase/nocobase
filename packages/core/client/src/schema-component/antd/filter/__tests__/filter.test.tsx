@@ -105,10 +105,13 @@ describe('Filter', () => {
   it('dynamic options', async () => {
     render(<App6 />);
 
+    await waitFor(() => {
+      expect(screen.getByText(/test1/i)).toBeInTheDocument();
+    });
+
     const addBtn = screen.getByText(/^Add condition$/i);
     const addGroupBtn = screen.getByText(/^Add condition group$/i);
 
-    expect(screen.getByText(/test1/i)).toBeInTheDocument();
     expect(addBtn).toBeInTheDocument();
     expect(addGroupBtn).toBeInTheDocument();
 

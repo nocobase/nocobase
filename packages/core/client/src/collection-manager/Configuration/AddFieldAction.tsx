@@ -11,11 +11,11 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import * as components from './components';
-import { getOptions } from './interfaces';
+import { useFieldInterfaceOptions } from './interfaces';
 
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
@@ -29,24 +29,41 @@ const getSchema = (schema: IField, record: any, compile) => {
     properties.defaultValue.required = false;
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
-    properties['defaultValue']['x-reactions'] = {
-      dependencies: [
-        'uiSchema.x-component-props.gmt',
-        'uiSchema.x-component-props.showTime',
-        'uiSchema.x-component-props.dateFormat',
-        'uiSchema.x-component-props.timeFormat',
-      ],
-      fulfill: {
-        state: {
-          componentProps: {
-            gmt: '{{$deps[0]}}',
-            showTime: '{{$deps[1]}}',
-            dateFormat: '{{$deps[2]}}',
-            timeFormat: '{{$deps[3]}}',
+    properties['defaultValue']['x-reactions'] = [
+      {
+        dependencies: [
+          'uiSchema.x-component-props.gmt',
+          'uiSchema.x-component-props.showTime',
+          'uiSchema.x-component-props.dateFormat',
+          'uiSchema.x-component-props.timeFormat',
+        ],
+        fulfill: {
+          state: {
+            componentProps: {
+              gmt: '{{$deps[0]}}',
+              showTime: '{{$deps[1]}}',
+              dateFormat: '{{$deps[2]}}',
+              timeFormat: '{{$deps[3]}}',
+            },
           },
         },
       },
-    };
+      {
+        dependencies: ['primaryKey', 'unique', 'autoIncrement'],
+        when: '{{$deps[0]||$deps[1]||$deps[2]}}',
+        fulfill: {
+          state: {
+            hidden: true,
+            value: null,
+          },
+        },
+        otherwise: {
+          state: {
+            hidden: false,
+          },
+        },
+      },
+    ];
   }
   const initialValue: any = {
     name: `f_${uid()}`,
@@ -140,7 +157,7 @@ export const useCollectionFieldFormValues = () => {
 
 const useCreateCollectionField = () => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -178,13 +195,15 @@ export const AddCollectionField = (props) => {
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align, database } = props;
-  const { getInterface, getTemplate, collections } = useCollectionManager();
+  const { getInterface, getTemplate, collections, getCollection } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
   const { isDialect } = useDialect();
+  const options = useFieldInterfaceOptions();
+  const fields = getCollection(record.name)?.options?.fields || record.fields || [];
 
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -196,15 +215,15 @@ export const AddFieldAction = (props) => {
   }, []);
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
-    const { exclude, include } = availableFieldInterfaces || {};
+    const { exclude, include } = (availableFieldInterfaces || {}) as any;
     const optionArr = [];
-    getOptions().forEach((v) => {
+    options.forEach((v) => {
       if (v.key === 'systemInfo') {
         optionArr.push({
           ...v,
           children: v.children.filter((v) => {
-            if (v.value === 'id') {
-              return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
+            if (v.hidden) {
+              return false;
             } else if (v.value === 'tableoid') {
               if (include?.length) {
                 return include.includes(v.value);
@@ -219,7 +238,7 @@ export const AddFieldAction = (props) => {
         let children = [];
         if (include?.length) {
           include.forEach((k) => {
-            const field = v?.children?.find((h) => [k, k.interface].includes(h.value));
+            const field = v?.children?.find((h) => [k, k.interface].includes(h.name));
             field &&
               children.push({
                 ...field,
@@ -228,7 +247,7 @@ export const AddFieldAction = (props) => {
           });
         } else if (exclude?.length) {
           children = v?.children?.filter((v) => {
-            return !exclude.includes(v.value);
+            return !exclude.includes(v.name);
           });
         } else {
           children = v?.children;
@@ -304,6 +323,18 @@ export const AddFieldAction = (props) => {
       items,
     };
   }, [getInterface, items, record]);
+  const scopeKeyOptions = useMemo(() => {
+    return fields
+      .filter((v) => {
+        return ['string', 'bigInt', 'integer'].includes(v.type);
+      })
+      .map((k) => {
+        return {
+          value: k.name,
+          label: compile(k.uiSchema?.title),
+        };
+      });
+  }, [fields?.length]);
   return (
     record.template !== 'sql' && (
       <RecordProvider record={record}>
@@ -331,6 +362,8 @@ export const AddFieldAction = (props) => {
               collections: currentCollections,
               isDialect,
               disabledJSONB: false,
+              scopeKeyOptions,
+              createMainOnly: true,
               ...scope,
             }}
           />

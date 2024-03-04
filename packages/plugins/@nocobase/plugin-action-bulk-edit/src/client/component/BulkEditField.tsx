@@ -1,18 +1,18 @@
 import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
-import { merge, uid } from '@formily/shared';
+import { merge } from '@formily/shared';
+import {
+  CollectionFieldProvider,
+  useCollection_deprecated,
+  useCollectionField_deprecated,
+  useCompile,
+  useComponent,
+  useFormBlockContext,
+} from '@nocobase/client';
 import { Checkbox, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useFormBlockContext,
-  CollectionFieldProvider,
-  useCollection,
-  useCollectionField,
-  useCompile,
-  useComponent,
-} from '@nocobase/client';
 
 export const DeletedField = () => {
   const { t } = useTranslation();
@@ -21,7 +21,7 @@ export const DeletedField = () => {
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { name, interface: interfaceType, uiSchema } = useCollectionField();
+  const { name, interface: interfaceType, uiSchema } = useCollectionField_deprecated();
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -74,7 +74,7 @@ const InternalField: React.FC = (props) => {
 const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
+    <CollectionFieldProvider name={fieldSchema.name}>
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
@@ -93,7 +93,7 @@ export const BulkEditField = (props: any) => {
   const field = useField<Field>();
   const [type, setType] = useState<number>(BulkEditFormItemValueType.ChangedTo);
   const [value, setValue] = useState(null);
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const collectionField = getField(fieldSchema.name) || {};
 
   useEffect(() => {
@@ -106,24 +106,6 @@ export const BulkEditField = (props: any) => {
 
   const valueChangeHandler = (val) => {
     setValue(val?.target?.value ?? val?.target?.checked ?? val);
-  };
-
-  const collectionSchema: any = {
-    type: 'void',
-    properties: {
-      [uid()]: {
-        type: 'string',
-        'x-component': 'BulkEditCollectionField',
-        'x-collection-field': fieldSchema['x-collection-field'],
-        'x-component-props': {
-          ...props,
-          value,
-          onChange: valueChangeHandler,
-          style: { minWidth: 150 },
-        },
-        'x-decorator': 'FormItem',
-      },
-    },
   };
 
   return (

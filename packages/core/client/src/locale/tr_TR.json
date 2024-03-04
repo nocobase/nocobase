@@ -544,7 +544,12 @@
   "Search plugin": "Eklenti ara",
   "Author": "Yazar",
   "Plugin loading failed. Please check the server logs.": "Eklenti yüklenemedi. Lütfen sunucu günlüklerini kontrol edin.",
+  "loading": "yükleniyor",
+  "name is required": "ad gereklidir",
+  "data source": "veri kaynağı",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" silinmiş olabilir. Lütfen bu {{blockType}}'yi kaldırın.",
+  "DataSource": "Veri Kaynağı",
   "Home page": "Anasayfa",
-  "User manual": "Kullanıcı kılavuzu",
+  "Handbook": "Kullanıcı kılavuzu",
   "License": "Lisans"
 }

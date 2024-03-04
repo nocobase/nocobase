@@ -5,27 +5,29 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
-import { omit, unionBy, uniqBy } from 'lodash';
-import React, { useState, useMemo, useContext } from 'react';
+import { unionBy, uniqBy } from 'lodash';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormActiveFieldsProvider } from '../../../block-provider';
-import { FlagProvider } from '../../../flag-provider';
-import { Table } from '../table-v2/Table';
-import { useAssociationFieldContext, useFieldNames } from './hooks';
-import { ActionContextProvider } from '../action';
 import {
   FormProvider,
+  RecordPickerContext,
   RecordPickerProvider,
   SchemaComponentOptions,
   useActionContext,
-  RecordPickerContext,
 } from '../..';
-import { getLabelFormatValue, useLabelUiSchema } from './util';
-import { CollectionProvider } from '../../../collection-manager';
-import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
-import { useCompile } from '../../hooks';
-import { useTableSelectorProps } from './InternalPicker';
 import { useCreateActionProps } from '../../../block-provider/hooks';
+import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
+import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
+import { CollectionProvider_deprecated } from '../../../collection-manager';
+import { CollectionRecordProvider, useCollectionRecord } from '../../../data-source';
+import { FlagProvider } from '../../../flag-provider';
+import { useCompile } from '../../hooks';
+import { ActionContextProvider } from '../action';
+import { Table } from '../table-v2/Table';
+import { useAssociationFieldContext, useFieldNames } from './hooks';
+import { useTableSelectorProps } from './InternalPicker';
+import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 
 export const SubTable: any = observer(
   (props: any) => {
@@ -38,6 +40,7 @@ export const SubTable: any = observer(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+    const recordV2 = useCollectionRecord();
 
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
@@ -135,69 +138,71 @@ export const SubTable: any = observer(
         `}
       >
         <FlagProvider isInSubTable>
-          <FormActiveFieldsProvider name="nester">
-            <Table
-              className={css`
-                .ant-formily-item.ant-formily-item-feedback-layout-loose {
-                  margin-bottom: 0px !important;
+          <CollectionRecordProvider record={null} parentRecord={recordV2}>
+            <FormActiveFieldsProvider name="nester">
+              <Table
+                className={css`
+                  .ant-formily-item.ant-formily-item-feedback-layout-loose {
+                    margin-bottom: 0px !important;
+                  }
+                  .ant-formily-editable {
+                    vertical-align: sub;
+                  }
+                  .ant-table-footer {
+                    display: flex;
+                  }
+                `}
+                bordered
+                size={'small'}
+                field={field}
+                showIndex
+                dragSort={field.editable}
+                showDel={field.editable}
+                pagination={false}
+                rowSelection={{ type: 'none', hideSelectAll: true }}
+                footer={() =>
+                  field.editable && (
+                    <>
+                      {field.componentProps?.allowAddnew !== false && (
+                        <Button
+                          type={'text'}
+                          block
+                          className={css`
+                            display: block;
+                            border-radius: 0px;
+                            border-right: 1px solid rgba(0, 0, 0, 0.06);
+                          `}
+                          onClick={() => {
+                            field.value = field.value || [];
+                            field.value.push(markRecordAsNew({}));
+                            field.onInput(field.value);
+                          }}
+                        >
+                          {t('Add new')}
+                        </Button>
+                      )}
+                      {field.componentProps?.allowSelectExistingRecord && (
+                        <Button
+                          type={'text'}
+                          block
+                          className={css`
+                            display: block;
+                            border-radius: 0px;
+                          `}
+                          onClick={() => {
+                            setVisibleSelector(true);
+                          }}
+                        >
+                          {t('Select')}
+                        </Button>
+                      )}
+                    </>
+                  )
                 }
-                .ant-formily-editable {
-                  vertical-align: sub;
-                }
-                .ant-table-footer {
-                  display: flex;
-                }
-              `}
-              bordered
-              size={'small'}
-              field={field}
-              showIndex
-              dragSort={field.editable}
-              showDel={field.editable}
-              pagination={false}
-              rowSelection={{ type: 'none', hideSelectAll: true }}
-              footer={() =>
-                field.editable && (
-                  <>
-                    {field.componentProps?.allowAddnew !== false && (
-                      <Button
-                        type={'text'}
-                        block
-                        className={css`
-                          display: block;
-                          border-radius: 0px;
-                          border-right: 1px solid rgba(0, 0, 0, 0.06);
-                        `}
-                        onClick={() => {
-                          field.value = field.value || [];
-                          field.value.push({});
-                          field.onInput(field.value);
-                        }}
-                      >
-                        {t('Add new')}
-                      </Button>
-                    )}
-                    {field.componentProps?.allowSelectExistingRecord && (
-                      <Button
-                        type={'text'}
-                        block
-                        className={css`
-                          display: block;
-                          border-radius: 0px;
-                        `}
-                        onClick={() => {
-                          setVisibleSelector(true);
-                        }}
-                      >
-                        {t('Select')}
-                      </Button>
-                    )}
-                  </>
-                )
-              }
-              isSubTable={true}
-            />
-          </FormActiveFieldsProvider>
+                isSubTable={true}
+              />
+            </FormActiveFieldsProvider>
+          </CollectionRecordProvider>
         </FlagProvider>
         <ActionContextProvider
           value={{
@@ -208,7 +213,7 @@ export const SubTable: any = observer(
           }}
         >
           <RecordPickerProvider {...pickerProps}>
-            <CollectionProvider name={collectionField?.target}>
+            <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                   <SchemaComponentOptions
@@ -229,7 +234,7 @@ export const SubTable: any = observer(
                   </SchemaComponentOptions>
                 </TableSelectorParamsProvider>
               </FormProvider>
-            </CollectionProvider>
+            </CollectionProvider_deprecated>
           </RecordPickerProvider>
         </ActionContextProvider>
       </div>

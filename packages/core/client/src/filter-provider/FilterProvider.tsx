@@ -2,7 +2,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { CollectionFieldOptions, useCollection } from '../collection-manager';
+import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
 
@@ -27,7 +27,7 @@ export interface ForeignKeyField {
   [key: string]: any;
 }
 
-type Collection = ReturnType<typeof useCollection>;
+type Collection = ReturnType<typeof useCollection_deprecated>;
 
 export interface DataBlock {
   /** 唯一标识符，schema 中的 name 值 */
@@ -41,7 +41,7 @@ export interface DataBlock {
   /** 清除筛选区块设置的筛选参数 */
   clearFilter: (uid: string) => void;
   /** 数据区块表中所有的关系字段 */
-  associatedFields?: CollectionFieldOptions[];
+  associatedFields?: CollectionFieldOptions_deprecated[];
   /** 数据区块表中所有的外键字段 */
   foreignKeyFields?: ForeignKeyField[];
   /** 数据区块已经存在的过滤条件（通过 `设置数据范围` 或者其它能设置筛选条件的功能） */
@@ -70,18 +70,18 @@ export const FilterBlockProvider: React.FC = ({ children }) => {
 };
 
 /**
- * 用于收集记录当前页面中的数据区块的信息
+ * 用于收集当前页面中的数据区块的信息，用于在过滤区块中使用
  * @param param0
  * @returns
  */
-export const FilterBlockRecord = ({
+export const DataBlockCollector = ({
   children,
   params,
 }: {
   children: React.ReactNode;
   params?: { filter: FilterParam };
 }) => {
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { recordDataBlocks, removeDataBlock } = useFilterBlock();
   const { service } = useBlockRequestContext();
   const field = useField();

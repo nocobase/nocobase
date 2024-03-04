@@ -17,7 +17,7 @@ test('BlockInitializers should add gantt block', async ({ page, mockPage, mockCo
   await page.getByRole('option', { name: 'Percent2' }).click();
   await page.getByLabel('block-item-Select-Time scale').click();
   await page.getByRole('option', { name: 'Day', exact: true }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
   await expect(page.getByLabel('block-item-gantt')).toBeVisible();
 });
 
@@ -58,9 +58,7 @@ test.describe('configure fields', () => {
     await expect(appends).toContain('manyToOne');
     //支持修改标题字段
     await page.getByRole('button', { name: 'Many to one' }).hover();
-    await page
-      .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-TableV2.Column.Designer-general' })
-      .hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general').hover();
     await page.getByRole('menuitem', { name: 'Title field' }).click();
     await page.getByText('Username').click();
     await expect(

@@ -2,6 +2,8 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useBulkDestroyActionProps, useDestroyActionProps, useUpdateActionProps } from '../../block-provider/hooks';
 import { useSchemaTemplateManager } from '../SchemaTemplateManagerProvider';
+import { uiSchemaTemplatesCollection } from '../collections/uiSchemaTemplates';
+import { CollectionTitle } from './CollectionTitle';
 
 const useUpdateSchemaTemplateActionProps = () => {
   const props = useUpdateActionProps();
@@ -43,12 +45,12 @@ export const uiSchemaTemplatesSchema: ISchema = {
       type: 'void',
       'x-decorator': 'TableBlockProvider',
       'x-decorator-props': {
-        collection: 'uiSchemaTemplates',
+        collection: uiSchemaTemplatesCollection,
         resource: 'uiSchemaTemplates',
         action: 'list',
         params: {
           pageSize: 20,
-          appends: ['collection'],
+          // appends: ['collection'],
           sort: ['-createdAt'],
         },
         rowKey: 'key',
@@ -135,7 +137,7 @@ export const uiSchemaTemplatesSchema: ISchema = {
                               'x-decorator': 'FormBlockProvider',
                               'x-decorator-props': {
                                 resource: 'uiSchemaTemplates',
-                                collection: 'uiSchemaTemplates',
+                                collection: uiSchemaTemplatesCollection,
                                 action: 'get',
                                 useParams: '{{ useParamsFromRecord }}',
                               },
@@ -222,13 +224,11 @@ export const uiSchemaTemplatesSchema: ISchema = {
             column2: {
               type: 'void',
               title: '{{t("Collection display name")}}',
-              'x-decorator': 'TableV2.Column.Decorator',
               'x-component': 'TableV2.Column',
               properties: {
                 'collection.title': {
                   type: 'string',
-                  'x-collection-field': 'uiSchemaTemplates.collection',
-                  'x-component': 'Input',
+                  'x-component': CollectionTitle,
                   'x-read-pretty': true,
                   'x-component-props': {
                     ellipsis: true,

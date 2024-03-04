@@ -1,5 +1,5 @@
 import { mockDatabase } from '@nocobase/database';
-import Application, { AppSupervisor, ApplicationOptions, Gateway, PluginManager } from '@nocobase/server';
+import Application, { ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -87,16 +87,6 @@ export class MockServer extends Application {
       await this.cleanDb();
     }
     await this.runCommand('start', '--quickstart');
-  }
-
-  protected createDatabase(options: ApplicationOptions) {
-    const oldDatabase = this._db;
-
-    const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
-    const database = mockDatabase(databaseOptions);
-    database.setContext({ app: this });
-
-    return database;
   }
 
   async destroy(options: any = {}): Promise<void> {
@@ -187,6 +177,16 @@ export class MockServer extends Application {
     });
     return proxy as any;
   }
+
+  protected createDatabase(options: ApplicationOptions) {
+    const oldDatabase = this.db;
+
+    const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
+    const database = mockDatabase(databaseOptions);
+    database.setContext({ app: this });
+
+    return database;
+  }
 }
 
 export function mockServer(options: ApplicationOptions = {}) {
@@ -243,13 +243,13 @@ export async function createMockServer(
     if (beforeInstall) {
       await beforeInstall(app);
     }
-    await app.runCommand('install', '-f');
+    await app.runCommandThrowError('install', '-f');
   }
   if (version) {
     await app.version.update(version);
   }
   if (!skipStart) {
-    await app.runCommand('start');
+    await app.runCommandThrowError('start');
   }
   return app;
 }

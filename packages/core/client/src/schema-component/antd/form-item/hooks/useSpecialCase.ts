@@ -2,8 +2,13 @@ import { Field } from '@formily/core';
 import { Schema, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useEffect, useMemo } from 'react';
-import { CollectionFieldOptions, useCollection, useCollectionManager } from '../../../../collection-manager';
+import {
+  CollectionFieldOptions_deprecated,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+} from '../../../../collection-manager';
 import { isSubMode } from '../../association-field/util';
+import { markRecordAsNew } from '../../../../data-source/collection-record/isNewRecord';
 
 /**
  * #### 处理 `子表单` 和 `子表格` 中的特殊情况
@@ -14,8 +19,8 @@ import { isSubMode } from '../../association-field/util';
 export const useSpecialCase = () => {
   const form = useForm();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionField } = useCollectionManager();
+  const { getField } = useCollection_deprecated();
+  const { getCollectionField } = useCollectionManager_deprecated();
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name);
@@ -74,9 +79,9 @@ export function isSpecialCaseField({
   fieldSchema,
   getCollectionField,
 }: {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptions_deprecated;
   fieldSchema: Schema;
-  getCollectionField: (name: string) => CollectionFieldOptions;
+  getCollectionField: (name: string) => CollectionFieldOptions_deprecated;
 }) {
   if (collectionField && ['hasOne', 'belongsTo'].includes(collectionField.type) && fieldSchema) {
     const parentFieldSchema = getParentFieldSchema(fieldSchema);
@@ -137,7 +142,7 @@ export function transformValue(
 
 /**
  * 判断一个 record 是否是从数据库中获取的，如果是则返回 true，否则返回 false
- * @param value useRecord 返回的值
+ * @param value useRecord  返回的值
  * @returns boolean
  */
 export function isFromDatabase(value: Record<string, any>) {
@@ -163,7 +168,7 @@ export const useSubTableSpecialCase = ({ field }) => {
   useEffect(() => {
     if (_.isEmpty(field.value)) {
       const value = field.value;
-      field.value = [{}];
+      field.value = [markRecordAsNew({})];
       // 因为默认值的解析是异步的，所以下面的代码会优先于默认值的设置，这样就防止了设置完默认值后又被清空的问题
       setTimeout(() => {
         field.value = value;

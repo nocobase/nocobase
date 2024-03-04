@@ -4,13 +4,12 @@ import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   CollectionCategroriesContext,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
   StablePopover,
-  collection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useCompile,
   useCurrentAppInfo,
   useRecord,
@@ -27,7 +26,7 @@ import {
   useValuesFromRecord,
 } from '../action-hooks';
 import useStyles from '../style';
-import { getPopupContainer, useGCMTranslation } from '../utils';
+import { getPopupContainer, useGCMTranslation, collection } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
 import { ConnectAssociationAction } from './ConnectAssociationAction';
@@ -58,7 +57,7 @@ const OperationButton: any = React.memo((props: any) => {
   // 获取当前字段列表
   const useCurrentFields = () => {
     const record = useRecord();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     const fields = getCollectionFields(record.collectionName || record.name) as any[];
     return fields;
   };
@@ -121,8 +120,8 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 delete: {
@@ -156,9 +155,9 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                       targetCollection: name,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 view: {
@@ -171,8 +170,8 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 connectAssociation: {
@@ -207,7 +206,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
   } = node;
   const compile = useCompile();
   const { styles } = useStyles();
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const [isHovered, setIsHovered] = useState(false);
   const CollectionConten = React.useCallback((data) => {
     const { type, name, primaryKey, allowNull, autoIncrement } = data;
@@ -378,7 +377,7 @@ const Entity: React.FC<{
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategroriesContext);
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
-  const { category } = item;
+  const { category = [] } = item;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
     return targetGraph.collections?.map((collection: any) => ({
@@ -404,7 +403,7 @@ const Entity: React.FC<{
       className={styles.entityContainer}
       style={{ boxShadow: attrs?.boxShadow, border: select ? '2px dashed #f5a20a' : 0 }}
     >
-      {category.map((v, index) => {
+      {category?.map((v, index) => {
         return (
           <Badge.Ribbon
             key={index}
@@ -423,7 +422,7 @@ const Entity: React.FC<{
         <div className={styles.tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
-              <CollectionProvider collection={collection}>
+              <CollectionProvider_deprecated collection={collection}>
                 <SchemaComponent
                   scope={{
                     useUpdateCollectionActionAndRefreshCM,
@@ -490,7 +489,7 @@ const Entity: React.FC<{
                     },
                   }}
                 />
-              </CollectionProvider>
+              </CollectionProvider_deprecated>
             </CollectionNodeProvder>
           </SchemaComponentProvider>
         </div>

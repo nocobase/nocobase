@@ -7,7 +7,6 @@ export const PrintActionInitializer = (props) => {
     title: '{{ t("Print") }}',
     'x-action': 'print',
     'x-component': 'Action',
-    'x-designer': 'Action.Designer',
     'x-component-props': {
       icon: 'PrinterOutlined',
       useProps: '{{ useDetailPrintActionProps }}',

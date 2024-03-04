@@ -1,9 +1,10 @@
 import { Plugin } from '@nocobase/client';
+import { deprecatedPrintActionSettings, printActionSettings } from './PrintAction.Settings';
 import { PrintActionPluginProvider } from './PrintActionPluginProvider';
-import { printActionSettings } from './PrintAction.Settings';
 export class PrintPlugin extends Plugin {
   async load() {
     this.app.use(PrintActionPluginProvider);
+    this.app.schemaSettingsManager.add(deprecatedPrintActionSettings);
     this.app.schemaSettingsManager.add(printActionSettings);
 
     const initializerData = {
@@ -11,7 +12,8 @@ export class PrintPlugin extends Plugin {
       Component: 'PrintActionInitializer',
       schema: {
         'x-component': 'Action',
-        'x-settings': 'ActionSettings:print',
+        'x-toolbar': 'ActionSchemaToolbar',
+        'x-settings': 'actionSettings:print',
         'x-action': 'print',
       },
     };

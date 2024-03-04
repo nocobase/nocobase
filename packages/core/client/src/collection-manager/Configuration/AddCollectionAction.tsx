@@ -11,10 +11,9 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import * as components from './components';
 import { TemplateSummary } from './components/TemplateSummary';
-import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {
@@ -97,105 +96,9 @@ const getSchema = (schema, category, compile): ISchema => {
   };
 };
 
-const getDefaultCollectionFields = (values) => {
-  if (values?.template === 'view' || values?.template === 'sql') {
-    return values.fields;
-  }
-  const defaults = values.fields ? [...values.fields] : [];
-  const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
-  if (autoGenId) {
-    const pk = values.fields.find((f) => f.primaryKey);
-    if (!pk) {
-      defaults.push({
-        name: 'id',
-        type: 'bigInt',
-        autoIncrement: true,
-        primaryKey: true,
-        allowNull: false,
-        uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
-        interface: 'id',
-      });
-    }
-  }
-  if (createdAt) {
-    defaults.push({
-      name: 'createdAt',
-      interface: 'createdAt',
-      type: 'date',
-      field: 'createdAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Created at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      },
-    });
-  }
-  if (createdBy) {
-    defaults.push({
-      name: 'createdBy',
-      interface: 'createdBy',
-      type: 'belongsTo',
-      target: 'users',
-      foreignKey: 'createdById',
-      uiSchema: {
-        type: 'object',
-        title: '{{t("Created by")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            value: 'id',
-            label: 'nickname',
-          },
-        },
-        'x-read-pretty': true,
-      },
-    });
-  }
-  if (updatedAt) {
-    defaults.push({
-      type: 'date',
-      field: 'updatedAt',
-      name: 'updatedAt',
-      interface: 'updatedAt',
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Last updated at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      },
-    });
-  }
-  if (updatedBy) {
-    defaults.push({
-      type: 'belongsTo',
-      target: 'users',
-      foreignKey: 'updatedById',
-      name: 'updatedBy',
-      interface: 'updatedBy',
-      uiSchema: {
-        type: 'object',
-        title: '{{t("Last updated by")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            value: 'id',
-            label: 'nickname',
-          },
-        },
-        'x-read-pretty': true,
-      },
-    });
-  }
-  // 其他
-  return defaults;
-};
-
 const useCreateCollection = (schema?: any) => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -210,18 +113,14 @@ const useCreateCollection = (schema?: any) => {
         if (schema?.events?.beforeSubmit) {
           schema.events.beforeSubmit(values);
         }
-        const fields = getDefaultCollectionFields(values);
         if (!values.autoCreateReverseField) {
           delete values.reverseField;
         }
-        delete values.id;
         delete values.autoCreateReverseField;
-
         await resource.create({
           values: {
             logging: true,
             ...values,
-            fields,
           },
         });
         ctx.setVisible(false);
@@ -237,18 +136,17 @@ const useCreateCollection = (schema?: any) => {
 };
 
 export const AddCollection = (props) => {
-  const record = useRecord();
-  return <AddCollectionAction item={record} {...props} />;
+  const recordData = useRecord();
+  return <AddCollectionAction item={recordData} {...props} />;
 };
 
 export const AddCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getTemplate } = useCollectionManager();
+  const { getTemplate, templates: collectionTemplates } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const collectionTemplates = useMemo(templateOptions, []);
   const items = useMemo(() => {
     const result = [];
     collectionTemplates.forEach((item) => {

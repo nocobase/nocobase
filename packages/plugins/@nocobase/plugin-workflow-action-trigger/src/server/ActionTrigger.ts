@@ -41,7 +41,7 @@ export default class extends Trigger {
       return;
     }
 
-    if (!['create', 'update', 'destroy'].includes(actionName)) {
+    if (!['create', 'update'].includes(actionName)) {
       return;
     }
 

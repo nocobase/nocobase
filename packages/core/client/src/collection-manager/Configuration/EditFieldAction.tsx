@@ -7,11 +7,12 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
-import { useCancelAction, useUpdateAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCancelAction } from '../action-hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import * as components from './components';
@@ -30,24 +31,41 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
     properties.defaultValue.required = false;
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
-    properties['defaultValue']['x-reactions'] = {
-      dependencies: [
-        'uiSchema.x-component-props.gmt',
-        'uiSchema.x-component-props.showTime',
-        'uiSchema.x-component-props.dateFormat',
-        'uiSchema.x-component-props.timeFormat',
-      ],
-      fulfill: {
-        state: {
-          componentProps: {
-            gmt: '{{$deps[0]}}',
-            showTime: '{{$deps[1]}}',
-            dateFormat: '{{$deps[2]}}',
-            timeFormat: '{{$deps[3]}}',
+    properties['defaultValue']['x-reactions'] = [
+      {
+        dependencies: [
+          'uiSchema.x-component-props.gmt',
+          'uiSchema.x-component-props.showTime',
+          'uiSchema.x-component-props.dateFormat',
+          'uiSchema.x-component-props.timeFormat',
+        ],
+        fulfill: {
+          state: {
+            componentProps: {
+              gmt: '{{$deps[0]}}',
+              showTime: '{{$deps[1]}}',
+              dateFormat: '{{$deps[2]}}',
+              timeFormat: '{{$deps[3]}}',
+            },
           },
         },
       },
-    };
+      {
+        dependencies: ['primaryKey', 'unique', 'autoIncrement'],
+        when: '{{$deps[0]||$deps[1]||$deps[2]}}',
+        fulfill: {
+          state: {
+            hidden: true,
+            value: undefined,
+          },
+        },
+        otherwise: {
+          state: {
+            hidden: false,
+          },
+        },
+      },
+    ];
   }
 
   return {
@@ -117,8 +135,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 const useUpdateCollectionField = () => {
   const form = useForm();
-  const { run } = useUpdateAction();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
@@ -144,12 +161,13 @@ const useUpdateCollectionField = () => {
 
 export const EditCollectionField = (props) => {
   const record = useRecord();
-  return <EditFieldAction item={record} {...props} />;
+  const parentRecordData = useCollectionParentRecordData();
+  return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
 export const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, ...otherProps } = props;
-  const { getInterface, collections } = useCollectionManager();
+  const { scope, getContainer, item: record, parentItem: parentRecord, children, ...otherProps } = props;
+  const { getInterface, collections, getCollection } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -157,6 +175,21 @@ export const EditFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const { isDialect } = useDialect();
+  const scopeKeyOptions = useMemo(() => {
+    return (
+      record?.fields ||
+      getCollection(record.collectionName)
+        .options.fields.filter((v) => {
+          return v.interface === 'select';
+        })
+        .map((k) => {
+          return {
+            value: k.name,
+            label: compile(k.uiSchema?.title),
+          };
+        })
+    );
+  }, [record.name]);
 
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -168,7 +201,7 @@ export const EditFieldAction = (props) => {
   }, []);
 
   return (
-    <RecordProvider record={record}>
+    <RecordProvider record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}
@@ -184,7 +217,7 @@ export const EditFieldAction = (props) => {
               defaultValues.autoCreateReverseField = false;
               defaultValues.reverseField = interfaceConf?.default?.reverseField;
               set(defaultValues.reverseField, 'name', `f_${uid()}`);
-              set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
+              set(defaultValues.reverseField, 'uiSchema.title', record.__parent?.title);
             }
             const schema = getSchema(
               {
@@ -212,6 +245,8 @@ export const EditFieldAction = (props) => {
             collections: currentCollections,
             isDialect,
             disabledJSONB: true,
+            scopeKeyOptions,
+            createMainOnly: true,
             ...scope,
           }}
         />

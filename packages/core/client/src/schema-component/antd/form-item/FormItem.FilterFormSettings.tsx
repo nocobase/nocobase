@@ -4,9 +4,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
-import { SchemaSettingsDataScope, VariableInput, getShouldChange } from '../../../schema-settings';
+import { VariableInput, getShouldChange } from '../../../schema-settings';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -21,7 +21,11 @@ import {
   EditTooltip,
   EditValidationRules,
 } from './SchemaSettingOptions';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
+/**
+ * @deprecated
+ */
 export const filterFormItemSettings = new SchemaSettings({
   name: 'FilterFormItemSettings',
   items: [
@@ -50,8 +54,8 @@ export const filterFormItemSettings = new SchemaSettings({
         return isSelectFieldMode && !isFormReadPretty;
       },
       useComponentProps() {
-        const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager();
-        const { getField } = useCollection();
+        const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
+        const { getField } = useCollection_deprecated();
         const { form } = useFormBlockContext();
         const record = useRecord();
         const field = useField();
@@ -111,8 +115,8 @@ export const filterFormItemSettings = new SchemaSettings({
       name: 'divider',
       type: 'divider',
       useVisible() {
-        const { getCollectionJoinField } = useCollectionManager();
-        const { getField } = useCollection();
+        const { getCollectionJoinField } = useCollectionManager_deprecated();
+        const { getField } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
         const collectionField =
           getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);

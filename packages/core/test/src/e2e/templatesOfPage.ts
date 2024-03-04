@@ -2765,7 +2765,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBulkEditBlockInitializers',
+                                            'x-initializer': 'BulkEditBlockInitializers',
                                             'x-uid': '3gjmo60w4de',
                                             'x-async': false,
                                             'x-index': 1,

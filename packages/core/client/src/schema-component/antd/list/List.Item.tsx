@@ -1,15 +1,17 @@
-import React from 'react';
 import { ObjectField } from '@formily/core';
 import { useField } from '@formily/react';
 import classnames from 'classnames';
+import React from 'react';
 import { css, cx } from '@emotion/css';
 import { useDesignable } from '../../hooks';
 
+import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../../../record-provider';
 
 export const ListItem = (props) => {
   const field = useField<ObjectField>();
   const { designable } = useDesignable();
+  const parentRecordData = useCollectionParentRecordData();
   return (
     <div
       className={cx(classnames(props.className), [
@@ -22,7 +24,9 @@ export const ListItem = (props) => {
         `,
       ])}
     >
-      <RecordProvider record={field.value}>{props.children}</RecordProvider>
+      <RecordProvider record={field.value} parent={parentRecordData}>
+        {props.children}
+      </RecordProvider>
     </div>
   );
 };

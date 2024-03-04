@@ -13,7 +13,7 @@ collection 示例
 }
 ```
 
-association 示例 
+association 示例
 
 ```js
 {
@@ -41,12 +41,12 @@ association 示例
 - collection、association、action 是配置里存好的
 - sourceId、filterByTk 由上下文提供
 
-## RecordProvider
+## CollectionRecordProvider
 
 Record
 
 ```ts
-class Record {
+class CollectionRecord {
   protected current = {};
   protected parent?: Record;
   public isNew = false;
@@ -63,69 +63,69 @@ a:list（**list 外层不套空 RecordPicker**）
 
 ```jsx | pure
 {list.map((item) => {
-  const record = new Record({ current: item });
-  return <RecordProvider record={record}></RecordProvider>
+  const record = new CollectionRecord({ current: item });
+  return <CollectionRecordProvider record={record}></CollectionRecordProvider>
 })}
 ```
 
 a:get(view、edit)
 
 ```jsx | pure
-const record = new Record({ current: item });
-<RecordProvider record={item}></RecordProvider>
+const record = new CollectionRecord({ current: item });
+<CollectionRecordProvider record={item}></CollectionRecordProvider>
 ```
 
 a:create
 
 ```jsx | pure
-const record = new Record({ current, isNew: true });
-<RecordProvider record={record}></RecordProvider>
+const record = new CollectionRecord({ current, isNew: true });
+<CollectionRecordProvider record={record}></CollectionRecordProvider>
 ```
 
 a.b:list
 
 ```jsx | pure
-<RecordProvider record={recordA}>
+<CollectionRecordProvider record={recordA}>
   {list.map((item) => {
-    const recordB = new Record({
+    const recordB = new CollectionRecord({
       current: item,
     });
-    return <RecordProvider record={recordB}></RecordProvider>
+    return <CollectionRecordProvider record={recordB}></CollectionRecordProvider>
   })}
-</RecordProvider>
+</CollectionRecordProvider>
 ```
 
 a.b:get
 
 ```jsx | pure
-const recordA = new Record({
+const recordA = new CollectionRecord({
   current: itemA,
 });
-const recordB = new Record({
+const recordB = new CollectionRecord({
   current: itemB,
   parent: recordA,
 });
 // 或者
 recordB.setParent(recordA);
 
-<RecordProvider record={recordA}>
-  <RecordProvider record={recordB}></RecordProvider>
-</RecordProvider>
+<CollectionRecordProvider record={recordA}>
+  <CollectionRecordProvider record={recordB}></CollectionRecordProvider>
+</CollectionRecordProvider>
 ```
 
 a.b:create
 
 ```jsx | pure
-const recordA = new Record({
+const recordA = new CollectionRecord({
   current: itemA,
 });
-const recordB = new Record({
+const recordB = new CollectionRecord({
   isNew: true,
   parent: recordA,
 });
-<RecordProvider record={recordA}>
-  <RecordProvider record={recordB}></RecordProvider>
-</RecordProvider>
+<CollectionRecordProvider record={recordA}>
+  <CollectionRecordProvider record={recordB}></CollectionRecordProvider>
+</CollectionRecordProvider>
 ```
 
 ## 区块
@@ -178,9 +178,9 @@ DataBlockProvider 内容
 <BlockProvider>
   <CollectionProvider>
     <UseRequestProvider>
-      <RecordProvider record={recordA}>
+      <CollectionRecordProvider record={recordA}>
         {props.children}
-      </RecordProvider>
+      </CollectionRecordProvider>
     </UseRequestProvider>
   </CollectionProvider>
 </BlockProvider>
@@ -189,7 +189,7 @@ DataBlockProvider 内容
 有当前父级记录的区块，如对多关系的表格区块，区块本身不套 RecordPicker
 
 ```tsx | pure
-<RecordProvider record={recordA}>
+<CollectionRecordProvider record={recordA}>
   <DataBlockProvider>
     <ActionBar>
       <Action type="filter" />
@@ -208,7 +208,7 @@ DataBlockProvider 内容
     <Table useProps />
     <Pagination />
   </DataBlockProvider>
-</RecordProvider>
+</CollectionRecordProvider>
 ```
 
 DataBlockProvider 内容
@@ -228,14 +228,14 @@ DataBlockProvider 内容
 有父级记录也有当前记录的区块，如关系的表单
 
 ```tsx | pure
-<RecordProvider record={recordA}>
+<CollectionRecordProvider record={recordA}>
   <DataBlockProvider>
     <Form useProps />
   </DataBlockProvider>
   <DataBlockProvider>
     <Form useProps />
   </DataBlockProvider>
-</RecordProvider>
+</CollectionRecordProvider>
 ```
 
 DataBlockProvider 内容
@@ -245,9 +245,9 @@ DataBlockProvider 内容
   <AssociationProvider>
     <CollectionProvider>
       <UseRequestProvider>
-        <RecordProvider record={recordA}>
+        <CollectionRecordProvider record={recordA}>
           {props.children}
-        </RecordProvider>
+        </CollectionRecordProvider>
       </UseRequestProvider>
     </CollectionProvider>
   </AssociationProvider>

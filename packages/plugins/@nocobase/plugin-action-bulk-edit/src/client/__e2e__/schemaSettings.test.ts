@@ -15,7 +15,7 @@ test.describe('bulk edit action setting', () => {
     await page.getByRole('option', { name: 'All' }).click();
     //配置更新规则
     await page.getByLabel('Bulk edit').click();
-    await page.getByLabel('schema-initializer-Grid-CreateFormBulkEditBlockInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-BulkEditBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-BulkEditFormItemInitializers-general').hover();

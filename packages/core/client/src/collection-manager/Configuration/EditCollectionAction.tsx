@@ -10,7 +10,7 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 
@@ -101,7 +101,7 @@ export const useValuesFromRecord = (options) => {
 };
 
 export const useUpdateCollectionActionAndRefreshCM = (options) => {
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const form = useForm();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
@@ -131,7 +131,7 @@ export const EditCollection = (props) => {
 
 export const EditCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, ...otherProps } = props;
-  const { getTemplate } = useCollectionManager();
+  const { getTemplate } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const { t } = useTranslation();
@@ -143,7 +143,7 @@ export const EditCollectionAction = (props) => {
         <a
           {...otherProps}
           onClick={async () => {
-            const templateConf = getTemplate(record.template);
+            const templateConf: any = getTemplate(record.template);
             const schema = getSchema(
               {
                 ...templateConf,

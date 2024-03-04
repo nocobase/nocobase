@@ -5,7 +5,7 @@ import { Checkbox, Table, Tag } from 'antd';
 import { isEmpty } from 'lodash';
 import React, { createContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager, useCompile, useRecord } from '../..';
+import { useCollectionManager_deprecated, useCompile, useRecord } from '../..';
 import { useStyles } from '../style';
 import { useAvailableActions } from './RoleTable';
 import { ScopeSelect } from './ScopeSelect';
@@ -38,7 +38,7 @@ export const RolesResourcesActions = connect((props) => {
   const form = useForm();
   const roleCollection = useRecord();
   const availableActions = useAvailableActions();
-  const { getCollection, getCollectionFields } = useCollectionManager();
+  const { getCollection, getCollectionFields } = useCollectionManager_deprecated();
   const collection = getCollection(roleCollection.collectionName);
   const collectionFields = getCollectionFields(roleCollection.collectionName);
   const compile = useCompile();

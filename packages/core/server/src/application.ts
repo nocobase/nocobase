@@ -1,4 +1,3 @@
-import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
@@ -18,7 +17,7 @@ import { applyMixins, AsyncEmitter, importModule, Toposort, ToposortOptions } fr
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
-import { IncomingMessage, Server, ServerResponse } from 'http';
+import { IncomingMessage, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
@@ -46,7 +45,9 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
+import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
+import { MainDataSource } from './main-data-source';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -138,7 +139,6 @@ export type MaintainingCommandStatus = {
 };
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  public listenServer: Server;
   declare middleware: any;
   stopped = false;
   ready = false;
@@ -185,10 +185,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cronJobManager;
   }
 
-  protected _db: Database;
+  get mainDataSource() {
+    return this.dataSourceManager?.dataSources.get('main') as SequelizeDataSource;
+  }
 
-  get db() {
-    return this._db;
+  get db(): Database {
+    if (!this.mainDataSource) {
+      return null;
+    }
+
+    // @ts-ignore
+    return this.mainDataSource.collectionManager.db;
   }
 
   protected _logger: SystemLogger;
@@ -197,10 +204,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._logger;
   }
 
-  protected _resourcer: Resourcer;
-
   get resourcer() {
-    return this._resourcer;
+    return this.mainDataSource.resourceManager;
   }
 
   protected _cacheManager: CacheManager;
@@ -237,10 +242,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._pm;
   }
 
-  protected _acl: ACL;
-
   get acl() {
-    return this._acl;
+    return this.mainDataSource.acl;
   }
 
   protected _authManager: AuthManager;
@@ -279,8 +282,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.options.name || 'main';
   }
 
-  isMaintaining() {
-    return this._maintaining;
+  protected _dataSourceManager: DataSourceManager;
+
+  get dataSourceManager() {
+    return this._dataSourceManager;
   }
 
   getMaintaining() {
@@ -383,11 +388,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.telemetry.shutdown();
     }
 
-    const oldDb = this._db;
+    const oldDb = this.db;
+
     this.init();
     if (!oldDb.closed()) {
       await oldDb.close();
     }
+
     this._loaded = false;
   }
 
@@ -408,8 +415,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         await this.telemetry.shutdown();
       }
 
-      const oldDb = this._db;
+      const oldDb = this.db;
+
       this.init();
+
       if (!oldDb.closed()) {
         await oldDb.close();
       }
@@ -436,6 +445,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.pm.load(options);
+
+    if (options?.sync) {
+      await this.db.sync();
+    }
 
     this.setMaintainingMessage('emit afterLoad');
     if (options?.hooks !== false) {
@@ -485,6 +498,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async runCommand(command: string, ...args: any[]) {
     return await this.runAsCLI([command, ...args], { from: 'user' });
+  }
+
+  async runCommandThrowError(command: string, ...args: any[]) {
+    return await this.runAsCLI([command, ...args], { from: 'user', throwError: true });
   }
 
   createCli() {
@@ -781,9 +798,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.reInit();
     await this.db.sync();
     await this.load({ hooks: false });
+
     this.log.debug('emit beforeInstall', { method: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
+
     // await app.db.sync();
     await this.pm.install();
     await this.version.update();
@@ -804,6 +823,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     // await this.pm.install(options);
     // this.log.debug('update version', { method: 'install' });
     // await this.version.update();
+
     this.log.debug('emit afterInstall', { method: 'install' });
     this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
@@ -838,8 +858,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await migrator3.beforeLoad.up();
     // load other plugins
     // TODO：改成约定式
-    await this.load();
-    await this.db.sync();
+    await this.load({ sync: true });
+    // await this.db.sync();
     await migrator3.afterSync.up();
     // upgrade plugins
     await this.pm.upgrade();
@@ -914,23 +934,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
-    this._acl = createACL();
+
+    if (this.db) {
+      this.db.removeAllListeners();
+    }
+
+    this.createMainDataSource(options);
 
     this._cronJobManager = new CronJobManager(this);
 
-    if (this._db) {
-      // MaxListenersExceededWarning
-      this._db.removeAllListeners();
-    }
-
-    this._db = this.createDatabase(options);
-
-    this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this.context.db = this._db;
-    // this.context.logger = this._logger;
-    this.context.resourcer = this._resourcer;
+    this.context.db = this.db;
+
+    this.context.resourcer = this.resourcer;
     this.context.cacheManager = this._cacheManager;
     this.context.cache = this._cache;
 
@@ -958,10 +975,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       actions: authActions,
     });
 
-    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
+    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
+    this.resourcer.use(this._authManager.middleware(), { tag: 'auth' });
 
     if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
+      this.resourcer.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
 
     this._locales = new Locale(createAppProxy(this));
@@ -979,6 +997,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     registerCli(this);
 
     this._version = new ApplicationVersion(this);
+  }
+
+  protected createMainDataSource(options: ApplicationOptions) {
+    const mainDataSourceInstance = new MainDataSource({
+      name: 'main',
+      database: this.createDatabase(options),
+      acl: createACL(),
+      resourceManager: createResourcer(options),
+    });
+
+    this._dataSourceManager = new DataSourceManager();
+
+    this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
   }
 
   protected createDatabase(options: ApplicationOptions) {

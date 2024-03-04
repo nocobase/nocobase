@@ -5,13 +5,12 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
 import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import {
   GeneralSchemaDesigner,
-  SchemaSettingsDataScope,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -23,10 +22,11 @@ import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { RecordPickerContext } from '../../antd/record-picker';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 
 export const TableSelectorDesigner = () => {
-  const { name, title } = useCollection();
-  const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager();
+  const { name, title } = useCollection_deprecated();
+  const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
 
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -50,7 +50,7 @@ export const TableSelectorDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { dragSort } = field.decoratorProps;
   const record = useRecord();
   const variables = useVariables();

@@ -1,6 +1,6 @@
 import { Database, Model, ModelStatic } from '@nocobase/database';
 import VerificationPlugin from '@nocobase/plugin-verification';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { authType } from '../../constants';
 
 class Provider {
@@ -21,7 +21,7 @@ describe('signin', () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['users', 'auth', 'verification', 'acl', 'sms-auth'],
+      plugins: ['users', 'auth', 'verification', 'acl', 'sms-auth', 'data-source-manager'],
     });
     db = app.db;
     agent = app.agent();

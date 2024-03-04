@@ -1,24 +1,24 @@
-import { useFieldSchema } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
+import { useFieldSchema } from '@formily/react';
 import {
   Action,
   SchemaSettings,
   SchemaSettingsActionModalItem,
   actionSettingsItems,
-  useCollection,
+  useCollection_deprecated,
   useRequest,
 } from '@nocobase/client';
-import React from 'react';
-import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '../schemas';
-import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
 import { App } from 'antd';
-import { useTranslation } from '../locale';
+import React from 'react';
 import { listByCurrentRoleUrl } from '../constants';
+import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
 import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
+import { useTranslation } from '../locale';
+import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '../schemas';
 
-function CustomRequestSettingsItem() {
+export function CustomRequestSettingsItem() {
   const { t } = useTranslation();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
   const { message } = App.useApp();
@@ -57,7 +57,7 @@ function CustomRequestSettingsItem() {
   );
 }
 
-function CustomRequestACL() {
+export function CustomRequestACL() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
@@ -76,7 +76,7 @@ function CustomRequestACL() {
   return (
     <>
       <SchemaSettingsActionModalItem
-        title={t('Access Control')}
+        title={t('Access control')}
         schema={CustomRequestACLSchema}
         initialValues={{
           roles: data?.data?.roles,
@@ -99,6 +99,9 @@ function CustomRequestACL() {
   );
 }
 
+/**
+ * @deprecated
+ */
 export const customRequestActionSettings = new SchemaSettings({
   name: 'CustomRequestActionSettings',
   items: [
@@ -119,6 +122,9 @@ export const customRequestActionSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const CustomRequestActionDesigner: React.FC = () => {
   const customRequestsResource = useCustomRequestsResource();
   const fieldSchema = useFieldSchema();

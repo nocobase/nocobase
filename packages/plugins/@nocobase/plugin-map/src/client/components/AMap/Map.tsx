@@ -2,7 +2,7 @@ import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
-import { css, useApp, useCollection } from '@nocobase/client';
+import { css, useApp, useCollection_deprecated } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -91,7 +91,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const mouseTool = useRef<any>();
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const type = useMemo<MapEditorType>(() => {
     if (props.type) return props.type;
     const collectionField = getField(fieldSchema?.name);

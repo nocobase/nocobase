@@ -1,12 +1,12 @@
+import { GeneralSchemaDesigner, useCollection_deprecated, useSchemaTemplate } from '@nocobase/client';
 import React from 'react';
-import { useCollection, GeneralSchemaDesigner, useSchemaTemplate } from '@nocobase/client';
 export const GanttDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
 
   return (
     <GeneralSchemaDesigner
-      schemaSettings="GanttBlockSettings"
+      schemaSettings="blockSettings:gantt"
       template={template}
       title={title || name}
     ></GeneralSchemaDesigner>

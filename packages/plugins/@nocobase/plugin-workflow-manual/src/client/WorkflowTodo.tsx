@@ -1,37 +1,35 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { css, usePlugin } from '@nocobase/client';
+import { css, useCompile, usePlugin } from '@nocobase/client';
 
 import {
-  CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
   useAPIClient,
   useActionContext,
-  useCollectionManager,
-  useCompile,
   useCurrentUserContext,
   useFormBlockContext,
   useRecord,
   useTableBlockContext,
+  ExtendCollectionsProvider,
 } from '@nocobase/client';
 import WorkflowPlugin, {
-  useAvailableUpstreams,
   FlowContext,
-  useFlowContext,
   JobStatusOptions,
   JobStatusOptionsMap,
   linkNodes,
+  useAvailableUpstreams,
+  useFlowContext,
 } from '@nocobase/plugin-workflow/client';
 
+import { NAMESPACE, useLang } from '../locale';
 import { DetailsBlockProvider } from './instruction/DetailsBlockProvider';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { NAMESPACE, useLang } from '../locale';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -258,7 +256,9 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 title: '{{ t("Refresh") }}',
                 'x-action': 'refresh',
                 'x-component': 'Action',
-                'x-designer': 'Action.Designer',
+                // 'x-designer': 'Action.Designer',
+                'x-toolbar': 'ActionSchemaToolbar',
+                'x-settings': 'actionSettings:refresh',
                 'x-component-props': {
                   icon: 'ReloadOutlined',
                   useProps: '{{ useRefreshActionProps }}',
@@ -617,7 +617,6 @@ function Drawer() {
 }
 
 function Decorator({ params = {}, children }) {
-  const { collections, ...cm } = useCollectionManager();
   const blockProps = {
     collection: 'users_jobs',
     resource: 'users_jobs',
@@ -635,14 +634,11 @@ function Decorator({ params = {}, children }) {
   };
 
   return (
-    <CollectionManagerProvider
-      {...cm}
-      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
-    >
+    <ExtendCollectionsProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
       <TableBlockProvider name="workflow-todo" {...blockProps}>
         {children}
       </TableBlockProvider>
-    </CollectionManagerProvider>
+    </ExtendCollectionsProvider>
   );
 }
 

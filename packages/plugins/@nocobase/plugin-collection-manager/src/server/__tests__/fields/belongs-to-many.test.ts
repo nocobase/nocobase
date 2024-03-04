@@ -34,6 +34,47 @@ describe('belongsToMany', () => {
     await app.destroy();
   });
 
+  it('should check association keys', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'postsTags',
+        fields: [
+          {
+            type: 'string',
+            name: 'postId',
+          },
+          {
+            type: 'string',
+            name: 'tagId',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    let error;
+    try {
+      await Field.repository.create({
+        values: {
+          collectionName: 'posts',
+          type: 'belongsToMany',
+          name: 'tags',
+          target: 'tags',
+          through: 'postsTags',
+          sourceKey: 'id',
+          targetKey: 'id',
+          foreignKey: 'postId',
+          otherKey: 'tagId',
+        },
+        context: {},
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+  });
+
   it('should throw error when through table foreign keys are same name', async () => {
     await Collection.repository.create({
       values: {

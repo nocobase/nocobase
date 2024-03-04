@@ -1,13 +1,18 @@
-import { Plugin, useCollection } from '@nocobase/client';
+import { Plugin, useCollection_deprecated } from '@nocobase/client';
 import { FileManagerProvider } from './FileManagerProvider';
 import { FileStoragePane } from './FileStorage';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
+import { AttachmentFieldInterface } from './interfaces/attachment';
+import { FileCollectionTemplate } from './templates';
 
 export class FileManagerPlugin extends Plugin {
   storageTypes = new Map();
 
   async load() {
+    this.app.dataSourceManager.addFieldInterfaces([AttachmentFieldInterface]);
+    this.app.dataSourceManager.addCollectionTemplates([FileCollectionTemplate]);
+
     this.app.use(FileManagerProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("File manager", { ns: "${NAMESPACE}" })}}`,
@@ -31,7 +36,7 @@ export class FileManagerPlugin extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollection_deprecated();
         return collection.template === 'file';
       },
     });

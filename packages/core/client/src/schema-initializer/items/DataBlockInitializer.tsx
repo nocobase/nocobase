@@ -5,12 +5,13 @@ import { useTranslation } from 'react-i18next';
 import {
   SchemaInitializerItem,
   SchemaInitializerMenu,
+  useGetSchemaInitializerMenuItems,
   useSchemaInitializer,
-  useSchemaInitializerMenuItems,
 } from '../../application';
+import { Collection } from '../../data-source/collection/Collection';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { useCollectionDataSourceItemsV2 } from '../utils';
+import { useCollectionDataSourceItems } from '../utils';
 
 const MENU_ITEM_HEIGHT = 40;
 const STEP = 15;
@@ -108,27 +109,41 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
   );
 };
 
-export function useMenuSearch(items: any[], isOpenSubMenu: boolean, showType?: boolean) {
+export function useMenuSearch(data: any[], openKeys: string[], showType?: boolean) {
   const [searchValue, setSearchValue] = useState('');
   const [count, setCount] = useState(STEP);
+
+  const isMuliSource = useMemo(() => data.length > 1, [data]);
+  const openKey = useMemo(() => {
+    return isMuliSource ? openKeys?.[1] : openKeys?.length > 0;
+  }, [openKeys]);
+
   useEffect(() => {
-    if (isOpenSubMenu) {
+    if (!openKey) {
       setSearchValue('');
     }
-  }, [isOpenSubMenu]);
+  }, [openKey]);
+
+  const currentItems = useMemo(() => {
+    if (isMuliSource) {
+      if (!openKey) return [];
+      return data.find((item) => (item.key || item.name) === openKey)?.children || [];
+    }
+    return data[0]?.children || [];
+  }, [data, isMuliSource, openKey]);
 
   // 根据搜索的值进行处理
   const searchedItems = useMemo(() => {
-    if (!searchValue) return items;
+    if (!searchValue) return currentItems;
     const lowerSearchValue = searchValue.toLocaleLowerCase();
-    return items.filter(
+    return currentItems.filter(
       (item) =>
         (item.label || item.title) &&
         String(item.label || item.title)
           .toLocaleLowerCase()
           .includes(lowerSearchValue),
     );
-  }, [searchValue, items]);
+  }, [searchValue, currentItems]);
 
   const shouldLoadMore = useMemo(() => searchedItems.length > count, [count, searchedItems]);
 
@@ -207,7 +222,23 @@ export function useMenuSearch(items: any[], isOpenSubMenu: boolean, showType?: b
     return res;
   }, [limitedSearchedItems, searchValue, shouldLoadMore, showType]);
 
-  return resultItems;
+  const res = useMemo(() => {
+    if (!isMuliSource) return resultItems;
+    return data.map((item) => {
+      if (openKey && item.key === openKey) {
+        return {
+          ...item,
+          children: resultItems,
+        };
+      } else {
+        return {
+          ...item,
+          children: [],
+        };
+      }
+    });
+  }, [data, openKey, resultItems]);
+  return res;
 }
 
 export interface DataBlockInitializerProps {
@@ -225,9 +256,9 @@ export interface DataBlockInitializerProps {
   icon?: string | React.ReactNode;
   name: string;
   title: string;
-  items?: any[];
-  filterItems?: (item: any, index: number, items: any[]) => boolean;
+  filter?: (collection: Collection) => boolean;
   componentType: string;
+  onlyCurrentDataSource?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -240,10 +271,10 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     icon = TableOutlined,
     name,
     title,
-    items,
-    filterItems,
+    filter,
+    onlyCurrentDataSource,
   } = props;
-  const { insert } = useSchemaInitializer();
+  const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const onClick = useCallback(
@@ -255,23 +286,27 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
         if (onCreateBlockSchema) {
           onCreateBlockSchema({ item });
         } else if (createBlockSchema) {
-          insert(createBlockSchema({ collection: item.collectionName || item.name, isCusomeizeCreate }));
+          insert(
+            createBlockSchema({
+              collection: item.collectionName || item.name,
+              dataSource: item.dataSource,
+              isCusomeizeCreate,
+              settings: 'blockSettings:createForm',
+            }),
+          );
         }
       }
+      setVisible(false);
     },
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
-  const defaultItems = useCollectionDataSourceItemsV2(componentType);
-  const menuChildren = useMemo(() => {
-    const result = items || defaultItems;
-    if (filterItems) {
-      return result.filter(filterItems);
-    }
-    return result;
-  }, [items, defaultItems]);
-  const childItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
-  const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
-  const searchedChildren = useMenuSearch(childItems, isOpenSubMenu);
+  const items = useCollectionDataSourceItems(componentType, filter, onlyCurrentDataSource);
+  const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
+  const childItems = useMemo(() => {
+    return getMenuItems(items, name);
+  }, [getMenuItems, items, name]);
+  const [openMenuKeys, setOpenMenuKeys] = useState([]);
+  const searchedChildren = useMenuSearch(childItems, openMenuKeys);
   const compiledMenuItems = useMemo(
     () => [
       {
@@ -285,14 +320,14 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
         children: searchedChildren,
       },
     ],
-    [name, compile, title, icon, searchedChildren, onClick, props],
+    [name, compile, title, icon, childItems, onClick, props],
   );
 
-  if (menuChildren.length > 0) {
+  if (childItems.length > 1 || (childItems.length === 1 && childItems[0].children?.length > 0)) {
     return (
       <SchemaInitializerMenu
         onOpenChange={(keys) => {
-          setIsOpenSubMenu(keys.length > 0);
+          setOpenMenuKeys(keys);
         }}
         items={compiledMenuItems}
       />

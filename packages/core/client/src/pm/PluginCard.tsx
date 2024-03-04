@@ -28,7 +28,6 @@ function PluginInfo(props: IPluginInfo) {
   const api = useAPIClient();
   const { modal } = App.useApp();
   const [showUploadForm, setShowUploadForm] = useState(false);
-  const [enabledVal, setEnabledVal] = useState(enabled);
   const reload = () => window.location.reload();
   const title = displayName || name || packageName;
   return (
@@ -173,7 +172,7 @@ function PluginInfo(props: IPluginInfo) {
                 });
               }
             }}
-            checked={enabledVal}
+            checked={!!enabled}
           ></Switch>,
         ].filter(Boolean)}
       >
