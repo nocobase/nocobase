@@ -888,5 +888,8 @@
   "Main department": "主属部门",
   "Department name": "部门名称",
   "Superior department": "上级部门",
-  "Owners": "负责人"
+  "Owners": "负责人",
+  "Plugin settings": "插件设置",
+  "Menu": "菜单",
+  "Drag and drop sorting field": "拖拽排序字段"
 }
