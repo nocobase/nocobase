@@ -1,6 +1,6 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { ActionContext, SchemaComponent, useCompile, usePlugin } from '@nocobase/client';
+import { ActionContext, SchemaComponent, useAPIClient, useCompile, usePlugin } from '@nocobase/client';
 import { Button, Dropdown, Empty } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ export const CreateDatabaseConnectAction = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const [dialect, setDialect] = useState(null);
+  const api = useAPIClient();
   const useDialectDataSource = (field) => {
     const options = [...plugin.types.keys()].map((key) => {
       const type = plugin.types.get(key);
@@ -100,7 +101,18 @@ export const CreateDatabaseConnectAction = () => {
                         description={
                           <>
                             {t('No external data source plugin installed', { ns: NAMESPACE })}
-                            <br /> <a>{t('View more', { ns: NAMESPACE })}</a>
+                            <br />{' '}
+                            <a
+                              target="_blank"
+                              href={
+                                api.auth.locale === 'zh-CN'
+                                  ? 'https://docs-cn.nocobase.com/handbook/data-source-manager'
+                                  : 'https://docs.nocobase.com/handbook/data-source-manager'
+                              }
+                              rel="noreferrer"
+                            >
+                              {t('View documentation', { ns: NAMESPACE })}
+                            </a>
                           </>
                         }
                       />
