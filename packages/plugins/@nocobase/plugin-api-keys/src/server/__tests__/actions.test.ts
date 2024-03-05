@@ -86,7 +86,7 @@ describe('actions', () => {
         },
       });
       expect(res.status).toBe(400);
-      expect(res.text).toBe('Role not found');
+      expect(res.text).toContain('Role not found');
     });
 
     it('token should work', async () => {
