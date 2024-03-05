@@ -835,7 +835,7 @@
   "Please use a valid SELECT or WITH AS statement": "請使用有效的 SELECT 或 WITH AS 語句",
   "Please confirm the SQL statement first": "請先確認 SQL 語句",
   "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "自動刪除依賴於該表的物件,以及依賴這些物件的物件",
-  "Second confirmation": "再次確認",
+  "Secondary confirmation": "再次確認",
   "Perform the {{title}}": "執行{{title}}",
   "Are you sure you want to perform the {{title}} action?": "你確定執行{{title}}動作嗎？",
   "Sign in with another account": "登入其他帳號",
