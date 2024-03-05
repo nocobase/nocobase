@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "0.20.0-alpha.2",
+  "version": "0.20.0-alpha.4",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/auth",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/auth",
+  "homepage": "https://docs.nocobase.com/handbook/auth",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/auth",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/react": "2.x",
@@ -26,7 +26,7 @@
   "displayName.zh-CN": "用户认证",
   "description": "User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.",
   "description.zh-CN": "用户认证管理，包括基础的密码认证、短信认证、SSO 协议的认证等，可扩展。",
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Authentication"
   ]

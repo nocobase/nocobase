@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-theme-editor",
-  "version": "0.20.0-alpha.2",
+  "version": "0.20.0-alpha.4",
   "main": "dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/theme-editor",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/theme-editor",
+  "homepage": "https://docs.nocobase.com/handbook/theme-editor",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/theme-editor",
   "displayName": "Theme editor",
   "displayName.zh-CN": "主题编辑器",
   "description": "Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.",
@@ -32,7 +32,7 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "System management"
   ]

@@ -792,7 +792,7 @@
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.",
   "Preset fields": "Preset fields",
   "Home page": "Home page",
-  "User manual": "User manual",
+  "Handbook": "Handbook",
   "License": "License",
   "Generic properties": "Generic properties",
   "Specific properties": "Specific properties",
@@ -803,5 +803,8 @@
   "Main department": "Main department",
   "Department name": "Department name",
   "Superior department": "Superior department",
-  "Owners": "Owners"
+  "Owners": "Owners",
+  "Plugin settings": "Plugin settings",
+  "Menu": "Menu",
+  "Drag and drop sorting field": "Drag and drop sorting field"
 }

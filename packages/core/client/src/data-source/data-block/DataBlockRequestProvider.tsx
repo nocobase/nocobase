@@ -5,6 +5,7 @@ import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { CollectionRecordProvider, CollectionRecord } from '../collection-record';
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
+import { useDataSourceHeaders } from '../utils';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
@@ -52,6 +53,8 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const { sourceId, association, parentRecord } = options;
   const api = useAPIClient();
+  const dataBlockProps = useDataBlockProps();
+  const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   return useRequest<T>(
     async () => {
       if (parentRecord) return Promise.resolve({ data: parentRecord });
@@ -60,7 +63,7 @@ function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
       const arr = association.split('.');
       // <collection>:get/<filterByTk>
       const url = `${arr[0]}:get/${sourceId}`;
-      const res = await api.request({ url });
+      const res = await api.request({ url, headers });
       return res.data;
     },
     {

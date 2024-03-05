@@ -5,6 +5,7 @@ export default defineCollection({
   model: 'DataSourceModel',
   autoGenId: false,
   shared: true,
+  dumpRules: 'required',
   fields: [
     {
       type: 'string',

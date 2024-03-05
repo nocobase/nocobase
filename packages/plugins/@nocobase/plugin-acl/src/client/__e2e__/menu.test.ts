@@ -28,7 +28,7 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
     .locator('span')
     .nth(1)
     .click();
-  await page.getByRole('tab').getByText('Menu permissions').click();
+  await page.getByRole('tab').getByText('Menu').click();
   await page.waitForSelector('.ant-table');
   await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input')).toBeChecked({ checked: true });
   await expect(page.getByRole('row', { name: 'page2' }).locator('.ant-checkbox-input')).toBeChecked({ checked: false });
@@ -46,7 +46,7 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
     .locator('span')
     .nth(1)
     .click();
-  await page.getByRole('tab').getByText('Menu permissions').click();
+  await page.getByRole('tab').getByText('Menu').click();
   await page.waitForSelector('.ant-table');
   await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input')).toBeChecked({ checked: false });
   await expect(page.getByRole('row', { name: 'page2' }).locator('.ant-checkbox-input')).toBeChecked({ checked: true });
