@@ -11,6 +11,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
   isAssociation = true;
   default = {
     type: 'belongsToMany',
+    target: 'attachments',
     // name,
     uiSchema: {
       type: 'array',
