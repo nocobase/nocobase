@@ -14,7 +14,7 @@ import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 
 test.describe('Configuration page to configure the Trigger node', () => {
-  test('Form Submit Button Binding Workflow Add Data Trigger', async ({
+  test.only('Form Submit Button Binding Workflow Add Data Trigger', async ({
     page,
     mockPage,
     mockCollections,
@@ -86,7 +86,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`).hover();
     await page
       .getByRole('button', {
-        name: `designer-schema-settings-Action-Action.Designer-${triggerNodeCollectionName}`,
+        name: `designer-schema-settings-Action-actionSettings:createSubmit-${triggerNodeCollectionName}`,
       })
       .hover();
     await page.getByRole('menuitem', { name: 'Bind workflows' }).click();
@@ -182,7 +182,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByRole('button', { name: 'Submit to workflow' }).hover();
     await page
       .getByRole('button', {
-        name: `designer-schema-settings-Action-Action.Designer-${triggerNodeCollectionName}`,
+        name: `designer-schema-settings-Action-actionSettings:submitToWorkflow-${triggerNodeCollectionName}`,
       })
       .hover();
     await page.getByRole('menuitem', { name: 'Bind workflows' }).click();
