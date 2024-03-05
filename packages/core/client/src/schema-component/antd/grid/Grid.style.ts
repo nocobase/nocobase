@@ -37,7 +37,6 @@ const useStyles = genStyleHook('nb-grid', (token) => {
       '.CardRow': {
         display: 'flex',
         position: 'relative',
-        height: '100%',
       },
 
       '.showDivider': {

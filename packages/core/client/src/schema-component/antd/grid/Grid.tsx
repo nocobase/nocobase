@@ -319,11 +319,7 @@ export const Grid: any = observer(
       <GridContext.Provider
         value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render, InitializerComponent, showDivider }}
       >
-        <div
-          className={`nb-grid ${componentCls} ${hashId}`}
-          style={{ position: 'relative', height: '100%' }}
-          ref={gridRef}
-        >
+        <div className={`nb-grid ${componentCls} ${hashId}`} style={{ position: 'relative' }} ref={gridRef}>
           <DndWrapper dndContext={props.dndContext}>
             {showDivider ? (
               <RowDivider
