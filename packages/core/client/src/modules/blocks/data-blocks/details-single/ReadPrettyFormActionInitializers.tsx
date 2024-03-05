@@ -1,4 +1,4 @@
-import { useCollection_deprecated } from '../../../..';
+import { CompatibleSchemaInitializer, useCollection_deprecated } from '../../../..';
 import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 
 const useVisibleCollection = () => {
@@ -10,7 +10,7 @@ const useVisibleCollection = () => {
  * @deprecated
  * 表单的操作配置
  */
-export const readPrettyFormActionInitializers_deprecated = new SchemaInitializer({
+export const readPrettyFormActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ReadPrettyFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
@@ -89,81 +89,84 @@ export const readPrettyFormActionInitializers_deprecated = new SchemaInitializer
   ],
 });
 
-export const readPrettyFormActionInitializers = new SchemaInitializer({
-  name: 'actionInitializers:detailsSingle',
-  title: '{{t("Configure actions")}}',
-  icon: 'SettingOutlined',
-  style: {
-    marginLeft: 8,
-  },
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'enableActions',
-      title: '{{t("Enable actions")}}',
-      children: [
-        {
-          title: '{{t("Edit")}}',
-          name: 'edit',
-          Component: 'UpdateActionInitializer',
-          schema: {
-            'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
-            'x-component-props': {
-              type: 'primary',
+export const readPrettyFormActionInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'actionInitializers:detailsSingle',
+    title: '{{t("Configure actions")}}',
+    icon: 'SettingOutlined',
+    style: {
+      marginLeft: 8,
+    },
+    items: [
+      {
+        type: 'itemGroup',
+        name: 'enableActions',
+        title: '{{t("Enable actions")}}',
+        children: [
+          {
+            title: '{{t("Edit")}}',
+            name: 'edit',
+            Component: 'UpdateActionInitializer',
+            schema: {
+              'x-component': 'Action',
+              'x-decorator': 'ACLActionProvider',
+              'x-component-props': {
+                type: 'primary',
+              },
+            },
+            useVisible: useVisibleCollection,
+          },
+          {
+            title: '{{t("Delete")}}',
+            name: 'delete',
+            Component: 'DestroyActionInitializer',
+            schema: {
+              'x-component': 'Action',
+              'x-decorator': 'ACLActionProvider',
+            },
+            useVisible: useVisibleCollection,
+          },
+        ],
+      },
+      {
+        name: 'divider',
+        type: 'divider',
+      },
+      {
+        type: 'subMenu',
+        name: 'customize',
+        title: '{{t("Customize")}}',
+        children: [
+          {
+            name: 'popup',
+            title: '{{t("Popup")}}',
+            Component: 'PopupActionInitializer',
+            useComponentProps() {
+              return {
+                'x-component': 'Action',
+              };
             },
           },
-          useVisible: useVisibleCollection,
-        },
-        {
-          title: '{{t("Delete")}}',
-          name: 'delete',
-          Component: 'DestroyActionInitializer',
-          schema: {
-            'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
+          {
+            name: 'updateRecord',
+            title: '{{t("Update record")}}',
+            Component: 'UpdateRecordActionInitializer',
+            useComponentProps() {
+              return {
+                'x-component': 'Action',
+              };
+            },
+            visible: useVisibleCollection,
           },
-          useVisible: useVisibleCollection,
-        },
-      ],
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      type: 'subMenu',
-      name: 'customize',
-      title: '{{t("Customize")}}',
-      children: [
-        {
-          name: 'popup',
-          title: '{{t("Popup")}}',
-          Component: 'PopupActionInitializer',
-          useComponentProps() {
-            return {
-              'x-component': 'Action',
-            };
+          {
+            name: 'customRequest',
+            title: '{{t("Custom request")}}',
+            Component: 'CustomRequestInitializer',
+            useVisible: useVisibleCollection,
           },
-        },
-        {
-          name: 'updateRecord',
-          title: '{{t("Update record")}}',
-          Component: 'UpdateRecordActionInitializer',
-          useComponentProps() {
-            return {
-              'x-component': 'Action',
-            };
-          },
-          visible: useVisibleCollection,
-        },
-        {
-          name: 'customRequest',
-          title: '{{t("Custom request")}}',
-          Component: 'CustomRequestInitializer',
-          useVisible: useVisibleCollection,
-        },
-      ],
-    },
-  ],
-});
+        ],
+      },
+    ],
+  },
+  readPrettyFormActionInitializers_deprecated,
+);

@@ -440,8 +440,8 @@ function ActionInitializer() {
 /**
  * @deprecated
  */
-export const addActionButton_deprecated: SchemaInitializer = new SchemaInitializer({
-  name: 'actionInitializers:workflowManual',
+export const addActionButton_deprecated = new CompatibleSchemaInitializer({
+  name: 'AddActionButton',
   title: '{{t("Configure actions")}}',
   items: [
     {
@@ -471,36 +471,39 @@ export const addActionButton_deprecated: SchemaInitializer = new SchemaInitializ
   ],
 });
 
-export const addActionButton: SchemaInitializer = new SchemaInitializer({
-  name: 'actionInitializers:workflowManual',
-  title: '{{t("Configure actions")}}',
-  items: [
-    {
-      name: 'jobStatusResolved',
-      title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
-      Component: ContinueInitializer,
-      action: JOB_STATUS.RESOLVED,
-      actionProps: {
-        type: 'primary',
+export const addActionButton = new CompatibleSchemaInitializer(
+  {
+    name: 'actionInitializers:workflowManual',
+    title: '{{t("Configure actions")}}',
+    items: [
+      {
+        name: 'jobStatusResolved',
+        title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
+        Component: ContinueInitializer,
+        action: JOB_STATUS.RESOLVED,
+        actionProps: {
+          type: 'primary',
+        },
       },
-    },
-    {
-      name: 'jobStatusRejected',
-      title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
-      Component: ActionInitializer,
-      action: JOB_STATUS.REJECTED,
-      actionProps: {
-        danger: true,
+      {
+        name: 'jobStatusRejected',
+        title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
+        Component: ActionInitializer,
+        action: JOB_STATUS.REJECTED,
+        actionProps: {
+          danger: true,
+        },
       },
-    },
-    {
-      name: 'jobStatusPending',
-      title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
-      Component: ActionInitializer,
-      action: JOB_STATUS.PENDING,
-    },
-  ],
-});
+      {
+        name: 'jobStatusPending',
+        title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
+        Component: ActionInitializer,
+        action: JOB_STATUS.PENDING,
+      },
+    ],
+  },
+  addActionButton_deprecated,
+);
 
 // NOTE: fake useAction for ui configuration
 function useSubmit() {

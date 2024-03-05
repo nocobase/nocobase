@@ -3,6 +3,7 @@ import { useForm } from '@formily/react';
 import {
   Action,
   ActionInitializer,
+  CompatibleSchemaInitializer,
   GeneralSchemaDesigner,
   SchemaInitializer,
   SchemaSettingsDivider,
@@ -128,7 +129,7 @@ const ChartFilterCollapseInitializer = (props) => {
 /**
  * @deprecated
  */
-export const chartFilterActionInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
+export const chartFilterActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartFilterActionInitializers',
   'data-testid': 'configure-actions-button-of-chart-filter',
   title: '{{t("Configure actions")}}',
@@ -171,45 +172,48 @@ export const chartFilterActionInitializers_deprecated: SchemaInitializer = new S
   ],
 });
 
-export const chartFilterActionInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'actionInitializers:chartFilterAction',
-  'data-testid': 'configure-actions-button-of-chart-filter',
-  title: '{{t("Configure actions")}}',
-  icon: 'SettingOutlined',
-  items: [
-    {
-      name: 'enbaleActions',
-      type: 'itemGroup',
-      title: '{{t("Enable actions")}}',
-      children: [
-        {
-          name: 'filter',
-          type: 'item',
-          title: '{{t("Filter")}}',
-          component: ChartFilterActionInitializer,
-          schema: {
-            'x-action-settings': {},
+export const chartFilterActionInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'actionInitializers:chartFilterAction',
+    'data-testid': 'configure-actions-button-of-chart-filter',
+    title: '{{t("Configure actions")}}',
+    icon: 'SettingOutlined',
+    items: [
+      {
+        name: 'enbaleActions',
+        type: 'itemGroup',
+        title: '{{t("Enable actions")}}',
+        children: [
+          {
+            name: 'filter',
+            type: 'item',
+            title: '{{t("Filter")}}',
+            component: ChartFilterActionInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
           },
-        },
-        {
-          name: 'reset',
-          type: 'item',
-          title: '{{t("Reset")}}',
-          component: ChartFilterResetInitializer,
-          schema: {
-            'x-action-settings': {},
+          {
+            name: 'reset',
+            type: 'item',
+            title: '{{t("Reset")}}',
+            component: ChartFilterResetInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
           },
-        },
-        {
-          name: 'collapse',
-          type: 'item',
-          title: '{{t("Collapse")}}',
-          component: ChartFilterCollapseInitializer,
-          schema: {
-            'x-action-settings': {},
+          {
+            name: 'collapse',
+            type: 'item',
+            title: '{{t("Collapse")}}',
+            component: ChartFilterCollapseInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
           },
-        },
-      ],
-    },
-  ],
-});
+        ],
+      },
+    ],
+  },
+  chartFilterActionInitializers_deprecated,
+);
