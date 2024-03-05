@@ -46,7 +46,7 @@ function useUpdateConfigAction() {
           config: form.values,
         },
       });
-      ctx.setFormValueChanged(false);
+      ctx.formValueChanged.current = false;
       ctx.setVisible(false);
       refresh();
     },
@@ -147,7 +147,6 @@ export const TriggerConfig = () => {
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
-  const [formValueChanged, setFormValueChanged] = useState(false);
   const { styles } = useStyles();
   const compile = useCompile();
   const trigger = useTrigger();
@@ -237,8 +236,6 @@ export const TriggerConfig = () => {
         value={{
           visible: editingConfig,
           setVisible: resetForm,
-          formValueChanged,
-          setFormValueChanged,
         }}
       >
         <FormProvider form={form}>

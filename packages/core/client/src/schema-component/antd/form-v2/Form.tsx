@@ -83,7 +83,7 @@ interface WithFormProps {
 const WithForm = (props: WithFormProps) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
-  const { setFormValueChanged } = useActionContext();
+  const ctx = useActionContext();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const linkageRules: any[] =
@@ -94,7 +94,7 @@ const WithForm = (props: WithFormProps) => {
 
     form.addEffects(id, () => {
       onFormInputChange(() => {
-        setFormValueChanged?.(true);
+        ctx.formValueChanged.current = true;
       });
     });
 
@@ -105,7 +105,7 @@ const WithForm = (props: WithFormProps) => {
     return () => {
       form.removeEffects(id);
     };
-  }, [form, props.disabled, setFormValueChanged]);
+  }, [form, props.disabled]);
 
   useEffect(() => {
     const id = uid();
@@ -172,14 +172,14 @@ const WithForm = (props: WithFormProps) => {
 
 const WithoutForm = (props) => {
   const fieldSchema = useFieldSchema();
-  const { setFormValueChanged } = useActionContext();
+  const ctx = useActionContext();
   const form = useMemo(
     () =>
       createForm({
         disabled: props.disabled,
         effects() {
           onFormInputChange((form) => {
-            setFormValueChanged?.(true);
+            ctx.formValueChanged.current = true;
           });
         },
       }),

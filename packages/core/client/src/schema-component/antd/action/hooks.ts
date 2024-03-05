@@ -21,12 +21,12 @@ export const useActionContext = () => {
     setVisible(visible: boolean, confirm = false) {
       if (ctx?.openMode !== 'page') {
         if (!visible) {
-          if (confirm && ctx.formValueChanged) {
+          if (confirm && ctx.formValueChanged.current) {
             modal.confirm({
               title: t('Unsaved changes'),
               content: t("Are you sure you don't want to save?"),
               async onOk() {
-                ctx.setFormValueChanged(false);
+                ctx.formValueChanged.current = false;
                 ctx.setVisible?.(false);
               },
             });

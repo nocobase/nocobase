@@ -1,14 +1,17 @@
 import { Schema } from '@formily/react';
 import { DrawerProps, ModalProps } from 'antd';
-import React, { createContext } from 'react';
+import React, { Ref, createContext, useRef } from 'react';
 import { useActionContext } from './hooks';
 
-export const ActionContext = createContext<ActionContextProps>({});
+export const ActionContext = createContext<ActionContextProps & { formValueChanged?: React.MutableRefObject<boolean> }>(
+  {},
+);
 
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
   const contextProps = useActionContext();
+  const formValueChanged = useRef(false);
   return (
-    <ActionContext.Provider value={{ ...contextProps, ...props, ...props?.value }}>
+    <ActionContext.Provider value={{ ...contextProps, ...props, ...props?.value, formValueChanged }}>
       {props.children}
     </ActionContext.Provider>
   );
@@ -23,8 +26,6 @@ export interface ActionContextProps {
   snapshot?: boolean;
   openSize?: OpenSize;
   containerRefKey?: string;
-  formValueChanged?: boolean;
-  setFormValueChanged?: (v: boolean) => void;
   fieldSchema?: Schema;
   drawerProps?: DrawerProps;
   modalProps?: ModalProps;

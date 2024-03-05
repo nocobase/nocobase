@@ -169,7 +169,6 @@ const InternalFileManager = (props) => {
           modalProps: {
             getContainer: others?.getContainer || modalProps?.getContainer,
           },
-          formValueChanged: false,
         }}
       >
         <RecordPickerProvider {...pickerProps}>

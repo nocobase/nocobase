@@ -77,7 +77,7 @@ function useUpdateAction() {
           config: form.values,
         },
       });
-      ctx.setFormValueChanged(false);
+      ctx.formValueChanged.current = false;
       ctx.setVisible(false);
       refresh();
     },
@@ -275,7 +275,6 @@ export function NodeDefaultView(props) {
 
   const [editingTitle, setEditingTitle] = useState<string>(data.title ?? typeTitle);
   const [editingConfig, setEditingConfig] = useState(false);
-  const [formValueChanged, setFormValueChanged] = useState(false);
 
   const form = useMemo(() => {
     const values = cloneDeep(data.config);
@@ -353,8 +352,6 @@ export function NodeDefaultView(props) {
           value={{
             visible: editingConfig,
             setVisible: resetForm,
-            formValueChanged,
-            setFormValueChanged,
           }}
         >
           <FormProvider form={form}>

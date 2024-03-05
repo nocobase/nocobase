@@ -52,7 +52,6 @@ export const Action: ComposedAction = observer(
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
-    const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
     const { run, element } = useAction(actionCallback);
@@ -72,7 +71,6 @@ export const Action: ComposedAction = observer(
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
-
     useEffect(() => {
       field.stateOfLinkageRules = {};
       linkageRules
@@ -156,8 +154,6 @@ export const Action: ComposedAction = observer(
         button={renderButton()}
         visible={visible}
         setVisible={setVisible}
-        formValueChanged={formValueChanged}
-        setFormValueChanged={setFormValueChanged}
         openMode={openMode}
         openSize={openSize}
         containerRefKey={containerRefKey}

@@ -11,8 +11,6 @@ export function useFormProviderProps() {
 
 export function DrawerFormProvider(props) {
   const { values, disabled, visible, setVisible } = props;
-  const [formValueChanged, setFormValueChanged] = useState(false);
-
   const form = useMemo(() => {
     const v = cloneDeep(values);
     return createForm({
@@ -37,8 +35,6 @@ export function DrawerFormProvider(props) {
       value={{
         visible,
         setVisible: resetForm,
-        formValueChanged,
-        setFormValueChanged,
       }}
     >
       <FormProvider form={form}>{props.children}</FormProvider>
