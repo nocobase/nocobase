@@ -4,11 +4,11 @@
   "displayName.zh-CN": "可视化数据表管理",
   "description": "An ER diagram-like tool. Currently only the Master database is supported.",
   "description.zh-CN": "类似 ER 图的工具，目前只支持主数据库。",
-  "version": "0.20.0-alpha.2",
+  "version": "0.20.0-alpha.4",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/plugins/graph-collection-manager",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/graph-collection-manager",
+  "homepage": "https://docs.nocobase.com/handbook/graph-collection-manager",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/graph-collection-manager",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@antv/x6": "^2.0.0",
@@ -35,7 +35,7 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Data model tools"
   ]

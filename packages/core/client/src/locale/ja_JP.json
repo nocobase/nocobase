@@ -677,6 +677,6 @@
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" は削除されている可能性があります。この {{blockType}} を削除してください。",
   "DataSource": "データソース",
   "Home page": "ホームページ",
-  "User manual": "ユーザーマニュアル",
+  "Handbook": "ユーザーマニュアル",
   "License": "ライセンス"
 }
