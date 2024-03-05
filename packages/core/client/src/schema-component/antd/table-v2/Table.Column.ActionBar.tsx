@@ -4,9 +4,8 @@ import React from 'react';
 import { SortableItem, useDesigner } from '../..';
 
 export const designerCss = css`
-  position: relative;
-  margin: calc(0px - var(--margin)) calc(0px - var(--margin));
-  padding: calc(var(--padding) + var(--paddingXXS)) var(--padding);
+  margin: -18px -16px;
+  padding: 18px 16px;
 
   &:hover {
     > .general-schema-designer {
