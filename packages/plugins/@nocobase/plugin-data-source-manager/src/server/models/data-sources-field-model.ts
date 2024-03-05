@@ -19,18 +19,6 @@ export class DataSourcesFieldModel extends MagicAttributeModel {
     const newOptions = mergeOptions(oldField ? oldField.options : {}, options);
 
     collection.setField(name, newOptions);
-
-    // const interfaceOption = options.interface;
-
-    // if (interfaceOption === 'updatedAt') {
-    //   // @ts-ignore
-    //   collection.model._timestampAttributes.createdAt = this.get('name');
-    // }
-    //
-    // if (interfaceOption === 'createdAt') {
-    //   // @ts-ignore
-    //   collection.model._timestampAttributes.updatedAt = this.get('name');
-    // }
   }
 
   unload(loadOptions: LoadOptions) {
@@ -38,7 +26,14 @@ export class DataSourcesFieldModel extends MagicAttributeModel {
     const options = this.get();
     const { collectionName, name, dataSourceKey } = options;
     const dataSource = app.dataSourceManager.dataSources.get(dataSourceKey);
+    if (!dataSource) {
+      return;
+    }
     const collection = dataSource.collectionManager.getCollection(collectionName);
+    if (!collection) {
+      return;
+    }
+
     collection.removeField(name);
   }
 }
