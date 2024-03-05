@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import moment from 'moment';
+import dayjs from 'dayjs';
 
 import { connect, mapProps } from '@formily/react';
 import { useBoolean } from 'ahooks';
@@ -7,7 +7,7 @@ import { Input, Radio, Space } from 'antd';
 import React, { useState } from 'react';
 import { useToken } from '../../';
 
-const date = moment();
+const date = dayjs();
 
 const spaceCSS = css`
   width: 100%;
@@ -16,7 +16,7 @@ const spaceCSS = css`
   }
 `;
 export const DateFormatCom = (props?) => {
-  const date = moment();
+  const date = dayjs();
   return (
     <div style={{ display: 'inline-flex' }}>
       <span>{props.format}</span>
@@ -57,7 +57,6 @@ const InternalExpiresRadio = (props) => {
       onChange(v.target.value);
     }
   };
-
   return (
     <Space className={spaceCSS}>
       <Radio.Group value={isCustom ? 'custom' : props.value} onChange={onSelectChange}>
