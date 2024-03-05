@@ -9,7 +9,6 @@ const FixedBlockContext = React.createContext<{
   fixedBlockUID: boolean | string;
   fixedBlockUIDRef: React.MutableRefObject<boolean | string>;
   inFixedBlock: boolean;
-  pageContainerRef?: React.MutableRefObject<HTMLDivElement>;
 }>({
   setFixedBlock: () => {},
   height: 0,
@@ -90,14 +89,9 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
     fixedBlockUIDRef.current = v;
     _setFixedBlock(v);
   };
-  const pageContainerRef = useRef<HTMLDivElement>(null);
-
   return (
-    <FixedBlockContext.Provider
-      value={{ inFixedBlock: true, height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef, pageContainerRef }}
-    >
+    <FixedBlockContext.Provider value={{ inFixedBlock: true, height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef }}>
       <div
-        ref={pageContainerRef}
         className={fixedBlockUID ? fixedBlockCss : ''}
         style={{
           height: fixedBlockUID ? `calc(100vh - ${height})` : undefined,
