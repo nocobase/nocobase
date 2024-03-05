@@ -73,3 +73,4 @@ export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
     </div>
   );
 });
+PluginDocument.displayName = 'PluginDocument';
