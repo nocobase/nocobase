@@ -1,6 +1,8 @@
 import { SchemaInitializer } from './SchemaInitializer';
 
 /**
+ * @internal
+ *
  * 因为需要把 SchemaInitializer 的 name 统一为一致的命名风格，统一之后新创建的 Schema 将
  * 使用新的命名风格，而旧的 Schema 仍然使用旧的命名风格，这样会导致一些问题。所以需要有一个方法
  * 可以确保旧版的 name 也可以正常工作，知道旧的 Schema 被移除。该类就是这个工作的：
