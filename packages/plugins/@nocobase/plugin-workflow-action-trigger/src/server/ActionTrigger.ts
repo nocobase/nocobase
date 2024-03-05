@@ -92,7 +92,7 @@ export default class extends Trigger {
           }
           const { collection, appends = [] } = workflow.config;
           const model = payload.constructor;
-          if (model instanceof Model) {
+          if (payload instanceof Model) {
             if (collection !== model.collection.name) {
               continue;
             }
