@@ -9,6 +9,7 @@ const FixedBlockContext = React.createContext<{
   fixedBlockUID: boolean | string;
   fixedBlockUIDRef: React.MutableRefObject<boolean | string>;
   inFixedBlock: boolean;
+  pageContainerRef?: React.MutableRefObject<HTMLDivElement>;
 }>({
   setFixedBlock: () => {},
   height: 0,
@@ -40,11 +41,6 @@ export const useFixedBlock = () => {
 export const FixedBlockWrapper: React.FC = (props) => {
   const fixedBlock = useFixedSchema();
   const { height, fixedBlockUID } = useFixedBlock();
-  const record = useRecord();
-  const isPopup = Object.keys(record).length;
-  if (isPopup) {
-    return <>{props.children}</>;
-  }
   /**
    * The fixedBlockUID of false means that the page has no fixed blocks
    * isPopup means that the FixedBlock is in the popup mode
@@ -94,9 +90,14 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
     fixedBlockUIDRef.current = v;
     _setFixedBlock(v);
   };
+  const pageContainerRef = useRef<HTMLDivElement>(null);
+
   return (
-    <FixedBlockContext.Provider value={{ inFixedBlock: true, height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef }}>
+    <FixedBlockContext.Provider
+      value={{ inFixedBlock: true, height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef, pageContainerRef }}
+    >
       <div
+        ref={pageContainerRef}
         className={fixedBlockUID ? fixedBlockCss : ''}
         style={{
           height: fixedBlockUID ? `calc(100vh - ${height})` : undefined,
