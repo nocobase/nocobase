@@ -166,6 +166,68 @@ describe('workflow > triggers > schedule > static mode', () => {
       expect(date.getTime()).toBe(now.getTime());
     });
 
+    it('no repeat triggered then update to repeat', async () => {
+      const start = await sleepToEvenSecond();
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 0,
+          startsOn: start.toISOString(),
+        },
+      });
+
+      await sleep(1000);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      await workflow.update({
+        config: {
+          ...workflow.config,
+          repeat: 1000,
+        },
+      });
+
+      console.log(new Date().toISOString());
+
+      await sleep(3000);
+
+      const e2s = await workflow.getExecutions();
+      console.log(e2s);
+      expect(e2s.length).toBe(2);
+    });
+  });
+
+  describe('status', () => {
+    it('should not trigger after turned off', async () => {
+      const start = await sleepToEvenSecond();
+      const future = new Date();
+      future.setSeconds(future.getSeconds() + 2);
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 0,
+          startsOn: future.toISOString(),
+          repeat: 1000,
+        },
+      });
+
+      await sleep(1000);
+
+      await workflow.update({ enabled: false });
+
+      await sleep(3000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+  });
+
+  describe('dispatch', () => {
     it('multiple workflows trigger at same time', async () => {
       const now = new Date();
       const startsOn = now.toISOString();
@@ -216,36 +278,7 @@ describe('workflow > triggers > schedule > static mode', () => {
       d2.setMilliseconds(0);
       expect(d2.getTime()).toBe(now.getTime());
     });
-  });
 
-  describe('status', () => {
-    it('should not trigger after turned off', async () => {
-      const start = await sleepToEvenSecond();
-      const future = new Date();
-      future.setSeconds(future.getSeconds() + 2);
-
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: future.toISOString(),
-          repeat: 1000,
-        },
-      });
-
-      await sleep(1000);
-
-      await workflow.update({ enabled: false });
-
-      await sleep(3000);
-
-      const executions = await workflow.getExecutions();
-      expect(executions.length).toBe(0);
-    });
-  });
-
-  describe('dispatch', () => {
     it('missed non-repeated scheduled time should not be triggered', async () => {
       await sleepToEvenSecond();
 
