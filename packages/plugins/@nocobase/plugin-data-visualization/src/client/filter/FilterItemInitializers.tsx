@@ -222,6 +222,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   }, [theme]);
   return <SchemaInitializerItem {...itemConfig} {...props} onClick={handleClick} />;
 });
+ChartFilterCustomItemInitializer.displayName = 'ChartFilterCustomItemInitializer';
 
 export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'ChartFilterItemInitializers',

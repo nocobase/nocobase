@@ -14,3 +14,4 @@ export const MobileClientProvider = React.memo((props) => {
 
   return <>{props.children}</>;
 });
+MobileClientProvider.displayName = 'MobileClientProvider';
