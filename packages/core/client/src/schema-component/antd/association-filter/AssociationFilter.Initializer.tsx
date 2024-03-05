@@ -1,11 +1,11 @@
-import { SchemaInitializerItemType } from '../../../application';
+import { CompatibleSchemaInitializer, SchemaInitializerItemType } from '../../../application';
 import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 import { useAssociatedFields } from '../../../filter-provider/utils';
 
 /**
  * @deprecated
  */
-export const associationFilterInitializer_deprecated = new SchemaInitializer({
+export const associationFilterInitializer_deprecated = new CompatibleSchemaInitializer({
   name: 'AssociationFilter.Initializer',
   style: {
     marginTop: 16,
@@ -58,55 +58,58 @@ export const associationFilterInitializer_deprecated = new SchemaInitializer({
   ],
 });
 
-export const associationFilterInitializer = new SchemaInitializer({
-  name: 'fieldInitializers:associationFilter',
-  style: {
-    marginTop: 16,
-  },
-  icon: 'SettingOutlined',
-  title: '{{t("Configure fields")}}',
-  items: [
-    {
-      name: 'associationFields',
-      type: 'itemGroup',
-      title: '{{t("Association fields")}}',
-      useChildren() {
-        const associatedFields = useAssociatedFields();
-        const useProps = '{{useAssociationFilterProps}}';
-        const children: SchemaInitializerItemType[] = associatedFields.map((field) => ({
-          type: 'item',
-          name: field.key,
-          title: field.uiSchema?.title,
-          Component: 'AssociationFilterDesignerDisplayField',
-          schema: {
-            name: field.name,
+export const associationFilterInitializer = new CompatibleSchemaInitializer(
+  {
+    name: 'fieldInitializers:associationFilter',
+    style: {
+      marginTop: 16,
+    },
+    icon: 'SettingOutlined',
+    title: '{{t("Configure fields")}}',
+    items: [
+      {
+        name: 'associationFields',
+        type: 'itemGroup',
+        title: '{{t("Association fields")}}',
+        useChildren() {
+          const associatedFields = useAssociatedFields();
+          const useProps = '{{useAssociationFilterProps}}';
+          const children: SchemaInitializerItemType[] = associatedFields.map((field) => ({
+            type: 'item',
+            name: field.key,
             title: field.uiSchema?.title,
-            type: 'void',
-            // 'x-designer': 'AssociationFilter.Item.Designer',
-            'x-toolbar': 'CollapseItemSchemaToolbar',
-            'x-settings': 'fieldSettings:FilterCollapseItem',
-            'x-component': 'AssociationFilter.Item',
-            'x-component-props': {
-              fieldNames: {
-                label: field.targetKey || 'id',
+            Component: 'AssociationFilterDesignerDisplayField',
+            schema: {
+              name: field.name,
+              title: field.uiSchema?.title,
+              type: 'void',
+              // 'x-designer': 'AssociationFilter.Item.Designer',
+              'x-toolbar': 'CollapseItemSchemaToolbar',
+              'x-settings': 'fieldSettings:FilterCollapseItem',
+              'x-component': 'AssociationFilter.Item',
+              'x-component-props': {
+                fieldNames: {
+                  label: field.targetKey || 'id',
+                },
+                useProps,
               },
-              useProps,
+              properties: {},
             },
-            properties: {},
-          },
-        }));
+          }));
 
-        return children;
+          return children;
+        },
       },
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      name: 'delete',
-      title: '{{t("Delete")}}',
-      Component: 'AssociationFilterDesignerDelete',
-    },
-  ],
-});
+      {
+        name: 'divider',
+        type: 'divider',
+      },
+      {
+        name: 'delete',
+        title: '{{t("Delete")}}',
+        Component: 'AssociationFilterDesignerDelete',
+      },
+    ],
+  },
+  associationFilterInitializer_deprecated,
+);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerChildren } from '../../application';
+import { CompatibleSchemaInitializer, SchemaInitializerChildren } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useCompile } from '../../schema-component';
 import { gridRowColWrap, useCustomFormItemInitializerFields, useInheritsFormItemInitializerFields } from '../utils';
@@ -27,7 +27,7 @@ const ParentCollectionFields = () => {
 /**
  * @deprecated
  */
-export const customFormItemInitializers_deprecated = new SchemaInitializer({
+export const customFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'CustomFormItemInitializers',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
@@ -46,21 +46,24 @@ export const customFormItemInitializers_deprecated = new SchemaInitializer({
   ],
 });
 
-export const customFormItemInitializers = new SchemaInitializer({
-  name: 'fieldInitializers:customFormItem',
-  wrap: gridRowColWrap,
-  icon: 'SettingOutlined',
-  title: '{{t("Configure fields")}}',
-  items: [
-    {
-      type: 'itemGroup',
-      title: '{{t("Configure fields")}}',
-      name: 'configureFields',
-      useChildren: useCustomFormItemInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: ParentCollectionFields,
-    },
-  ],
-});
+export const customFormItemInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'fieldInitializers:customFormItem',
+    wrap: gridRowColWrap,
+    icon: 'SettingOutlined',
+    title: '{{t("Configure fields")}}',
+    items: [
+      {
+        type: 'itemGroup',
+        title: '{{t("Configure fields")}}',
+        name: 'configureFields',
+        useChildren: useCustomFormItemInitializerFields,
+      },
+      {
+        name: 'parentCollectionFields',
+        Component: ParentCollectionFields,
+      },
+    ],
+  },
+  customFormItemInitializers_deprecated,
+);

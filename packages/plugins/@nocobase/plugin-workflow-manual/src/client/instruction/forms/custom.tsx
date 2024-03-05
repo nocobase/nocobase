@@ -8,6 +8,7 @@ import lodash from 'lodash';
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
+  CompatibleSchemaInitializer,
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
@@ -325,7 +326,7 @@ const CustomItemsComponent = (props) => {
 /**
  * @deprecated
  */
-export const addCustomFormField_deprecated: SchemaInitializer = new SchemaInitializer({
+export const addCustomFormField_deprecated = new CompatibleSchemaInitializer({
   name: 'AddCustomFormField',
   wrap: gridRowColWrap,
   insertPosition: 'beforeEnd',
@@ -333,13 +334,16 @@ export const addCustomFormField_deprecated: SchemaInitializer = new SchemaInitia
   ItemsComponent: CustomItemsComponent,
 });
 
-export const addCustomFormField: SchemaInitializer = new SchemaInitializer({
-  name: 'fieldInitializers:workflowManualCustomForm',
-  wrap: gridRowColWrap,
-  insertPosition: 'beforeEnd',
-  title: "{{t('Configure fields')}}",
-  ItemsComponent: CustomItemsComponent,
-});
+export const addCustomFormField = new CompatibleSchemaInitializer(
+  {
+    name: 'fieldInitializers:workflowManualCustomForm',
+    wrap: gridRowColWrap,
+    insertPosition: 'beforeEnd',
+    title: "{{t('Configure fields')}}",
+    ItemsComponent: CustomItemsComponent,
+  },
+  addCustomFormField_deprecated,
+);
 
 function CustomFormFieldInitializer() {
   const itemConfig = useSchemaInitializerItem();

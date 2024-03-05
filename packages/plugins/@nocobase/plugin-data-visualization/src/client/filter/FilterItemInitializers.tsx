@@ -8,6 +8,7 @@ import {
   BlockItem,
   CollectionFieldProvider,
   CollectionProvider,
+  CompatibleSchemaInitializer,
   FormDialog,
   HTMLEncode,
   SchemaComponent,
@@ -226,7 +227,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
 /**
  * @deprecated
  */
-export const chartFilterItemInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
+export const chartFilterItemInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartFilterItemInitializers',
   'data-testid': 'configure-fields-button-of-chart-filter-item',
   wrap: gridRowColWrap,
@@ -273,49 +274,52 @@ export const chartFilterItemInitializers_deprecated: SchemaInitializer = new Sch
   ],
 });
 
-export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'fieldInitializers:chartFilterItem',
-  'data-testid': 'configure-fields-button-of-chart-filter-item',
-  wrap: gridRowColWrap,
-  icon: 'SettingOutlined',
-  title: '{{ t("Configure fields") }}',
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'displayFields',
-      title: '{{ t("Display fields") }}',
-      useChildren: () => {
-        const { getCollection } = useCollectionManager_deprecated();
-        const { getChartCollections } = useChartData();
-        const { getChartFilterFields } = useChartFilter();
-        const collections = getChartCollections();
+export const chartFilterItemInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'fieldInitializers:chartFilterItem',
+    'data-testid': 'configure-fields-button-of-chart-filter-item',
+    wrap: gridRowColWrap,
+    icon: 'SettingOutlined',
+    title: '{{ t("Configure fields") }}',
+    items: [
+      {
+        type: 'itemGroup',
+        name: 'displayFields',
+        title: '{{ t("Display fields") }}',
+        useChildren: () => {
+          const { getCollection } = useCollectionManager_deprecated();
+          const { getChartCollections } = useChartData();
+          const { getChartFilterFields } = useChartFilter();
+          const collections = getChartCollections();
 
-        return useMemo(() => {
-          return collections.map((name: any) => {
-            const collection = getCollection(name);
-            const fields = getChartFilterFields(collection);
-            return {
-              name: collection.key,
-              type: 'subMenu',
-              title: collection.title,
-              children: fields,
-            };
-          });
-        }, [collections]);
+          return useMemo(() => {
+            return collections.map((name: any) => {
+              const collection = getCollection(name);
+              const fields = getChartFilterFields(collection);
+              return {
+                name: collection.key,
+                type: 'subMenu',
+                title: collection.title,
+                children: fields,
+              };
+            });
+          }, [collections]);
+        },
       },
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      name: 'custom',
-      type: 'item',
-      title: lang('Custom'),
-      Component: () => {
-        const { insertAdjacent } = useDesignable();
-        return <ChartFilterCustomItemInitializer insert={(s: Schema) => insertAdjacent('beforeEnd', s)} />;
+      {
+        name: 'divider',
+        type: 'divider',
       },
-    },
-  ],
-});
+      {
+        name: 'custom',
+        type: 'item',
+        title: lang('Custom'),
+        Component: () => {
+          const { insertAdjacent } = useDesignable();
+          return <ChartFilterCustomItemInitializer insert={(s: Schema) => insertAdjacent('beforeEnd', s)} />;
+        },
+      },
+    ],
+  },
+  chartFilterItemInitializers_deprecated,
+);

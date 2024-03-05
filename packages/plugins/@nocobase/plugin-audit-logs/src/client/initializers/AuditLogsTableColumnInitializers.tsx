@@ -1,4 +1,5 @@
 import {
+  CompatibleSchemaInitializer,
   SchemaInitializer,
   SchemaInitializerChildren,
   useAssociatedTableColumnInitializerFields,
@@ -47,7 +48,7 @@ const AssociatedFields = () => {
 /**
  * @deprecated
  */
-export const auditLogsTableColumnInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
+export const auditLogsTableColumnInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'AuditLogsTableColumnInitializers',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
@@ -91,46 +92,49 @@ export const auditLogsTableColumnInitializers_deprecated: SchemaInitializer = ne
   ],
 });
 
-export const auditLogsTableColumnInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'fieldInitializers:auditLogsTableColumn',
-  insertPosition: 'beforeEnd',
-  icon: 'SettingOutlined',
-  title: '{{t("Configure columns")}}',
-  wrap(s) {
-    if (s['x-action-column']) {
-      return s;
-    }
-    return {
-      type: 'void',
-      'x-decorator': 'TableV2.Column.Decorator',
-      'x-designer': 'TableV2.Column.Designer',
-      'x-component': 'TableV2.Column',
-      properties: {
-        [s.name]: {
-          ...s,
+export const auditLogsTableColumnInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'fieldInitializers:auditLogsTableColumn',
+    insertPosition: 'beforeEnd',
+    icon: 'SettingOutlined',
+    title: '{{t("Configure columns")}}',
+    wrap(s) {
+      if (s['x-action-column']) {
+        return s;
+      }
+      return {
+        type: 'void',
+        'x-decorator': 'TableV2.Column.Decorator',
+        'x-designer': 'TableV2.Column.Designer',
+        'x-component': 'TableV2.Column',
+        properties: {
+          [s.name]: {
+            ...s,
+          },
         },
+      };
+    },
+    items: [
+      {
+        name: 'displayFields',
+        type: 'itemGroup',
+        title: '{{t("Display fields")}}',
+        useChildren: useTableColumnInitializerFields,
       },
-    };
+      {
+        name: 'parentCollectionFields',
+        Component: ParentCollectionFields,
+      },
+      {
+        name: 'associationFields',
+        Component: AssociatedFields,
+      },
+      {
+        name: 'actionColumn',
+        title: '{{t("Action column")}}',
+        Component: 'AuditLogsTableActionColumnInitializer',
+      },
+    ],
   },
-  items: [
-    {
-      name: 'displayFields',
-      type: 'itemGroup',
-      title: '{{t("Display fields")}}',
-      useChildren: useTableColumnInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: ParentCollectionFields,
-    },
-    {
-      name: 'associationFields',
-      Component: AssociatedFields,
-    },
-    {
-      name: 'actionColumn',
-      title: '{{t("Action column")}}',
-      Component: 'AuditLogsTableActionColumnInitializer',
-    },
-  ],
-});
+  auditLogsTableColumnInitializers_deprecated,
+);

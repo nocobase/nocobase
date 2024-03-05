@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerChildren } from '../../../../application';
+import { CompatibleSchemaInitializer, SchemaInitializerChildren } from '../../../../application';
 import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 import { useCompile } from '../../../../schema-component';
 import {
@@ -50,7 +50,7 @@ const AssociatedFields = () => {
 /**
  * @deprecated
  */
-export const tableColumnInitializers_deprecated = new SchemaInitializer({
+export const tableColumnInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'TableColumnInitializers',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
@@ -110,62 +110,65 @@ export const tableColumnInitializers_deprecated = new SchemaInitializer({
   ],
 });
 
-export const tableColumnInitializers = new SchemaInitializer({
-  name: 'fieldInitializers:tableColumn',
-  insertPosition: 'beforeEnd',
-  icon: 'SettingOutlined',
-  title: '{{t("Configure columns")}}',
-  wrap: (s, { isInSubTable }) => {
-    if (s['x-action-column']) {
-      return s;
-    }
-    return {
-      type: 'void',
-      'x-decorator': 'TableV2.Column.Decorator',
-      // 'x-designer': 'TableV2.Column.Designer',
-      'x-toolbar': 'TableColumnSchemaToolbar',
-      'x-settings': 'fieldSettings:TableColumn',
-      'x-component': 'TableV2.Column',
-      properties: {
-        [s.name]: {
-          ...s,
+export const tableColumnInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'fieldInitializers:tableColumn',
+    insertPosition: 'beforeEnd',
+    icon: 'SettingOutlined',
+    title: '{{t("Configure columns")}}',
+    wrap: (s, { isInSubTable }) => {
+      if (s['x-action-column']) {
+        return s;
+      }
+      return {
+        type: 'void',
+        'x-decorator': 'TableV2.Column.Decorator',
+        // 'x-designer': 'TableV2.Column.Designer',
+        'x-toolbar': 'TableColumnSchemaToolbar',
+        'x-settings': 'fieldSettings:TableColumn',
+        'x-component': 'TableV2.Column',
+        properties: {
+          [s.name]: {
+            ...s,
+          },
+        },
+      };
+    },
+    items: [
+      {
+        name: 'displayFields',
+        type: 'itemGroup',
+        title: '{{t("Display fields")}}',
+        // children: DisplayFields,
+        useChildren: useTableColumnInitializerFields,
+      },
+      {
+        name: 'parentCollectionFields',
+        Component: ParentCollectionFields,
+      },
+      {
+        name: 'associationFields',
+        Component: AssociatedFields,
+      },
+      {
+        name: 'divider',
+        type: 'divider',
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return fieldSchema['x-component'] !== 'AssociationField.SubTable';
         },
       },
-    };
+      {
+        type: 'item',
+        name: 'add',
+        title: '{{t("Action column")}}',
+        Component: 'TableActionColumnInitializer',
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return fieldSchema['x-component'] !== 'AssociationField.SubTable';
+        },
+      },
+    ],
   },
-  items: [
-    {
-      name: 'displayFields',
-      type: 'itemGroup',
-      title: '{{t("Display fields")}}',
-      // children: DisplayFields,
-      useChildren: useTableColumnInitializerFields,
-    },
-    {
-      name: 'parentCollectionFields',
-      Component: ParentCollectionFields,
-    },
-    {
-      name: 'associationFields',
-      Component: AssociatedFields,
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return fieldSchema['x-component'] !== 'AssociationField.SubTable';
-      },
-    },
-    {
-      type: 'item',
-      name: 'add',
-      title: '{{t("Action column")}}',
-      Component: 'TableActionColumnInitializer',
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return fieldSchema['x-component'] !== 'AssociationField.SubTable';
-      },
-    },
-  ],
-});
+  tableColumnInitializers_deprecated,
+);

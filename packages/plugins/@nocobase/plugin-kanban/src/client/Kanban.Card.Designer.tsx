@@ -2,7 +2,7 @@ import { MenuOutlined } from '@ant-design/icons';
 import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
-  SchemaInitializer,
+  CompatibleSchemaInitializer,
   SchemaInitializerOpenModeSchemaItems,
   createDesignable,
   useAPIClient,
@@ -63,7 +63,7 @@ export const KanbanCardDesigner = () => {
 /**
  * @deprecated
  */
-export const kanbanCardInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
+export const kanbanCardInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'KanbanCardInitializers',
   wrap: gridRowColWrap,
   useInsert() {
@@ -137,76 +137,79 @@ export const kanbanCardInitializers_deprecated: SchemaInitializer = new SchemaIn
   ],
 });
 
-export const kanbanCardInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'fieldInitializers:kanbanCard',
-  wrap: gridRowColWrap,
-  useInsert() {
-    const fieldSchema = useFieldSchema();
-    const { t } = useTranslation();
-    const api = useAPIClient();
-    const { refresh } = useDesignable();
+export const kanbanCardInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'fieldInitializers:kanbanCard',
+    wrap: gridRowColWrap,
+    useInsert() {
+      const fieldSchema = useFieldSchema();
+      const { t } = useTranslation();
+      const api = useAPIClient();
+      const { refresh } = useDesignable();
 
-    return (schema) => {
-      const gridSchema = fieldSchema.reduceProperties((buf, schema) => {
-        if (schema['x-component'] === 'Grid') {
-          return schema;
+      return (schema) => {
+        const gridSchema = fieldSchema.reduceProperties((buf, schema) => {
+          if (schema['x-component'] === 'Grid') {
+            return schema;
+          }
+          return buf;
+        }, null);
+
+        if (!gridSchema) {
+          return;
         }
-        return buf;
-      }, null);
 
-      if (!gridSchema) {
-        return;
-      }
-
-      const dn = createDesignable({
-        t,
-        api,
-        refresh,
-        current: gridSchema,
-      });
-      dn.loadAPIClientEvents();
-      dn.insertBeforeEnd(schema);
-    };
-  },
-  Component: (props: any) => {
-    const { getAriaLabel } = useGetAriaLabelOfDesigner();
-    return (
-      <MenuOutlined
-        {...props}
-        role="button"
-        aria-label={getAriaLabel('schema-initializer')}
-        style={{ cursor: 'pointer', fontSize: 12 }}
-      />
-    );
-  },
-  items: [
-    {
-      type: 'itemGroup',
-      title: '{{t("Display fields")}}',
-      name: 'displayFields',
-      useChildren: useFormItemInitializerFields,
-    },
-    {
-      type: 'itemGroup',
-      divider: true,
-      title: '{{t("Display association fields")}}',
-      name: 'displayAssociationFields',
-      hideIfNoChildren: true,
-      useChildren() {
-        const associationFields = useAssociatedFormItemInitializerFields({
-          readPretty: true,
-          block: 'Kanban',
+        const dn = createDesignable({
+          t,
+          api,
+          refresh,
+          current: gridSchema,
         });
-        return associationFields;
+        dn.loadAPIClientEvents();
+        dn.insertBeforeEnd(schema);
+      };
+    },
+    Component: (props: any) => {
+      const { getAriaLabel } = useGetAriaLabelOfDesigner();
+      return (
+        <MenuOutlined
+          {...props}
+          role="button"
+          aria-label={getAriaLabel('schema-initializer')}
+          style={{ cursor: 'pointer', fontSize: 12 }}
+        />
+      );
+    },
+    items: [
+      {
+        type: 'itemGroup',
+        title: '{{t("Display fields")}}',
+        name: 'displayFields',
+        useChildren: useFormItemInitializerFields,
       },
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      name: 'openMode',
-      Component: SchemaInitializerOpenModeSchemaItems,
-    },
-  ],
-});
+      {
+        type: 'itemGroup',
+        divider: true,
+        title: '{{t("Display association fields")}}',
+        name: 'displayAssociationFields',
+        hideIfNoChildren: true,
+        useChildren() {
+          const associationFields = useAssociatedFormItemInitializerFields({
+            readPretty: true,
+            block: 'Kanban',
+          });
+          return associationFields;
+        },
+      },
+      {
+        name: 'divider',
+        type: 'divider',
+      },
+      {
+        name: 'openMode',
+        Component: SchemaInitializerOpenModeSchemaItems,
+      },
+    ],
+  },
+  kanbanCardInitializers_deprecated,
+);
