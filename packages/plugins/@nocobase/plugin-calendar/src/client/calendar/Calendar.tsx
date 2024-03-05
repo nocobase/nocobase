@@ -184,9 +184,9 @@ export const Calendar: any = observer(
     const components = useMemo(() => {
       return {
         toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
-        week: {
-          header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
-        },
+        // week: {
+        //   header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
+        // },
         month: {
           dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
         },
@@ -217,7 +217,6 @@ export const Calendar: any = observer(
       noEventsInRange: i18nt('None'),
       showMore: (count) => i18nt('{{count}} more items', { count }),
     };
-
     return wrapSSR(
       <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>
         <GlobalStyle />
