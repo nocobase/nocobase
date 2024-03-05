@@ -4,7 +4,7 @@ export async function createApp(options: any = {}) {
   const app = await createMockServer({
     acl: false,
     ...options,
-    plugins: ['error-handler', 'collection-manager', 'ui-schema-storage'],
+    plugins: ['collection-manager', 'ui-schema-storage'],
   });
   return app;
 }

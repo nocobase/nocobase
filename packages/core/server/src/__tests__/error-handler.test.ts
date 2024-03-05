@@ -1,11 +1,12 @@
+import { createMockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { ErrorHandler } from '../errors/handler';
+
 describe('create with exception', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = await createMockServer({
       acl: false,
-      plugins: ['error-handler'],
     });
   });
 
@@ -13,7 +14,13 @@ describe('create with exception', () => {
     await app.destroy();
   });
 
-  it('should handle not null error', async () => {
+  it('should get error handler instance', async () => {
+    const handler = app.errorHandler;
+    expect(handler).toBeTruthy();
+    expect(handler).toBeInstanceOf(ErrorHandler);
+  });
+
+  it('should handle database not null error', async () => {
     const collection = app.collection({
       name: 'users',
       fields: [

@@ -48,6 +48,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
+import { createErrorHandler, ErrorHandler } from './errors/handler';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -260,6 +261,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get localeManager() {
     return this._locales;
+  }
+
+  protected _errorHandler: ErrorHandler;
+  get errorHandler() {
+    return this._errorHandler;
   }
 
   protected _telemetry: Telemetry;
@@ -983,6 +989,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this._locales = new Locale(createAppProxy(this));
+    this._errorHandler = createErrorHandler(this);
 
     if (options.perfHooks) {
       enablePerfHooks(this);

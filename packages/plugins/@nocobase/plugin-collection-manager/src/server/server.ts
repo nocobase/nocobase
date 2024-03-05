@@ -1,5 +1,4 @@
 import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
-import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
@@ -267,8 +266,7 @@ export class CollectionManagerPlugin extends Plugin {
     await this.importCollections(path.resolve(__dirname, './collections'));
     this.db.getRepository<CollectionRepository>('collections').setApp(this.app);
 
-    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
-    errorHandlerPlugin.errorHandler.register(
+    this.app.errorHandler.register(
       (err) => {
         return err instanceof UniqueConstraintError;
       },
