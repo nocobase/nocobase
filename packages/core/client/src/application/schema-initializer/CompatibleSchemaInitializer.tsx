@@ -14,12 +14,17 @@ export class CompatibleSchemaInitializer extends SchemaInitializer {
    */
   otherInstance: CompatibleSchemaInitializer = null;
 
-  constructor(options: any, otherInstance: CompatibleSchemaInitializer) {
+  constructor(options: any, otherInstance?: CompatibleSchemaInitializer) {
     super(options);
-    this.otherInstance = otherInstance;
+    if (otherInstance) {
+      this.otherInstance = otherInstance;
+      otherInstance.otherInstance = this;
+    }
   }
 
   add(name: string, item: any) {
+    if (super.get(name)) return;
+
     super.add(name, item);
     if (this.otherInstance) {
       this.otherInstance.add(name, item);
@@ -27,6 +32,8 @@ export class CompatibleSchemaInitializer extends SchemaInitializer {
   }
 
   remove(nestedName: string): void {
+    if (!super.get(nestedName)) return;
+
     super.remove(nestedName);
     if (this.otherInstance) {
       this.otherInstance.remove(nestedName);
