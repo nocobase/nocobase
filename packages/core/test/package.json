@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "0.20.0-alpha.3",
+  "version": "0.20.0-alpha.4",
   "main": "lib/index.js",
   "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
-    "@nocobase/server": "0.20.0-alpha.3",
+    "@nocobase/server": "0.20.0-alpha.4",
     "@playwright/test": "^1.42.1",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.4.3",
@@ -60,5 +60,5 @@
     "vitest-dom": "^0.1.1",
     "ws": "^8.13.0"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

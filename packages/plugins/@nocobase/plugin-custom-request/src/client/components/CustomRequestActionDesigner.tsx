@@ -76,7 +76,7 @@ export function CustomRequestACL() {
   return (
     <>
       <SchemaSettingsActionModalItem
-        title={t('Access Control')}
+        title={t('Access control')}
         schema={CustomRequestACLSchema}
         initialValues={{
           roles: data?.data?.roles,
