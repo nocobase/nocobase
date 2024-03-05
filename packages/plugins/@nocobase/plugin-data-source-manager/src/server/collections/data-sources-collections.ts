@@ -7,6 +7,12 @@ export default defineCollection({
   shared: true,
   autoGenId: false,
   timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['name', 'dataSourceKey'],
+    },
+  ],
   fields: [
     {
       type: 'uid',
@@ -16,7 +22,6 @@ export default defineCollection({
     {
       type: 'string',
       name: 'name',
-      unique: true,
     },
     {
       type: 'belongsTo',

@@ -31,7 +31,6 @@ export const useAvailableActions = () => {
 
 export const DataSourceTable = () => {
   const record = useRecord();
-  console.log(record.key);
   return (
     <div>
       <SchemaComponentContext.Provider value={{ designable: false }}>

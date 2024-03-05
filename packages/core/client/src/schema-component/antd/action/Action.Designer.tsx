@@ -717,7 +717,7 @@ export function SecondConFirm() {
 
   return (
     <SchemaSettingsSwitchItem
-      title={t('Second confirmation')}
+      title={t('Secondary confirmation')}
       checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
       onChange={(value) => {
         if (!fieldSchema['x-component-props']) {
