@@ -100,115 +100,118 @@ const getDefaultCollectionFields = (presetFields, values) => {
   // 其他
   return defaults;
 };
-export const PresetFields = observer((props: any) => {
-  const { getInterface } = useCollectionManager_deprecated();
-  const form = useForm();
-  const compile = useCompile();
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const { t } = useTranslation();
-  const column = [
-    {
-      title: t('Field'),
-      dataIndex: 'field',
-      key: 'field',
-    },
-    {
-      title: t('Interface'),
-      dataIndex: 'interface',
-      key: 'interface',
-      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
-    },
-    {
-      title: t('Description'),
-      dataIndex: 'description',
-      key: 'description',
-    },
-  ];
-  const dataSource = [
-    {
-      field: t('ID'),
-      interface: 'integer',
-      description: t('Primary key, unique identifier, self growth'),
-      name: 'id',
-    },
-    {
-      field: t('Created at'),
-      interface: 'createdAt',
-      description: t('Store the creation time of each record'),
-      name: 'createdAt',
-    },
-    {
-      field: t('Last updated at'),
-      interface: 'updatedAt',
-      description: t('Store the last update time of each record'),
-      name: 'updatedAt',
-    },
-    {
-      field: t('Created by'),
-      interface: 'createdBy',
-      description: t('Store the creation user of each record'),
-      name: 'createdBy',
-    },
+export const PresetFields = observer(
+  (props: any) => {
+    const { getInterface } = useCollectionManager_deprecated();
+    const form = useForm();
+    const compile = useCompile();
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const { t } = useTranslation();
+    const column = [
+      {
+        title: t('Field'),
+        dataIndex: 'field',
+        key: 'field',
+      },
+      {
+        title: t('Interface'),
+        dataIndex: 'interface',
+        key: 'interface',
+        render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+      },
+      {
+        title: t('Description'),
+        dataIndex: 'description',
+        key: 'description',
+      },
+    ];
+    const dataSource = [
+      {
+        field: t('ID'),
+        interface: 'integer',
+        description: t('Primary key, unique identifier, self growth'),
+        name: 'id',
+      },
+      {
+        field: t('Created at'),
+        interface: 'createdAt',
+        description: t('Store the creation time of each record'),
+        name: 'createdAt',
+      },
+      {
+        field: t('Last updated at'),
+        interface: 'updatedAt',
+        description: t('Store the last update time of each record'),
+        name: 'updatedAt',
+      },
+      {
+        field: t('Created by'),
+        interface: 'createdBy',
+        description: t('Store the creation user of each record'),
+        name: 'createdBy',
+      },
 
-    {
-      field: t('Last updated by'),
-      interface: 'updatedBy',
-      description: t('Store the last update user of each record'),
-      name: 'updatedBy',
-    },
-  ];
-  useEffect(() => {
-    const config = {
-      autoGenId: true,
-      createdAt: true,
-      createdBy: true,
-      updatedAt: true,
-      updatedBy: true,
-    };
-    const initialValue = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
-    setSelectedRowKeys(initialValue);
-    form.setValues({ ...form.values, ...config });
-  }, []);
-  useEffect(() => {
-    const fields = getDefaultCollectionFields(
-      selectedRowKeys.map((v) => {
-        return {
-          name: v,
-        };
-      }),
-      form.values,
-    );
-    form.setValuesIn('fields', fields);
-  }, [selectedRowKeys]);
-  return (
-    <Table
-      size="small"
-      pagination={false}
-      rowKey="name"
-      bordered
-      scroll={{ x: 600 }}
-      dataSource={dataSource}
-      columns={column}
-      rowSelection={{
-        type: 'checkbox',
-        selectedRowKeys,
-        onChange: (_, selectedRows) => {
-          const fields = getDefaultCollectionFields(selectedRows, form.values);
-          const config = {
-            autoGenId: !!fields.find((v) => v.name === 'id'),
-            createdAt: !!fields.find((v) => v.name === 'createdAt'),
-            createdBy: !!fields.find((v) => v.name === 'createdBy'),
-            updatedAt: !!fields.find((v) => v.name === 'updatedAt'),
-            updatedBy: !!fields.find((v) => v.name === 'updatedBy'),
+      {
+        field: t('Last updated by'),
+        interface: 'updatedBy',
+        description: t('Store the last update user of each record'),
+        name: 'updatedBy',
+      },
+    ];
+    useEffect(() => {
+      const config = {
+        autoGenId: true,
+        createdAt: true,
+        createdBy: true,
+        updatedAt: true,
+        updatedBy: true,
+      };
+      const initialValue = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
+      setSelectedRowKeys(initialValue);
+      form.setValues({ ...form.values, ...config });
+    }, []);
+    useEffect(() => {
+      const fields = getDefaultCollectionFields(
+        selectedRowKeys.map((v) => {
+          return {
+            name: v,
           };
-          setSelectedRowKeys(
-            fields?.map?.((v) => {
-              return v.name;
-            }),
-          );
-          form.setValues({ ...form.values, fields, ...config });
-        },
-      }}
-    />
-  );
-});
+        }),
+        form.values,
+      );
+      form.setValuesIn('fields', fields);
+    }, [selectedRowKeys]);
+    return (
+      <Table
+        size="small"
+        pagination={false}
+        rowKey="name"
+        bordered
+        scroll={{ x: 600 }}
+        dataSource={dataSource}
+        columns={column}
+        rowSelection={{
+          type: 'checkbox',
+          selectedRowKeys,
+          onChange: (_, selectedRows) => {
+            const fields = getDefaultCollectionFields(selectedRows, form.values);
+            const config = {
+              autoGenId: !!fields.find((v) => v.name === 'id'),
+              createdAt: !!fields.find((v) => v.name === 'createdAt'),
+              createdBy: !!fields.find((v) => v.name === 'createdBy'),
+              updatedAt: !!fields.find((v) => v.name === 'updatedAt'),
+              updatedBy: !!fields.find((v) => v.name === 'updatedBy'),
+            };
+            setSelectedRowKeys(
+              fields?.map?.((v) => {
+                return v.name;
+              }),
+            );
+            form.setValues({ ...form.values, fields, ...config });
+          },
+        }}
+      />
+    );
+  },
+  { displayName: 'PresetFields' },
+);
