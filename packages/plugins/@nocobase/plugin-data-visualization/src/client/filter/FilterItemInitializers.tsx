@@ -29,11 +29,14 @@ import { lang, useChartsTranslation } from '../locale';
 import { getPropsSchemaByComponent } from './utils';
 const { Paragraph, Text } = Typography;
 
-const FieldComponentProps: React.FC = observer((props) => {
-  const form = useForm();
-  const schema = getPropsSchemaByComponent(form.values.component);
-  return schema ? <SchemaComponent schema={schema} {...props} /> : null;
-});
+const FieldComponentProps: React.FC = observer(
+  (props) => {
+    const form = useForm();
+    const schema = getPropsSchemaByComponent(form.values.component);
+    return schema ? <SchemaComponent schema={schema} {...props} /> : null;
+  },
+  { displayName: 'FieldComponentProps' },
+);
 
 const ErrorFallback = ({ error }) => {
   return (
