@@ -14,7 +14,7 @@ import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 
 test.describe('Configuration page to configure the Trigger node', () => {
-  test.only('Form Submit Button Binding Workflow Add Data Trigger', async ({
+  test('Form Submit Button Binding Workflow Add Data Trigger', async ({
     page,
     mockPage,
     mockCollections,
