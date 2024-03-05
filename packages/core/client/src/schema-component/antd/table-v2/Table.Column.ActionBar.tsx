@@ -4,6 +4,7 @@ import React from 'react';
 import { SortableItem, useDesigner } from '../..';
 
 export const designerCss = css`
+  position: relative;
   margin: -18px -16px;
   padding: 18px 16px;
 
