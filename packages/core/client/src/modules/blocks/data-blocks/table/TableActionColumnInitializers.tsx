@@ -4,16 +4,13 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
-import {
-  CompatibleSchemaInitializer,
-  SchemaInitializerActionModal,
-  SchemaInitializerItem,
-  useSchemaInitializer,
-} from '../../../../application';
-import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { SchemaInitializerActionModal } from '../../../../application/schema-initializer/components/SchemaInitializerActionModal';
+import { useSchemaInitializer } from '../../../../application/schema-initializer/context';
+import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 
 export const Resizable = () => {
   const { t } = useTranslation();

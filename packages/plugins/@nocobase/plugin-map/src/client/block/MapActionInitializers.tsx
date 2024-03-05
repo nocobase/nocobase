@@ -1,4 +1,4 @@
-import { CompatibleSchemaInitializer, SchemaInitializer, useCollection_deprecated } from '@nocobase/client';
+import { CompatibleSchemaInitializer, useCollection_deprecated } from '@nocobase/client';
 
 /**
  * @deprecated

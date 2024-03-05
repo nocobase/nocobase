@@ -1,14 +1,14 @@
 import { useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CompatibleSchemaInitializer, SchemaInitializerChildren } from '../../../../application';
-import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 import { useCompile } from '../../../../schema-component';
 import {
   useAssociatedTableColumnInitializerFields,
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,
 } from '../../../../schema-initializer/utils';
+import { SchemaInitializerChildren } from '../../../../application/schema-initializer/components/SchemaInitializerChildren';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 
 // 表格列配置
 const ParentCollectionFields = () => {

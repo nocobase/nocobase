@@ -5,7 +5,6 @@ import {
   ActionInitializer,
   CompatibleSchemaInitializer,
   GeneralSchemaDesigner,
-  SchemaInitializer,
   SchemaSettingsDivider,
   SchemaSettingsRemove,
 } from '@nocobase/client';

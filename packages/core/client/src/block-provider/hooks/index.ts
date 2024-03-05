@@ -10,7 +10,6 @@ import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
-  useCollectionManager,
   useDataSourceHeaders,
   useFormActiveFields,
   useFormBlockContext,

@@ -1,5 +1,5 @@
-import { CompatibleSchemaInitializer, SchemaInitializerItemType } from '../../../application';
-import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
+import { CompatibleSchemaInitializer } from '../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { SchemaInitializerItemType } from '../../../application/schema-initializer/types';
 import { useAssociatedFields } from '../../../filter-provider/utils';
 
 /**

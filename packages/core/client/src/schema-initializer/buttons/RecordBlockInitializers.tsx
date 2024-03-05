@@ -2,7 +2,6 @@ import { Schema, useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../..';
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 

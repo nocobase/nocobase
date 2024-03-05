@@ -1,4 +1,4 @@
-import { CompatibleSchemaInitializer, SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import { CompatibleSchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
 /**

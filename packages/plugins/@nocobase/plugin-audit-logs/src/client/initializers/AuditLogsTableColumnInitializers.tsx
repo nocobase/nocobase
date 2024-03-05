@@ -1,6 +1,5 @@
 import {
   CompatibleSchemaInitializer,
-  SchemaInitializer,
   SchemaInitializerChildren,
   useAssociatedTableColumnInitializerFields,
   useCompile,

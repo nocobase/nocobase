@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CompatibleSchemaInitializer, SchemaInitializerChildren } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useCompile } from '../../schema-component';
 import { gridRowColWrap, useCustomFormItemInitializerFields, useInheritsFormItemInitializerFields } from '../utils';
+import { SchemaInitializerChildren } from '../../application/schema-initializer/components/SchemaInitializerChildren';
+import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 
 // 表单里配置字段
 const ParentCollectionFields = () => {

@@ -3,7 +3,6 @@ import { uid } from '@formily/shared';
 import {
   CompatibleSchemaInitializer,
   DataBlockInitializer,
-  SchemaInitializer,
   SchemaInitializerItem,
   useACLRoleContext,
   useSchemaInitializer,

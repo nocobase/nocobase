@@ -1,5 +1,4 @@
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../../schema-initializer/utils';
 
 /**

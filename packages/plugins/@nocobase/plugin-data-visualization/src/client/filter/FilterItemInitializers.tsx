@@ -13,7 +13,6 @@ import {
   HTMLEncode,
   SchemaComponent,
   SchemaComponentOptions,
-  SchemaInitializer,
   SchemaInitializerItem,
   gridRowColWrap,
   useCollectionManager_deprecated,

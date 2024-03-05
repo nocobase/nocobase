@@ -1,5 +1,5 @@
-import { CompatibleSchemaInitializer, useCollection_deprecated } from '../../../..';
-import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 
 const useVisibleCollection = () => {
   const collection = useCollection_deprecated();

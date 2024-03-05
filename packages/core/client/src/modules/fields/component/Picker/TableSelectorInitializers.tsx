@@ -1,6 +1,5 @@
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCollection_deprecated } from '../../../..';
-import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../../../../schema-initializer/utils';
 
 /**

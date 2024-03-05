@@ -12,7 +12,6 @@ import {
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
-  SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemType,
   SchemaInitializerItems,

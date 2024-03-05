@@ -15,7 +15,6 @@ import {
   InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
-  SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemType,
   SchemaSettingsBlockTitleItem,

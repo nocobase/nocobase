@@ -1,5 +1,4 @@
-import { CompatibleSchemaInitializer } from '../../../../application';
-import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { formTriggerWorkflowActionInitializerV2 } from './formActionInitializers';
 
 /**

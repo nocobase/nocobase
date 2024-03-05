@@ -4,7 +4,6 @@ import {
   CompatibleSchemaInitializer,
   createDesignable,
   Resizable,
-  SchemaInitializer,
   useAPIClient,
   useDesignable,
 } from '@nocobase/client';

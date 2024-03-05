@@ -3,7 +3,7 @@ import {
   FilterParentCollectionFields,
   FilterAssociatedFields,
 } from '../../../../schema-initializer/buttons/FormItemInitializers';
-import { CompatibleSchemaInitializer } from '../../../../application';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 
 /**
  * @deprecated
