@@ -303,6 +303,45 @@ describe('data source', async () => {
     expect(mockDataSource).toBeInstanceOf(MockDataSource);
   });
 
+  it('should destroy data source', async () => {
+    class MockCollectionManager extends CollectionManager {}
+
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        return Promise.resolve(true);
+      }
+
+      async load(): Promise<void> {
+        await waitSecond(1000);
+      }
+
+      createCollectionManager(options?: any): any {
+        return new MockCollectionManager();
+      }
+    }
+
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    await app.db.getRepository('dataSources').create({
+      values: {
+        key: 'mockInstance1',
+        type: 'mock',
+        displayName: 'Mock',
+        options: {},
+      },
+    });
+
+    await waitSecond(2000);
+
+    expect(app.dataSourceManager.dataSources.get('mockInstance1')).toBeDefined();
+
+    await app.agent().resource('dataSources').destroy({
+      filterByTk: 'mockInstance1',
+    });
+
+    expect(app.dataSourceManager.dataSources.get('mockInstance1')).not.toBeDefined();
+  });
+
   describe('data source collections', () => {
     beforeEach(async () => {
       class MockCollectionManager extends CollectionManager {}

@@ -322,6 +322,10 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
+    this.app.db.on('dataSources.afterDestroy', async (model: DataSourceModel) => {
+      this.app.dataSourceManager.dataSources.delete(model.get('key'));
+    });
+
     this.app.on('afterStart', async (app: Application) => {
       const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find({
         filter: {

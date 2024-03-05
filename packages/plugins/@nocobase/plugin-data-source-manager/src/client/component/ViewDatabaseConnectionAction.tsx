@@ -13,14 +13,15 @@ export const ViewDatabaseConnectionAction = () => {
   return (
     <div
       className={
-        !record.enabled &&
-        css`
-          .ant-btn-link {
-            &:hover {
-              color: rgba(0, 0, 0, 0.25) !important;
-            }
-          }
-        `
+        !record.enabled
+          ? css`
+              .ant-btn-link {
+                &:hover {
+                  color: rgba(0, 0, 0, 0.25) !important;
+                }
+              }
+            `
+          : undefined
       }
     >
       <Button
