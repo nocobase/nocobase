@@ -4,7 +4,7 @@
   "displayName.zh-CN": "认证：CAS",
   "description": "CAS authentication.",
   "description.zh-CN": "通过 CAS 协议认证身份。",
-  "version": "0.20.0-alpha.3",
+  "version": "0.20.0-alpha.4",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/auth-cas",
