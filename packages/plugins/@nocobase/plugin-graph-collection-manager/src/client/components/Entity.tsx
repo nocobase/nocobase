@@ -282,6 +282,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
     </div>
   );
 });
+PopoverContent.displayName = 'PopoverContent';
 
 const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
   const {

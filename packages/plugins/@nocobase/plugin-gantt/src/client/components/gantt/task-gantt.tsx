@@ -64,3 +64,4 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
     );
   },
 );
+TaskGantt.displayName = 'TaskGantt';
