@@ -119,7 +119,8 @@ describe('workflow > triggers > schedule > static mode', () => {
     });
 
     it('start before now and repeat every 2 seconds after created and limit 1', async () => {
-      const start = await sleepToEvenSecond();
+      await sleepToEvenSecond();
+      const start = new Date();
       start.setMilliseconds(0);
 
       const workflow = await WorkflowModel.create({
