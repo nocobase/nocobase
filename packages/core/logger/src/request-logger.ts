@@ -1,6 +1,7 @@
 import { getLoggerFilePath } from './config';
-import { LoggerOptions, createLogger } from './logger';
+import { createLogger, LoggerOptions } from './logger';
 import { pick } from 'lodash';
+
 const defaultRequestWhitelist = [
   'action',
   'header.x-role',
