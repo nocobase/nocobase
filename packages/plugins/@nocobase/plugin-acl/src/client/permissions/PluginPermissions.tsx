@@ -42,7 +42,6 @@ export const PluginPermissions: React.FC<{
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
     [snippets],
   );
-
   const { t } = useTranslation();
   const { loading, refresh } = useRequest(
     {
@@ -57,7 +56,11 @@ export const PluginPermissions: React.FC<{
       ready: !!role && active,
       refreshDeps: [role?.name],
       onSuccess(data) {
-        setSnippets(data?.data || []);
+        setSnippets(
+          data?.data.filter((v) => {
+            return settings.find((k) => `!${k.aclSnippet}` === v || !v.startsWith('!pm.'));
+          }) || [],
+        );
       },
     },
   );
@@ -130,6 +133,7 @@ export const PluginPermissions: React.FC<{
           return v.isTopLevel !== false;
         })
         .map((v) => {
+          return v;
           if (v.showTabs !== false) {
             return v;
           }
