@@ -1,6 +1,7 @@
 import { BarChartOutlined, LineChartOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import {
+  CompatibleSchemaInitializer,
   DataBlockInitializer,
   SchemaInitializer,
   SchemaInitializerItem,
@@ -49,7 +50,7 @@ const ChartInitializer = () => {
 /**
  * @deprecated
  */
-export const chartInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
+export const chartInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartInitializers',
   icon: 'PlusOutlined',
   title: '{{t("Add block")}}',
@@ -74,30 +75,33 @@ export const chartInitializers_deprecated: SchemaInitializer = new SchemaInitial
   ],
 });
 
-export const chartInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'blockInitializers:chart',
-  icon: 'PlusOutlined',
-  title: '{{t("Add block")}}',
-  items: [
-    {
-      name: 'chart',
-      title: lang('Chart'),
-      Component: ChartInitializer,
-    },
-    {
-      name: 'otherBlocks',
-      type: 'itemGroup',
-      title: lang('Other blocks'),
-      children: [
-        {
-          name: 'filter',
-          title: lang('Filter'),
-          Component: FilterBlockInitializer,
-        },
-      ],
-    },
-  ],
-});
+export const chartInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'blockInitializers:chart',
+    icon: 'PlusOutlined',
+    title: '{{t("Add block")}}',
+    items: [
+      {
+        name: 'chart',
+        title: lang('Chart'),
+        Component: ChartInitializer,
+      },
+      {
+        name: 'otherBlocks',
+        type: 'itemGroup',
+        title: lang('Other blocks'),
+        children: [
+          {
+            name: 'filter',
+            title: lang('Filter'),
+            Component: FilterBlockInitializer,
+          },
+        ],
+      },
+    ],
+  },
+  chartInitializers_deprecated,
+);
 
 export const ChartV2BlockInitializer: React.FC = () => {
   const itemConfig = useSchemaInitializerItem();

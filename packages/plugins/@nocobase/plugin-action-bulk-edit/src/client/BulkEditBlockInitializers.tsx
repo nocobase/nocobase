@@ -1,4 +1,4 @@
-import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import { CompatibleSchemaInitializer, SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { CreateFormBulkEditBlockInitializer } from './CreateFormBulkEditBlockInitializer';
 
 /**
@@ -41,7 +41,7 @@ export const CreateFormBulkEditBlockInitializers: SchemaInitializer = new Schema
 /**
  * @deprecated
  */
-export const BulkEditBlockInitializers_deprecated: SchemaInitializer = new SchemaInitializer({
+export const BulkEditBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'BulkEditBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
@@ -74,35 +74,38 @@ export const BulkEditBlockInitializers_deprecated: SchemaInitializer = new Schem
   ],
 });
 
-export const bulkEditBlockInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'blockInitializers:bulkEdit',
-  wrap: gridRowColWrap,
-  title: '{{t("Add block")}}',
-  icon: 'PlusOutlined',
-  items: [
-    {
-      type: 'itemGroup',
-      title: '{{t("Data blocks")}}',
-      name: 'dataBlocks',
-      children: [
-        {
-          name: 'form',
-          title: '{{t("Form")}}',
-          Component: CreateFormBulkEditBlockInitializer,
-        },
-      ],
-    },
-    {
-      type: 'itemGroup',
-      title: '{{t("Other blocks")}}',
-      name: 'otherBlocks',
-      children: [
-        {
-          name: 'markdown',
-          title: '{{t("Markdown")}}',
-          Component: 'MarkdownBlockInitializer',
-        },
-      ],
-    },
-  ],
-});
+export const bulkEditBlockInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'blockInitializers:bulkEdit',
+    wrap: gridRowColWrap,
+    title: '{{t("Add block")}}',
+    icon: 'PlusOutlined',
+    items: [
+      {
+        type: 'itemGroup',
+        title: '{{t("Data blocks")}}',
+        name: 'dataBlocks',
+        children: [
+          {
+            name: 'form',
+            title: '{{t("Form")}}',
+            Component: CreateFormBulkEditBlockInitializer,
+          },
+        ],
+      },
+      {
+        type: 'itemGroup',
+        title: '{{t("Other blocks")}}',
+        name: 'otherBlocks',
+        children: [
+          {
+            name: 'markdown',
+            title: '{{t("Markdown")}}',
+            Component: 'MarkdownBlockInitializer',
+          },
+        ],
+      },
+    ],
+  },
+  BulkEditBlockInitializers_deprecated,
+);

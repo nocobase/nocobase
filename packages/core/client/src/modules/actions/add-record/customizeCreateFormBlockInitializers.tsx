@@ -1,10 +1,11 @@
+import { CompatibleSchemaInitializer } from '../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../../../schema-initializer/utils';
 
 /**
  * @deprecated
  */
-export const customizeCreateFormBlockInitializers_deprecated = new SchemaInitializer({
+export const customizeCreateFormBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'CusomeizeCreateFormBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
@@ -38,36 +39,39 @@ export const customizeCreateFormBlockInitializers_deprecated = new SchemaInitial
   ],
 });
 
-export const customizeCreateFormBlockInitializers = new SchemaInitializer({
-  name: 'blockInitializers:customizeCreateForm',
-  wrap: gridRowColWrap,
-  title: '{{t("Add block")}}',
-  icon: 'PlusOutlined',
-  items: [
-    {
-      type: 'itemGroup',
-      title: '{{t("Data blocks")}}',
-      name: 'dataBlocks',
-      children: [
-        {
-          name: 'form',
-          title: '{{t("Form")}}',
-          Component: 'FormBlockInitializer',
-          isCusomeizeCreate: true,
-        },
-      ],
-    },
-    {
-      type: 'itemGroup',
-      title: '{{t("Other blocks")}}',
-      name: 'otherBlocks',
-      children: [
-        {
-          name: 'markdown',
-          title: '{{t("Markdown")}}',
-          Component: 'MarkdownBlockInitializer',
-        },
-      ],
-    },
-  ],
-});
+export const customizeCreateFormBlockInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'blockInitializers:customizeCreateForm',
+    wrap: gridRowColWrap,
+    title: '{{t("Add block")}}',
+    icon: 'PlusOutlined',
+    items: [
+      {
+        type: 'itemGroup',
+        title: '{{t("Data blocks")}}',
+        name: 'dataBlocks',
+        children: [
+          {
+            name: 'form',
+            title: '{{t("Form")}}',
+            Component: 'FormBlockInitializer',
+            isCusomeizeCreate: true,
+          },
+        ],
+      },
+      {
+        type: 'itemGroup',
+        title: '{{t("Other blocks")}}',
+        name: 'otherBlocks',
+        children: [
+          {
+            name: 'markdown',
+            title: '{{t("Markdown")}}',
+            Component: 'MarkdownBlockInitializer',
+          },
+        ],
+      },
+    ],
+  },
+  customizeCreateFormBlockInitializers_deprecated,
+);

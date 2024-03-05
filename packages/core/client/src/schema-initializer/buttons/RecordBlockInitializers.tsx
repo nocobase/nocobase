@@ -4,6 +4,7 @@ import { useCollection_deprecated, useCollectionManager_deprecated } from '../..
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
+import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -239,7 +240,7 @@ function useRecordBlocks() {
 /**
  * @deprecated
  */
-export const recordBlockInitializers_deprecated = new SchemaInitializer({
+export const recordBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'RecordBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
@@ -325,88 +326,91 @@ export const recordBlockInitializers_deprecated = new SchemaInitializer({
   ],
 });
 
-export const recordBlockInitializers = new SchemaInitializer({
-  name: 'blockInitializers:record',
-  wrap: gridRowColWrap,
-  title: '{{t("Add block")}}',
-  icon: 'PlusOutlined',
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'currentRecordBlocks',
-      title: '{{t("Current record blocks")}}',
-      useChildren: useRecordBlocks,
-    },
-    {
-      name: 'filterBlocks',
-      title: '{{t("Filter blocks")}}',
-      type: 'itemGroup',
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return collection.fields.some((field) => ['hasMany', 'belongsToMany'].includes(field.type));
+export const recordBlockInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'blockInitializers:record',
+    wrap: gridRowColWrap,
+    title: '{{t("Add block")}}',
+    icon: 'PlusOutlined',
+    items: [
+      {
+        type: 'itemGroup',
+        name: 'currentRecordBlocks',
+        title: '{{t("Current record blocks")}}',
+        useChildren: useRecordBlocks,
       },
-      children: [
-        {
-          name: 'filterForm',
-          title: '{{t("Form")}}',
-          Component: 'FilterFormBlockInitializer',
-          useComponentProps() {
-            const collection = useCollection_deprecated();
-            const toManyField = useMemo(
-              () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
-              [collection.fields],
-            );
-
-            return {
-              filterMenuItemChildren(collection) {
-                return toManyField.some((field) => field.target === collection.name);
-              },
-              onlyCurrentDataSource: true,
-            };
-          },
+      {
+        name: 'filterBlocks',
+        title: '{{t("Filter blocks")}}',
+        type: 'itemGroup',
+        useVisible() {
+          const collection = useCollection_deprecated();
+          return collection.fields.some((field) => ['hasMany', 'belongsToMany'].includes(field.type));
         },
-        {
-          name: 'filterCollapse',
-          title: '{{t("Collapse")}}',
-          Component: 'FilterCollapseBlockInitializer',
-          useComponentProps() {
-            const collection = useCollection_deprecated();
-            const toManyField = useMemo(
-              () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
-              [collection.fields],
-            );
+        children: [
+          {
+            name: 'filterForm',
+            title: '{{t("Form")}}',
+            Component: 'FilterFormBlockInitializer',
+            useComponentProps() {
+              const collection = useCollection_deprecated();
+              const toManyField = useMemo(
+                () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
+                [collection.fields],
+              );
 
-            return {
-              filterMenuItemChildren(collection) {
-                return toManyField.some((field) => field.target === collection.name);
-              },
-              onlyCurrentDataSource: true,
-            };
+              return {
+                filterMenuItemChildren(collection) {
+                  return toManyField.some((field) => field.target === collection.name);
+                },
+                onlyCurrentDataSource: true,
+              };
+            },
           },
-        },
-      ],
-    },
-    {
-      type: 'itemGroup',
-      name: 'relationshipBlocks',
-      title: '{{t("Relationship blocks")}}',
-      useChildren: useRelationFields,
-      useVisible() {
-        const res = useRelationFields();
-        return res.length > 0;
+          {
+            name: 'filterCollapse',
+            title: '{{t("Collapse")}}',
+            Component: 'FilterCollapseBlockInitializer',
+            useComponentProps() {
+              const collection = useCollection_deprecated();
+              const toManyField = useMemo(
+                () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
+                [collection.fields],
+              );
+
+              return {
+                filterMenuItemChildren(collection) {
+                  return toManyField.some((field) => field.target === collection.name);
+                },
+                onlyCurrentDataSource: true,
+              };
+            },
+          },
+        ],
       },
-    },
-    {
-      type: 'itemGroup',
-      name: 'otherBlocks',
-      title: '{{t("Other blocks")}}',
-      children: [
-        {
-          name: 'markdown',
-          title: '{{t("Markdown")}}',
-          Component: 'MarkdownBlockInitializer',
+      {
+        type: 'itemGroup',
+        name: 'relationshipBlocks',
+        title: '{{t("Relationship blocks")}}',
+        useChildren: useRelationFields,
+        useVisible() {
+          const res = useRelationFields();
+          return res.length > 0;
         },
-      ],
-    },
-  ],
-});
+      },
+      {
+        type: 'itemGroup',
+        name: 'otherBlocks',
+        title: '{{t("Other blocks")}}',
+        children: [
+          {
+            name: 'markdown',
+            title: '{{t("Markdown")}}',
+            Component: 'MarkdownBlockInitializer',
+          },
+        ],
+      },
+    ],
+  },
+  recordBlockInitializers_deprecated,
+);

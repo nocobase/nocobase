@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Action,
   ActionContextProvider,
+  CompatibleSchemaInitializer,
   DefaultValueProvider,
   FormActiveFieldsProvider,
   GeneralSchemaDesigner,
@@ -125,7 +126,7 @@ function SimpleDesigner() {
 /**
  * @deprecated
  */
-export const addBlockButton_deprecated: SchemaInitializer = new SchemaInitializer({
+export const addBlockButton_deprecated = new CompatibleSchemaInitializer({
   name: 'AddBlockButton',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
@@ -190,70 +191,73 @@ export const addBlockButton_deprecated: SchemaInitializer = new SchemaInitialize
   ],
 });
 
-export const addBlockButton: SchemaInitializer = new SchemaInitializer({
-  name: 'blockInitializers:workflowManual',
-  wrap: gridRowColWrap,
-  title: '{{t("Add block")}}',
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'dataBlocks',
-      title: '{{t("Data blocks")}}',
-      hideIfNoChildren: true,
-      useChildren() {
-        const workflowPlugin = usePlugin(WorkflowPlugin);
-        const current = useNodeContext();
-        const nodes = useAvailableUpstreams(current);
-        const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
-        const nodeBlockInitializers = nodes
-          .map((node) => {
-            const instruction = workflowPlugin.instructions.get(node.type);
-            return instruction?.useInitializers?.(node);
-          })
-          .filter(Boolean);
-        const dataBlockInitializers: any = [
-          ...triggerInitializers,
-          ...(nodeBlockInitializers.length
-            ? [
-                {
-                  name: 'nodes',
-                  type: 'subMenu',
-                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-                  children: nodeBlockInitializers,
-                },
-              ]
-            : []),
-        ].filter(Boolean);
-        return dataBlockInitializers;
-      },
-    },
-    {
-      type: 'itemGroup',
-      name: 'form',
-      title: '{{t("Form")}}',
-      useChildren() {
-        const dm = useDataSourceManager();
-        const allCollections = dm.getAllCollections();
-        return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
-          const { useInitializer: getInitializer } = item.config;
-          return getInitializer({ allCollections });
-        });
-      },
-    },
-    {
-      type: 'itemGroup',
-      name: 'otherBlocks',
-      title: '{{t("Other blocks")}}',
-      children: [
-        {
-          name: 'markdown',
-          title: '{{t("Markdown")}}',
-          Component: 'MarkdownBlockInitializer',
+export const addBlockButton = new CompatibleSchemaInitializer(
+  {
+    name: 'blockInitializers:workflowManual',
+    wrap: gridRowColWrap,
+    title: '{{t("Add block")}}',
+    items: [
+      {
+        type: 'itemGroup',
+        name: 'dataBlocks',
+        title: '{{t("Data blocks")}}',
+        hideIfNoChildren: true,
+        useChildren() {
+          const workflowPlugin = usePlugin(WorkflowPlugin);
+          const current = useNodeContext();
+          const nodes = useAvailableUpstreams(current);
+          const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
+          const nodeBlockInitializers = nodes
+            .map((node) => {
+              const instruction = workflowPlugin.instructions.get(node.type);
+              return instruction?.useInitializers?.(node);
+            })
+            .filter(Boolean);
+          const dataBlockInitializers: any = [
+            ...triggerInitializers,
+            ...(nodeBlockInitializers.length
+              ? [
+                  {
+                    name: 'nodes',
+                    type: 'subMenu',
+                    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                    children: nodeBlockInitializers,
+                  },
+                ]
+              : []),
+          ].filter(Boolean);
+          return dataBlockInitializers;
         },
-      ],
-    },
-  ],
-});
+      },
+      {
+        type: 'itemGroup',
+        name: 'form',
+        title: '{{t("Form")}}',
+        useChildren() {
+          const dm = useDataSourceManager();
+          const allCollections = dm.getAllCollections();
+          return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
+            const { useInitializer: getInitializer } = item.config;
+            return getInitializer({ allCollections });
+          });
+        },
+      },
+      {
+        type: 'itemGroup',
+        name: 'otherBlocks',
+        title: '{{t("Other blocks")}}',
+        children: [
+          {
+            name: 'markdown',
+            title: '{{t("Markdown")}}',
+            Component: 'MarkdownBlockInitializer',
+          },
+        ],
+      },
+    ],
+  },
+  addBlockButton_deprecated,
+);
 
 function AssignedFieldValues() {
   const ctx = useContext(SchemaComponentContext);
