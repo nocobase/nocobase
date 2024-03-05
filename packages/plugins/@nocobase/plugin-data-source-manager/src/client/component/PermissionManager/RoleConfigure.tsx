@@ -3,12 +3,12 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest, SchemaComponent, useRecord } from '@nocobase/client';
 import { PermissionContext } from './PermisionProvider';
+import { CurrentRolesContext } from './';
 
 export const RoleConfigure = () => {
-  const { update, currentRecord } = useContext(PermissionContext);
+  const { update } = useContext(PermissionContext);
   const { t } = useTranslation();
   const { key } = useRecord();
-
   return (
     <SchemaComponent
       schema={{
@@ -18,12 +18,13 @@ export const RoleConfigure = () => {
         'x-component-props': {
           useValues: (options) => {
             const api = useAPIClient();
+            const role = useContext(CurrentRolesContext);
             return useRequest(
               () =>
                 api
                   .resource(`dataSources/${key}/roles`)
                   .get({
-                    filterByTk: currentRecord.name,
+                    filterByTk: role.name,
                   })
                   .then((res) => {
                     const record = res?.data?.data;
