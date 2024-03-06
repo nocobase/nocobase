@@ -1,9 +1,9 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../..';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../..';
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
-import { gridRowColWrap } from '../utils';
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
+import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -327,7 +327,7 @@ export const recordBlockInitializers_deprecated = new CompatibleSchemaInitialize
 
 export const recordBlockInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:record',
+    name: 'popup:view:addBlock',
     wrap: gridRowColWrap,
     title: '{{t("Add block")}}',
     icon: 'PlusOutlined',

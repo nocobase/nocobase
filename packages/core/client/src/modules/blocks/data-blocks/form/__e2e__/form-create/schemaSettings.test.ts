@@ -1094,7 +1094,7 @@ test.describe('creation form block schema settings', () => {
                                                         version: '2.0',
                                                         type: 'void',
                                                         'x-component': 'Grid',
-                                                        'x-initializer': 'blockInitializers:record',
+                                                        'x-initializer': 'popup:view:addBlock',
                                                         'x-uid': 's49vs6v3qs0',
                                                         'x-async': false,
                                                         'x-index': 1,
@@ -1182,7 +1182,7 @@ test.describe('creation form block schema settings', () => {
 
     //在编辑操作中使用引用模板
     await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-users').click();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-users').click();
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();

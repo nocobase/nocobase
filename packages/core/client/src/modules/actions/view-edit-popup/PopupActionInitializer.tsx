@@ -1,6 +1,6 @@
 import React from 'react';
-import { BlockInitializer } from '../../../schema-initializer/items';
 import { useSchemaInitializerItem } from '../../../application';
+import { BlockInitializer } from '../../../schema-initializer/items';
 
 export const PopupActionInitializer = (props) => {
   const schema = {
@@ -38,7 +38,7 @@ export const PopupActionInitializer = (props) => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'blockInitializers:record',
+                    'x-initializer': 'popup:view:addBlock',
                     properties: {},
                   },
                 },

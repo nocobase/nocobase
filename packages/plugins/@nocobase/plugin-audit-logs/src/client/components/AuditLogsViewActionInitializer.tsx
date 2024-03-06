@@ -206,7 +206,7 @@ export const AuditLogsViewActionInitializer = () => {
                                                                   grid: {
                                                                     type: 'void',
                                                                     'x-component': 'Grid',
-                                                                    'x-initializer': 'blockInitializers:record',
+                                                                    'x-initializer': 'popup:view:addBlock',
                                                                   },
                                                                 },
                                                               },

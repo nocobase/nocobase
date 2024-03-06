@@ -77,7 +77,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test8')).toBeVisible();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
     await page.getByText('Form').first().click();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
@@ -106,13 +106,13 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // add relationship blocks
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
 
     await page.mouse.move(300, 0);
 
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'One to many' }).hover();
 
     // 下拉列表中，可选择以下区块进行创建
@@ -170,7 +170,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test8')).toBeVisible();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
     await page.getByText('Form').first().click();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
@@ -181,14 +181,14 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
 
     // add relationship blocks
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
     await page.mouse.move(300, 0);
 
     await expect(page.getByLabel('block-item-CardItem-general-').nth(2)).toBeVisible();
 
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'One to many' }).hover();
 
     // 下拉列表中，可选择以下区块进行创建

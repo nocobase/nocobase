@@ -1547,7 +1547,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     'x-uid': '1m4fg88bmp6',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -1621,7 +1621,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     'x-uid': 'zjv8mf85knj',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -2327,7 +2327,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       tg0zrjeg91v: {
                                                         _isJSONSchemaObject: true,
@@ -2489,7 +2489,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       kvt96oyiaij: {
                                                         _isJSONSchemaObject: true,
@@ -4617,7 +4617,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       '1yv7y62q3u0': {
                                                         _isJSONSchemaObject: true,
@@ -4720,7 +4720,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'dz4i8jw4kqz',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -5256,7 +5256,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       cw6dlprjcwy: {
                                                         _isJSONSchemaObject: true,
@@ -6009,7 +6009,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       trny88kf0bk: {
                                                         _isJSONSchemaObject: true,
@@ -6833,7 +6833,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       '1xwjbso8iwl': {
                                                         _isJSONSchemaObject: true,
@@ -6936,7 +6936,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'wbrtmx39s4q',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -7297,7 +7297,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       t2x4eztgl9z: {
                                                         _isJSONSchemaObject: true,
@@ -8154,7 +8154,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       rqr8ymho8qk: {
                                                         _isJSONSchemaObject: true,
@@ -8257,7 +8257,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'nzgpjel7gnt',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -8504,7 +8504,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       i0qbr8outk2: {
                                                         _isJSONSchemaObject: true,
@@ -9210,7 +9210,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       '5oesm2w11p1': {
                                                         _isJSONSchemaObject: true,
@@ -9313,7 +9313,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'o61euxh6r2l',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -9522,7 +9522,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       itbs2k3vnwh: {
                                                         _isJSONSchemaObject: true,
@@ -10297,7 +10297,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       '53lam282m0w': {
                                                         _isJSONSchemaObject: true,
@@ -10400,7 +10400,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'vgnlbwsjqbx',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -10717,7 +10717,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       ik4xkal0fk3: {
                                                         _isJSONSchemaObject: true,
@@ -11893,7 +11893,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       '1sdc9mt382r': {
                                                         _isJSONSchemaObject: true,
@@ -11996,7 +11996,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'hku8pm0hkmc',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -12284,7 +12284,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       '873tavkmkob': {
                                                         _isJSONSchemaObject: true,
@@ -12913,7 +12913,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'i4pbty5jkhr',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -13005,7 +13005,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'ofz5idx9716',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -13290,7 +13290,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       '5g4hlzrrkbh': {
                                                         _isJSONSchemaObject: true,
@@ -13393,7 +13393,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': '5v2mpey52su',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -13570,7 +13570,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                                     'x-component':
                                                                                                       'Grid',
                                                                                                     'x-initializer':
-                                                                                                      'blockInitializers:record',
+                                                                                                      'popup:view:addBlock',
                                                                                                     'x-uid':
                                                                                                       'eno5ymv0s21',
                                                                                                     'x-async': false,
@@ -13671,7 +13671,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                                     'x-component':
                                                                                                       'Grid',
                                                                                                     'x-initializer':
-                                                                                                      'blockInitializers:record',
+                                                                                                      'popup:view:addBlock',
                                                                                                     'x-uid':
                                                                                                       'cpoo628xa2y',
                                                                                                     'x-async': false,
@@ -13879,7 +13879,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       f4262c4203q: {
                                                         _isJSONSchemaObject: true,
@@ -14068,7 +14068,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                                     'x-component':
                                                                                                       'Grid',
                                                                                                     'x-initializer':
-                                                                                                      'blockInitializers:record',
+                                                                                                      'popup:view:addBlock',
                                                                                                     'x-uid':
                                                                                                       'y3qxvvkexzc',
                                                                                                     'x-async': false,
@@ -14169,7 +14169,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                                     'x-component':
                                                                                                       'Grid',
                                                                                                     'x-initializer':
-                                                                                                      'blockInitializers:record',
+                                                                                                      'popup:view:addBlock',
                                                                                                     'x-uid':
                                                                                                       '8voz33qzsh8',
                                                                                                     'x-async': false,
@@ -15640,7 +15640,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       rxh2yo159ct: {
                                                         _isJSONSchemaObject: true,
@@ -16323,7 +16323,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       scqusdl60dp: {
                                                         _isJSONSchemaObject: true,
@@ -17357,7 +17357,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       qd1exa12t8i: {
                                                         _isJSONSchemaObject: true,
@@ -17460,7 +17460,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'blockInitializers:record',
+                                                                                              'popup:view:addBlock',
                                                                                             'x-uid': 'y94je87dtvs',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -17790,7 +17790,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     properties: {
                                                       a7fabwj9osd: {
                                                         _isJSONSchemaObject: true,
@@ -18533,7 +18533,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     'x-uid': '6k8q5pvnbjg',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -18607,7 +18607,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'blockInitializers:record',
+                                                    'x-initializer': 'popup:view:addBlock',
                                                     'x-uid': 'yqsyvw7utn4',
                                                     'x-async': false,
                                                     'x-index': 1,

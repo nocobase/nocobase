@@ -7,7 +7,7 @@ test.describe('where single data details block can be added', () => {
     await nocoPage.goto();
 
     await page.getByLabel('action-Action.Link-View-view-general-table-0').click();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
     await page.mouse.move(300, 0);
 
@@ -22,7 +22,7 @@ test.describe('configure actions', () => {
     await nocoPage.goto();
 
     await page.getByLabel('action-Action.Link-View-view-general-table-0').click();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:view:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
     await page.mouse.move(300, 0);
 

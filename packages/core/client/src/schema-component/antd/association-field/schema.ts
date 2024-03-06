@@ -110,7 +110,7 @@ export default {
               grid: {
                 type: 'void',
                 'x-component': 'Grid',
-                'x-initializer': 'blockInitializers:record',
+                'x-initializer': 'popup:view:addBlock',
                 properties: {},
               },
             },

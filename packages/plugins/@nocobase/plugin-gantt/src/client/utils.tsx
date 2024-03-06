@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useCompile, useCollection_deprecated } from '@nocobase/client';
+import { useCollection_deprecated, useCompile } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const useGanttTranslation = () => {
@@ -129,7 +129,7 @@ export const createGanttBlockSchema = (options) => {
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'blockInitializers:record',
+                            'x-initializer': 'popup:view:addBlock',
                             properties: {},
                           },
                         },

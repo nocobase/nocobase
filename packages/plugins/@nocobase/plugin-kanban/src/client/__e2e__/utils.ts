@@ -227,7 +227,7 @@ export const oneEmptyKanbanBlock: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'blockInitializers:record',
+                                            'x-initializer': 'popup:view:addBlock',
                                             'x-uid': '2hsi7zy93g6',
                                             'x-async': false,
                                             'x-index': 1,
