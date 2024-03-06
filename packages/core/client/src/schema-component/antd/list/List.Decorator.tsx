@@ -7,6 +7,7 @@ import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
 
 export const ListBlockContext = createContext<any>({});
+ListBlockContext.displayName = 'ListBlockContext';
 
 const InternalListBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();

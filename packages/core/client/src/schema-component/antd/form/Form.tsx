@@ -87,6 +87,7 @@ const useDefaultValues = (opts: any = {}, props: FormProps = {}) => {
 };
 
 const FormBlockContext = createContext<any>(null);
+FormBlockContext.displayName = 'FormBlockContext';
 
 export const Form: React.FC<FormProps> & { Designer?: any } = observer(
   (props) => {

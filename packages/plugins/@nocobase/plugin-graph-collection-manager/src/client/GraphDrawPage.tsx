@@ -222,6 +222,7 @@ function optimizeEdge(edge) {
 }
 
 export const CollapsedContext = createContext<any>({});
+CollapsedContext.displayName = 'CollapsedContext';
 const formatNodeData = () => {
   const layoutNodes = [];
   const edges = targetGraph.getEdges();
@@ -504,7 +505,7 @@ export const GraphDrawPage = React.memo(() => {
         refWidth: 100,
         refHeight: 100,
       },
-      component: React.forwardRef((props, ref) => {
+      component: (props) => {
         return (
           <CurrentAppInfoContext.Provider value={currentAppInfo}>
             <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSource?.key}>
@@ -527,7 +528,7 @@ export const GraphDrawPage = React.memo(() => {
             </DataSourceApplicationProvider>
           </CurrentAppInfoContext.Provider>
         );
-      }),
+      },
     });
     targetGraph.use(
       new Scroller({
@@ -1195,7 +1196,7 @@ export const GraphDrawPage = React.memo(() => {
                                 type: 'void',
                                 'x-component': 'Action',
                                 'x-component-props': {
-                                  component: forwardRef(() => {
+                                  component: () => {
                                     return (
                                       <Tooltip title={t('Auto layout')} getPopupContainer={getPopupContainer}>
                                         <Button
@@ -1207,7 +1208,7 @@ export const GraphDrawPage = React.memo(() => {
                                         </Button>
                                       </Tooltip>
                                     );
-                                  }),
+                                  },
                                   useAction: () => {
                                     return {
                                       run() {},

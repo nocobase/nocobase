@@ -22,6 +22,7 @@ const toActionMap = (arr: any[]) => {
 };
 
 export const RoleResourceCollectionContext = createContext<any>({});
+RoleResourceCollectionContext.displayName = 'RoleResourceCollectionContext';
 
 export const RolesResourcesActions = connect((props) => {
   const { styles } = useStyles();

@@ -2,7 +2,7 @@ import React from 'react';
 import { Droppable } from 'react-beautiful-dnd';
 
 function withDroppable(Component) {
-  return function WrapperComponent({ children, ...droppableProps }) {
+  const res = function WrapperComponent({ children, ...droppableProps }) {
     return (
       <Droppable {...droppableProps}>
         {(provided) => (
@@ -14,6 +14,8 @@ function withDroppable(Component) {
       </Droppable>
     );
   };
+  res.displayName = `withDroppable(${Component.displayName || Component.name})`;
+  return res;
 }
 
 export default withDroppable;

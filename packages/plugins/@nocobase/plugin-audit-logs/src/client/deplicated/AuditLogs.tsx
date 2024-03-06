@@ -103,6 +103,7 @@ const Value = observer(
 );
 
 const IsAssociationBlock = createContext(null);
+IsAssociationBlock.displayName = 'IsAssociationBlock';
 
 export const AuditLogs: any = () => {
   const isAssoc = useContext(IsAssociationBlock);

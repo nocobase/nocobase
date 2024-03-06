@@ -58,6 +58,7 @@ interface FilterContextValue {
 }
 
 const FilterContext = createContext<FilterContextValue>(null);
+FilterContext.displayName = 'FilterContext';
 
 /**
  * 主要用于记录当前页面中的数据区块的信息，用于在过滤区块中使用
