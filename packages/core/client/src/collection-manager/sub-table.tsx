@@ -69,6 +69,7 @@ const collection: CollectionOptions = {
 };
 
 export const DataSourceContext_deprecated = createContext(null);
+DataSourceContext_deprecated.displayName = 'DataSourceContext_deprecated';
 
 const useSelectedRowKeys = () => {
   const ctx = useContext(DataSourceContext_deprecated);

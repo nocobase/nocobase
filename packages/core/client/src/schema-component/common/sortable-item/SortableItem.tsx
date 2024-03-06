@@ -6,7 +6,9 @@ import React, { HTMLAttributes, createContext, useContext } from 'react';
 import { useToken } from '../../antd/__builtins__';
 
 export const DraggableContext = createContext(null);
+DraggableContext.displayName = 'DraggableContext';
 export const SortableContext = createContext(null);
+SortableContext.displayName = 'SortableContext';
 
 export const SortableProvider = (props) => {
   const { id, data, children } = props;

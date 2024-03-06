@@ -350,7 +350,6 @@ const SideMenu = ({
 };
 
 const MenuModeContext = createContext(null);
-
 MenuModeContext.displayName = 'MenuModeContext';
 
 const useSideMenuRef = () => {
