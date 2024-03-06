@@ -32,3 +32,4 @@ export const EnableLinkage = React.forwardRef((props: any, ref) => {
     />
   );
 });
+EnableLinkage.displayName = 'EnableLinkage';

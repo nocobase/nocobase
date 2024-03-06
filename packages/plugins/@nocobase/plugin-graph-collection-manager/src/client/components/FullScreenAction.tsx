@@ -20,3 +20,4 @@ export const FullscreenAction = forwardRef(() => {
     </Tooltip>
   );
 });
+FullscreenAction.displayName = 'FullscreenAction';

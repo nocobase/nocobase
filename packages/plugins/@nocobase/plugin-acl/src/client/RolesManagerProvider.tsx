@@ -6,3 +6,4 @@ export const RolesManagerContext = createContext<{
 }>({
   role: null,
 } as any);
+RolesManagerContext.displayName = 'RolesManagerContext';

@@ -13,6 +13,7 @@ export interface ImportContextType {
 }
 
 export const ImportContext = createContext<ImportContextType>(null);
+ImportContext.displayName = 'ImportContext';
 
 export const useImportContext = () => {
   return useContext(ImportContext);

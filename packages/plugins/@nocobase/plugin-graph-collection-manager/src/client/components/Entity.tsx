@@ -196,7 +196,7 @@ const OperationButton: any = React.memo((props: any) => {
     </div>
   );
 });
-
+OperationButton.displayName = 'OperationButton';
 const PopoverContent = React.forwardRef((props: any, ref) => {
   const { property, node, ...other } = props;
   const {
@@ -282,6 +282,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
     </div>
   );
 });
+PopoverContent.displayName = 'PopoverContent';
 
 const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
   const {

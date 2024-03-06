@@ -11,5 +11,8 @@ export interface FilterContextProps {
 }
 
 export const RemoveActionContext = createContext(null);
+RemoveActionContext.displayName = 'RemoveActionContext';
 export const FilterContext = createContext<FilterContextProps>(null);
+FilterContext.displayName = 'FilterContext';
 export const LinkageLogicContext = createContext(null);
+LinkageLogicContext.displayName = 'LinkageLogicContext';

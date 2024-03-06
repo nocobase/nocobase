@@ -51,6 +51,4 @@ const Summary = observer(
   { displayName: 'Summary' },
 );
 
-Summary.displayName = 'Summary';
-
 export default Summary;

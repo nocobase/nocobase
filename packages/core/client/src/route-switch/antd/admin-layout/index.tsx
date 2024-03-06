@@ -54,6 +54,7 @@ const filterByACL = (schema, options) => {
 };
 
 const SchemaIdContext = createContext(null);
+SchemaIdContext.displayName = 'SchemaIdContext';
 const useMenuProps = () => {
   const defaultSelectedUid = useContext(SchemaIdContext);
   return {
