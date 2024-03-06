@@ -143,7 +143,9 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         parts.pop();
         const modifiedString = parts.join('.');
         field.query(`${modifiedString}.*[0:].${fieldSchema.name}`).forEach((f) => {
-          f.setComponentProps({ ...data });
+          if (f.props.name === fieldSchema.name) {
+            f.setComponentProps({ ...data });
+          }
         });
         dn.emit('patch', {
           schema,
