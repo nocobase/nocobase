@@ -1,5 +1,5 @@
-import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCollection_deprecated } from '../../../..';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { gridRowColWrap } from '../../../../schema-initializer/utils';
 
 /**
@@ -88,7 +88,7 @@ export const tableSelectorInitializers_deprecated = new CompatibleSchemaInitiali
 
 export const tableSelectorInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:tableSelector',
+    name: 'popup:tableSelector:addBlock',
     wrap: gridRowColWrap,
     title: '{{t("Add block")}}',
     icon: 'PlusOutlined',

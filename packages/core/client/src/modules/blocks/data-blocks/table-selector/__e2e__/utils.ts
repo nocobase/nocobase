@@ -18,7 +18,7 @@ export async function createTable({
     .click();
 
   // create a table block
-  await page.getByLabel('schema-initializer-Grid-blockInitializers:tableSelector-users').hover();
+  await page.getByLabel('schema-initializer-Grid-popup:tableSelector:addBlock-users').hover();
   await page.getByRole('menuitem', { name: 'form Table' }).click();
   await page.mouse.move(300, 0);
 }

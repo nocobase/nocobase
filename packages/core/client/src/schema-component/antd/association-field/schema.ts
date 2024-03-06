@@ -55,7 +55,7 @@ export default {
       grid: {
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:tableSelector',
+        'x-initializer': 'popup:tableSelector:addBlock',
         properties: {},
       },
       footer: {

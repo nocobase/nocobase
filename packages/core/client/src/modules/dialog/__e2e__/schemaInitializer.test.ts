@@ -225,7 +225,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByLabel('block-item-Markdown.Void-roles-form')).toBeVisible();
 
     async function addBlock(name: string) {
-      await page.getByLabel('schema-initializer-Grid-blockInitializers:tableSelector-roles').hover();
+      await page.getByLabel('schema-initializer-Grid-popup:tableSelector:addBlock-roles').hover();
       await page.getByRole('menuitem', { name }).click();
       await page.mouse.move(300, 0);
     }
