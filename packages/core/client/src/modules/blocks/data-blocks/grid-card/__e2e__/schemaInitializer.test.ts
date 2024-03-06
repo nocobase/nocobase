@@ -4,7 +4,7 @@ test.describe('where grid card block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Grid Card');
     await expect(page.getByLabel('block-item-BlockItem-users-grid-card')).toBeVisible();
   });

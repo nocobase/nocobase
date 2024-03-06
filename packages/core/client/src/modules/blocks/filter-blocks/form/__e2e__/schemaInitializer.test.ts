@@ -4,7 +4,7 @@ test.describe('where filter form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Filter form');
     await expect(page.getByLabel('block-item-CardItem-users-filter-form')).toBeVisible();
   });

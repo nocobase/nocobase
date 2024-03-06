@@ -1,5 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import { SchemaInitializerItem, Plugin, useSchemaInitializer, SchemaSettings } from '@nocobase/client';
+import { Plugin, SchemaInitializerItem, SchemaSettings, useSchemaInitializer } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,7 +50,7 @@ const helloSettings = new SchemaSettings({
 
 class HelloPlugin extends Plugin {
   async load() {
-    this.app.schemaInitializerManager.addItem('blockInitializers:page', 'otherBlocks.hello', {
+    this.app.schemaInitializerManager.addItem('page:addBlock', 'otherBlocks.hello', {
       title: '{{t("Hello block")}}',
       Component: HelloBlockInitializer,
     });

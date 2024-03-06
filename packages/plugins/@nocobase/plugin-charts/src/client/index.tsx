@@ -6,7 +6,7 @@ import { ChartBlockEngine } from './ChartBlockEngine';
 import { ChartBlockInitializer } from './ChartBlockInitializer';
 import { ChartQueryMetadataProvider } from './ChartQueryMetadataProvider';
 import './Icons';
-import { lang, NAMESPACE } from './locale';
+import { NAMESPACE, lang } from './locale';
 import { CustomSelect } from './select';
 import { QueriesTable } from './settings/QueriesTable';
 
@@ -73,7 +73,7 @@ export class ChartsPlugin extends Plugin {
   }
   async load() {
     // Chart (Old) 老的不需要了
-    // const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
+    // const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     // blockInitializers?.add('data-blocks.chart-old', {
     //   icon: 'PieChartOutlined',
     //   title: '{{t("Chart (Old)",{ns:"charts"})}}',

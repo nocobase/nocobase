@@ -58,7 +58,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}` }).click();
 
@@ -150,7 +150,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}` }).click();
 

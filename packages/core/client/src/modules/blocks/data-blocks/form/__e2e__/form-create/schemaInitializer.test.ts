@@ -5,7 +5,7 @@ test.describe('where creation form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Form');
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
   });

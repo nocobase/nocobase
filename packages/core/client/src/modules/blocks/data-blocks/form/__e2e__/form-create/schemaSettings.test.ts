@@ -350,7 +350,7 @@ test.describe('creation form block schema settings', () => {
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).toBeVisible();
 
     // 创建区块的时候，可以选择刚才保存的模板 --------------------------------------------------
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'General right' }).hover();
 
@@ -359,7 +359,7 @@ test.describe('creation form block schema settings', () => {
     await page.getByRole('menuitem', { name: 'new_form_template (Fields only)' }).click();
 
     // Reference template
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'General right' }).hover();
     await page.getByRole('menuitem', { name: 'General right' }).click();
@@ -719,7 +719,7 @@ test.describe('creation form block schema settings', () => {
             version: '2.0',
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'blockInitializers:page',
+            'x-initializer': 'page:addBlock',
             properties: {
               gdj0ceke8ac: {
                 _isJSONSchemaObject: true,
@@ -879,7 +879,7 @@ test.describe('creation form block schema settings', () => {
             version: '2.0',
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'blockInitializers:page',
+            'x-initializer': 'page:addBlock',
             properties: {
               ibb0kjq3kyl: {
                 _isJSONSchemaObject: true,
@@ -1160,7 +1160,7 @@ test.describe('creation form block schema settings', () => {
         'x-index': 1,
       },
     }).goto();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     //使用复制模板
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Users' }).hover();

@@ -7,7 +7,7 @@ export class IframeBlockPlugin extends Plugin {
     this.app.schemaSettingsManager.add(iframeBlockSchemaSettings_deprecated);
     this.app.schemaSettingsManager.add(iframeBlockSchemaSettings);
     this.app.use(IframeBlockProvider);
-    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
+    const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('otherBlocks.iframe', {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',

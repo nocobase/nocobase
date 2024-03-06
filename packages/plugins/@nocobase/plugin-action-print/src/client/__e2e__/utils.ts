@@ -96,7 +96,7 @@ export const oneTableWithViewAction: PageConfig = {
         type: 'void',
         version: '2.0',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         _isJSONSchemaObject: true,
         properties: {
           '8xj4v8eg792': {
@@ -392,7 +392,7 @@ export const oneCalenderWithViewAction: PageConfig = {
         type: 'void',
         version: '2.0',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         _isJSONSchemaObject: true,
         properties: {
           '8er4x7qwc0p': {

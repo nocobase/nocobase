@@ -96,7 +96,7 @@ export const oneEmptyKanbanBlock: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         properties: {
           '4io56n1mje4': {
             _isJSONSchemaObject: true,

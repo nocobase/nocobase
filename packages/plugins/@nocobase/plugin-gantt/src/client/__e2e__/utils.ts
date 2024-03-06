@@ -140,7 +140,7 @@ export const oneEmptyGantt: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         properties: {
           gl57m4hyewf: {
             _isJSONSchemaObject: true,

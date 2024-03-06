@@ -3,9 +3,9 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import Manual from './instruction';
 
+import { NAMESPACE } from '../locale';
 import { WorkflowTodo } from './WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
-import { NAMESPACE } from '../locale';
 import {
   addActionButton,
   addActionButton_deprecated,
@@ -34,7 +34,7 @@ export default class extends Plugin {
     this.app.schemaInitializerManager.add(addCustomFormField_deprecated);
     this.app.schemaInitializerManager.add(addCustomFormField);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
+    const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers.add('otherBlocks.workflowTodos', {
       title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
       Component: 'WorkflowTodoBlockInitializer',

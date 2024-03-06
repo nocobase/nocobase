@@ -12,7 +12,7 @@ export const T2165 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         properties: {
           psn8ekavlq6: {
             _isJSONSchemaObject: true,
@@ -291,7 +291,7 @@ export const T2174 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           ppgwx2drpng: {
@@ -889,7 +889,7 @@ export const T2614: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         properties: {
           vv0l8wohslb: {
             _isJSONSchemaObject: true,
@@ -1726,7 +1726,7 @@ export const T2993: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           vv0l8wohslb: {
@@ -2313,7 +2313,7 @@ export const T2615: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         properties: {
           '1valv0kj8vs': {
             _isJSONSchemaObject: true,
@@ -3218,7 +3218,7 @@ export const T2845: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           '1valv0kj8vs': {
@@ -4701,7 +4701,7 @@ export const T2200 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         properties: {
           ai6ojrzwkiv: {
             _isJSONSchemaObject: true,
@@ -5044,7 +5044,7 @@ export const T3106: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           cxk2aa058lc: {
@@ -5264,7 +5264,7 @@ export const T3251: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         properties: {
           xovhjqo0uig: {
             _isJSONSchemaObject: true,

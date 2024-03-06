@@ -14,7 +14,7 @@ export const oneTableBlock: PageConfig = {
         type: 'void',
         version: '2.0',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         _isJSONSchemaObject: true,
         properties: {
           hxf5h572bwc: {

@@ -7,7 +7,7 @@ test.describe('blockInitializers should add kanban block', () => {
     await mockCollections(generalWithSingleSelect);
     await mockRecord('general');
     await mockPage().goto();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await expect(page.getByRole('menuitem', { name: 'form Kanban right' })).toBeVisible();
     await page.getByRole('menuitem', { name: 'form Kanban right' }).click();
     await page.getByRole('menuitem', { name: 'General' }).click();

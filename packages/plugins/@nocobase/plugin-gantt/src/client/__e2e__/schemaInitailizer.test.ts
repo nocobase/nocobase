@@ -4,7 +4,7 @@ import { generalWithDatetimeFields, oneEmptyGantt } from './utils';
 test('BlockInitializers should add gantt block', async ({ page, mockPage, mockCollections }) => {
   await mockCollections(generalWithDatetimeFields);
   await mockPage().goto();
-  await page.getByLabel('schema-initializer-Grid-blockInitializers:page').click();
+  await page.getByLabel('schema-initializer-Grid-page:addBlock').click();
   await page.getByRole('menuitem', { name: 'form Gantt right' }).click();
   await page.getByRole('menuitem', { name: 'General' }).click();
   await page.getByLabel('block-item-Select-Title field').click();

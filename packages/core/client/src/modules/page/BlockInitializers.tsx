@@ -76,7 +76,7 @@ export const blockInitializers_deprecated = new CompatibleSchemaInitializer({
 
 export const blockInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:page',
+    name: 'page:addBlock',
     title: '{{t("Add block")}}',
     icon: 'PlusOutlined',
     wrap: gridRowColWrap,

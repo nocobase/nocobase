@@ -3,9 +3,9 @@ import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
+import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
 export const PageMenuItem = () => {
@@ -75,7 +75,7 @@ export const PageMenuItem = () => {
             [uid()]: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'blockInitializers:page',
+              'x-initializer': 'page:addBlock',
               properties: {},
             },
           },

@@ -9,13 +9,13 @@ import {
 import antd from './chart/antd';
 import g2plot from './chart/g2plot';
 import { ChartGroup } from './chart/group';
-import { lang } from './locale';
 import {
   chartFilterActionInitializers,
   chartFilterActionInitializers_deprecated,
   chartFilterItemInitializers,
   chartFilterItemInitializers_deprecated,
 } from './filter';
+import { lang } from './locale';
 
 class DataVisualizationPlugin extends Plugin {
   public charts: ChartGroup = new ChartGroup();
@@ -36,7 +36,7 @@ class DataVisualizationPlugin extends Plugin {
     this.app.schemaInitializerManager.add(chartFilterActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(chartFilterActionInitializers);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
+    const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.chartV2', {
       title: lang('Charts'),
       Component: 'ChartV2BlockInitializer',
@@ -47,6 +47,6 @@ class DataVisualizationPlugin extends Plugin {
 export default DataVisualizationPlugin;
 export { Chart } from './chart/chart';
 export type { ChartProps, ChartType, RenderProps } from './chart/chart';
+export { ChartConfigContext } from './configure';
 export type { FieldOption } from './hooks';
 export type { QueryProps } from './renderer';
-export { ChartConfigContext } from './configure';

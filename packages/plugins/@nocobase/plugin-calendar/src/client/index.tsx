@@ -1,6 +1,7 @@
 import { Plugin } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
+import { calendarBlockSettings } from './calendar/Calender.Settings';
 import { CalendarCollectionTemplate } from './collection-templates/calendar';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
 import {
@@ -10,12 +11,11 @@ import {
   calendarFormActionInitializers,
 } from './schema-initializer/initializers';
 import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } from './schema-initializer/items';
-import { calendarBlockSettings } from './calendar/Calender.Settings';
 
 export class PluginCalendarClient extends Plugin {
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
-    this.app.schemaInitializerManager.addItem('blockInitializers:page', 'dataBlocks.calendar', {
+    this.app.schemaInitializerManager.addItem('page:addBlock', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',
     });

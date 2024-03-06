@@ -25,7 +25,7 @@ export class AuditLogsPlugin extends Plugin {
     this.app.schemaInitializerManager.add(auditLogsTableColumnInitializers_deprecated);
     this.app.schemaInitializerManager.add(auditLogsTableColumnInitializers);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('blockInitializers:page');
+    const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     const recordBlockInitializers = this.app.schemaInitializerManager.get('blockInitializers:record');
     const auditLogs: Omit<SchemaInitializerItemType, 'name'> = {
       title: '{{t("Audit logs")}}',

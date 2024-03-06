@@ -3,7 +3,7 @@ import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase
 test.describe('where multi data details block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Details');
     await expect(page.getByLabel('block-item-CardItem-users-details')).toBeVisible();
   });

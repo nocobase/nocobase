@@ -13,7 +13,7 @@ export const T2797: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           '921il71tsii': {
@@ -595,7 +595,7 @@ export const T2838: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'blockInitializers:page',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           ocvzef7y4nh: {
