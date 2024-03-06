@@ -18,7 +18,7 @@ export const routes = [
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'blockInitializers:mobilePage',
+              'x-initializer': 'mobilePage:addBlock',
               'x-component-props': {
                 showDivider: false,
               },

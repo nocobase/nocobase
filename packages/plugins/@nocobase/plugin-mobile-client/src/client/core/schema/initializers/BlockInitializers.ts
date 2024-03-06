@@ -75,7 +75,7 @@ export const mBlockInitializers_deprecated = new CompatibleSchemaInitializer({
 
 export const mBlockInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:mobilePage',
+    name: 'mobilePage:addBlock',
     title: '{{t("Add block")}}',
     icon: 'PlusOutlined',
     wrap: gridRowColWrap,
