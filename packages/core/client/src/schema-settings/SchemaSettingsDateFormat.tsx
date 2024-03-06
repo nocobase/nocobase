@@ -19,7 +19,9 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
     collectionField?.uiSchema?.['x-component-props']?.dateFormat ||
     'YYYY-MM-DD';
   const timeFormatDefaultValue =
-    fieldSchema?.['x-component-props']?.timeFormat || collectionField?.uiSchema?.['x-component-props']?.timeFormat;
+    fieldSchema?.['x-component-props']?.timeFormat ||
+    collectionField?.uiSchema?.['x-component-props']?.timeFormat ||
+    'HH:mm:ss';
   return (
     <SchemaSettingsModalItem
       title={t('Date display format')}
