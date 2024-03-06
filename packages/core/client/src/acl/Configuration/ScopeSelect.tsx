@@ -29,15 +29,20 @@ export const ScopeSelect = (props) => {
       }),
     [],
   );
+
+  const scope = useMemo(() => {
+    return {
+      onChange(value) {
+        props?.onChange?.(value);
+      },
+    };
+  }, [props?.onChange])
+
   return (
     <FormProvider form={form}>
       <SchemaComponent
         components={{ RolesResourcesScopesSelectedRowKeysProvider }}
-        scope={{
-          onChange(value) {
-            props?.onChange?.(value);
-          },
-        }}
+        scope={scope}
         schema={scopesSchema}
       />
     </FormProvider>

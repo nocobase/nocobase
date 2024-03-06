@@ -199,12 +199,19 @@ const MenuEditor = (props) => {
     },
   );
 
+  const scope = useMemo(() => ({
+    useMenuProps,
+    onSelect,
+    sideMenuRef,
+    defaultSelectedUid
+  }), [])
+
   if (loading) {
     return render();
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <SchemaComponent memoized scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }} schema={schema} />
+      <SchemaComponent memoized scope={scope} schema={schema} />
     </SchemaIdContext.Provider>
   );
 };

@@ -2,7 +2,7 @@ import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
@@ -153,6 +153,8 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   const collection = getCollection(collectionField?.collectionName);
   const primaryKey = collection?.getPrimaryKey();
   const appends = useAssociationNames(props.collection);
+  const scope = useMemo(() => ({ treeTable }), [treeTable]);
+
   let params = { ...props.params };
   if (props.dragSort) {
     params['sort'] = ['sort'];
@@ -255,9 +257,8 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   if (params?.filter) {
     params.filter = parsedFilter;
   }
-
   return (
-    <SchemaComponentOptions scope={{ treeTable }}>
+    <SchemaComponentOptions scope={scope}>
       <BlockProvider name="table-selector" {...props} params={params}>
         <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
       </BlockProvider>

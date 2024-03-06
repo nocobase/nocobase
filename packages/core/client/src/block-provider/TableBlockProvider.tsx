@@ -111,8 +111,9 @@ export const TableBlockProvider = (props) => {
     };
   }, [parsedFilter, params]);
 
+  const scope = useMemo(() => ({ treeTable }), [treeTable]);
   return (
-    <SchemaComponentOptions scope={{ treeTable }}>
+    <SchemaComponentOptions scope={scope}>
       <FormContext.Provider value={form}>
         <BlockProvider name={props.name || 'table'} {...props} params={paramsWithFilter} runWhenParamsChanged>
           <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={paramsWithFilter} />

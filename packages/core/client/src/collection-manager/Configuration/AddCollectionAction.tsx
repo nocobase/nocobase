@@ -180,6 +180,9 @@ export const AddCollectionAction = (props) => {
     };
   }, [category, items]);
 
+  const components = useMemo(() => ({ ...components, ArrayTable, TemplateSummary }), []);
+  const scopes = useMemo(() => ({ getContainer, useCancelAction, useCreateCollection, record, ...scope }), [scope]);
+
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -192,16 +195,8 @@ export const AddCollectionAction = (props) => {
         </Dropdown>
         <SchemaComponent
           schema={schema}
-          components={{ ...components, ArrayTable, TemplateSummay: TemplateSummary }}
-          scope={{
-            getContainer,
-            useCancelAction,
-            createOnly: true,
-            useCreateCollection,
-            record,
-            showReverseFieldConfig: true,
-            ...scope,
-          }}
+          components={components}
+          scope={scopes}
         />
       </ActionContextProvider>
     </RecordProvider>

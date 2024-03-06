@@ -1,5 +1,5 @@
 import { SchemaComponentOptions } from '@nocobase/client';
-import React, { useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ImportActionInitializer, ImportDesigner } from '.';
 import { ImportContext } from './context';
@@ -9,23 +9,30 @@ import { useShared } from './useShared';
 
 export const ImportPluginProvider = (props: any) => {
   const { uploadValidator, beforeUploadHandler, validateUpload } = useShared();
+  const scope = useMemo(() => ({
+    uploadValidator,
+    validateUpload,
+    beforeUploadHandler,
+    useDownloadXlsxTemplateAction,
+    useImportStartAction,
+  }), [uploadValidator, beforeUploadHandler, validateUpload])
+
+  const components = useMemo(() => ({
+    ImportActionInitializer,
+    ImportDesigner,
+  }), []);
+
   return (
     <SchemaComponentOptions
-      components={{ ImportActionInitializer, ImportDesigner }}
-      scope={{
-        uploadValidator,
-        validateUpload,
-        beforeUploadHandler,
-        useDownloadXlsxTemplateAction,
-        useImportStartAction,
-      }}
+      components={components}
+      scope={scope}
     >
       <ImportContextProvider>{props.children}</ImportContextProvider>
     </SchemaComponentOptions>
   );
 };
 
-export const ImportContextProvider = (props: any) => {
+export const ImportContextProvider = memo((props: any) => {
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importStatus, setImportStatus] = useState<number>(ImportStatus.IMPORTING);
   const [importResult, setImportResult] = useState<{
@@ -47,4 +54,4 @@ export const ImportContextProvider = (props: any) => {
       {props.children}
     </ImportContext.Provider>
   );
-};
+});

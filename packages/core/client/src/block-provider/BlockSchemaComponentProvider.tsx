@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Plugin } from '../application/Plugin';
 import { ActionSchemaToolbar } from '../modules/actions/ActionSchemaToolbar';
 import { CollapseItemSchemaToolbar } from '../modules/blocks/filter-blocks/collapse/CollapseItemSchemaToolbar';
@@ -18,30 +18,34 @@ import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
+  const components = useMemo(() => ({
+    TableFieldProvider,
+    TableBlockProvider,
+    TableSelectorProvider,
+    FormBlockProvider,
+    FilterFormBlockProvider,
+    FormFieldProvider,
+    DetailsBlockProvider,
+    RecordLink,
+  }), [])
+
+  const scope = useMemo(() => ({
+    ...bp,
+    useSourceIdFromRecord,
+    useSourceIdFromParentRecord,
+    useParamsFromRecord,
+    useFormBlockProps,
+    useFormFieldProps,
+    useDetailsBlockProps,
+    useTableFieldProps,
+    useTableBlockProps,
+    useTableSelectorProps,
+  }), [])
+
   return (
     <SchemaComponentOptions
-      components={{
-        TableFieldProvider,
-        TableBlockProvider,
-        TableSelectorProvider,
-        FormBlockProvider,
-        FilterFormBlockProvider,
-        FormFieldProvider,
-        DetailsBlockProvider,
-        RecordLink,
-      }}
-      scope={{
-        ...bp,
-        useSourceIdFromRecord,
-        useSourceIdFromParentRecord,
-        useParamsFromRecord,
-        useFormBlockProps,
-        useFormFieldProps,
-        useDetailsBlockProps,
-        useTableFieldProps,
-        useTableBlockProps,
-        useTableSelectorProps,
-      }}
+      components={components}
+      scope={scope}
     >
       {props.children}
     </SchemaComponentOptions>

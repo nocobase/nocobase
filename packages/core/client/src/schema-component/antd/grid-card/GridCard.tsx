@@ -2,7 +2,7 @@ import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, Col, PaginationProps } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner, useProps } from '../../hooks';
@@ -96,12 +96,14 @@ const InternalGridCard = (props) => {
     [run, params],
   );
 
+  const scope = useMemo(() => ({
+    useGridCardItemProps,
+    useGridCardActionBarProps,
+  }), [])
+
   return (
     <SchemaComponentOptions
-      scope={{
-        useGridCardItemProps,
-        useGridCardActionBarProps,
-      }}
+      scope={scope}
     >
       <SortableItem className={cx('nb-card-list', designerCss)}>
         <AntdList

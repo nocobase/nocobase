@@ -2,7 +2,7 @@ import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Card, message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '.';
 import { i18n, useAPIClient, useRequest } from '..';
@@ -164,10 +164,11 @@ const schema: ISchema = {
 };
 
 export const SystemSettingsPane = () => {
+  const scope = useMemo(() => ({ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }), []);
   return (
     <Card bordered={false}>
       <SchemaComponent
-        scope={{ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }}
+        scope={scope}
         schema={schema}
       />
     </Card>

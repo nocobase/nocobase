@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { error } from '@nocobase/utils/client';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SchemaComponentOptions } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
@@ -74,8 +74,9 @@ const useChinaRegionLoadData = () => {
 };
 
 export const ChinaRegionProvider = (props) => {
+  const scope = useMemo(() => ({ useChinaRegionDataSource, useChinaRegionLoadData }), []);
   return (
-    <SchemaComponentOptions scope={{ useChinaRegionDataSource, useChinaRegionLoadData }}>
+    <SchemaComponentOptions scope={scope}>
       {props.children}
     </SchemaComponentOptions>
   );

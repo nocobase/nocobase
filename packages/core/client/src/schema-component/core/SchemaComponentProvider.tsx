@@ -1,7 +1,7 @@
 import { createForm } from '@formily/core';
 import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext } from '../context';
 import { ISchemaComponentProvider } from '../types';
@@ -53,27 +53,35 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   }, [props.scope, t]);
   const [active, setActive] = useState(designable);
 
-  const schemaComponentContextValue = useMemo(
-    () => ({
+  const refresh = useCallback(() => {
+    setUid(uid());
+  }, []);
+
+  const reset = useCallback(() => {
+    setFormId(uid());
+  }, []);
+  const setDesignable = useCallback((value) => {
+    if (typeof designable !== 'boolean') {
+      setActive(value);
+    }
+    onDesignableChange?.(value);
+  }, [designable, onDesignableChange]);
+
+  const contextValue = useMemo(() => {
+    return {
       scope,
       components,
-      reset: () => setFormId(uid()),
-      refresh: () => {
-        setUid(uid());
-      },
+      reset,
+      refresh,
       designable: typeof designable === 'boolean' ? designable : active,
-      setDesignable: (value) => {
-        if (typeof designable !== 'boolean') {
-          setActive(value);
-        }
-        onDesignableChange?.(value);
-      },
-    }),
-    [uidValue, scope, components, designable, active],
-  );
+      setDesignable,
+    };
+
+    // uidValue 虽然没用到，但是这里必须加上，为了让整个页面能够渲染
+  }, [uidValue, scope, components, reset, refresh, designable, active, setDesignable])
 
   return (
-    <SchemaComponentContext.Provider value={schemaComponentContextValue}>
+    <SchemaComponentContext.Provider value={contextValue}>
       <FormProvider form={form}>
         <SchemaComponentOptions inherit scope={scope} components={components}>
           {children}

@@ -29,6 +29,22 @@ import { useTableSelectorProps } from './InternalPicker';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 
+
+const usePickActionProps = () => {
+  const { setVisible } = useActionContext();
+  const { selectedRows, options, collectionField } = useContext(RecordPickerContext);
+  const { field } = useAssociationFieldContext<ArrayField>();
+  return {
+    onClick() {
+      const selectData = unionBy(selectedRows, options, collectionField?.targetKey || 'id');
+      const data = field.value || [];
+      field.value = uniqBy(data.concat(selectData), collectionField?.targetKey || 'id');
+      field.onInput(field.value);
+      setVisible(false);
+    },
+  };
+};
+
 export const SubTable: any = observer(
   (props: any) => {
     const { openSize } = props;
@@ -88,25 +104,19 @@ export const SubTable: any = observer(
       setSelectedRows,
       collectionField,
     };
-    const usePickActionProps = () => {
-      const { setVisible } = useActionContext();
-      const { selectedRows, options, collectionField } = useContext(RecordPickerContext);
-      return {
-        onClick() {
-          const selectData = unionBy(selectedRows, options, collectionField?.targetKey || 'id');
-          const data = field.value || [];
-          field.value = uniqBy(data.concat(selectData), collectionField?.targetKey || 'id');
-          field.onInput(field.value);
-          setVisible(false);
-        },
-      };
-    };
     const getFilter = () => {
       const targetKey = collectionField?.targetKey || 'id';
       const list = options.map((option) => option[targetKey]).filter(Boolean);
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+
+    const scope = useMemo(() => ({
+      usePickActionProps,
+      useTableSelectorProps,
+      useCreateActionProps,
+    }), []);
+
     return (
       <div
         className={css`
@@ -217,11 +227,7 @@ export const SubTable: any = observer(
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                   <SchemaComponentOptions
-                    scope={{
-                      usePickActionProps,
-                      useTableSelectorProps,
-                      useCreateActionProps,
-                    }}
+                    scope={scope}
                   >
                     <RecursionField
                       onlyRenderProperties
