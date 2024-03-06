@@ -8,7 +8,7 @@ import set from 'lodash/set';
 import React, { ComponentType, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
-import { SchemaComponentContext } from '../context';
+import { useSchemaComponentChangelessContext } from './useSchemaComponentContext';
 
 interface CreateDesignableProps {
   current: Schema;
@@ -701,7 +701,7 @@ export function useFindComponent() {
 
 // TODO
 export function useDesignable() {
-  const { designable, setDesignable, refresh, reset } = useContext(SchemaComponentContext);
+  const { designable, setDesignable, refresh, reset } = useSchemaComponentChangelessContext();
   const schemaOptions = useContext(SchemaOptionsContext);
   const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
   const DesignableBar = useMemo(

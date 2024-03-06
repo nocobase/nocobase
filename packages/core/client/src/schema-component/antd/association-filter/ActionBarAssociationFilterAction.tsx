@@ -1,14 +1,14 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import React, { useContext } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponentContext, createDesignable } from '../..';
+import { createDesignable, useSchemaComponentChangelessContext } from '../..';
 import { useAPIClient } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const ActionBarAssociationFilterAction = (props) => {
-  const { refresh } = useContext(SchemaComponentContext);
+  const { refresh } = useSchemaComponentChangelessContext();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { t } = useTranslation();

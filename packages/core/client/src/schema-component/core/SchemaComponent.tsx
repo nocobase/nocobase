@@ -1,6 +1,6 @@
 import { IRecursionFieldProps, ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
 import React, { memo, useCallback, useContext, useMemo } from 'react';
-import { SchemaComponentContext } from '../context';
+import { SchemaComponentContext, SchemaComponentContextProvider } from '../context';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
 type SchemaComponentOnChange = {
@@ -35,19 +35,20 @@ const RecursionSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnCh
     props.onChange?.(s);
   }, [s, ctx.refresh, props.onChange]);
 
-  const contextValue = useMemo(() => ({
-    ...ctx,
-    refresh
-  }), [ctx, refresh]);
+  const contextValue = useMemo(
+    () => ({
+      ...ctx,
+      refresh,
+    }),
+    [ctx, refresh],
+  );
 
   return (
-    <SchemaComponentContext.Provider
-      value={contextValue}
-    >
+    <SchemaComponentContextProvider value={contextValue}>
       <SchemaComponentOptions inherit components={components} scope={scope}>
         <RecursionField {...others} schema={s} />
       </SchemaComponentOptions>
-    </SchemaComponentContext.Provider>
+    </SchemaComponentContextProvider>
   );
 };
 
@@ -57,14 +58,14 @@ const MemoizedSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnCha
   return <RecursionSchemaComponent {...others} schema={s} />;
 };
 
-export const SchemaComponent = memo((
-  props: (ISchemaFieldProps | IRecursionFieldProps) & { memoized?: boolean } & SchemaComponentOnChange,
-) => {
-  const { memoized, ...others } = props;
-  if (memoized) {
-    return <MemoizedSchemaComponent {...others} />;
-  }
-  return <RecursionSchemaComponent {...others} />;
-});
+export const SchemaComponent = memo(
+  (props: (ISchemaFieldProps | IRecursionFieldProps) & { memoized?: boolean } & SchemaComponentOnChange) => {
+    const { memoized, ...others } = props;
+    if (memoized) {
+      return <MemoizedSchemaComponent {...others} />;
+    }
+    return <RecursionSchemaComponent {...others} />;
+  },
+);
 
 SchemaComponent.displayName = 'SchemaComponent';

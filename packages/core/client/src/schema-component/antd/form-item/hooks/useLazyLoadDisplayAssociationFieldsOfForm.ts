@@ -31,7 +31,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { getAssociationAppends } = useAssociationNames();
 
   const schemaName = fieldSchema.name.toString();
-  const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
+  const formValue = isInSubForm || isInSubTable ? subFormValue : form.values;
   const collectionFieldRef = useRef(null);
   const sourceCollectionFieldRef = useRef(null);
 

@@ -67,6 +67,7 @@ import {
   useRecord,
   useSchemaSettingsItem,
   useSortFields,
+  useCollection,
 } from '..';
 import {
   BlockRequestContext_deprecated,
@@ -144,10 +145,10 @@ interface SchemaSettingsProviderProps {
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
   const { children, fieldSchema, ...others } = props;
   const { getTemplateBySchema } = useSchemaTemplateManager();
-  const { name } = useCollection_deprecated();
+  const collection = useCollection();
   const template = getTemplateBySchema(fieldSchema);
   return (
-    <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
+    <SchemaSettingsContext.Provider value={{ collectionName: collection?.name, template, fieldSchema, ...others }}>
       {children}
     </SchemaSettingsContext.Provider>
   );

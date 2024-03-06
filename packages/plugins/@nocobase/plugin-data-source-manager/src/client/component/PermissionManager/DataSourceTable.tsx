@@ -3,9 +3,9 @@ import React, { createContext, useContext } from 'react';
 import {
   useRequest,
   SchemaComponent,
-  SchemaComponentContext,
   SettingCenterPermissionProvider,
   useRecord,
+  SchemaComponentContextProvider,
 } from '@nocobase/client';
 import { dataSourceSchema } from './schemas/dataSourceTable';
 import { PermissionProvider } from './PermisionProvider';
@@ -34,7 +34,7 @@ export const DataSourceTable = () => {
   const record = useRecord();
   return (
     <div>
-      <SchemaComponentContext.Provider value={{ designable: false }}>
+      <SchemaComponentContextProvider value={{ designable: false }}>
         <AvailableActionsProver>
           <SchemaComponent
             schema={dataSourceSchema}
@@ -42,7 +42,7 @@ export const DataSourceTable = () => {
             scope={{ dataSourceKey: record.key }}
           />
         </AvailableActionsProver>
-      </SchemaComponentContext.Provider>
+      </SchemaComponentContextProvider>
     </div>
   );
 };

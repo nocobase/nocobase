@@ -20,6 +20,7 @@ import {
   TemplateSummary,
   ResourceActionContext,
   useDataSourceManager,
+  SchemaComponentContextProvider,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
@@ -157,7 +158,7 @@ export const ConfigurationTable = () => {
     return getCollectionSchema(name);
   }, [name]);
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+    <SchemaComponentContextProvider value={{ ...ctx, designable: false }}>
       <SchemaComponent
         schema={collectionSchema}
         components={{
@@ -184,6 +185,6 @@ export const ConfigurationTable = () => {
           isPG: database?.dialect === 'postgres',
         }}
       />
-    </SchemaComponentContext.Provider>
+    </SchemaComponentContextProvider>
   );
 };

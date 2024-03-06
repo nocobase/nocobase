@@ -2,7 +2,7 @@ import React, { FC, ReactNode, createContext, useContext } from 'react';
 import type { DataSource } from './DataSource';
 import { useDataSourceManager } from './DataSourceManagerProvider';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
-import { CardItem, useSchemaComponentContext } from '../../schema-component';
+import { CardItem, useSchemaComponentChangelessContext } from '../../schema-component';
 import { Button, Result } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +18,7 @@ export interface DataSourceProviderProps {
 export const DataSourceProvider: FC<DataSourceProviderProps> = ({ children, dataSource }) => {
   const dataSourceManager = useDataSourceManager();
   const { t } = useTranslation();
-  const { refresh } = useSchemaComponentContext();
+  const { refresh } = useSchemaComponentChangelessContext();
   const [_, setRandom] = React.useState(0);
   const dataSourceValue = dataSourceManager.getDataSource(dataSource);
 

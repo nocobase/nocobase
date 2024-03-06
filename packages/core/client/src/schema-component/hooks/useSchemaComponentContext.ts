@@ -1,6 +1,10 @@
 import { useContext } from 'react';
-import { SchemaComponentContext } from '../context';
+import { SchemaComponentContext, SchemaComponentChangelessContext } from '../context';
 
 export function useSchemaComponentContext() {
   return useContext(SchemaComponentContext);
+}
+
+export function useSchemaComponentChangelessContext() {
+  return useContext(SchemaComponentChangelessContext);
 }

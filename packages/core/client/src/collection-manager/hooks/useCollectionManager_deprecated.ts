@@ -1,7 +1,7 @@
 import { CascaderProps } from 'antd';
 import _ from 'lodash';
 import { useCallback, useMemo, useState } from 'react';
-import { useCompile, useSchemaComponentContext } from '../../schema-component';
+import { useCompile, useSchemaComponentChangelessContext } from '../../schema-component';
 import { CollectionFieldOptions_deprecated, CollectionOptions } from '../types';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
@@ -19,7 +19,7 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
   const cm = useCollectionManager();
   const dataSourceNameValue = dataSourceName || dataSource?.key || undefined;
   const [random, setRandom] = useState(uid());
-  const { refresh } = useSchemaComponentContext();
+  const { refresh } = useSchemaComponentChangelessContext();
   const interfaces = useMemo(
     () =>
       dm?.collectionFieldInterfaceManager?.getFieldInterfaces().reduce((acc, cur) => {

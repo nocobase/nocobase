@@ -3,7 +3,7 @@ import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponentContext } from '../context';
+import { SchemaComponentContextProvider } from '../context';
 import { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
@@ -60,12 +60,15 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   const reset = useCallback(() => {
     setFormId(uid());
   }, []);
-  const setDesignable = useCallback((value) => {
-    if (typeof designable !== 'boolean') {
-      setActive(value);
-    }
-    onDesignableChange?.(value);
-  }, [designable, onDesignableChange]);
+  const setDesignable = useCallback(
+    (value) => {
+      if (typeof designable !== 'boolean') {
+        setActive(value);
+      }
+      onDesignableChange?.(value);
+    },
+    [designable, onDesignableChange],
+  );
 
   const contextValue = useMemo(() => {
     return {
@@ -78,16 +81,16 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
     };
 
     // uidValue 虽然没用到，但是这里必须加上，为了让整个页面能够渲染
-  }, [uidValue, scope, components, reset, refresh, designable, active, setDesignable])
+  }, [uidValue, scope, components, reset, refresh, designable, active, setDesignable]);
 
   return (
-    <SchemaComponentContext.Provider value={contextValue}>
+    <SchemaComponentContextProvider value={contextValue}>
       <FormProvider form={form}>
         <SchemaComponentOptions inherit scope={scope} components={components}>
           {children}
         </SchemaComponentOptions>
       </FormProvider>
-    </SchemaComponentContext.Provider>
+    </SchemaComponentContextProvider>
   );
 };
 SchemaComponentProvider.displayName = 'SchemaComponentProvider';

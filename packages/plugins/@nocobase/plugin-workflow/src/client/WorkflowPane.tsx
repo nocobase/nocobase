@@ -1,4 +1,10 @@
-import { SchemaComponent, SchemaComponentContext, usePlugin, useRecord } from '@nocobase/client';
+import {
+  SchemaComponent,
+  SchemaComponentContext,
+  SchemaComponentContextProvider,
+  usePlugin,
+  useRecord,
+} from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext, useEffect } from 'react';
 import { ExecutionLink } from './ExecutionLink';
@@ -52,7 +58,7 @@ export function WorkflowPane() {
   const { getTriggersOptions } = usePlugin(WorkflowPlugin);
   return (
     <Card bordered={false}>
-      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+      <SchemaComponentContextProvider value={{ ...ctx, designable: false }}>
         <SchemaComponent
           schema={workflowSchema}
           components={{
@@ -68,7 +74,7 @@ export function WorkflowPane() {
             getTriggersOptions,
           }}
         />
-      </SchemaComponentContext.Provider>
+      </SchemaComponentContextProvider>
     </Card>
   );
 }

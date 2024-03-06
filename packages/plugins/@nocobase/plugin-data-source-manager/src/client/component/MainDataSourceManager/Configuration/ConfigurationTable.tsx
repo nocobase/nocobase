@@ -19,6 +19,7 @@ import {
   CollectionCategroriesContext,
   FieldSummary,
   TemplateSummary,
+  SchemaComponentContextProvider,
 } from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
@@ -166,7 +167,7 @@ export const ConfigurationTable = () => {
 
   const ctx = useContext(SchemaComponentContext);
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+    <SchemaComponentContextProvider value={{ ...ctx, designable: false }}>
       <SchemaComponent
         schema={collectionSchema}
         components={{
@@ -194,6 +195,6 @@ export const ConfigurationTable = () => {
           isPG: database?.dialect === 'postgres',
         }}
       />
-    </SchemaComponentContext.Provider>
+    </SchemaComponentContextProvider>
   );
 };

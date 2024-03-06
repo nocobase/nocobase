@@ -14,6 +14,7 @@ import {
   InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
+  SchemaComponentContextProvider,
   SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemType,
@@ -242,6 +243,10 @@ function AssignedFieldValues() {
     }, 300);
   }
 
+  const refresh = useCallback(() => {
+    setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
+  }, [schema]);
+
   return (
     <>
       <SchemaSettingsItem title={title} onClick={() => setOpen(true)}>
@@ -273,16 +278,14 @@ function AssignedFieldValues() {
                   />
                   <br />
                   {open && schema && (
-                    <SchemaComponentContext.Provider
+                    <SchemaComponentContextProvider
                       value={{
                         ...ctx,
-                        refresh() {
-                          setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
-                        },
+                        refresh,
                       }}
                     >
                       <SchemaComponent schema={schema} components={components} />
-                    </SchemaComponentContext.Provider>
+                    </SchemaComponentContextProvider>
                   )}
                 </FormLayout>
               </FormProvider>
@@ -484,7 +487,7 @@ export function SchemaConfig({ value, onChange }) {
   );
 
   return (
-    <SchemaComponentContext.Provider
+    <SchemaComponentContextProvider
       value={{
         ...ctx,
         designable: !workflow.executed,
@@ -517,7 +520,7 @@ export function SchemaConfig({ value, onChange }) {
           useDetailsBlockProps: useFormBlockContext,
         }}
       />
-    </SchemaComponentContext.Provider>
+    </SchemaComponentContextProvider>
   );
 }
 

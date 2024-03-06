@@ -3,7 +3,7 @@ import { Input, Spin } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAPIClient, useRequest, useSchemaTemplateManager } from '..';
-import { RemoteSchemaComponent, SchemaComponentContext } from '../schema-component';
+import { RemoteSchemaComponent, SchemaComponentContext, SchemaComponentContextProvider } from '../schema-component';
 
 const EditableTitle = (props) => {
   const [title, setTitle] = useState(props.title);
@@ -86,9 +86,9 @@ export const BlockTemplateDetails = () => {
         title={<EditableTitle filterByTk={key} title={data?.data?.name} />}
       />
       <div style={{ margin: 'var(--nb-spacing)' }}>
-        <SchemaComponentContext.Provider value={{ ...value, designable: true }}>
+        <SchemaComponentContextProvider value={{ ...value, designable: true }}>
           <RemoteSchemaComponent uid={data?.data?.uid} />
-        </SchemaComponentContext.Provider>
+        </SchemaComponentContextProvider>
       </div>
     </div>
   );

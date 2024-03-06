@@ -1,9 +1,9 @@
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-import { css, useCompile, usePlugin } from '@nocobase/client';
+import { SchemaComponentContextProvider, css, useCompile, usePlugin } from '@nocobase/client';
 
 import {
   SchemaComponent,
@@ -580,8 +580,12 @@ function Drawer() {
   const ctx = useContext(SchemaComponentContext);
   const { id, node, workflow, status } = useRecord();
 
+  const contextValue = useMemo(() => {
+    return { ...ctx, reset() {}, designable: false };
+  }, [ctx]);
+
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>
+    <SchemaComponentContextProvider value={contextValue}>
       <SchemaComponent
         components={{
           FooterStatus,
@@ -613,7 +617,7 @@ function Drawer() {
           },
         }}
       />
-    </SchemaComponentContext.Provider>
+    </SchemaComponentContextProvider>
   );
 }
 

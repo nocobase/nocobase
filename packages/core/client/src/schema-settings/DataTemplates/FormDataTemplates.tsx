@@ -7,7 +7,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { mergeFilter } from '../../filter-provider/utils';
-import { SchemaComponent, SchemaComponentContext, removeNullCondition } from '../../schema-component';
+import { SchemaComponent, SchemaComponentContextProvider, removeNullCondition } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { VariableInput } from '../VariableInput';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
@@ -259,9 +259,9 @@ export const FormDataTemplates = observer(
     );
 
     return (
-      <SchemaComponentContext.Provider value={{ ...designerCtx, designable: true }}>
+      <SchemaComponentContextProvider value={{ ...designerCtx, designable: true }}>
         <SchemaComponent components={components} scope={scope} schema={schema} />
-      </SchemaComponentContext.Provider>
+      </SchemaComponentContextProvider>
     );
   },
   { displayName: 'FormDataTemplates' },

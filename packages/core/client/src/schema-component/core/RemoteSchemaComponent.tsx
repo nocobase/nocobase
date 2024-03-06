@@ -3,7 +3,7 @@ import { Schema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useRequest } from '../../api-client';
-import { useSchemaComponentContext } from '../hooks';
+import { useSchemaComponentChangelessContext } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
 
@@ -32,7 +32,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     onSuccess,
     schemaTransform = defaultTransform,
   } = props;
-  const { reset } = useSchemaComponentContext();
+  const { reset } = useSchemaComponentChangelessContext();
   const conf = {
     url: `/uiSchemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
   };

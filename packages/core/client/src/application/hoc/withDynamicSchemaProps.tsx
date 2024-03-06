@@ -1,6 +1,6 @@
 import { merge, omit } from 'lodash';
 import React, { ComponentType, useMemo } from 'react';
-import { useDesignable, useSchemaComponentContext } from '../../schema-component';
+import { useDesignable, useSchemaComponentChangelessContext } from '../../schema-component';
 
 const useDefaultSchemaProps = () => undefined;
 
@@ -12,7 +12,7 @@ export function withDynamicSchemaProps<T = any>(Component: ComponentType<T>, opt
   const displayName = options.displayName || Component.displayName || Component.name;
   const ComponentWithProps: ComponentType<T> = (props) => {
     const { dn, findComponent } = useDesignable();
-    const { scope } = useSchemaComponentContext();
+    const { scope } = useSchemaComponentChangelessContext();
     const useComponentPropsStr = useMemo(() => {
       const xComponent = dn.getSchemaAttribute('x-component');
       const xDecorator = dn.getSchemaAttribute('x-decorator');
