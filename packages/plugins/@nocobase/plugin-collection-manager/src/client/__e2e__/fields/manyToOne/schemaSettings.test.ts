@@ -7,6 +7,7 @@ import {
   test,
 } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern } from '../../utils';
+import { T3377 } from './templatesOfBug';
 
 test.describe('form item & create form', () => {
   test('supported options', async ({ page, mockPage, mockRecords }) => {
@@ -659,5 +660,30 @@ test.describe('table column & table', () => {
     await expect(
       page.getByRole('cell', { name: record.manyToOne.id, exact: true }).filter({ has: page.locator('.ant-tag') }),
     ).toBeVisible();
+  });
+});
+
+test.describe('table column & sub-table', () => {
+  // https://nocobase.height.app/T-3377
+  test('title field', async ({ page, mockPage }) => {
+    await mockPage(T3377).goto();
+
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+
+    // 下拉列表中应该有值
+    await expect(page.getByRole('option', { name: 'admin', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'member', exact: true })).toBeVisible();
+
+    // 1. 切换 title field
+    await page.getByRole('button', { name: 'Roles', exact: true }).hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users').hover();
+    await page.getByRole('menuitem', { name: 'Title field Role UID' }).click();
+    await page.getByRole('option', { name: 'Role name' }).click();
+
+    // 2. 下拉列表的值会改变
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: 'Admin', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Member', exact: true })).toBeVisible();
   });
 });

@@ -142,6 +142,7 @@ export const CalendarFormActionInitializers_deprecated = new CompatibleSchemaIni
                 redirecting: false,
                 successMessage: generateNTemplate('Updated successfully'),
               },
+              triggerWorkflows: [],
             },
             'x-component-props': {
               useProps: '{{ useCustomizeUpdateActionProps }}',

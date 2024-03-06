@@ -11,6 +11,7 @@ export const SignupPageContext = createContext<{
     }>;
   };
 }>({});
+SignupPageContext.displayName = 'SignupPageContext';
 
 export const SignupPageProvider: React.FC<{
   authType: string;

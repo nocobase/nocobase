@@ -506,6 +506,7 @@ export const useCustomizeUpdateActionProps = () => {
         assignedValues: originalAssignedValues = {},
         onSuccess,
         skipValidator,
+        triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
 
       const assignedValues = {};
@@ -536,6 +537,10 @@ export const useCustomizeUpdateActionProps = () => {
       await resource.update({
         filterByTk,
         values: { ...assignedValues },
+        // TODO(refactor): should change to inject by plugin
+        triggerWorkflows: triggerWorkflows?.length
+          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined,
       });
       service?.refresh?.();
       if (!(resource instanceof TableFieldResource)) {
@@ -901,10 +906,16 @@ export const useDestroyActionProps = () => {
   const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const data = useParamsFromRecord();
+  const actionSchema = useFieldSchema();
   return {
     async onClick() {
+      const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
       await resource.destroy({
         filterByTk,
+        // TODO(refactor): should change to inject by plugin
+        triggerWorkflows: triggerWorkflows?.length
+          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined,
         ...data,
       });
 

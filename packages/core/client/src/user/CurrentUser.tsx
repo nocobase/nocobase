@@ -162,6 +162,8 @@ export const SettingsMenu: React.FC<{
 };
 
 export const DropdownVisibleContext = createContext(null);
+DropdownVisibleContext.displayName = 'DropdownVisibleContext';
+
 export const CurrentUser = () => {
   const [visible, setVisible] = useState(false);
   const { token } = useToken();

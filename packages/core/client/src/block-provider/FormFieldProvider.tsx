@@ -10,6 +10,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
 export const FormFieldContext = createContext<any>({});
+FormFieldContext.displayName = 'FormFieldContext';
 
 const InternalFormFieldProvider = (props) => {
   const { action, readPretty, fieldName } = props;
@@ -75,6 +76,7 @@ const InternalFormFieldProvider = (props) => {
 };
 
 export const WithoutFormFieldResource = createContext(null);
+WithoutFormFieldResource.displayName = 'WithoutFormFieldResource';
 
 export const FormFieldProvider = (props) => {
   return (

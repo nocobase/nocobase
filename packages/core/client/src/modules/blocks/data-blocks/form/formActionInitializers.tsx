@@ -1,11 +1,4 @@
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { SchemaInitializerItemType } from '../../../../application/schema-initializer/types';
-
-export const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
-  name: 'submitToWorkflow',
-  title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-  Component: 'FormTriggerWorkflowActionInitializerV2',
-};
 
 /**
  * @deprecated
@@ -45,7 +38,6 @@ export const formActionInitializers_deprecated = new CompatibleSchemaInitializer
           title: '{{t("Save record")}}',
           Component: 'SaveRecordActionInitializer',
         },
-        formTriggerWorkflowActionInitializerV2,
         {
           name: 'customRequest',
           title: '{{t("Custom request")}}',
@@ -91,7 +83,6 @@ export const formActionInitializers = new CompatibleSchemaInitializer(
             title: '{{t("Save record")}}',
             Component: 'SaveRecordActionInitializer',
           },
-          formTriggerWorkflowActionInitializerV2,
           {
             name: 'customRequest',
             title: '{{t("Custom request")}}',

@@ -1,5 +1,4 @@
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { formTriggerWorkflowActionInitializerV2 } from './formActionInitializers';
 
 /**
  * @deprecated
@@ -48,7 +47,6 @@ export const updateFormActionInitializers_deprecated = new CompatibleSchemaIniti
           title: '{{t("Save record")}}',
           Component: 'SaveRecordActionInitializer',
         },
-        formTriggerWorkflowActionInitializerV2,
         {
           type: 'item',
           name: 'customRequest',
@@ -105,7 +103,6 @@ export const updateFormActionInitializers = new CompatibleSchemaInitializer(
             title: '{{t("Save record")}}',
             Component: 'SaveRecordActionInitializer',
           },
-          formTriggerWorkflowActionInitializerV2,
           {
             type: 'item',
             name: 'customRequest',

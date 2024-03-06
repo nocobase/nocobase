@@ -40,6 +40,16 @@ export const detailsActionInitializers_deprecated = new CompatibleSchemaInitiali
         },
       ],
     },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      type: 'subMenu',
+      name: 'customize',
+      title: '{{t("Customize")}}',
+      children: [],
+    },
   ],
 });
 

@@ -3,6 +3,7 @@ import React, { createContext, useContext } from 'react';
 import { useRequest } from '../api-client';
 
 export const AsyncDataContext = createContext<Result<any, any> & { state?: any; setState?: any }>(null);
+AsyncDataContext.displayName = 'AsyncDataContext';
 
 export interface AsyncDataProviderProps {
   value?: any;
