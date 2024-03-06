@@ -182,7 +182,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByRole('button', { name: 'Submit to workflow' }).hover();
     await page
       .getByRole('button', {
-        name: `designer-schema-settings-Action-actionSettings:submitToWorkflow-${triggerNodeCollectionName}`,
+        name: `designer-schema-settings-Action-Action.Designer-${triggerNodeCollectionName}`,
       })
       .hover();
     await page.getByRole('menuitem', { name: 'Bind workflows' }).click();
