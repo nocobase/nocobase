@@ -34,7 +34,7 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     await page.getByRole('button', { name: 'singleLineText (Duplicate)' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:createForm-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').hover();
     //配置表单区块
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);

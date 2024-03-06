@@ -680,7 +680,7 @@ test.describe('actions schema settings', () => {
       await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).click();
       await page.getByRole('button', { name: 'Add new' }).click();
-      await page.getByLabel('schema-initializer-Grid-blockInitializers:createForm-treeCollection').hover();
+      await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
       await page.mouse.move(300, 0);
       await page.getByLabel('schema-initializer-ActionBar-actionInitializers:createForm-treeCollection').hover();

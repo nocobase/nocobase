@@ -40,7 +40,7 @@ export const CreateChildInitializer = (props) => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'blockInitializers:createForm',
+                    'x-initializer': 'popup:addNew:addBlock',
                     properties: {},
                   },
                 },

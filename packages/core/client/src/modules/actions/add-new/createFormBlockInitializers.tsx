@@ -39,7 +39,7 @@ export const createFormBlockInitializers_deprecated = new CompatibleSchemaInitia
 
 export const createFormBlockInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:createForm',
+    name: 'popup:addNew:addBlock',
     wrap: gridRowColWrap,
     title: '{{t("Add block")}}',
     icon: 'PlusOutlined',

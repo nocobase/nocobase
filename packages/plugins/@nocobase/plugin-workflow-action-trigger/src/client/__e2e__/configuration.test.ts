@@ -71,7 +71,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
     await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
-    await page.getByLabel(`schema-initializer-Grid-blockInitializers:createForm-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-popup:addNew:addBlock-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -164,7 +164,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
 
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
-    await page.getByLabel(`schema-initializer-Grid-blockInitializers:createForm-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-popup:addNew:addBlock-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
 
     // 移开鼠标，关闭菜单

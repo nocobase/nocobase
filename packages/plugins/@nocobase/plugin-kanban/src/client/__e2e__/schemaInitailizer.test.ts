@@ -93,7 +93,7 @@ test.describe('configure actions', () => {
     await expect(page.getByLabel('action-Action-Add ')).toBeVisible();
     //添加数据
     await page.getByLabel('action-Action-Add new-create-general-kanban').click();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:createForm-general').click();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').click();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').click();

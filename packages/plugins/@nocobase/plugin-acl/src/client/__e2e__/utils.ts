@@ -116,7 +116,7 @@ export const oneTableBlock: PageConfig = {
                                             type: 'void',
                                             version: '2.0',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'blockInitializers:createForm',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             _isJSONSchemaObject: true,
                                             properties: {
                                               f3q7xmyiyl4: {

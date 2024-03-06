@@ -23,7 +23,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test123')).toBeVisible();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:createForm-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').hover();
     await page.getByText('Form').click();
     await page.getByText('Markdown').click();
 

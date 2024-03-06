@@ -980,7 +980,7 @@ test.describe('creation form block schema settings', () => {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'blockInitializers:createForm',
+                                                'x-initializer': 'popup:addNew:addBlock',
                                                 'x-uid': 'w224zhqyair',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -1171,12 +1171,12 @@ test.describe('creation form block schema settings', () => {
 
     //在新建操作中使用引用模板
     await page.getByLabel('action-Action-Add new-create-users-table').click();
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:createForm-users').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:createForm-users').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
     await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
 
