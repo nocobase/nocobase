@@ -48,12 +48,12 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test7')).toBeVisible();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:customizeCreateForm-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addRecord:addBlock-general').hover();
     await page.getByText('Form').hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
 
     // add Markdown
-    await page.getByLabel('schema-initializer-Grid-blockInitializers:customizeCreateForm-general').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addRecord:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
 
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();

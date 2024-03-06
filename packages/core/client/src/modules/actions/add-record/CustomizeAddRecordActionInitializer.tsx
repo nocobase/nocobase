@@ -29,7 +29,7 @@ export const CustomizeAddRecordActionInitializer = () => {
             'x-component-props': {},
             'x-initializer': 'TabPaneInitializersForCreateFormBlock',
             'x-initializer-props': {
-              gridInitializer: 'blockInitializers:customizeCreateForm',
+              gridInitializer: 'popup:addRecord:addBlock',
             },
             properties: {
               tab1: {
@@ -42,7 +42,7 @@ export const CustomizeAddRecordActionInitializer = () => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'blockInitializers:customizeCreateForm',
+                    'x-initializer': 'popup:addRecord:addBlock',
                     properties: {},
                   },
                 },
