@@ -2,6 +2,7 @@ import { useAPIClient, useApp, useCompile, useCollectionRecord, useRequest } fro
 import { Checkbox, message, Table } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { flatMap } from 'lodash';
 import { useStyles } from './style';
 import { RolesManagerContext } from '../RolesManagerProvider';
 import lodash from 'lodash';
@@ -38,6 +39,15 @@ export const PluginPermissions: React.FC<{
   const settings = app.pluginSettingsManager.getList(false);
   const allAclSnippets = app.pluginSettingsManager.getAclSnippets();
   const [snippets, setSnippets] = useState<string[]>([]);
+  const flatPlugins = useMemo(() => {
+    return flatMap(settings, (item) => {
+      if (item.children) {
+        return [item, ...item.children];
+      } else {
+        return item;
+      }
+    });
+  }, [settings]);
   const allChecked = useMemo(
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
     [snippets],
@@ -59,7 +69,7 @@ export const PluginPermissions: React.FC<{
       onSuccess(data) {
         setSnippets(
           data?.data.filter((v) => {
-            return settings.find((k) => `!${k.aclSnippet}` === v || !v.startsWith('!pm.'));
+            return flatPlugins.find((k) => v.includes(`!${k.aclSnippet}`) || !v.startsWith('!pm.'));
           }) || [],
         );
       },
