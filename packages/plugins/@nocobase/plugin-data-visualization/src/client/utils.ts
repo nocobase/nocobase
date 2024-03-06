@@ -1,9 +1,9 @@
 import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
+import lodash from 'lodash';
 import { SelectedField } from './configure';
 import { FieldOption } from './hooks';
 import { QueryProps } from './renderer';
-import lodash from 'lodash';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
   const { collection } = decoratorProps;
@@ -17,7 +17,7 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-component-props': {
       size: 'small',
     },
-    'x-initializer': 'blockInitializers:chart',
+    'x-initializer': 'charts:addBlock',
     properties: {
       [uid()]: {
         type: 'void',

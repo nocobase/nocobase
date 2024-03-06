@@ -76,7 +76,7 @@ export const BulkEditBlockInitializers_deprecated = new CompatibleSchemaInitiali
 
 export const bulkEditBlockInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:bulkEdit',
+    name: 'popup:bulkEdit:addBlock',
     wrap: gridRowColWrap,
     title: '{{t("Add block")}}',
     icon: 'PlusOutlined',

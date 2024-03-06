@@ -76,7 +76,7 @@ export const chartInitializers_deprecated = new CompatibleSchemaInitializer({
 
 export const chartInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:chart',
+    name: 'charts:addBlock',
     icon: 'PlusOutlined',
     title: '{{t("Add block")}}',
     items: [
@@ -122,7 +122,7 @@ export const ChartV2BlockInitializer: React.FC = () => {
               type: 'void',
               'x-component': 'Grid',
               'x-decorator': 'ChartV2Block',
-              'x-initializer': 'blockInitializers:chart',
+              'x-initializer': 'charts:addBlock',
             },
           },
         });

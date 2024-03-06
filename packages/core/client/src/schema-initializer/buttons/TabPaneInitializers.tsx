@@ -20,7 +20,7 @@ export const TabPaneInitializers = (props?: any) => {
       if (isCreate || !record) {
         initializer = 'popup:addNew:addBlock';
       } else if (isBulkEdit) {
-        initializer = 'blockInitializers:bulkEdit';
+        initializer = 'popup:bulkEdit:addBlock';
       }
     }
     return {
