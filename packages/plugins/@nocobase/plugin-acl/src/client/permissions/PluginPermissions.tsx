@@ -42,6 +42,7 @@ export const PluginPermissions: React.FC<{
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
     [snippets],
   );
+
   const { t } = useTranslation();
   const { loading, refresh } = useRequest(
     {
@@ -133,7 +134,6 @@ export const PluginPermissions: React.FC<{
           return v.isTopLevel !== false;
         })
         .map((v) => {
-          return v;
           if (v.showTabs !== false) {
             return v;
           }
