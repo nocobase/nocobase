@@ -1,6 +1,7 @@
 import { Model, Transactionable } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { AppOptionsFactory } from '../server';
+import { merge } from '@nocobase/utils';
 
 export interface registerAppOptions extends Transactionable {
   skipInstall?: boolean;
@@ -10,11 +11,12 @@ export interface registerAppOptions extends Transactionable {
 export class ApplicationModel extends Model {
   registerToSupervisor(mainApp: Application, options: registerAppOptions) {
     const appName = this.get('name') as string;
-    const appOptions = (this.get('options') as any) || {};
+    const appModelOptions = (this.get('options') as any) || {};
+
+    const appOptions = options.appOptionsFactory(appName, mainApp);
 
     const subAppOptions = {
-      ...options.appOptionsFactory(appName, mainApp),
-      ...appOptions,
+      ...(merge(appOptions, appModelOptions) as object),
       name: appName,
     };
 
