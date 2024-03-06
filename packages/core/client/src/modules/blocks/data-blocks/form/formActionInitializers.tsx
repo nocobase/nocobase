@@ -29,7 +29,7 @@ export const formActionInitializers_deprecated = new CompatibleSchemaInitializer
       type: 'divider',
     },
     {
-      name: 'custom',
+      name: 'customize',
       type: 'subMenu',
       title: '{{t("Customize")}}',
       children: [
