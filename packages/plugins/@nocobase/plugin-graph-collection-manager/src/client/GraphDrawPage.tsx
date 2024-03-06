@@ -432,13 +432,6 @@ export const GraphDrawPage = React.memo(() => {
   };
 
   const dataSource = useDataSource();
-  useEffect(() => {
-    dataSource.addReloadCallback(reloadCallback);
-
-    return () => {
-      dataSource.removeReloadCallback(reloadCallback);
-    };
-  }, []);
 
   const initGraphCollections = () => {
     targetGraph = new Graph({
@@ -1082,28 +1075,31 @@ export const GraphDrawPage = React.memo(() => {
   }, []);
 
   useEffect(() => {
+    dataSource.addReloadCallback(reloadCallback);
+
+    return () => {
+      dataSource.removeReloadCallback(reloadCallback);
+    };
+  }, []);
+  useEffect(() => {
     setLoading(true);
     refreshPositions()
       .then(async () => {
-        await reloadCallback();
+        if (selectedCollections && collectionList.length) {
+          const selectKeys = selectedCollections?.split(',');
+          const data = collectionList.filter((v) => selectKeys.includes(v.name));
+          renderInitGraphCollection(data, false);
+          handelResetLayout(true);
+          targetGraph.selectedCollections = selectedCollections;
+        } else {
+          !selectedCollections && reloadCallback(true);
+        }
         setLoading(false);
       })
       .catch((err) => {
         setLoading(false);
         throw err;
       });
-  }, []);
-
-  useEffect(() => {
-    if (selectedCollections && collectionList.length) {
-      const selectKeys = selectedCollections?.split(',');
-      const data = collectionList.filter((v) => selectKeys.includes(v.name));
-      renderInitGraphCollection(data, false);
-      handelResetLayout(true);
-      targetGraph.selectedCollections = selectedCollections;
-    } else {
-      !selectedCollections && reloadCallback(true);
-    }
     return () => {
       cleanGraphContainer();
     };
