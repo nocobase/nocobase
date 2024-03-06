@@ -99,7 +99,6 @@ const titleField: any = {
         field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
         const path = field.path?.splice(field.path?.length - 1, 1);
         field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
-          console.log(f, fieldNames);
           f.componentProps.fieldNames = fieldNames;
         });
         dn.emit('patch', {
