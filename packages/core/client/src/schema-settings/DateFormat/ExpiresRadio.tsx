@@ -84,8 +84,10 @@ const InternalExpiresRadio = (props) => {
               );
             }
             return (
-              <Radio value={v.value} key={v.value}>
-                {v.label}
+              <Radio value={v.value} key={v.value} aria-label={v.value}>
+                <span role="button" aria-label={v.value}>
+                  {v.label}
+                </span>
               </Radio>
             );
           })}
