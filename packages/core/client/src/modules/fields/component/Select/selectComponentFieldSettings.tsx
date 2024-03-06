@@ -30,8 +30,6 @@ const enableLink = {
   type: 'switch',
   useVisible() {
     const field = useField();
-    console.log(field);
-    console.log(useFieldSchema());
     return field.readPretty;
   },
   useComponentProps() {
@@ -99,6 +97,11 @@ const titleField: any = {
         fieldSchema['x-component-props']['fieldNames'] = newFieldNames;
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
+        const path = field.path?.splice(field.path?.length - 1, 1);
+        field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+          console.log(f, fieldNames);
+          f.componentProps.fieldNames = fieldNames;
+        });
         dn.emit('patch', {
           schema,
         });
