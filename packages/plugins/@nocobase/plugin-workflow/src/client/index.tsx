@@ -9,7 +9,7 @@ export * from './utils';
 export * from './hooks/useGetAriaLabelOfAddButton';
 export { default as useStyles } from './style';
 export * from './variable';
-export { getCollectionFieldOptions, useWorkflowVariableOptions } from './variable';
+export * from './hooks/useTriggerWorkflowActionProps';
 
 import React from 'react';
 
@@ -30,8 +30,6 @@ import QueryInstruction from './nodes/query';
 import CreateInstruction from './nodes/create';
 import UpdateInstruction from './nodes/update';
 import DestroyInstruction from './nodes/destroy';
-import { useTriggerWorkflowsActionProps } from './hooks/useTriggerWorkflowActionProps';
-import { FormTriggerWorkflowActionInitializerV2 } from './components/FormTriggerWorkflowActionInitializerV2';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 import { NAMESPACE } from './locale';
 import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
@@ -74,7 +72,6 @@ export default class PluginWorkflowClient extends Plugin {
 
   async load() {
     this.addRoutes();
-    this.addScopes();
     this.addComponents();
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -99,17 +96,10 @@ export default class PluginWorkflowClient extends Plugin {
     this.registerInstruction('destroy', DestroyInstruction);
   }
 
-  addScopes() {
-    this.app.addScopes({
-      useTriggerWorkflowsActionProps,
-    });
-  }
-
   addComponents() {
     this.app.addComponents({
       WorkflowPage,
       ExecutionPage,
-      FormTriggerWorkflowActionInitializerV2,
     });
   }
 

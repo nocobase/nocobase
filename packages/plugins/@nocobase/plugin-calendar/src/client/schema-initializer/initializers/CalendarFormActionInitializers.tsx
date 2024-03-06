@@ -139,6 +139,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
                 redirecting: false,
                 successMessage: generateNTemplate('Updated successfully'),
               },
+              triggerWorkflows: [],
             },
             'x-component-props': {
               useProps: '{{ useCustomizeUpdateActionProps }}',

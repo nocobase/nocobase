@@ -19,6 +19,7 @@ export const UpdateRecordActionInitializer = (props) => {
         redirecting: false,
         successMessage: '{{t("Updated successfully")}}',
       },
+      triggerWorkflows: [],
     },
     'x-component-props': {
       useProps: '{{ useCustomizeUpdateActionProps }}',

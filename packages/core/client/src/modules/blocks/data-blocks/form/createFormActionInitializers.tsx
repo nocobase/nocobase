@@ -1,5 +1,4 @@
 import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
-import { formTriggerWorkflowActionInitializerV2 } from './formActionInitializers';
 
 export const createFormActionInitializers = new SchemaInitializer({
   name: 'CreateFormActionInitializers',
@@ -35,7 +34,6 @@ export const createFormActionInitializers = new SchemaInitializer({
           title: '{{t("Save record")}}',
           Component: 'SaveRecordActionInitializer',
         },
-        formTriggerWorkflowActionInitializerV2,
         {
           name: 'customRequest',
           title: '{{t("Custom request")}}',
