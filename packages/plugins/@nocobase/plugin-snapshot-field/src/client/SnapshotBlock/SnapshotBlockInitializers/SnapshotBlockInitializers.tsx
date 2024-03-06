@@ -40,7 +40,7 @@ export const snapshotBlockInitializers_deprecated = new CompatibleSchemaInitiali
 
 export const snapshotBlockInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:snapshot',
+    name: 'popup:snapshot:addBlock',
     wrap: gridRowColWrap,
     title: `{{t("Add block", { ns: "${NAMESPACE}" })}}`,
     icon: 'PlusOutlined',
