@@ -20,10 +20,7 @@ import { CreateSubmitActionInitializer } from '../modules/actions/submit/CreateS
 import { UpdateSubmitActionInitializer } from '../modules/actions/submit/UpdateSubmitActionInitializer';
 import { UpdateRecordActionInitializer } from '../modules/actions/update-record/UpdateRecordActionInitializer';
 import { PopupActionInitializer } from '../modules/actions/view-edit-popup/PopupActionInitializer';
-import {
-  recordFormBlockInitializers,
-  recordFormBlockInitializers_deprecated,
-} from '../modules/actions/view-edit-popup/RecordFormBlockInitializers';
+import { recordFormBlockInitializers_deprecated } from '../modules/actions/view-edit-popup/RecordFormBlockInitializers';
 import { UpdateActionInitializer } from '../modules/actions/view-edit-popup/UpdateActionInitializer';
 import { ViewActionInitializer } from '../modules/actions/view-edit-popup/ViewActionInitializer';
 import {
@@ -118,9 +115,9 @@ import {
   recordBlockInitializers_deprecated,
   subTableActionInitializers,
   subTableActionInitializers_deprecated,
-  tabPaneInitializers_deprecated,
   tabPaneInitializersForBulkEditFormBlock,
   tabPaneInitializersForRecordBlock,
+  tabPaneInitializers_deprecated,
 } from './buttons';
 import * as initializerComponents from './components';
 import * as items from './items';
@@ -225,7 +222,6 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(recordBlockInitializers_deprecated);
     this.app.schemaInitializerManager.add(recordBlockInitializers);
     this.app.schemaInitializerManager.add(recordFormBlockInitializers_deprecated);
-    this.app.schemaInitializerManager.add(recordFormBlockInitializers);
     this.app.schemaInitializerManager.add(subTableActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(subTableActionInitializers);
     this.app.schemaInitializerManager.add(tableSelectorInitializers_deprecated);

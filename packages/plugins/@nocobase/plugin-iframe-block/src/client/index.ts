@@ -25,7 +25,7 @@ export class IframeBlockPlugin extends Plugin {
       Component: 'IframeBlockInitializer',
     });
 
-    const recordFormBlockInitializers = this.app.schemaInitializerManager.get('blockInitializers:recordForm');
+    const recordFormBlockInitializers = this.app.schemaInitializerManager.get('RecordFormBlockInitializers');
     recordFormBlockInitializers?.add('otherBlocks.iframe', {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',
