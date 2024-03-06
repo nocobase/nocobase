@@ -11,6 +11,7 @@ import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
   useCollectionManager,
+  useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
   useFormBlockContext,
@@ -180,6 +181,8 @@ export function useCollectValuesToSubmit() {
 }
 
 export const useCreateActionProps = () => {
+  const filterByTk = useFilterByTk();
+  const record = useCollectionRecord();
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
@@ -191,7 +194,7 @@ export const useCreateActionProps = () => {
   const { t } = useTranslation();
   const { updateAssociationValues } = useFormBlockContext();
   const collectValues = useCollectValuesToSubmit();
-  const action = actionField.componentProps.saveMode || 'create';
+  const action = record.isNew ? 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
@@ -207,6 +210,7 @@ export const useCreateActionProps = () => {
         const data = await resource[action]({
           values,
           filterKeys: filterKeys,
+          filterByTk,
           // TODO(refactor): should change to inject by plugin
           triggerWorkflows: triggerWorkflows?.length
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')

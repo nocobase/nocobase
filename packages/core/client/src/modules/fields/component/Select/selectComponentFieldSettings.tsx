@@ -5,7 +5,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
+import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useRecord } from '../../../../record-provider';
 import { removeNullCondition, useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
@@ -16,14 +17,13 @@ import {
   useIsSelectFieldMode,
   useTitleFieldOptions,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { VariableInput, getShouldChange } from '../../../../schema-settings';
-import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { VariableInput, getShouldChange } from '../../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
+import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useCollectionField } from '../utils';
-import { useFieldComponentName } from '../../../../common/useFieldComponentName';
-import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
-import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 
 const enableLink = {
   name: 'enableLink',
@@ -77,10 +77,11 @@ const titleField: any = {
     const fieldSchema = tableColumnSchema || schema;
     const targetCollectionField = useCollectionField();
     const collectionField = tableColumnField || targetCollectionField;
-    const fieldNames =
-      field?.componentProps?.fieldNames ||
-      fieldSchema?.['x-component-props']?.['fieldNames'] ||
-      uiSchema?.['x-component-props']?.['fieldNames'];
+    const fieldNames = {
+      ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+      ...field?.componentProps?.fieldNames,
+      ...fieldSchema?.['x-component-props']?.['fieldNames'],
+    };
     return {
       title: t('Title field'),
       options,
@@ -89,13 +90,13 @@ const titleField: any = {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
-        const fieldNames = {
+        const newFieldNames = {
           ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-          ...field.componentProps.fieldNames,
+          ...fieldSchema['x-component-props']?.['fieldNames'],
           label,
         };
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+        fieldSchema['x-component-props']['fieldNames'] = newFieldNames;
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
         dn.emit('patch', {

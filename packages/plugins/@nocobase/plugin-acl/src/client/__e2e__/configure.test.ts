@@ -70,7 +70,7 @@ test('allows to confgiure plugins ', async ({ page, mockPage, mockRole, updateRo
     .locator('span')
     .nth(1)
     .click();
-  await expect(page.getByRole('tab').getByText('Plugin settings permissions')).toBeVisible();
+  await expect(page.getByRole('tab').getByText('Plugin settings')).toBeVisible();
   await updateRole({
     name: roleData.name,
     snippets: ['!pm.*'],

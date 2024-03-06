@@ -27,7 +27,6 @@ export default class StaticScheduleTrigger {
 
   inspect(workflows) {
     const now = new Date();
-    now.setMilliseconds(0);
 
     workflows.forEach((workflow) => {
       const nextTime = this.getNextTime(workflow, now);
@@ -65,7 +64,8 @@ export default class StaticScheduleTrigger {
         const next = interval.next();
         return next.getTime();
       } else if (typeof config.repeat === 'number') {
-        return timestamp + ((timestamp - startTime) % config.repeat);
+        const next = timestamp + config.repeat - ((timestamp - startTime) % config.repeat);
+        return next;
       } else {
         return null;
       }
