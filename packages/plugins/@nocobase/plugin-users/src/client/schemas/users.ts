@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { useActionContext, useCollectionRecord, useRecord, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
+import { uid } from '@formily/shared';
 
 export const userCollection = {
   name: 'users',
@@ -475,7 +476,7 @@ export const usersSchema: ISchema = {
   },
 };
 
-export const roleUsersSchema: ISchema = {
+export const getRoleUsersSchema = (): ISchema => ({
   type: 'void',
   properties: {
     actions: {
@@ -487,7 +488,7 @@ export const roleUsersSchema: ISchema = {
         },
       },
       properties: {
-        filter: {
+        [uid()]: {
           type: 'void',
           title: '{{ t("Filter") }}',
           'x-action': 'filter',
@@ -724,4 +725,4 @@ export const roleUsersSchema: ISchema = {
       },
     },
   },
-};
+});
