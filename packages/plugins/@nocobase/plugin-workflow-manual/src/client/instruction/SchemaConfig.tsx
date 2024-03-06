@@ -192,7 +192,7 @@ export const addBlockButton_deprecated = new CompatibleSchemaInitializer({
 
 export const addBlockButton = new CompatibleSchemaInitializer(
   {
-    name: 'blockInitializers:workflowManual',
+    name: 'popup:workflowManual:configureUserInterface:addBlock',
     wrap: gridRowColWrap,
     title: '{{t("Add block")}}',
     items: [
@@ -550,7 +550,7 @@ export function SchemaConfig({ value, onChange }) {
                 'x-component-props': {},
                 'x-initializer': 'TabPaneInitializers',
                 'x-initializer-props': {
-                  gridInitializer: 'blockInitializers:workflowManual',
+                  gridInitializer: 'popup:workflowManual:configureUserInterface:addBlock',
                 },
                 properties: value ?? {
                   tab1: {
@@ -562,7 +562,7 @@ export function SchemaConfig({ value, onChange }) {
                       grid: {
                         type: 'void',
                         'x-component': 'Grid',
-                        'x-initializer': 'blockInitializers:workflowManual',
+                        'x-initializer': 'popup:workflowManual:configureUserInterface:addBlock',
                         properties: {},
                       },
                     },
