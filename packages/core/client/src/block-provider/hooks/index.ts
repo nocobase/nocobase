@@ -10,7 +10,6 @@ import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
-  useCollectionManager,
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
@@ -194,7 +193,7 @@ export const useCreateActionProps = () => {
   const { t } = useTranslation();
   const { updateAssociationValues } = useFormBlockContext();
   const collectValues = useCollectValuesToSubmit();
-  const action = record.isNew ? 'create' : 'update';
+  const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
