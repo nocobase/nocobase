@@ -5,9 +5,15 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
+  push:
     branches:
-      - '**'
+      - 'main'
+    paths:
+      - 'packages/**'
+      - 'docker/nocobase/**'
+      - 'Dockerfile'
+      - '.github/workflows/build-pro-image.yml'
+
 jobs:
   build-and-push:
     if: github.event.pull_request.head.repo.fork != true

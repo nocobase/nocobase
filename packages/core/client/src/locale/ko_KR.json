@@ -835,7 +835,7 @@
   "Please use a valid SELECT or WITH AS statement": "유효한 SELECT 또는 WITH AS 문을 사용하세요",
   "Please confirm the SQL statement first": "먼저 SQL 문을 확인하세요",
   "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "컬렉션에 의존하는 객체(예: 뷰)와 이러한 객체에 의존하는 모든 객체를 자동으로 삭제합니다",
-  "Second confirmation": "두 번째 확인",
+  "Secondary confirmation": "두 번째 확인",
   "Perform the {{title}}": "{{title}} 실행",
   "Are you sure you want to perform the {{title}} action?": "{{title}} 작업을 실행하시겠습니까?",
   "Sign in with another account": "다른 계정으로 로그인",
