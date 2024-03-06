@@ -3,6 +3,7 @@ import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 
 const MenuItemsContext = createContext(null);
+MenuItemsContext.displayName = 'MenuItemsContext';
 
 export const toItems = (properties = {}) => {
   const items = [];

@@ -222,6 +222,7 @@ function optimizeEdge(edge) {
 }
 
 export const CollapsedContext = createContext<any>({});
+CollapsedContext.displayName = 'CollapsedContext';
 const formatNodeData = () => {
   const layoutNodes = [];
   const edges = targetGraph.getEdges();

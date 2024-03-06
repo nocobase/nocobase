@@ -7,6 +7,7 @@ export const ChartQueryMetadataContext = createContext({
   refresh: () => {},
   data: [] as any[],
 });
+ChartQueryMetadataContext.displayName = 'ChartQueryMetadataContext';
 
 export const ChartQueryMetadataProvider: React.FC = (props) => {
   const api = useAPIClient();

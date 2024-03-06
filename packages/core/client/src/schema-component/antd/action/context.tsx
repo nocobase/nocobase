@@ -6,6 +6,7 @@ import { useActionContext } from './hooks';
 export const ActionContext = createContext<ActionContextProps & { formValueChanged?: React.MutableRefObject<boolean> }>(
   {},
 );
+ActionContext.displayName = 'ActionContext';
 
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
   const contextProps = useActionContext();

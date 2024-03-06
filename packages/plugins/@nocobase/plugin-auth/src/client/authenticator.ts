@@ -12,6 +12,7 @@ export type Authenticator = {
 };
 
 export const AuthenticatorsContext = createContext<Authenticator[]>([]);
+AuthenticatorsContext.displayName = 'AuthenticatorsContext';
 
 export const useAuthenticator = (name: string) => {
   const authenticators = useContext(AuthenticatorsContext);

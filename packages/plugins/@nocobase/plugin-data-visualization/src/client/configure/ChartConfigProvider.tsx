@@ -24,6 +24,7 @@ export const ChartConfigContext = createContext<{
 }>({
   visible: true,
 });
+ChartConfigContext.displayName = 'ChartConfigContext';
 
 export const ChartConfigProvider: React.FC = (props) => {
   const { insertAdjacent } = useDesignable();
