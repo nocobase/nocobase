@@ -5,7 +5,7 @@ test.describe('where creation form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await createBlockInPage(page, 'Form');
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
   });
@@ -16,7 +16,7 @@ test.describe('configure fields', () => {
     await mockPage(oneEmptyForm).goto();
 
     // collection fields
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
 
@@ -32,7 +32,7 @@ test.describe('configure fields', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne.nickname')).toBeVisible();
 
     // delete fields
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
 
@@ -49,7 +49,7 @@ test.describe('configure fields', () => {
     ).not.toBeVisible();
 
     // add text
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
     await page.getByRole('menuitem', { name: 'Text' }).click();
     await expect(page.getByLabel('block-item-Markdown.Void-general-form')).toBeVisible();
   });
@@ -61,7 +61,7 @@ test.describe('configure actions', () => {
   test('submit', async ({ page, mockPage }) => {
     await mockPage(oneEmptyForm).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:form-general').hover();
 
     // add button
     await page.getByRole('menuitem', { name: 'Submit' }).click();
@@ -71,7 +71,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
 
     // delete button
-    await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:form-general').hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await expect(page.getByRole('menuitem', { name: 'Submit' }).getByRole('switch')).not.toBeChecked();
 
@@ -104,7 +104,7 @@ test.describe('configure actions', () => {
   test('customize: save record', async ({ page, mockPage }) => {
     await mockPage(oneEmptyForm).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:form-general').hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Save record' }).click();
 

@@ -282,7 +282,7 @@ test.describe('association fields', () => {
     await expect(page.getByLabel('Member')).toBeHidden();
     await expect(page.getByLabel('Root')).toBeVisible();
 
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
+    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-users').hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
 
     await page.mouse.move(200, 0);

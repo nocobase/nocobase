@@ -112,7 +112,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -120,7 +120,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -144,7 +144,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -264,7 +264,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -272,7 +272,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -296,7 +296,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -416,7 +416,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -424,7 +424,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -448,7 +448,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -568,7 +568,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -576,7 +576,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -600,7 +600,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -720,7 +720,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -728,7 +728,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -752,7 +752,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -872,7 +872,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -880,7 +880,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -904,7 +904,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -1040,7 +1040,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1048,7 +1048,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1072,7 +1072,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -1208,7 +1208,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1216,7 +1216,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1240,7 +1240,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -1376,7 +1376,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1384,7 +1384,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1408,7 +1408,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -1545,7 +1545,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1553,7 +1553,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1577,7 +1577,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -1722,7 +1722,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1730,7 +1730,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1754,7 +1754,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -1890,7 +1890,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1898,7 +1898,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1922,7 +1922,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
@@ -2064,7 +2064,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -2072,7 +2072,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-FormItemInitializers-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -2096,7 +2096,7 @@ test.describe('field data update', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);

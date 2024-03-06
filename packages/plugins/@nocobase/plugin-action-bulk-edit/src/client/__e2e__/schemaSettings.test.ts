@@ -15,10 +15,10 @@ test.describe('bulk edit action setting', () => {
     await page.getByRole('option', { name: 'All' }).click();
     //配置更新规则
     await page.getByLabel('Bulk edit').click();
-    await page.getByLabel('schema-initializer-Grid-BulkEditBlockInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:bulkEdit-general').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-BulkEditFormItemInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-fieldInitializers:bulkEditFormItem-general').hover();
     await page.getByRole('menuitem', { name: 'Single line text' }).click();
     await page.getByRole('menuitem', { name: 'Start date time' }).click();
     await page.getByRole('menuitem', { name: 'Percent' }).click();
@@ -30,7 +30,7 @@ test.describe('bulk edit action setting', () => {
     await page.getByRole('option', { name: 'Changed to' }).locator('div').click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('0');
-    await page.getByLabel('schema-initializer-ActionBar-BulkEditFormActionInitializers-general').click();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:blkEditForm-general').click();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     //更新提交的数据符合预期
     const [request] = await Promise.all([

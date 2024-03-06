@@ -2,7 +2,7 @@ import { expect, oneEmptyTableBlockBasedOnUsers, test } from '@nocobase/test/e2e
 
 test('actions', async ({ page, mockPage }) => {
   await mockPage(oneEmptyTableBlockBasedOnUsers).goto();
-  await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
+  await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-users').hover();
   //添加按钮
   await page.getByRole('menuitem', { name: 'Add new' }).click();
   await page.getByRole('menuitem', { name: 'Delete' }).click();

@@ -6,7 +6,7 @@ export async function showSettingsMenu(page: Page, fieldName: string) {
 }
 
 export async function createColumnItem(page: Page, fieldName: string) {
-  await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+  await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
   await page.getByRole('menuitem', { name: fieldName, exact: true }).click();
   await page.mouse.move(300, 0);
 }

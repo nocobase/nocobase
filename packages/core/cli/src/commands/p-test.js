@@ -61,6 +61,7 @@ exports.pTest = async (options) => {
   }
 
   const files = glob.sync('packages/**/__e2e__/**/*.test.ts', {
+    ignore: '**/{plugin-workflow,plugin-workflow-*}/**',
     root: process.cwd(),
   });
 

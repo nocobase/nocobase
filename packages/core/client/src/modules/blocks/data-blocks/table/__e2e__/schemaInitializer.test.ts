@@ -4,7 +4,7 @@ test.describe('where table block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await createBlockInPage(page, 'Table');
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
   });
@@ -17,7 +17,7 @@ test.describe('configure actions', () => {
     await mockPage(oneEmptyTable).goto();
 
     // add buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -35,7 +35,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -56,7 +56,7 @@ test.describe('configure actions', () => {
   test('customize: add record', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTable).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'add record' }).click();
 
@@ -70,7 +70,9 @@ test.describe('configure columns', () => {
   test.describe.configure({ retries: process.env.CI ? 4 : 0 });
   test('action column & display collection fields & display association fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTable).goto();
-    const configureColumnButton = page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9');
+    const configureColumnButton = page.getByLabel(
+      'schema-initializer-TableV2-fieldInitializers:tableColumn-t_unp4scqamw9',
+    );
 
     // Action column -------------------------------------------------------------
     // 1. 点击开关，可以开启和关闭 Action column

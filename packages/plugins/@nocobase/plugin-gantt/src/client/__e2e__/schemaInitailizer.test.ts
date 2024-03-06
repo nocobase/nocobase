@@ -4,7 +4,7 @@ import { generalWithDatetimeFields, oneEmptyGantt } from './utils';
 test('BlockInitializers should add gantt block', async ({ page, mockPage, mockCollections }) => {
   await mockCollections(generalWithDatetimeFields);
   await mockPage().goto();
-  await page.getByLabel('schema-initializer-Grid-BlockInitializers').click();
+  await page.getByLabel('schema-initializer-Grid-blockInitializers:page').click();
   await page.getByRole('menuitem', { name: 'form Gantt right' }).click();
   await page.getByRole('menuitem', { name: 'General' }).click();
   await page.getByLabel('block-item-Select-Title field').click();
@@ -25,7 +25,7 @@ test('BlockInitializers should add gantt block', async ({ page, mockPage, mockCo
 test.describe('configure fields', () => {
   test('add field,then remove field in gantt block', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+    await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await page.getByRole('menuitem', { name: 'Single line text2' }).click();
     //添加字段
@@ -43,7 +43,7 @@ test.describe('configure fields', () => {
   test('add assciation field should appends association', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', { singleLineText: 'singleLineText', manyToOne: { id: 1 } });
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+    await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
 
     //关系字段,断言请求的appends是否符合预期
     const [request] = await Promise.all([
@@ -75,7 +75,7 @@ test.describe('configure fields', () => {
 test.describe('configure actions', () => {
   test('configure button in gannt block', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGantt).goto();
-    await page.getByLabel('schema-initializer-ActionBar-GanttActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:gantt-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();

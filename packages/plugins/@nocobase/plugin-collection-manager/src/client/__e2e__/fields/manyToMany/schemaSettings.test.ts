@@ -260,7 +260,7 @@ test.describe('form item & create form', () => {
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
-        .getByLabel('schema-initializer-AssociationField.SubTable-TableColumnInitializers-users'),
+        .getByLabel('schema-initializer-AssociationField.SubTable-fieldInitializers:tableColumn-users'),
     ).toBeVisible();
 
     // 选择 Sub-form
@@ -275,7 +275,7 @@ test.describe('form item & create form', () => {
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
-        .getByLabel('schema-initializer-Grid-FormItemInitializers-users'),
+        .getByLabel('schema-initializer-Grid-fieldInitializers:formItem-users'),
     ).toBeVisible();
 
     // 选择 Sub-form(Popover)

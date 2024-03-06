@@ -8,7 +8,7 @@ test.describe('ReadPrettyFormActionInitializers & CalendarFormActionInitializers
     await nocoPage.goto();
     await page.getByLabel('block-item-CardItem-general-table').hover();
     await page.getByLabel('action-Action.Link-View-view-general').click();
-    await page.getByLabel('schema-initializer-ActionBar-ReadPrettyFormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsSingle-general').hover();
     await page.getByRole('menuitem', { name: 'Print' }).click();
     await expect(page.getByLabel('action-Action-Print-print-general-form')).toBeVisible();
   });
@@ -17,7 +17,7 @@ test.describe('ReadPrettyFormActionInitializers & CalendarFormActionInitializers
     await mockRecord('general', { singleLineText: 'test' });
     await nocoPage.goto();
     await page.getByTitle('test').click();
-    await page.getByLabel('schema-initializer-ActionBar-CalendarFormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:calendarForm-general').hover();
     await page.getByRole('menuitem', { name: 'Print' }).click();
     await page.getByLabel('action-Action-Print-print-general-form').click();
   });

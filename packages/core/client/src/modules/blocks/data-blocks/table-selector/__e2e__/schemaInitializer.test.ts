@@ -20,7 +20,7 @@ test.describe('configure actions', () => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
     // add buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-users').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -38,7 +38,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-users').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -59,7 +59,7 @@ test.describe('configure actions', () => {
   test('customize: bulk update', async ({ page, mockPage }) => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-users').hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
 
@@ -99,6 +99,6 @@ test.describe('configure actions column', () => {
 });
 
 async function createActionColumn(page: Page) {
-  await page.getByLabel('schema-initializer-TableV2.Selector-TableColumnInitializers-users').hover();
+  await page.getByLabel('schema-initializer-TableV2.Selector-fieldInitializers:tableColumn-users').hover();
   await page.getByRole('menuitem', { name: 'Action column' }).click();
 }

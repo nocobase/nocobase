@@ -34,18 +34,18 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     await page.getByRole('button', { name: 'singleLineText (Duplicate)' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click();
-    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:createForm-general').hover();
     //配置表单区块
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
     await page.getByRole('menuitem', { name: 'singleLineText' }).click();
     await page.getByRole('menuitem', { name: 'oneToOneBelongsTo' }).click();
     await page.getByRole('menuitem', { name: 'oneToOneHasOne' }).click();
     await page.getByRole('menuitem', { name: 'oneToMany' }).click();
     await page.getByRole('menuitem', { name: 'manyToOne', exact: true }).click();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();
-    await page.getByLabel('schema-initializer-ActionBar-CreateFormActionInitializers-general').click();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:createForm-general').click();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel('drawer-Action.Container-general-Duplicate-mask').click();
     //同步表单字段

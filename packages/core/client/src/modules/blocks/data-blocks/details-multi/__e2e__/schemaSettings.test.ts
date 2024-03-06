@@ -33,7 +33,7 @@ test.describe('actions schema settings', () => {
     await mockPage(oneEmptyDetailsBlock).goto();
 
     // 创建 Edit & Delete 两个按钮
-    await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsMulti-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.mouse.move(0, 300);

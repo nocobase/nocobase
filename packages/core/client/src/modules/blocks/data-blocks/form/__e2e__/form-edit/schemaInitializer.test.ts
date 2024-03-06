@@ -7,7 +7,7 @@ test.describe('where edit form block can be added', () => {
     await nocoPage.goto();
 
     await page.getByLabel('action-Action.Link-Edit-update-general-table-0').click();
-    await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:record-general').hover();
     await page.getByText('Form').first().click();
     await page.mouse.move(300, 0);
 

@@ -18,7 +18,7 @@ test.describe('data will be updated && Assign field values && after successful s
     await page.getByRole('option', { name: 'All' }).click();
     //字段赋值
     await page.getByRole('menuitem', { name: 'Assign field values' }).click();
-    await page.getByLabel('schema-initializer-Grid-CustomFormItemInitializers-general').click();
+    await page.getByLabel('schema-initializer-Grid-fieldInitializers:customFormItem-general').click();
     await page.getByRole('menuitem', { name: 'Single select' }).click();
     await page.getByTestId('select-single').click();
     await page.getByText('option3').click();

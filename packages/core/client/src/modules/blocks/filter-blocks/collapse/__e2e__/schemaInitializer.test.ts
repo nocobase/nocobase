@@ -4,7 +4,7 @@ test.describe('where collapse block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await createBlockInPage(page, 'Collapse');
     await expect(page.getByLabel('block-item-CardItem-users-filter-collapse')).toBeVisible();
   });

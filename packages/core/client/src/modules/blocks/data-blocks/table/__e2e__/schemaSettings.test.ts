@@ -101,7 +101,7 @@ test.describe('table block schema settings', () => {
       ).toBeChecked();
       await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
       // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
       await page.getByLabel('schema-initializer-TableV2-').click();
@@ -141,7 +141,7 @@ test.describe('table block schema settings', () => {
     }
 
     async function createColumnItem(page: Page, fieldName: string) {
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
       await page.getByRole('menuitem', { name: fieldName, exact: true }).click();
       await page.mouse.move(300, 0);
     }
@@ -213,7 +213,7 @@ test.describe('table block schema settings', () => {
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
       await page.mouse.move(300, 0);
@@ -677,13 +677,13 @@ test.describe('actions schema settings', () => {
 
       // 添加一行数据
       // TODO: 使用 mockRecord 为 tree 表添加一行数据无效
-      await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).click();
       await page.getByRole('button', { name: 'Add new' }).click();
-      await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-Grid-blockInitializers:createForm-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
       await page.mouse.move(300, 0);
-      await page.getByLabel('schema-initializer-ActionBar-CreateFormActionInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-actionInitializers:createForm-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.mouse.move(300, 0);
       await page.getByRole('button', { name: 'Submit' }).click();

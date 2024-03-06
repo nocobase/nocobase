@@ -58,7 +58,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}` }).click();
 
@@ -71,16 +71,16 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
     await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
-    await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-blockInitializers:createForm-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
     await page
-      .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
+      .getByLabel(`schema-initializer-ActionBar-actionInitializers:createForm-${triggerNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     // 绑定工作流
-    await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-fieldInitializers:formItem-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`).hover();
@@ -150,7 +150,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}` }).click();
 
@@ -164,7 +164,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
 
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
-    await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-blockInitializers:createForm-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
 
     // 移开鼠标，关闭菜单
@@ -172,11 +172,11 @@ test.describe('Configuration page to configure the Trigger node', () => {
 
     // 绑定工作流
     await page
-      .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
+      .getByLabel(`schema-initializer-ActionBar-actionInitializers:createForm-${triggerNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Submit to workflow' }).click();
-    await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-fieldInitializers:formItem-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Submit to workflow' }).hover();

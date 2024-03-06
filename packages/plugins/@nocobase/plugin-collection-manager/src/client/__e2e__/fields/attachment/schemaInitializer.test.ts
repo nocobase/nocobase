@@ -9,7 +9,7 @@ test.describe('form item & create form', () => {
       page,
       showMenu: async () => {
         await page.getByRole('button', { name: 'Add new' }).click();
-        await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+        await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
     });
@@ -28,7 +28,7 @@ test.describe('form item & edit form', () => {
         await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
         // 等待弹窗内容渲染完成
         await page.waitForTimeout(1000);
-        await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+        await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
     });
@@ -47,7 +47,7 @@ test.describe('form item & view form', () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
         // 等待弹窗内容渲染完成
         await page.waitForTimeout(1000);
-        await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').hover();
+        await page.getByLabel('schema-initializer-Grid-fieldInitializers:detailsSingle-general').hover();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
     });

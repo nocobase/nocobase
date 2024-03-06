@@ -4,7 +4,7 @@ test.describe('where grid card block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await createBlockInPage(page, 'Grid Card');
     await expect(page.getByLabel('block-item-BlockItem-users-grid-card')).toBeVisible();
   });
@@ -16,7 +16,7 @@ test.describe('configure global actions', () => {
   test('filter & add new & refresh', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGridCardBlock).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-GridCardActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:gridCard-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
@@ -31,7 +31,7 @@ test.describe('configure global actions', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-GridCardActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:gridCard-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
@@ -53,7 +53,7 @@ test.describe('configure item actions', () => {
     await mockRecord('general');
     await nocoPage.goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-GridCardItemActionInitializers-general').first().hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:gridCardItem-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -68,7 +68,7 @@ test.describe('configure item actions', () => {
     await expect(page.getByLabel('action-Action.Link-Delete-destroy-general-grid-card').first()).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-GridCardItemActionInitializers-general').first().hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:gridCardItem-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -88,7 +88,7 @@ test.describe('configure item actions', () => {
     await mockRecord('general');
     await nocoPage.goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-GridCardItemActionInitializers-general').first().hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:gridCardItem-general').first().hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Popup' }).click();
     await page.getByRole('menuitem', { name: 'Update record' }).click();
@@ -108,7 +108,7 @@ test.describe('configure fields', () => {
     await nocoPage.goto();
 
     const formItemInitializer = page
-      .getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general')
+      .getByLabel('schema-initializer-Grid-fieldInitializers:detailsSingle-general')
       .first();
 
     await formItemInitializer.hover();

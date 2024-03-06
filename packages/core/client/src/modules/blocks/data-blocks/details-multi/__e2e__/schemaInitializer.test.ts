@@ -3,7 +3,7 @@ import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase
 test.describe('where multi data details block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-blockInitializers:page').hover();
     await createBlockInPage(page, 'Details');
     await expect(page.getByLabel('block-item-CardItem-users-details')).toBeVisible();
   });
@@ -13,7 +13,7 @@ test.describe('configure fields', () => {
   test('display collection fields & display association fields & add text', async ({ page, mockPage }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
 
-    const formItemInitializer = page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general');
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-fieldInitializers:detailsSingle-general');
 
     // add fields
     await formItemInitializer.hover();
@@ -63,7 +63,7 @@ test.describe('configure actions', () => {
   test('edit & delete & duplicate', async ({ page, mockPage }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsMulti-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
@@ -75,7 +75,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsMulti-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 

@@ -2,7 +2,7 @@ import { expect, oneFormBlockBasedOnUsers, test } from '@nocobase/test/e2e';
 
 test('fields', async ({ page, mockPage }) => {
   await mockPage(oneFormBlockBasedOnUsers).goto();
-  await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
+  await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-users').hover();
   await page.getByRole('menuitem', { name: 'Nickname' }).click();
   await page.getByRole('menuitem', { name: 'Username' }).click();
   await page.getByRole('menuitem', { name: 'Email' }).click();
