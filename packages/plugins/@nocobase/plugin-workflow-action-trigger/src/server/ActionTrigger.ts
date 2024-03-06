@@ -63,7 +63,7 @@ export default class extends Trigger {
       filter: {
         key: triggers.map((trigger) => trigger[0]),
         current: true,
-        type: 'form',
+        type: 'action',
         enabled: true,
       },
     });
@@ -91,15 +91,17 @@ export default class extends Trigger {
             }
           }
           const { collection, appends = [] } = workflow.config;
-          const model = <typeof Model>payload.constructor;
-          if (collection !== model.collection.name) {
-            continue;
-          }
-          if (appends.length) {
-            payload = await model.collection.repository.findOne({
-              filterByTk: payload.get(model.primaryKeyAttribute),
-              appends,
-            });
+          const model = payload.constructor;
+          if (payload instanceof Model) {
+            if (collection !== model.collection.name) {
+              continue;
+            }
+            if (appends.length) {
+              payload = await model.collection.repository.findOne({
+                filterByTk: payload.get(model.primaryKeyAttribute),
+                appends,
+              });
+            }
           }
           // this.workflow.trigger(workflow, { data: toJSON(payload), ...userInfo });
           event.push({ data: toJSON(payload), ...userInfo });

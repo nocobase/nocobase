@@ -1,0 +1,10 @@
+{
+  "Action event": "操作事件",
+  "Triggers after specific operations on data are submitted, such as create, update, delete, etc., or directly submitting a record to the workflow.": "在对数据的特定操作提交后触发，如创建、更新、删除等，或直接提交一条数据至工作流。",
+  "Collection": "数据表",
+  "Which collection record belongs to.": "数据所属的数据表。",
+  "Associations to use": "待使用的关系数据",
+  "Trigger data": "触发器数据",
+  "User submitted action": "提交操作的用户",
+  "Role of user submitted action": "提交操作用户的角色"
+}
