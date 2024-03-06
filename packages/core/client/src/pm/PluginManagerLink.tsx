@@ -1,7 +1,7 @@
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Button, Card, Dropdown, Popover, Tooltip } from 'antd';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../application';
@@ -29,12 +29,24 @@ export const PluginManagerLink = () => {
 export const SettingsCenterDropdown = () => {
   const [visible, setVisible] = useState(false);
   const compile = useCompile();
-  const { t } = useTranslation();
   const { token } = useToken();
   const navigate = useNavigate();
   const app = useApp();
   const settings = app.pluginSettingsManager.getList();
   const [open, setOpen] = useState(false);
+  const items = useMemo(
+    () =>
+      settings
+        .filter((v) => v.isTopLevel !== false)
+        .map((setting) => {
+          return {
+            key: setting.name,
+            icon: setting.icon,
+            label: <Link to={setting.path}>{compile(setting.title)}</Link>,
+          };
+        }),
+    [settings],
+  );
   return (
     <Dropdown
       menu={{
@@ -42,15 +54,7 @@ export const SettingsCenterDropdown = () => {
           maxHeight: '70vh',
           overflow: 'auto',
         },
-        items: settings
-          .filter((v) => v.isTopLevel !== false)
-          .map((setting) => {
-            return {
-              key: setting.name,
-              icon: setting.icon,
-              label: <Link to={setting.path}>{compile(setting.title)}</Link>,
-            };
-          }),
+        items,
       }}
     >
       <Button
