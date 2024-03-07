@@ -933,7 +933,7 @@ export const createListBlockSchema = (options) => {
   const {
     formItemInitializers = 'details:configureFields',
     actionInitializers = 'list:configureActions',
-    itemActionInitializers = 'actionInitializers:listItem',
+    itemActionInitializers = 'list:configureItemActions',
     collection,
     dataSource,
     association,

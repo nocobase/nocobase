@@ -786,7 +786,7 @@ export const oneEmptyListBlock: PageConfig = {
                                 version: '2.0',
                                 type: 'void',
                                 'x-align': 'left',
-                                'x-initializer': 'actionInitializers:listItem',
+                                'x-initializer': 'list:configureItemActions',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   useProps: '{{ useListActionBarProps }}',
