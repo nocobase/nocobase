@@ -279,7 +279,7 @@ export const chartFilterItemInitializers_deprecated = new CompatibleSchemaInitia
 
 export const chartFilterItemInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:chartFilterItem',
+    name: 'chartFilterForm:configureFields',
     'data-testid': 'configure-fields-button-of-chart-filter-item',
     wrap: gridRowColWrap,
     icon: 'SettingOutlined',
