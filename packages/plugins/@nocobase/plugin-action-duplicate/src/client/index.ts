@@ -60,11 +60,7 @@ export class PluginDuplicateClient extends Plugin {
       },
     };
 
-    this.app.schemaInitializerManager.addItem(
-      'actionInitializers:tableColumnAction',
-      'actions.duplicate',
-      initializerTableData,
-    );
+    this.app.schemaInitializerManager.addItem('table:configureItemActions', 'actions.duplicate', initializerTableData);
   }
 }
 

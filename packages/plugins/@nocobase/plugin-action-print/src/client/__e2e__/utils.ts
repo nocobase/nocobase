@@ -169,7 +169,7 @@ export const oneTableWithViewAction: PageConfig = {
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-component': 'TableV2.Column',
                             'x-decorator': 'TableV2.Column.ActionBar',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'table:configureItemActions',
                             'x-action-column': 'actions',
                             _isJSONSchemaObject: true,
                             properties: {

@@ -233,7 +233,7 @@ export const oneEmptyGantt: PageConfig = {
                                 'x-decorator': 'TableV2.Column.ActionBar',
                                 'x-component': 'TableV2.Column',
                                 'x-designer': 'TableV2.ActionColumnDesigner',
-                                'x-initializer': 'actionInitializers:tableColumnAction',
+                                'x-initializer': 'table:configureItemActions',
                                 properties: {
                                   actions: {
                                     _isJSONSchemaObject: true,
@@ -474,7 +474,7 @@ export const oneEmptyTableBlockWithCustomizeUpdate: PageConfig = {
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-component': 'TableV2.Column',
                             'x-decorator': 'TableV2.Column.ActionBar',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'table:configureItemActions',
                             'x-action-column': 'actions',
                             _isJSONSchemaObject: true,
                             properties: {

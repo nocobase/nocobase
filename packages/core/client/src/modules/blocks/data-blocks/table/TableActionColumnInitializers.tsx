@@ -229,7 +229,7 @@ export const tableActionColumnInitializers_deprecated = new CompatibleSchemaInit
 
 export const tableActionColumnInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:tableColumnAction',
+    name: 'table:configureItemActions',
     insertPosition: 'beforeEnd',
     useInsert: function useInsert() {
       const { refresh } = useDesignable();

@@ -94,7 +94,7 @@ export const T2797: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'table:configureItemActions',
                             'x-index': 1,
                             properties: {
                               actions: {
@@ -673,7 +673,7 @@ export const T2838: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'actionInitializers:tableColumnAction',
+                            'x-initializer': 'table:configureItemActions',
                             'x-index': 1,
                             properties: {
                               actions: {

@@ -1382,7 +1382,7 @@ export const createTableBlockSchema = (options) => {
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
             'x-designer': 'TableV2.ActionColumnDesigner',
-            'x-initializer': tableActionColumnInitializers ?? 'actionInitializers:tableColumnAction',
+            'x-initializer': tableActionColumnInitializers ?? 'table:configureItemActions',
             properties: {
               [uid()]: {
                 type: 'void',

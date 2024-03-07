@@ -10,7 +10,7 @@ export const TableActionColumnInitializer = () => {
     'x-decorator': 'TableV2.Column.ActionBar',
     'x-component': 'TableV2.Column',
     'x-designer': 'TableV2.ActionColumnDesigner',
-    'x-initializer': 'actionInitializers:tableColumnAction',
+    'x-initializer': 'table:configureItemActions',
     'x-action-column': 'actions',
     properties: {
       [uid()]: {
