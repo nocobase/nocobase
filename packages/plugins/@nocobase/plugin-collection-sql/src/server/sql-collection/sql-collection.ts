@@ -1,4 +1,4 @@
-import { Collection, CollectionContext, CollectionOptions } from '../collection';
+import { Collection, CollectionContext, CollectionOptions } from '@nocobase/database/src/collection';
 import { SQLModel } from './sql-model';
 
 export class SqlCollection extends Collection {
