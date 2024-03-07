@@ -8,7 +8,7 @@ test.describe('ReadPrettyFormActionInitializers & CalendarFormActionInitializers
     await nocoPage.goto();
     await page.getByLabel('block-item-CardItem-general-table').hover();
     await page.getByLabel('action-Action.Link-View-view-general').click();
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsSingle-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-details:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Print' }).click();
     await expect(page.getByLabel('action-Action-Print-print-general-form')).toBeVisible();
   });

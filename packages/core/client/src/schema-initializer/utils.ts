@@ -1252,7 +1252,7 @@ export const createFilterFormBlockSchema = (options) => {
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'details:configureFields',
-    actionInitializers = 'actionInitializers:detailsSingle',
+    actionInitializers = 'details:configureActions',
     collection,
     association,
     dataSource,

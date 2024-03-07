@@ -18,11 +18,7 @@ export class PrintPlugin extends Plugin {
       },
     };
 
-    this.app.schemaInitializerManager.addItem(
-      'actionInitializers:detailsSingle',
-      'enableActions.print',
-      initializerData,
-    );
+    this.app.schemaInitializerManager.addItem('details:configureActions', 'enableActions.print', initializerData);
     this.app.schemaInitializerManager.addItem(
       'actionInitializers:calendarForm',
       'enableActions.print',

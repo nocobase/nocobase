@@ -1892,8 +1892,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:detailsSingle',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginBottom: 24,

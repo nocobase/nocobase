@@ -61,14 +61,14 @@ test.describe('configure actions', () => {
 test.describe('configure fields', () => {});
 
 async function createAction(page: Page, name: string) {
-  await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsSingle-general').hover();
+  await page.getByLabel('schema-initializer-ActionBar-details:configureActions-general').hover();
   await page.getByRole('menuitem', { name: name }).click();
   await expect(page.getByRole('menuitem', { name: name }).getByRole('switch')).toBeChecked();
   await page.mouse.move(300, 0);
 }
 
 async function createCustomAction(page: Page, name: string) {
-  await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsSingle-general').hover();
+  await page.getByLabel('schema-initializer-ActionBar-details:configureActions-general').hover();
   await page.getByRole('menuitem', { name: 'Customize' }).hover();
   await page.getByRole('menuitem', { name: name }).click();
   await page.mouse.move(0, 400);

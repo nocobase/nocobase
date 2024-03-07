@@ -91,7 +91,7 @@ export const readPrettyFormActionInitializers_deprecated = new CompatibleSchemaI
 
 export const readPrettyFormActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:detailsSingle',
+    name: 'details:configureActions',
     title: '{{t("Configure actions")}}',
     icon: 'SettingOutlined',
     style: {
