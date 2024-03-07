@@ -253,7 +253,7 @@ export const oneEmptyGantt: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'popup:view:addBlock',
+                                            'x-initializer': 'popup:common:addBlock',
                                             'x-uid': 'gxtfjqzxbfu',
                                             'x-async': false,
                                             'x-index': 1,

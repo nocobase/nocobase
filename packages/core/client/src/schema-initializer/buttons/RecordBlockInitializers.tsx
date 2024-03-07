@@ -327,7 +327,7 @@ export const recordBlockInitializers_deprecated = new CompatibleSchemaInitialize
 
 export const recordBlockInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'popup:view:addBlock',
+    name: 'popup:common:addBlock',
     wrap: gridRowColWrap,
     title: '{{t("Add block")}}',
     icon: 'PlusOutlined',

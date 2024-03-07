@@ -111,7 +111,7 @@ export const CalendarFormActionInitializers_deprecated = new CompatibleSchemaIni
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'popup:view:addBlock',
+                            'x-initializer': 'popup:common:addBlock',
                             properties: {},
                           },
                         },
@@ -274,7 +274,7 @@ export const calendarFormActionInitializers = new CompatibleSchemaInitializer(
                             grid: {
                               type: 'void',
                               'x-component': 'Grid',
-                              'x-initializer': 'popup:view:addBlock',
+                              'x-initializer': 'popup:common:addBlock',
                               properties: {},
                             },
                           },

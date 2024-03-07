@@ -38,7 +38,7 @@ export const PopupActionInitializer = (props) => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'popup:view:addBlock',
+                    'x-initializer': 'popup:common:addBlock',
                     properties: {},
                   },
                 },

@@ -19,7 +19,7 @@ export class IframeBlockPlugin extends Plugin {
       Component: 'IframeBlockInitializer',
     });
 
-    const recordBlockInitializers = this.app.schemaInitializerManager.get('popup:view:addBlock');
+    const recordBlockInitializers = this.app.schemaInitializerManager.get('popup:common:addBlock');
     recordBlockInitializers?.add('otherBlocks.iframe', {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',

@@ -16,7 +16,7 @@ export const TabPaneInitializers = (props?: any) => {
     const ctx = useActionContext();
     let initializer = gridInitializer;
     if (!initializer) {
-      initializer = 'popup:view:addBlock';
+      initializer = 'popup:common:addBlock';
       if (isCreate || !record) {
         initializer = 'popup:addNew:addBlock';
       } else if (isBulkEdit) {

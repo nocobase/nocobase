@@ -4,7 +4,7 @@ import { gridRowColWrap } from '../../../schema-initializer/utils';
 /**
  * @deprecated
  */
-export const recordFormBlockInitializers_deprecated = new SchemaInitializer({
+export const recordFormBlockInitializers = new SchemaInitializer({
   name: 'RecordFormBlockInitializers',
   title: '{{ t("Add block") }}',
   icon: 'PlusOutlined',

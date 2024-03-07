@@ -230,7 +230,7 @@ export const oneTableWithViewAction: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'popup:view:addBlock',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     _isJSONSchemaObject: true,
                                                     properties: {
                                                       v9jpx7749ok: {
@@ -776,7 +776,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                     'x-component-props': {},
                                     _isJSONSchemaObject: true,
                                     'x-initializer-props': {
-                                      gridInitializer: 'popup:view:addBlock',
+                                      gridInitializer: 'popup:common:addBlock',
                                     },
                                     properties: {
                                       tab1: {
@@ -792,7 +792,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                             type: 'void',
                                             version: '2.0',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'popup:view:addBlock',
+                                            'x-initializer': 'popup:common:addBlock',
                                             _isJSONSchemaObject: true,
                                             'x-initializer-props': {
                                               actionInitializers: 'actionInitializers:calendarForm',
