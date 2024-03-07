@@ -43,7 +43,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
         } else {
           insert(
             createFormBlockSchema({
-              formItemInitializers: 'fieldInitializers:bulkEditFormItem',
+              formItemInitializers: 'bulkEditForm:configureFields',
               actionInitializers: 'actionInitializers:blkEditForm',
               association,
               collection: collection.name,

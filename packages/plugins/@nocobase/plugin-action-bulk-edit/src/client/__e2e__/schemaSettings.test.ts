@@ -18,7 +18,7 @@ test.describe('bulk edit action setting', () => {
     await page.getByLabel('schema-initializer-Grid-popup:bulkEdit:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-fieldInitializers:bulkEditFormItem-general').hover();
+    await page.getByLabel('schema-initializer-Grid-bulkEditForm:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'Single line text' }).click();
     await page.getByRole('menuitem', { name: 'Start date time' }).click();
     await page.getByRole('menuitem', { name: 'Percent' }).click();

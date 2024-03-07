@@ -42,7 +42,7 @@ export const BulkEditFormItemInitializers_deprecated = new CompatibleSchemaIniti
 
 export const bulkEditFormItemInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:bulkEditFormItem',
+    name: 'bulkEditForm:configureFields',
     wrap: gridRowColWrap,
     icon: 'SettingOutlined',
     title: '{{t("Configure fields")}}',
