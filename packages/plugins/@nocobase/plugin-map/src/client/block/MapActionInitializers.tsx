@@ -74,7 +74,7 @@ export const mapActionInitializers_deprecated = new CompatibleSchemaInitializer(
 
 export const mapActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:map',
+    name: 'map:configureActions',
     title: "{{t('Configure actions')}}",
     icon: 'SettingOutlined',
     style: {

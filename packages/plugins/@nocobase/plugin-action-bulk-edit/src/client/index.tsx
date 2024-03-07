@@ -57,7 +57,7 @@ export class BulkEditPlugin extends Plugin {
 
     this.app.schemaInitializerManager.addItem('table:configureActions', 'customize.bulkEdit', initializerData);
     this.app.schemaInitializerManager.addItem('gantt:configureActions', 'customize.bulkEdit', initializerData);
-    this.app.schemaInitializerManager.addItem('actionInitializers:map', 'customize.bulkEdit', initializerData);
+    this.app.schemaInitializerManager.addItem('map:configureActions', 'customize.bulkEdit', initializerData);
   }
 }
 
