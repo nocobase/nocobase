@@ -60,7 +60,7 @@ export const updateFormActionInitializers_deprecated = new CompatibleSchemaIniti
 
 export const updateFormActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:updateForm',
+    name: 'editForm:configureActions',
     title: '{{t("Configure actions")}}',
     icon: 'SettingOutlined',
     items: [

@@ -23,7 +23,7 @@ export const RecordAssociationFormBlockInitializer = () => {
       onClick={async ({ item }) => {
         const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
         const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
-          ? 'actionInitializers:updateForm'
+          ? 'editForm:configureActions'
           : 'createForm:configureActions';
 
         if (item.template) {

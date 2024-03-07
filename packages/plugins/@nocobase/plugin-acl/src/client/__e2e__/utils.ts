@@ -1054,8 +1054,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:updateForm',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginTop: 24,
@@ -1740,8 +1739,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer':
-                                                                          'actionInitializers:updateForm',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginTop: 24,
