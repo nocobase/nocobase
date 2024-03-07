@@ -1023,7 +1023,7 @@ export const createGridCardBlockSchema = (options) => {
   const {
     formItemInitializers = 'details:configureFields',
     actionInitializers = 'gridCard:configureActions',
-    itemActionInitializers = 'actionInitializers:gridCardItem',
+    itemActionInitializers = 'gridCard:configureItemActions',
     collection,
     association,
     resource,

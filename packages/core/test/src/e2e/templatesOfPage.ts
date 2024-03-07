@@ -938,7 +938,7 @@ export const oneEmptyGridCardBlock: PageConfig = {
                                 version: '2.0',
                                 type: 'void',
                                 'x-align': 'left',
-                                'x-initializer': 'actionInitializers:gridCardItem',
+                                'x-initializer': 'gridCard:configureItemActions',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   useProps: '{{ useGridCardActionBarProps }}',
