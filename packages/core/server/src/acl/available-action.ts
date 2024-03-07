@@ -7,6 +7,7 @@ const availableActions: {
     displayName: '{{t("Add new")}}',
     type: 'new-data',
     onNewRecord: true,
+    aliases: ['create', 'firstOrCreate', 'updateOrCreate'],
     allowConfigureFields: true,
   },
   // import: {
