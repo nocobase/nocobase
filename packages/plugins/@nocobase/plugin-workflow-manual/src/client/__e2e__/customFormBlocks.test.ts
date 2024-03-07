@@ -83,15 +83,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -99,9 +97,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Single line text' }).click();
     await page
@@ -230,15 +226,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -246,9 +240,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Long text' }).click();
     await page
@@ -377,15 +369,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -393,9 +383,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page
@@ -524,15 +512,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -540,9 +526,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Email' }).click();
     await page
@@ -671,15 +655,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -687,9 +669,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Integer' }).click();
     await page
@@ -818,15 +798,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -834,9 +812,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Number' }).click();
     await page
@@ -965,15 +941,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -981,9 +955,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Percent' }).click();
     await page
@@ -1112,15 +1084,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1128,9 +1098,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Checkbox', exact: true }).click();
     await page
@@ -1259,15 +1227,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1275,9 +1241,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Single select', exact: true }).click();
     await page
@@ -1413,15 +1377,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1429,9 +1391,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Multiple select', exact: true }).click();
     await page
@@ -1574,15 +1534,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1590,9 +1548,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Radio group', exact: true }).click();
     await page
@@ -1727,15 +1683,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1743,9 +1697,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Checkbox group', exact: true }).click();
     await page
@@ -1886,15 +1838,13 @@ test.describe('field data entry', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // 获取自定义表单的随机值
     const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-"]',
+      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
     );
     const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
     const randomValue = ariaLabel.split('-').pop();
 
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1902,9 +1852,7 @@ test.describe('field data entry', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:workflowManualCustomForm-${randomValue}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
     await page.getByRole('menuitem', { name: 'Datetime', exact: true }).click();
     await page

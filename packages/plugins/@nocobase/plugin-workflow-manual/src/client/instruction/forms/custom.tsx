@@ -103,7 +103,7 @@ function CustomFormBlockInitializer() {
                 grid: {
                   type: 'void',
                   'x-component': 'Grid',
-                  'x-initializer': 'fieldInitializers:workflowManualCustomForm',
+                  'x-initializer': 'workflowManual:customForm:configureFields',
                 },
                 actions: {
                   type: 'void',
@@ -335,7 +335,7 @@ export const addCustomFormField_deprecated = new CompatibleSchemaInitializer({
 
 export const addCustomFormField = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:workflowManualCustomForm',
+    name: 'workflowManual:customForm:configureFields',
     wrap: gridRowColWrap,
     insertPosition: 'beforeEnd',
     title: "{{t('Configure fields')}}",
