@@ -17,7 +17,7 @@ test.describe('ReadPrettyFormActionInitializers & CalendarFormActionInitializers
     await mockRecord('general', { singleLineText: 'test' });
     await nocoPage.goto();
     await page.getByTitle('test').click();
-    await page.getByLabel('schema-initializer-ActionBar-calendar:configureActionsForm-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-details:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Print' }).click();
     await page.getByLabel('action-Action-Print-print-general-form').click();
   });

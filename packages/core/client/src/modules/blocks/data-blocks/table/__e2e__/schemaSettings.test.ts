@@ -567,7 +567,7 @@ test.describe('actions schema settings', () => {
   test.describe('popup', () => {
     const addSomeCustomActions = async (page: Page) => {
       // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'View' }).click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
@@ -624,7 +624,7 @@ test.describe('actions schema settings', () => {
   test.describe('update record', () => {
     const addSomeCustomActions = async (page: Page) => {
       // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'View' }).click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();

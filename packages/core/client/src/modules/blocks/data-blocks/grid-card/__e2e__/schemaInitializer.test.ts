@@ -53,7 +53,7 @@ test.describe('configure item actions', () => {
     await mockRecord('general');
     await nocoPage.goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureActionsItem-general').first().hover();
+    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -68,7 +68,7 @@ test.describe('configure item actions', () => {
     await expect(page.getByLabel('action-Action.Link-Delete-destroy-general-grid-card').first()).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureActionsItem-general').first().hover();
+    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -88,7 +88,7 @@ test.describe('configure item actions', () => {
     await mockRecord('general');
     await nocoPage.goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureActionsItem-general').first().hover();
+    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Popup' }).click();
     await page.getByRole('menuitem', { name: 'Update record' }).click();

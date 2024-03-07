@@ -5,7 +5,7 @@ test('edit button', async ({ page, mockPage, mockRecord }) => {
   await mockRecord('t_unp4scqamw9');
 
   // 新建一个 custom request action
-  await page.getByRole('button', { name: 'Actions' }).hover();
+  await page.getByRole('button', { name: 'Actions', exact: true }).hover();
   await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
   await page.getByRole('menuitem', { name: 'Customize right' }).hover();
   await page.getByRole('menuitem', { name: 'Custom request' }).click();

@@ -864,7 +864,7 @@ export async function expectInitializerMenu({ showMenu, supportedOptions, page }
  * @param name
  */
 export const createBlockInPage = async (page: Page, name: string) => {
-  await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+  await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
 
   if (name === 'Form') {
     await page.getByText('Form', { exact: true }).first().hover();
