@@ -94,7 +94,7 @@ export const calendarActionInitializers = new CompatibleSchemaInitializer(
   {
     title: generateNTemplate('Configure actions'),
     icon: 'SettingOutlined',
-    name: 'actionInitializers:calendar',
+    name: 'calendar:configureActions',
     style: { marginLeft: 8 },
     items: [
       {

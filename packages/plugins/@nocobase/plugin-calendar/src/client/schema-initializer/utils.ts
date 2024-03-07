@@ -41,7 +41,7 @@ export const createCalendarBlockSchema = (options) => {
                 marginBottom: 24,
               },
             },
-            'x-initializer': 'actionInitializers:calendar',
+            'x-initializer': 'calendar:configureActions',
             properties: {},
           },
           event: {
