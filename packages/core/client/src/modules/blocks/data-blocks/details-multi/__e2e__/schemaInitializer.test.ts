@@ -13,7 +13,7 @@ test.describe('configure fields', () => {
   test('display collection fields & display association fields & add text', async ({ page, mockPage }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
 
-    const formItemInitializer = page.getByLabel('schema-initializer-Grid-fieldInitializers:detailsSingle-general');
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-details:configureFields-general');
 
     // add fields
     await formItemInitializer.hover();

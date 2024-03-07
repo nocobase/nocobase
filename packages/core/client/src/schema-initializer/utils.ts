@@ -858,7 +858,7 @@ export const useCollectionDataSourceItems = (
 
 export const createDetailsBlockSchema = (options) => {
   const {
-    formItemInitializers = 'fieldInitializers:detailsSingle',
+    formItemInitializers = 'details:configureFields',
     actionInitializers = 'actionInitializers:detailsMulti',
     collection,
     dataSource,
@@ -931,7 +931,7 @@ export const createDetailsBlockSchema = (options) => {
 
 export const createListBlockSchema = (options) => {
   const {
-    formItemInitializers = 'fieldInitializers:detailsSingle',
+    formItemInitializers = 'details:configureFields',
     actionInitializers = 'actionInitializers:list',
     itemActionInitializers = 'actionInitializers:listItem',
     collection,
@@ -1021,7 +1021,7 @@ export const createListBlockSchema = (options) => {
 
 export const createGridCardBlockSchema = (options) => {
   const {
-    formItemInitializers = 'fieldInitializers:detailsSingle',
+    formItemInitializers = 'details:configureFields',
     actionInitializers = 'actionInitializers:gridCard',
     itemActionInitializers = 'actionInitializers:gridCardItem',
     collection,
@@ -1251,7 +1251,7 @@ export const createFilterFormBlockSchema = (options) => {
 
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
-    formItemInitializers = 'fieldInitializers:detailsSingle',
+    formItemInitializers = 'details:configureFields',
     actionInitializers = 'actionInitializers:detailsSingle',
     collection,
     association,

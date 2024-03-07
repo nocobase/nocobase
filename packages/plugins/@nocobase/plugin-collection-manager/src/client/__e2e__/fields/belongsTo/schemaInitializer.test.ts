@@ -49,7 +49,7 @@ test.describe('form item & view form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
-        await page.getByLabel('schema-initializer-Grid-fieldInitializers:detailsSingle-general').hover();
+        await page.getByLabel('schema-initializer-Grid-details:configureFields-general').hover();
       },
       supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
     });

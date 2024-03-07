@@ -1345,7 +1345,7 @@ export const T2838: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'fieldInitializers:detailsSingle',
+                                                                                                                    'details:configureFields',
                                                                                                                   'x-index': 2,
                                                                                                                   'x-uid':
                                                                                                                     '1et421zrsz4',
@@ -1401,8 +1401,7 @@ export const T2838: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'fieldInitializers:detailsSingle',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         'x-index': 2,
                                                                         'x-uid': 'j4qxeoy1pqw',
                                                                         'x-async': false,

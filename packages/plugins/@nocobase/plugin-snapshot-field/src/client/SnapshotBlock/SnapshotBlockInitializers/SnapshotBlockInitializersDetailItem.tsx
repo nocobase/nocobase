@@ -15,7 +15,7 @@ import { uid } from '@formily/shared';
 
 export const createSnapshotBlockSchema = (options) => {
   const {
-    formItemInitializers = 'fieldInitializers:detailsSingle',
+    formItemInitializers = 'details:configureFields',
     actionInitializers = 'actionInitializers:detailsSingle',
     collection,
     association,

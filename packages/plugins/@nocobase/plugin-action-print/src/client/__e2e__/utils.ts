@@ -292,8 +292,7 @@ export const oneTableWithViewAction: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'fieldInitializers:detailsSingle',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         _isJSONSchemaObject: true,
                                                                         'x-uid': 'kum0xpsh9se',
                                                                         'x-async': false,
@@ -856,7 +855,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:detailsSingle',
+                                                                'x-initializer': 'details:configureFields',
                                                                 _isJSONSchemaObject: true,
                                                                 'x-uid': 'br7bq2ddccy',
                                                                 'x-async': false,

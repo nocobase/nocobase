@@ -47,7 +47,7 @@ test.describe('form item & view form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-View').click();
-        await page.getByLabel('schema-initializer-Grid-fieldInitializers:detailsSingle-general').hover();
+        await page.getByLabel('schema-initializer-Grid-details:configureFields-general').hover();
       },
       supportedOptions: ['Created at', 'Last updated at', 'Created by', 'Last updated by', 'ID', 'Table OID'],
     });

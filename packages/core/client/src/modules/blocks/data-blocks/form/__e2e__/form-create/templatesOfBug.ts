@@ -1087,8 +1087,7 @@ export const T2614: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'fieldInitializers:detailsSingle',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           i39cn9ve66b: {
                                                                             _isJSONSchemaObject: true,
@@ -3001,8 +3000,7 @@ export const T2615: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'fieldInitializers:detailsSingle',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           j9mxulol74m: {
                                                                             _isJSONSchemaObject: true,
@@ -4407,8 +4405,7 @@ export const T2845: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'fieldInitializers:detailsSingle',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         'x-index': 2,
                                                                         properties: {
                                                                           j9mxulol74m: {

@@ -1908,8 +1908,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'fieldInitializers:detailsSingle',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           hnzs6hajxl8: {

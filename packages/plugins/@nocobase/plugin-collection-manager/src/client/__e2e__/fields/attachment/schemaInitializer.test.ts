@@ -47,7 +47,7 @@ test.describe('form item & view form', () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
         // 等待弹窗内容渲染完成
         await page.waitForTimeout(1000);
-        await page.getByLabel('schema-initializer-Grid-fieldInitializers:detailsSingle-general').hover();
+        await page.getByLabel('schema-initializer-Grid-details:configureFields-general').hover();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
     });

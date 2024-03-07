@@ -94,7 +94,7 @@ export const readPrettyFormItemInitializers_deprecated = new CompatibleSchemaIni
 
 export const readPrettyFormItemInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:detailsSingle',
+    name: 'details:configureFields',
     wrap: gridRowColWrap,
     icon: 'SettingOutlined',
     title: '{{t("Configure fields")}}',

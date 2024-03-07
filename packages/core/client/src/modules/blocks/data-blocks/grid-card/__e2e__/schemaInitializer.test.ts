@@ -107,9 +107,7 @@ test.describe('configure fields', () => {
     await mockRecord('general');
     await nocoPage.goto();
 
-    const formItemInitializer = page
-      .getByLabel('schema-initializer-Grid-fieldInitializers:detailsSingle-general')
-      .first();
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-details:configureFields-general').first();
 
     await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
