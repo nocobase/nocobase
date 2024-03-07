@@ -40,7 +40,7 @@ export const auditLogsTableActionInitializers_deprecated = new CompatibleSchemaI
 
 export const auditLogsTableActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:auditLogsTable',
+    name: 'auditLogsTable:configureActions',
     title: "{{t('Configure actions')}}",
     icon: 'SettingOutlined',
     style: {
