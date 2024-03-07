@@ -8,7 +8,7 @@ export const AuditLogsTableActionColumnInitializer = () => {
     'x-decorator': 'TableV2.Column.ActionBar',
     'x-component': 'TableV2.Column',
     'x-designer': 'TableV2.ActionColumnDesigner',
-    'x-initializer': 'actionInitializers:auditLogsTableColumn',
+    'x-initializer': 'auditLogsTable:configureItemActions',
     'x-action-column': 'actions',
     properties: {
       actions: {

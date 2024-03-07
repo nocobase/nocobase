@@ -19,7 +19,7 @@ export const AuditLogsBlockInitializer = () => {
     rowKey: 'id',
     tableActionInitializers: 'actionInitializers:auditLogsTable',
     tableColumnInitializers: 'auditLogsTable:configureColumns',
-    tableActionColumnInitializers: 'actionInitializers:auditLogsTableColumn',
+    tableActionColumnInitializers: 'auditLogsTable:configureItemActions',
     tableBlockProvider: 'AuditLogsBlockProvider',
     disableTemplate: true,
   });

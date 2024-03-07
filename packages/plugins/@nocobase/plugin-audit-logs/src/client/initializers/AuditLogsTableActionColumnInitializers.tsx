@@ -77,7 +77,7 @@ export const auditLogsTableActionColumnInitializers_deprecated = new CompatibleS
 
 export const auditLogsTableActionColumnInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:auditLogsTableColumn',
+    name: 'auditLogsTable:configureItemActions',
     insertPosition: 'beforeEnd',
     Component: (props: any) => <MenuOutlined {...props} style={{ cursor: 'pointer' }} />,
     useInsert() {
