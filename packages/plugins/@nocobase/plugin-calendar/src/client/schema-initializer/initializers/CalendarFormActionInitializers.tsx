@@ -1,5 +1,19 @@
-import { SchemaInitializer, useCollection_deprecated } from '@nocobase/client';
+import { SchemaInitializer, SchemaInitializerItemType, useCollection_deprecated } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
+
+export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
+  name: 'deleteEvent',
+  title: generateNTemplate('Delete Event'),
+  Component: 'DeleteEventActionInitializer',
+  schema: {
+    'x-component': 'Action',
+    'x-decorator': 'ACLActionProvider',
+  },
+  useVisible() {
+    const collection = useCollection_deprecated();
+    return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+  },
+};
 
 /**
  * @deprecated
@@ -47,19 +61,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
-        {
-          name: 'deleteEvent',
-          title: generateNTemplate('Delete Event'),
-          Component: 'DeleteEventActionInitializer',
-          schema: {
-            'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
-          },
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
-        },
+        deleteEventActionInitializer,
       ],
     },
     {

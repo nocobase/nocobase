@@ -8,6 +8,7 @@ import {
   CalendarActionInitializers_deprecated,
   CalendarFormActionInitializers,
   calendarActionInitializers,
+  deleteEventActionInitializer,
 } from './schema-initializer/initializers';
 import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } from './schema-initializer/items';
 
@@ -29,6 +30,9 @@ export class PluginCalendarClient extends Plugin {
     this.app.schemaInitializerManager.add(CalendarActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(calendarActionInitializers);
     this.app.schemaInitializerManager.add(CalendarFormActionInitializers);
+    this.app.schemaInitializerManager
+      .get('details:configureActions')
+      .add('enableActions.deleteEvent', deleteEventActionInitializer);
   }
 }
 
