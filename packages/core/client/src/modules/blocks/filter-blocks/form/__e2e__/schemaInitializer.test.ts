@@ -14,7 +14,7 @@ test.describe('configure fields', () => {
   test('display collection fields & display association fields & add text', async ({ page, mockPage }) => {
     await mockPage(oneEmptyFilterFormBlock).goto();
 
-    const formItemInitializer = page.getByLabel('schema-initializer-Grid-fieldInitializers:filterFormItem-general');
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-filterForm:configureFields-general');
 
     // add fields
     await formItemInitializer.hover();

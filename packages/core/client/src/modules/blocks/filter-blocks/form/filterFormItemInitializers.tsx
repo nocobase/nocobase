@@ -42,7 +42,7 @@ export const filterFormItemInitializers_deprecated = new CompatibleSchemaInitial
 
 export const filterFormItemInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:filterFormItem',
+    name: 'filterForm:configureFields',
     wrap: gridRowColWrap,
     icon: 'SettingOutlined',
     title: '{{t("Configure fields")}}',

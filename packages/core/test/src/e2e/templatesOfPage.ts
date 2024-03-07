@@ -1043,7 +1043,7 @@ export const oneEmptyFilterFormBlock: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:filterFormItem',
+                            'x-initializer': 'filterForm:configureFields',
                             'x-uid': 'yls3c6j92ex',
                             'x-async': false,
                             'x-index': 1,
@@ -11129,7 +11129,7 @@ export const oneFilterFormBlockWithAllAssociationFields: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:filterFormItem',
+                            'x-initializer': 'filterForm:configureFields',
                             properties: {
                               y5gw4zxp20e: {
                                 _isJSONSchemaObject: true,
@@ -18836,7 +18836,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:filterFormItem',
+                            'x-initializer': 'filterForm:configureFields',
                             properties: {
                               '0k8y0nlffht': {
                                 _isJSONSchemaObject: true,

@@ -1186,7 +1186,7 @@ export const createFormBlockSchema = (options) => {
 
 export const createFilterFormBlockSchema = (options) => {
   const {
-    formItemInitializers = 'fieldInitializers:filterFormItem',
+    formItemInitializers = 'filterForm:configureFields',
     actionInitializers = 'actionInitializers:filterForm',
     collection,
     resource,
@@ -1425,7 +1425,7 @@ export const createCollapseBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-action': 'associateFilter',
-        'x-initializer': 'fieldInitializers:filterCollapse',
+        'x-initializer': 'filterCollapse:configureFields',
         'x-component': 'AssociationFilter',
         properties: {},
       },

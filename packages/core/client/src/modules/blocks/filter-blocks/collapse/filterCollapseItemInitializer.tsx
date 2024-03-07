@@ -161,7 +161,7 @@ export const filterCollapseItemInitializer_deprecated = new CompatibleSchemaInit
 
 export const filterCollapseItemInitializer = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:filterCollapse',
+    name: 'filterCollapse:configureFields',
     style: { marginTop: 16 },
     icon: 'SettingOutlined',
     title: '{{t("Configure fields")}}',
