@@ -63,7 +63,7 @@ test.describe('configure actions', () => {
   test('edit & delete & duplicate', async ({ page, mockPage }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsMulti-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
@@ -75,7 +75,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:detailsMulti-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 

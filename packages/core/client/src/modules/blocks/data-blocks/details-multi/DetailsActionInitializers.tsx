@@ -55,7 +55,7 @@ export const detailsActionInitializers_deprecated = new CompatibleSchemaInitiali
 
 export const detailsActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:detailsMulti',
+    name: 'detailsWithPaging:configureActions',
     title: '{{t("Configure actions")}}',
     icon: 'SettingOutlined',
     style: {

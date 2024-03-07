@@ -619,7 +619,7 @@ export const oneEmptyDetailsBlock: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:detailsMulti',
+                            'x-initializer': 'detailsWithPaging:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
@@ -3780,7 +3780,7 @@ export const oneDetailBlockWithM2oFieldToGeneral: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:detailsMulti',
+                            'x-initializer': 'detailsWithPaging:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
