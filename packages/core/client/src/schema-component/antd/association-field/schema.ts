@@ -6,7 +6,7 @@ export default {
       grid: {
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'fieldInitializers:formItem',
+        'x-initializer': 'form:configureFields',
       },
     },
   },

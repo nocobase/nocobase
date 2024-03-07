@@ -100,7 +100,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -108,7 +108,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -252,7 +252,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -260,7 +260,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -404,7 +404,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -412,7 +412,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -556,7 +556,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -564,7 +564,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -708,7 +708,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -716,7 +716,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -860,7 +860,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -868,7 +868,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1028,7 +1028,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1036,7 +1036,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1196,7 +1196,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1204,7 +1204,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1364,7 +1364,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1372,7 +1372,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1533,7 +1533,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1541,7 +1541,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1710,7 +1710,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1718,7 +1718,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1878,7 +1878,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -1886,7 +1886,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -2052,7 +2052,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -2060,7 +2060,7 @@ test.describe('field data update', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });

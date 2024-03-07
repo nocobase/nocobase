@@ -549,7 +549,7 @@ test.describe('creation form block schema settings', () => {
         .hover();
       await page.mouse.move(100, 0);
 
-      await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-users').hover();
+      await page.getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
       await page.getByRole('menuitem', { name: 'Nickname' }).click();
       await page.getByRole('menuitem', { name: 'Username' }).click();
 
@@ -764,7 +764,7 @@ test.describe('creation form block schema settings', () => {
                                 version: '2.0',
                                 type: 'void',
                                 'x-component': 'Grid',
-                                'x-initializer': 'fieldInitializers:formItem',
+                                'x-initializer': 'form:configureFields',
                                 properties: {
                                   gnw25oyqe56: {
                                     _isJSONSchemaObject: true,
@@ -1189,7 +1189,7 @@ test.describe('creation form block schema settings', () => {
     await page.mouse.move(300, 0);
 
     //修改引用模板
-    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-fieldInitializers:formItem-users').hover();
+    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
     await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步

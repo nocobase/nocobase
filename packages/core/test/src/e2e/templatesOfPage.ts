@@ -340,7 +340,7 @@ export const oneEmptyForm: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             'x-uid': 'y6qzidbf0lm',
                             'x-async': false,
                             'x-index': 1,
@@ -450,7 +450,7 @@ export const oneEmptyFormWithActions: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             'x-uid': '9gcg27ewld4',
                             'x-async': false,
                             'x-index': 1,
@@ -1967,7 +1967,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 'x-uid': '3h8z0005y9o',
                                                                 'x-async': false,
                                                                 'x-index': 1,
@@ -2173,7 +2173,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 'x-uid': 'kin1do2rmxl',
                                                                 'x-async': false,
                                                                 'x-index': 1,
@@ -2536,7 +2536,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         'x-uid': 'mlnbbyffhjc',
                                                                         'x-async': false,
                                                                         'x-index': 1,
@@ -2930,7 +2930,7 @@ export const oneFormBlockWithRolesFieldBasedUsers: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               '91d8jzkh9r5': {
                                 _isJSONSchemaObject: true,
@@ -3147,7 +3147,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               '7dnk9dcjavn': {
                                 _isJSONSchemaObject: true,
@@ -4048,7 +4048,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   s251k4sz6zy: {
                                                                     _isJSONSchemaObject: true,
@@ -5302,7 +5302,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           '9uqlmdu75wk': {
                                                                             _isJSONSchemaObject: true,
@@ -6055,7 +6055,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           '7mwkv9h74ki': {
                                                                             _isJSONSchemaObject: true,
@@ -6427,7 +6427,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   '0k83zkmy257': {
                                                                     _isJSONSchemaObject: true,
@@ -7342,7 +7342,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           lq1mdgniw87: {
                                                                             _isJSONSchemaObject: true,
@@ -7864,7 +7864,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   j8pqhlswvky: {
                                                                     _isJSONSchemaObject: true,
@@ -8548,7 +8548,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           dho8aesxv5r: {
                                                                             _isJSONSchemaObject: true,
@@ -8956,7 +8956,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   '9tn7mmv6q2j': {
                                                                     _isJSONSchemaObject: true,
@@ -9565,7 +9565,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           nx1dw628ww8: {
                                                                             _isJSONSchemaObject: true,
@@ -9935,7 +9935,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   '08iltavqcsw': {
                                                                     _isJSONSchemaObject: true,
@@ -10759,7 +10759,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           '5rcq2dnzpvl': {
                                                                             _isJSONSchemaObject: true,
@@ -11560,7 +11560,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   o59i5tuhrf9: {
                                                                     _isJSONSchemaObject: true,
@@ -12325,7 +12325,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           q4u8z9fymes: {
                                                                             _isJSONSchemaObject: true,
@@ -12774,7 +12774,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   f6yjc0sfg5k: {
                                                                     _isJSONSchemaObject: true,
@@ -13919,7 +13919,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           fr6gmmxwxm6: {
                                                                             _isJSONSchemaObject: true,
@@ -14890,7 +14890,7 @@ export const oneFormWithMultiLevelAssociationFields: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               grgso6wba2b: {
                                 _isJSONSchemaObject: true,
@@ -15144,7 +15144,7 @@ export const oneSubformWithMultiLevelAssociationFields: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               '6k12v33b6j3': {
                                 _isJSONSchemaObject: true,
@@ -15184,7 +15184,7 @@ export const oneSubformWithMultiLevelAssociationFields: PageConfig = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'fieldInitializers:formItem',
+                                                'x-initializer': 'form:configureFields',
                                                 properties: {
                                                   '9c4mwdnt1kf': {
                                                     _isJSONSchemaObject: true,
@@ -15772,7 +15772,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'fieldInitializers:formItem',
+                                                                                              'form:configureFields',
                                                                                             properties: {
                                                                                               '7gni7kgrxc6': {
                                                                                                 _isJSONSchemaObject:
@@ -15880,7 +15880,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'fieldInitializers:formItem',
+                                                                                                                    'form:configureFields',
                                                                                                                   properties:
                                                                                                                     {
                                                                                                                       wfis8uozy45:
@@ -16009,7 +16009,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                                                         'x-component':
                                                                                                                                                           'Grid',
                                                                                                                                                         'x-initializer':
-                                                                                                                                                          'fieldInitializers:formItem',
+                                                                                                                                                          'form:configureFields',
                                                                                                                                                         properties:
                                                                                                                                                           {
                                                                                                                                                             '8ga4k036hkh':
@@ -16362,7 +16362,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           row_x1kzwaop93e: {
                                                                             _isJSONSchemaObject: true,
@@ -16440,7 +16440,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'fieldInitializers:formItem',
+                                                                                              'form:configureFields',
                                                                                             properties: {
                                                                                               '0o134mwdmzm': {
                                                                                                 _isJSONSchemaObject:
@@ -16548,7 +16548,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'fieldInitializers:formItem',
+                                                                                                                    'form:configureFields',
                                                                                                                   properties:
                                                                                                                     {
                                                                                                                       '2eg7xlliyk0':
@@ -16677,7 +16677,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                                                         'x-component':
                                                                                                                                                           'Grid',
                                                                                                                                                         'x-initializer':
-                                                                                                                                                          'fieldInitializers:formItem',
+                                                                                                                                                          'form:configureFields',
                                                                                                                                                         properties:
                                                                                                                                                           {
                                                                                                                                                             wca260ji2ih:
@@ -16806,7 +16806,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                                                                                               'x-component':
                                                                                                                                                                                                 'Grid',
                                                                                                                                                                                               'x-initializer':
-                                                                                                                                                                                                'fieldInitializers:formItem',
+                                                                                                                                                                                                'form:configureFields',
                                                                                                                                                                                               properties:
                                                                                                                                                                                                 {
                                                                                                                                                                                                   '9xq8mnnzyrw':
@@ -17658,7 +17658,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'fieldInitializers:formItem',
+                                                                                              'form:configureFields',
                                                                                             'x-uid': 'gf8iixoigrh',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -17828,7 +17828,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           beh7yt0xrkh: {
                                                                             _isJSONSchemaObject: true,
@@ -18292,7 +18292,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   '11k61q066eh': {
                                                                     _isJSONSchemaObject: true,
@@ -18724,7 +18724,7 @@ export const oneFormBlockBasedOnUsers: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             'x-uid': '66dozhzo5ld',
                             'x-async': false,
                             'x-index': 1,

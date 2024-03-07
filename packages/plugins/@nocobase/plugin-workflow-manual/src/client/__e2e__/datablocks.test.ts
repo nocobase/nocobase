@@ -906,9 +906,7 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: preManualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${preManualNodeCollectionName}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${preManualNodeCollectionName}"]`)
       .hover();
     await page
       .getByLabel(`designer-schema-settings-CardItem-CreateFormDesigner-${preManualNodeCollectionName}`)
@@ -918,9 +916,7 @@ test.describe('field data', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${preManualNodeCollectionName}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${preManualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: triggerNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -1110,9 +1106,7 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: preManualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${preManualNodeCollectionName}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${preManualNodeCollectionName}"]`)
       .hover();
     await page
       .getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${preManualNodeCollectionName}`)
@@ -1122,9 +1116,7 @@ test.describe('field data', () => {
     await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
-      .locator(
-        `button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${preManualNodeCollectionName}"]`,
-      )
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${preManualNodeCollectionName}"]`)
       .hover();
     await page.getByRole('menuitem', { name: triggerNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });

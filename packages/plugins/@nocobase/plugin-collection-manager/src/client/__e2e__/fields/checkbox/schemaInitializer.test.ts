@@ -9,7 +9,7 @@ test.describe('form item & create form', () => {
       page,
       showMenu: async () => {
         await page.getByRole('button', { name: 'Add new' }).click();
-        await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
+        await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
       },
       supportedOptions: ['checkbox', 'chinaRegion', 'multipleSelect', 'radioGroup', 'singleSelect', 'checkboxGroup'],
     });
@@ -26,7 +26,7 @@ test.describe('form item & edit form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
+        await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
       },
       supportedOptions: ['checkbox', 'chinaRegion', 'multipleSelect', 'radioGroup', 'singleSelect', 'checkboxGroup'],
     });

@@ -214,7 +214,7 @@ export const T2797: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         'x-index': 1,
                                                                         'x-uid': '1d3zru9pi2o',
                                                                         'x-async': false,
@@ -368,7 +368,7 @@ export const T2797: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'fieldInitializers:formItem',
+                                                                                                                    'form:configureFields',
                                                                                                                   'x-index': 1,
                                                                                                                   'x-uid':
                                                                                                                     'k9p2rqt49v1',
@@ -1134,7 +1134,7 @@ export const T2838: PageConfig = {
                                                                                                                                                                                             'x-component':
                                                                                                                                                                                               'Grid',
                                                                                                                                                                                             'x-initializer':
-                                                                                                                                                                                              'fieldInitializers:formItem',
+                                                                                                                                                                                              'form:configureFields',
                                                                                                                                                                                             'x-index': 1,
                                                                                                                                                                                             properties:
                                                                                                                                                                                               {

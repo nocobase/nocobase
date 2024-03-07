@@ -96,7 +96,7 @@ test.describe('configure actions', () => {
     await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').click();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').click();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').click();
     await page.getByRole('menuitem', { name: 'Single Select' }).click();
     await page.getByLabel('block-item-CollectionField-').locator('.ant-select').click();
     await page.getByRole('option', { name: 'option1' }).click();

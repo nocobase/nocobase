@@ -58,7 +58,7 @@ export const T2165 = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             'x-linkage-rules': [
                               {
                                 condition: {
@@ -492,7 +492,7 @@ export const T2174 = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         'x-index': 1,
                                                                         properties: {
                                                                           s3hhb0ohnv1: {
@@ -1128,7 +1128,7 @@ export const T2614: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'fieldInitializers:formItem',
+                                                                                              'form:configureFields',
                                                                                             properties: {
                                                                                               e5kqdzyj562: {
                                                                                                 _isJSONSchemaObject:
@@ -1403,7 +1403,7 @@ export const T2614: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           j9egu0k0tkq: {
                                                                             _isJSONSchemaObject: true,
@@ -1444,7 +1444,7 @@ export const T2614: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'fieldInitializers:formItem',
+                                                                                              'form:configureFields',
                                                                                             properties: {
                                                                                               esgv9d2n3jl: {
                                                                                                 _isJSONSchemaObject:
@@ -1876,7 +1876,7 @@ export const T2993: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   itg7al9oxaw: {
                                                                     _isJSONSchemaObject: true,
@@ -1918,7 +1918,7 @@ export const T2993: PageConfig = {
                                                                                     type: 'void',
                                                                                     'x-component': 'Grid',
                                                                                     'x-initializer':
-                                                                                      'fieldInitializers:formItem',
+                                                                                      'form:configureFields',
                                                                                     properties: {
                                                                                       um4p1ariq2x: {
                                                                                         _isJSONSchemaObject: true,
@@ -2018,7 +2018,7 @@ export const T2993: PageConfig = {
                                                                                                           'x-component':
                                                                                                             'Grid',
                                                                                                           'x-initializer':
-                                                                                                            'fieldInitializers:formItem',
+                                                                                                            'form:configureFields',
                                                                                                           properties: {
                                                                                                             uscd5l8tu2t:
                                                                                                               {
@@ -2458,7 +2458,7 @@ export const T2615: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   i7cb2o172ey: {
                                                                     _isJSONSchemaObject: true,
@@ -2742,7 +2742,7 @@ export const T2615: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           '7eayo28dgzo': {
                                                                             _isJSONSchemaObject: true,
@@ -3376,7 +3376,7 @@ export const T2845: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 'x-index': 1,
                                                                 properties: {
                                                                   i7cb2o172ey: {
@@ -3464,7 +3464,7 @@ export const T2845: PageConfig = {
                                                                                     type: 'void',
                                                                                     'x-component': 'Grid',
                                                                                     'x-initializer':
-                                                                                      'fieldInitializers:formItem',
+                                                                                      'form:configureFields',
                                                                                     properties: {
                                                                                       '3wg2gga1tgx': {
                                                                                         _isJSONSchemaObject: true,
@@ -3729,7 +3729,7 @@ export const T2845: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'fieldInitializers:formItem',
+                                                                                                                    'form:configureFields',
                                                                                                                   'x-uid':
                                                                                                                     'slesgjv4uxx',
                                                                                                                   'x-async':
@@ -4021,7 +4021,7 @@ export const T2845: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         'x-index': 1,
                                                                         properties: {
                                                                           '7eayo28dgzo': {
@@ -4108,7 +4108,7 @@ export const T2845: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'fieldInitializers:formItem',
+                                                                                              'form:configureFields',
                                                                                             properties: {
                                                                                               ddo3fvkz6hw: {
                                                                                                 _isJSONSchemaObject:
@@ -4492,7 +4492,7 @@ export const T2845: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'fieldInitializers:formItem',
+                                                                                              'form:configureFields',
                                                                                             properties: {
                                                                                               c5mcb8foh05: {
                                                                                                 _isJSONSchemaObject:
@@ -4881,7 +4881,7 @@ export const T2200 = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           '3i87cpmv87x': {
                                                                             _isJSONSchemaObject: true,
@@ -5091,7 +5091,7 @@ export const T3106: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             'x-index': 1,
                             properties: {
                               wbvuzjzl83g: {
@@ -5307,7 +5307,7 @@ export const T3251: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'fieldInitializers:formItem',
+                            'x-initializer': 'form:configureFields',
                             'x-linkage-rules': [
                               {
                                 condition: {

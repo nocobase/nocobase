@@ -38,7 +38,7 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     //配置表单区块
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'singleLineText' }).click();
     await page.getByRole('menuitem', { name: 'oneToOneBelongsTo' }).click();
     await page.getByRole('menuitem', { name: 'oneToOneHasOne' }).click();

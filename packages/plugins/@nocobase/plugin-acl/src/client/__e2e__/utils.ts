@@ -161,7 +161,7 @@ export const oneTableBlock: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'fieldInitializers:formItem',
+                                                                'x-initializer': 'form:configureFields',
                                                                 _isJSONSchemaObject: true,
                                                                 properties: {
                                                                   ddz3kqt5kpf: {
@@ -240,7 +240,7 @@ export const oneTableBlock: PageConfig = {
                                                                                     version: '2.0',
                                                                                     'x-component': 'Grid',
                                                                                     'x-initializer':
-                                                                                      'fieldInitializers:formItem',
+                                                                                      'form:configureFields',
                                                                                     _isJSONSchemaObject: true,
                                                                                     properties: {
                                                                                       yhxqnl03mak: {
@@ -898,7 +898,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           q3s02k44o3o: {
@@ -1303,7 +1303,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           '7043nizntd8': {
@@ -1345,7 +1345,7 @@ export const oneTableBlock: PageConfig = {
                                                                                             version: '2.0',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'fieldInitializers:formItem',
+                                                                                              'form:configureFields',
                                                                                             _isJSONSchemaObject: true,
                                                                                             properties: {
                                                                                               dtxjb31ls31: {

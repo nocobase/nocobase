@@ -72,7 +72,7 @@ test('filter task node', async ({ page, mockPage, mockCollections, mockRecords }
   await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
   await page.mouse.move(300, 0, { steps: 100 });
   await page
-    .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+    .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
     .hover();
   await page.getByLabel(`designer-schema-settings-CardItem-CreateFormDesigner-${manualNodeCollectionName}`).hover();
   await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -80,7 +80,7 @@ test('filter task node', async ({ page, mockPage, mockCollections, mockRecords }
   await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
   await page.getByRole('button', { name: 'OK', exact: true }).click();
   await page
-    .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+    .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
     .hover();
   await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
   await page.mouse.move(300, 0, { steps: 100 });
@@ -182,7 +182,7 @@ test('filter workflow name', async ({ page, mockPage, mockCollections, mockRecor
   await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
   await page.mouse.move(300, 0, { steps: 100 });
   await page
-    .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+    .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
     .hover();
   await page.getByLabel(`designer-schema-settings-CardItem-CreateFormDesigner-${manualNodeCollectionName}`).hover();
   await page.getByRole('menuitem', { name: 'Edit block title' }).click();
@@ -190,7 +190,7 @@ test('filter workflow name', async ({ page, mockPage, mockCollections, mockRecor
   await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
   await page.getByRole('button', { name: 'OK', exact: true }).click();
   await page
-    .locator(`button[aria-label^="schema-initializer-Grid-fieldInitializers:formItem-${manualNodeCollectionName}"]`)
+    .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
     .hover();
   await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
   await page.mouse.move(300, 0, { steps: 100 });

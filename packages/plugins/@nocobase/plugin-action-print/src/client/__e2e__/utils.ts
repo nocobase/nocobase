@@ -547,7 +547,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                     type: 'void',
                                                                     version: '2.0',
                                                                     'x-component': 'Grid',
-                                                                    'x-initializer': 'fieldInitializers:formItem',
+                                                                    'x-initializer': 'form:configureFields',
                                                                     _isJSONSchemaObject: true,
                                                                     properties: {
                                                                       ikh538659hb: {

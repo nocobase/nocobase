@@ -80,7 +80,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
       .hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     // 绑定工作流
-    await page.getByLabel(`schema-initializer-Grid-fieldInitializers:formItem-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-form:configureFields-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`).hover();
@@ -176,7 +176,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
       .hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Submit to workflow' }).click();
-    await page.getByLabel(`schema-initializer-Grid-fieldInitializers:formItem-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-form:configureFields-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Submit to workflow' }).hover();

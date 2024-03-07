@@ -16,7 +16,7 @@ test.describe('configure fields', () => {
     await mockPage(oneEmptyForm).goto();
 
     // collection fields
-    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
 
@@ -32,7 +32,7 @@ test.describe('configure fields', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne.nickname')).toBeVisible();
 
     // delete fields
-    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
 
@@ -49,7 +49,7 @@ test.describe('configure fields', () => {
     ).not.toBeVisible();
 
     // add text
-    await page.getByLabel('schema-initializer-Grid-fieldInitializers:formItem-general').hover();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'Text' }).click();
     await expect(page.getByLabel('block-item-Markdown.Void-general-form')).toBeVisible();
   });

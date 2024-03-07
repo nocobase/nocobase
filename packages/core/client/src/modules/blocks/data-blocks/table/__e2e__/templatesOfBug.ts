@@ -513,7 +513,7 @@ export const T2187 = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'fieldInitializers:formItem',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           h191s1ni4am: {
                                                                             _isJSONSchemaObject: true,
