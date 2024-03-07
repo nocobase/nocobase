@@ -154,7 +154,7 @@ export const oneEmptyGantt: PageConfig = {
                                 marginBottom: 24,
                               },
                             },
-                            'x-initializer': 'actionInitializers:gantt',
+                            'x-initializer': 'gantt:configureActions',
                             'x-uid': 'guwovmwt4c0',
                             'x-async': false,
                             'x-index': 1,

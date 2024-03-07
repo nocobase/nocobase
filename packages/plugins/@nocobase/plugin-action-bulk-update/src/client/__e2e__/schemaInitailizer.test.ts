@@ -13,7 +13,7 @@ test.describe('TableActionInitializers & GanttActionInitializers & MapActionInit
     const nocoPage = await mockPage(oneEmptyGantt).waitForInit();
     await mockRecords('general', 3);
     await nocoPage.goto();
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:gantt-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
     await page.mouse.move(300, 0);

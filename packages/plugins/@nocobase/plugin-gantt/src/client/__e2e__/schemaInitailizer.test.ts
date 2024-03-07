@@ -75,7 +75,7 @@ test.describe('configure fields', () => {
 test.describe('configure actions', () => {
   test('configure button in gannt block', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGantt).goto();
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:gantt-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();

@@ -152,7 +152,7 @@ export const GanttActionInitializers_deprecated = new CompatibleSchemaInitialize
 
 export const ganttActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:gantt',
+    name: 'gantt:configureActions',
     title: "{{t('Configure actions')}}",
     icon: 'SettingOutlined',
     style: {
