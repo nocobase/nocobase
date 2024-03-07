@@ -4,7 +4,7 @@ import { oneEmptyGantt } from './utils';
 test.describe('TableActionInitializers & GanttActionInitializers & MapActionInitializers should add bulk edit action', () => {
   test('bulk edit in TableActionInitializers', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTableBlockWithActions).goto();
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
     await page.mouse.move(300, 0);

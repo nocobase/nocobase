@@ -1354,7 +1354,7 @@ export const createTableBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': tableActionInitializers ?? 'actionInitializers:tableAction',
+        'x-initializer': tableActionInitializers ?? 'table:configureActions',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -1458,7 +1458,7 @@ export const createTableSelectorSchema = (options) => {
     properties: {
       [uid()]: {
         type: 'void',
-        'x-initializer': 'actionInitializers:tableAction',
+        'x-initializer': 'table:configureActions',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {

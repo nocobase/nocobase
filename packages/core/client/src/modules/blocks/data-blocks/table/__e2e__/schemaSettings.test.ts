@@ -677,7 +677,7 @@ test.describe('actions schema settings', () => {
 
       // 添加一行数据
       // TODO: 使用 mockRecord 为 tree 表添加一行数据无效
-      await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-table:configureActions-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).click();
       await page.getByRole('button', { name: 'Add new' }).click();
       await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-treeCollection').hover();

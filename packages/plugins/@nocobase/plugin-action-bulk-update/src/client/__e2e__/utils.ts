@@ -408,7 +408,7 @@ export const oneEmptyTableBlockWithCustomizeUpdate: PageConfig = {
                         type: 'void',
                         version: '2.0',
                         'x-component': 'ActionBar',
-                        'x-initializer': 'actionInitializers:tableAction',
+                        'x-initializer': 'table:configureActions',
                         'x-component-props': {
                           style: {
                             marginBottom: 'var(--nb-spacing)',

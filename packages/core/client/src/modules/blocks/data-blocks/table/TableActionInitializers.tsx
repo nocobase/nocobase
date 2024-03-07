@@ -122,7 +122,7 @@ export const tableActionInitializers_deprecated = new CompatibleSchemaInitialize
 
 export const tableActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:tableAction',
+    name: 'table:configureActions',
     title: "{{t('Configure actions')}}",
     icon: 'SettingOutlined',
     style: {

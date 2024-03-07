@@ -4,7 +4,7 @@ import { oneEmptyGantt } from './utils';
 test.describe('TableActionInitializers & GanttActionInitializers & MapActionInitializers ', () => {
   test('TableActionInitializers should add bulk update', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTableBlockWithCustomizeActions).goto();
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
     await expect(page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table')).toBeVisible();

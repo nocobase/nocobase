@@ -17,7 +17,7 @@ test.describe('configure actions', () => {
     await mockPage(oneEmptyTable).goto();
 
     // add buttons
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -35,7 +35,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -56,7 +56,7 @@ test.describe('configure actions', () => {
   test('customize: add record', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTable).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:tableAction-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'add record' }).click();
 
