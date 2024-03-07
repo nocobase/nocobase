@@ -93,7 +93,7 @@ export const auditLogsTableColumnInitializers_deprecated = new CompatibleSchemaI
 
 export const auditLogsTableColumnInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:auditLogsTableColumn',
+    name: 'auditLogsTable:configureColumns',
     insertPosition: 'beforeEnd',
     icon: 'SettingOutlined',
     title: '{{t("Configure columns")}}',
