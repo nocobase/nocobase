@@ -11,7 +11,7 @@ export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
   },
   useVisible() {
     const collection = useCollection_deprecated();
-    return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+    return collection.template === 'calendar';
   },
 };
 
