@@ -558,7 +558,7 @@ test.skip('Collection event add data trigger, get front manual node add form sin
               version: '2.0',
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'popup:workflowManual:configureUserInterface:addBlock',
+              'x-initializer': 'workflowManual:popup:configureUserInterface:addBlock',
               name: 'grid',
               properties: {
                 '59t231zx5vx': {
