@@ -90,7 +90,7 @@ export const listActionInitializers_deprecated = new CompatibleSchemaInitializer
 
 export const listActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:list',
+    name: 'list:configureActions',
     title: "{{t('Configure actions')}}",
     icon: 'SettingOutlined',
     style: {
