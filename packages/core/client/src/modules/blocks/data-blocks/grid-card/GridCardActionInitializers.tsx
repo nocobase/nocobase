@@ -85,7 +85,7 @@ export const gridCardActionInitializers_deprecated = new CompatibleSchemaInitial
 
 export const gridCardActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:gridCard',
+    name: 'gridCard:configureActions',
     title: "{{t('Configure actions')}}",
     icon: 'SettingOutlined',
     style: {

@@ -1022,7 +1022,7 @@ export const createListBlockSchema = (options) => {
 export const createGridCardBlockSchema = (options) => {
   const {
     formItemInitializers = 'details:configureFields',
-    actionInitializers = 'actionInitializers:gridCard',
+    actionInitializers = 'gridCard:configureActions',
     itemActionInitializers = 'actionInitializers:gridCardItem',
     collection,
     association,

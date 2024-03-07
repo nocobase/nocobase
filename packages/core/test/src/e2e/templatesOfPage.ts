@@ -890,7 +890,7 @@ export const oneEmptyGridCardBlock: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'actionInitializers:gridCard',
+                        'x-initializer': 'gridCard:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
