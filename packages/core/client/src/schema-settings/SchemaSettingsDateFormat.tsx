@@ -19,7 +19,9 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
     collectionField?.uiSchema?.['x-component-props']?.dateFormat ||
     'YYYY-MM-DD';
   const timeFormatDefaultValue =
-    fieldSchema?.['x-component-props']?.timeFormat || collectionField?.uiSchema?.['x-component-props']?.timeFormat;
+    fieldSchema?.['x-component-props']?.timeFormat ||
+    collectionField?.uiSchema?.['x-component-props']?.timeFormat ||
+    'HH:mm:ss';
   return (
     <SchemaSettingsModalItem
       title={t('Date display format')}
@@ -143,7 +145,9 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         parts.pop();
         const modifiedString = parts.join('.');
         field.query(`${modifiedString}.*[0:].${fieldSchema.name}`).forEach((f) => {
-          f.setComponentProps({ ...data });
+          if (f.props.name === fieldSchema.name) {
+            f.setComponentProps({ ...data });
+          }
         });
         dn.emit('patch', {
           schema,
