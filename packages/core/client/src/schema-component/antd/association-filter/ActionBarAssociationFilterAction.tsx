@@ -7,6 +7,11 @@ import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
+/**
+ * @deprecated
+ * @param props
+ * @returns
+ */
 export const ActionBarAssociationFilterAction = (props) => {
   const { refresh } = useContext(SchemaComponentContext);
   const fieldSchema = useFieldSchema();

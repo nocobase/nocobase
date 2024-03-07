@@ -44,7 +44,6 @@ const gridRowColWrap = (schema: ISchema) => {
 
 export const KanbanCardDesigner = () => {
   const { designable } = useDesignable();
-  const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const { render } = useSchemaInitializerRender('fieldInitializers:kanbanCard');
   if (!designable) {
     return null;
