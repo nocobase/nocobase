@@ -472,7 +472,7 @@ export const addActionButton_deprecated = new CompatibleSchemaInitializer({
 
 export const addActionButton = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:workflowManual',
+    name: 'workflowManual:form:configureActions',
     title: '{{t("Configure actions")}}',
     items: [
       {

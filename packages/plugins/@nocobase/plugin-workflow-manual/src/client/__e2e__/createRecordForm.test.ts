@@ -2017,7 +2017,7 @@ test.describe('action button', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // await page.mouse.click(300, 0);
     await page
-      .getByLabel(`schema-initializer-ActionBar-actionInitializers:workflowManual-${manualNodeCollectionName}`)
+      .getByLabel(`schema-initializer-ActionBar-workflowManual:form:configureActions-${manualNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Terminate the process' }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -2158,7 +2158,7 @@ test.describe('action button', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     // await page.mouse.click(300, 0);
     await page
-      .getByLabel(`schema-initializer-ActionBar-actionInitializers:workflowManual-${manualNodeCollectionName}`)
+      .getByLabel(`schema-initializer-ActionBar-workflowManual:form:configureActions-${manualNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Save temporarily' }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
