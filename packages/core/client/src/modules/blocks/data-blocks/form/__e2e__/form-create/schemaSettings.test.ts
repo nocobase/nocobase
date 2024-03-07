@@ -810,7 +810,7 @@ test.describe('creation form block schema settings', () => {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
                                 type: 'void',
-                                'x-initializer': 'actionInitializers:form',
+                                'x-initializer': 'createForm:configureActions',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   layout: 'one-column',

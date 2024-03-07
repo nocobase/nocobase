@@ -349,7 +349,7 @@ export const oneEmptyForm: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -459,7 +459,7 @@ export const oneEmptyFormWithActions: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -2182,7 +2182,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'actionInitializers:form',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -3042,7 +3042,7 @@ export const oneFormBlockWithRolesFieldBasedUsers: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -3671,7 +3671,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -14999,7 +14999,7 @@ export const oneFormWithMultiLevelAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -15316,7 +15316,7 @@ export const oneSubformWithMultiLevelAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -18712,7 +18712,7 @@ export const oneFormBlockBasedOnUsers: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:form',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',

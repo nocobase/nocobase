@@ -44,10 +44,7 @@ import {
   createFormActionInitializers,
   createFormActionInitializers_deprecated,
 } from '../modules/blocks/data-blocks/form/createFormActionInitializers';
-import {
-  formActionInitializers,
-  formActionInitializers_deprecated,
-} from '../modules/blocks/data-blocks/form/formActionInitializers';
+import { formActionInitializers } from '../modules/blocks/data-blocks/form/formActionInitializers';
 import {
   formItemInitializers,
   formItemInitializers_deprecated,
@@ -188,7 +185,6 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(tableActionColumnInitializers);
     this.app.schemaInitializerManager.add(formItemInitializers_deprecated);
     this.app.schemaInitializerManager.add(formItemInitializers);
-    this.app.schemaInitializerManager.add(formActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(formActionInitializers);
     this.app.schemaInitializerManager.add(detailsActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(detailsActionInitializers);
