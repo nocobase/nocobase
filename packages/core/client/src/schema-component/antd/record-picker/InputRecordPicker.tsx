@@ -16,6 +16,7 @@ import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 export const RecordPickerContext = createContext(null);
+RecordPickerContext.displayName = 'RecordPickerContext';
 
 function flatData(data) {
   const newArr = [];

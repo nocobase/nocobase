@@ -37,5 +37,15 @@ export const detailsActionInitializers = new SchemaInitializer({
         },
       ],
     },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      type: 'subMenu',
+      name: 'customize',
+      title: '{{t("Customize")}}',
+      children: [],
+    },
   ],
 });

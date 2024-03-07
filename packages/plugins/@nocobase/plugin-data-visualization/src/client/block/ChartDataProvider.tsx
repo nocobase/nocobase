@@ -12,6 +12,7 @@ export const ChartDataContext = createContext<{
   addChart: (uid: string, chart: ChartData) => void;
   removeChart: (uid: string) => void;
 }>({} as any);
+ChartDataContext.displayName = 'ChartDataContext';
 
 export const ChartDataProvider: React.FC = (props) => {
   const [charts, setCharts] = useState<{

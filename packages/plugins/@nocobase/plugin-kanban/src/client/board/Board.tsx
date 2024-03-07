@@ -20,6 +20,7 @@ import withDroppable from './withDroppable';
 const Columns = forwardRef((props, ref: any) => (
   <div ref={ref} style={{ whiteSpace: 'nowrap', height: '100%', overflowY: 'clip' }} {...props} />
 ));
+Columns.displayName = 'Columns';
 
 const DroppableBoard = withDroppable(Columns);
 

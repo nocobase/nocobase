@@ -6,6 +6,7 @@ import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useCompile } from '../schema-component';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
+CurrentUserContext.displayName = 'CurrentUserContext';
 
 export const useCurrentUserContext = () => {
   return useContext(CurrentUserContext);

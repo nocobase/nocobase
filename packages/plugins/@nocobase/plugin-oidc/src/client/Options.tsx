@@ -324,25 +324,28 @@ const schema = {
   },
 };
 
-const Usage = observer(() => {
-  const { t } = useOidcTranslation();
+const Usage = observer(
+  () => {
+    const { t } = useOidcTranslation();
 
-  const { protocol, host } = window.location;
-  const url = `${protocol}//${host}/api/oidc:redirect`;
+    const { protocol, host } = window.location;
+    const url = `${protocol}//${host}/api/oidc:redirect`;
 
-  const copy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    message.success(t('Copied'));
-  };
+    const copy = (text: string) => {
+      navigator.clipboard.writeText(text);
+      message.success(t('Copied'));
+    };
 
-  return (
-    <Card title={t('Usage')} type="inner">
-      <FormItem label={t('Redirect URL')}>
-        <Input value={url} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(url)} />} />
-      </FormItem>
-    </Card>
-  );
-});
+    return (
+      <Card title={t('Usage')} type="inner">
+        <FormItem label={t('Redirect URL')}>
+          <Input value={url} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(url)} />} />
+        </FormItem>
+      </Card>
+    );
+  },
+  { displayName: 'Usage' },
+);
 
 export const Options = () => {
   const { t } = useOidcTranslation();

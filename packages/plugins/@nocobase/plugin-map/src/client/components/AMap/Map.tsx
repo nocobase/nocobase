@@ -473,3 +473,4 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     </div>
   );
 });
+AMapComponent.displayName = 'AMapComponent';

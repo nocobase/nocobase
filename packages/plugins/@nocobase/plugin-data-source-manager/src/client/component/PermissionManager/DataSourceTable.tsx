@@ -11,6 +11,7 @@ import { dataSourceSchema } from './schemas/dataSourceTable';
 import { PermissionProvider } from './PermisionProvider';
 
 const AvailableActionsContext = createContext([]);
+AvailableActionsContext.displayName = 'AvailableActionsContext';
 
 const AvailableActionsProver: React.FC = (props) => {
   const { data, loading } = useRequest<{
@@ -31,7 +32,6 @@ export const useAvailableActions = () => {
 
 export const DataSourceTable = () => {
   const record = useRecord();
-  console.log(record.key);
   return (
     <div>
       <SchemaComponentContext.Provider value={{ designable: false }}>

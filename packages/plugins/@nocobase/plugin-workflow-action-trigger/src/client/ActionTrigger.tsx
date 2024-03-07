@@ -10,8 +10,8 @@ import { Trigger, CollectionBlockInitializer, getCollectionFieldOptions } from '
 import { NAMESPACE, useLang } from '../locale';
 
 export default class extends Trigger {
-  title = `{{t("Form event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Event triggers when submitted a workflow bound form action.", { ns: "${NAMESPACE}" })}}`;
+  title = `{{t("Action event", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Triggers after specific operations on data are submitted, such as create, update, delete, etc., or directly submitting a record to the workflow.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       type: 'string',
@@ -21,8 +21,8 @@ export default class extends Trigger {
       'x-component-props': {
         className: 'auto-width',
       },
-      title: `{{t("Form data model", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Use a collection to match form data.", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Collection", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Which collection record belongs to.", { ns: "${NAMESPACE}" })}}`,
       'x-reactions': [
         {
           target: 'appends',
@@ -38,7 +38,7 @@ export default class extends Trigger {
     appends: {
       type: 'array',
       title: `{{t("Associations to use", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.", { ns: "workflow" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
@@ -65,7 +65,7 @@ export default class extends Trigger {
     useCollectionDataSource,
   };
   isActionTriggerable = (config, context) => {
-    return ['create', 'update'].includes(context.action);
+    return ['create', 'update', 'customize:update', 'customize:triggerWorkflows'].includes(context.action);
   };
   useVariables(config, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -75,9 +75,9 @@ export default class extends Trigger {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const langTriggerData = useLang('Trigger data');
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langUserSubmittedForm = useLang('User submitted form');
+    const langUserSubmittedForm = useLang('User submitted action');
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langRoleSubmittedForm = useLang('Role of user submitted form');
+    const langRoleSubmittedForm = useLang('Role of user submitted action');
     const rootFields = [
       {
         collectionName: config.collection,

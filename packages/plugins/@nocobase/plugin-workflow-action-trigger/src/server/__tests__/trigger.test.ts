@@ -5,7 +5,7 @@ import { MockServer } from '@nocobase/test';
 
 import Plugin from '..';
 
-describe('workflow > form-trigge[r', () => {
+describe('workflow > action-trigger', () => {
   let app: MockServer;
   let db: Database;
   let agent;
@@ -20,7 +20,7 @@ describe('workflow > form-trigge[r', () => {
     app = await getApp({
       plugins: ['users', 'auth', Plugin],
     });
-    await app.getPlugin('auth').install();
+    await app.pm.get('auth').install();
     agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -42,7 +42,7 @@ describe('workflow > form-trigge[r', () => {
     it('enabled / disabled', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         config: {
           collection: 'posts',
         },
@@ -97,7 +97,7 @@ describe('workflow > form-trigge[r', () => {
     it('only trigger if params provided matching collection config', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         config: {
           collection: 'posts',
         },
@@ -139,7 +139,7 @@ describe('workflow > form-trigge[r', () => {
     it('system fields could be accessed', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         config: {
           collection: 'posts',
         },
@@ -162,7 +162,7 @@ describe('workflow > form-trigge[r', () => {
     it('appends', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         config: {
           collection: 'posts',
           appends: ['createdBy'],
@@ -186,7 +186,7 @@ describe('workflow > form-trigge[r', () => {
     it('user submitted form', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         config: {
           collection: 'posts',
         },
@@ -211,7 +211,7 @@ describe('workflow > form-trigge[r', () => {
     it('trigger after updated', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         config: {
           collection: 'posts',
         },
@@ -241,11 +241,50 @@ describe('workflow > form-trigge[r', () => {
     });
   });
 
+  describe.skip('destroy', () => {
+    it('trigger after destroyed', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({
+        values: { title: 't1' },
+      });
+      const p2 = await PostRepo.create({
+        values: { title: 't2' },
+      });
+      const res1 = await userAgents[0].resource('posts').destroy({
+        filterByTk: p1.id,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(0);
+
+      const res2 = await userAgents[0].resource('posts').destroy({
+        filterByTk: p2.id,
+        triggerWorkflows: `${workflow.key}`,
+      });
+
+      await sleep(500);
+
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2.context.data).toBe(1);
+    });
+  });
+
   describe('directly trigger', () => {
     it('trigger data', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
@@ -264,12 +303,12 @@ describe('workflow > form-trigge[r', () => {
     it('multi trigger', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
       });
 
       const w2 = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
@@ -292,7 +331,7 @@ describe('workflow > form-trigge[r', () => {
     it('user submitted form', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         config: {
           collection: 'posts',
           appends: ['createdBy'],
@@ -318,7 +357,7 @@ describe('workflow > form-trigge[r', () => {
     it('level: 1', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
@@ -337,7 +376,7 @@ describe('workflow > form-trigge[r', () => {
     it('level: 2', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
@@ -358,7 +397,7 @@ describe('workflow > form-trigge[r', () => {
     it('revision', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
@@ -405,7 +444,7 @@ describe('workflow > form-trigge[r', () => {
     it('sync form trigger', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         sync: true,
         config: {
           collection: 'posts',
@@ -426,7 +465,7 @@ describe('workflow > form-trigge[r', () => {
     it('sync and async will all be triggered in one action', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         config: {
           collection: 'posts',
         },
@@ -434,7 +473,7 @@ describe('workflow > form-trigge[r', () => {
 
       const w2 = await WorkflowModel.create({
         enabled: true,
-        type: 'form',
+        type: 'action',
         sync: true,
         config: {
           collection: 'posts',

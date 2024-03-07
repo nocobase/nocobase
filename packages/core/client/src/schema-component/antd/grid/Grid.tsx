@@ -11,8 +11,11 @@ import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 
 const GridRowContext = createContext<any>({});
+GridRowContext.displayName = 'GridRowContext';
 const GridColContext = createContext<any>({});
+GridColContext.displayName = 'GridColContext';
 const GridContext = createContext<any>({});
+GridContext.displayName = 'GridContext';
 
 const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
 const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';

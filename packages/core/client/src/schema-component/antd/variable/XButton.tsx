@@ -15,3 +15,4 @@ export const XButton = forwardRef((props: ButtonProps, ref: any) => {
     </Button>
   );
 });
+XButton.displayName = 'XButton';

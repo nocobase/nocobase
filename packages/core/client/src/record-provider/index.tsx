@@ -4,7 +4,9 @@ import { CollectionRecordProvider } from '../data-source';
 import { useCurrentUserContext } from '../user';
 
 export const RecordContext_deprecated = createContext({});
+RecordContext_deprecated.displayName = 'RecordContext_deprecated';
 export const RecordIndexContext = createContext(null);
+RecordIndexContext.displayName = 'RecordIndexContext';
 
 /**
  * @deprecated use `CollectionRecordProvider` instead

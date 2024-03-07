@@ -68,32 +68,35 @@ const schema = {
   },
 };
 
-const Usage = observer(() => {
-  const form = useForm();
-  const record = useRecord();
-  const { t } = useSamlTranslation();
+const Usage = observer(
+  () => {
+    const form = useForm();
+    const record = useRecord();
+    const { t } = useSamlTranslation();
 
-  const app = getSubAppName() || 'main';
-  const name = form.values.name ?? record.name;
-  const { protocol, host } = window.location;
-  const url = `${protocol}//${host}/api/saml:redirect?authenticator=${name}&__appName=${app}`;
+    const app = getSubAppName() || 'main';
+    const name = form.values.name ?? record.name;
+    const { protocol, host } = window.location;
+    const url = `${protocol}//${host}/api/saml:redirect?authenticator=${name}&__appName=${app}`;
 
-  const copy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    message.success(t('Copied'));
-  };
+    const copy = (text: string) => {
+      navigator.clipboard.writeText(text);
+      message.success(t('Copied'));
+    };
 
-  return (
-    <Card title={t('Usage')} type="inner">
-      <FormItem label={t('SP Issuer/EntityID')}>
-        <Input value={name} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(name)} />} />
-      </FormItem>
-      <FormItem label={t('ACS URL')}>
-        <Input value={url} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(url)} />} />
-      </FormItem>
-    </Card>
-  );
-});
+    return (
+      <Card title={t('Usage')} type="inner">
+        <FormItem label={t('SP Issuer/EntityID')}>
+          <Input value={name} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(name)} />} />
+        </FormItem>
+        <FormItem label={t('ACS URL')}>
+          <Input value={url} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(url)} />} />
+        </FormItem>
+      </Card>
+    );
+  },
+  { displayName: 'Usage' },
+);
 
 export const Options = () => {
   const { t } = useSamlTranslation();

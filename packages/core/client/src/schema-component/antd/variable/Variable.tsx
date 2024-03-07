@@ -7,6 +7,7 @@ import { RawTextArea } from './RawTextArea';
 import { TextArea } from './TextArea';
 
 const VariableScopeContext = createContext([]);
+VariableScopeContext.displayName = 'VariableScopeContext';
 
 export function VariableScopeProvider({ scope = [], children }) {
   return <VariableScopeContext.Provider value={scope}>{children}</VariableScopeContext.Provider>;

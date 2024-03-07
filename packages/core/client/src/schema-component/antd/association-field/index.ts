@@ -14,3 +14,4 @@ AssociationField.AddNewer = Action.Container;
 AssociationField.Selector = Action.Container;
 AssociationField.Viewer = Action.Container;
 AssociationField.InternalSelect = InternalPicker;
+AssociationField.ReadPretty = ReadPretty;

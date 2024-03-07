@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
 import useStyles from './GridCard.Decorator.style';
 export const GridCardBlockContext = createContext<any>({});
+GridCardBlockContext.displayName = 'GridCardBlockContext';
 
 const InternalGridCardBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();

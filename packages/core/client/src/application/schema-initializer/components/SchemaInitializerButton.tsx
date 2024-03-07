@@ -28,7 +28,18 @@ export const SchemaInitializerButton: FC<SchemaInitializerButtonProps> = React.m
       icon={typeof options.icon === 'string' ? <Icon type={options.icon as string} /> : options.icon}
       {...others}
     >
-      {compile(options.title)}
+      <span
+        style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          display: 'inline-block',
+          width: options.icon ? 'calc(100% - 14px)' : '100%',
+          verticalAlign: 'bottom',
+        }}
+      >
+        {compile(options.title)}
+      </span>
     </Button>
   );
 });

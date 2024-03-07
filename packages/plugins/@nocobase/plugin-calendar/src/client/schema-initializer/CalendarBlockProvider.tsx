@@ -5,6 +5,7 @@ import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 
 export const CalendarBlockContext = createContext<any>({});
+CalendarBlockContext.displayName = 'CalendarBlockContext';
 
 const InternalCalendarBlockProvider = (props) => {
   const { fieldNames, showLunar } = props;

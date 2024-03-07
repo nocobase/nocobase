@@ -165,6 +165,8 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
                   ['x-uid']: fieldSchema['x-uid'],
                 };
                 const fieldNames = {
+                  ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+                  ...fieldSchema['x-component-props']?.['fieldNames'],
                   label,
                 };
                 fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};

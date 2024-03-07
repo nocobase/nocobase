@@ -58,3 +58,4 @@ export const ChartFilterForm: React.FC = memo((props) => {
   useEffect(() => setForm(form), [form, setForm]);
   return <FormV2 {...props} form={form} />;
 });
+ChartFilterForm.displayName = 'ChartFilterForm';

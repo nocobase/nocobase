@@ -8,6 +8,7 @@ import { useAPIClient, useRequest } from '../api-client';
 export const ResourceActionContext = createContext<
   Result<any, any> & { state?: any; setState?: any; dragSort?: boolean; defaultRequest?: any }
 >(null);
+ResourceActionContext.displayName = 'ResourceActionContext';
 
 interface ResourceActionProviderProps {
   type?: 'association' | 'collection';
@@ -18,6 +19,7 @@ interface ResourceActionProviderProps {
 }
 
 const ResourceContext = createContext<any>(null);
+ResourceContext.displayName = 'ResourceContext';
 
 const CollectionResourceActionProvider = (props) => {
   const { collection, request, uid, dragSort } = props;

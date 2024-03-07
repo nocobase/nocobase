@@ -4,6 +4,7 @@ import { FormProvider, SchemaComponent, useRecord } from '@nocobase/client';
 import { getScopesSchema } from './schemas/scopes';
 
 const RolesResourcesScopesSelectedRowKeysContext = createContext(null);
+RolesResourcesScopesSelectedRowKeysContext.displayName = 'RolesResourcesScopesSelectedRowKeysContext';
 
 const RolesResourcesScopesSelectedRowKeysProvider: React.FC = (props) => {
   const [keys, setKeys] = useState([]);

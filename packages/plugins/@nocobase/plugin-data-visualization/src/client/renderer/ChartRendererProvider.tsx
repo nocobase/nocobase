@@ -65,6 +65,7 @@ export const ChartRendererContext = createContext<
     data?: any[];
   } & ChartRendererProps
 >({} as any);
+ChartRendererContext.displayName = 'ChartRendererContext';
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const { query, config, collection, transform, dataSource } = props;

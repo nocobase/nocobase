@@ -1,12 +1,6 @@
 import { SchemaInitializerItemType } from '../../../../application';
 import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 
-export const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
-  name: 'submitToWorkflow',
-  title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-  Component: 'FormTriggerWorkflowActionInitializerV2',
-};
-
 // 表单的操作配置
 export const formActionInitializers = new SchemaInitializer({
   name: 'FormActionInitializers',
@@ -42,7 +36,6 @@ export const formActionInitializers = new SchemaInitializer({
           title: '{{t("Save record")}}',
           Component: 'SaveRecordActionInitializer',
         },
-        formTriggerWorkflowActionInitializerV2,
         {
           name: 'customRequest',
           title: '{{t("Custom request")}}',

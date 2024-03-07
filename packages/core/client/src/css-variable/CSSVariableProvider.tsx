@@ -42,9 +42,6 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorSettings', token.colorSettings || defaultTheme.token.colorSettings);
     document.body.style.setProperty('--colorBgSettingsHover', token.colorBgSettingsHover);
     document.body.style.setProperty('--colorBorderSettingsHover', token.colorBorderSettingsHover);
-    document.body.style.setProperty('--margin', `${token.margin}px`);
-    document.body.style.setProperty('--padding', `${token.padding}px`);
-    document.body.style.setProperty('--paddingXXS', `${token.paddingXXS}px`);
 
     // 设置登录页面的背景色
     document.body.style.setProperty('background-color', token.colorBgContainer);
@@ -75,9 +72,6 @@ export const CSSVariableProvider = ({ children }) => {
     token.colorSettings,
     token.colorBgSettingsHover,
     token.colorBorderSettingsHover,
-    token.margin,
-    token.padding,
-    token.paddingXXS,
   ]);
 
   return children;

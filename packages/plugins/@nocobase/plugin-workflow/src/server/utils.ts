@@ -1,6 +1,6 @@
 import { Model } from '@nocobase/database';
 
-export function toJSON(data: Model | Model[]): object {
+export function toJSON(data: any): any {
   if (Array.isArray(data)) {
     return data.map(toJSON);
   }

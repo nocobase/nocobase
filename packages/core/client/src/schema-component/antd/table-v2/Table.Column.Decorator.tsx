@@ -7,6 +7,7 @@ import {
   useCompile,
   useDesigner,
   CollectionFieldContext,
+  useFlag,
 } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 import { isCollectionFieldComponent } from './utils';
@@ -35,6 +36,7 @@ export const TableColumnDecorator = (props) => {
   const field = useField();
   const { fieldSchema, uiSchema, collectionField } = useColumnSchema();
   const compile = useCompile();
+  const { isInSubTable } = useFlag() || {};
   useLayoutEffect(() => {
     if (field.title) {
       return;
@@ -47,7 +49,12 @@ export const TableColumnDecorator = (props) => {
     }
   }, [uiSchema?.title]);
   return (
-    <SortableItem className={designerCss}>
+    <SortableItem
+      className={designerCss({
+        margin: isInSubTable ? '-12px -8px' : '-18px -16px',
+        padding: isInSubTable ? '12px 8px' : '18px 16px',
+      })}
+    >
       <CollectionFieldContext.Provider value={collectionField}>
         <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
         {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}

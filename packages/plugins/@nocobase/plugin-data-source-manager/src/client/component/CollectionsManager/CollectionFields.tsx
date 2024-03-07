@@ -33,6 +33,7 @@ const RemoteCollectionContext = createContext<{
   refreshRM: Function;
   titleField: string;
 }>({ refreshRM: () => {}, titleField: null, targetCollection: null });
+RemoteCollectionContext.displayName = 'RemoteCollectionContext';
 export const useRemoteCollectionContext = () => {
   return useContext(RemoteCollectionContext);
 };

@@ -36,3 +36,4 @@ export const AsDefaultTemplate = React.forwardRef((props: any, ref) => {
     />
   );
 });
+AsDefaultTemplate.displayName = 'AsDefaultTemplate';

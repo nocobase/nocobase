@@ -124,6 +124,7 @@ interface SchemaSettingsContextProps<T = any> {
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
+SchemaSettingsContext.displayName = 'SchemaSettingsContext';
 
 export function useSchemaSettings<T = any>() {
   return useContext(SchemaSettingsContext) as SchemaSettingsContextProps<T>;

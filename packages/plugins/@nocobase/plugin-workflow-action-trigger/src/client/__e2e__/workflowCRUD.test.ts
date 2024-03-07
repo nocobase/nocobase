@@ -24,7 +24,7 @@ test.describe('Filter', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -47,7 +47,7 @@ test.describe('Filter', () => {
 });
 
 test.describe('Add new', () => {
-  test('add new Form event', async ({ page }) => {
+  test('add new Action event', async ({ page }) => {
     // 添加工作流
     await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
@@ -56,7 +56,7 @@ test.describe('Add new', () => {
     const workFlowName = faker.string.alphanumeric(5);
     await createWorkFlow.name.fill(workFlowName);
     await createWorkFlow.triggerType.click();
-    await page.getByRole('option', { name: 'Form event' }).click();
+    await page.getByRole('option', { name: 'Action event' }).click();
     await page.getByLabel('action-Action-Submit-workflows').click();
 
     // 3、预期结果：列表中出现新建的工作流
@@ -75,7 +75,7 @@ test.describe('Add new', () => {
 test.describe('Sync', () => {});
 
 test.describe('Delete', () => {
-  test('delete Form event', async ({ page }) => {
+  test('delete Action event', async ({ page }) => {
     //添加工作流
     const triggerNodeAppendText = faker.string.alphanumeric(5);
     const workFlowName = faker.string.alphanumeric(5) + triggerNodeAppendText;
@@ -83,7 +83,7 @@ test.describe('Delete', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -107,7 +107,7 @@ test.describe('Delete', () => {
 });
 
 test.describe('Edit', () => {
-  test('edit Form event name', async ({ page }) => {
+  test('edit Action event name', async ({ page }) => {
     //添加工作流
     const triggerNodeAppendText = faker.string.alphanumeric(5);
     let workFlowName = faker.string.alphanumeric(5) + triggerNodeAppendText;
@@ -115,7 +115,7 @@ test.describe('Edit', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
@@ -140,7 +140,7 @@ test.describe('Edit', () => {
 });
 
 test.describe('Duplicate', () => {
-  test('Duplicate Form event triggers with only unconfigured trigger nodes', async ({ page }) => {
+  test('Duplicate Action event triggers with only unconfigured trigger nodes', async ({ page }) => {
     //添加工作流
     const triggerNodeAppendText = faker.string.alphanumeric(5);
     const workFlowName = faker.string.alphanumeric(5) + triggerNodeAppendText;
@@ -148,7 +148,7 @@ test.describe('Duplicate', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'form',
+      type: 'action',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);

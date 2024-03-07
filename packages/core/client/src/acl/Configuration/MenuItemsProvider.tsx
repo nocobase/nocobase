@@ -4,6 +4,7 @@ import { useRequest } from '../../api-client';
 import { useAdminSchemaUid } from '../../hooks';
 
 const MenuItemsContext = createContext(null);
+MenuItemsContext.displayName = 'MenuItemsContext';
 
 export const toItems = (properties = {}) => {
   const items = [];

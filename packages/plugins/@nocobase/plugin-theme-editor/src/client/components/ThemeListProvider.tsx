@@ -9,6 +9,7 @@ interface TData extends Pick<ReturnTypeOfUseRequest, 'data' | 'error' | 'run' | 
 }
 
 const ThemeListContext = createContext<TData>(null);
+ThemeListContext.displayName = 'ThemeListContext';
 
 export const useThemeListContext = () => {
   return React.useContext(ThemeListContext);

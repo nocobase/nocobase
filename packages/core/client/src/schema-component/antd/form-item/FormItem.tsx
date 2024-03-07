@@ -70,13 +70,13 @@ export const FormItem: any = observer(
     const fieldSchema = useFieldSchema();
 
     return (
-      <CollectionFieldProvider name={fieldSchema.name} allowNull={!fieldSchema['x-collection-field']}>
-        <ACLCollectionFieldProvider>
-          <BlockItem className={'nb-form-item'}>
+      <BlockItem className={'nb-form-item'}>
+        <CollectionFieldProvider name={fieldSchema.name} allowNull={!fieldSchema['x-collection-field']}>
+          <ACLCollectionFieldProvider>
             <Item className={className} {...props} extra={extra} />
-          </BlockItem>
-        </ACLCollectionFieldProvider>
-      </CollectionFieldProvider>
+          </ACLCollectionFieldProvider>
+        </CollectionFieldProvider>
+      </BlockItem>
     );
   },
   { displayName: 'FormItem' },

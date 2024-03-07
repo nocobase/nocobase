@@ -18,7 +18,10 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       Component: ButtonEditor,
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
-        return buttonEditorProps;
+        return {
+          isLink: true,
+          ...buttonEditorProps,
+        };
       },
     },
     {

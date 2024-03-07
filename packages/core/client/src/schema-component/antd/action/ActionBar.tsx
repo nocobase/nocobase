@@ -65,7 +65,7 @@ export const ActionBar = observer(
             >
               {props.children && (
                 <div>
-                  <Space {...spaceProps}>
+                  <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
                     {fieldSchema.mapProperties((schema, key) => {
                       return <RecursionField key={key} name={key} schema={schema} />;
                     })}

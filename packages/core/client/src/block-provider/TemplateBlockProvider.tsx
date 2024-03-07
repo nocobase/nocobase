@@ -5,6 +5,7 @@ const TemplateBlockContext = createContext<{
   templateFinshed?: boolean;
   onTemplateSuccess?: Function;
 }>({});
+TemplateBlockContext.displayName = 'TemplateBlockContext';
 
 export const useTemplateBlockContext = () => {
   return useContext(TemplateBlockContext);

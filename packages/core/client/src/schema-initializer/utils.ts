@@ -287,6 +287,7 @@ export const useFormItemInitializerFields = (options?: any) => {
       const targetCollection = getCollection(field.target);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
       const isAssociationField = targetCollection;
+      const fieldNames = field?.uiSchema['x-component-props']?.['fieldNames'];
       const schema = {
         type: 'string',
         name: field.name,
@@ -302,9 +303,9 @@ export const useFormItemInitializerFields = (options?: any) => {
                 value: 'id',
               },
             }
-          : isAssociationField
+          : isAssociationField && fieldNames
             ? {
-                fieldNames: field?.uiSchema['x-component-props']['fieldNames'],
+                fieldNames: { ...fieldNames, label: targetCollection?.titleField || fieldNames.label },
               }
             : {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],

@@ -31,8 +31,7 @@ test.describe('table block schema settings', () => {
     });
   });
 
-  // 现有固定区块功能会被废弃，现 skip 掉
-  test.skip('fix block', async ({ page, mockPage }) => {
+  test('fix block', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).goto();
 
     const tableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();

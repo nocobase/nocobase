@@ -24,6 +24,7 @@ export const ChartFilterContext = createContext<{
   form: any;
   setForm: (form: any) => void;
 }>({} as any);
+ChartFilterContext.displayName = 'ChartFilterContext';
 
 export const ChartFilterProvider: React.FC = (props) => {
   const [ready, setReady] = useState(false);

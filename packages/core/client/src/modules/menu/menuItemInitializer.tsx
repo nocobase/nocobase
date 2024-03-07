@@ -8,6 +8,9 @@ export const menuItemInitializer = new SchemaInitializer({
   insertPosition: 'beforeEnd',
   icon: 'PlusOutlined',
   title: '{{t("Add menu item")}}',
+  style: {
+    width: '100%',
+  },
   items: [
     {
       name: 'group',

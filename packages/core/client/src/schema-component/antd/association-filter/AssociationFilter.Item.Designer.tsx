@@ -3,7 +3,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDefaultSortingRules,
@@ -12,8 +12,8 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
-import { useCompile, useDesignable } from '../../hooks';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { useCompile, useDesignable } from '../../hooks';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
@@ -44,6 +44,8 @@ export const AssociationFilterItemDesigner = (props) => {
       ['x-uid']: fieldSchema['x-uid'],
     };
     const fieldNames = {
+      ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+      ...fieldSchema['x-component-props']?.['fieldNames'],
       label,
     };
     fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};

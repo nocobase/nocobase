@@ -3,6 +3,7 @@ import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 
 const AvailableActionsContext = createContext([]);
+AvailableActionsContext.displayName = 'AvailableActionsContext';
 
 export const AvailableActionsProvider: React.FC = (props) => {
   const { data, loading } = useRequest<{

@@ -13,3 +13,4 @@ export const SchemaSettingsIcon: FC<SchemaSettingOptions> = React.memo((props) =
   const style = useMemo(() => ({ cursor: 'pointer', fontSize: 12 }), []);
   return <MenuOutlined role="button" style={style} aria-label={getAriaLabel('schema-settings', name)} />;
 });
+SchemaSettingsIcon.displayName = 'SchemaSettingsIcon';

@@ -40,16 +40,11 @@ export const useFixedBlock = () => {
 export const FixedBlockWrapper: React.FC = (props) => {
   const fixedBlock = useFixedSchema();
   const { height, fixedBlockUID } = useFixedBlock();
-  const record = useRecord();
-  const isPopup = Object.keys(record).length;
-  if (isPopup) {
-    return <>{props.children}</>;
-  }
   /**
    * The fixedBlockUID of false means that the page has no fixed blocks
    * isPopup means that the FixedBlock is in the popup mode
    */
-  if (!fixedBlock && fixedBlockUID) return null;
+  if (!fixedBlock && fixedBlockUID) return <>{props.children}</>;
   return (
     <div
       className="nb-fixed-block"

@@ -7,6 +7,7 @@ import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';
 
 export const TableFieldContext = createContext<any>({});
+TableFieldContext.displayName = 'TableFieldContext';
 
 const InternalTableFieldProvider = (props) => {
   const { params = {}, showIndex, dragSort, fieldName } = props;
@@ -122,6 +123,7 @@ export class TableFieldResource {
 }
 
 export const WithoutTableFieldResource = createContext(null);
+WithoutTableFieldResource.displayName = 'WithoutTableFieldResource';
 
 export const TableFieldProvider = (props) => {
   return (

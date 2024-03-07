@@ -20,7 +20,9 @@ type Params = {
 };
 
 export const TableSelectorContext = createContext<any>({});
+TableSelectorContext.displayName = 'TableSelectorContext';
 const TableSelectorParamsContext = createContext<Params>({}); // 用于传递参数
+TableSelectorParamsContext.displayName = 'TableSelectorParamsContext';
 
 type TableSelectorProviderProps = {
   params: Record<string, any>;

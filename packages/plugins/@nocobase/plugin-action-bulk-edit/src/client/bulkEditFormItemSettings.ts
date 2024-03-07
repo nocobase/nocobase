@@ -4,12 +4,11 @@ import { useField, useFieldSchema } from '@formily/react';
 import {
   SchemaSettings,
   useApp,
-  useCollection,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
   useDesignable,
   useFieldComponentName,
   useFormBlockContext,
-  useIsAssociationField,
   useIsFormReadPretty,
   useValidateSchema,
 } from '@nocobase/client';
@@ -40,9 +39,8 @@ export const bulkEditFormItemSettings = new SchemaSettings({
               const field = useField<Field>();
               const fieldSchema = useFieldSchema();
               const { getCollectionJoinField } = useCollectionManager_deprecated();
-              const { getField } = useCollection();
-              const collectionField =
-                getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+              const { dataSource } = useCollection_deprecated();
+              const collectionField = getCollectionJoinField(fieldSchema['x-collection-field'], dataSource);
 
               return {
                 title: t('Edit field title'),
@@ -192,9 +190,8 @@ export const bulkEditFormItemSettings = new SchemaSettings({
               const { dn, refresh } = useDesignable();
               const validateSchema = useValidateSchema();
               const { getCollectionJoinField } = useCollectionManager_deprecated();
-              const { getField } = useCollection();
-              const collectionField =
-                getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+              const { dataSource } = useCollection_deprecated();
+              const collectionField = getCollectionJoinField(fieldSchema['x-collection-field'], dataSource);
 
               return {
                 title: t('Set validation rules'),

@@ -184,24 +184,24 @@ function useRecordBlocks() {
   const { actionInitializers } = options;
   const collection = useCollection_deprecated();
   const { getChildrenCollections } = useCollectionManager_deprecated();
-  const formChildrenCollections = getChildrenCollections(collection.name, collection.dataSource);
-  const hasFormChildCollection = formChildrenCollections?.length > 0;
-  const detailChildrenCollections = getChildrenCollections(collection.name, true);
-  const hasDetailChildCollection = detailChildrenCollections?.length > 0;
+  const collectionsWithView = getChildrenCollections(collection.name, true, collection.dataSource).filter(
+    (v) => v?.filterTargetKey,
+  );
+  const hasChildCollection = collectionsWithView?.length > 0;
   const modifyFlag = (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
   const detailChildren = useDetailCollections({
     ...options,
-    childrenCollections: detailChildrenCollections,
+    childrenCollections: collectionsWithView,
     collection,
   });
   const formChildren = useFormCollections({
     ...options,
-    childrenCollections: formChildrenCollections,
+    childrenCollections: collectionsWithView,
     collection,
   });
 
   const res = [];
-  if (hasDetailChildCollection) {
+  if (hasChildCollection) {
     res.push({
       name: 'details',
       type: 'subMenu',
@@ -217,7 +217,7 @@ function useRecordBlocks() {
     });
   }
 
-  if (hasFormChildCollection) {
+  if (hasChildCollection) {
     res.push({
       name: 'form',
       type: 'subMenu',

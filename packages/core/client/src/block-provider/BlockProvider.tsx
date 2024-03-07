@@ -35,7 +35,9 @@ import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
  * @deprecated
  */
 export const BlockResourceContext = createContext(null);
+BlockResourceContext.displayName = 'BlockResourceContext';
 export const BlockAssociationContext = createContext(null);
+BlockAssociationContext.displayName = 'BlockAssociationContext';
 
 /**
  * @deprecated
@@ -50,6 +52,7 @@ export const BlockRequestContext_deprecated = createContext<{
   __parent?: any;
   updateAssociationValues?: any[];
 }>({});
+BlockRequestContext_deprecated.displayName = 'BlockRequestContext_deprecated';
 
 export const useBlockResource = () => {
   const resource = useDataBlockResource();
@@ -209,6 +212,7 @@ const BlockContext = createContext<{
   /** 用以区分区块的标识 */
   name: string;
 }>(null);
+BlockContext.displayName = 'BlockContext';
 
 export const useBlockContext = () => {
   return useContext(BlockContext);

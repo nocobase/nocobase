@@ -17,7 +17,7 @@ const TARGET_FIELD = 'targetField';
 export const useTopRecord = () => {
   let record = useRecord();
 
-  while (record && Object.keys(record.__parent).length > 0) {
+  while (record?.__parent && Object.keys(record.__parent).length > 0) {
     record = record.__parent;
   }
   return record;
