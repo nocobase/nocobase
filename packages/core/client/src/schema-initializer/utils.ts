@@ -1187,7 +1187,7 @@ export const createFormBlockSchema = (options) => {
 export const createFilterFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'filterForm:configureFields',
-    actionInitializers = 'actionInitializers:filterForm',
+    actionInitializers = 'filterForm:configureActions',
     collection,
     resource,
     association,

@@ -81,7 +81,7 @@ test.describe('actions schema settings', () => {
     await mockPage(oneEmptyFilterFormBlock).goto();
 
     // 创建 Filter & Reset 两个按钮
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:filterForm-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-filterForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 

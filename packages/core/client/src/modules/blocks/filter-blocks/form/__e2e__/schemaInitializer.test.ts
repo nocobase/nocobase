@@ -72,7 +72,7 @@ test.describe('configure actions', () => {
   test('filter & reset', async ({ page, mockPage }) => {
     await mockPage(oneEmptyFilterFormBlock).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:filterForm-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-filterForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 
@@ -84,7 +84,7 @@ test.describe('configure actions', () => {
     await expect(page.getByLabel('action-Action-Reset-general-filter-form')).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:filterForm-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-filterForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 

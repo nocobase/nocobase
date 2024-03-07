@@ -37,7 +37,7 @@ export const filterFormActionInitializers_deprecated = new CompatibleSchemaIniti
 
 export const filterFormActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:filterForm',
+    name: 'filterForm:configureActions',
     title: '{{t("Configure actions")}}',
     icon: 'SettingOutlined',
     items: [

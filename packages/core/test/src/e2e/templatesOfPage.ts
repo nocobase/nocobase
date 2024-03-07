@@ -1052,7 +1052,7 @@ export const oneEmptyFilterFormBlock: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:filterForm',
+                            'x-initializer': 'filterForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -11337,7 +11337,7 @@ export const oneFilterFormBlockWithAllAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:filterForm',
+                            'x-initializer': 'filterForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -18862,7 +18862,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'actionInitializers:filterForm',
+                            'x-initializer': 'filterForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
