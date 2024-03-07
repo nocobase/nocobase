@@ -24,7 +24,7 @@ export const RecordAssociationFormBlockInitializer = () => {
         const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
         const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
           ? 'actionInitializers:updateForm'
-          : 'actionInitializers:createForm';
+          : 'createForm:configureActions';
 
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);

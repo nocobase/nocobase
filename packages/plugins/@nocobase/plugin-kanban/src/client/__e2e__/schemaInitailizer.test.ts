@@ -100,7 +100,7 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'Single Select' }).click();
     await page.getByLabel('block-item-CollectionField-').locator('.ant-select').click();
     await page.getByRole('option', { name: 'option1' }).click();
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:createForm-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel('action-Action-Submit-submit-general-form').click();
     await page.getByLabel('block-item-Kanban.Card-general-kanban').hover();

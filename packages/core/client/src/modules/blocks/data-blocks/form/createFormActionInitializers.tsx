@@ -49,7 +49,7 @@ export const createFormActionInitializers_deprecated = new CompatibleSchemaIniti
 
 export const createFormActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:createForm',
+    name: 'createForm:configureActions',
     title: '{{t("Configure actions")}}',
     icon: 'SettingOutlined',
     items: [

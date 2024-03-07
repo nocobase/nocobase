@@ -27,7 +27,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
             const blockSchema = createFormBlockSchema({
-              actionInitializers: 'actionInitializers:createForm',
+              actionInitializers: 'createForm:configureActions',
               association,
               collection: collection.name,
               dataSource: collection.dataSource,

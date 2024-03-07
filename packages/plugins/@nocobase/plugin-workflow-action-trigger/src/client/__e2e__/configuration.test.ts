@@ -76,7 +76,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
     await page
-      .getByLabel(`schema-initializer-ActionBar-actionInitializers:createForm-${triggerNodeCollectionName}`)
+      .getByLabel(`schema-initializer-ActionBar-createForm:configureActions-${triggerNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     // 绑定工作流
@@ -172,7 +172,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
 
     // 绑定工作流
     await page
-      .getByLabel(`schema-initializer-ActionBar-actionInitializers:createForm-${triggerNodeCollectionName}`)
+      .getByLabel(`schema-initializer-ActionBar-createForm:configureActions-${triggerNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Submit to workflow' }).click();

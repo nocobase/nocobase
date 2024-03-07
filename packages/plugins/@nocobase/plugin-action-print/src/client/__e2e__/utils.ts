@@ -666,7 +666,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                     type: 'void',
                                                                     version: '2.0',
                                                                     'x-component': 'ActionBar',
-                                                                    'x-initializer': 'actionInitializers:createForm',
+                                                                    'x-initializer': 'createForm:configureActions',
                                                                     'x-component-props': {
                                                                       style: {
                                                                         marginTop: 24,
