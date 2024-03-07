@@ -44,7 +44,7 @@ const gridRowColWrap = (schema: ISchema) => {
 
 export const KanbanCardDesigner = () => {
   const { designable } = useDesignable();
-  const { render } = useSchemaInitializerRender('fieldInitializers:kanbanCard');
+  const { render } = useSchemaInitializerRender('kanban:configureItemFields');
   if (!designable) {
     return null;
   }
@@ -138,7 +138,7 @@ export const kanbanCardInitializers_deprecated = new CompatibleSchemaInitializer
 
 export const kanbanCardInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:kanbanCard',
+    name: 'kanban:configureItemFields',
     wrap: gridRowColWrap,
     useInsert() {
       const fieldSchema = useFieldSchema();
