@@ -40,7 +40,7 @@ export const subTableActionInitializers_deprecated = new CompatibleSchemaInitial
 
 export const subTableActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:subTable',
+    name: 'subTable:configureActions',
     title: "{{t('Configure actions')}}",
     icon: 'SettingOutlined',
     style: {
