@@ -47,7 +47,7 @@ export const kanbanActionInitializers_deprecated = new CompatibleSchemaInitializ
 
 export const kanbanActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:kanban',
+    name: 'kanban:configureActions',
     title: "{{t('Configure actions')}}",
     icon: 'SettingOutlined',
     style: {

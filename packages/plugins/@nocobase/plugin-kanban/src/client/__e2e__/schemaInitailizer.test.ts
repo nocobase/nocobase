@@ -62,7 +62,7 @@ test.describe('configure fields', () => {
     expect(appends).toContain('manyToOne');
     await expect(page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne')).toBeVisible();
     //修改标题字段
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:kanban-general').click();
+    await page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general').click();
     await page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne').hover();
     await page.getByTestId('card-1').getByLabel('designer-schema-settings-').hover();
     await page.getByText('Title field').click();
@@ -78,8 +78,8 @@ test.describe('configure actions', () => {
     const nocoPage = await mockPage(oneEmptyKanbanBlock).waitForInit();
     await nocoPage.goto();
     await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
-    await expect(page.getByLabel('schema-initializer-ActionBar-actionInitializers:kanban-general')).toBeVisible();
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:kanban-general').click();
+    await expect(page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general')).toBeVisible();
+    await page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general').click();
     await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
     //按钮正常显示
     await expect(page.getByLabel('action-Filter.Action-Filter-filter-general-kanban')).toBeVisible();
@@ -87,7 +87,7 @@ test.describe('configure actions', () => {
   test('add new action in kanban', async ({ page, mockPage }) => {
     const nocoPage = await mockPage(oneEmptyKanbanBlock).waitForInit();
     await nocoPage.goto();
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:kanban-general').click();
+    await page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general').click();
     await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
     //按钮正常显示
     await expect(page.getByLabel('action-Action-Add ')).toBeVisible();
