@@ -44,7 +44,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
           insert(
             createFormBlockSchema({
               formItemInitializers: 'bulkEditForm:configureFields',
-              actionInitializers: 'actionInitializers:blkEditForm',
+              actionInitializers: 'bulkEditForm:configureActions',
               association,
               collection: collection.name,
               dataSource: collection.dataSource,

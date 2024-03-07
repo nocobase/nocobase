@@ -30,7 +30,7 @@ test.describe('bulk edit action setting', () => {
     await page.getByRole('option', { name: 'Changed to' }).locator('div').click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('0');
-    await page.getByLabel('schema-initializer-ActionBar-actionInitializers:blkEditForm-general').click();
+    await page.getByLabel('schema-initializer-ActionBar-bulkEditForm:configureActions-general').click();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     //更新提交的数据符合预期
     const [request] = await Promise.all([

@@ -29,7 +29,7 @@ export const BulkEditFormActionInitializers_deprecated = new CompatibleSchemaIni
 
 export const bulkEditFormActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:blkEditForm',
+    name: 'bulkEditForm:configureActions',
     title: '{{t("Configure actions")}}',
     icon: 'SettingOutlined',
     items: [
