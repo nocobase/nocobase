@@ -1,5 +1,5 @@
 import { message } from 'antd';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRecord, RecordContext_deprecated, SchemaComponentOptions } from '@nocobase/client';
 import { CurrentRolesContext } from './';
@@ -25,7 +25,9 @@ export const PermissionProvider = (props) => {
     role[key] = true;
   });
   const [currentRecord, setCurrentRecord] = useState(role);
-
+  useEffect(() => {
+    setCurrentRecord(role);
+  }, [role]);
   return (
     <PermissionContext.Provider
       value={{
@@ -36,7 +38,7 @@ export const PermissionProvider = (props) => {
             url: `dataSources/${record.key}/roles:update`,
             data: form.values,
             method: 'post',
-            params: { filterByTk: role.name },
+            params: { filterByTk: form.values.roleName },
           });
           setCurrentRecord({ ...currentRecord, ...form.values });
           message.success(t('Saved successfully'));
