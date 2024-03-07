@@ -139,7 +139,7 @@ export function AssignedFieldValues() {
     type: 'void',
     'x-uid': uid(),
     'x-component': 'Grid',
-    'x-initializer': 'fieldInitializers:customFormItem',
+    'x-initializer': 'assignFieldValuesForm:configureFields',
   };
   const tips = {
     'customize:update': t(

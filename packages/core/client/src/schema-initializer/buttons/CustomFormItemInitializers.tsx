@@ -48,7 +48,7 @@ export const customFormItemInitializers_deprecated = new CompatibleSchemaInitial
 
 export const customFormItemInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:customFormItem',
+    name: 'assignFieldValuesForm:configureFields',
     wrap: gridRowColWrap,
     icon: 'SettingOutlined',
     title: '{{t("Configure fields")}}',
