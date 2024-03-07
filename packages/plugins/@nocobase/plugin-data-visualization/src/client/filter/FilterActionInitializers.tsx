@@ -173,7 +173,7 @@ export const chartFilterActionInitializers_deprecated = new CompatibleSchemaInit
 
 export const chartFilterActionInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'actionInitializers:chartFilterAction',
+    name: 'chartFilterForm:configureActions',
     'data-testid': 'configure-actions-button-of-chart-filter',
     title: '{{t("Configure actions")}}',
     icon: 'SettingOutlined',

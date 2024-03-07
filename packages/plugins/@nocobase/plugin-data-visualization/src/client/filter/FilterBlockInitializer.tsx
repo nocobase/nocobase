@@ -36,7 +36,7 @@ const createFilterSchema = () => {
           },
           actions: {
             type: 'void',
-            'x-initializer': 'actionInitializers:chartFilterAction',
+            'x-initializer': 'chartFilterForm:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',
