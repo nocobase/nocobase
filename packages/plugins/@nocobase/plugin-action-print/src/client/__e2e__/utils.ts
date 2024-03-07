@@ -793,7 +793,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                             'x-initializer': 'popup:common:addBlock',
                                             _isJSONSchemaObject: true,
                                             'x-initializer-props': {
-                                              actionInitializers: 'actionInitializers:calendarForm',
+                                              actionInitializers: 'details:configureActions',
                                             },
                                             properties: {
                                               '0j7rb0bivys': {
@@ -839,7 +839,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'ActionBar',
-                                                                'x-initializer': 'actionInitializers:calendarForm',
+                                                                'x-initializer': 'details:configureActions',
                                                                 'x-component-props': {
                                                                   style: {
                                                                     marginBottom: 24,

@@ -76,7 +76,7 @@ export const createCalendarBlockSchema = (options) => {
                             type: 'void',
                             'x-component': 'Grid',
                             'x-initializer-props': {
-                              actionInitializers: 'actionInitializers:calendarForm',
+                              actionInitializers: 'details:configureActions',
                             },
                             'x-initializer': 'popup:common:addBlock',
                             properties: {},

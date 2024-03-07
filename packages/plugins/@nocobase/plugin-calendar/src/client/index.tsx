@@ -6,9 +6,8 @@ import { CalendarCollectionTemplate } from './collection-templates/calendar';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
 import {
   CalendarActionInitializers_deprecated,
-  CalendarFormActionInitializers_deprecated,
+  CalendarFormActionInitializers,
   calendarActionInitializers,
-  calendarFormActionInitializers,
 } from './schema-initializer/initializers';
 import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } from './schema-initializer/items';
 
@@ -29,8 +28,7 @@ export class PluginCalendarClient extends Plugin {
     this.schemaSettingsManager.add(calendarBlockSettings);
     this.app.schemaInitializerManager.add(CalendarActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(calendarActionInitializers);
-    this.app.schemaInitializerManager.add(CalendarFormActionInitializers_deprecated);
-    this.app.schemaInitializerManager.add(calendarFormActionInitializers);
+    this.app.schemaInitializerManager.add(CalendarFormActionInitializers);
   }
 }
 
