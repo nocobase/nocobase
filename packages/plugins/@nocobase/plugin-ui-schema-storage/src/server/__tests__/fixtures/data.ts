@@ -284,7 +284,7 @@ export default {
                                             rowSelection: { type: 'checkbox' },
                                             useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                           },
-                                          'x-initializer': 'fieldInitializers:tableColumn',
+                                          'x-initializer': 'table:configureColumns',
                                           'x-uid': 'nd7c9jym6f9',
                                           'x-async': false,
                                           'x-index': 1,
@@ -488,7 +488,7 @@ export default {
                                             rowSelection: { type: 'checkbox' },
                                             useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                           },
-                                          'x-initializer': 'fieldInitializers:tableColumn',
+                                          'x-initializer': 'table:configureColumns',
                                           properties: {
                                             gpysrsz6uw3: {
                                               _isJSONSchemaObject: true,
@@ -673,7 +673,7 @@ export default {
                                             rowSelection: { type: 'checkbox' },
                                             useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                           },
-                                          'x-initializer': 'fieldInitializers:tableColumn',
+                                          'x-initializer': 'table:configureColumns',
                                           properties: {
                                             ppttymwsr3d: {
                                               _isJSONSchemaObject: true,
@@ -901,7 +901,7 @@ export default {
                                             rowSelection: { type: 'checkbox' },
                                             useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                           },
-                                          'x-initializer': 'fieldInitializers:tableColumn',
+                                          'x-initializer': 'table:configureColumns',
                                           properties: {
                                             xfyrokl5xzu: {
                                               _isJSONSchemaObject: true,
@@ -1199,8 +1199,7 @@ export default {
                                                                             useDataSource:
                                                                               '{{ cm.useDataSourceFromRAC }}',
                                                                           },
-                                                                          'x-initializer':
-                                                                            'fieldInitializers:tableColumn',
+                                                                          'x-initializer': 'table:configureColumns',
                                                                           'x-uid': 'n1svf2lkvqd',
                                                                           'x-async': false,
                                                                           'x-index': 1,
@@ -1391,8 +1390,7 @@ export default {
                                                                             useDataSource:
                                                                               '{{ cm.useDataSourceFromRAC }}',
                                                                           },
-                                                                          'x-initializer':
-                                                                            'fieldInitializers:tableColumn',
+                                                                          'x-initializer': 'table:configureColumns',
                                                                           'x-uid': 'ymddh2e0ufc',
                                                                           'x-async': false,
                                                                           'x-index': 1,
@@ -1563,7 +1561,7 @@ export default {
                                       type: 'array',
                                       title: '{{t("Fields")}}',
                                       'x-component': 'Table.Array',
-                                      'x-initializer': 'fieldInitializers:tableColumn',
+                                      'x-initializer': 'table:configureColumns',
                                       'x-component-props': {
                                         pagination: false,
                                         expandable: { childrenColumnName: '__nochildren__' },
@@ -1833,7 +1831,7 @@ export default {
                                                             rowSelection: { type: 'checkbox' },
                                                             useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                                           },
-                                                          'x-initializer': 'fieldInitializers:tableColumn',
+                                                          'x-initializer': 'table:configureColumns',
                                                           'x-uid': '0d2h3ova480',
                                                           'x-async': false,
                                                           'x-index': 1,
@@ -1997,7 +1995,7 @@ export default {
                                                             rowSelection: { type: 'checkbox' },
                                                             useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                                           },
-                                                          'x-initializer': 'fieldInitializers:tableColumn',
+                                                          'x-initializer': 'table:configureColumns',
                                                           'x-uid': 'z4rlx8hfjtq',
                                                           'x-async': false,
                                                           'x-index': 1,
@@ -2224,7 +2222,7 @@ export default {
         useAction: '{{cm.useMoveAction}}',
         useDataSource: '{{cm.useDataSourceFromRAC}}',
       },
-      'x-initializer': 'fieldInitializers:tableColumn',
+      'x-initializer': 'table:configureColumns',
       properties: {
         actions: {
           _isJSONSchemaObject: true,
@@ -2456,8 +2454,7 @@ export default {
                                                                                 useDataSource:
                                                                                   '{{ cm.useDataSourceFromRAC }}',
                                                                               },
-                                                                              'x-initializer':
-                                                                                'fieldInitializers:tableColumn',
+                                                                              'x-initializer': 'table:configureColumns',
                                                                               'x-uid': '4ytlnx3h4r8',
                                                                               'x-async': false,
                                                                               'x-index': 1,
@@ -2677,8 +2674,7 @@ export default {
                                                                                 useDataSource:
                                                                                   '{{ cm.useDataSourceFromRAC }}',
                                                                               },
-                                                                              'x-initializer':
-                                                                                'fieldInitializers:tableColumn',
+                                                                              'x-initializer': 'table:configureColumns',
                                                                               'x-uid': 'v25lnvhyzzf',
                                                                               'x-async': false,
                                                                               'x-index': 1,
@@ -2827,8 +2823,7 @@ export default {
                                                                                 useDataSource:
                                                                                   '{{ cm.useDataSourceFromRAC }}',
                                                                               },
-                                                                              'x-initializer':
-                                                                                'fieldInitializers:tableColumn',
+                                                                              'x-initializer': 'table:configureColumns',
                                                                               'x-uid': 'zpvg0dqa6ah',
                                                                               'x-async': false,
                                                                               'x-index': 1,
@@ -3153,8 +3148,7 @@ export default {
                                                                           type: 'array',
                                                                           title: '{{t("Fields")}}',
                                                                           'x-component': 'Table.Array',
-                                                                          'x-initializer':
-                                                                            'fieldInitializers:tableColumn',
+                                                                          'x-initializer': 'table:configureColumns',
                                                                           'x-component-props': {
                                                                             pagination: false,
                                                                             expandable: {
@@ -3287,7 +3281,7 @@ export default {
                                                                                                   '{{ cm.useDataSourceFromRAC }}',
                                                                                               },
                                                                                               'x-initializer':
-                                                                                                'fieldInitializers:tableColumn',
+                                                                                                'table:configureColumns',
                                                                                               'x-uid': 'cobw3nz2wb7',
                                                                                               'x-async': false,
                                                                                               'x-index': 1,
@@ -3691,7 +3685,7 @@ export default {
                                                     rowSelection: { type: 'checkbox' },
                                                     useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                                   },
-                                                  'x-initializer': 'fieldInitializers:tableColumn',
+                                                  'x-initializer': 'table:configureColumns',
                                                   'x-uid': 'je1aq3fa393',
                                                   'x-async': false,
                                                   'x-index': 1,
@@ -3895,7 +3889,7 @@ export default {
                                                     rowSelection: { type: 'checkbox' },
                                                     useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                                   },
-                                                  'x-initializer': 'fieldInitializers:tableColumn',
+                                                  'x-initializer': 'table:configureColumns',
                                                   properties: {
                                                     cj30vjztnkq: {
                                                       _isJSONSchemaObject: true,
@@ -4081,7 +4075,7 @@ export default {
                                                     rowSelection: { type: 'checkbox' },
                                                     useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                                   },
-                                                  'x-initializer': 'fieldInitializers:tableColumn',
+                                                  'x-initializer': 'table:configureColumns',
                                                   properties: {
                                                     dvv0tf3p4o9: {
                                                       _isJSONSchemaObject: true,
@@ -4309,7 +4303,7 @@ export default {
                                                     rowSelection: { type: 'checkbox' },
                                                     useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                                   },
-                                                  'x-initializer': 'fieldInitializers:tableColumn',
+                                                  'x-initializer': 'table:configureColumns',
                                                   properties: {
                                                     dncah8wtscx: {
                                                       _isJSONSchemaObject: true,
@@ -4613,7 +4607,7 @@ export default {
                                                                                       '{{ cm.useDataSourceFromRAC }}',
                                                                                   },
                                                                                   'x-initializer':
-                                                                                    'fieldInitializers:tableColumn',
+                                                                                    'table:configureColumns',
                                                                                   'x-uid': 's8hao0uqg8g',
                                                                                   'x-async': false,
                                                                                   'x-index': 1,
@@ -4811,7 +4805,7 @@ export default {
                                                                                       '{{ cm.useDataSourceFromRAC }}',
                                                                                   },
                                                                                   'x-initializer':
-                                                                                    'fieldInitializers:tableColumn',
+                                                                                    'table:configureColumns',
                                                                                   'x-uid': '0v1u8mu6z1p',
                                                                                   'x-async': false,
                                                                                   'x-index': 1,
@@ -4986,7 +4980,7 @@ export default {
                                               type: 'array',
                                               title: '{{t("Fields")}}',
                                               'x-component': 'Table.Array',
-                                              'x-initializer': 'fieldInitializers:tableColumn',
+                                              'x-initializer': 'table:configureColumns',
                                               'x-component-props': {
                                                 pagination: false,
                                                 expandable: { childrenColumnName: '__nochildren__' },
@@ -5148,7 +5142,7 @@ export default {
                                                                                               '{{ cm.useDataSourceFromRAC }}',
                                                                                           },
                                                                                           'x-initializer':
-                                                                                            'fieldInitializers:tableColumn',
+                                                                                            'table:configureColumns',
                                                                                           'x-uid': '369iecwk6gw',
                                                                                           'x-async': false,
                                                                                           'x-index': 1,
@@ -5359,7 +5353,7 @@ export default {
                                                                                               '{{ cm.useDataSourceFromRAC }}',
                                                                                           },
                                                                                           'x-initializer':
-                                                                                            'fieldInitializers:tableColumn',
+                                                                                            'table:configureColumns',
                                                                                           'x-uid': 'jffadc6g4j0',
                                                                                           'x-async': false,
                                                                                           'x-index': 1,
@@ -5616,7 +5610,7 @@ export default {
                                                                     rowSelection: { type: 'checkbox' },
                                                                     useDataSource: '{{ cm.useDataSourceFromRAC }}',
                                                                   },
-                                                                  'x-initializer': 'fieldInitializers:tableColumn',
+                                                                  'x-initializer': 'table:configureColumns',
                                                                   'x-uid': 'i9y89citemg',
                                                                   'x-async': false,
                                                                   'x-index': 1,
@@ -6002,7 +5996,7 @@ export default {
                             rowSelection: { type: 'checkbox' },
                             useDataSource: '{{ cm.useDataSourceFromRAC }}',
                           },
-                          'x-initializer': 'fieldInitializers:tableColumn',
+                          'x-initializer': 'table:configureColumns',
                           'x-uid': 'v3abytn9e51',
                           'x-async': false,
                           'x-index': 1,
@@ -6187,7 +6181,7 @@ export default {
                             rowSelection: { type: 'checkbox' },
                             useDataSource: '{{ cm.useDataSourceFromRAC }}',
                           },
-                          'x-initializer': 'fieldInitializers:tableColumn',
+                          'x-initializer': 'table:configureColumns',
                           'x-uid': 'p1tbjz52j84',
                           'x-async': false,
                           'x-index': 1,

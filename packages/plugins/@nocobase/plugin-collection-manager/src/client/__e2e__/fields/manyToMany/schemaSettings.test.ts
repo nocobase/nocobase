@@ -260,7 +260,7 @@ test.describe('form item & create form', () => {
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
-        .getByLabel('schema-initializer-AssociationField.SubTable-fieldInitializers:tableColumn-users'),
+        .getByLabel('schema-initializer-AssociationField.SubTable-table:configureColumns-users'),
     ).toBeVisible();
 
     // 选择 Sub-form

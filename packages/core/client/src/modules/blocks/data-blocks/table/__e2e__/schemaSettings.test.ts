@@ -101,7 +101,7 @@ test.describe('table block schema settings', () => {
       ).toBeChecked();
       await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
       // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
       await page.getByLabel('schema-initializer-TableV2-').click();
@@ -141,7 +141,7 @@ test.describe('table block schema settings', () => {
     }
 
     async function createColumnItem(page: Page, fieldName: string) {
-      await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: fieldName, exact: true }).click();
       await page.mouse.move(300, 0);
     }
@@ -213,7 +213,7 @@ test.describe('table block schema settings', () => {
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
       await page.mouse.move(300, 0);

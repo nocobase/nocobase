@@ -208,7 +208,7 @@ export const oneEmptyTable: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -1468,7 +1468,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -2248,7 +2248,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -2799,7 +2799,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -4537,7 +4537,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -5926,7 +5926,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -6090,7 +6090,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                                                                                         'x-component':
                                                                                           'AssociationField.SubTable',
                                                                                         'x-initializer':
-                                                                                          'fieldInitializers:tableColumn',
+                                                                                          'table:configureColumns',
                                                                                         'x-initializer-props': {
                                                                                           action: false,
                                                                                         },
@@ -6750,7 +6750,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -8070,7 +8070,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -9125,7 +9125,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -10211,7 +10211,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -11806,7 +11806,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -13202,7 +13202,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -14468,7 +14468,7 @@ export const oneEmptyTableWithTreeCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -14751,7 +14751,7 @@ export const oneCollapseAndOneTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -15551,7 +15551,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -17267,7 +17267,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -17557,7 +17557,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                                         'x-component':
                                                                                           'AssociationField.SubTable',
                                                                                         'x-initializer':
-                                                                                          'fieldInitializers:tableColumn',
+                                                                                          'table:configureColumns',
                                                                                         'x-initializer-props': {
                                                                                           action: false,
                                                                                         },
@@ -17899,7 +17899,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                                         'x-component':
                                                                                           'AssociationField.SubTable',
                                                                                         'x-initializer':
-                                                                                          'fieldInitializers:tableColumn',
+                                                                                          'table:configureColumns',
                                                                                         'x-initializer-props': {
                                                                                           action: false,
                                                                                         },
@@ -18442,7 +18442,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19002,7 +19002,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19193,7 +19193,7 @@ export const twoTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19301,7 +19301,7 @@ export const twoTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19458,7 +19458,7 @@ export const twoTableWithAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19565,7 +19565,7 @@ export const twoTableWithAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19723,7 +19723,7 @@ export const oneEmptyTableBlockBasedOnUsers = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19904,7 +19904,7 @@ export const checkboxForTableRow = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',

@@ -122,7 +122,7 @@ export default {
   SubTable: {
     type: 'void',
     'x-component': 'AssociationField.SubTable',
-    'x-initializer': 'fieldInitializers:tableColumn',
+    'x-initializer': 'table:configureColumns',
     'x-initializer-props': {
       action: false,
     },

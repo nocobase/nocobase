@@ -99,6 +99,6 @@ test.describe('configure actions column', () => {
 });
 
 async function createActionColumn(page: Page) {
-  await page.getByLabel('schema-initializer-TableV2.Selector-fieldInitializers:tableColumn-users').hover();
+  await page.getByLabel('schema-initializer-TableV2.Selector-table:configureColumns-users').hover();
   await page.getByRole('menuitem', { name: 'Action column' }).click();
 }

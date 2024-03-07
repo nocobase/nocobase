@@ -622,7 +622,7 @@ test.describe('creation form block schema settings', () => {
         .hover();
       await page.mouse.move(100, 0);
 
-      await page.getByLabel('schema-initializer-AssociationField.SubTable-fieldInitializers:tableColumn-users').hover();
+      await page.getByLabel('schema-initializer-AssociationField.SubTable-table:configureColumns-users').hover();
       await page.getByRole('menuitem', { name: 'Nickname' }).click();
       await page.getByRole('menuitem', { name: 'Username' }).click();
 
@@ -1014,7 +1014,7 @@ test.describe('creation form block schema settings', () => {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'array',
-                            'x-initializer': 'fieldInitializers:tableColumn',
+                            'x-initializer': 'table:configureColumns',
                             'x-component': 'TableV2',
                             'x-component-props': {
                               rowKey: 'id',

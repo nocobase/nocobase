@@ -112,7 +112,7 @@ export const tableColumnInitializers_deprecated = new CompatibleSchemaInitialize
 
 export const tableColumnInitializers = new CompatibleSchemaInitializer(
   {
-    name: 'fieldInitializers:tableColumn',
+    name: 'table:configureColumns',
     insertPosition: 'beforeEnd',
     icon: 'SettingOutlined',
     title: '{{t("Configure columns")}}',

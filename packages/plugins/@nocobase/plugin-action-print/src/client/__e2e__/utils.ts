@@ -152,7 +152,7 @@ export const oneTableWithViewAction: PageConfig = {
                         type: 'array',
                         version: '2.0',
                         'x-component': 'TableV2',
-                        'x-initializer': 'fieldInitializers:tableColumn',
+                        'x-initializer': 'table:configureColumns',
                         'x-component-props': {
                           rowKey: 'id',
                           useProps: '{{ useTableBlockProps }}',

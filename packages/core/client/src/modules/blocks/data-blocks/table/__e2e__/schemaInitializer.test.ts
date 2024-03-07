@@ -70,9 +70,7 @@ test.describe('configure columns', () => {
   test.describe.configure({ retries: process.env.CI ? 4 : 0 });
   test('action column & display collection fields & display association fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTable).goto();
-    const configureColumnButton = page.getByLabel(
-      'schema-initializer-TableV2-fieldInitializers:tableColumn-t_unp4scqamw9',
-    );
+    const configureColumnButton = page.getByLabel('schema-initializer-TableV2-table:configureColumns-t_unp4scqamw9');
 
     // Action column -------------------------------------------------------------
     // 1. 点击开关，可以开启和关闭 Action column

@@ -25,7 +25,7 @@ test('BlockInitializers should add gantt block', async ({ page, mockPage, mockCo
 test.describe('configure fields', () => {
   test('add field,then remove field in gantt block', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
-    await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
+    await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await page.getByRole('menuitem', { name: 'Single line text2' }).click();
     //添加字段
@@ -43,7 +43,7 @@ test.describe('configure fields', () => {
   test('add assciation field should appends association', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', { singleLineText: 'singleLineText', manyToOne: { id: 1 } });
-    await page.getByLabel('schema-initializer-TableV2-fieldInitializers:tableColumn-general').hover();
+    await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
 
     //关系字段,断言请求的appends是否符合预期
     const [request] = await Promise.all([

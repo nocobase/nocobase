@@ -1365,7 +1365,7 @@ export const createTableBlockSchema = (options) => {
       },
       [uid()]: {
         type: 'array',
-        'x-initializer': tableColumnInitializers ?? 'fieldInitializers:tableColumn',
+        'x-initializer': tableColumnInitializers ?? 'table:configureColumns',
         'x-component': 'TableV2',
         'x-component-props': {
           rowKey: 'id',
@@ -1469,7 +1469,7 @@ export const createTableSelectorSchema = (options) => {
       },
       value: {
         type: 'array',
-        'x-initializer': 'fieldInitializers:tableColumn',
+        'x-initializer': 'table:configureColumns',
         'x-component': 'TableV2.Selector',
         'x-component-props': {
           rowSelection: {
