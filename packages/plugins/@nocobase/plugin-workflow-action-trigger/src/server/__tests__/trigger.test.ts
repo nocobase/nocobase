@@ -358,11 +358,17 @@ describe('workflow > action-trigger', () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'action',
+        config: {
+          collection: 'posts',
+        },
       });
 
       const w2 = await WorkflowModel.create({
         enabled: true,
         type: 'action',
+        config: {
+          collection: 'posts',
+        },
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
@@ -412,6 +418,9 @@ describe('workflow > action-trigger', () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'action',
+        config: {
+          collection: 'posts',
+        },
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
@@ -431,6 +440,9 @@ describe('workflow > action-trigger', () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'action',
+        config: {
+          collection: 'posts',
+        },
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
@@ -452,6 +464,9 @@ describe('workflow > action-trigger', () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'action',
+        config: {
+          collection: 'posts',
+        },
       });
 
       const res1 = await userAgents[0].resource('workflows').trigger({
