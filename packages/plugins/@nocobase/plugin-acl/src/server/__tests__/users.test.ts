@@ -34,6 +34,137 @@ describe('actions', () => {
     await app.destroy();
   });
 
+  it('should set scope with user associations', async () => {
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'sites',
+        autoGenId: false,
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    // create site
+    const site = await db.getRepository('sites').create({
+      values: {
+        name: 'testSite',
+      },
+    });
+
+    const site2 = await db.getRepository('sites').create({
+      values: {
+        name: 'site2',
+      },
+    });
+
+    await app.db.getCollection('fields').repository.create({
+      values: {
+        collectionName: 'users',
+        name: 'site',
+        type: 'belongsTo',
+        foreignKey: 'siteId',
+        targetKey: 'id',
+      },
+      context: {},
+    });
+
+    const testUser = await db.getRepository('users').create({
+      values: {
+        username: 'testUser',
+        site: site.get('id'),
+      },
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        users: [
+          {
+            id: testUser.get('id'),
+          },
+        ],
+      },
+    });
+
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'items',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            name: 'site',
+            type: 'belongsTo',
+            foreignKey: 'siteId',
+            targetKey: 'id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const scope = await app.db.getCollection('dataSourcesRolesResourcesScopes').repository.create({
+      values: {
+        name: 'items-own-site',
+        actions: ['view'],
+        fields: ['name'],
+        scope: { $and: [{ site: { id: { $eq: '{{$user.site.id}}' } } }] },
+        resourceName: 'items',
+      },
+    });
+
+    // create acl resource
+    const createResourcesResp = await adminAgent.resource('roles.resources', 'testRole').create({
+      values: {
+        name: 'items',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            scope: scope.get('id'),
+          },
+        ],
+      },
+    });
+
+    expect(createResourcesResp.status).toBe(200);
+
+    const item = await db.getRepository('items').create({
+      values: {
+        name: 'testItem',
+        site: site.get('id'),
+      },
+    });
+
+    await db.getRepository('items').create({
+      values: {
+        name: 'item2',
+        site: site2.get('id'),
+      },
+    });
+
+    // list with user
+    const userAgent: any = app.agent().login(testUser).set('x-role', 'testRole');
+
+    const listResp = await userAgent.resource('items').list({});
+    expect(listResp.status).toBe(200);
+    const data = listResp.body.data;
+    expect(data.length).toBe(1);
+  });
+
   it('update profile with roles', async () => {
     const res2 = await adminAgent.resource('users').updateProfile({
       filterByTk: adminUser.id,
