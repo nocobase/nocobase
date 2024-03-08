@@ -60,7 +60,7 @@ exports.pTest = async (options) => {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  const files = glob.sync('packages/**/__e2e__/**/*.test.ts', {
+  const files = glob.sync('packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts', {
     root: process.cwd(),
   });
 
