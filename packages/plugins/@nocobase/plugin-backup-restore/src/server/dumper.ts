@@ -73,7 +73,7 @@ export class Dumper extends AppMigrator {
             if (backupFileStat.isFile()) {
               return {
                 name: fileName,
-                createdAt: backupFileStat.birthtime,
+                createdAt: backupFileStat.ctime,
                 fileSize: humanFileSize(backupFileStat.size),
                 status: 'ok',
               } as BackUpStatusOk;
