@@ -214,6 +214,7 @@ describe('workflow > action-trigger', () => {
         type: 'action',
         config: {
           collection: 'posts',
+          appends: ['createdBy'],
         },
       });
 
@@ -238,6 +239,7 @@ describe('workflow > action-trigger', () => {
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e2.context.data).toHaveProperty('title', 't2');
+      expect(e2.context.data).toHaveProperty('createdBy');
     });
   });
 
@@ -281,7 +283,7 @@ describe('workflow > action-trigger', () => {
   });
 
   describe('directly trigger', () => {
-    it('trigger data', async () => {
+    it('no collection configured should not be triggered', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'action',
@@ -295,9 +297,61 @@ describe('workflow > action-trigger', () => {
 
       await sleep(500);
 
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+    });
+
+    it('trigger on form data', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          appends: ['createdBy'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('workflows').trigger({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(202);
+
+      await sleep(500);
+
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e1.context.data).toMatchObject({ title: 't1' });
+      expect(e1.context.data.createdBy).toBeUndefined();
+    });
+
+    it('trigger on record data', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          appends: ['createdBy'],
+        },
+      });
+
+      const post = await PostRepo.create({
+        values: { title: 't1', createdBy: users[0].id },
+      });
+
+      const res1 = await userAgents[0].resource('workflows').trigger({
+        values: post.toJSON(),
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(202);
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1.context.data).toMatchObject({ title: 't1' });
+      expect(e1.context.data).toHaveProperty('createdBy');
+      expect(e1.context.data.createdBy.id).toBe(users[0].id);
     });
 
     it('multi trigger', async () => {
