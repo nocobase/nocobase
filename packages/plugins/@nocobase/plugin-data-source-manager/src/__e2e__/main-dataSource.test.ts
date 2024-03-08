@@ -275,4 +275,106 @@ test.describe('create a primary key other than ID.', () => {
       type: 'bigInt',
     });
   });
+  test('integer field set unique index', async ({ page, mockCollection }) => {
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await mockCollection({
+      name: 'general',
+      autoGenId: false,
+      fields: [],
+    });
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill('general');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel('action-Action.Link-Configure fields-collections-general').click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'Integer' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill(uid());
+    // Primary 和 Unique选中一个，其中一个自动取消勾选
+    await page.getByLabel('Primary').check();
+    await page.getByLabel('Unique').check();
+    //断言提交的data是否符合预期
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('/fields:create')),
+      page.getByLabel('action-Action-Submit-fields-').click(),
+    ]);
+    const postData = request.postDataJSON();
+    //提交的数据符合预期
+    expect(postData).toMatchObject({
+      unique: true,
+      interface: 'integer',
+      primaryKey: false,
+      type: 'bigInt',
+    });
+  });
+  test('input(string) field set unique index', async ({ page, mockCollection }) => {
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await mockCollection({
+      name: 'general',
+      autoGenId: false,
+      fields: [],
+    });
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill('general');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel('action-Action.Link-Configure fields-collections-general').click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'Single line text' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill(uid());
+    // Primary 和 Unique选中一个，其中一个自动取消勾选
+    await page.getByLabel('Primary').check();
+    await page.getByLabel('Unique').check();
+    //断言提交的data是否符合预期
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('/fields:create')),
+      page.getByLabel('action-Action-Submit-fields-').click(),
+    ]);
+    const postData = request.postDataJSON();
+    //提交的数据符合预期
+    expect(postData).toMatchObject({
+      unique: true,
+      interface: 'input',
+      primaryKey: false,
+      type: 'string',
+    });
+  });
+  test('input(string) field set as primary key', async ({ page, mockCollection }) => {
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await mockCollection({
+      name: 'general',
+      autoGenId: false,
+      fields: [],
+    });
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill('general');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel('action-Action.Link-Configure fields-collections-general').click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'Single line text' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill(uid());
+    // Primary 和 Unique选中一个，其中一个自动取消勾选
+    await page.getByLabel('Unique').check();
+    await page.getByLabel('Primary').check();
+    //断言提交的data是否符合预期
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('/fields:create')),
+      page.getByLabel('action-Action-Submit-fields-').click(),
+    ]);
+    const postData = request.postDataJSON();
+    //提交的数据符合预期
+    expect(postData).toMatchObject({
+      unique: false,
+      interface: 'input',
+      primaryKey: true,
+      type: 'string',
+    });
+  });
 });
