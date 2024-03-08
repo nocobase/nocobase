@@ -1,25 +1,26 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
+import { useCollection, useCollectionManager } from '../../../data-source/collection';
 
 export const AssociationFieldProvider = observer(
   (props) => {
     const field = useField<Field>();
-    const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
+    const collection = useCollection();
+    const dm = useCollectionManager();
     const fieldSchema = useFieldSchema();
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
 
     const collectionField = useMemo(
-      () => getCollectionJoinField(fieldSchema['x-collection-field']),
+      () => collection.getField(fieldSchema['x-collection-field']),
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field'], fieldSchema.name],
     );
     const isFileCollection = useMemo(
-      () => getCollection(collectionField?.target)?.template === 'file',
+      () => dm.getCollection(collectionField?.target)?.template === 'file',
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field']],
     );

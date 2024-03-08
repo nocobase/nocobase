@@ -1,10 +1,11 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
-import React, { createContext, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
+import { useWhyDidYouUpdate } from 'ahooks';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -147,11 +148,13 @@ export const DataBlockCollector = ({
 export const useFilterBlock = () => {
   const ctx = React.useContext(FilterContext);
   // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
+  const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.dataBlocks || [], [ctx?.dataBlocks]);
+
   if (!ctx) {
     return {
       inProvider: false,
       recordDataBlocks: () => {},
-      getDataBlocks: () => [] as DataBlock[],
+      getDataBlocks,
       removeDataBlock: () => {},
     };
   }
@@ -168,8 +171,10 @@ export const useFilterBlock = () => {
     // 由于 setDataBlocks 是异步操作，所以上面的 existingBlock 在判断时有可能用的是旧的 dataBlocks,所以下面还需要根据 uid 进行去重操作
     setDataBlocks((prev) => uniqBy([...prev, block], 'uid'));
   };
-  const getDataBlocks = () => dataBlocks;
   const removeDataBlock = (uid: string) => {
+    const blocks = dataBlocks.filter((item) => item.uid !== uid);
+    if (blocks.length === dataBlocks.length) return;
+
     setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
   };
 

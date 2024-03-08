@@ -1,12 +1,15 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { mergeFilter } from '../filter-provider/utils';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
+import { isEqual } from 'lodash';
+import { useWhyDidYouUpdate } from 'ahooks';
+import { useDeepMemoized } from '../application';
 
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
@@ -41,14 +44,19 @@ const InternalTableBlockProvider = (props: Props) => {
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
-  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const [expandFlag, setExpandFlag] = useState(fieldNames ? true : false);
+  const data = useDeepMemoized(service?.data?.data);
   const allIncludesChildren = useMemo(() => {
+    const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
     if (treeTable !== false) {
-      const keys = getIdsWithChildren(service?.data?.data);
-      return keys || [];
+      const keys = getIdsWithChildren(data);
+      return keys;
     }
-  }, [service?.loading]);
+  }, [data, fieldSchema]);
+
+  const setExpandFlagValue = useCallback(() => {
+    setExpandFlag(!expandFlag);
+  }, [expandFlag]);
 
   return (
     <FixedBlockWrapper>
@@ -65,7 +73,7 @@ const InternalTableBlockProvider = (props: Props) => {
           expandFlag,
           childrenColumnName,
           allIncludesChildren,
-          setExpandFlag: () => setExpandFlag(!expandFlag),
+          setExpandFlag: setExpandFlagValue,
         }}
       >
         <RenderChildrenWithAssociationFilter {...props} />
@@ -76,31 +84,35 @@ const InternalTableBlockProvider = (props: Props) => {
 
 export const TableBlockProvider = (props) => {
   const resourceName = props.resource;
-  const params = useMemo(() => ({ ...props.params }), [props.params]);
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager_deprecated(props.dataSource);
   const collection = getCollection(props.collection, props.dataSource);
-  const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
-  if (props.dragSort && dragSortBy) {
-    params['sort'] = dragSortBy;
-  }
-  let childrenColumnName = 'children';
-  if (collection?.tree && treeTable !== false) {
-    if (resourceName?.includes('.')) {
-      const f = getCollectionField(resourceName);
-      if (f?.treeChildren) {
-        childrenColumnName = f.name;
-        params['tree'] = true;
+  const { treeTable, dragSortBy } = useMemo(() => fieldSchema?.['x-decorator-props'] || {}, [fieldSchema]);
+  const isTree = collection?.tree && treeTable !== false;
+
+  const treeField = useMemo(() => {
+    if (isTree) {
+      if (resourceName?.includes('.')) {
+        return getCollectionField(resourceName);
+      } else {
+        return collection.fields.find((f) => f.treeChildren);
       }
-    } else {
-      const f = collection.fields.find((f) => f.treeChildren);
-      if (f) {
-        childrenColumnName = f.name;
-      }
-      params['tree'] = true;
     }
-  }
+  }, [resourceName, isTree, collection.fields, getCollectionField]);
+
+  const childrenColumnName = treeField?.name || 'children';
+
+  const params = useMemo(() => {
+    return {
+      ...props.params,
+      tree: isTree && treeField?.treeChildren,
+      sort: props.dragSort && dragSortBy ? dragSortBy : undefined,
+    };
+  }, [isTree, props.params, props.dragSort, dragSortBy, treeField?.treeChildren]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const form = useMemo(() => createForm(), [treeTable]);
+
   const { filter: parsedFilter } = useParsedFilter({
     filterOption: params?.filter,
   });
@@ -111,8 +123,10 @@ export const TableBlockProvider = (props) => {
     };
   }, [parsedFilter, params]);
 
+  const scope = useMemo(() => ({ treeTable }), [treeTable]);
+
   return (
-    <SchemaComponentOptions scope={{ treeTable }}>
+    <SchemaComponentOptions scope={scope}>
       <FormContext.Provider value={form}>
         <BlockProvider name={props.name || 'table'} {...props} params={paramsWithFilter} runWhenParamsChanged>
           <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={paramsWithFilter} />
@@ -132,106 +146,134 @@ export const useTableBlockProps = () => {
   const ctx = useTableBlockContext();
   const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
   const { getDataBlocks } = useFilterBlock();
-
+  const isLoading = ctx?.service?.loading;
+  const serviceResponse = useDeepMemoized(ctx?.service?.data);
+  const params = useDeepMemoized(ctx?.service?.params);
+  const selectedRowKeys = useDeepMemoized(ctx?.field?.data?.selectedRowKeys);
   useEffect(() => {
-    if (!ctx?.service?.loading) {
-      field.value = [];
-      field.value = ctx?.service?.data?.data;
-      field?.setInitialValue(ctx?.service?.data?.data);
+    if (!isLoading) {
+      const data = serviceResponse?.data || [];
+      const meta = serviceResponse?.meta || {};
+
+      if (!isEqual(field.value, data)) {
+        field.value = data;
+        field?.setInitialValue(data);
+      }
       field.data = field.data || {};
-      field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
+      field.data.selectedRowKeys = selectedRowKeys;
       field.componentProps.pagination = field.componentProps.pagination || {};
-      field.componentProps.pagination.pageSize = ctx?.service?.data?.meta?.pageSize;
-      field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
-      field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
+      field.componentProps.pagination.pageSize = meta?.pageSize;
+      field.componentProps.pagination.total = meta?.count;
+      field.componentProps.pagination.current = meta?.page;
     }
-  }, [ctx?.service?.loading]);
+  }, [field, serviceResponse, isLoading, selectedRowKeys]);
+
   return {
     childrenColumnName: ctx.childrenColumnName,
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort && ctx.dragSortBy,
     rowKey: ctx.rowKey || 'id',
-    pagination:
-      ctx?.params?.paginate !== false
+    pagination: useMemo(() => {
+      return params?.paginate !== false
         ? {
-            defaultCurrent: ctx?.params?.page || 1,
-            defaultPageSize: ctx?.params?.pageSize,
+            defaultCurrent: params?.page || 1,
+            defaultPageSize: params?.pageSize,
           }
-        : false,
-    onRowSelectionChange(selectedRowKeys) {
-      ctx.field.data = ctx?.field?.data || {};
-      ctx.field.data.selectedRowKeys = selectedRowKeys;
-      ctx?.field?.onRowSelect?.(selectedRowKeys);
-    },
-    async onRowDragEnd({ from, to }) {
-      await ctx.resource.move({
-        sourceId: from[ctx.rowKey || 'id'],
-        targetId: to[ctx.rowKey || 'id'],
-        sortField: ctx.dragSort && ctx.dragSortBy,
-      });
-      ctx.service.refresh();
-    },
-    onChange({ current, pageSize }, filters, sorter) {
-      const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
-      ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
-    },
-    onClickRow(record, setSelectedRow, selectedRow) {
-      const { targets, uid } = findFilterTargets(fieldSchema);
-      const dataBlocks = getDataBlocks();
+        : false;
+    }, [params?.page, params?.pageSize, params?.paginate]),
+    onRowSelectionChange: useCallback(
+      (selectedRowKeys) => {
+        ctx.field.data = ctx?.field?.data || {};
+        ctx.field.data.selectedRowKeys = selectedRowKeys;
+        ctx?.field?.onRowSelect?.(selectedRowKeys);
+      },
+      [ctx.field],
+    ),
+    onRowDragEnd: useCallback(
+      async ({ from, to }) => {
+        await ctx.resource.move({
+          sourceId: from[ctx.rowKey || 'id'],
+          targetId: to[ctx.rowKey || 'id'],
+          sortField: ctx.dragSort && ctx.dragSortBy,
+        });
+        ctx.service.refresh();
+        // ctx.resource
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      },
+      [ctx.rowKey, ctx.dragSort, ctx.dragSortBy],
+    ),
+    onChange: useCallback(
+      ({ current, pageSize }, filters, sorter) => {
+        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
+        ctx.service.run({ ...params?.[0], page: current, pageSize, sort });
+        // ctx.service
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      },
+      [globalSort, params],
+    ),
+    onClickRow: useCallback(
+      (record, setSelectedRow, selectedRow) => {
+        const { targets, uid } = findFilterTargets(fieldSchema);
+        const dataBlocks = getDataBlocks();
 
-      // 如果是之前创建的区块是没有 x-filter-targets 属性的，所以这里需要判断一下避免报错
-      if (!targets || !targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid))) {
-        // 当用户已经点击过某一行，如果此时再把相连接的区块给删除的话，行的高亮状态就会一直保留。
-        // 这里暂时没有什么比较好的方法，只是在用户再次点击的时候，把高亮状态给清除掉。
-        setSelectedRow((prev) => (prev.length ? [] : prev));
-        return;
-      }
-
-      const value = [record[ctx.rowKey]];
-
-      dataBlocks.forEach((block) => {
-        const target = targets.find((target) => target.uid === block.uid);
-        if (!target) return;
-
-        const param = block.service.params?.[0] || {};
-        // 保留原有的 filter
-        const storedFilter = block.service.params?.[1]?.filters || {};
-
-        if (selectedRow.includes(record[ctx.rowKey])) {
-          delete storedFilter[uid];
-        } else {
-          storedFilter[uid] = {
-            $and: [
-              {
-                [target.field || ctx.rowKey]: {
-                  [target.field ? '$in' : '$eq']: value,
-                },
-              },
-            ],
-          };
+        // 如果是之前创建的区块是没有 x-filter-targets 属性的，所以这里需要判断一下避免报错
+        if (!targets || !targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid))) {
+          // 当用户已经点击过某一行，如果此时再把相连接的区块给删除的话，行的高亮状态就会一直保留。
+          // 这里暂时没有什么比较好的方法，只是在用户再次点击的时候，把高亮状态给清除掉。
+          setSelectedRow((prev) => (prev.length ? [] : prev));
+          return;
         }
 
-        const mergedFilter = mergeFilter([
-          ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
-          block.defaultFilter,
-        ]);
+        const value = [record[ctx.rowKey]];
 
-        return block.doFilter(
-          {
-            ...param,
-            page: 1,
-            filter: mergedFilter,
-          },
-          { filters: storedFilter },
-        );
-      });
+        dataBlocks.forEach((block) => {
+          const target = targets.find((target) => target.uid === block.uid);
+          if (!target) return;
 
-      // 更新表格的选中状态
-      setSelectedRow((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : [...value]));
-    },
-    onExpand(expanded, record) {
-      ctx?.field.onExpandClick?.(expanded, record);
-    },
+          const param = block.service.params?.[0] || {};
+          // 保留原有的 filter
+          const storedFilter = block.service.params?.[1]?.filters || {};
+
+          if (selectedRow.includes(record[ctx.rowKey])) {
+            delete storedFilter[uid];
+          } else {
+            storedFilter[uid] = {
+              $and: [
+                {
+                  [target.field || ctx.rowKey]: {
+                    [target.field ? '$in' : '$eq']: value,
+                  },
+                },
+              ],
+            };
+          }
+
+          const mergedFilter = mergeFilter([
+            ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
+            block.defaultFilter,
+          ]);
+
+          return block.doFilter(
+            {
+              ...param,
+              page: 1,
+              filter: mergedFilter,
+            },
+            { filters: storedFilter },
+          );
+        });
+
+        // 更新表格的选中状态
+        setSelectedRow((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : [...value]));
+      },
+      [ctx.rowKey, fieldSchema, getDataBlocks],
+    ),
+    onExpand: useCallback(
+      (expanded, record) => {
+        ctx?.field.onExpandClick?.(expanded, record);
+      },
+      [ctx.field],
+    ),
   };
 };
