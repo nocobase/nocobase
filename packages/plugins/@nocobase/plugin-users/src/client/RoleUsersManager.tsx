@@ -1,4 +1,4 @@
-import React, { useContext, useRef } from 'react';
+import React, { useContext, useEffect, useMemo, useRef } from 'react';
 import { App } from 'antd';
 import {
   CollectionProvider_deprecated,
@@ -13,7 +13,7 @@ import {
 } from '@nocobase/client';
 import { RolesManagerContext } from '@nocobase/plugin-acl/client';
 import { useUsersTranslation } from './locale';
-import { roleUsersSchema, userCollection } from './schemas/users';
+import { getRoleUsersSchema, userCollection } from './schemas/users';
 import { useFilterActionProps } from './hooks';
 
 const useRemoveUser = () => {
@@ -83,9 +83,12 @@ export const RoleUsersManager: React.FC = () => {
     },
     {
       ready: !!role,
-      refreshDeps: [role],
     },
   );
+  useEffect(() => {
+    service.run();
+  }, [role]);
+
   const selectedRoleUsers = useRef([]);
   const handleSelectRoleUsers = (_: number[], rows: any[]) => {
     selectedRoleUsers.current = rows;
@@ -106,11 +109,13 @@ export const RoleUsersManager: React.FC = () => {
     };
   };
 
+  const schema = useMemo(() => getRoleUsersSchema(), [role]);
+
   return (
     <ResourceActionContext.Provider value={{ ...service }}>
       <CollectionProvider_deprecated collection={userCollection}>
         <SchemaComponent
-          schema={roleUsersSchema}
+          schema={schema}
           components={{ RoleUsersProvider }}
           scope={{
             useBulkRemoveUsers,

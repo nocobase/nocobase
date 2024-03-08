@@ -126,7 +126,7 @@ test.describe('form item & create form', () => {
         .hover();
     })(page, 'datetime');
     await page.getByRole('menuitem', { name: 'Date display format' }).click();
-    await page.getByLabel('YYYY/MM/DD').click();
+    await page.getByRole('button', { name: 'DD/MM/YYYY' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 输入一个值，然后验证格式是否正确
@@ -140,7 +140,7 @@ test.describe('form item & create form', () => {
       page
         .getByLabel('block-item-CollectionField-general-form-general.datetime-datetime')
         .getByPlaceholder('Select date'),
-    ).toHaveValue(dayjs().format('YYYY/MM/DD'));
+    ).toHaveValue(dayjs().format('DD/MM/YYYY'));
   });
 });
 
@@ -236,14 +236,14 @@ test.describe('form item & edit form', () => {
         .hover();
     })(page, 'datetime');
     await page.getByRole('menuitem', { name: 'Date display format' }).click();
-    await page.getByLabel('YYYY/MM/DD').click();
+    await page.getByRole('button', { name: 'DD/MM/YYYY' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.datetime-datetime')
         .getByPlaceholder('Select date'),
-    ).toHaveValue(dayjs(record.datetime).format('YYYY/MM/DD'));
+    ).toHaveValue(dayjs(record.datetime).format('DD/MM/YYYY'));
   });
 });
 
@@ -285,11 +285,11 @@ test.describe('form item & view form', () => {
         .hover();
     })(page, 'datetime');
     await page.getByRole('menuitem', { name: 'Date display format' }).click();
-    await page.getByLabel('YYYY/MM/DD').click();
+    await page.getByRole('button', { name: 'DD/MM/YYYY' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.datetime-datetime')).toHaveText(
-      `datetime:${dayjs(record.datetime).format('YYYY/MM/DD')}`,
+      `datetime:${dayjs(record.datetime).format('DD/MM/YYYY')}`,
     );
   });
 });
@@ -318,10 +318,10 @@ test.describe('table column & table', () => {
     await createColumnItem(page, 'datetime');
     await showSettingsMenu(page, 'datetime');
     await page.getByRole('menuitem', { name: 'Date display format' }).click();
-    await page.getByLabel('MM/DD/YY').click();
+    await page.getByRole('button', { name: 'DD/MM/YYYY' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(
-      page.getByRole('cell', { name: dayjs(records[0].datetime).format('MM/DD/YY'), exact: true }),
+      page.getByRole('cell', { name: dayjs(records[0].datetime).format('DD/MM/YYYY'), exact: true }),
     ).toBeVisible();
   });
 });
