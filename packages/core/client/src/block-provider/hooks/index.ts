@@ -1273,8 +1273,8 @@ export const useAssociationNames = (dataSource?: string) => {
           collectAppends(condition);
         });
       }
-
-      const isTreeCollection = isAssociationField && getCollection(collectionField.target)?.template === 'tree';
+      const isTreeCollection =
+        isAssociationField && getCollection(collectionField.target, dataSource)?.template === 'tree';
       if (collectionField && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
