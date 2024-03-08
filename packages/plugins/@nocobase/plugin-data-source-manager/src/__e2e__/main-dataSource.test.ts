@@ -8,6 +8,7 @@ test('initializing main data source by default', async ({ page }) => {
   await expect(page.getByText('main', { exact: true })).toBeVisible();
 });
 
+//预设字段
 test.describe('create collection with preset fields', () => {
   test('all preset fields by default', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
@@ -222,7 +223,7 @@ test.describe('create collection with preset fields', () => {
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').fill(uid());
     await page.getByLabel('block-item-collections-Preset').getByLabel('Select all').uncheck();
-    //添加关系字段,断言提交的data是否符合预期
+    //断言提交的data是否符合预期
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/collections:create')),
       page.getByLabel('action-Action-Submit').click(),
@@ -236,6 +237,42 @@ test.describe('create collection with preset fields', () => {
       updatedAt: false,
       updatedBy: false,
       fields: [],
+    });
+  });
+});
+
+//创建非Id为主键
+test.describe('create a primary key other than ID.', () => {
+  test('integer field as primary key', async ({ page, mockCollection }) => {
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await mockCollection({
+      name: 'general',
+      autoGenId: false,
+      fields: [],
+    });
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill('general');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel('action-Action.Link-Configure fields-collections-general').click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'Integer' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill(uid());
+    await page.getByLabel('Primary').check();
+    //断言提交的data是否符合预期
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('/fields:create')),
+      page.getByLabel('action-Action-Submit-fields-').click(),
+    ]);
+    const postData = request.postDataJSON();
+    //提交的数据符合预期
+    expect(postData).toMatchObject({
+      unique: false,
+      interface: 'integer',
+      primaryKey: true,
+      type: 'bigInt',
     });
   });
 });
