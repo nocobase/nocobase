@@ -11,21 +11,33 @@ export class CASAuth extends BaseAuth {
     });
   }
 
-  getOptions() {
+  getOptions(): {
+    casUrl?: string;
+    serviceUrl?: string;
+    autoSignup?: boolean;
+  } {
     const opts = this.options || {};
     return {
       ...opts,
       serviceUrl: `${opts.serviceDomain}/api/cas:service`,
-    } as {
-      casUrl?: string;
-      serviceUrl?: string;
-      autoSignup?: boolean;
     };
   }
 
+  getService(authenticator: string, appName: string, redirect: string) {
+    const { serviceUrl } = this.getOptions();
+    return encodeURIComponent(`${serviceUrl}?authenticator=${authenticator}&__appName=${appName}&redirect=${redirect}`);
+  }
+
   async serviceValidate(ticket: string) {
-    const { casUrl, serviceUrl } = this.getOptions();
-    const url = `${casUrl}/serviceValidate?ticket=${ticket}&service=${serviceUrl}`;
+    const { casUrl } = this.getOptions();
+    const { authenticator, __appName: appName, redirect = '/admin' } = this.ctx.action.params;
+    const service = this.getService(authenticator, appName, redirect);
+    const url = `${casUrl}/serviceValidate?ticket=${ticket}&service=${service}`;
+    this.ctx.logger.debug(`serviceValidate url: ${url}`, {
+      module: 'auth',
+      submodule: 'cas',
+      method: 'serviceValidate',
+    });
     try {
       const res = await axios.get(url);
       return res;
@@ -42,6 +54,7 @@ export class CASAuth extends BaseAuth {
       throw new Error('Missing ticket');
     }
     const res = await this.serviceValidate(ticket);
+    ctx.logger.debug(res?.data, { module: 'auth', submodule: 'cas', method: 'validate' });
     const pattern = /<(?:cas|sso):user>(.*?)<\/(?:cas|sso):user>/;
     const username = res?.data.match(pattern)?.[1];
     if (!username) {
