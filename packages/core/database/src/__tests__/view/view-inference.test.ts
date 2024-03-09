@@ -34,7 +34,7 @@ describe('view inference', function () {
 
     await db.sync();
 
-    const viewName = 'user_posts';
+    const viewName = 'test_view';
 
     const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
     await db.sequelize.query(dropViewSQL);

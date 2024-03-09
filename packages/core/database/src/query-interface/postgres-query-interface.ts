@@ -153,10 +153,14 @@ export default class PostgresQueryInterface extends QueryInterface {
 
             // handle column alias
             const from = ast[0].from;
-            const findAs = from.find((from) => from.as === columnExprTable);
+            if (columnExprTable === null && column.expr.type === 'column_ref') {
+              columnExprTable = from[0].table;
+            } else {
+              const findAs = from.find((from) => from.as === columnExprTable);
 
-            if (findAs) {
-              columnExprTable = findAs.table;
+              if (findAs) {
+                columnExprTable = findAs.table;
+              }
             }
 
             return columnUsage.column_name === column.expr.column && columnUsage.table_name === columnExprTable;
