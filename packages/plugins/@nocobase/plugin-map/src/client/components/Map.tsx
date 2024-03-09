@@ -23,6 +23,7 @@ const InternalMap = connect((props: MapProps) => {
     </div>
   );
 }, mapReadPretty(ReadPretty));
+InternalMap.displayName = 'Map';
 
 const Map = InternalMap as typeof InternalMap & {
   Designer: typeof Designer;

@@ -51,6 +51,47 @@ import {
 import { DEFAULT_DATA_SOURCE_KEY, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
 import { DataSource } from '../data-source/data-source/DataSource';
 
+export const allBuiltInFieldInterfaces = [
+  CheckboxFieldInterface,
+  CheckboxGroupFieldInterface,
+  ChinaRegionFieldInterface,
+  CollectionSelectFieldInterface,
+  ColorFieldInterface,
+  CreatedAtFieldInterface,
+  CreatedByFieldInterface,
+  DatetimeFieldInterface,
+  EmailFieldInterface,
+  IconFieldInterface,
+  IdFieldInterface,
+  InputFieldInterface,
+  IntegerFieldInterface,
+  JsonFieldInterface,
+  LinkToFieldInterface,
+  M2MFieldInterface,
+  M2OFieldInterface,
+  MarkdownFieldInterface,
+  MultipleSelectFieldInterface,
+  NumberFieldInterface,
+  O2MFieldInterface,
+  O2OFieldInterface,
+  OHOFieldInterface,
+  OBOFieldInterface,
+  PasswordFieldInterface,
+  PercentFieldInterface,
+  PhoneFieldInterface,
+  RadioGroupFieldInterface,
+  RichTextFieldInterface,
+  SelectFieldInterface,
+  SubTableFieldInterface,
+  TableoidFieldInterface,
+  TextareaFieldInterface,
+  TimeFieldInterface,
+  UpdatedAtFieldInterface,
+  UpdatedByFieldInterface,
+  UrlFieldInterface,
+  SortFieldInterface,
+]
+
 class MainDataSource extends DataSource {
   async getDataSource() {
     const service = await this.app.apiClient.request({
@@ -75,9 +116,8 @@ class MainDataSource extends DataSource {
 export class CollectionPlugin extends Plugin {
   async load() {
     this.dataSourceManager.addCollectionMixins([InheritanceCollectionMixin]);
-    this.addFieldInterfaces();
     this.addCollectionTemplates();
-    this.addFieldInterfaces();
+    this.dataSourceManager.addFieldInterfaces(allBuiltInFieldInterfaces);
     this.addFieldInterfaceGroups();
 
     this.dataSourceManager.addDataSource(MainDataSource, {
@@ -113,49 +153,6 @@ export class CollectionPlugin extends Plugin {
         label: '{{t("Others")}}',
       },
     });
-  }
-
-  addFieldInterfaces() {
-    this.dataSourceManager.addFieldInterfaces([
-      CheckboxFieldInterface,
-      CheckboxGroupFieldInterface,
-      ChinaRegionFieldInterface,
-      CollectionSelectFieldInterface,
-      ColorFieldInterface,
-      CreatedAtFieldInterface,
-      CreatedByFieldInterface,
-      DatetimeFieldInterface,
-      EmailFieldInterface,
-      IconFieldInterface,
-      IdFieldInterface,
-      InputFieldInterface,
-      IntegerFieldInterface,
-      JsonFieldInterface,
-      LinkToFieldInterface,
-      M2MFieldInterface,
-      M2OFieldInterface,
-      MarkdownFieldInterface,
-      MultipleSelectFieldInterface,
-      NumberFieldInterface,
-      O2MFieldInterface,
-      O2OFieldInterface,
-      OHOFieldInterface,
-      OBOFieldInterface,
-      PasswordFieldInterface,
-      PercentFieldInterface,
-      PhoneFieldInterface,
-      RadioGroupFieldInterface,
-      RichTextFieldInterface,
-      SelectFieldInterface,
-      SubTableFieldInterface,
-      TableoidFieldInterface,
-      TextareaFieldInterface,
-      TimeFieldInterface,
-      UpdatedAtFieldInterface,
-      UpdatedByFieldInterface,
-      UrlFieldInterface,
-      SortFieldInterface,
-    ]);
   }
 
   addCollectionTemplates() {

@@ -137,7 +137,7 @@ export const useValidator = (validator: (value: any) => string) => {
   const field = useField<Field>();
   useEffect(() => {
     const dispose = reaction(
-      () => field.value,
+      () => field?.value,
       (value) => {
         const message = validator(value);
         field.setFeedback({

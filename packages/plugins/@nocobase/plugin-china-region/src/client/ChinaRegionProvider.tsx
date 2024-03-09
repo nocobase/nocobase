@@ -4,7 +4,7 @@ import { useAPIClient, useRequest } from '@nocobase/client';
 
 export const useChinaRegionDataSource = (options) => {
   const field = useField<ArrayField>();
-  const maxLevel = field.componentProps.maxLevel;
+  const maxLevel = field?.componentProps.maxLevel;
   return useRequest(
     {
       resource: 'chinaRegions',
@@ -38,7 +38,7 @@ export const useChinaRegionDataSource = (options) => {
 export const useChinaRegionLoadData = () => {
   const api = useAPIClient();
   const field = useField<ArrayField>();
-  const maxLevel = field.componentProps.maxLevel;
+  const maxLevel = field?.componentProps?.maxLevel;
   return (selectedOptions) => {
     const targetOption = selectedOptions[selectedOptions.length - 1];
     if (targetOption?.children?.length > 0) {

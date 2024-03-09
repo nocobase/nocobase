@@ -19,8 +19,8 @@ export const ReadPretty = observer(
       return <div />;
     }
     const collectionField = useCollectionField();
-    const dataSource = field.dataSource || props.options || collectionField?.uiSchema.enum || [];
-    const currentOptions = getCurrentOptions(field.value, dataSource, fieldNames);
+    const dataSource = field?.dataSource || props.options || collectionField?.uiSchema.enum || [];
+    const currentOptions = getCurrentOptions(field?.value, dataSource, fieldNames);
 
     return (
       <div>

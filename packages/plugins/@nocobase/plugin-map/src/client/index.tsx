@@ -21,6 +21,7 @@ MapProvider.displayName = 'MapProvider';
 export class MapPlugin extends Plugin {
   async load() {
     this.app.use(MapProvider);
+    this.app.addComponents({ Map: Map as any });
 
     this.app.dataSourceManager.addFieldInterfaces(fields);
     this.app.dataSourceManager.addFieldInterfaceGroups({

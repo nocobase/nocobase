@@ -46,4 +46,8 @@ export const Input: ComposedInput = Object.assign(
   },
 );
 
+(Input as any).TextArea.ReadPretty = ReadPretty.TextArea;
+(Input as any).URL.ReadPretty = ReadPretty.URL;
+(Input as any).JSON.ReadPretty = ReadPretty.JSON;
+
 export default Input;

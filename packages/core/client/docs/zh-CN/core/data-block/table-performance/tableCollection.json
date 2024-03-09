@@ -1,0 +1,1071 @@
+{
+  "key": "dax26iuxpmt",
+  "name": "tt_pmt_staff",
+  "title": "性能>员工[普通表]",
+  "inherit": false,
+  "hidden": false,
+  "description": null,
+  "fields": [
+    {
+      "key": "0d2rycb2pmt",
+      "name": "id",
+      "type": "bigInt",
+      "interface": "id",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "autoIncrement": true,
+      "primaryKey": true,
+      "allowNull": false,
+      "uiSchema": {
+        "type": "number",
+        "title": "{{t(\"ID\")}}",
+        "x-component": "InputNumber",
+        "x-read-pretty": true
+      }
+    },
+    {
+      "key": "5k5ccsyhpmt",
+      "name": "deptid",
+      "type": "bigInt",
+      "interface": "integer",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "isForeignKey": true,
+      "uiSchema": {
+        "type": "number",
+        "title": "deptid",
+        "x-component": "InputNumber",
+        "x-read-pretty": true
+      }
+    },
+    {
+      "key": "649awmv9kza",
+      "name": "fileid",
+      "type": "bigInt",
+      "interface": "integer",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "isForeignKey": true,
+      "uiSchema": {
+        "type": "number",
+        "title": "fileid",
+        "x-component": "InputNumber",
+        "x-read-pretty": true
+      }
+    },
+    {
+      "key": "t0bt3g4cpmt",
+      "name": "orgid",
+      "type": "bigInt",
+      "interface": "integer",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "isForeignKey": true,
+      "uiSchema": {
+        "type": "number",
+        "title": "orgid",
+        "x-component": "InputNumber",
+        "x-read-pretty": true
+      }
+    },
+    {
+      "key": "n4n1yktxset",
+      "name": "proportionexpid",
+      "type": "bigInt",
+      "interface": "integer",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "isForeignKey": true,
+      "uiSchema": {
+        "type": "number",
+        "title": "proportionexpid",
+        "x-component": "InputNumber",
+        "x-read-pretty": true
+      }
+    },
+    {
+      "key": "3ji1ldjupmt",
+      "name": "createdAt",
+      "type": "date",
+      "interface": "createdAt",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "field": "createdAt",
+      "uiSchema": {
+        "type": "datetime",
+        "title": "{{t(\"Created at\")}}",
+        "x-component": "DatePicker",
+        "x-component-props": {},
+        "x-read-pretty": true
+      }
+    },
+    {
+      "key": "orh016pzpmt",
+      "name": "createdBy",
+      "type": "belongsTo",
+      "interface": "createdBy",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "target": "users",
+      "foreignKey": "createdById",
+      "uiSchema": {
+        "type": "object",
+        "title": "{{t(\"Created by\")}}",
+        "x-component": "AssociationField",
+        "x-component-props": {
+          "fieldNames": {
+            "value": "id",
+            "label": "nickname"
+          }
+        },
+        "x-read-pretty": true
+      },
+      "targetKey": "id"
+    },
+    {
+      "key": "xxm0g05jpmt",
+      "name": "updatedAt",
+      "type": "date",
+      "interface": "updatedAt",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "field": "updatedAt",
+      "uiSchema": {
+        "type": "string",
+        "title": "{{t(\"Last updated at\")}}",
+        "x-component": "DatePicker",
+        "x-component-props": {},
+        "x-read-pretty": true
+      }
+    },
+    {
+      "key": "9wp4v5fwpmt",
+      "name": "updatedBy",
+      "type": "belongsTo",
+      "interface": "updatedBy",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "target": "users",
+      "foreignKey": "updatedById",
+      "uiSchema": {
+        "type": "object",
+        "title": "{{t(\"Last updated by\")}}",
+        "x-component": "AssociationField",
+        "x-component-props": {
+          "fieldNames": {
+            "value": "id",
+            "label": "nickname"
+          }
+        },
+        "x-read-pretty": true
+      },
+      "targetKey": "id"
+    },
+    {
+      "key": "iezxmwh1pmt",
+      "name": "staffcode",
+      "type": "sequence",
+      "interface": "sequence",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "patterns": [
+        {
+          "type": "string",
+          "options": {
+            "value": "NB"
+          }
+        },
+        {
+          "type": "integer",
+          "options": {
+            "digits": 9,
+            "start": 1,
+            "key": 52031
+          }
+        }
+      ],
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Input",
+        "x-component-props": {},
+        "title": "员工号(自动编码)"
+      },
+      "unique": false,
+      "inputable": false
+    },
+    {
+      "key": "khzh1v1cpmt",
+      "name": "staffname",
+      "type": "string",
+      "interface": "input",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Input",
+        "title": "姓名(单行文本)"
+      }
+    },
+    {
+      "key": "8h58dz5bpmt",
+      "name": "address",
+      "type": "text",
+      "interface": "textarea",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Input.TextArea",
+        "title": "联系地址(多行文本)"
+      }
+    },
+    {
+      "key": "zolos0d9pmt",
+      "name": "phone",
+      "type": "string",
+      "interface": "phone",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Input",
+        "x-component-props": {
+          "type": "tel"
+        },
+        "title": "联系电话(手机号码)"
+      }
+    },
+    {
+      "key": "h1i82qrypmt",
+      "name": "email",
+      "type": "string",
+      "interface": "email",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Input",
+        "x-validator": "email",
+        "title": "电子邮箱(电子邮箱)"
+      }
+    },
+    {
+      "key": "6mjqrhctpmt",
+      "name": "age",
+      "type": "bigInt",
+      "interface": "integer",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "number",
+        "x-component": "InputNumber",
+        "x-component-props": {
+          "stringMode": true,
+          "step": "1"
+        },
+        "x-validator": "integer",
+        "title": "年龄(整数)"
+      }
+    },
+    {
+      "key": "i5e7xxo2pmt",
+      "name": "workyears",
+      "type": "double",
+      "interface": "number",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "step": "0.1",
+          "stringMode": true
+        },
+        "type": "number",
+        "x-component": "InputNumber",
+        "title": "工龄(数字)"
+      }
+    },
+    {
+      "key": "xfm96km3pmt",
+      "name": "selforgworkyears",
+      "type": "double",
+      "interface": "number",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "step": "0.1",
+          "stringMode": true
+        },
+        "type": "number",
+        "x-component": "InputNumber",
+        "title": "司龄(数字)"
+      }
+    },
+    {
+      "key": "xon8vnm1pmt",
+      "name": "proportion",
+      "type": "float",
+      "interface": "percent",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "step": "0.0001",
+          "stringMode": true,
+          "addonAfter": "%"
+        },
+        "type": "string",
+        "x-component": "Percent",
+        "title": "股份占比(百分比)"
+      }
+    },
+    {
+      "key": "dnijk17tpmt",
+      "name": "isonduty",
+      "type": "boolean",
+      "interface": "checkbox",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "boolean",
+        "x-component": "Checkbox",
+        "title": "是否在岗(勾选)"
+      }
+    },
+    {
+      "key": "v9kgbw1npmt",
+      "name": "maritalstatus_singleselect",
+      "type": "string",
+      "interface": "select",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "enum": [
+          {
+            "value": "01",
+            "label": "未婚"
+          },
+          {
+            "value": "02",
+            "label": "已婚"
+          },
+          {
+            "value": "03",
+            "label": "丧偶"
+          },
+          {
+            "value": "04",
+            "label": "离异"
+          },
+          {
+            "value": "05",
+            "label": "其他"
+          }
+        ],
+        "type": "string",
+        "x-component": "Select",
+        "title": "婚姻状况(下拉单选)"
+      }
+    },
+    {
+      "key": "1m7sadgxpmt",
+      "name": "prof_multipleselect",
+      "type": "array",
+      "interface": "multipleSelect",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "enum": [
+          {
+            "value": "04",
+            "label": "中国委托公证人资格（香港、澳门）"
+          },
+          {
+            "value": "05",
+            "label": "注册会计师"
+          },
+          {
+            "value": "10",
+            "label": "监理工程师"
+          },
+          {
+            "value": "28",
+            "label": "专利代理师"
+          },
+          {
+            "value": "32",
+            "label": "工程咨询（投资）专业技术人员职业资格"
+          },
+          {
+            "value": "33",
+            "label": "通信专业技术人员职业资格"
+          },
+          {
+            "value": "34",
+            "label": "计算机技术与软件专业技术资格"
+          },
+          {
+            "value": "36",
+            "label": "会计专业技术资格"
+          },
+          {
+            "value": "52",
+            "label": "统计专业技术资格"
+          },
+          {
+            "value": "56",
+            "label": "翻译专业资格"
+          }
+        ],
+        "type": "array",
+        "x-component": "Select",
+        "x-component-props": {
+          "mode": "multiple"
+        },
+        "title": "职业资格(下拉多选)"
+      },
+      "defaultValue": []
+    },
+    {
+      "key": "as9m82ynpmt",
+      "name": "maritalstatus_radio",
+      "type": "string",
+      "interface": "radioGroup",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "enum": [
+          {
+            "value": "01",
+            "label": "未婚"
+          },
+          {
+            "value": "02",
+            "label": "已婚"
+          },
+          {
+            "value": "03",
+            "label": "丧偶"
+          },
+          {
+            "value": "04",
+            "label": "离异"
+          },
+          {
+            "value": "05",
+            "label": "其他"
+          }
+        ],
+        "type": "string",
+        "x-component": "Radio.Group",
+        "title": "婚姻状况(单选)"
+      }
+    },
+    {
+      "key": "h4a3h0zkpmt",
+      "name": "prof_check",
+      "type": "array",
+      "interface": "checkboxGroup",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "enum": [
+          {
+            "value": "04",
+            "label": "中国委托公证人资格（香港、澳门）"
+          },
+          {
+            "value": "05",
+            "label": "注册会计师"
+          },
+          {
+            "value": "10",
+            "label": "监理工程师"
+          },
+          {
+            "value": "28",
+            "label": "专利代理师"
+          },
+          {
+            "value": "32",
+            "label": "工程咨询（投资）专业技术人员职业资格"
+          },
+          {
+            "value": "33",
+            "label": "通信专业技术人员职业资格"
+          },
+          {
+            "value": "34",
+            "label": "计算机技术与软件专业技术资格"
+          },
+          {
+            "value": "36",
+            "label": "会计专业技术资格"
+          },
+          {
+            "value": "52",
+            "label": "统计专业技术资格"
+          },
+          {
+            "value": "56",
+            "label": "翻译专业资格"
+          }
+        ],
+        "type": "string",
+        "x-component": "Checkbox.Group",
+        "title": "职业资格(复选)"
+      },
+      "defaultValue": []
+    },
+    {
+      "key": "2vg9uhb4pmt",
+      "name": "regaddress",
+      "type": "belongsToMany",
+      "interface": "chinaRegion",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "maxLevel": 3,
+          "useDataSource": "{{ useChinaRegionDataSource }}",
+          "useLoadData": "{{ useChinaRegionLoadData }}",
+          "changeOnSelectLast": false,
+          "labelInValue": true,
+          "fieldNames": {
+            "label": "name",
+            "value": "code",
+            "children": "children"
+          }
+        },
+        "type": "array",
+        "x-component": "Cascader",
+        "title": "户籍地(行政区划)"
+      },
+      "target": "chinaRegions",
+      "targetKey": "code",
+      "sortBy": "level",
+      "through": "tt_pmt_staff_regaddress",
+      "foreignKey": "f_hhmtoqcqk8g",
+      "otherKey": "f_t0sryffordg",
+      "sourceKey": "id"
+    },
+    {
+      "key": "9rfwtrrepmt",
+      "name": "photo",
+      "type": "belongsToMany",
+      "interface": "attachment",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "multiple": true,
+          "action": "attachments:upload"
+        },
+        "type": "array",
+        "x-component": "Upload.Attachment",
+        "title": "照片(附件)"
+      },
+      "target": "attachments",
+      "through": "tt_pmt_staff_photo",
+      "foreignKey": "f_yntlgbf87rd",
+      "otherKey": "f_sikqv9m15cv",
+      "targetKey": "id",
+      "sourceKey": "id"
+    },
+    {
+      "key": "7x5uevlopmt",
+      "name": "prof_markdown",
+      "type": "text",
+      "interface": "markdown",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Markdown",
+        "title": "职业资格(Markdown)"
+      }
+    },
+    {
+      "key": "lybdq5awpmt",
+      "name": "prof_richtext",
+      "type": "text",
+      "interface": "richText",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "RichText",
+        "title": "职业资格(富文本)"
+      }
+    },
+    {
+      "key": "duc6939bpmt",
+      "name": "birthdate",
+      "type": "date",
+      "interface": "datetime",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "dateFormat": "YYYY-MM-DD",
+          "gmt": false,
+          "showTime": false
+        },
+        "type": "string",
+        "x-component": "DatePicker",
+        "title": "出生日期(日期)"
+      }
+    },
+    {
+      "key": "kd1k3d1vpmt",
+      "name": "testcasenum",
+      "type": "bigInt",
+      "interface": "integer",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "number",
+        "x-component": "InputNumber",
+        "x-component-props": {
+          "stringMode": true,
+          "step": "1"
+        },
+        "x-validator": "integer",
+        "title": "测试用例编号"
+      }
+    },
+    {
+      "key": "h0kyhflppmt",
+      "name": "testdatanum",
+      "type": "bigInt",
+      "interface": "integer",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "number",
+        "x-component": "InputNumber",
+        "x-component-props": {
+          "stringMode": true,
+          "step": "1"
+        },
+        "x-validator": "integer",
+        "title": "测试数据编号"
+      }
+    },
+    {
+      "key": "sigq297cpmt",
+      "name": "org",
+      "type": "belongsTo",
+      "interface": "m2o",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "foreignKey": "orgid",
+      "onDelete": "SET NULL",
+      "uiSchema": {
+        "x-component": "AssociationField",
+        "x-component-props": {
+          "multiple": false,
+          "fieldNames": {
+            "label": "id",
+            "value": "id"
+          }
+        },
+        "title": "所属组织(many to one)"
+      },
+      "target": "tt_pmt_org",
+      "targetKey": "id"
+    },
+    {
+      "key": "kgag86hipmt",
+      "name": "dept",
+      "type": "belongsTo",
+      "interface": "m2o",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "foreignKey": "deptid",
+      "onDelete": "SET NULL",
+      "uiSchema": {
+        "x-component": "AssociationField",
+        "x-real-component": "tag",
+        "x-component-props": {
+          "multiple": false,
+          "fieldNames": {
+            "label": "id",
+            "value": "id"
+          }
+        },
+        "title": "所属部门(many to one)"
+      },
+      "target": "tt_pmt_dept",
+      "targetKey": "id"
+    },
+    {
+      "key": "vja8qigtpmt",
+      "name": "prof",
+      "type": "belongsToMany",
+      "interface": "m2m",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "foreignKey": "staffid",
+      "otherKey": "profid",
+      "uiSchema": {
+        "x-component": "AssociationField",
+        "x-component-props": {
+          "multiple": true,
+          "fieldNames": {
+            "label": "id",
+            "value": "id"
+          }
+        },
+        "title": "职业资格(many to many)"
+      },
+      "through": "tt_pmt_staff_prof",
+      "target": "tt_bd_prof",
+      "targetKey": "id",
+      "sourceKey": "id"
+    },
+    {
+      "key": "r5b5s85spmt",
+      "name": "prof_json",
+      "type": "json",
+      "interface": "json",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "defaultValue": null,
+      "uiSchema": {
+        "type": "object",
+        "x-component": "Input.JSON",
+        "x-component-props": {
+          "autoSize": {
+            "minRows": 5
+          }
+        },
+        "default": null,
+        "title": "职业资格(JSON)"
+      }
+    },
+    {
+      "key": "be635dbcpmt",
+      "name": "address_point",
+      "type": "point",
+      "interface": "point",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "mapType": "amap"
+        },
+        "type": "void",
+        "x-component": "Map",
+        "x-component-designer": "Map.Designer",
+        "title": "联系地址坐标(点) "
+      }
+    },
+    {
+      "key": "lmd0usk9pmt",
+      "name": "address_line",
+      "type": "lineString",
+      "interface": "lineString",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "mapType": "amap"
+        },
+        "type": "void",
+        "x-component": "Map",
+        "x-component-designer": "Map.Designer",
+        "title": "联系地址坐标(线) "
+      }
+    },
+    {
+      "key": "07yrmxlopmt",
+      "name": "address_circle",
+      "type": "circle",
+      "interface": "circle",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "mapType": "amap"
+        },
+        "type": "void",
+        "x-component": "Map",
+        "x-component-designer": "Map.Designer",
+        "title": "联系地址坐标(圆)"
+      }
+    },
+    {
+      "key": "4k9t55htpmt",
+      "name": "address_polygon",
+      "type": "polygon",
+      "interface": "polygon",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "x-component-props": {
+          "mapType": "amap"
+        },
+        "type": "void",
+        "x-component": "Map",
+        "x-component-designer": "Map.Designer",
+        "title": "联系地址坐标(多边形)"
+      }
+    },
+    {
+      "key": "dn9fkra7pmt",
+      "name": "url",
+      "type": "string",
+      "interface": "url",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "title": "个人主页(URL)",
+        "x-component": "Input.URL"
+      }
+    },
+    {
+      "key": "wrc0cop6ujt",
+      "name": "file_obo",
+      "type": "belongsTo",
+      "interface": "obo",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "foreignKey": "fileid",
+      "onDelete": "SET NULL",
+      "uiSchema": {
+        "x-component": "AssociationField",
+        "x-component-props": {
+          "multiple": false,
+          "fieldNames": {
+            "label": "id",
+            "value": "id"
+          }
+        },
+        "title": "档案文件(one belongsto one)"
+      },
+      "target": "tt_pmt_file",
+      "targetKey": "id"
+    },
+    {
+      "key": "56azdim3mt8",
+      "name": "file_m2o",
+      "type": "belongsTo",
+      "interface": "m2o",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "foreignKey": "fileid",
+      "onDelete": "SET NULL",
+      "uiSchema": {
+        "x-component": "AssociationField",
+        "x-component-props": {
+          "multiple": false,
+          "fieldNames": {
+            "label": "id",
+            "value": "id"
+          }
+        },
+        "title": "档案文件(many to one)"
+      },
+      "target": "tt_pmt_file",
+      "targetKey": "id"
+    },
+    {
+      "key": "5zej7e06q20",
+      "name": "file_m2m",
+      "type": "belongsToMany",
+      "interface": "m2m",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "foreignKey": "staffid",
+      "otherKey": "fileid",
+      "uiSchema": {
+        "x-component": "AssociationField",
+        "x-component-props": {
+          "multiple": true,
+          "fieldNames": {
+            "label": "id",
+            "value": "id"
+          }
+        },
+        "title": "档案文件(many to many)"
+      },
+      "target": "tt_pmt_file",
+      "through": "tt_pmt_staff_file",
+      "targetKey": "id",
+      "sourceKey": "id"
+    },
+    {
+      "key": "07e5o7r5ylf",
+      "name": "isinsured",
+      "type": "boolean",
+      "interface": "checkbox",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "boolean",
+        "x-component": "Checkbox",
+        "title": "是否参保(勾选)"
+      }
+    },
+    {
+      "key": "mwzo04ga2ci",
+      "name": "proportionexp",
+      "type": "belongsTo",
+      "interface": "m2o",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "foreignKey": "proportionexpid",
+      "onDelete": "SET NULL",
+      "uiSchema": {
+        "x-component": "AssociationField",
+        "x-component-props": {
+          "multiple": false,
+          "fieldNames": {
+            "label": "id",
+            "value": "id"
+          }
+        },
+        "title": "股份数占比表达式(many to one)"
+      },
+      "target": "tt_pmt_exp",
+      "targetKey": "id"
+    },
+    {
+      "key": "jmkrp8m9qpb",
+      "name": "age_formula",
+      "type": "formula",
+      "interface": "formula",
+      "description": null,
+      "collectionName": "tt_pmt_staff",
+      "parentKey": null,
+      "reverseKey": null,
+      "dataType": "integer",
+      "uiSchema": {
+        "x-component-props": {
+          "stringMode": true
+        },
+        "type": "number",
+        "x-component": "Formula.Result",
+        "x-read-pretty": true,
+        "title": "年龄(公式)"
+      },
+      "engine": "formula.js",
+      "expression": "YEAR(TODAY())-YEAR({{birthdate}})"
+    }
+  ],
+  "category": [
+    {
+      "id": 8,
+      "createdAt": "2023-05-02T05:01:45.150Z",
+      "updatedAt": "2023-05-02T05:08:54.545Z",
+      "name": "性能测试pmt",
+      "color": "red",
+      "collectionCategory": {
+        "createdAt": "2023-04-07T07:20:55.666Z",
+        "updatedAt": "2023-04-07T07:20:55.666Z",
+        "collectionName": "tt_pmt_staff",
+        "categoryId": 8
+      }
+    }
+  ],
+  "logging": true,
+  "autoGenId": true,
+  "createdBy": true,
+  "updatedBy": true,
+  "createdAt": true,
+  "updatedAt": true,
+  "sortable": true,
+  "template": "general",
+  "schema": "public",
+  "filterTargetKey": "id"
+}

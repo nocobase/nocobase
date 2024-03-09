@@ -11,7 +11,7 @@ import { defaultFieldNames } from './defaultFieldNames';
 
 const useDefDataSource = (options) => {
   const field = useField<ArrayField>();
-  return useRequest(() => Promise.resolve({ data: field.dataSource || [] }), options);
+  return useRequest(() => Promise.resolve({ data: field?.dataSource || [] }), options);
 };
 
 const useDefLoadData = (props: any) => {
@@ -37,7 +37,9 @@ export const Cascader = connect(
     const loadData = useLoadData(props);
     const { loading, run } = useDataSource({
       onSuccess(data) {
-        field.dataSource = data?.data || [];
+        if (field) {
+          field.dataSource = data?.data || [];
+        }
       },
     });
     // 兼容值为 object[] 的情况
@@ -74,7 +76,7 @@ export const Cascader = connect(
       <AntdCascader
         loading={loading}
         {...others}
-        options={field.dataSource}
+        options={field?.dataSource}
         loadData={loadData}
         changeOnSelect={isBoolean(changeOnSelectLast) ? !changeOnSelectLast : changeOnSelect}
         value={toValue()}

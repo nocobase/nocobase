@@ -50,6 +50,10 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: 'tmp',
+              link: '/core/data-block/table-performance'
+            },
+            {
               title: 'Application',
               link: '/core/application/application',
             },

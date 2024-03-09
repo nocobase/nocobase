@@ -31,6 +31,7 @@ function useTargetCollectionField() {
   const fieldSchema = useFieldSchema();
   const providedCollection = useCollection_deprecated();
   const { getCollection, getCollectionField } = useCollectionManager_deprecated();
+  if (!fieldSchema) return;
   const paths = (fieldSchema.name as string).split('.');
   let collection: any = providedCollection;
   for (let i = 0; i < paths.length - 1; i++) {
@@ -59,10 +60,10 @@ export function Result(props) {
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const formBlockContext = useFormBlockContext();
   const field = useField();
-  const path: any = field.path.entire;
+  const path: any = field?.path?.entire;
   const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
-  const fieldName = fieldPath.split('.')[0];
-  const index = parseInt(fieldPath.split('.')?.[1]);
+  const fieldName = fieldPath?.split('.')[0];
+  const index = parseInt(fieldPath?.split('.')?.[1]);
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
