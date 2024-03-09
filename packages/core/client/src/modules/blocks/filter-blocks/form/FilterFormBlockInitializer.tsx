@@ -6,10 +6,10 @@ import { FilterBlockInitializer } from '../../../../schema-initializer/items/Fil
 import { Collection } from '../../../../data-source';
 
 export const FilterFormBlockInitializer = ({
-  filterMenuItemChildren,
+  filterCollections,
   onlyCurrentDataSource,
 }: {
-  filterMenuItemChildren: (collection: Collection) => boolean;
+  filterCollections: (collection: Collection) => boolean;
   onlyCurrentDataSource: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();
@@ -36,7 +36,7 @@ export const FilterFormBlockInitializer = ({
         options = { ...options, settings: 'blockSettings:filterForm' };
         return createFilterFormBlockSchema(options);
       }}
-      filter={filterMenuItemChildren}
+      filter={filterCollections}
     />
   );
 };

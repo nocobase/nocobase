@@ -32,7 +32,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
             title: '{{t("Form")}}',
             Component: 'FilterFormBlockInitializer',
             componentProps: {
-              filterMenuItemChildren() {
+              filterCollections() {
                 return false;
               },
               onlyCurrentDataSource: true,
@@ -45,7 +45,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
             title: '{{t("Collapse")}}',
             Component: 'FilterCollapseBlockInitializer',
             componentProps: {
-              filterMenuItemChildren() {
+              filterCollections() {
                 return false;
               },
               onlyCurrentDataSource: true,

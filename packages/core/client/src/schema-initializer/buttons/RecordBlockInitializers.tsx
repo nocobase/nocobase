@@ -269,7 +269,7 @@ export const recordBlockInitializers = new SchemaInitializer({
             );
 
             return {
-              filterMenuItemChildren(collection) {
+              filterCollections(collection) {
                 return toManyField.some((field) => field.target === collection.name);
               },
               onlyCurrentDataSource: true,
@@ -288,7 +288,7 @@ export const recordBlockInitializers = new SchemaInitializer({
             );
 
             return {
-              filterMenuItemChildren(collection) {
+              filterCollections(collection) {
                 return toManyField.some((field) => field.target === collection.name);
               },
               onlyCurrentDataSource: true,

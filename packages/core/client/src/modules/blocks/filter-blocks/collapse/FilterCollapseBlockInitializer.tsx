@@ -7,10 +7,10 @@ import { DataBlockInitializer } from '../../../../schema-initializer/items/DataB
 import { Collection } from '../../../../data-source';
 
 export const FilterCollapseBlockInitializer = ({
-  filterMenuItemChildren,
+  filterCollections,
   onlyCurrentDataSource,
 }: {
-  filterMenuItemChildren: (collection: Collection) => boolean;
+  filterCollections: (collection: Collection) => boolean;
   onlyCurrentDataSource: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();
@@ -31,7 +31,7 @@ export const FilterCollapseBlockInitializer = ({
         });
         insert(schema);
       }}
-      filter={filterMenuItemChildren}
+      filter={filterCollections}
     />
   );
 };
