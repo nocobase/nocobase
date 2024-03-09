@@ -109,7 +109,7 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
   );
 };
 
-export function useMenuSearch(data: any[], openKeys: string[], showType?: boolean) {
+export function useMenuSearch({ data, openKeys, showType }: { data: any[]; openKeys: string[]; showType?: boolean }) {
   const [searchValue, setSearchValue] = useState('');
   const [count, setCount] = useState(STEP);
 
@@ -306,7 +306,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     return getMenuItems(items, name);
   }, [getMenuItems, items, name]);
   const [openMenuKeys, setOpenMenuKeys] = useState([]);
-  const searchedChildren = useMenuSearch(childItems, openMenuKeys);
+  const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys });
   const compiledMenuItems = useMemo(
     () => [
       {
