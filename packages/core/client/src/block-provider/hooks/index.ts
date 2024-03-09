@@ -29,6 +29,9 @@ import { transformVariableValue } from '../../variables/utils/transformVariableV
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { Field, Form } from '@formily/core';
+import { untracked } from '@formily/reactive';
+import { isSubMode } from '../../schema-component/antd/association-field/util';
 
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
@@ -222,14 +225,14 @@ export const useCreateActionProps = () => {
         __parent?.service?.refresh?.();
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
-          await form.reset(undefined, { forceClear: true });
+          await resetFormCorrectly(form);
           return;
         }
         if (onSuccess?.manualClose) {
           modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
-              await form.reset(undefined, { forceClear: true });
+              await resetFormCorrectly(form);
               if (onSuccess?.redirecting && onSuccess?.redirectTo) {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
@@ -241,7 +244,7 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
-          await form.reset(undefined, { forceClear: true });
+          await resetFormCorrectly(form);
           if (onSuccess?.redirecting && onSuccess?.redirectTo) {
             if (isURL(onSuccess.redirectTo)) {
               window.location.href = onSuccess.redirectTo;
@@ -1342,4 +1345,21 @@ function getTargetField(obj) {
   });
   const result = keys.slice(0, index);
   return result;
+}
+
+/**
+ * 之所以不直接使用 form.reset() 是因为其无法将子表格重置为空
+ * 主要用于修复这个问题：https://nocobase.height.app/T-3106
+ * @param form
+ */
+async function resetFormCorrectly(form: Form) {
+  untracked(() => {
+    Object.keys(form.fields).forEach((key) => {
+      if (isSubMode(form.fields[key])) {
+        // 清空子表格或者子表单的初始值，可以确保后面的 reset 会清空子表格或者子表单的值
+        (form.fields[key] as Field).initialValue = null;
+      }
+    });
+  });
+  await form.reset();
 }
