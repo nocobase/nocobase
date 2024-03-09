@@ -1165,7 +1165,7 @@ test.describe('creation form block schema settings', () => {
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Users' }).hover();
     await page.getByRole('menuitem', { name: 'Duplicate template' }).hover();
-    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
 
@@ -1174,7 +1174,7 @@ test.describe('creation form block schema settings', () => {
     await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
-    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
     await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
@@ -1185,7 +1185,7 @@ test.describe('creation form block schema settings', () => {
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').click();
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
-    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
 
     //修改引用模板
