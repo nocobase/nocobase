@@ -871,18 +871,16 @@ export const createDetailsBlockSchema = (options) => {
     collection,
     dataSource,
     association,
-    resource,
     template,
     settings,
     ...others
   } = options;
-  const resourceName = resource || association || collection;
+  const resourceName = association || collection;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:view`,
     'x-decorator': 'DetailsBlockProvider',
     'x-decorator-props': {
-      resource: resourceName,
       dataSource,
       collection,
       association,

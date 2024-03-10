@@ -1,5 +1,5 @@
 import { FormOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useBlockRequestContext } from '../../block-provider';
@@ -72,3 +72,61 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationDetailsWithoutPagination() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+  const { block } = useBlockRequestContext();
+  const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
+
+  const createAssociationDetailsWithoutPagination = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      insert(
+        createReadPrettyFormBlockSchema({
+          actionInitializers,
+          collection: field.target,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+          action: 'get',
+          useSourceId: '{{ useSourceIdFromParentRecord }}',
+          useParams: '{{ useParamsFromRecord }}',
+          settings: 'blockSettings:singleDataDetails',
+        }),
+      );
+    },
+    [actionInitializers, getCollection, insert],
+  );
+
+  const templateWrap = useCallback(
+    (templateSchema, { item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      if (item.template.componentName === 'ReadPrettyFormItem') {
+        const blockSchema = createReadPrettyFormBlockSchema({
+          actionInitializers,
+          collection: field.target,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+          action: 'get',
+          useSourceId: '{{ useSourceIdFromParentRecord }}',
+          useParams: '{{ useParamsFromRecord }}',
+          template: templateSchema,
+          settings: 'blockSettings:singleDataDetails',
+        });
+        if (item.mode === 'reference') {
+          blockSchema['x-template-key'] = item.template.key;
+        }
+        return blockSchema;
+      } else {
+        return templateSchema;
+      }
+    },
+    [actionInitializers, getCollection],
+  );
+
+  return { createAssociationDetailsWithoutPagination, templateWrap };
+}
