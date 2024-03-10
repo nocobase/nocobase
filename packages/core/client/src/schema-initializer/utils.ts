@@ -751,6 +751,10 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   };
 };
 
+/**
+ * @deprecated
+ * 待统一区块的创建之后，将废弃该方法
+ */
 export const useRecordCollectionDataSourceItems = (
   componentName,
   item = null,
@@ -851,7 +855,7 @@ export const useCollectionDataSourceItems = (
         t,
       }),
     }));
-  }, [allCollections, componentName, dm, getTemplatesByCollection, t]);
+  }, [allCollections, componentName, getTemplatesByCollection, t]);
 
   return res;
 };
@@ -1527,7 +1531,9 @@ const getChildren = ({
         return (
           componentName &&
           template.componentName === componentName &&
-          (!template.resourceName || template.resourceName === item.name)
+          (['FormItem', 'ReadPrettyFormItem'].includes(componentName) ||
+            !template.resourceName ||
+            template.resourceName === item.name)
         );
       });
       if (!templates.length) {
@@ -1561,8 +1567,9 @@ const getChildren = ({
             dataSource,
             title: t('Duplicate template'),
             children: templates.map((template) => {
-              const templateName =
-                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+                ? `${template?.name} ${t('(Fields only)')}`
+                : template?.name;
               return {
                 type: 'item',
                 mode: 'copy',
@@ -1580,8 +1587,9 @@ const getChildren = ({
             dataSource,
             title: t('Reference template'),
             children: templates.map((template) => {
-              const templateName =
-                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+                ? `${template?.name} ${t('(Fields only)')}`
+                : template?.name;
               return {
                 type: 'item',
                 mode: 'reference',

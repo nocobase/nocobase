@@ -109,7 +109,17 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
   );
 };
 
-export function useMenuSearch({ data, openKeys, showType }: { data: any[]; openKeys: string[]; showType?: boolean }) {
+export function useMenuSearch({
+  data,
+  openKeys,
+  showType,
+  hideSearch,
+}: {
+  data: any[];
+  openKeys: string[];
+  showType?: boolean;
+  hideSearch?: boolean;
+}) {
   const [searchValue, setSearchValue] = useState('');
   const [count, setCount] = useState(STEP);
 
@@ -154,28 +164,31 @@ export function useMenuSearch({ data, openKeys, showType }: { data: any[]; openK
 
   // 最终的返回结果
   const resultItems = useMemo<MenuProps['items']>(() => {
-    // isMenuType 为了 `useSchemaInitializerMenuItems()` 里面处理判断标识的
-    const res: any[] = [
+    const res = [];
+    if (!hideSearch) {
       // 开头：搜索框
-      Object.assign(
-        {
-          key: 'search',
-          label: (
-            <SearchCollections
-              value={searchValue}
-              onChange={(val: string) => {
-                setCount(STEP);
-                setSearchValue(val);
-              }}
-            />
-          ),
-          onClick({ domEvent }) {
-            domEvent.stopPropagation();
+      res.push(
+        Object.assign(
+          {
+            key: 'search',
+            label: (
+              <SearchCollections
+                value={searchValue}
+                onChange={(val: string) => {
+                  setCount(STEP);
+                  setSearchValue(val);
+                }}
+              />
+            ),
+            onClick({ domEvent }) {
+              domEvent.stopPropagation();
+            },
           },
-        },
-        showType ? { isMenuType: true } : {},
-      ),
-    ];
+          // isMenuType 为了 `useSchemaInitializerMenuItems()` 里面处理判断标识的
+          showType ? { isMenuType: true } : {},
+        ),
+      );
+    }
 
     // 中间：搜索的数据
     if (limitedSearchedItems.length > 0) {
@@ -259,6 +272,7 @@ export interface DataBlockInitializerProps {
   filter?: (collection: Collection) => boolean;
   componentType: string;
   onlyCurrentDataSource?: boolean;
+  hideSearch?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -273,6 +287,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     title,
     filter,
     onlyCurrentDataSource,
+    hideSearch,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -306,7 +321,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     return getMenuItems(items, name);
   }, [getMenuItems, items, name]);
   const [openMenuKeys, setOpenMenuKeys] = useState([]);
-  const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys });
+  const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys, hideSearch });
   const compiledMenuItems = useMemo(
     () => [
       {

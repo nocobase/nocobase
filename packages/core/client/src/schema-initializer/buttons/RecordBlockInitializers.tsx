@@ -4,6 +4,7 @@ import { useCollection_deprecated, useCollectionManager_deprecated } from '../..
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
+import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -122,34 +123,6 @@ const useRelationFields = () => {
   return relationFields;
 };
 
-const useDetailCollections = (props) => {
-  const { actionInitializers, childrenCollections, collection } = props;
-  const detailCollections = [
-    {
-      name: collection.name,
-      type: 'item',
-      title: collection?.title || collection.name,
-      Component: 'RecordReadPrettyFormBlockInitializer',
-      icon: false,
-      targetCollection: collection,
-      actionInitializers,
-    },
-  ].concat(
-    childrenCollections.map((c) => {
-      return {
-        name: c.name,
-        type: 'item',
-        title: c?.title || c.name,
-        Component: 'RecordReadPrettyFormBlockInitializer',
-        icon: false,
-        targetCollection: c,
-        actionInitializers,
-      };
-    }),
-  ) as SchemaInitializerItemType[];
-  return detailCollections;
-};
-
 const useFormCollections = (props) => {
   const { actionInitializers, childrenCollections, collection } = props;
   const formCollections = [
@@ -181,7 +154,6 @@ const useFormCollections = (props) => {
 
 function useRecordBlocks() {
   const { options } = useSchemaInitializer();
-  const { actionInitializers } = options;
   const collection = useCollection_deprecated();
   const { getChildrenCollections } = useCollectionManager_deprecated();
   const collectionsWithView = getChildrenCollections(collection.name, true, collection.dataSource).filter(
@@ -189,11 +161,6 @@ function useRecordBlocks() {
   );
   const hasChildCollection = collectionsWithView?.length > 0;
   const modifyFlag = (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-  const detailChildren = useDetailCollections({
-    ...options,
-    childrenCollections: collectionsWithView,
-    collection,
-  });
   const formChildren = useFormCollections({
     ...options,
     childrenCollections: collectionsWithView,
@@ -201,21 +168,30 @@ function useRecordBlocks() {
   });
 
   const res = [];
-  if (hasChildCollection) {
-    res.push({
-      name: 'details',
-      type: 'subMenu',
-      title: '{{t("Details")}}',
-      children: detailChildren,
-    });
-  } else {
-    res.push({
-      name: 'details',
-      title: '{{t("Details")}}',
-      Component: 'RecordReadPrettyFormBlockInitializer',
-      actionInitializers,
-    });
-  }
+  res.push({
+    name: 'details',
+    title: '{{t("Details")}}',
+    Component: 'DetailsBlockInitializer',
+    useComponentProps() {
+      const currentCollection = useCollection_deprecated();
+      const { createSingleDetailsSchema, templateWrap } = useCreateSingleDetailsSchema();
+      const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
+
+      return {
+        filterCollections(collection) {
+          if (collectionsWithView?.length) {
+            return collectionsNeedToDisplay.some((c) => c.name === collection.name);
+          }
+          return false;
+        },
+        onlyCurrentDataSource: true,
+        hideSearch: true,
+        componentType: 'ReadPrettyFormItem',
+        createBlockSchema: createSingleDetailsSchema,
+        templateWrap,
+      };
+    },
+  });
 
   if (hasChildCollection) {
     res.push({
