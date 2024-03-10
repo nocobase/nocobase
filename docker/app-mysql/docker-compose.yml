@@ -14,7 +14,7 @@ services:
       - DB_DIALECT=mysql
       - DB_HOST=mysql
       - DB_DATABASE=nocobase
-      - DB_USER=nocobase
+      - DB_USER=root
       - DB_PASSWORD=nocobase
       - DB_TIMEZONE=+08:00
     volumes:

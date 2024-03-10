@@ -60,12 +60,12 @@ const PreviewCom = (props) => {
       const children = collection.fields
         .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
         ?.map((v) => {
-          return { value: v.name, key: v.name, label: t(v.uiSchema?.title) };
+          return { value: v.name, key: v.name, label: t(v.uiSchema?.title || v.name) };
         })
         .concat(result);
       data.push({
         value: item,
-        label: t(collection.title),
+        label: t(collection.title || collection.name),
         children,
       });
     });
@@ -187,7 +187,7 @@ const PreviewCom = (props) => {
             {data.map((group) => (
               <Select.OptGroup key={group.key} label={compile(group.label)}>
                 {group.children.map((item) => (
-                  <Select.Option key={item.value} value={item.value}>
+                  <Select.Option key={item.value} value={item.name}>
                     {compile(item.label)}
                   </Select.Option>
                 ))}
