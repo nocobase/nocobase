@@ -175,7 +175,6 @@ export const SubTable: any = observer(
                           onClick={() => {
                             field.value = field.value || [];
                             field.value.push(markRecordAsNew({}));
-                            field.onInput(field.value);
                           }}
                         >
                           {t('Add new')}

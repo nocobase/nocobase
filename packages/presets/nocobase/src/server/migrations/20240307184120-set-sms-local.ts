@@ -1,13 +1,16 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  on = 'beforeLoad'; // 'beforeLoad' or 'afterLoad'
+  on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<0.20.0-alpha.6';
 
   async up() {
-    await this.pm.repository.destroy({
+    await this.pm.repository.update({
+      values: {
+        builtIn: false,
+      },
       filter: {
-        packageName: '@nocobase/plugin-workflow-form-trigger',
+        name: 'sms-auth',
       },
     });
   }

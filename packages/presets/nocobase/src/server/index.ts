@@ -31,7 +31,6 @@ export class PresetNocoBase extends Plugin {
     'formula-field',
     'data-visualization',
     'auth',
-    'sms-auth',
     'logger',
     'custom-request',
     'calendar',
@@ -58,6 +57,7 @@ export class PresetNocoBase extends Plugin {
     'theme-editor>=0.11.1-alpha.1',
     'api-doc>=0.13.0-alpha.1',
     'cas>=0.13.0-alpha.5',
+    'sms-auth>=0.10.0-alpha.2',
   ];
 
   splitNames(name: string) {

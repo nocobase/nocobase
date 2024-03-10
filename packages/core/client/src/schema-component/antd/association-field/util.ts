@@ -5,6 +5,7 @@ import { Tag } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { Field } from '@formily/core';
 
 export const useLabelUiSchemaV2 = () => {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
@@ -102,6 +103,7 @@ export function isShowFilePicker(labelUiSchema) {
 /**
  * 当前字段的模式是否是 `子表格` 或者 `子表单`
  */
-export function isSubMode(fieldSchema: Schema) {
-  return ['Nester', 'SubTable', 'PopoverNester'].includes(fieldSchema['x-component-props']?.mode);
+export function isSubMode(field: any) {
+  const mode = field['x-component-props']?.mode || (field as Field).componentProps?.mode;
+  return ['Nester', 'SubTable', 'PopoverNester'].includes(mode);
 }
