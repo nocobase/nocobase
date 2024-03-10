@@ -17,7 +17,6 @@ import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateFie
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
-import sqlResourcer from './resourcers/sql';
 import viewResourcer from './resourcers/views';
 
 export class CollectionManagerPlugin extends Plugin {
@@ -287,7 +286,6 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.resource(viewResourcer);
-    this.app.resource(sqlResourcer);
     this.app.actions(collectionActions);
 
     const handleFieldSource = (fields) => {

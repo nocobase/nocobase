@@ -1,6 +1,7 @@
 import { Plugin } from '@nocobase/server';
 import { Collection } from '@nocobase/database';
 import { SqlCollection } from './sql-collection';
+import sqlResourcer from './resources/sql-resourcer';
 
 export class PluginCollectionSqlServer extends Plugin {
   async beforeLoad() {
@@ -17,6 +18,8 @@ export class PluginCollectionSqlServer extends Plugin {
         return;
       },
     });
+
+    this.app.resource(sqlResourcer);
   }
 }
 

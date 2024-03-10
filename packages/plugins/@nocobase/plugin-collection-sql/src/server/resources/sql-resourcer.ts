@@ -1,11 +1,10 @@
 import { Context, Next } from '@nocobase/actions';
-import { SQLModel, SqlCollection } from '@nocobase/database';
-import { CollectionModel } from '../models';
+import { SqlCollection, SQLModel } from '../sql-collection';
 
 const updateCollection = async (ctx: Context, transaction: any) => {
   const { filterByTk, values } = ctx.action.params;
   const repo = ctx.db.getRepository('collections');
-  const collection: CollectionModel = await repo.findOne({
+  const collection = await repo.findOne({
     filter: {
       name: filterByTk,
     },
@@ -83,7 +82,7 @@ export default {
       try {
         const { upRes } = await updateCollection(ctx, transaction);
         const [collection] = upRes;
-        await (collection as CollectionModel).load({ transaction, resetFields: true });
+        await collection.load({ transaction, resetFields: true });
         await transaction.commit();
         ctx.body = upRes;
       } catch (e) {
