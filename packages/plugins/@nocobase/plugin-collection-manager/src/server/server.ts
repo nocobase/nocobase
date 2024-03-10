@@ -18,6 +18,9 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import sqlResourcer from './resourcers/sql';
 import viewResourcer from './resourcers/views';
+import { registerSequelizeValidationErrorHandler } from './error-handler/register-sequelize-error-handler';
+import zhCN from './locale/zh_CN.json';
+import enUS from './locale/en_US.json';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -54,6 +57,11 @@ export class CollectionManagerPlugin extends Plugin {
       name: `pm.${this.name}.collections`,
       actions: ['collections:*', 'collections.fields:*', 'dbViews:*', 'collectionCategories:*', 'sqlCollection:*'],
     });
+
+    registerSequelizeValidationErrorHandler(this.app.errorHandler);
+
+    this.app.i18n.addResources('zh-CN', 'error-handler', zhCN);
+    this.app.i18n.addResources('en-US', 'error-handler', enUS);
 
     this.app.db.on('collections.beforeCreate', async (model) => {
       if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm' && !model.get('schema')) {

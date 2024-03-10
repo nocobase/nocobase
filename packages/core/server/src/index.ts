@@ -6,3 +6,4 @@ export * from './plugin';
 export * from './plugin-manager';
 export * from './gateway';
 export * from './app-supervisor';
+export * from './errors/handler';

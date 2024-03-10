@@ -6,5 +6,6 @@ export async function createApp(options: any = {}) {
     ...options,
     plugins: ['collection-manager', 'ui-schema-storage'],
   });
+
   return app;
 }
