@@ -1,6 +1,7 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
 import {
+  useCollection,
   useCollection_deprecated,
   useCollectionManager_deprecated,
   useCreateAssociationDetailsBlock,
@@ -25,6 +26,10 @@ const recursiveParent = (schema: Schema) => {
   }
 };
 
+const canMakeAssociationBlock = (field) => {
+  return ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface);
+};
+
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager_deprecated();
@@ -40,87 +45,85 @@ const useRelationFields = () => {
     }
   }
 
-  const relationFields = fields
-    .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
-    .map((field) => {
-      if (['hasOne', 'belongsTo'].includes(field.type)) {
-        return {
-          name: field.name,
-          type: 'subMenu',
-          title: field?.uiSchema?.title || field.name,
-          children: [
-            {
-              name: `${field.name}_details`,
-              type: 'item',
-              title: '{{t("Details")}}',
-              field,
-              Component: 'RecordReadPrettyAssociationFormBlockInitializer',
-            },
-          ],
-        };
-      }
-
-      if (['hasMany', 'belongsToMany'].includes(field.type)) {
-        return {
-          name: field.name,
-          type: 'subMenu',
-          title: field?.uiSchema?.title || field.name,
-          children: [
-            {
-              name: `${field.name}_table`,
-              type: 'item',
-              title: '{{t("Table")}}',
-              field,
-              Component: 'RecordAssociationBlockInitializer',
-            },
-            {
-              name: `${field.name}_details`,
-              type: 'item',
-              title: '{{t("Details")}}',
-              field,
-              Component: 'RecordAssociationDetailsBlockInitializer',
-            },
-            {
-              name: `${field.name}_list`,
-              type: 'item',
-              title: '{{t("List")}}',
-              field,
-              Component: 'RecordAssociationListBlockInitializer',
-            },
-            {
-              name: `${field.name}_grid_card`,
-              type: 'item',
-              title: '{{t("Grid Card")}}',
-              field,
-              Component: 'RecordAssociationGridCardBlockInitializer',
-            },
-            {
-              name: `${field.name}_form`,
-              type: 'item',
-              title: '{{t("Form")}}',
-              field,
-              Component: 'RecordAssociationFormBlockInitializer',
-            },
-            // TODO: This one should be append in the calendar plugin
-            {
-              name: `${field.name}_calendar`,
-              type: 'item',
-              title: '{{t("Calendar")}}',
-              field,
-              Component: 'RecordAssociationCalendarBlockInitializer',
-            },
-          ],
-        };
-      }
-
+  const relationFields = fields.filter(canMakeAssociationBlock).map((field) => {
+    if (['hasOne', 'belongsTo'].includes(field.type)) {
       return {
         name: field.name,
-        type: 'item',
-        field,
+        type: 'subMenu',
         title: field?.uiSchema?.title || field.name,
-        Component: 'RecordAssociationBlockInitializer',
+        children: [
+          {
+            name: `${field.name}_details`,
+            type: 'item',
+            title: '{{t("Details")}}',
+            field,
+            Component: 'RecordReadPrettyAssociationFormBlockInitializer',
+          },
+        ],
       };
-    }) as any;
+    }
+
+    if (['hasMany', 'belongsToMany'].includes(field.type)) {
+      return {
+        name: field.name,
+        type: 'subMenu',
+        title: field?.uiSchema?.title || field.name,
+        children: [
+          {
+            name: `${field.name}_table`,
+            type: 'item',
+            title: '{{t("Table")}}',
+            field,
+            Component: 'RecordAssociationBlockInitializer',
+          },
+          {
+            name: `${field.name}_details`,
+            type: 'item',
+            title: '{{t("Details")}}',
+            field,
+            Component: 'RecordAssociationDetailsBlockInitializer',
+          },
+          {
+            name: `${field.name}_list`,
+            type: 'item',
+            title: '{{t("List")}}',
+            field,
+            Component: 'RecordAssociationListBlockInitializer',
+          },
+          {
+            name: `${field.name}_grid_card`,
+            type: 'item',
+            title: '{{t("Grid Card")}}',
+            field,
+            Component: 'RecordAssociationGridCardBlockInitializer',
+          },
+          {
+            name: `${field.name}_form`,
+            type: 'item',
+            title: '{{t("Form")}}',
+            field,
+            Component: 'RecordAssociationFormBlockInitializer',
+          },
+          // TODO: This one should be append in the calendar plugin
+          {
+            name: `${field.name}_calendar`,
+            type: 'item',
+            title: '{{t("Calendar")}}',
+            field,
+            Component: 'RecordAssociationCalendarBlockInitializer',
+          },
+        ],
+      };
+    }
+
+    return {
+      name: field.name,
+      type: 'item',
+      field,
+      title: field?.uiSchema?.title || field.name,
+      Component: 'RecordAssociationBlockInitializer',
+    };
+  }) as any;
 
   return relationFields;
 };
@@ -243,8 +246,14 @@ function useRecordBlocks() {
       title: '{{t("Table")}}',
       Component: 'TableBlockInitializer',
       useVisible() {
-        // TODO: 存在关系字段时显示
-        return true;
+        const collection = useCollection();
+        return useMemo(
+          () =>
+            collection.fields.some(
+              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
+            ),
+          [collection.fields],
+        );
       },
       useComponentProps() {
         const { createAssociationTableBlock } = useCreateAssociationTableBlock();
@@ -267,8 +276,14 @@ function useRecordBlocks() {
       title: '{{t("List")}}',
       Component: 'ListBlockInitializer',
       useVisible() {
-        // TODO: 存在关系字段时显示
-        return true;
+        const collection = useCollection();
+        return useMemo(
+          () =>
+            collection.fields.some(
+              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
+            ),
+          [collection.fields],
+        );
       },
       useComponentProps() {
         const { createAssociationListBlock } = useCreateAssociationListBlock();
@@ -291,8 +306,14 @@ function useRecordBlocks() {
       title: '{{t("Grid Card")}}',
       Component: 'GridCardBlockInitializer',
       useVisible() {
-        // TODO: 存在关系字段时显示
-        return true;
+        const collection = useCollection();
+        return useMemo(
+          () =>
+            collection.fields.some(
+              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
+            ),
+          [collection.fields],
+        );
       },
       useComponentProps() {
         const { createAssociationGridCardBlock } = useCreateAssociationGridCardBlock();
@@ -332,8 +353,14 @@ export const recordBlockInitializers = new SchemaInitializer({
       title: '{{t("Filter blocks")}}',
       type: 'itemGroup',
       useVisible() {
-        const collection = useCollection_deprecated();
-        return collection.fields.some((field) => ['hasMany', 'belongsToMany'].includes(field.type));
+        const collection = useCollection();
+        return useMemo(
+          () =>
+            collection.fields.some(
+              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
+            ),
+          [collection.fields],
+        );
       },
       children: [
         {
