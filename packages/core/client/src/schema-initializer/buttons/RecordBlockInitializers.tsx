@@ -26,7 +26,7 @@ const recursiveParent = (schema: Schema) => {
   }
 };
 
-const canMakeAssociationBlock = (field) => {
+export const canMakeAssociationBlock = (field) => {
   return ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface);
 };
 
