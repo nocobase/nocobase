@@ -10,5 +10,5 @@ test('add data source', async ({ page }) => {
 
 test.describe('configure data source', () => {
   test('external data source collection configure', async ({ page }) => {});
-  test('Synchronize(Refresh) external data source collection', async ({ page }) => {});
+  test('synchronize(refresh) external data source collection', async ({ page }) => {});
 });
