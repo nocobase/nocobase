@@ -1,8 +1,9 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCreateAssociationFormBlock,
   useCreateAssociationGridCardBlock,
   useCreateAssociationListBlock,
   useCreateAssociationTableBlock,
@@ -168,6 +169,7 @@ function useRecordBlocks() {
       useComponentProps() {
         const currentCollection = useCollection_deprecated();
         const { createEditFormBlock, templateWrap } = useCreateEditFormBlock();
+        const { createAssociationFormBlock, templateWrap: templateWrapOfAssociation } = useCreateAssociationFormBlock();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
         return {
@@ -183,8 +185,24 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           hideSearch: true,
           componentType: 'editForm',
-          createBlockSchema: createEditFormBlock,
-          templateWrap,
+          createBlockSchema: useCallback(
+            ({ item }) => {
+              if (item.associationField) {
+                return createAssociationFormBlock({ item });
+              }
+              createEditFormBlock({ item });
+            },
+            [createAssociationFormBlock, createEditFormBlock],
+          ),
+          templateWrap: useCallback(
+            (templateSchema, { item }) => {
+              if (item.associationField) {
+                return templateWrapOfAssociation(templateSchema, { item });
+              }
+              return templateWrap(templateSchema, { item });
+            },
+            [templateWrap, templateWrapOfAssociation],
+          ),
         };
       },
       useVisible() {
