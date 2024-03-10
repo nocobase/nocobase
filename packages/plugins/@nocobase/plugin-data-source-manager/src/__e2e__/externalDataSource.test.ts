@@ -8,7 +8,7 @@ test('add data source', async ({ page }) => {
   await expect(page.getByText('main', { exact: true })).toBeVisible();
 });
 
-test.describe('configure Data Source', () => {
+test.describe('configure data source', () => {
   test('external data source collection configure', async ({ page }) => {});
   test('Synchronize(Refresh) external data source collection', async ({ page }) => {});
 });
