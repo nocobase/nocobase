@@ -8,7 +8,7 @@ import {
   useGetSchemaInitializerMenuItems,
   useSchemaInitializer,
 } from '../../application';
-import { Collection } from '../../data-source/collection/Collection';
+import { Collection, CollectionFieldOptions } from '../../data-source/collection/Collection';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
@@ -269,7 +269,7 @@ export interface DataBlockInitializerProps {
   icon?: string | React.ReactNode;
   name: string;
   title: string;
-  filter?: (collection: Collection) => boolean;
+  filter?: (options: { collection: Collection; associationField: CollectionFieldOptions }) => boolean;
   componentType: string;
   onlyCurrentDataSource?: boolean;
   hideSearch?: boolean;

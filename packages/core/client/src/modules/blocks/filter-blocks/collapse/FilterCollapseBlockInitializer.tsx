@@ -4,13 +4,13 @@ import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { createCollapseBlockSchema } from '../../../../schema-initializer/utils';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { Collection } from '../../../../data-source';
+import { Collection, CollectionFieldOptions } from '../../../../data-source';
 
 export const FilterCollapseBlockInitializer = ({
   filterCollections,
   onlyCurrentDataSource,
 }: {
-  filterCollections: (collection: Collection) => boolean;
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();

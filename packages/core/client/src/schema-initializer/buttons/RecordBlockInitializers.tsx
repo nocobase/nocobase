@@ -1,7 +1,13 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
-import { useCollection_deprecated, useCollectionManager_deprecated, useCreateEditFormBlock } from '../..';
-import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
+import {
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+  useCreateAssociationGridCardBlock,
+  useCreateAssociationListBlock,
+  useCreateAssociationTableBlock,
+  useCreateEditFormBlock,
+} from '../..';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
 import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
@@ -47,13 +53,6 @@ const useRelationFields = () => {
               field,
               Component: 'RecordReadPrettyAssociationFormBlockInitializer',
             },
-            // {
-            //   name: `${field.name}_form`,
-            //   type: 'item',
-            //   title: '{{t("Form")}}',
-            //   field,
-            //   component: 'RecordAssociationFormBlockInitializer',
-            // },
           ],
         };
       }
@@ -129,7 +128,6 @@ function useRecordBlocks() {
   const collectionsWithView = getChildrenCollections(collection.name, true, collection.dataSource).filter(
     (v) => v?.filterTargetKey,
   );
-  const modifyFlag = (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
 
   const res: any[] = [
     {
@@ -144,9 +142,12 @@ function useRecordBlocks() {
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
         return {
-          filterCollections(collection) {
-            if (collectionsWithView?.length) {
+          filterCollections({ collection, associationField }) {
+            if (collectionsWithView?.length && collection) {
               return collectionsNeedToDisplay.some((c) => c.name === collection.name);
+            }
+            if (associationField) {
+              return true;
             }
             return false;
           },
@@ -158,10 +159,7 @@ function useRecordBlocks() {
         };
       },
     },
-  ];
-
-  if (modifyFlag) {
-    res.push({
+    {
       name: 'form',
       title: '{{t("Form")}}',
       Component: 'FormBlockInitializer',
@@ -173,9 +171,12 @@ function useRecordBlocks() {
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
         return {
-          filterCollections(collection) {
-            if (collectionsWithView?.length) {
+          filterCollections({ collection, associationField }) {
+            if (collectionsWithView?.length && collection) {
               return collectionsNeedToDisplay.some((c) => c.name === collection.name);
+            }
+            if (associationField) {
+              return ['hasMany', 'belongsToMany'].includes(associationField.type);
             }
             return false;
           },
@@ -186,8 +187,83 @@ function useRecordBlocks() {
           templateWrap,
         };
       },
-    });
-  }
+      useVisible() {
+        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+      },
+    },
+    {
+      name: 'table',
+      title: '{{t("Table")}}',
+      Component: 'TableBlockInitializer',
+      useVisible() {
+        // TODO: 存在关系字段时显示
+        return true;
+      },
+      useComponentProps() {
+        const { createAssociationTableBlock } = useCreateAssociationTableBlock();
+
+        return {
+          hideSearch: true,
+          onlyCurrentDataSource: true,
+          filterCollections({ associationField }) {
+            if (associationField) {
+              return ['hasMany', 'belongsToMany'].includes(associationField.type);
+            }
+            return false;
+          },
+          createBlockSchema: createAssociationTableBlock,
+        };
+      },
+    },
+    {
+      name: 'list',
+      title: '{{t("List")}}',
+      Component: 'ListBlockInitializer',
+      useVisible() {
+        // TODO: 存在关系字段时显示
+        return true;
+      },
+      useComponentProps() {
+        const { createAssociationListBlock } = useCreateAssociationListBlock();
+
+        return {
+          hideSearch: true,
+          onlyCurrentDataSource: true,
+          filterCollections({ associationField }) {
+            if (associationField) {
+              return ['hasMany', 'belongsToMany'].includes(associationField.type);
+            }
+            return false;
+          },
+          createBlockSchema: createAssociationListBlock,
+        };
+      },
+    },
+    {
+      name: 'gridCard',
+      title: '{{t("Grid Card")}}',
+      Component: 'GridCardBlockInitializer',
+      useVisible() {
+        // TODO: 存在关系字段时显示
+        return true;
+      },
+      useComponentProps() {
+        const { createAssociationGridCardBlock } = useCreateAssociationGridCardBlock();
+
+        return {
+          hideSearch: true,
+          onlyCurrentDataSource: true,
+          filterCollections({ associationField }) {
+            if (associationField) {
+              return ['hasMany', 'belongsToMany'].includes(associationField.type);
+            }
+            return false;
+          },
+          createBlockSchema: createAssociationGridCardBlock,
+        };
+      },
+    },
+  ];
 
   return res;
 }
@@ -225,8 +301,10 @@ export const recordBlockInitializers = new SchemaInitializer({
             );
 
             return {
-              filterCollections(collection) {
-                return toManyField.some((field) => field.target === collection.name);
+              filterCollections({ collection }) {
+                if (collection) {
+                  return toManyField.some((field) => field.target === collection.name);
+                }
               },
               onlyCurrentDataSource: true,
             };
@@ -244,8 +322,10 @@ export const recordBlockInitializers = new SchemaInitializer({
             );
 
             return {
-              filterCollections(collection) {
-                return toManyField.some((field) => field.target === collection.name);
+              filterCollections({ collection }) {
+                if (collection) {
+                  return toManyField.some((field) => field.target === collection.name);
+                }
               },
               onlyCurrentDataSource: true,
             };

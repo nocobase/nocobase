@@ -3,13 +3,13 @@ import React from 'react';
 import { useSchemaInitializerItem } from '../../../../application';
 import { createFilterFormBlockSchema } from '../../../../schema-initializer/utils';
 import { FilterBlockInitializer } from '../../../../schema-initializer/items/FilterBlockInitializer';
-import { Collection } from '../../../../data-source';
+import { Collection, CollectionFieldOptions } from '../../../../data-source';
 
 export const FilterFormBlockInitializer = ({
   filterCollections,
   onlyCurrentDataSource,
 }: {
-  filterCollections: (collection: Collection) => boolean;
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();

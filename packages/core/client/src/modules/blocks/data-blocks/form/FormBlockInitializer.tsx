@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { createFormBlockSchema } from '../../../../schema-initializer/utils';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { Collection } from '../../../../data-source/collection/Collection';
+import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 
 export const FormBlockInitializer = ({
   filterCollections,
@@ -13,7 +13,7 @@ export const FormBlockInitializer = ({
   componentType = 'FormItem',
   templateWrap,
 }: {
-  filterCollections: (collection: Collection) => boolean;
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
   hideSearch?: boolean;
   createBlockSchema?: (options: any) => any;

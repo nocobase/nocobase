@@ -4,7 +4,7 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../appl
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { createDetailsBlockSchema } from '../../../../schema-initializer/utils';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { Collection } from '../../../../data-source/collection/Collection';
+import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 
 export const DetailsBlockInitializer = ({
   filterCollections,
@@ -14,7 +14,7 @@ export const DetailsBlockInitializer = ({
   createBlockSchema,
   templateWrap,
 }: {
-  filterCollections: (collection: Collection) => boolean;
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
   hideSearch?: boolean;
   /**

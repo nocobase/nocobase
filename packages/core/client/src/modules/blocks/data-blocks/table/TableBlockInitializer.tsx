@@ -4,8 +4,28 @@ import { useCollectionManager_deprecated } from '../../../../collection-manager/
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { createTableBlockSchema } from '../../../../schema-initializer/utils';
 import React from 'react';
+import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 
-export const TableBlockInitializer = () => {
+export const TableBlockInitializer = ({
+  filterCollections,
+  onlyCurrentDataSource,
+  hideSearch,
+  createBlockSchema,
+  templateWrap,
+}: {
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
+  onlyCurrentDataSource: boolean;
+  hideSearch?: boolean;
+  createBlockSchema?: (options: any) => any;
+  templateWrap?: (
+    templateSchema: any,
+    {
+      item,
+    }: {
+      item: any;
+    },
+  ) => any;
+}) => {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager_deprecated();
   const itemConfig = useSchemaInitializerItem();
@@ -15,6 +35,10 @@ export const TableBlockInitializer = () => {
       icon={<TableOutlined />}
       componentType={'Table'}
       onCreateBlockSchema={async ({ item }) => {
+        if (createBlockSchema) {
+          return createBlockSchema({ item });
+        }
+
         const collection = getCollection(item.name, item.dataSource);
         const schema = createTableBlockSchema({
           collection: item.name,
@@ -23,6 +47,9 @@ export const TableBlockInitializer = () => {
         });
         insert(schema);
       }}
+      onlyCurrentDataSource={onlyCurrentDataSource}
+      hideSearch={hideSearch}
+      filter={filterCollections}
     />
   );
 };

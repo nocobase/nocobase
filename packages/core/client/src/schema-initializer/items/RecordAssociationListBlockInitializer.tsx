@@ -1,5 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
@@ -41,3 +41,28 @@ export const RecordAssociationListBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationListBlock() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createAssociationListBlock = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      insert(
+        createListBlockSchema({
+          rowKey: collection.filterTargetKey,
+          collection: field.target,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+          settings: 'blockSettings:list',
+        }),
+      );
+    },
+    [getCollection, insert],
+  );
+
+  return { createAssociationListBlock };
+}

@@ -8,9 +8,8 @@ import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { Collection } from '../data-source/collection/Collection';
+import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
-import { DataSourceManager } from '../data-source/data-source/DataSourceManager';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -829,13 +828,15 @@ export const useRecordCollectionDataSourceItems = (
 
 export const useCollectionDataSourceItems = (
   componentName,
-  filter: (collection: Collection) => boolean = () => true,
+  filter: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean = () => true,
   onlyCurrentDataSource = false,
 ) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
   const dataSourceKey = useDataSourceKey();
-  let allCollections = dm.getAllCollections(filter);
+  const associationFields = useAssociationFields(componentName, filter);
+
+  let allCollections = dm.getAllCollections((collection) => filter({ collection }));
   if (onlyCurrentDataSource) {
     allCollections = allCollections.filter((collection) => collection.key === dataSourceKey);
   }
@@ -846,14 +847,17 @@ export const useCollectionDataSourceItems = (
       name: key,
       label: displayName,
       type: 'subMenu',
-      children: getChildren({
-        collections,
-        componentName,
-        searchValue: '',
-        dataSource: key,
-        getTemplatesByCollection,
-        t,
-      }),
+      children: [
+        ...getChildren({
+          collections,
+          componentName,
+          searchValue: '',
+          dataSource: key,
+          getTemplatesByCollection,
+          t,
+        }),
+        ...associationFields,
+      ],
     }));
   }, [allCollections, componentName, getTemplatesByCollection, t]);
 
@@ -941,18 +945,16 @@ export const createListBlockSchema = (options) => {
     collection,
     dataSource,
     association,
-    resource,
     template,
     settings,
     ...others
   } = options;
-  const resourceName = resource || association || collection;
+  const resourceName = association || collection;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:view`,
     'x-decorator': 'List.Decorator',
     'x-decorator-props': {
-      resource: resourceName,
       collection,
       dataSource,
       association,
@@ -1030,19 +1032,17 @@ export const createGridCardBlockSchema = (options) => {
     itemActionInitializers = 'GridCardItemActionInitializers',
     collection,
     association,
-    resource,
     template,
     dataSource,
     settings,
     ...others
   } = options;
-  const resourceName = resource || association || collection;
+  const resourceName = association || collection;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:view`,
     'x-decorator': 'GridCard.Decorator',
     'x-decorator-props': {
-      resource: resourceName,
       collection,
       association,
       dataSource,
@@ -1320,7 +1320,6 @@ export const createReadPrettyFormBlockSchema = (options) => {
 export const createTableBlockSchema = (options) => {
   const {
     collection,
-    resource,
     rowKey,
     tableActionInitializers,
     tableColumnInitializers,
@@ -1335,11 +1334,10 @@ export const createTableBlockSchema = (options) => {
   const schema: ISchema = {
     type: 'void',
     'x-decorator': tableBlockProvider ?? 'TableBlockProvider',
-    'x-acl-action': `${resource || collection}:list`,
+    'x-acl-action': `${collection}:list`,
     'x-decorator-props': {
       collection,
       dataSource,
-      resource: resource || collection,
       action: 'list',
       params: {
         pageSize,
@@ -1606,3 +1604,127 @@ const getChildren = ({
       };
     });
 };
+
+function useAssociationFields(
+  componentName: string,
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean,
+) {
+  const fieldSchema = useFieldSchema();
+  const { getCollectionFields } = useCollectionManager_deprecated();
+  const collection = useCollection_deprecated();
+  const dataSource = useDataSourceKey();
+  const { getTemplatesByCollection } = useSchemaTemplateManager();
+  const { t } = useTranslation();
+
+  return useMemo(() => {
+    let fields: CollectionFieldOptions[] = [];
+
+    if (fieldSchema['x-initializer']) {
+      fields = collection.fields;
+    } else {
+      const collection = recursiveParent(fieldSchema.parent);
+      if (collection) {
+        fields = getCollectionFields(collection);
+      }
+    }
+
+    return fields
+      .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
+      .filter((field) => filterCollections({ associationField: field }))
+      .map((field, index) => {
+        const title = field.uiSchema.title || field.name;
+        const templates = getTemplatesByCollection(dataSource, field.target).filter((template) => {
+          return (
+            componentName &&
+            template.componentName === componentName &&
+            (['FormItem', 'ReadPrettyFormItem'].includes(componentName) ||
+              !template.resourceName ||
+              template.resourceName === `${field.collectionName}.${field.name}`)
+          );
+        });
+        if (!templates.length) {
+          return {
+            type: 'item',
+            name: `${field.collectionName}.${field.name}`,
+            collectionName: field.target,
+            title,
+            dataSource,
+            associationField: field,
+          };
+        }
+        return {
+          key: `${componentName}_table_subMenu_${index}`,
+          type: 'subMenu',
+          name: `${field.target}_${index}`,
+          title,
+          dataSource,
+          children: [
+            {
+              type: 'item',
+              name: `${field.collectionName}.${field.name}`,
+              collectionName: field.target,
+              dataSource,
+              title: t('Blank block'),
+              associationField: field,
+            },
+            {
+              type: 'divider',
+            },
+            {
+              key: `${componentName}_table_subMenu_${index}_copy`,
+              type: 'subMenu',
+              name: 'copy',
+              dataSource,
+              title: t('Duplicate template'),
+              children: templates.map((template) => {
+                const templateName = ['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(template?.componentName)
+                  ? `${template?.name} ${t('(Fields only)')}`
+                  : template?.name;
+                return {
+                  type: 'item',
+                  mode: 'copy',
+                  name: `${field.collectionName}.${field.name}`,
+                  collectionName: field.target,
+                  template,
+                  dataSource,
+                  title: templateName || t('Untitled'),
+                  associationField: field,
+                };
+              }),
+            },
+            {
+              key: `${componentName}_table_subMenu_${index}_ref`,
+              type: 'subMenu',
+              name: 'ref',
+              dataSource,
+              title: t('Reference template'),
+              children: templates.map((template) => {
+                const templateName = ['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(template?.componentName)
+                  ? `${template?.name} ${t('(Fields only)')}`
+                  : template?.name;
+                return {
+                  type: 'item',
+                  mode: 'reference',
+                  name: `${field.collectionName}.${field.name}`,
+                  collectionName: field.target,
+                  template,
+                  dataSource,
+                  title: templateName || t('Untitled'),
+                  associationField: field,
+                };
+              }),
+            },
+          ],
+        };
+      });
+  }, [
+    collection.fields,
+    componentName,
+    dataSource,
+    fieldSchema,
+    filterCollections,
+    getCollectionFields,
+    getTemplatesByCollection,
+    t,
+  ]);
+}
