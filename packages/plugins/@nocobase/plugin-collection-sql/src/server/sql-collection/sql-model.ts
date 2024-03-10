@@ -86,10 +86,12 @@ export class SQLModel extends Model {
     table: string;
     columns: string | { name: string; as: string }[];
   }[] {
-    let { ast } = sqlParser.parse(this.sql);
+    let ast: any = sqlParser.parse(this.sql).ast;
+
     if (Array.isArray(ast)) {
       ast = ast[0];
     }
+
     if (ast.with) {
       const tables = new Set<string>();
       // parse sql includes with clause is not accurate
