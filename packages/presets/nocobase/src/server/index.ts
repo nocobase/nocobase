@@ -4,10 +4,8 @@ import _ from 'lodash';
 export class PresetNocoBase extends Plugin {
   builtInPlugins = [
     'data-source-manager',
-    'error-handler',
     'collection-manager',
     'ui-schema-storage',
-    // 'ui-routes-storage',
     'file-manager',
     'system-settings',
     'sequence-field',

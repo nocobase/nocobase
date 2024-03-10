@@ -1,5 +1,4 @@
 import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
-import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
@@ -19,6 +18,9 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import sqlResourcer from './resourcers/sql';
 import viewResourcer from './resourcers/views';
+import { registerSequelizeValidationErrorHandler } from './error-handler/register-sequelize-error-handler';
+import zhCN from './locale/zh_CN.json';
+import enUS from './locale/en_US.json';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -50,6 +52,11 @@ export class CollectionManagerPlugin extends Plugin {
         plugin: this,
       },
     });
+
+    registerSequelizeValidationErrorHandler(this.app.errorHandler);
+
+    this.app.i18n.addResources('zh-CN', 'error-handler', zhCN);
+    this.app.i18n.addResources('en-US', 'error-handler', enUS);
 
     this.app.db.on('collections.beforeCreate', async (model) => {
       if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm' && !model.get('schema')) {
@@ -262,8 +269,7 @@ export class CollectionManagerPlugin extends Plugin {
     await this.importCollections(path.resolve(__dirname, './collections'));
     this.db.getRepository<CollectionRepository>('collections').setApp(this.app);
 
-    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
-    errorHandlerPlugin.errorHandler.register(
+    this.app.errorHandler.register(
       (err) => {
         return err instanceof UniqueConstraintError;
       },

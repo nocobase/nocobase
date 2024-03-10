@@ -39,6 +39,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   });
 
   app.use(requestLogger(app.name, options.logger?.request), { tag: 'logger' });
+  app.use(app.errorHandler.middleware(), { before: 'cors', tag: 'errorHandler' });
 
   app.use(
     cors({

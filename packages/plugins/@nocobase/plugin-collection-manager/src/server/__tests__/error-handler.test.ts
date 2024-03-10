@@ -1,19 +1,25 @@
-import { Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
-describe('create with exception', () => {
+import Database, { Collection as DBCollection } from '@nocobase/database';
+import { createApp } from './index';
+import { MockServer } from '@nocobase/test';
+
+describe('collections repository', () => {
+  let db: Database;
   let app: MockServer;
+  let Collection: DBCollection;
+  let Field: DBCollection;
+
   beforeEach(async () => {
-    app = await createMockServer({
-      acl: false,
-      plugins: ['error-handler'],
-    });
+    app = await createApp();
+    db = app.db;
+    Collection = db.getCollection('collections');
+    Field = db.getCollection('fields');
   });
 
   afterEach(async () => {
     await app.destroy();
   });
 
-  it('should handle not null error', async () => {
+  it('should handle database not null error', async () => {
     const collection = app.collection({
       name: 'users',
       fields: [

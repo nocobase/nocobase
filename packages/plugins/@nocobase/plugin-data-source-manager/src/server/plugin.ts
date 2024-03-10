@@ -124,6 +124,10 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (resourceName === 'dataSources' && actionName == 'list') {
         let dataPath = 'body';
 
+        if (Array.isArray(ctx.body['rows'])) {
+          dataPath = 'body.rows';
+        }
+
         if (Array.isArray(ctx.body['data'])) {
           dataPath = 'body.data';
         }
