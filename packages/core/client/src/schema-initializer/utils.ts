@@ -1530,8 +1530,10 @@ const getChildren = ({
       const templates = getTemplatesByCollection(dataSource, item.name).filter((template) => {
         return (
           componentName &&
-          template.componentName === componentName &&
-          (['FormItem', 'ReadPrettyFormItem'].includes(componentName) ||
+          (template.componentName === componentName ||
+            // 旧版的编辑表单的 componentName 是 'FormItem'，新版的编辑表单改为了 'editForm'；这里是为了兼容旧版的编辑表单模板加的一个条件
+            (componentName === 'editForm' && template.componentName === 'FormItem')) &&
+          (['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(componentName) ||
             !template.resourceName ||
             template.resourceName === item.name)
         );
@@ -1567,7 +1569,7 @@ const getChildren = ({
             dataSource,
             title: t('Duplicate template'),
             children: templates.map((template) => {
-              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+              const templateName = ['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(template?.componentName)
                 ? `${template?.name} ${t('(Fields only)')}`
                 : template?.name;
               return {
@@ -1587,7 +1589,7 @@ const getChildren = ({
             dataSource,
             title: t('Reference template'),
             children: templates.map((template) => {
-              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+              const templateName = ['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(template?.componentName)
                 ? `${template?.name} ${t('(Fields only)')}`
                 : template?.name;
               return {

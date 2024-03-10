@@ -280,8 +280,6 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     templateWrap,
     onCreateBlockSchema,
     componentType,
-    createBlockSchema,
-    isCusomeizeCreate,
     icon = TableOutlined,
     name,
     title,
@@ -300,20 +298,11 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
       } else {
         if (onCreateBlockSchema) {
           onCreateBlockSchema({ item });
-        } else if (createBlockSchema) {
-          insert(
-            createBlockSchema({
-              collection: item.collectionName || item.name,
-              dataSource: item.dataSource,
-              isCusomeizeCreate,
-              settings: 'blockSettings:createForm',
-            }),
-          );
         }
       }
       setVisible(false);
     },
-    [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
+    [getTemplateSchemaByMode, insert, onCreateBlockSchema, setVisible, templateWrap],
   );
   const items = useCollectionDataSourceItems(componentType, filter, onlyCurrentDataSource);
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);

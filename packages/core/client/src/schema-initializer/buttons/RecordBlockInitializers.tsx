@@ -1,6 +1,6 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../..';
+import { useCollection_deprecated, useCollectionManager_deprecated, useCreateEditFormBlock } from '../..';
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
@@ -123,90 +123,70 @@ const useRelationFields = () => {
   return relationFields;
 };
 
-const useFormCollections = (props) => {
-  const { actionInitializers, childrenCollections, collection } = props;
-  const formCollections = [
-    {
-      name: collection.name,
-      type: 'item',
-      title: collection?.title || collection.name,
-      Component: 'RecordFormBlockInitializer',
-      icon: false,
-      targetCollection: collection,
-      actionInitializers,
-    },
-  ].concat(
-    childrenCollections.map((c) => {
-      return {
-        name: c.name,
-        type: 'item',
-        title: c?.title || c.name,
-        Component: 'RecordFormBlockInitializer',
-        icon: false,
-        targetCollection: c,
-        actionInitializers,
-      };
-    }),
-  ) as SchemaInitializerItemType[];
-
-  return formCollections;
-};
-
 function useRecordBlocks() {
-  const { options } = useSchemaInitializer();
   const collection = useCollection_deprecated();
   const { getChildrenCollections } = useCollectionManager_deprecated();
   const collectionsWithView = getChildrenCollections(collection.name, true, collection.dataSource).filter(
     (v) => v?.filterTargetKey,
   );
-  const hasChildCollection = collectionsWithView?.length > 0;
   const modifyFlag = (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-  const formChildren = useFormCollections({
-    ...options,
-    childrenCollections: collectionsWithView,
-    collection,
-  });
 
-  const res = [];
-  res.push({
-    name: 'details',
-    title: '{{t("Details")}}',
-    Component: 'DetailsBlockInitializer',
-    useComponentProps() {
-      const currentCollection = useCollection_deprecated();
-      const { createSingleDetailsSchema, templateWrap } = useCreateSingleDetailsSchema();
-      const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
+  const res: any[] = [
+    {
+      name: 'details',
+      title: '{{t("Details")}}',
+      Component: 'DetailsBlockInitializer',
+      collectionName: collection.name,
+      dataSource: collection.dataSource,
+      useComponentProps() {
+        const currentCollection = useCollection_deprecated();
+        const { createSingleDetailsSchema, templateWrap } = useCreateSingleDetailsSchema();
+        const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
-      return {
-        filterCollections(collection) {
-          if (collectionsWithView?.length) {
-            return collectionsNeedToDisplay.some((c) => c.name === collection.name);
-          }
-          return false;
-        },
-        onlyCurrentDataSource: true,
-        hideSearch: true,
-        componentType: 'ReadPrettyFormItem',
-        createBlockSchema: createSingleDetailsSchema,
-        templateWrap,
-      };
+        return {
+          filterCollections(collection) {
+            if (collectionsWithView?.length) {
+              return collectionsNeedToDisplay.some((c) => c.name === collection.name);
+            }
+            return false;
+          },
+          onlyCurrentDataSource: true,
+          hideSearch: true,
+          componentType: 'ReadPrettyFormItem',
+          createBlockSchema: createSingleDetailsSchema,
+          templateWrap,
+        };
+      },
     },
-  });
+  ];
 
-  if (hasChildCollection) {
+  if (modifyFlag) {
     res.push({
       name: 'form',
-      type: 'subMenu',
       title: '{{t("Form")}}',
-      children: formChildren,
+      Component: 'FormBlockInitializer',
+      collectionName: collection.name,
+      dataSource: collection.dataSource,
+      useComponentProps() {
+        const currentCollection = useCollection_deprecated();
+        const { createEditFormBlock, templateWrap } = useCreateEditFormBlock();
+        const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
+
+        return {
+          filterCollections(collection) {
+            if (collectionsWithView?.length) {
+              return collectionsNeedToDisplay.some((c) => c.name === collection.name);
+            }
+            return false;
+          },
+          onlyCurrentDataSource: true,
+          hideSearch: true,
+          componentType: 'editForm',
+          createBlockSchema: createEditFormBlock,
+          templateWrap,
+        };
+      },
     });
-  } else {
-    modifyFlag &&
-      res.push({
-        name: 'form',
-        title: '{{t("Form")}}',
-        Component: 'RecordFormBlockInitializer',
-      });
   }
 
   return res;
