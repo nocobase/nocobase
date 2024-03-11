@@ -10,10 +10,10 @@ export const CreateChildInitializer = (props) => {
     'x-component': 'Action',
     'x-visible': '{{treeTable}}',
     'x-component-props': {
-      icon: 'PlusOutlined',
       openMode: 'drawer',
-      type: 'primary',
+      type: 'link',
       addChild: true,
+      style: { paddingRight: '0px' },
     },
     properties: {
       drawer: {

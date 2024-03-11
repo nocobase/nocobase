@@ -292,8 +292,12 @@ function FinallyButton({
           type={componentType}
           icon={<DownOutlined />}
           buttonsRender={([leftButton, rightButton]) => [
-            leftButton,
-            React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+            React.cloneElement(leftButton as React.ReactElement<any, string>, {
+              style: props?.style,
+            }),
+            React.cloneElement(rightButton as React.ReactElement<any, string>, {
+              loading: false,
+            }),
           ]}
           menu={menu}
           onClick={(info) => {
