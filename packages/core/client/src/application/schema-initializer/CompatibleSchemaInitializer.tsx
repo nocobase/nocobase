@@ -42,3 +42,58 @@ export class CompatibleSchemaInitializer extends SchemaInitializer {
     }
   }
 }
+
+const oldToNewNameMap = {
+  BlockInitializers: 'page:addBlock',
+  MBlockInitializers: 'mobilePage:addBlock',
+  CreateFormBlockInitializers: 'popup:addNew:addBlock',
+  CusomeizeCreateFormBlockInitializers: 'popup:addRecord:addBlock',
+  RecordBlockInitializers: 'popup:common:addBlock',
+  BulkEditBlockInitializers: 'popup:bulkEdit:addBlock',
+  TableColumnInitializers: 'table:configureColumns',
+  TableActionColumnInitializers: 'table:configureItemActions',
+  TableActionInitializers: 'table:configureActions',
+  SubTableActionInitializers: 'subTable:configureActions',
+  FormItemInitializers: 'form:configureFields',
+  CreateFormActionInitializers: 'createForm:configureActions',
+  UpdateFormActionInitializers: 'editForm:configureActions',
+  ReadPrettyFormItemInitializers: 'details:configureFields',
+  DetailsActionInitializers: 'detailsWithPaging:configureActions',
+  ReadPrettyFormActionInitializers: 'details:configureActions',
+  KanbanCardInitializers: 'kanban:configureItemFields',
+  KanbanActionInitializers: 'kanban:configureActions',
+  GridCardActionInitializers: 'gridCard:configureActions',
+  GridCardItemActionInitializers: 'gridCard:configureItemActions',
+  ListActionInitializers: 'list:configureActions',
+  ListItemActionInitializers: 'list:configureItemActions',
+  CalendarActionInitializers: 'calendar:configureActions',
+  GanttActionInitializers: 'gantt:configureActions',
+  MapActionInitializers: 'map:configureActions',
+  TableSelectorInitializers: 'popup:tableSelector:addBlock',
+  ChartInitializers: 'charts:addBlock',
+  ChartFilterItemInitializers: 'chartFilterForm:configureFields',
+  ChartFilterActionInitializers: 'chartFilterForm:configureActions',
+  AssociationFilterInitializers: 'filterCollapse:configureFields',
+  FilterFormItemInitializers: 'filterForm:configureFields',
+  FilterFormActionInitializers: 'filterForm:configureActions',
+  CustomFormItemInitializers: 'assignFieldValuesForm:configureFields',
+  BulkEditFormItemInitializers: 'bulkEditForm:configureFields',
+  BulkEditFormActionInitializers: 'bulkEditForm:configureActions',
+  AuditLogsTableColumnInitializers: 'auditLogsTable:configureColumns',
+  AuditLogsTableActionColumnInitializers: 'auditLogsTable:configureItemActions',
+  AuditLogsTableActionInitializers: 'auditLogsTable:configureActions',
+  SnapshotBlockInitializers: 'popup:snapshot:addBlock',
+  AddBlockButton: 'workflowManual:popup:configureUserInterface:addBlock',
+  AddCustomFormField: 'workflowManual:customForm:configureFields',
+  AddActionButton: 'workflowManual:form:configureActions',
+};
+
+/**
+ * 由于旧版的 schema 的 x-initializer 的值是旧的命名风格，当其与新的命名比较时就存在问题，
+ * 这里通过将新版命名转换为旧版命名再进行比较，已解决这个问题。
+ * @param oldOrNewName x-initializer 的值
+ * @param newName 新的命名
+ */
+export function isInitializersSame(oldOrNewName: string, newName: string) {
+  return oldOrNewName === newName || oldToNewNameMap[oldOrNewName] === newName;
+}

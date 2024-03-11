@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { useSchemaToolbar } from '../../../application';
+import { isInitializersSame, useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import {
   ButtonEditor,
@@ -75,7 +75,7 @@ export const submitActionSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         return (
           fieldSchema['x-action'] === 'submit' &&
-          fieldSchema.parent?.['x-initializer'] === 'createForm:configureActions'
+          isInitializersSame(fieldSchema.parent?.['x-initializer'], 'createForm:configureActions')
         );
       },
     },
