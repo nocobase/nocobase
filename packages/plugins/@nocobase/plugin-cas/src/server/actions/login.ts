@@ -2,12 +2,10 @@ import { Context, Next } from '@nocobase/actions';
 import { CASAuth } from '../auth';
 
 export const login = async (ctx: Context, next: Next) => {
-  const { authenticator, redirect = '' } = ctx.action.params;
+  const { authenticator, redirect = '/admin' } = ctx.action.params;
   const auth = (await ctx.app.authManager.get(authenticator, ctx)) as CASAuth;
-  const { casUrl, serviceUrl } = auth.getOptions();
-  const service = encodeURIComponent(
-    `${serviceUrl}?authenticator=${authenticator}&__appName=${ctx.app.name}&redirect=${redirect}`,
-  );
+  const { casUrl } = auth.getOptions();
+  const service = auth.getService(authenticator, ctx.app.name, redirect);
   ctx.redirect(`${casUrl}/login?service=${service}`);
   next();
 };

@@ -1,5 +1,6 @@
 import { createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
-import { T3106 } from './templatesOfBug';
+import { T3106, T3469 } from './templatesOfBug';
+import { uid } from '@formily/shared';
 
 test.describe('where creation form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -99,6 +100,38 @@ test.describe('configure actions', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
     ).toHaveValue('test name');
+  });
+
+  // https://nocobase.height.app/T-3469
+  test('default values for fields should not be cleared after submission', async ({ page, mockPage }) => {
+    await mockPage(T3469).goto();
+
+    // username 的值不能重复，所以为了避免报错这里随机生成一个值
+    const username = uid();
+
+    // Username 字段没有设置默认值，手动输入一个值
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+      .getByRole('textbox')
+      .fill(username);
+
+    // Nickname 字段设置了默认值，应该显示出默认值
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
+    ).toHaveValue('Should be cleared after submission');
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+    ).toHaveValue(username);
+
+    // 点击提交按钮之后，Nickname 字段的默认值应该依然显示，Username 字段的值应该被清空
+    await page.getByLabel('action-Action-Submit-submit-').click();
+
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
+    ).toHaveValue('Should be cleared after submission');
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+    ).toHaveValue('');
   });
 
   test('customize: save record', async ({ page, mockPage }) => {
