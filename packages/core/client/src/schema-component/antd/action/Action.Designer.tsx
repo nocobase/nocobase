@@ -89,11 +89,11 @@ export function ButtonEditor(props) {
         field.title = title;
         field.componentProps.icon = icon;
         field.componentProps.danger = type === 'danger';
-        field.componentProps.type = type;
+        field.componentProps.type = type || field.componentProps.type;
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
-        fieldSchema['x-component-props'].type = type;
+        fieldSchema['x-component-props'].type = type || field.componentProps.type;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

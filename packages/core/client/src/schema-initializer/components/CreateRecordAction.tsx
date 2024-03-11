@@ -341,9 +341,9 @@ function FinallyButton({
       </Button>
     );
   }
-
   return (
     <Button
+      {...props}
       aria-label={props['aria-label']}
       type={componentType}
       disabled={field.disabled}

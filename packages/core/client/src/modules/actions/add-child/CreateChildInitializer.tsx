@@ -14,6 +14,7 @@ export const CreateChildInitializer = (props) => {
       type: 'link',
       addChild: true,
       style: { paddingRight: '0px' },
+      component: 'CreateRecordAction',
     },
     properties: {
       drawer: {
