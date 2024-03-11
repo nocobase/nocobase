@@ -74,8 +74,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           dataIndex,
           key: s.name,
           sorter: s['x-component-props']?.['sorter'],
-          width: 200,
           ...s['x-component-props'],
+          width: s['x-component-props']?.width ?? 200,
           render: (v, record) => {
             const index = field.value?.indexOf(record);
             return (
@@ -131,6 +131,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
+        width: 300,
         render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
       },
     ];
@@ -292,7 +293,6 @@ export const Table: any = observer(
     const dataSource = useMemo(() => field?.value?.slice?.()?.filter?.(Boolean), [field.value]);
     const isRowSelect = rowSelection?.type !== 'none';
     const defaultRowKeyMap = useRef(new Map());
-
     const highlightRow = useMemo(
       () =>
         onClickRow
@@ -547,6 +547,7 @@ export const Table: any = observer(
                   </div>
                 );
               },
+              columnWidth: 56,
               ...memoizedRowSelection,
             }
           : undefined,
@@ -578,23 +579,18 @@ export const Table: any = observer(
       },
       [field, dragSort, getRowKey],
     );
-    const fieldSchema = useFieldSchema();
-    const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
-    const { height: tableHeight, tableSizeRefCallback } = useTableSize(fixedBlock);
-    const maxContent = useMemo(() => {
-      return {
-        x: 'max-content',
-      };
-    }, []);
+    // const enableVirtualList = dataSource?.length >= 10;
+    const enableVirtualList = true;
+    const { tableHeight, tableWidth, tableSizeRefCallback } = useTableSize(columns, enableVirtualList);
+
     const scroll = useMemo(() => {
-      return fixedBlock
-        ? {
-            x: 'max-content',
-            y: tableHeight,
-          }
-        : maxContent;
-    }, [fixedBlock, tableHeight, maxContent]);
+      return {
+        x: tableWidth,
+        y: tableHeight,
+        // scrollToFirstRowOnChange: true
+      };
+    }, [tableHeight, tableWidth]);
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
@@ -630,6 +626,7 @@ export const Table: any = observer(
       components,
       onChange: onTableChange,
       onRow,
+      virtual: enableVirtualList,
       rowClassName,
       scroll,
       columns,
@@ -671,6 +668,7 @@ export const Table: any = observer(
             onChange={onTableChange}
             onRow={onRow}
             rowClassName={rowClassName}
+            virtual={enableVirtualList}
             scroll={scroll}
             columns={columns}
             expandable={expandable}
