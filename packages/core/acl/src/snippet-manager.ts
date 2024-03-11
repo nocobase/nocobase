@@ -31,7 +31,7 @@ class SnippetManager {
     const snippet = this.snippets.get(snippetName);
 
     if (!snippet) {
-      throw new Error(`Snippet ${snippetName} not found`);
+      return null;
     }
 
     const matched = snippet.actions.some((action) => minimatch(actionPath, action));

@@ -472,7 +472,15 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
-      actions: ['dataSources:*', 'roles.dataSourceResources'],
+      actions: [
+        'dataSources:*',
+        'roles.dataSourceResources',
+        'collections:*',
+        'collections.fields:*',
+        'dbViews:*',
+        'collectionCategories:*',
+        'sqlCollection:*',
+      ],
     });
 
     this.app.acl.allow('dataSources', 'listEnabled', 'loggedIn');
