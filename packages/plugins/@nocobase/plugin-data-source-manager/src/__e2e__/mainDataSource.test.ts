@@ -241,8 +241,8 @@ test.describe('create collection with preset fields', () => {
   });
 });
 
-//创建非Id为主键
-test.describe('create a primary key other than ID.', () => {
+//创建非Id为主键/唯一索引
+test.describe('create primary key  or unique index other than ID.', () => {
   test('integer field as primary key', async ({ page, mockCollection }) => {
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).click();
@@ -376,5 +376,134 @@ test.describe('create a primary key other than ID.', () => {
       primaryKey: true,
       type: 'string',
     });
+  });
+});
+
+//创建关系字段
+test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt ',' integer ',' uuid ',' uid '] and are non primary key field with a Unique index set", () => {
+  test('oho field sourceKey', async ({ page, mockCollection }) => {
+    const collectionName = uid();
+    await mockCollection({
+      name: collectionName,
+      autoGenId: true,
+      fields: [
+        { name: 'id', interface: 'id', type: 'bigInt' },
+        { name: 'string', interface: 'input', type: 'string', unique: true },
+        { name: 'bigInt', type: 'bigInt', interface: 'integer', unique: true },
+        { name: 'integer', type: 'integer', interface: 'input', unique: true },
+        { name: 'uuid', type: 'uuid', interface: 'input', unique: true },
+        { name: 'uid', type: 'uid', interface: 'input', unique: true },
+      ],
+    });
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill(collectionName);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'One to one (has one)' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('oho');
+    await page.getByLabel('block-item-SourceKey-fields-').click();
+    // 获取所有选项的文本内容
+    const options = await page.locator('.rc-virtual-list').evaluate(() => {
+      const optionElements = document.querySelectorAll('.ant-select-item-option');
+      return Array.from(optionElements).map((option) => option.textContent);
+    });
+
+    // 断言下拉列表是否符合预期
+    expect(options).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
+  });
+  test('obo field targetKey', async ({ page, mockCollection }) => {
+    const collectionName = uid();
+    await mockCollection({
+      name: collectionName,
+      autoGenId: true,
+      fields: [
+        { name: 'id', interface: 'id', type: 'bigInt' },
+        { name: 'string', interface: 'input', type: 'string', unique: true },
+        { name: 'bigInt', type: 'bigInt', interface: 'integer', unique: true },
+        { name: 'integer', type: 'integer', interface: 'input', unique: true },
+        { name: 'uuid', type: 'uuid', interface: 'input', unique: true },
+        { name: 'uid', type: 'uid', interface: 'input', unique: true },
+      ],
+    });
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill(collectionName);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('obo');
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: collectionName }).locator('div').click();
+    await page.getByLabel('block-item-TargetKey-fields-').click();
+    // 获取所有选项的文本内容
+    const options = await page.locator('.ant-select-dropdown > .rc-virtual-list').evaluate(() => {
+      const optionElements = document.querySelectorAll('.ant-select-item-option');
+      return Array.from(optionElements).map((option) => option.textContent);
+    });
+
+    // 断言下拉列表是否符合预期
+    expect(options).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
+  });
+  test('o2m field targetKey & sourceKey', async ({ page, mockCollection }) => {
+    const collectionName = uid();
+
+    await mockCollection({
+      name: collectionName,
+      autoGenId: true,
+      fields: [
+        { name: 'id', interface: 'id', type: 'bigInt' },
+        { name: 'string', interface: 'input', type: 'string', unique: true },
+        { name: 'bigInt', type: 'bigInt', interface: 'integer', unique: true },
+        { name: 'integer', type: 'integer', interface: 'input', unique: true },
+        { name: 'uuid', type: 'uuid', interface: 'input', unique: true },
+        { name: 'uid', type: 'uid', interface: 'input', unique: true },
+      ],
+    });
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill(collectionName);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'One to many' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('obo');
+
+    await page.getByLabel('block-item-SourceKey-fields-').click();
+    // sourceKey 选项符合预期
+    const sourcekeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(1)
+      .evaluate(() => {
+        const optionElements = document.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期
+    expect(sourcekeyOptions).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
+
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: collectionName }).locator('div').click();
+    await page.getByLabel('block-item-TargetKey-fields-').click();
+
+    //targetKey 选项符合预期
+    const targetKeyOptions = await page.locator('.rc-virtual-list').evaluate(() => {
+      const optionElements = document.querySelectorAll('.ant-select-item-option');
+      return Array.from(optionElements).map((option) => option.textContent);
+    });
+
+    // 断言下拉列表是否符合预期
+    expect(targetKeyOptions).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
   });
 });
