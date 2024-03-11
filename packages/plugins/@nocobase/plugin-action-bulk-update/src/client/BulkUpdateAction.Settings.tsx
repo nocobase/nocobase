@@ -1,22 +1,17 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { isValid, uid } from '@formily/shared';
+import { ISchema, useFieldSchema } from '@formily/react';
+import { isValid } from '@formily/shared';
 import {
   ActionDesigner,
-  DefaultValueProvider,
-  FlagProvider,
   SchemaSettings,
-  SchemaSettingsActionModalItem,
-  SchemaSettingsItemGroup,
   SchemaSettingsItemType,
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
   AssignedFieldValues,
-  useCompile,
   useDesignable,
   useSchemaToolbar,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 
 function UpdateMode() {
   const { dn } = useDesignable();
@@ -135,10 +130,6 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
   {
     name: 'assignFieldValues',
     Component: AssignedFieldValues,
-    // useVisible() {
-    //   const fieldSchema = useFieldSchema();
-    //   return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
-    // },
   },
   {
     name: 'afterSuccess',
