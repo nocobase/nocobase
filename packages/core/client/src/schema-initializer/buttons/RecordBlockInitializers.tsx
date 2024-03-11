@@ -193,22 +193,44 @@ function useRecordBlocks() {
       },
     },
     {
-      name: 'form',
-      title: '{{t("Form")}}',
+      name: 'editForm',
+      title: '{{t("Edit form")}}',
       Component: 'FormBlockInitializer',
       collectionName: collection.name,
       dataSource: collection.dataSource,
       useComponentProps() {
         const currentCollection = useCollection_deprecated();
         const { createEditFormBlock, templateWrap } = useCreateEditFormBlock();
-        const { createAssociationFormBlock, templateWrap: templateWrapOfAssociation } = useCreateAssociationFormBlock();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
         return {
-          filterCollections({ collection, associationField }) {
+          filterCollections({ collection }) {
             if (collectionsWithView?.length && collection) {
               return collectionsNeedToDisplay.some((c) => c.name === collection.name);
             }
+            return false;
+          },
+          onlyCurrentDataSource: true,
+          // hideSearch: true,
+          componentType: 'editForm',
+          createBlockSchema: createEditFormBlock,
+          templateWrap: templateWrap,
+        };
+      },
+      useVisible() {
+        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+      },
+    },
+    {
+      name: 'createForm',
+      title: '{{t("Create form")}}',
+      Component: 'FormBlockInitializer',
+      collectionName: collection.name,
+      dataSource: collection.dataSource,
+      useComponentProps() {
+        const { createAssociationFormBlock, templateWrap } = useCreateAssociationFormBlock();
+        return {
+          filterCollections({ collection, associationField }) {
             if (associationField) {
               return ['hasMany', 'belongsToMany'].includes(associationField.type);
             }
@@ -217,28 +239,19 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           // hideSearch: true,
           componentType: 'editForm',
-          createBlockSchema: useCallback(
-            ({ item }) => {
-              if (item.associationField) {
-                return createAssociationFormBlock({ item });
-              }
-              createEditFormBlock({ item });
-            },
-            [createAssociationFormBlock, createEditFormBlock],
-          ),
-          templateWrap: useCallback(
-            (templateSchema, { item }) => {
-              if (item.associationField) {
-                return templateWrapOfAssociation(templateSchema, { item });
-              }
-              return templateWrap(templateSchema, { item });
-            },
-            [templateWrap, templateWrapOfAssociation],
-          ),
+          createBlockSchema: createAssociationFormBlock,
+          templateWrap: templateWrap,
         };
       },
       useVisible() {
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection();
+        return useMemo(
+          () =>
+            collection.fields.some(
+              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
+            ),
+          [collection.fields],
+        );
       },
     },
     {
