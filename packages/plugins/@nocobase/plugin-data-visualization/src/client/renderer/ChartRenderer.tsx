@@ -8,6 +8,7 @@ import {
   gridRowColWrap,
   useAPIClient,
   useCollection_deprecated,
+  useDataSource,
   useDesignable,
 } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
@@ -27,9 +28,9 @@ export const ChartRenderer: React.FC & {
 } = (props) => {
   const { t } = useChartsTranslation();
   const ctx = useContext(ChartRendererContext);
-  const { config, transform, collection, service, data: _data } = ctx;
-  const fields = useFieldsWithAssociation(collection);
-  const data = useData(_data, collection);
+  const { config, transform, dataSource, collection, service, data: _data } = ctx;
+  const fields = useFieldsWithAssociation(dataSource, collection);
+  const data = useData(_data, dataSource, collection);
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const api = useAPIClient();
@@ -84,14 +85,15 @@ ChartRenderer.Designer = function Designer() {
   const field = useField();
   const schema = useFieldSchema();
   const { insertAdjacent } = useDesignable();
-  const { name, title, dataSource } = useCollection_deprecated();
+  const dataSource = useDataSource();
+  const { name, title } = useCollection_deprecated();
   return (
     <GeneralSchemaDesigner disableInitializer title={title || name}>
       <SchemaSettingsItem
         title="Configure"
         key="configure"
         onClick={async () => {
-          setCurrent({ schema, field, dataSource, collection: name, service, data: service.data });
+          setCurrent({ schema, field, dataSource: dataSource.key, collection: name, service, data: service.data });
           setVisible(true);
         }}
       >
