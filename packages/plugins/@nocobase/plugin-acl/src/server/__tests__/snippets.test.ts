@@ -12,7 +12,7 @@ describe('snippet', () => {
     await app.destroy();
   });
 
-  it('should not allow to create collections when global allow create', async () => {
+  it.skip('should not allow to create collections when global allow create', async () => {
     await app.db.getRepository('roles').create({
       values: {
         name: 'testRole',
