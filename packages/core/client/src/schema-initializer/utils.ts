@@ -887,12 +887,13 @@ export const createDetailsBlockSchema = (options) => {
       association,
       readPretty: true,
       action,
-      params:
-        action === 'list'
-          ? {
+      ...(action === 'list'
+        ? {
+            params: {
               pageSize: 1,
-            }
-          : undefined,
+            },
+          }
+        : {}),
       ...others,
     },
     'x-toolbar': 'BlockSchemaToolbar',
@@ -924,16 +925,17 @@ export const createDetailsBlockSchema = (options) => {
             'x-initializer': formItemInitializers,
             properties: {},
           },
-          pagination:
-            action === 'list'
-              ? {
+          ...(action === 'list'
+            ? {
+                pagination: {
                   type: 'void',
                   'x-component': 'Pagination',
                   'x-component-props': {
                     useProps: '{{ useDetailsPaginationProps }}',
                   },
-                }
-              : undefined,
+                },
+              }
+            : {}),
         },
       },
     },
