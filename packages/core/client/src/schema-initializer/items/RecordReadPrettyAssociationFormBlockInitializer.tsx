@@ -4,7 +4,7 @@ import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useBlockRequestContext } from '../../block-provider';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 
 /**
@@ -33,7 +33,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'ReadPrettyFormItem') {
-            const blockSchema = createReadPrettyFormBlockSchema({
+            const blockSchema = createDetailsBlockSchema({
               actionInitializers,
               collection: collectionName,
               dataSource: collection.dataSource,
@@ -54,7 +54,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
           }
         } else {
           insert(
-            createReadPrettyFormBlockSchema({
+            createDetailsBlockSchema({
               actionInitializers,
               collection: collectionName,
               resource,
@@ -85,7 +85,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
       const collection = getCollection(field.target);
 
       insert(
-        createReadPrettyFormBlockSchema({
+        createDetailsBlockSchema({
           actionInitializers,
           collection: field.target,
           dataSource: collection.dataSource,
@@ -106,7 +106,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
       const collection = getCollection(field.target);
 
       if (item.template.componentName === 'ReadPrettyFormItem') {
-        const blockSchema = createReadPrettyFormBlockSchema({
+        const blockSchema = createDetailsBlockSchema({
           actionInitializers,
           collection: field.target,
           dataSource: collection.dataSource,

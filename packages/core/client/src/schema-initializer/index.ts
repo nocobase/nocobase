@@ -67,6 +67,7 @@ export {
   createFilterFormBlockSchema,
   createFormBlockSchema,
   createReadPrettyFormBlockSchema,
+  createDetailsBlockSchema,
   createTableBlockSchema,
   gridRowColWrap,
   itemsMerge,

@@ -873,23 +873,26 @@ export const createDetailsBlockSchema = (options) => {
     association,
     template,
     settings,
+    action = 'list',
     ...others
   } = options;
   const resourceName = association || collection;
   const schema: ISchema = {
     type: 'void',
-    'x-acl-action': `${resourceName}:view`,
+    'x-acl-action': action === 'get' ? `${resourceName}:get` : `${resourceName}:view`,
     'x-decorator': 'DetailsBlockProvider',
     'x-decorator-props': {
       dataSource,
       collection,
       association,
       readPretty: true,
-      action: 'list',
-      params: {
-        pageSize: 1,
-      },
-      // useParams: '{{ useParamsFromRecord }}',
+      action,
+      params:
+        action === 'list'
+          ? {
+              pageSize: 1,
+            }
+          : undefined,
       ...others,
     },
     'x-toolbar': 'BlockSchemaToolbar',
@@ -921,13 +924,16 @@ export const createDetailsBlockSchema = (options) => {
             'x-initializer': formItemInitializers,
             properties: {},
           },
-          pagination: {
-            type: 'void',
-            'x-component': 'Pagination',
-            'x-component-props': {
-              useProps: '{{ useDetailsPaginationProps }}',
-            },
-          },
+          pagination:
+            action === 'list'
+              ? {
+                  type: 'void',
+                  'x-component': 'Pagination',
+                  'x-component-props': {
+                    useProps: '{{ useDetailsPaginationProps }}',
+                  },
+                }
+              : undefined,
         },
       },
     },
@@ -1251,6 +1257,12 @@ export const createFilterFormBlockSchema = (options) => {
   return schema;
 };
 
+/**
+ * @deprecated
+ * 已弃用，可以使用 createDetailsBlockSchema 替换
+ * @param options
+ * @returns
+ */
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',

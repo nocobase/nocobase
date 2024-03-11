@@ -4,10 +4,7 @@ import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem }
 import { useBlockAssociationContext, useBlockRequestContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
-import {
-  createReadPrettyFormBlockSchema,
-  useRecordCollectionDataSourceItems,
-} from '../../../../schema-initializer/utils';
+import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -39,7 +36,7 @@ export function useCreateSingleDetailsSchema() {
     (templateSchema, options) => {
       const { item } = options;
       if (item.template.componentName === 'ReadPrettyFormItem') {
-        const blockSchema = createReadPrettyFormBlockSchema({
+        const blockSchema = createDetailsBlockSchema({
           actionInitializers,
           association,
           collection: item.collectionName || item.name,
@@ -68,7 +65,7 @@ export function useCreateSingleDetailsSchema() {
         insert(templateWrap(template, { item }));
       } else {
         insert(
-          createReadPrettyFormBlockSchema({
+          createDetailsBlockSchema({
             actionInitializers,
             association,
             collection: item.collectionName || item.name,
