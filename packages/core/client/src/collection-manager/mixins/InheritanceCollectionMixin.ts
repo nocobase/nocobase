@@ -16,8 +16,8 @@ export class InheritanceCollectionMixin extends Collection {
   protected foreignKeyFields: CollectionFieldOptions[];
 
   getParentCollectionsName() {
-    if (this.parentCollectionsName?.length) {
-      return this.parentCollectionsName;
+    if (this.parentCollectionsName) {
+      return this.parentCollectionsName.slice();
     }
 
     const parents: string[] = [];
@@ -41,8 +41,8 @@ export class InheritanceCollectionMixin extends Collection {
   }
 
   getParentCollections() {
-    if (this.parentCollections?.length) {
-      return this.parentCollections;
+    if (this.parentCollections) {
+      return this.parentCollections.slice();
     }
     this.parentCollections = this.getParentCollectionsName().map((collectionName) => {
       return this.collectionManager.getCollection(collectionName);
@@ -52,8 +52,8 @@ export class InheritanceCollectionMixin extends Collection {
 
   getChildrenCollectionsName(isSupportView = false) {
     const cacheKey = isSupportView ? 'supportView' : 'notSupportView';
-    if (this.childrenCollectionsName[cacheKey]?.length) {
-      return this.childrenCollectionsName[cacheKey];
+    if (this.childrenCollectionsName[cacheKey]) {
+      return this.childrenCollectionsName[cacheKey].slice();
     }
 
     const children: string[] = [];
@@ -86,8 +86,8 @@ export class InheritanceCollectionMixin extends Collection {
 
   getChildrenCollections(isSupportView = false) {
     const cacheKey = isSupportView ? 'supportView' : 'notSupportView';
-    if (this.childrenCollections[cacheKey]?.length) {
-      return this.childrenCollections[cacheKey];
+    if (this.childrenCollections[cacheKey]) {
+      return this.childrenCollections[cacheKey].slice();
     }
     this.childrenCollections[cacheKey] = this.getChildrenCollectionsName(isSupportView).map((collectionName) => {
       return this.collectionManager.getCollection(collectionName);
@@ -96,8 +96,8 @@ export class InheritanceCollectionMixin extends Collection {
   }
 
   getInheritedFields() {
-    if (this.inheritsFields?.length) {
-      return this.inheritsFields;
+    if (this.inheritsFields) {
+      return this.inheritsFields.slice();
     }
 
     const parentCollections = this.getParentCollectionsName();
@@ -155,8 +155,8 @@ export class InheritanceCollectionMixin extends Collection {
   }
 
   getAllCollectionsInheritChain() {
-    if (this.allCollectionsInheritChain?.length) {
-      return this.allCollectionsInheritChain;
+    if (this.allCollectionsInheritChain) {
+      return this.allCollectionsInheritChain.slice();
     }
 
     const collectionsInheritChain = [this.name];
@@ -197,8 +197,8 @@ export class InheritanceCollectionMixin extends Collection {
   }
 
   getInheritCollectionsChain() {
-    if (this.inheritCollectionsChain?.length) {
-      return this.inheritCollectionsChain;
+    if (this.inheritCollectionsChain) {
+      return this.inheritCollectionsChain.slice();
     }
     const collectionsInheritChain = [this.name];
     const getInheritChain = (name: string) => {
@@ -225,8 +225,8 @@ export class InheritanceCollectionMixin extends Collection {
   }
 
   getAllFields(predicate?: GetCollectionFieldPredicate) {
-    if (this.allFields?.length) {
-      return this.allFields;
+    if (this.allFields) {
+      return this.allFields.slice();
     }
     const currentFields = this.getCurrentFields();
     const inheritedFields = this.getInheritedFields();
@@ -240,8 +240,8 @@ export class InheritanceCollectionMixin extends Collection {
   }
 
   getForeignKeyFields() {
-    if (this.foreignKeyFields?.length) {
-      return this.foreignKeyFields;
+    if (this.foreignKeyFields) {
+      return this.foreignKeyFields.slice();
     }
     const currentFields = this.getCurrentFields();
     const inheritedFields = this.getInheritedFields();
