@@ -32,4 +32,26 @@ describe('snippet', () => {
 
     expect(createCollectionResponse.statusCode).toEqual(403);
   });
+
+  it('should allowed when snippet not allowed but resource allowed', async () => {
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        strategy: { actions: ['view'] },
+        snippets: ['!ui.*', '!pm', '!pm.*'],
+      },
+    });
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    const userAgent: any = app.agent().login(testUser);
+
+    const listResp = await userAgent.resource('users').list();
+
+    expect(listResp.statusCode).toEqual(200);
+  });
 });
