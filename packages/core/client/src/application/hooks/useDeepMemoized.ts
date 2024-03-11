@@ -1,15 +1,14 @@
-import { isEqual } from 'lodash';
-import { useRef } from 'react';
 import _ from 'lodash';
+import { useCreation } from 'ahooks';
 
-export const useDeepMemoized = (newObj: any, ignoreUndefinedValue = false) => {
-  const v = ignoreUndefinedValue ? _.omitBy(newObj, _.isUndefined) : newObj;
+export const useDeepMemoized = (obj: any, ignoreUndefinedValue = false) => {
+  const newObj = ignoreUndefinedValue ? _.omitBy(obj, _.isUndefined) : obj;
 
-  const oldObj = useRef(v);
+  const oldObj = useCreation(() => ({ value: _.cloneDeep(newObj) }), []);
 
-  if (!isEqual(v, oldObj.current)) {
-    oldObj.current = v;
+  if (!_.isEqual(newObj, oldObj.value)) {
+    oldObj.value = _.cloneDeep(newObj);
   }
 
-  return oldObj.current;
+  return oldObj.value;
 };
