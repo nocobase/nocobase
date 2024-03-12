@@ -14,7 +14,7 @@ export class NanoidField extends Field {
     this.listener = async (instance) => {
       const value = instance.get(name);
       if (!value) {
-        const nanoIdFunc = customAlphabet ? customAlphabet(customAlphabetOptions) : nanoid;
+        const nanoIdFunc = customAlphabetOptions ? customAlphabet(customAlphabetOptions) : nanoid;
         instance.set(name, nanoIdFunc(size || DEFAULT_SIZE));
       }
     };

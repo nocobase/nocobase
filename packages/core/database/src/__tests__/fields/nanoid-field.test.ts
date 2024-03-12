@@ -25,10 +25,15 @@ describe('nanoid field', () => {
           size: 21,
           customAlphabet: '1234567890abcdef',
         },
+        {
+          type: 'nanoid',
+          name: 'id2',
+        },
       ],
     });
     await Test.sync();
     const test = await Test.model.create();
     expect(test.id).toHaveLength(21);
+    expect(test.id2).toHaveLength(12);
   });
 });
