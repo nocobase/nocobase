@@ -297,6 +297,7 @@ function FinallyButton({
             }),
             React.cloneElement(rightButton as React.ReactElement<any, string>, {
               loading: false,
+              style: props?.style,
             }),
           ]}
           menu={menu}
@@ -310,7 +311,13 @@ function FinallyButton({
       ) : (
         <Dropdown menu={menu}>
           {
-            <Button aria-label={props['aria-label']} icon={icon} type={componentType} danger={props.danger}>
+            <Button
+              aria-label={props['aria-label']}
+              icon={icon}
+              type={componentType}
+              danger={props.danger}
+              style={props?.style}
+            >
               {props.children} <DownOutlined />
             </Button>
           }

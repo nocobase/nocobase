@@ -13,7 +13,7 @@ export const CreateChildInitializer = (props) => {
       openMode: 'drawer',
       type: 'link',
       addChild: true,
-      style: { paddingRight: '0px' },
+      style: { padding: '0px', marginTop: '-5px' },
       component: 'CreateRecordAction',
     },
     properties: {
