@@ -3,10 +3,16 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemType, useDataSourceKey, useFormActiveFields, useFormBlockContext } from '../';
+import {
+  SchemaInitializerItemType,
+  useCollectionManager,
+  useDataSourceKey,
+  useFormActiveFields,
+  useFormBlockContext,
+} from '../';
 import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
-import { useActionContext, useDesignable } from '../schema-component';
+import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
@@ -859,7 +865,7 @@ export const useCollectionDataSourceItems = (
         ...associationFields,
       ],
     }));
-  }, [allCollections, componentName, getTemplatesByCollection, t]);
+  }, [allCollections, associationFields, componentName, getTemplatesByCollection, t]);
 
   return res;
 };
@@ -1624,9 +1630,11 @@ function useAssociationFields(
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager_deprecated();
   const collection = useCollection_deprecated();
+  const cm = useCollectionManager();
   const dataSource = useDataSourceKey();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const { t } = useTranslation();
+  const compile = useCompile();
 
   return useMemo(() => {
     let fields: CollectionFieldOptions[] = [];
@@ -1644,7 +1652,8 @@ function useAssociationFields(
       .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
       .filter((field) => filterCollections({ associationField: field }))
       .map((field, index) => {
-        const title = field.uiSchema.title || field.name;
+        const targetCollection = cm.getCollection(field.target);
+        const title = `${field.uiSchema.title || field.name} -> ${compile(targetCollection.title)}`;
         const templates = getTemplatesByCollection(dataSource, field.target).filter((template) => {
           return (
             componentName &&
