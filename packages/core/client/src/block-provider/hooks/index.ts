@@ -986,6 +986,11 @@ export const useBulkDestroyActionProps = () => {
         filterByTk: field.data?.selectedRowKeys,
       });
       field.data.selectedRowKeys = [];
+      const currentPage = service.params[0]?.page;
+      const totalPage = service.data?.meta?.totalPage;
+      if (currentPage === totalPage) {
+        service.params[0].page = currentPage - 1;
+      }
       service?.refresh?.();
     },
   };
