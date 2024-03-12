@@ -6,7 +6,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'datetime';
   order = 1;
-  title = '{{t("UnixTimestamp")}}';
+  title = '{{t("Unix Timestamp")}}';
   sortable = true;
   default = {
     type: 'bigInt',

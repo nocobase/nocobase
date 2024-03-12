@@ -895,5 +895,6 @@
   "Alphabet": "字符",
   "Accuracy": "精确度",
   "Millisecond": "毫秒",
-  "Second": "秒"
+  "Second": "秒",
+  "Unix Timestamp":"时间戳"
 }
