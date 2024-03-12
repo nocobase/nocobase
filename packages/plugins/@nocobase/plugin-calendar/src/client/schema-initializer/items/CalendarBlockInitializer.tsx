@@ -22,11 +22,13 @@ export const CalendarBlockInitializer = ({
   onlyCurrentDataSource,
   hideSearch,
   createBlockSchema,
+  showAssociationFields,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
   hideSearch?: boolean;
   createBlockSchema?: (options: any) => any;
+  showAssociationFields?: boolean;
 }) => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
@@ -106,6 +108,7 @@ export const CalendarBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       filter={filterCollections}
+      showAssociationFields={showAssociationFields}
     />
   );
 };

@@ -44,6 +44,7 @@ export class PluginCalendarClient extends Plugin {
             return false;
           },
           createBlockSchema: createAssociationCalendarBlock,
+          showAssociationFields: true,
         };
       },
     });

@@ -184,7 +184,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByRole('menuitem', { name: 'table Table right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'ordered-list List right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'ordered-list Grid Card right' })).toBeVisible();
-    // TODO: 还有一个 Calendar，等 https://nocobase.height.app/T-3502 修复后再添加测试用例
+    await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).hover();
