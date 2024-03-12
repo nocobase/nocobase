@@ -41,7 +41,6 @@ import {
   UrlFieldInterface,
   SortFieldInterface,
   UUIDFieldInterface,
-  SnowflakeFieldInterface,
   NanoidFieldInterface,
 } from './interfaces';
 import {
@@ -159,7 +158,6 @@ export class CollectionPlugin extends Plugin {
       UrlFieldInterface,
       SortFieldInterface,
       UUIDFieldInterface,
-      SnowflakeFieldInterface,
       NanoidFieldInterface,
     ]);
   }

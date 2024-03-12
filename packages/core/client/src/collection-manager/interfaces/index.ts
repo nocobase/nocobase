@@ -36,4 +36,3 @@ export * from './url';
 export * from './sort';
 export * from './uuid';
 export * from './nanoid';
-export * from './snowflake';
