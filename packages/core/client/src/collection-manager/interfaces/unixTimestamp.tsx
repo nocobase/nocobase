@@ -14,8 +14,9 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       type: 'number',
       'x-component': 'UnixTimestamp',
       'x-component-props': {
-        stringMode: true,
-        step: '1',
+        accuracy: 'millisecond',
+        format: 'YYYY-MM-DD HH:mm:ss',
+        showTime: true,
       },
     },
   };
@@ -24,9 +25,8 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
     'uiSchema.x-component-props.accuracy': {
-      type: 'boolean',
+      type: 'string',
       title: '{{t("Accuracy")}}',
-      'x-hidden': true,
       'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
       default: 'millisecond',
