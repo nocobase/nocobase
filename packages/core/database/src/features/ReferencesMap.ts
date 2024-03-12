@@ -11,7 +11,7 @@ class ReferencesMap {
 
   addReference(reference: Reference) {
     if (!reference.onDelete) {
-      reference.onDelete = 'SET NULL';
+      reference.onDelete = 'NO ACTION';
     }
 
     reference.onDelete = reference.onDelete.toUpperCase();
