@@ -1,7 +1,7 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
 
-describe('string field', () => {
+describe('nanoid field', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -22,7 +22,7 @@ describe('string field', () => {
           type: 'nanoid',
           name: 'id',
           primaryKey: true,
-          length: 21,
+          size: 21,
           customAlphabet: '1234567890abcdef',
         },
       ],

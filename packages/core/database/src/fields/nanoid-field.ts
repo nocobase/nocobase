@@ -2,20 +2,20 @@ import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 import { customAlphabet, nanoid } from 'nanoid';
 
-const DEFAULT_LENGTH = 12;
+const DEFAULT_SIZE = 12;
 export class NanoidField extends Field {
   get dataType() {
     return DataTypes.STRING;
   }
 
   init() {
-    const { name, length, customAlphabet: customAlphabetOptions } = this.options;
+    const { name, size, customAlphabet: customAlphabetOptions } = this.options;
 
     this.listener = async (instance) => {
       const value = instance.get(name);
       if (!value) {
         const nanoIdFunc = customAlphabet ? customAlphabet(customAlphabetOptions) : nanoid;
-        instance.set(name, nanoIdFunc(length || DEFAULT_LENGTH));
+        instance.set(name, nanoIdFunc(size || DEFAULT_SIZE));
       }
     };
   }
@@ -35,6 +35,6 @@ export class NanoidField extends Field {
 
 export interface NanoidFieldOptions extends BaseColumnFieldOptions {
   type: 'nanoid';
-  length?: number;
+  size?: number;
   customAlphabet?: string;
 }
