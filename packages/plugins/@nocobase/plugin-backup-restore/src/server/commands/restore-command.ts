@@ -62,6 +62,6 @@ export default function addRestoreCommand(app: Application) {
         groups,
       });
 
-      await app.restart();
+      await app.upgrade();
     });
 }
