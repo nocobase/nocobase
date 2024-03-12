@@ -892,5 +892,8 @@
   "Plugin settings": "插件设置",
   "Menu": "菜单",
   "Drag and drop sorting field": "拖拽排序字段",
-  "Alphabet": "字符"
+  "Alphabet": "字符",
+  "Accuracy": "精确度",
+  "Millisecond": "毫秒",
+  "Second": "秒"
 }

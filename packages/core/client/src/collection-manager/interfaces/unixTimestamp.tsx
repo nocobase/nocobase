@@ -23,15 +23,17 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    ...dateTimeProps,
-    'uiSchema.x-component-props.gmt': {
+    'uiSchema.x-component-props.accuracy': {
       type: 'boolean',
-      title: '{{t("GMT")}}',
+      title: '{{t("Accuracy")}}',
       'x-hidden': true,
-      'x-component': 'Checkbox',
-      'x-content': '{{t("Use the same time zone (GMT) for all users")}}',
+      'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      default: false,
+      default: 'millisecond',
+      enum: [
+        { value: 'millisecond', label: '{{t("Millisecond")}}' },
+        { value: 'second', label: '{{t("Second")}}' },
+      ],
     },
   };
   filterable = {
