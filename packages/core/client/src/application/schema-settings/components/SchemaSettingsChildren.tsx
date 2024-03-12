@@ -84,7 +84,10 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
   const useChildrenRes = useChildren();
   const useComponentPropsRes = useComponentProps();
   const findComponent = useFindComponent();
-  const componentChildren = useChildrenRes || children;
+  const componentChildren = useMemo(() => {
+    const res = [...(useChildrenRes || []), ...(children || [])];
+    return res.length === 0 ? undefined : res;
+  }, [useChildrenRes, children]);
   const visibleResult = useVisible();
   const ComponentValue = useMemo(() => {
     return !Component && type && typeComponentMap[type] ? typeComponentMap[type] : Component;
