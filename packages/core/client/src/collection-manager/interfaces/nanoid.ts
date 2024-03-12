@@ -35,6 +35,18 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
+    customAlphabet: {
+      type: 'string',
+      title: '{{t("Alphabet")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    size: {
+      type: 'number',
+      title: '{{t("Length")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'InputNumber',
+    },
   };
   filterable = {
     operators: operators.string,

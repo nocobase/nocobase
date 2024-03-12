@@ -42,6 +42,7 @@ import {
   SortFieldInterface,
   UUIDFieldInterface,
   NanoidFieldInterface,
+  UnixTimestampFieldInterface,
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
@@ -159,6 +160,7 @@ export class CollectionPlugin extends Plugin {
       SortFieldInterface,
       UUIDFieldInterface,
       NanoidFieldInterface,
+      UnixTimestampFieldInterface,
     ]);
   }
 
