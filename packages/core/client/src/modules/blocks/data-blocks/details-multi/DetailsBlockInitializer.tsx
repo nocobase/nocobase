@@ -13,6 +13,7 @@ export const DetailsBlockInitializer = ({
   componentType = 'Details',
   createBlockSchema,
   templateWrap,
+  showAssociationFields,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
@@ -31,6 +32,7 @@ export const DetailsBlockInitializer = ({
       item: any;
     },
   ) => any;
+  showAssociationFields?: boolean;
 }) => {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager_deprecated();
@@ -63,6 +65,7 @@ export const DetailsBlockInitializer = ({
       hideSearch={hideSearch}
       filter={filterCollections}
       templateWrap={templateWrap}
+      showAssociationFields={showAssociationFields}
     />
   );
 };

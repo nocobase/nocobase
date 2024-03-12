@@ -1,6 +1,6 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
-import { useSchemaInitializerItem } from '../../../../application';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { createFilterFormBlockSchema } from '../../../../schema-initializer/utils';
 import { FilterBlockInitializer } from '../../../../schema-initializer/items/FilterBlockInitializer';
 import { Collection, CollectionFieldOptions } from '../../../../data-source';
@@ -13,6 +13,7 @@ export const FilterFormBlockInitializer = ({
   onlyCurrentDataSource: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
 
   return (
     <FilterBlockInitializer
@@ -32,9 +33,14 @@ export const FilterFormBlockInitializer = ({
         }
         return s;
       }}
-      createBlockSchema={(options) => {
-        options = { ...options, settings: 'blockSettings:filterForm' };
-        return createFilterFormBlockSchema(options);
+      onCreateBlockSchema={({ item }) => {
+        return insert(
+          createFilterFormBlockSchema({
+            collection: item.collectionName || item.name,
+            dataSource: item.dataSource,
+            settings: 'blockSettings:filterForm',
+          }),
+        );
       }}
       filter={filterCollections}
     />

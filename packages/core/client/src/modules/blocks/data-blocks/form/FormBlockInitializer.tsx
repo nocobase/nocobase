@@ -12,6 +12,7 @@ export const FormBlockInitializer = ({
   createBlockSchema,
   componentType = 'FormItem',
   templateWrap,
+  showAssociationFields,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
@@ -20,7 +21,7 @@ export const FormBlockInitializer = ({
   /**
    * 虽然这里的命名现在看起来比较奇怪，但为了兼容旧版本的 template，暂时保留这个命名。
    */
-  componentType?: 'FormItem' | 'editForm';
+  componentType?: 'FormItem';
   templateWrap?: (
     templateSchema: any,
     {
@@ -29,6 +30,7 @@ export const FormBlockInitializer = ({
       item: any;
     },
   ) => any;
+  showAssociationFields?: boolean;
 }) => {
   const { insert } = useSchemaInitializer();
   const itemConfig = useSchemaInitializerItem();
@@ -77,6 +79,7 @@ export const FormBlockInitializer = ({
       filter={filterCollections}
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
+      showAssociationFields={showAssociationFields}
     />
   );
 };

@@ -13,6 +13,7 @@ export const ListBlockInitializer = ({
   createBlockSchema,
   componentType = 'FormItem',
   templateWrap,
+  showAssociationFields,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
@@ -21,7 +22,7 @@ export const ListBlockInitializer = ({
   /**
    * 虽然这里的命名现在看起来比较奇怪，但为了兼容旧版本的 template，暂时保留这个命名。
    */
-  componentType?: 'FormItem' | 'editForm';
+  componentType?: 'FormItem';
   templateWrap?: (
     templateSchema: any,
     {
@@ -30,6 +31,7 @@ export const ListBlockInitializer = ({
       item: any;
     },
   ) => any;
+  showAssociationFields?: boolean;
 }) => {
   const { getCollection } = useCollectionManager_deprecated();
   const { insert } = useSchemaInitializer();
@@ -56,6 +58,7 @@ export const ListBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       filter={filterCollections}
+      showAssociationFields={showAssociationFields}
     />
   );
 };

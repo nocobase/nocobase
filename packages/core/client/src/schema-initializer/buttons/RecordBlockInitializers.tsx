@@ -151,10 +151,21 @@ function useRecordBlocks() {
           templateWrap: templateWrapOfAssociationDetailsWithoutPagination,
         } = useCreateAssociationDetailsWithoutPagination();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
-
+        const createBlockSchema = useCallback(
+          ({ item }) => {
+            if (item.associationField) {
+              if (['hasOne', 'belongsTo'].includes(item.associationField.type)) {
+                return createAssociationDetailsWithoutPagination({ item });
+              }
+              return createAssociationDetailsBlock({ item });
+            }
+            return createSingleDetailsSchema({ item });
+          },
+          [createAssociationDetailsBlock, createAssociationDetailsWithoutPagination, createSingleDetailsSchema],
+        );
         return {
           filterCollections({ collection, associationField }) {
-            if (collectionsWithView?.length && collection) {
+            if (collection) {
               return collectionsNeedToDisplay.some((c) => c.name === collection.name);
             }
             if (associationField) {
@@ -165,18 +176,7 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           // hideSearch: true,
           componentType: 'ReadPrettyFormItem',
-          createBlockSchema: useCallback(
-            ({ item }) => {
-              if (item.associationField) {
-                if (['hasOne', 'belongsTo'].includes(item.associationField.type)) {
-                  return createAssociationDetailsWithoutPagination({ item });
-                }
-                return createAssociationDetailsBlock({ item });
-              }
-              return createSingleDetailsSchema({ item });
-            },
-            [createAssociationDetailsBlock, createAssociationDetailsWithoutPagination, createSingleDetailsSchema],
-          ),
+          createBlockSchema,
           templateWrap: useCallback(
             (templateSchema, { item }) => {
               if (item.associationField) {
@@ -189,6 +189,7 @@ function useRecordBlocks() {
             },
             [templateWrap, templateWrapOfAssociationDetailsWithoutPagination],
           ),
+          showAssociationFields: true,
         };
       },
     },
@@ -205,16 +206,17 @@ function useRecordBlocks() {
 
         return {
           filterCollections({ collection }) {
-            if (collectionsWithView?.length && collection) {
+            if (collection) {
               return collectionsNeedToDisplay.some((c) => c.name === collection.name);
             }
             return false;
           },
           onlyCurrentDataSource: true,
           // hideSearch: true,
-          componentType: 'editForm',
+          componentType: 'FormItem',
           createBlockSchema: createEditFormBlock,
           templateWrap: templateWrap,
+          showAssociationFields: true,
         };
       },
       useVisible() {
@@ -238,9 +240,10 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           // hideSearch: true,
-          componentType: 'editForm',
+          componentType: 'FormItem',
           createBlockSchema: createAssociationFormBlock,
           templateWrap: templateWrap,
+          showAssociationFields: true,
         };
       },
       useVisible() {
@@ -281,6 +284,7 @@ function useRecordBlocks() {
             return false;
           },
           createBlockSchema: createAssociationTableBlock,
+          showAssociationFields: true,
         };
       },
     },
@@ -311,6 +315,7 @@ function useRecordBlocks() {
             return false;
           },
           createBlockSchema: createAssociationListBlock,
+          showAssociationFields: true,
         };
       },
     },
@@ -341,6 +346,7 @@ function useRecordBlocks() {
             return false;
           },
           createBlockSchema: createAssociationGridCardBlock,
+          showAssociationFields: true,
         };
       },
     },

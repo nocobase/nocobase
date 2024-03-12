@@ -832,15 +832,21 @@ export const useRecordCollectionDataSourceItems = (
   ];
 };
 
-export const useCollectionDataSourceItems = (
+export const useCollectionDataSourceItems = ({
   componentName,
-  filter: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean = () => true,
+  filter = () => true,
   onlyCurrentDataSource = false,
-) => {
+  showAssociationFields,
+}: {
+  componentName;
+  filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
+  onlyCurrentDataSource?: boolean;
+  showAssociationFields?: boolean;
+}) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
   const dataSourceKey = useDataSourceKey();
-  const associationFields = useAssociationFields(componentName, filter);
+  const associationFields = useAssociationFields({ componentName, filterCollections: filter, showAssociationFields });
 
   let allCollections = dm.getAllCollections((collection) => filter({ collection }));
   if (onlyCurrentDataSource) {
@@ -1546,10 +1552,8 @@ const getChildren = ({
       const templates = getTemplatesByCollection(dataSource, item.name).filter((template) => {
         return (
           componentName &&
-          (template.componentName === componentName ||
-            // 旧版的编辑表单的 componentName 是 'FormItem'，新版的编辑表单改为了 'editForm'；这里是为了兼容旧版的编辑表单模板加的一个条件
-            (componentName === 'editForm' && template.componentName === 'FormItem')) &&
-          (['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(componentName) ||
+          template.componentName === componentName &&
+          (['FormItem', 'ReadPrettyFormItem'].includes(componentName) ||
             !template.resourceName ||
             template.resourceName === item.name)
         );
@@ -1585,7 +1589,7 @@ const getChildren = ({
             dataSource,
             title: t('Duplicate template'),
             children: templates.map((template) => {
-              const templateName = ['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(template?.componentName)
+              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
                 ? `${template?.name} ${t('(Fields only)')}`
                 : template?.name;
               return {
@@ -1605,7 +1609,7 @@ const getChildren = ({
             dataSource,
             title: t('Reference template'),
             children: templates.map((template) => {
-              const templateName = ['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(template?.componentName)
+              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
                 ? `${template?.name} ${t('(Fields only)')}`
                 : template?.name;
               return {
@@ -1623,10 +1627,15 @@ const getChildren = ({
     });
 };
 
-function useAssociationFields(
-  componentName: string,
-  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean,
-) {
+function useAssociationFields({
+  componentName,
+  filterCollections,
+  showAssociationFields,
+}: {
+  componentName: string;
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
+  showAssociationFields?: boolean;
+}) {
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager_deprecated();
   const collection = useCollection_deprecated();
@@ -1637,6 +1646,10 @@ function useAssociationFields(
   const compile = useCompile();
 
   return useMemo(() => {
+    if (!showAssociationFields) {
+      return [];
+    }
+
     let fields: CollectionFieldOptions[] = [];
 
     if (fieldSchema['x-initializer']) {
@@ -1653,7 +1666,7 @@ function useAssociationFields(
       .filter((field) => filterCollections({ associationField: field }))
       .map((field, index) => {
         const targetCollection = cm.getCollection(field.target);
-        const title = `${field.uiSchema.title || field.name} -> ${compile(targetCollection.title)}`;
+        const title = `${compile(field.uiSchema.title || field.name)} -> ${compile(targetCollection.title)}`;
         const templates = getTemplatesByCollection(dataSource, field.target).filter((template) => {
           return (
             componentName &&
@@ -1698,7 +1711,7 @@ function useAssociationFields(
               dataSource,
               title: t('Duplicate template'),
               children: templates.map((template) => {
-                const templateName = ['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(template?.componentName)
+                const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
                   ? `${template?.name} ${t('(Fields only)')}`
                   : template?.name;
                 return {
@@ -1720,7 +1733,7 @@ function useAssociationFields(
               dataSource,
               title: t('Reference template'),
               children: templates.map((template) => {
-                const templateName = ['FormItem', 'ReadPrettyFormItem', 'editForm'].includes(template?.componentName)
+                const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
                   ? `${template?.name} ${t('(Fields only)')}`
                   : template?.name;
                 return {
@@ -1739,13 +1752,16 @@ function useAssociationFields(
         };
       });
   }, [
+    cm,
     collection.fields,
+    compile,
     componentName,
     dataSource,
     fieldSchema,
     filterCollections,
     getCollectionFields,
     getTemplatesByCollection,
+    showAssociationFields,
     t,
   ]);
 }

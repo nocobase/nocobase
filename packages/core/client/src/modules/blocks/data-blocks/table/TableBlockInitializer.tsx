@@ -12,6 +12,7 @@ export const TableBlockInitializer = ({
   hideSearch,
   createBlockSchema,
   templateWrap,
+  showAssociationFields,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
@@ -25,6 +26,7 @@ export const TableBlockInitializer = ({
       item: any;
     },
   ) => any;
+  showAssociationFields?: boolean;
 }) => {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager_deprecated();
@@ -50,6 +52,7 @@ export const TableBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       filter={filterCollections}
+      showAssociationFields={showAssociationFields}
     />
   );
 };

@@ -233,7 +233,7 @@ export function useMenuSearch({
     }
 
     return res;
-  }, [limitedSearchedItems, searchValue, shouldLoadMore, showType]);
+  }, [hideSearch, limitedSearchedItems, searchValue, shouldLoadMore, showType]);
 
   const res = useMemo(() => {
     if (!isMuliSource) return resultItems;
@@ -250,7 +250,7 @@ export function useMenuSearch({
         };
       }
     });
-  }, [data, openKey, resultItems]);
+  }, [data, isMuliSource, openKey, resultItems]);
   return res;
 }
 
@@ -265,7 +265,6 @@ export interface DataBlockInitializerProps {
   ) => any;
   onCreateBlockSchema?: (args: any) => void;
   createBlockSchema?: (args: any) => any;
-  isCusomeizeCreate?: boolean;
   icon?: string | React.ReactNode;
   name: string;
   title: string;
@@ -273,6 +272,7 @@ export interface DataBlockInitializerProps {
   componentType: string;
   onlyCurrentDataSource?: boolean;
   hideSearch?: boolean;
+  showAssociationFields?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -286,6 +286,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     filter,
     onlyCurrentDataSource,
     hideSearch,
+    showAssociationFields,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -304,15 +305,28 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     },
     [getTemplateSchemaByMode, insert, onCreateBlockSchema, setVisible, templateWrap],
   );
-  const items = useCollectionDataSourceItems(componentType, filter, onlyCurrentDataSource);
+  const items = useCollectionDataSourceItems({
+    componentName: componentType,
+    filter,
+    onlyCurrentDataSource,
+    showAssociationFields,
+  });
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {
     return getMenuItems(items, name);
   }, [getMenuItems, items, name]);
   const [openMenuKeys, setOpenMenuKeys] = useState([]);
   const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys, hideSearch });
-  const compiledMenuItems = useMemo(
-    () => [
+  const compiledMenuItems = useMemo(() => {
+    let children = searchedChildren.filter((item) => item.key !== 'search');
+    const hasAssociationField = children.some((item) => item.associationField);
+    if (!hasAssociationField && children.length === 1) {
+      // 只有一项可选时，直接展开
+      children = children[0].children;
+    } else {
+      children = searchedChildren;
+    }
+    return [
       {
         key: name,
         label: compile(title),
@@ -321,11 +335,10 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
           if (info.key !== name) return;
           onClick({ ...info, item: props });
         },
-        children: searchedChildren,
+        children,
       },
-    ],
-    [name, compile, title, icon, childItems, onClick, props],
-  );
+    ];
+  }, [name, compile, title, icon, searchedChildren, onClick, props]);
 
   if (childItems.length > 1 || (childItems.length === 1 && childItems[0].children?.length > 0)) {
     return (
