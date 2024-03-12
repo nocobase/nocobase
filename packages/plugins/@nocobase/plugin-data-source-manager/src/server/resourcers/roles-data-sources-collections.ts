@@ -22,7 +22,7 @@ const rolesRemoteCollectionsResourcer = {
       const collectionRepository = new FullDataRepository<any>(dataSource.collectionManager.getCollections());
 
       // all collections
-      const [collections, count] = await collectionRepository.findAndCount();
+      const [collections] = await collectionRepository.findAndCount();
 
       const filterItem = lodash.get(filter, '$and');
       const filterByTitle = filterItem?.find((item) => item.title);
@@ -45,44 +45,44 @@ const rolesRemoteCollectionsResourcer = {
         .filter((roleResources) => roleResources.get('usingActionsConfig'))
         .map((roleResources) => roleResources.get('name'));
 
+      const filtedCollections = collections.filter((collection) => {
+        return (
+          (!filterTitle || lodash.get(collection, 'options.title')?.toLowerCase().includes(filterTitle)) &&
+          (!filterName || collection.options.name.toLowerCase().includes(filterName))
+        );
+      });
+
       const items = lodash.sortBy(
-        collections
-          .filter((collection) => {
-            return (
-              (!filterTitle || lodash.get(collection, 'options.title')?.toLowerCase().includes(filterTitle)) &&
-              (!filterName || collection.options.name.toLowerCase().includes(filterName))
-            );
-          })
-          .map((collection, i) => {
-            const collectionName = collection.options.name;
-            const exists = roleResourcesNames.includes(collectionName);
+        filtedCollections.map((collection, i) => {
+          const collectionName = collection.options.name;
+          const exists = roleResourcesNames.includes(collectionName);
 
-            const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(collectionName)
-              ? 'resourceAction'
-              : 'strategy';
+          const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(collectionName)
+            ? 'resourceAction'
+            : 'strategy';
 
-            return {
-              type: 'collection',
-              name: collectionName,
-              collectionName,
-              title: collection.options.uiSchema?.title || collection.options.title,
-              roleName: role,
-              usingConfig,
-              exists,
-              fields: [...collection.fields.values()].map((field) => {
-                return field.options;
-              }),
-            };
-          }),
+          return {
+            type: 'collection',
+            name: collectionName,
+            collectionName,
+            title: collection.options.uiSchema?.title || collection.options.title,
+            roleName: role,
+            usingConfig,
+            exists,
+            fields: [...collection.fields.values()].map((field) => {
+              return field.options;
+            }),
+          };
+        }),
         'name',
       );
 
       ctx.body = {
-        count,
+        count: filtedCollections.length,
         rows: items,
         page: Number(page),
         pageSize: Number(pageSize),
-        totalPage: totalPage(count, pageSize),
+        totalPage: totalPage(filtedCollections.length, pageSize),
       };
 
       await next();
