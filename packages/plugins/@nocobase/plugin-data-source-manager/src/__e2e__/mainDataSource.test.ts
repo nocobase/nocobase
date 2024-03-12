@@ -381,19 +381,25 @@ test.describe('create primary key  or unique index other than ID.', () => {
 
 //创建关系字段
 test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt ',' integer ',' uuid ',' uid '] and are non primary key field with a Unique index set", () => {
+  const fields = [
+    { name: 'id', interface: 'id', type: 'bigInt' },
+    { name: 'string', interface: 'input', type: 'string', unique: true },
+    { name: 'bigInt', type: 'bigInt', interface: 'integer', unique: true },
+    { name: 'integer', type: 'integer', interface: 'input', unique: true },
+    { name: 'uuid', type: 'uuid', interface: 'input', unique: true },
+    { name: 'uid', type: 'uid', interface: 'input', unique: true },
+    { name: 'string1', interface: 'input', type: 'string' },
+    { name: 'bigInt1', type: 'bigInt', interface: 'integer' },
+    { name: 'integer1', type: 'integer', interface: 'input' },
+    { name: 'uuid1', type: 'uuid', interface: 'input' },
+    { name: 'uid1', type: 'uid', interface: 'input' },
+  ];
   test('oho field sourceKey', async ({ page, mockCollection }) => {
     const collectionName = uid();
     await mockCollection({
       name: collectionName,
       autoGenId: true,
-      fields: [
-        { name: 'id', interface: 'id', type: 'bigInt' },
-        { name: 'string', interface: 'input', type: 'string', unique: true },
-        { name: 'bigInt', type: 'bigInt', interface: 'integer', unique: true },
-        { name: 'integer', type: 'integer', interface: 'input', unique: true },
-        { name: 'uuid', type: 'uuid', interface: 'input', unique: true },
-        { name: 'uid', type: 'uid', interface: 'input', unique: true },
-      ],
+      fields,
     });
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).click();
@@ -421,14 +427,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await mockCollection({
       name: collectionName,
       autoGenId: true,
-      fields: [
-        { name: 'id', interface: 'id', type: 'bigInt' },
-        { name: 'string', interface: 'input', type: 'string', unique: true },
-        { name: 'bigInt', type: 'bigInt', interface: 'integer', unique: true },
-        { name: 'integer', type: 'integer', interface: 'input', unique: true },
-        { name: 'uuid', type: 'uuid', interface: 'input', unique: true },
-        { name: 'uid', type: 'uid', interface: 'input', unique: true },
-      ],
+      fields,
     });
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).click();
@@ -445,10 +444,13 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await page.getByRole('option', { name: collectionName }).locator('div').click();
     await page.getByLabel('block-item-TargetKey-fields-').click();
     // 获取所有选项的文本内容
-    const options = await page.locator('.ant-select-dropdown > .rc-virtual-list').evaluate(() => {
-      const optionElements = document.querySelectorAll('.ant-select-item-option');
-      return Array.from(optionElements).map((option) => option.textContent);
-    });
+    const options = await page
+      .locator('.rc-virtual-list')
+      .nth(1)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
 
     // 断言下拉列表是否符合预期
     expect(options).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
@@ -459,14 +461,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await mockCollection({
       name: collectionName,
       autoGenId: true,
-      fields: [
-        { name: 'id', interface: 'id', type: 'bigInt' },
-        { name: 'string', interface: 'input', type: 'string', unique: true },
-        { name: 'bigInt', type: 'bigInt', interface: 'integer', unique: true },
-        { name: 'integer', type: 'integer', interface: 'input', unique: true },
-        { name: 'uuid', type: 'uuid', interface: 'input', unique: true },
-        { name: 'uid', type: 'uid', interface: 'input', unique: true },
-      ],
+      fields,
     });
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).click();
@@ -482,13 +477,10 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
 
     await page.getByLabel('block-item-SourceKey-fields-').click();
     // sourceKey 选项符合预期
-    const sourcekeyOptions = await page
-      .locator('.rc-virtual-list')
-      .nth(1)
-      .evaluate(() => {
-        const optionElements = document.querySelectorAll('.ant-select-item-option');
-        return Array.from(optionElements).map((option) => option.textContent);
-      });
+    const sourcekeyOptions = await page.locator('.rc-virtual-list').evaluate((element) => {
+      const optionElements = element.querySelectorAll('.ant-select-item-option');
+      return Array.from(optionElements).map((option) => option.textContent);
+    });
 
     // 断言下拉列表是否符合预期
     expect(sourcekeyOptions).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
@@ -498,12 +490,27 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await page.getByLabel('block-item-TargetKey-fields-').click();
 
     //targetKey 选项符合预期
-    const targetKeyOptions = await page.locator('.rc-virtual-list').evaluate(() => {
-      const optionElements = document.querySelectorAll('.ant-select-item-option');
-      return Array.from(optionElements).map((option) => option.textContent);
-    });
+    const targetKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(2)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
 
-    // 断言下拉列表是否符合预期
-    expect(targetKeyOptions).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
+    // 断言下拉列表是否符合预期,o2m的targetkey 不限制unique
+    expect(targetKeyOptions).toEqual([
+      'ID',
+      'string',
+      'bigInt',
+      'integer',
+      'uuid',
+      'uid',
+      'string1',
+      'bigInt1',
+      'integer1',
+      'uuid1',
+      'uid1',
+    ]);
   });
 });
