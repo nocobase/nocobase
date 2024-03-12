@@ -318,7 +318,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   const [openMenuKeys, setOpenMenuKeys] = useState([]);
   const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys, hideSearch });
   const compiledMenuItems = useMemo(() => {
-    let children = searchedChildren.filter((item) => item.key !== 'search');
+    let children = searchedChildren.filter((item) => item.key !== 'search' && item.key !== 'empty');
     const hasAssociationField = children.some((item) => item.associationField);
     if (!hasAssociationField && children.length === 1) {
       // 只有一项可选时，直接展开
