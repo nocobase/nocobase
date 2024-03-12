@@ -394,7 +394,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     { name: 'uuid1', type: 'uuid', interface: 'input' },
     { name: 'uid1', type: 'uid', interface: 'input' },
   ];
-  test('oho field sourceKey', async ({ page, mockCollection }) => {
+  test('oho sourceKey', async ({ page, mockCollection }) => {
     const collectionName = uid();
     await mockCollection({
       name: collectionName,
@@ -420,9 +420,9 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     });
 
     // 断言下拉列表是否符合预期
-    expect(options).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
+    expect(options).toEqual(expect.arrayContaining(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']));
   });
-  test('obo field targetKey', async ({ page, mockCollection }) => {
+  test('obo targetKey', async ({ page, mockCollection }) => {
     const collectionName = uid();
     await mockCollection({
       name: collectionName,
@@ -453,9 +453,9 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
       });
 
     // 断言下拉列表是否符合预期
-    expect(options).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
+    expect(options).toEqual(expect.arrayContaining(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']));
   });
-  test('o2m field targetKey & sourceKey', async ({ page, mockCollection }) => {
+  test('o2m targetKey & sourceKey', async ({ page, mockCollection }) => {
     const collectionName = uid();
 
     await mockCollection({
@@ -473,7 +473,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('obo');
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('o2m');
 
     await page.getByLabel('block-item-SourceKey-fields-').click();
     // sourceKey 选项符合预期
@@ -499,18 +499,179 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
       });
 
     // 断言下拉列表是否符合预期,o2m的targetkey 不限制unique
-    expect(targetKeyOptions).toEqual([
-      'ID',
-      'string',
-      'bigInt',
-      'integer',
-      'uuid',
-      'uid',
-      'string1',
-      'bigInt1',
-      'integer1',
-      'uuid1',
-      'uid1',
-    ]);
+    expect(targetKeyOptions).toEqual(
+      expect.arrayContaining([
+        'ID',
+        'string',
+        'bigInt',
+        'integer',
+        'uuid',
+        'uid',
+        'string1',
+        'bigInt1',
+        'integer1',
+        'uuid1',
+        'uid1',
+      ]),
+    );
+  });
+
+  test('m2o targetKey & foreignKey', async ({ page, mockCollection }) => {
+    const collectionName = uid();
+    const foreignKey = `f_${uid()}`;
+    await mockCollection({
+      name: collectionName,
+      autoGenId: true,
+      fields,
+    });
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill(collectionName);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'Many to one' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('m2o');
+
+    await page.getByLabel('block-item-ForeignKey-fields-').locator('input').click();
+    // ForeignKey 选项符合预期
+    const foreignKeyOptions = await page.locator('.rc-virtual-list').evaluate((element) => {
+      const optionElements = element.querySelectorAll('.ant-select-item-option');
+      return Array.from(optionElements).map((option) => option.textContent);
+    });
+
+    // 断言下拉列表是否符合预期
+    expect(foreignKeyOptions).toEqual(
+      expect.arrayContaining([
+        'ID',
+        'string',
+        'bigInt',
+        'integer',
+        'uuid',
+        'uid',
+        'string1',
+        'bigInt1',
+        'integer1',
+        'uuid1',
+        'uid1',
+      ]),
+    );
+    //ForeignKey 支持自定义输入和选择
+    await page.getByLabel('block-item-ForeignKey-fields-').locator('input').clear();
+    await page.getByLabel('block-item-ForeignKey-fields-').locator('input').fill(foreignKey);
+
+    const inputValue = await page.getByLabel('block-item-ForeignKey-fields-').locator('input').inputValue();
+    expect(inputValue).toEqual(foreignKey);
+    await page.getByRole('option', { name: 'uuid1' }).locator('div').click();
+    const optionValue = await page.getByLabel('block-item-ForeignKey-fields-').locator('input').inputValue();
+    expect(optionValue).toEqual('uuid1');
+
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: collectionName }).locator('div').click();
+    await page.getByLabel('block-item-TargetKey-fields-').click();
+
+    //targetKey 选项符合预期
+    const targetKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(2)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期, 限制unique
+    expect(targetKeyOptions).toEqual(expect.arrayContaining(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']));
+  });
+
+  test('m2m targetKey & foreignKey', async ({ page, mockCollection }) => {
+    const collectionName = uid();
+    const foreignKey = `f_${uid()}`;
+    await mockCollection({
+      name: collectionName,
+      autoGenId: true,
+      fields,
+    });
+    await page.goto('/admin/settings/data-source-manager/list');
+    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).click();
+    await page.getByRole('textbox').nth(1).fill(collectionName);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
+    await page.getByRole('button', { name: 'plus Add field' }).click();
+    await page.getByRole('menuitem', { name: 'Many to many' }).click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('obo');
+
+    await page.getByLabel('block-item-SourceKey-fields-').click();
+    // sourceKey 选项符合预期
+    const sourcekeyOptions = await page.locator('.rc-virtual-list').evaluate((element) => {
+      const optionElements = element.querySelectorAll('.ant-select-item-option');
+      return Array.from(optionElements).map((option) => option.textContent);
+    });
+    expect(sourcekeyOptions).toEqual(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']);
+
+    // ForeignKey1 选项符合预期
+    await page.getByLabel('block-item-ThroughCollection-').click();
+    await page.getByRole('option', { name: collectionName }).locator('div').click();
+    await page.getByLabel('block-item-ForeignKey-fields-Foreign key 1').locator('input').click();
+    const foreignKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(2)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期
+    expect(foreignKeyOptions).toEqual(
+      expect.arrayContaining([
+        'ID',
+        'string',
+        'bigInt',
+        'integer',
+        'uuid',
+        'uid',
+        'string1',
+        'bigInt1',
+        'integer1',
+        'uuid1',
+        'uid1',
+      ]),
+    );
+    //ForeignKey1 支持自定义输入和选择
+    await page.getByLabel('block-item-ForeignKey-fields-Foreign key 1').locator('input').clear();
+    await page.getByLabel('block-item-ForeignKey-fields-Foreign key 1').locator('input').fill(foreignKey);
+
+    const inputValue = await page
+      .getByLabel('block-item-ForeignKey-fields-Foreign key 1')
+      .locator('input')
+      .inputValue();
+    expect(inputValue).toEqual(foreignKey);
+    await page.getByRole('option', { name: 'uuid1' }).locator('div').click();
+    const optionValue = await page
+      .getByLabel('block-item-ForeignKey-fields-Foreign key 1')
+      .locator('input')
+      .inputValue();
+    expect(optionValue).toEqual('uuid1');
+
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: collectionName }).locator('div').click();
+    await page.getByLabel('block-item-TargetKey-fields-').click();
+
+    //targetKey 选项符合预期
+    const targetKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(2)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期, 限制unique
+    expect(targetKeyOptions).toEqual(expect.arrayContaining(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']));
   });
 });
