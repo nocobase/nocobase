@@ -17,7 +17,7 @@ describe('action test', () => {
     await app.destroy();
   });
 
-  test('get parent properties', async () => {
+  test('get parent property', async () => {
     await app
       .agent()
       .resource('uiSchemas')
@@ -39,7 +39,7 @@ describe('action test', () => {
         },
       });
 
-    const response = await app.agent().resource('uiSchemas').getParentProperties({
+    const response = await app.agent().resource('uiSchemas').getParentProperty({
       filterByTk: 'n2',
     });
 

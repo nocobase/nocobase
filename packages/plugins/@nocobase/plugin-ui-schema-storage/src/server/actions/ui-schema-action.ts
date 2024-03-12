@@ -52,7 +52,7 @@ export const uiSchemaActions = {
   ),
 
   getParentJsonSchema: callRepositoryMethod('getParentJsonSchema', 'resourceIndex'),
-  getParentProperties: callRepositoryMethod('getParentProperties', 'resourceIndex'),
+  getParentProperty: callRepositoryMethod('getParentProperty', 'resourceIndex'),
 
   insert: callRepositoryMethod('insert', 'values'),
   insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),
