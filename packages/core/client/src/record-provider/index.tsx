@@ -13,7 +13,7 @@ RecordIndexContext.displayName = 'RecordIndexContext';
  */
 export const RecordProvider: React.FC<{
   record: any;
-  parent?: CollectionRecord | object;
+  parent?: CollectionRecord | any;
   isNew?: boolean;
   collectionName?: string;
 }> = (props) => {

@@ -6,6 +6,7 @@ import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
+  collectionName?: string;
   collectionField?: CollectionFieldOptions_deprecated;
   schema?: any;
   noDisabled?: boolean;
@@ -22,7 +23,7 @@ interface Props {
  * @param param0
  * @returns
  */
-export const useFormVariable = ({ collectionField, schema, noDisabled, targetFieldSchema }: Props) => {
+export const useFormVariable = ({ collectionName, collectionField, schema, noDisabled, targetFieldSchema }: Props) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
   const result = useBaseVariable({
