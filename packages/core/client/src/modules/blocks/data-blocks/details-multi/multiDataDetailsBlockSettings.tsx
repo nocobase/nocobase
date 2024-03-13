@@ -8,6 +8,7 @@ import { useCollection_deprecated, useSortFields } from '../../../../collection-
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsBlockTitleItem, SchemaSettingsTemplate } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
 
 export const multiDataDetailsBlockSettings = new SchemaSettings({
   name: 'blockSettings:multiDataDetails',
@@ -164,6 +165,7 @@ export const multiDataDetailsBlockSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'template',
       Component: SchemaSettingsTemplate,
