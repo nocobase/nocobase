@@ -896,5 +896,5 @@
   "Accuracy": "精确度",
   "Millisecond": "毫秒",
   "Second": "秒",
-  "Unix Timestamp":"时间戳"
+  "Unix Timestamp":"Unix 时间戳"
 }

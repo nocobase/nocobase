@@ -12,7 +12,7 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
     type: 'nanoid',
     uiSchema: {
       type: 'string',
-      'x-component': 'Input',
+      'x-component': 'NanoIDInput',
     },
   };
   availableTypes = ['string', 'uid'];
