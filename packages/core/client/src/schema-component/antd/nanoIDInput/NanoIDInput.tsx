@@ -11,22 +11,22 @@ export const NanoIDInput = Object.assign(
   connect(
     AntdInput,
     mapProps((props: any, field: any) => {
-      const { size, customAlphabet } = useCollectionField();
+      const { size, customAlphabet } = useCollectionField() || {};
       const { t } = useTranslation();
       const form = useForm();
       function isValidNanoid(value) {
-        if (value.length !== size) {
-          return t('Field value size is') + ` ${size}`;
+        if (value?.length !== size) {
+          return t('Field value size is') + ` ${size || 21}`;
         }
         for (let i = 0; i < value.length; i++) {
-          if (customAlphabet.indexOf(value[i]) === -1) {
+          if (customAlphabet?.indexOf(value[i]) === -1) {
             return t(`Field value do not meet the requirements`);
           }
         }
       }
 
       useEffect(() => {
-        if (!field.initialValue) {
+        if (!field.initialValue && customAlphabet) {
           field.setInitialValue(Alphabet(customAlphabet, size)());
         }
         form.setFieldState(field.props.name, (state) => {

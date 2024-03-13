@@ -63,7 +63,7 @@ export const ForeignKey = observer(
         : ['belongsToMany'].includes(type)
           ? through
           : target;
-      const fields = getCollection(effectField || name, dataSourceKey)?.fields;
+      const fields = getCollection(effectField, dataSourceKey)?.fields;
       if (fields) {
         const sourceOptions = fields
           ?.filter((v) => {
@@ -95,7 +95,7 @@ export const ForeignKey = observer(
           onDropdownVisibleChange={async (open) => {
             const { target, type, through } = form.values;
             const effectField = ['belongsTo'].includes(type)
-              ? collectionName
+              ? collectionName || name
               : ['belongsToMany'].includes(type)
                 ? through
                 : target;
