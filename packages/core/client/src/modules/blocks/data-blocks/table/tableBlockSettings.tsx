@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';
 import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -290,6 +291,7 @@ export const tableBlockSettings = new SchemaSettings({
         return !dragSort;
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',
       type: 'select',

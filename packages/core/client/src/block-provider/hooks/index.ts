@@ -426,6 +426,10 @@ export const useFilterBlockActionProps = () => {
               block.defaultFilter,
             ]);
 
+            if (block.dataLoadingMode === 'manual' && _.isEmpty(mergedFilter)) {
+              return block.clearData();
+            }
+
             return block.doFilter(
               {
                 ...param,
@@ -436,11 +440,10 @@ export const useFilterBlockActionProps = () => {
             );
           }),
         );
-        actionField.data.loading = false;
       } catch (error) {
         console.error(error);
-        actionField.data.loading = false;
       }
+      actionField.data.loading = false;
     },
   };
 };
@@ -465,6 +468,10 @@ export const useResetBlockActionProps = () => {
           getDataBlocks().map(async (block) => {
             const target = targets.find((target) => target.uid === block.uid);
             if (!target) return;
+
+            if (block.dataLoadingMode === 'manual') {
+              return block.clearData();
+            }
 
             const param = block.service.params?.[0] || {};
             // 保留原有的 filter
@@ -1208,6 +1215,9 @@ export const useAssociationFilterBlockProps = () => {
           [filterKey]: value,
         };
       } else {
+        if (block.dataLoadingMode === 'manual') {
+          return block.clearData();
+        }
         delete storedFilter[key];
       }
 

@@ -12,11 +12,11 @@ import {
   SchemaSettingsTemplate,
   mergeFilter,
   useCollection,
-  useCollectionManager,
   useDesignable,
   useFormBlockContext,
   SchemaSettings,
   useCollectionManager_deprecated,
+  setDataLoadingModeSettingsItem,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { useMapTranslation } from '../locale';
@@ -127,6 +127,7 @@ export const mapBlockSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'defaultZoomLevel',
       Component: SchemaSettingsModalItem,

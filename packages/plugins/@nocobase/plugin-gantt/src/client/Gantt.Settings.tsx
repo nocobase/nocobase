@@ -6,6 +6,7 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsTemplate,
   removeNullCondition,
+  setDataLoadingModeSettingsItem,
   useCollection,
   useCollection_deprecated,
   useCompile,
@@ -373,6 +374,7 @@ export const ganttSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'endDateField',
       Component: SchemaSettingsSelectItem,

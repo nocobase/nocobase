@@ -23,7 +23,7 @@ const InternalListBlockProvider = (props) => {
     if (!service?.loading) {
       form.setValuesIn(field.address.concat('list').toString(), service?.data?.data);
     }
-  }, [service?.data?.data, service?.loading]);
+  }, [field.address, form, service?.data?.data, service?.loading]);
 
   return (
     <ListBlockContext.Provider

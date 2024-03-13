@@ -5,11 +5,17 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../../../schema-component';
 import { SchemaSettingsModalItem, useCollectionState } from '../../../../schema-settings';
 import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
+import { useDataBlockProps } from '../../../../data-source';
 
 export const setDataLoadingModeSettingsItem = {
   name: 'setDataLoadingMode',
   Component: SetDataLoadingMode,
 };
+
+export function useDataLoadingMode() {
+  const { dataLoadingMode } = useDataBlockProps();
+  return dataLoadingMode || 'auto';
+}
 
 function SetDataLoadingMode() {
   const { dn } = useDesignable();
@@ -42,6 +48,7 @@ function SetDataLoadingMode() {
       }
       onSubmit={({ dataLoadingMode }) => {
         _.set(fieldSchema, 'x-decorator-props.dataLoadingMode', dataLoadingMode);
+        field.decoratorProps.dataLoadingMode = dataLoadingMode;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
