@@ -21,9 +21,17 @@ Radio.__ANT_RADIO = true;
 
 Radio.Group = connect(
   AntdRadio.Group,
-  mapProps({
-    dataSource: 'options',
-  }),
+  mapProps(
+    {
+      dataSource: 'options',
+    },
+    (props) => {
+      return {
+        ...props,
+        value: props.value ? props.value.toString() : props.value,
+      };
+    },
+  ),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return <div></div>;
@@ -35,7 +43,7 @@ Radio.Group = connect(
     return (
       <div>
         {dataSource
-          .filter((option) => option.value === value)
+          .filter((option) => option.value == value)
           .map((option, key) => (
             <Tag key={key} color={option.color} icon={option.icon}>
               {option.label}
