@@ -10,7 +10,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-visualization",
   "devDependencies": {
     "@ant-design/icons": "5.x",
-    "@ant-design/plots": "^1.2.5",
+    "@ant-design/plots": "^2.1.4",
     "@emotion/css": "^11.7.1",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
