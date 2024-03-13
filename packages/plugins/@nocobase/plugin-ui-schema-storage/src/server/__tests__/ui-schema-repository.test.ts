@@ -405,7 +405,7 @@ describe('ui_schema repository', () => {
       });
 
       const parentProperty = await repository.getParentProperty('n2');
-      expect(parentProperty.properties.b['x-uid']).toBe('n2');
+      expect(parentProperty['properties']['b']['x-uid']).toBe('n2');
     });
 
     it('should getJsonSchema by subTree', async () => {
