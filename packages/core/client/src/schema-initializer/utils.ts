@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   SchemaInitializerItemType,
+  useCollection,
   useCollectionManager,
   useDataSourceKey,
   useFormActiveFields,
@@ -16,6 +17,7 @@ import { useActionContext, useCompile, useDesignable } from '../schema-component
 import { useSchemaTemplateManager } from '../schema-templates';
 import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
+import _ from 'lodash';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -846,6 +848,7 @@ export const useCollectionDataSourceItems = ({
   const { t } = useTranslation();
   const dm = useDataSourceManager();
   const dataSourceKey = useDataSourceKey();
+  const collection = useCollection();
   const associationFields = useAssociationFields({ componentName, filterCollections: filter, showAssociationFields });
 
   let allCollections = dm.getAllCollections((collection) => {
@@ -872,6 +875,10 @@ export const useCollectionDataSourceItems = ({
           dataSource: key,
           getTemplatesByCollection,
           t,
+        }).sort((item) => {
+          // fix https://nocobase.height.app/T-3551
+          const inherits = _.toArray(collection?.inherits || []);
+          if (item.name === collection?.name || inherits.some((inheritName) => inheritName === item.name)) return -1;
         }),
         ...associationFields,
       ],
