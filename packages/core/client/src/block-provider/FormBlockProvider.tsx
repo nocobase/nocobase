@@ -14,7 +14,7 @@ import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
 export const FormBlockContext = createContext<{
   form?: any;
   action?: string;
-  type?: 'update' | 'create';
+  type?: string;
   field?: any;
   service?: any;
   resource?: any;
@@ -23,6 +23,7 @@ export const FormBlockContext = createContext<{
   collectionName?: string;
   record?: CollectionRecord;
   params?: any;
+  [key: string]: any;
 }>({});
 FormBlockContext.displayName = 'FormBlockContext';
 

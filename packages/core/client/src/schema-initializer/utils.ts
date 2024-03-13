@@ -726,7 +726,7 @@ const recursiveParent = (schema: Schema) => {
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
   const { removeActiveFieldName } = useFormActiveFields() || {};
-  const { form }: { form: Form } = useFormBlockContext();
+  const { form }: { form?: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
 
   if (!fieldSchema?.['x-initializer']) {
