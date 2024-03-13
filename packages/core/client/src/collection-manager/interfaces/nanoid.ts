@@ -1,12 +1,11 @@
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { operators } from './properties';
-
 export class NanoidFieldInterface extends CollectionFieldInterface {
   name = 'nanoid';
   type = 'object';
   group = 'advanced';
   order = 0;
-  title = '{{t("Nanoid")}}';
+  title = '{{t("Nano ID")}}';
   hidden = false;
   sortable = true;
   default = {
@@ -38,12 +37,14 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
     customAlphabet: {
       type: 'string',
       title: '{{t("Alphabet")}}',
+      default: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
       'x-decorator': 'FormItem',
       'x-component': 'Input',
     },
     size: {
       type: 'number',
       title: '{{t("Length")}}',
+      default: 21,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
     },
