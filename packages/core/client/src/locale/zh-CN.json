@@ -896,5 +896,7 @@
   "Accuracy": "精确度",
   "Millisecond": "毫秒",
   "Second": "秒",
-  "Unix Timestamp":"Unix 时间戳"
+  "Unix Timestamp": "Unix 时间戳",
+  "Field value do not meet the requirements": "字符不符合要求",
+  "Field value size is": "字符长度要求"
 }
