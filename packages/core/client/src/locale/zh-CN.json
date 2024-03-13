@@ -851,7 +851,7 @@
   "loading": "加载中",
   "name is required": "名称不能为空",
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" 可能已被删除。请删除当前{{blockType}}.",
-  "data source": "数据源",
+  "Data source": "数据源",
   "DataSource": "数据源",
   "Data model": "数据模型",
   "Security": "认证与安全",
@@ -891,5 +891,12 @@
   "Owners": "负责人",
   "Plugin settings": "插件设置",
   "Menu": "菜单",
-  "Drag and drop sorting field": "拖拽排序字段"
+  "Drag and drop sorting field": "拖拽排序字段",
+  "Alphabet": "字符",
+  "Accuracy": "精确度",
+  "Millisecond": "毫秒",
+  "Second": "秒",
+  "Unix Timestamp": "Unix 时间戳",
+  "Field value do not meet the requirements": "字符不符合要求",
+  "Field value size is": "字符长度要求"
 }

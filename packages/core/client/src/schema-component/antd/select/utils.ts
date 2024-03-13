@@ -44,7 +44,10 @@ export function getCurrentOptions(values: string | string[], dataSource: any[], 
     if (!options) return [];
     const current: Option[] = [];
     for (const value of arrValues) {
-      const option = options.find((v) => v[fieldNames.value] === value) || { value, label: value };
+      const option = options.find((v) => v[fieldNames.value] == value) || {
+        value,
+        label: value ? value.toString() : value,
+      };
       current.push(option);
     }
     return current;
