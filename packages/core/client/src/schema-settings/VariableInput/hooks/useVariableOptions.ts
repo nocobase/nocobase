@@ -105,8 +105,8 @@ export const useVariableOptions = ({
       currentRoleSettings,
       datetimeSettings,
       shouldDisplayCurrentForm && currentFormSettings,
-      shouldDisplayCurrentObject && currentObjectSettings,
       shouldDisplayCurrentRecord && currentRecordSettings,
+      shouldDisplayCurrentObject && currentObjectSettings,
       shouldDisplayCurrentParentRecord && currentParentRecordSettings,
     ].filter(Boolean);
   }, [

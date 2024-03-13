@@ -19,7 +19,7 @@ import {
   RecordIndexProvider,
   RecordProvider,
   useCollection_deprecated,
-  useCollectionParentRecordData,
+  useCollectionParentRecord,
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
@@ -43,7 +43,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const parentRecordData = useCollectionParentRecordData();
+  const parentRecord = useCollectionParentRecord();
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
@@ -70,7 +70,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           return (
             <SubFormProvider value={record}>
               <RecordIndexProvider index={record.__index || index}>
-                <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
+                <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecord}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
                     <span
                       role="button"

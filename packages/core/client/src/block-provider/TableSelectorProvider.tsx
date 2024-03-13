@@ -7,6 +7,7 @@ import { useCollectionManager_deprecated } from '../collection-manager';
 import {
   useCollectionParentRecord,
   useCollectionParentRecordData,
+  useCollectionRecord,
 } from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
@@ -148,8 +149,8 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
-  const record = useRecord();
-  const parentRecord = useCollectionParentRecord();
+  const record = useCollectionRecord();
+  const recordData = record?.data || {};
   const { getCollection } = useCollectionManager_deprecated();
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
@@ -166,8 +167,8 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
         ...(params.filter ?? {}),
-        id: record[primaryKey] && {
-          $ne: record[primaryKey],
+        id: recordData[primaryKey] && {
+          $ne: recordData[primaryKey],
         },
       };
     }
@@ -178,7 +179,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   let extraFilter;
   if (collectionField) {
     if (['oho', 'o2m'].includes(collectionField.interface) && !isInFilterFormBlock(fieldSchema)) {
-      if (record?.[collectionField.sourceKey]) {
+      if (recordData?.[collectionField.sourceKey]) {
         extraFilter = {
           $or: [
             {
@@ -188,7 +189,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
             },
             {
               [collectionField.foreignKey]: {
-                $eq: record?.[collectionField.sourceKey],
+                $eq: recordData?.[collectionField.sourceKey],
               },
             },
           ],
@@ -205,7 +206,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
       const fields = getCollectionFields(collectionField.target);
       const targetField = fields.find((f) => f.foreignKey && f.foreignKey === collectionField.foreignKey);
       if (targetField) {
-        if (record?.[collectionField.foreignKey]) {
+        if (recordData?.[collectionField.foreignKey]) {
           extraFilter = {
             $or: [
               {
@@ -215,7 +216,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
               },
               {
                 [`${targetField.name}.${targetField.foreignKey}`]: {
-                  $eq: record?.[collectionField.foreignKey],
+                  $eq: recordData?.[collectionField.foreignKey],
                 },
               },
             ],
@@ -262,7 +263,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
 
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
-      <BlockProvider name="table-selector" {...props} params={params} parentRecord={parentRecord}>
+      <BlockProvider name="table-selector" {...props} params={params} parentRecord={record}>
         <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
       </BlockProvider>
     </SchemaComponentOptions>

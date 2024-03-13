@@ -40,7 +40,7 @@ export const SubTable: any = observer(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-    const recordV2 = useCollectionRecord();
+    const record = useCollectionRecord();
 
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
@@ -138,7 +138,7 @@ export const SubTable: any = observer(
         `}
       >
         <FlagProvider isInSubTable>
-          <CollectionRecordProvider record={null} parentRecord={recordV2}>
+          <CollectionRecordProvider record={null} parentRecord={record}>
             <FormActiveFieldsProvider name="nester">
               <Table
                 className={css`

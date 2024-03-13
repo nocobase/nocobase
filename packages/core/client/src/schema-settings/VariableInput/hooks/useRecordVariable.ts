@@ -6,6 +6,7 @@ import { useCollection } from '../../../data-source/collection/CollectionProvide
 import { useCollectionRecord } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 
 interface Props {
   collectionField?: CollectionFieldOptions_deprecated;
@@ -47,16 +48,14 @@ export const useRecordVariable = (props: Props) => {
  */
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
-  const { isInSubForm, isInSubTable } = useFlag() || {};
-  const record = useCollectionRecord();
-  const recordData = isInSubForm || isInSubTable ? record?.parentRecord?.data : record?.data;
-  const { name: collectionName } = useCollection() || {};
+  const formBlockCtx = useFormBlockContext();
+  const formBlockRecord = formBlockCtx?.record;
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
-    collectionName: props.collectionName || collectionName,
+    collectionName: props.collectionName || formBlockCtx?.collectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
   });
@@ -65,10 +64,10 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 变量配置 */
     currentRecordSettings,
     /** 变量值 */
-    currentRecordCtx: recordData,
+    currentRecordCtx: formBlockRecord?.data,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord: !_.isEmpty(recordData),
+    shouldDisplayCurrentRecord: !_.isEmpty(formBlockRecord?.data),
     /** 当前记录对应的 collection name */
-    collectionName,
+    collectionName: formBlockCtx?.collectionName,
   };
 };

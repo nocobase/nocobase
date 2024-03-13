@@ -61,7 +61,7 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
 
   return {
     currentParentRecordSettings,
-    currentParentRecordCtx: record?.parentRecord?.data,
+    currentParentRecordCtx: record?.parentRecord?.data || record?.data, // 兼容 Table selector 的特殊情况：在 Table selector 中，当需要解析上级记录时，还获取不到上级记录的值，所以需要使用当前记录的值
     shouldDisplayCurrentParentRecord: !record?.parentRecord?.isNew && record?.parentRecord?.data,
     collectionName: parentCollectionName,
   };

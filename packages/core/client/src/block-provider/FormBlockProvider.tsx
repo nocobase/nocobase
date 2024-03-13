@@ -3,7 +3,7 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
-import { useCollectionParentRecordData, useCollectionRecord } from '../data-source';
+import { CollectionRecord, useCollectionParentRecordData, useCollectionRecord } from '../data-source';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
@@ -11,7 +11,19 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
 
-export const FormBlockContext = createContext<any>({});
+export const FormBlockContext = createContext<{
+  form?: any;
+  action?: string;
+  type?: 'update' | 'create';
+  field?: any;
+  service?: any;
+  resource?: any;
+  updateAssociationValues?: any;
+  formBlockRef?: any;
+  collectionName?: string;
+  record?: CollectionRecord;
+  params?: any;
+}>({});
 FormBlockContext.displayName = 'FormBlockContext';
 
 const InternalFormBlockProvider = (props) => {
@@ -42,8 +54,9 @@ const InternalFormBlockProvider = (props) => {
       updateAssociationValues,
       formBlockRef,
       collectionName: collection,
+      record,
     };
-  }, [action, field, form, params, resource, service, updateAssociationValues]);
+  }, [action, collection, ctx, field, form, params, record, resource, service, updateAssociationValues]);
 
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
