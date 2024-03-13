@@ -8,7 +8,7 @@ import { useDataBlockRequest } from '../../../data-source';
 export const Details = (props) => {
   const request = useDataBlockRequest();
 
-  if (!request.loading && _.isEmpty(request?.data?.data)) {
+  if (!request?.loading && _.isEmpty(request?.data?.data)) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />;
   }
 
