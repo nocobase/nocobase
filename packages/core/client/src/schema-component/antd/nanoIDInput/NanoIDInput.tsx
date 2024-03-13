@@ -16,7 +16,7 @@ export const NanoIDInput = Object.assign(
       const form = useForm();
       function isValidNanoid(value) {
         if (value.length !== size) {
-          return t(`Field value size is ${size}`);
+          return t('Field value size is') + ` ${size}`;
         }
         for (let i = 0; i < value.length; i++) {
           if (customAlphabet.indexOf(value[i]) === -1) {
