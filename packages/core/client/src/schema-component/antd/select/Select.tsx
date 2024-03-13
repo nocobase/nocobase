@@ -122,7 +122,7 @@ const InternalSelect = connect(
         }
         return undefined;
       }
-      return v ? v.toString() : v;
+      return v;
     };
     return (
       <AntdSelect
