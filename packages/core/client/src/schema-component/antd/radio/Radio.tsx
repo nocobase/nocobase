@@ -28,7 +28,7 @@ Radio.Group = connect(
     (props) => {
       return {
         ...props,
-        value: props.value ? props.value.toString() : props.value,
+        value: props.value && typeof props.value !== 'boolean' ? props.value.toString() : props.value,
       };
     },
   ),
@@ -43,7 +43,7 @@ Radio.Group = connect(
     return (
       <div>
         {dataSource
-          .filter((option) => option.value == value)
+          .filter((option) => option.value === value)
           .map((option, key) => (
             <Tag key={key} color={option.color} icon={option.icon}>
               {option.label}
