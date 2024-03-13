@@ -48,7 +48,6 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const record = useCollectionRecord();
   const { name: parentCollectionName } = useParentCollection() || {};
-  const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const currentParentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
@@ -63,7 +62,7 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
   return {
     currentParentRecordSettings,
     currentParentRecordCtx: record?.parentRecord?.data,
-    shouldDisplayCurrentParentRecord: !!record?.parentRecord?.data && !isInSubForm && !isInSubTable,
+    shouldDisplayCurrentParentRecord: !record?.parentRecord?.isNew && record?.parentRecord?.data,
     collectionName: parentCollectionName,
   };
 };

@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
-import { CollectionRecordProvider } from '../data-source';
+import { CollectionRecord, CollectionRecordProvider } from '../data-source';
 import { useCurrentUserContext } from '../user';
 
 export const RecordContext_deprecated = createContext({});
@@ -13,14 +13,14 @@ RecordIndexContext.displayName = 'RecordIndexContext';
  */
 export const RecordProvider: React.FC<{
   record: any;
-  parent?: any;
+  parent?: CollectionRecord | object;
   isNew?: boolean;
   collectionName?: string;
 }> = (props) => {
   const { record, children, parent, isNew } = props;
   const { name: __collectionName } = useCollection_deprecated();
   const value = { ...record };
-  value['__parent'] = parent;
+  value['__parent'] = parent instanceof CollectionRecord ? parent.data : parent;
   value['__collectionName'] = __collectionName;
   return (
     <RecordContext_deprecated.Provider value={value}>

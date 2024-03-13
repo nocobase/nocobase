@@ -71,12 +71,12 @@ export const useVariableOptions = ({
   const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled });
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
-    collectionName: currentFormCollectionName || blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
     form,
   });
+
   const { currentObjectSettings, shouldDisplayCurrentObject } = useCurrentObjectVariable({
     currentCollection: currentIterationCollectionName || name,
     collectionField,

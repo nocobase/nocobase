@@ -14,6 +14,9 @@ import { InternaPopoverNester } from './InternalPopoverNester';
 import { InternalSubTable } from './InternalSubTable';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
+import { RecordProvider } from '../../../record-provider';
+import { useCollectionRecord } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { ParentCollectionProvider } from '../../../data-source/collection/AssociationProvider';
 
 const EditableAssociationField = observer(
   (props: any) => {
@@ -21,6 +24,7 @@ const EditableAssociationField = observer(
     const field: Field = useField();
     const form = useForm();
     const { options: collectionField, currentMode } = useAssociationFieldContext();
+    const record = useCollectionRecord();
 
     const useCreateActionProps = () => {
       const { onClick } = useCAP();
@@ -49,15 +53,19 @@ const EditableAssociationField = observer(
     };
 
     return (
-      <SchemaComponentOptions scope={{ useCreateActionProps }} components={{ CreateRecordAction }}>
-        {currentMode === 'Picker' && <InternalPicker {...props} />}
-        {currentMode === 'Nester' && <InternalNester {...props} />}
-        {currentMode === 'PopoverNester' && <InternaPopoverNester {...props} />}
-        {currentMode === 'Select' && <AssociationSelect {...props} />}
-        {currentMode === 'SubTable' && <InternalSubTable {...props} />}
-        {currentMode === 'FileManager' && <InternalFileManager {...props} />}
-        {currentMode === 'CascadeSelect' && <InternalCascadeSelect {...props} />}
-      </SchemaComponentOptions>
+      <RecordProvider isNew={false} record={null} parent={record}>
+        <ParentCollectionProvider>
+          <SchemaComponentOptions scope={{ useCreateActionProps }} components={{ CreateRecordAction }}>
+            {currentMode === 'Picker' && <InternalPicker {...props} />}
+            {currentMode === 'Nester' && <InternalNester {...props} />}
+            {currentMode === 'PopoverNester' && <InternaPopoverNester {...props} />}
+            {currentMode === 'Select' && <AssociationSelect {...props} />}
+            {currentMode === 'SubTable' && <InternalSubTable {...props} />}
+            {currentMode === 'FileManager' && <InternalFileManager {...props} />}
+            {currentMode === 'CascadeSelect' && <InternalCascadeSelect {...props} />}
+          </SchemaComponentOptions>
+        </ParentCollectionProvider>
+      </RecordProvider>
     );
   },
   { displayName: 'EditableAssociationField' },

@@ -6,7 +6,6 @@ import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
-  collectionName?: string;
   collectionField?: CollectionFieldOptions_deprecated;
   schema?: any;
   noDisabled?: boolean;
@@ -23,7 +22,7 @@ interface Props {
  * @param param0
  * @returns
  */
-export const useFormVariable = ({ collectionName, collectionField, schema, noDisabled, targetFieldSchema }: Props) => {
+export const useFormVariable = ({ collectionField, schema, noDisabled, targetFieldSchema }: Props) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
   const result = useBaseVariable({
@@ -57,7 +56,6 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
  * @returns
  */
 export const useCurrentFormVariable = ({
-  collectionName,
   collectionField,
   schema,
   noDisabled,
@@ -66,7 +64,7 @@ export const useCurrentFormVariable = ({
 }: Props = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
-  const { form } = useFormBlockContext();
+  const { form, collectionName } = useFormBlockContext();
   const currentFormSettings = useBaseVariable({
     collectionField,
     uiSchema: schema,
@@ -74,7 +72,7 @@ export const useCurrentFormVariable = ({
     maxDepth: 4,
     name: '$nForm',
     title: t('Current form'),
-    collectionName: collectionName,
+    collectionName,
     noDisabled,
     returnFields: (fields, option) => {
       // fix https://nocobase.height.app/T-2277

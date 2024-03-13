@@ -14,9 +14,14 @@ export interface AssociationProviderProps {
 const ParentCollectionContext = createContext<Collection>(null);
 ParentCollectionContext.displayName = 'ParentCollectionContext';
 
-const ParentCollectionProvider = (props) => {
+export const ParentCollectionProvider = (props: { parentCollection?: Collection; children?: ReactNode }) => {
   const collection = useCollection();
-  return <ParentCollectionContext.Provider value={collection}>{props.children}</ParentCollectionContext.Provider>;
+  return (
+    // 即使从 props 中传入的 parentCollection 为 undefined，也应该被使用
+    <ParentCollectionContext.Provider value={'parentCollection' in props ? props.parentCollection : collection}>
+      {props.children}
+    </ParentCollectionContext.Provider>
+  );
 };
 
 export const useParentCollection = () => {

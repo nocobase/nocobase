@@ -4,7 +4,10 @@ import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
-import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
+import {
+  useCollectionParentRecord,
+  useCollectionParentRecordData,
+} from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider, useRecord } from '../record-provider';
@@ -146,6 +149,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
   const record = useRecord();
+  const parentRecord = useCollectionParentRecord();
   const { getCollection } = useCollectionManager_deprecated();
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
@@ -258,7 +262,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
 
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
-      <BlockProvider name="table-selector" {...props} params={params}>
+      <BlockProvider name="table-selector" {...props} params={params} parentRecord={parentRecord}>
         <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
       </BlockProvider>
     </SchemaComponentOptions>
