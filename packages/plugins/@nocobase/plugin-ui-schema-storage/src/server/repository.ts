@@ -189,7 +189,7 @@ export class UiSchemaRepository extends Repository {
     return this.doGetProperties(uid, options);
   }
 
-  async getParentJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
+  async getParentJsonSchema(uid: string, options: GetJsonSchemaOptions = {}) {
     const parentUid = await this.findParentUid(uid, options.transaction);
 
     if (!parentUid) {

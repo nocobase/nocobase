@@ -366,6 +366,48 @@ describe('ui_schema repository', () => {
       });
     });
 
+    it('should get parent json schema', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      const parentSchema = await repository.getParentJsonSchema('n2');
+      expect(parentSchema['x-uid']).toBe('n1');
+    });
+
+    it('should get parent property', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      const parentProperty = await repository.getParentProperty('n2');
+      expect(parentProperty.properties.b['x-uid']).toBe('n2');
+    });
+
     it('should getJsonSchema by subTree', async () => {
       await repository.insert({
         'x-uid': 'n1',
