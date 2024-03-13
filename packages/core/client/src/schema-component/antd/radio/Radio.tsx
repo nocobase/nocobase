@@ -40,10 +40,11 @@ Radio.Group = connect(
     const field = useField<any>();
     const collectionField = useCollectionField();
     const dataSource = field.dataSource || collectionField?.uiSchema.enum || [];
+    const val = value ? props.value.toString() : value;
     return (
       <div>
         {dataSource
-          .filter((option) => option.value === value)
+          .filter((option) => option.value === val)
           .map((option, key) => (
             <Tag key={key} color={option.color} icon={option.icon}>
               {option.label}
