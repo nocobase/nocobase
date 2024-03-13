@@ -32,15 +32,15 @@ function SetDataLoadingMode() {
       schema={
         {
           type: 'object',
-          title: t('Set data loading mode'),
+          title: t('Data loading mode'),
           properties: {
             dataLoadingMode: {
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
               default: fieldSchema['x-decorator-props']?.dataLoadingMode || 'auto',
               enum: [
-                { value: 'auto', label: '{{t("Automatically load data")}}' },
-                { value: 'manual', label: '{{t("Load data after filtering")}}' },
+                { value: 'auto', label: t('Automatically load data') },
+                { value: 'manual', label: t('Load data after filtering') },
               ],
             },
           },
