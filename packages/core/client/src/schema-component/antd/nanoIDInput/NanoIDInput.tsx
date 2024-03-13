@@ -1,5 +1,5 @@
 import { customAlphabet as Alphabet } from 'nanoid';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Input as AntdInput } from 'antd';
@@ -11,9 +11,13 @@ export const NanoIDInput = Object.assign(
     AntdInput,
     mapProps((props: any, field: any) => {
       const { size, customAlphabet } = useCollectionField();
+      useEffect(() => {
+        if (!field.initialValue) {
+          field.setInitialValue(Alphabet(customAlphabet, size)());
+        }
+      }, []);
       return {
         ...props,
-        defaultValue: field.initialValue || Alphabet(customAlphabet, size),
         suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
       };
     }),
