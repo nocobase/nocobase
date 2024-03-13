@@ -31,7 +31,7 @@ Radio.Group = connect(
         if (defaultOption) {
           field.setValue(defaultOption.value);
         }
-      }, [props.value]);
+      }, [props.value, field.dataSource]);
       return {
         ...props,
       };
