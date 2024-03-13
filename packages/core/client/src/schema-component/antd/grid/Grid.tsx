@@ -448,8 +448,7 @@ Grid.Col = observer(
       }
       return { width };
     }, [cols?.length, schema?.['x-component-props']?.['width']]);
-
-    const { setNodeRef } = useDroppable({
+    const { isOver, setNodeRef } = useDroppable({
       id: field.address.toString(),
       data: {
         insertAdjacent: 'beforeEnd',
@@ -457,9 +456,33 @@ Grid.Col = observer(
         wrapSchema: (s) => s,
       },
     });
+    const [active, setActive] = useState(false);
+
+    const droppableStyle = useMemo(() => {
+      if (!isOver) return {};
+
+      return {
+        backgroundColor: new TinyColor(token.colorSettings).setAlpha(0.1).toHex8String(),
+      };
+    }, [active, isOver]);
+
+    useDndMonitor({
+      onDragStart(event) {
+        setActive(true);
+      },
+      onDragMove(event) {},
+      onDragOver(event) {},
+      onDragEnd(event) {
+        setActive(false);
+      },
+      onDragCancel(event) {
+        setActive(false);
+      },
+    });
+
     return (
       <GridColContext.Provider value={{ cols, schema }}>
-        <div ref={setNodeRef} style={style} className={cls('nb-grid-col')}>
+        <div ref={setNodeRef} style={{ ...style, ...droppableStyle }} className={cls('nb-grid-col')}>
           {props.children}
         </div>
       </GridColContext.Provider>
