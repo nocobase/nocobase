@@ -459,10 +459,16 @@ Grid.Col = observer(
     const [active, setActive] = useState(false);
 
     const droppableStyle = useMemo(() => {
-      if (!isOver) return {};
+      if (!isOver)
+        return {
+          height: '100%',
+        };
 
       return {
         backgroundColor: new TinyColor(token.colorSettings).setAlpha(0.1).toHex8String(),
+        borderTopRightRadius: '10px',
+        borderTopLeftRadius: '10px',
+        height: '100%',
       };
     }, [active, isOver]);
 
