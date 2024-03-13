@@ -21,9 +21,17 @@ Radio.__ANT_RADIO = true;
 
 Radio.Group = connect(
   AntdRadio.Group,
-  mapProps({
-    dataSource: 'options',
-  }),
+  mapProps(
+    {
+      dataSource: 'options',
+    },
+    (props) => {
+      return {
+        ...props,
+        value: props.value && typeof props.value !== 'boolean' ? props.value.toString() : props.value,
+      };
+    },
+  ),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return <div></div>;

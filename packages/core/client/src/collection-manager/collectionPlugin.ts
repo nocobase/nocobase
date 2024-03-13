@@ -40,6 +40,9 @@ import {
   UpdatedByFieldInterface,
   UrlFieldInterface,
   SortFieldInterface,
+  UUIDFieldInterface,
+  NanoidFieldInterface,
+  UnixTimestampFieldInterface,
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
@@ -155,6 +158,9 @@ export class CollectionPlugin extends Plugin {
       UpdatedByFieldInterface,
       UrlFieldInterface,
       SortFieldInterface,
+      UUIDFieldInterface,
+      NanoidFieldInterface,
+      UnixTimestampFieldInterface,
     ]);
   }
 

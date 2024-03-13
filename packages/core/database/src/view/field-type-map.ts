@@ -1,9 +1,10 @@
 const postgres = {
-  'character varying': 'string',
-  varchar: 'string',
+  'character varying': ['string', 'uuid', 'nanoid'],
+  varchar: ['string', 'uuid', 'nanoid'],
+  char: ['string', 'uuid', 'nanoid'],
+
   character: 'string',
   text: 'text',
-  char: 'string',
   oid: 'string',
   name: 'string',
 
@@ -29,7 +30,7 @@ const postgres = {
   path: 'json',
   polygon: 'json',
   circle: 'json',
-  uuid: 'string',
+  uuid: 'uuid',
 };
 
 const mysql = {
@@ -41,10 +42,10 @@ const mysql = {
   'tinyint unsigned': ['integer', 'boolean', 'sort'],
   'mediumint unsigned': ['integer', 'boolean', 'sort'],
 
-  char: 'string',
+  char: ['string', 'uuid', 'nanoid'],
+  varchar: ['string', 'uuid', 'nanoid'],
   date: 'date',
   time: 'time',
-  varchar: 'string',
   text: 'text',
   longtext: 'text',
   int: ['integer', 'sort'],
@@ -64,7 +65,7 @@ const mysql = {
 
 const sqlite = {
   text: 'text',
-  varchar: 'string',
+  varchar: ['string', 'uuid', 'nanoid'],
 
   integer: 'integer',
   real: 'real',

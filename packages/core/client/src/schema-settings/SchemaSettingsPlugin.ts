@@ -42,6 +42,7 @@ import { subformPopoverComponentFieldSettings } from '../modules/fields/componen
 import { selectComponentFieldSettings } from '../modules/fields/component/Select/selectComponentFieldSettings';
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
+import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -90,6 +91,8 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);
     this.schemaSettingsManager.add(subTablePopoverComponentFieldSettings);
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
+    this.schemaSettingsManager.add(unixTimestampComponentFieldSettings);
+
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
     this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);
