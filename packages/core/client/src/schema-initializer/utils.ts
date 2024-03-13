@@ -848,7 +848,12 @@ export const useCollectionDataSourceItems = ({
   const dataSourceKey = useDataSourceKey();
   const associationFields = useAssociationFields({ componentName, filterCollections: filter, showAssociationFields });
 
-  let allCollections = dm.getAllCollections((collection) => filter({ collection }));
+  let allCollections = dm.getAllCollections((collection) => {
+    if (onlyCurrentDataSource && collection.dataSource !== dataSourceKey) {
+      return false;
+    }
+    return filter({ collection });
+  });
   if (onlyCurrentDataSource) {
     allCollections = allCollections.filter((collection) => collection.key === dataSourceKey);
   }

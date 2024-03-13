@@ -30,104 +30,6 @@ export const canMakeAssociationBlock = (field) => {
   return ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface);
 };
 
-const useRelationFields = () => {
-  const fieldSchema = useFieldSchema();
-  const { getCollectionFields } = useCollectionManager_deprecated();
-  const collection = useCollection_deprecated();
-  let fields = [];
-
-  if (fieldSchema['x-initializer']) {
-    fields = collection.fields;
-  } else {
-    const collection = recursiveParent(fieldSchema.parent);
-    if (collection) {
-      fields = getCollectionFields(collection);
-    }
-  }
-
-  const relationFields = fields.filter(canMakeAssociationBlock).map((field) => {
-    if (['hasOne', 'belongsTo'].includes(field.type)) {
-      return {
-        name: field.name,
-        type: 'subMenu',
-        title: field?.uiSchema?.title || field.name,
-        children: [
-          {
-            name: `${field.name}_details`,
-            type: 'item',
-            title: '{{t("Details")}}',
-            field,
-            Component: 'RecordReadPrettyAssociationFormBlockInitializer',
-          },
-        ],
-      };
-    }
-
-    if (['hasMany', 'belongsToMany'].includes(field.type)) {
-      return {
-        name: field.name,
-        type: 'subMenu',
-        title: field?.uiSchema?.title || field.name,
-        children: [
-          {
-            name: `${field.name}_table`,
-            type: 'item',
-            title: '{{t("Table")}}',
-            field,
-            Component: 'RecordAssociationBlockInitializer',
-          },
-          {
-            name: `${field.name}_details`,
-            type: 'item',
-            title: '{{t("Details")}}',
-            field,
-            Component: 'RecordAssociationDetailsBlockInitializer',
-          },
-          {
-            name: `${field.name}_list`,
-            type: 'item',
-            title: '{{t("List")}}',
-            field,
-            Component: 'RecordAssociationListBlockInitializer',
-          },
-          {
-            name: `${field.name}_grid_card`,
-            type: 'item',
-            title: '{{t("Grid Card")}}',
-            field,
-            Component: 'RecordAssociationGridCardBlockInitializer',
-          },
-          {
-            name: `${field.name}_form`,
-            type: 'item',
-            title: '{{t("Form")}}',
-            field,
-            Component: 'RecordAssociationFormBlockInitializer',
-          },
-          // TODO: This one should be append in the calendar plugin
-          {
-            name: `${field.name}_calendar`,
-            type: 'item',
-            title: '{{t("Calendar")}}',
-            field,
-            Component: 'RecordAssociationCalendarBlockInitializer',
-          },
-        ],
-      };
-    }
-
-    return {
-      name: field.name,
-      type: 'item',
-      field,
-      title: field?.uiSchema?.title || field.name,
-      Component: 'RecordAssociationBlockInitializer',
-    };
-  }) as any;
-
-  return relationFields;
-};
-
 function useRecordBlocks() {
   const collection = useCollection_deprecated();
   const { getChildrenCollections } = useCollectionManager_deprecated();
@@ -400,6 +302,7 @@ export const recordBlockInitializers = new SchemaInitializer({
                 }
               },
               onlyCurrentDataSource: true,
+              showChildren: true,
             };
           },
         },
@@ -408,7 +311,7 @@ export const recordBlockInitializers = new SchemaInitializer({
           title: '{{t("Collapse")}}',
           Component: 'FilterCollapseBlockInitializer',
           useComponentProps() {
-            const collection = useCollection_deprecated();
+            const collection = useCollection();
             const toManyField = useMemo(
               () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
               [collection.fields],
@@ -421,6 +324,7 @@ export const recordBlockInitializers = new SchemaInitializer({
                 }
               },
               onlyCurrentDataSource: true,
+              showChildren: true,
             };
           },
         },

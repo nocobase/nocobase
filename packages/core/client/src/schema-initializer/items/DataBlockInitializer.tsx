@@ -273,6 +273,8 @@ export interface DataBlockInitializerProps {
   onlyCurrentDataSource?: boolean;
   hideSearch?: boolean;
   showAssociationFields?: boolean;
+  /** 即使 children 只有一个时，也显示出来 */
+  showChildren?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -287,6 +289,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     onlyCurrentDataSource,
     hideSearch,
     showAssociationFields,
+    showChildren,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -320,7 +323,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   const compiledMenuItems = useMemo(() => {
     let children = searchedChildren.filter((item) => item.key !== 'search' && item.key !== 'empty');
     const hasAssociationField = children.some((item) => item.associationField);
-    if (!hasAssociationField && children.length === 1) {
+    if (!showChildren && !hasAssociationField && children.length === 1) {
       // 只有一项可选时，直接展开
       children = children[0].children;
     } else {

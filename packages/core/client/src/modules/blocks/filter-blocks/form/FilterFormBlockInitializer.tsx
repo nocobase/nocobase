@@ -8,9 +8,11 @@ import { Collection, CollectionFieldOptions } from '../../../../data-source';
 export const FilterFormBlockInitializer = ({
   filterCollections,
   onlyCurrentDataSource,
+  showChildren,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
+  showChildren?: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
@@ -43,6 +45,7 @@ export const FilterFormBlockInitializer = ({
         );
       }}
       filter={filterCollections}
+      showChildren={showChildren}
     />
   );
 };
