@@ -1,5 +1,5 @@
 import { Collection, Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 
@@ -384,6 +384,28 @@ describe('ui_schema repository', () => {
       });
 
       const schema = await repository.getJsonSchema('n2');
+      expect(schema).toBeDefined();
+    });
+
+    it('should get root async json schema', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        async: true,
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      const schema = await repository.getJsonSchema('n1');
       expect(schema).toBeDefined();
     });
 
