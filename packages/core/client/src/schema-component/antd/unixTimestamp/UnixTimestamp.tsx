@@ -1,5 +1,4 @@
 import { connect, mapReadPretty } from '@formily/react';
-import { DatePicker as AntdDatePicker } from 'antd';
 import React, { useMemo } from 'react';
 import { DatePicker } from '../date-picker';
 import dayjs from 'dayjs';
@@ -31,12 +30,12 @@ export const UnixTimestamp = connect(
     const { value, onChange, accuracy } = props;
     const v = useMemo(() => toValue(value, accuracy), [value]);
     return (
-      <AntdDatePicker
+      <DatePicker
         {...props}
         value={v}
-        onChange={(v: any, dateString) => {
+        onChange={(v: any) => {
           if (onChange) {
-            onChange(getTimestamp(dateString, accuracy));
+            onChange(getTimestamp(v, accuracy));
           }
         }}
       />

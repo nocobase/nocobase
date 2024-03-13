@@ -15,7 +15,6 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       'x-component': 'UnixTimestamp',
       'x-component-props': {
         accuracy: 'millisecond',
-        format: 'YYYY-MM-DD HH:mm:ss',
         showTime: true,
       },
     },
