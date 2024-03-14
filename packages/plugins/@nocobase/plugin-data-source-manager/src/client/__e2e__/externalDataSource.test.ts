@@ -1,6 +1,7 @@
 import { expect, test, expectSettingsMenu } from '@nocobase/test/e2e';
 import { uid } from '@nocobase/utils';
 
+//添加数据源
 test.describe('add external data source', () => {
   test('pg external data source', async ({ page }) => {
     await page.goto('/');
@@ -32,6 +33,7 @@ test.describe('add external data source', () => {
   });
 });
 
+//配置数据源
 test.describe('configure external data source', () => {
   //进入外部数据源数据表管理页
   test('external data source collection configure', async ({ page }) => {
@@ -46,6 +48,7 @@ test.describe('configure external data source', () => {
   test('synchronize(refresh) external data source collection', async ({ page }) => {});
 });
 
+//管理数据源数据表字段
 test.describe('configure collection field', () => {
   test('field display name', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/pg/collections');
@@ -113,6 +116,7 @@ test.describe('configure collection field', () => {
   test('synchronize(refresh) external data source collection', async ({ page }) => {});
 });
 
+//添加关系字段
 test.describe('add association field', () => {
   test('oho forignkey', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/pg/collections');
@@ -269,4 +273,29 @@ test.describe('add association field', () => {
     // 断言下拉列表是否符合预期，限制unique
     expect(targetKeyOptions).toEqual(expect.arrayContaining(['user_uuid']));
   });
+});
+
+test.describe('add block', () => {
+  test('data block ', async ({ page }) => {});
+  test('filter block ', async ({ page }) => {});
+  test('association block ', async ({ page }) => {});
+});
+
+test.describe('add filed', () => {
+  test('data block ', async ({ page }) => {});
+  test('filter block ', async ({ page }) => {});
+  test('association block ', async ({ page }) => {});
+});
+
+test.describe('add action', () => {
+  test('data block ', async ({ page }) => {});
+  test('filter block ', async ({ page }) => {});
+  test('association block ', async ({ page }) => {});
+});
+
+test.describe('permissions', () => {
+  test('view', async ({ page }) => {});
+  test('create', async ({ page }) => {});
+  test('update', async ({ page }) => {});
+  test('delete', async ({ page }) => {});
 });
