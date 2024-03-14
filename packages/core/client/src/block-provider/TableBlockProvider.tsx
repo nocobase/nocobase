@@ -98,7 +98,7 @@ export const TableBlockProvider = (props) => {
         return collection.fields.find((f) => f.treeChildren);
       }
     }
-  }, [resourceName, isTree, collection.fields, getCollectionField]);
+  }, [resourceName, isTree, collection?.fields, getCollectionField]);
 
   const childrenColumnName = treeField?.name || 'children';
 
