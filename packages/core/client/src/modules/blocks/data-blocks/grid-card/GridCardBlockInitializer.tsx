@@ -4,8 +4,35 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../appl
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { createGridCardBlockSchema } from '../../../../schema-initializer/utils';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
+import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 
-export const GridCardBlockInitializer = () => {
+export const GridCardBlockInitializer = ({
+  filterCollections,
+  onlyCurrentDataSource,
+  hideSearch,
+  createBlockSchema,
+  componentType = 'FormItem',
+  templateWrap,
+  showAssociationFields,
+}: {
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
+  onlyCurrentDataSource: boolean;
+  hideSearch?: boolean;
+  createBlockSchema?: (options: any) => any;
+  /**
+   * 虽然这里的命名现在看起来比较奇怪，但为了兼容旧版本的 template，暂时保留这个命名。
+   */
+  componentType?: 'FormItem';
+  templateWrap?: (
+    templateSchema: any,
+    {
+      item,
+    }: {
+      item: any;
+    },
+  ) => any;
+  showAssociationFields?: boolean;
+}) => {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager_deprecated();
   const itemConfig = useSchemaInitializerItem();
@@ -15,6 +42,10 @@ export const GridCardBlockInitializer = () => {
       icon={<OrderedListOutlined />}
       componentType={'GridCard'}
       onCreateBlockSchema={async ({ item }) => {
+        if (createBlockSchema) {
+          return createBlockSchema({ item });
+        }
+
         const collection = getCollection(item.name, item.dataSource);
         const schema = createGridCardBlockSchema({
           collection: item.name,
@@ -24,6 +55,10 @@ export const GridCardBlockInitializer = () => {
         });
         insert(schema);
       }}
+      onlyCurrentDataSource={onlyCurrentDataSource}
+      hideSearch={hideSearch}
+      filter={filterCollections}
+      showAssociationFields={showAssociationFields}
     />
   );
 };
