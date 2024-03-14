@@ -465,7 +465,9 @@ Grid.Col = observer(
         };
 
       return {
-        backgroundColor: new TinyColor(token.colorSettings).setAlpha(0.1).toHex8String(),
+        background: `linear-gradient(to top,  ${new TinyColor(token.colorSettings)
+          .setAlpha(0.1)
+          .toHex8String()} 20%, transparent 20%)`,
         borderTopRightRadius: '10px',
         borderTopLeftRadius: '10px',
         height: '100%',
