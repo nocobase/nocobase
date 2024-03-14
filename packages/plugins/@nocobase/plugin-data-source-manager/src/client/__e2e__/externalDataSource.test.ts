@@ -114,32 +114,12 @@ test.describe('configure collection field', () => {
 });
 
 test.describe('add association field', () => {
-  test('support association field adding', async ({ page }) => {
-    await page.goto('/admin/settings/data-source-manager/pg/collections');
-    await page.getByLabel('action-Action.Link-Configure fields').first().click();
-    await expectSettingsMenu({
-      page,
-      showMenu: async () => {
-        await page.getByRole('button', { name: 'plus Add field' }).hover();
-      },
-      supportedOptions: [
-        'One to one (has one)',
-        'One to one (belongs to)',
-        'One to many',
-        'Many to one',
-        'Many to many',
-      ],
-    });
-  });
-  // 字段配置
-  test('oho', async ({ page }) => {
-    const ohoFieldTitle = uid();
+  test('oho forignkey', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/pg/collections');
     await page.getByLabel('action-Action.Link-Configure fields').first().click();
     await page.getByRole('button', { name: 'plus Add field' }).hover();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).click();
 
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill(ohoFieldTitle);
     await page.getByLabel('block-item-Select-fields-Target collection').click();
     await page.getByRole('option', { name: 'users' }).locator('div').click();
     await page.getByLabel('block-item-ForeignKey-fields-').locator('input').click();
@@ -155,5 +135,138 @@ test.describe('add association field', () => {
 
     // 断言下拉列表是否符合预期
     expect(foreignKeyOptions).toEqual(expect.arrayContaining(['user_uuid', 'username']));
+  });
+
+  test('obo targetKey', async ({ page }) => {
+    const ohoFieldTitle = uid();
+    await page.goto('/admin/settings/data-source-manager/pg/collections');
+    await page.getByLabel('action-Action.Link-Configure fields').first().click();
+    await page.getByRole('button', { name: 'plus Add field' }).hover();
+    await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).click();
+
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill(ohoFieldTitle);
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: 'users' }).locator('div').click();
+    await page.getByLabel('block-item-TargetKey-fields-').click();
+    // 获取所有选项的文本内容
+    const options = await page
+      .locator('.rc-virtual-list')
+      .nth(1)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期,现在unique
+    expect(options).toEqual(expect.arrayContaining(['user_uuid']));
+  });
+  test('o2m targetKey & forignkey', async ({ page }) => {
+    await page.goto('/admin/settings/data-source-manager/pg/collections');
+    await page.getByLabel('action-Action.Link-Configure fields').first().click();
+    await page.getByRole('button', { name: 'plus Add field' }).hover();
+    await page.getByRole('menuitem', { name: 'One to many' }).click();
+
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: 'users' }).locator('div').click();
+    //targetkey
+    await page.getByLabel('block-item-TargetKey-fields-').click();
+    // 获取所有选项的文本内容
+    const options = await page
+      .locator('.rc-virtual-list')
+      .nth(1)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期,现在unique
+    expect(options).toEqual(expect.arrayContaining(['user_uuid', 'username']));
+
+    await page.getByLabel('block-item-ForeignKey-fields-').locator('input').click();
+
+    // foreignKey 选项符合预期
+    const foreignKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(2)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期
+    expect(foreignKeyOptions).toEqual(expect.arrayContaining(['user_uuid', 'username']));
+  });
+
+  test('m2o targetKey & forignkey', async ({ page }) => {
+    await page.goto('/admin/settings/data-source-manager/pg/collections');
+    await page.getByLabel('action-Action.Link-Configure fields').first().click();
+    await page.getByRole('button', { name: 'plus Add field' }).hover();
+    await page.getByRole('menuitem', { name: 'Many to many' }).click();
+
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: 'users' }).locator('div').click();
+
+    await page.getByLabel('block-item-ForeignKey-fields-').locator('input').click();
+    // foreignKey 选项符合预期
+    const foreignKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(1)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期
+    expect(foreignKeyOptions).toEqual(expect.arrayContaining(['user_uuid', 'username']));
+
+    await page.getByLabel('block-item-TargetKey-fields-').click();
+    //targetKey 选项符合预期,限制unique
+    const targetKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(2)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期
+    expect(targetKeyOptions).toEqual(expect.arrayContaining(['user_uuid']));
+  });
+
+  test('m2m targetKey & forignkey', async ({ page }) => {
+    await page.goto('/admin/settings/data-source-manager/pg/collections');
+    await page.getByLabel('action-Action.Link-Configure fields').first().click();
+    await page.getByRole('button', { name: 'plus Add field' }).hover();
+    await page.getByRole('menuitem', { name: 'Many to many' }).click();
+    await page.getByLabel('block-item-ThroughCollection-').click();
+    await page.getByRole('option', { name: 'users' }).locator('div').click();
+
+    await page.getByLabel('block-item-ForeignKey-fields-').locator('input').first().click();
+    // foreignKey 选项符合预期
+    const foreignKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(1)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期
+    expect(foreignKeyOptions).toEqual(expect.arrayContaining(['user_uuid', 'username']));
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: 'users' }).locator('div').click();
+    await page.getByLabel('block-item-TargetKey-fields-').click();
+
+    //targetKey 选项符合预期
+    const targetKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .last()
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期，限制unique
+    expect(targetKeyOptions).toEqual(expect.arrayContaining(['user_uuid']));
   });
 });

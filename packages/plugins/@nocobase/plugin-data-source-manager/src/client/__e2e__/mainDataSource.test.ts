@@ -12,7 +12,7 @@ test('initializing main data source by default', async ({ page }) => {
 test.describe('create collection with preset fields', () => {
   test('all preset fields by default', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByRole('button', { name: 'plus Create collection down' }).click();
     await page.getByRole('menuitem', { name: 'General collection' }).locator('span').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').click();
@@ -62,7 +62,7 @@ test.describe('create collection with preset fields', () => {
 
   test('id preset field', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByRole('button', { name: 'plus Create collection down' }).click();
     await page.getByRole('menuitem', { name: 'General collection' }).locator('span').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').click();
@@ -93,7 +93,7 @@ test.describe('create collection with preset fields', () => {
   });
   test('createdAt preset field', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByRole('button', { name: 'plus Create collection down' }).click();
     await page.getByRole('menuitem', { name: 'General collection' }).locator('span').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').click();
@@ -124,7 +124,7 @@ test.describe('create collection with preset fields', () => {
   });
   test('createdBy preset field', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByRole('button', { name: 'plus Create collection down' }).click();
     await page.getByRole('menuitem', { name: 'General collection' }).locator('span').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').click();
@@ -155,7 +155,7 @@ test.describe('create collection with preset fields', () => {
   });
   test('updatedBy preset field', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByRole('button', { name: 'plus Create collection down' }).click();
     await page.getByRole('menuitem', { name: 'General collection' }).locator('span').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').click();
@@ -186,7 +186,7 @@ test.describe('create collection with preset fields', () => {
   });
   test('updatedAt preset field', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByRole('button', { name: 'plus Create collection down' }).click();
     await page.getByRole('menuitem', { name: 'General collection' }).locator('span').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').click();
@@ -217,7 +217,7 @@ test.describe('create collection with preset fields', () => {
   });
   test('unselect preset fields', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByRole('button', { name: 'plus Create collection down' }).click();
     await page.getByRole('menuitem', { name: 'General collection' }).locator('span').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').click();
@@ -245,7 +245,7 @@ test.describe('create collection with preset fields', () => {
 test.describe('create primary key  or unique index other than ID.', () => {
   test('integer field as primary key', async ({ page, mockCollection }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await mockCollection({
       name: 'general',
       autoGenId: false,
@@ -277,7 +277,7 @@ test.describe('create primary key  or unique index other than ID.', () => {
   });
   test('integer field set unique index', async ({ page, mockCollection }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await mockCollection({
       name: 'general',
       autoGenId: false,
@@ -311,7 +311,7 @@ test.describe('create primary key  or unique index other than ID.', () => {
   });
   test('input(string) field set unique index', async ({ page, mockCollection }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await mockCollection({
       name: 'general',
       autoGenId: false,
@@ -345,7 +345,7 @@ test.describe('create primary key  or unique index other than ID.', () => {
   });
   test('input(string) field set as primary key', async ({ page, mockCollection }) => {
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await mockCollection({
       name: 'general',
       autoGenId: false,
@@ -380,7 +380,8 @@ test.describe('create primary key  or unique index other than ID.', () => {
 });
 
 //创建关系字段
-test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt ',' integer ',' uuid ',' uid '] and are non primary key field with a Unique index set", () => {
+//sourceKey, targetKey, optional field types are [string ',' bigInt ',' integer ',' uuid ',' uid '] and are non primary key field with a Unique index set
+test.describe('association constraints support selecting non-primary key fields with Unique indexes', () => {
   const fields = [
     { name: 'id', interface: 'id', type: 'bigInt' },
     { name: 'string', interface: 'input', type: 'string', unique: true },
@@ -402,7 +403,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
       fields,
     });
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
     await page.getByRole('textbox').nth(1).fill(collectionName);
@@ -410,8 +411,6 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('oho');
     await page.getByLabel('block-item-SourceKey-fields-').click();
     // 获取所有选项的文本内容
     const options = await page.locator('.rc-virtual-list').evaluate(() => {
@@ -430,7 +429,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
       fields,
     });
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
     await page.getByRole('textbox').nth(1).fill(collectionName);
@@ -438,8 +437,6 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('obo');
     await page.getByLabel('block-item-Select-fields-Target collection').click();
     await page.getByRole('option', { name: collectionName }).locator('div').click();
     await page.getByLabel('block-item-TargetKey-fields-').click();
@@ -464,7 +461,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
       fields,
     });
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
     await page.getByRole('textbox').nth(1).fill(collectionName);
@@ -472,8 +469,6 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('o2m');
 
     await page.getByLabel('block-item-SourceKey-fields-').click();
     // sourceKey 选项符合预期
@@ -525,7 +520,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
       fields,
     });
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
     await page.getByRole('textbox').nth(1).fill(collectionName);
@@ -533,8 +528,6 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'Many to one' }).click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('m2o');
 
     await page.getByLabel('block-item-ForeignKey-fields-').locator('input').click();
     // ForeignKey 选项符合预期
@@ -586,7 +579,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     expect(targetKeyOptions).toEqual(expect.arrayContaining(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']));
   });
 
-  test('m2m targetKey & foreignKey', async ({ page, mockCollection }) => {
+  test('m2m sourceKey & foreignKey & targetKey', async ({ page, mockCollection }) => {
     const collectionName = uid();
     const foreignKey = `f_${uid()}`;
     await mockCollection({
@@ -595,7 +588,7 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
       fields,
     });
     await page.goto('/admin/settings/data-source-manager/list');
-    await page.getByRole('button', { name: 'Configure' }).click();
+    await page.getByRole('button', { name: 'Configure' }).first().click();
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
     await page.getByRole('textbox').nth(1).fill(collectionName);
@@ -603,8 +596,6 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'Many to many' }).click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill('obo');
 
     await page.getByLabel('block-item-SourceKey-fields-').click();
     // sourceKey 选项符合预期
