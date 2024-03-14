@@ -13,7 +13,7 @@ export const T3377: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           dtuo84w9hyg: {
             _isJSONSchemaObject: true,
@@ -60,7 +60,7 @@ export const T3377: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               '729znsrntep': {
                                 _isJSONSchemaObject: true,
@@ -98,7 +98,7 @@ export const T3377: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'AssociationField.SubTable',
-                                            'x-initializer': 'TableColumnInitializers',
+                                            'x-initializer': 'table:configureColumns',
                                             'x-initializer-props': {
                                               action: false,
                                             },
