@@ -8,6 +8,7 @@ import { useCollection_deprecated, useSortFields } from '../../../../collection-
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsBlockTitleItem, SchemaSettingsTemplate } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const listBlockSettings = new SchemaSettings({
   name: 'blockSettings:list',
@@ -156,6 +157,7 @@ export const listBlockSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',
       type: 'select',
