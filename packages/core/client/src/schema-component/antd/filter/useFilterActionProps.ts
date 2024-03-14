@@ -198,23 +198,27 @@ export const useFilterFieldProps = ({ options, service, params }) => {
       }
     },
     onReset() {
-      if (dataLoadingMode === 'manual') {
-        field.title = t('Filter');
-        return service.mutate(undefined);
-      }
-
       const filter = params.filter;
       const filters = service.params?.[1]?.filters || {};
       delete filters[`filterAction`];
-      service.run(
+
+      const newParams = [
         {
           ...service.params?.[0],
           filter: mergeFilter([...Object.values(filters), filter]),
           page: 1,
         },
         { filters },
-      );
+      ];
+
       field.title = t('Filter');
+
+      if (dataLoadingMode === 'manual') {
+        service.params = newParams;
+        return service.mutate(undefined);
+      }
+
+      service.run(...newParams);
     },
   };
 };
