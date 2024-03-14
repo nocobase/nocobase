@@ -17,6 +17,9 @@ import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettings
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 
+/**
+ * @deprecated
+ */
 export const formSettings = new SchemaSettings({
   name: 'FormSettings',
   items: [
@@ -83,6 +86,9 @@ export const formSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const readPrettyFormSettings = new SchemaSettings({
   name: 'ReadPrettyFormSettings',
   items: [
@@ -122,6 +128,9 @@ export const readPrettyFormSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const formDetailsSettings = new SchemaSettings({
   name: 'FormDetailsSettings',
   items: [

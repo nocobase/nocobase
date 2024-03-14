@@ -1,8 +1,8 @@
 import { BarChartOutlined, LineChartOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import {
+  CompatibleSchemaInitializer,
   DataBlockInitializer,
-  SchemaInitializer,
   SchemaInitializerItem,
   useACLRoleContext,
   useSchemaInitializer,
@@ -46,7 +46,10 @@ const ChartInitializer = () => {
   );
 };
 
-export const chartInitializers: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ */
+export const chartInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartInitializers',
   icon: 'PlusOutlined',
   title: '{{t("Add block")}}',
@@ -71,6 +74,34 @@ export const chartInitializers: SchemaInitializer = new SchemaInitializer({
   ],
 });
 
+export const chartInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'charts:addBlock',
+    icon: 'PlusOutlined',
+    title: '{{t("Add block")}}',
+    items: [
+      {
+        name: 'chart',
+        title: lang('Chart'),
+        Component: ChartInitializer,
+      },
+      {
+        name: 'otherBlocks',
+        type: 'itemGroup',
+        title: lang('Other blocks'),
+        children: [
+          {
+            name: 'filter',
+            title: lang('Filter'),
+            Component: FilterBlockInitializer,
+          },
+        ],
+      },
+    ],
+  },
+  chartInitializers_deprecated,
+);
+
 export const ChartV2BlockInitializer: React.FC = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
@@ -91,7 +122,7 @@ export const ChartV2BlockInitializer: React.FC = () => {
               type: 'void',
               'x-component': 'Grid',
               'x-decorator': 'ChartV2Block',
-              'x-initializer': 'ChartInitializers',
+              'x-initializer': 'charts:addBlock',
             },
           },
         });
