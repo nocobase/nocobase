@@ -59,3 +59,45 @@ INSERT INTO roles (role_name) VALUES
 INSERT INTO user_roles (user_uuid, role_uuid) VALUES
                                                 ((SELECT user_uuid FROM users WHERE username = 'Alice'), (SELECT role_uuid FROM roles WHERE role_name = 'Admin')),
                                                 ((SELECT user_uuid FROM users WHERE username = 'Bob'), (SELECT role_uuid FROM roles WHERE role_name = 'User'));
+
+
+CREATE TABLE "test_table" (
+                                "id2" SERIAL PRIMARY KEY,
+                                "smallint" int2,
+                                "integer" int4,
+                                "bigint" int8,
+                                "boolean" bool,
+                                "numeric" numeric,
+                                "real" float4,
+                                "double" float8,
+                                "money" money,
+                                "date" date,
+                                "time" time,
+                                "timestamp" timestamp,
+                                "timestamptz" timestamptz,
+                                "interval" interval,
+                                "char" bpchar,
+                                "varchar" varchar,
+                                "text" text,
+                                "tsquery" tsquery,
+                                "tsvector" tsvector,
+                                "uuid" uuid,
+                                "xml" xml,
+                                "json" json,
+                                "jsonb" jsonb,
+                                "bit" bit,
+                                "bitvarying" varbit,
+                                "bytea" bytea,
+                                "cidr" cidr,
+                                "inet" inet,
+                                "macaddr" macaddr,
+                                "txidsnapshot" txid_snapshot,
+                                "box" box,
+                                "circle" circle,
+                                "line" line,
+                                "lseg" lseg,
+                                "path" path,
+                                "point" point,
+                                "polygon" polygon
+);
+
