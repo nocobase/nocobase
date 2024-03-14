@@ -39,6 +39,8 @@ export const CollectionFieldInterfaceSelect = observer(
     ) : (
       <Select
         aria-label="field-interface"
+        //@ts-ignore
+        role="button"
         defaultValue={value}
         style={{ width: '100%' }}
         popupMatchSelectWidth={false}

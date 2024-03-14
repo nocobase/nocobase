@@ -47,10 +47,9 @@ test.describe('configure external data source', () => {
 });
 
 test.describe('configure collection field', () => {
-  //实时编辑字段标题
   test('field display name', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/pg/collections');
-    await page.getByLabel('orders').click();
+    await page.getByLabel('action-Action.Link-Configure fields').first().click();
     const fieldTitle = uid();
     //断言提交的data是否符合预期
     const [request] = await Promise.all([
@@ -58,24 +57,56 @@ test.describe('configure collection field', () => {
       page.getByLabel('field-title-input').first().fill(fieldTitle),
     ]);
     const postData = request.postDataJSON();
-    await expect(postData).toMatchObject({
-      title: fieldTitle,
-    });
+    expect(postData).toHaveProperty(
+      'uiSchema',
+      expect.objectContaining({
+        title: fieldTitle,
+      }),
+    );
   });
-  //实时编辑字段标题
   test('field interface', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/pg/collections');
-    await page.getByLabel('orders').click();
-    const fieldTitle = uid();
+    await page.getByLabel('action-Action.Link-Configure fields').first().click();
+    await page.getByLabel('field-interface').first().click();
+
+    const interfaceOptions = await page
+      .locator('.rc-virtual-list')
+      .last()
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+    //断言下拉列表是否符合预期
+    expect(interfaceOptions).toEqual(
+      expect.arrayContaining([
+        'Single line text',
+        'Phone',
+        'Email',
+        'URL',
+        'Color',
+        'Icon',
+        'Single select',
+        'Radio group',
+        'Sequence',
+        'Collection selector',
+        'ID',
+      ]),
+    );
     //断言提交的data是否符合预期
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('/fields:update')),
-      page.getByLabel('field-title-input').first().fill(fieldTitle),
+      page.getByRole('option', { name: 'Email' }).click(),
     ]);
     const postData = request.postDataJSON();
     await expect(postData).toMatchObject({
-      title: fieldTitle,
+      interface: 'email',
     });
+    expect(postData).toHaveProperty(
+      'uiSchema',
+      expect.objectContaining({
+        'x-validator': 'email',
+      }),
+    );
   });
   // 字段配置
   test('add association field(oho)', async ({ page }) => {
