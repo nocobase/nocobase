@@ -17,7 +17,7 @@ export function useDataLoadingMode() {
   return dataLoadingMode || 'auto';
 }
 
-function SetDataLoadingMode() {
+export function SetDataLoadingMode() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const field = useField();
