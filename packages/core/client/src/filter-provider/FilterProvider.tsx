@@ -1,10 +1,12 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
-import React, { createContext, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
+import { useDataLoadingMode } from '../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
+import { GeneralField } from '@formily/core';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -40,6 +42,8 @@ export interface DataBlock {
   doFilter: (params: any, params2?: any) => Promise<void>;
   /** 清除筛选区块设置的筛选参数 */
   clearFilter: (uid: string) => void;
+  /** 将数据区块的数据置为空 */
+  clearData: () => void;
   /** 数据区块表中所有的关系字段 */
   associatedFields?: CollectionFieldOptions_deprecated[];
   /** 数据区块表中所有的外键字段 */
@@ -50,6 +54,11 @@ export interface DataBlock {
   service?: any;
   /** 数据区块所的 DOM 容器 */
   dom: HTMLElement;
+  /**
+   * auto: 数据区块会在初始渲染时请求数据
+   * manual: 只有当点击了筛选按钮，才会请求数据
+   */
+  dataLoadingMode?: 'auto' | 'manual';
 }
 
 interface FilterContextValue {
@@ -89,13 +98,14 @@ export const DataBlockCollector = ({
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
   const container = useRef(null);
+  const dataLoadingMode = useDataLoadingMode();
 
   const shouldApplyFilter =
     field.decoratorType !== 'FilterFormBlockProvider' &&
     field.decoratorType !== 'FormBlockProvider' &&
     field.decoratorProps.blockType !== 'filter';
 
-  const addBlockToDataBlocks = () => {
+  const addBlockToDataBlocks = useCallback(() => {
     recordDataBlocks({
       uid: fieldSchema['x-uid'],
       title: field.componentProps.title,
@@ -106,6 +116,7 @@ export const DataBlockCollector = ({
       defaultFilter: params?.filter || {},
       service,
       dom: container.current,
+      dataLoadingMode,
       clearFilter(uid: string) {
         const param = this.service.params?.[0] || {};
         const storedFilter = this.service.params?.[1]?.filters || {};
@@ -124,12 +135,15 @@ export const DataBlockCollector = ({
           { filters: storedFilter },
         );
       },
+      clearData() {
+        this.service.mutate(undefined);
+      },
     });
-  };
+  }, [associatedFields, collection, dataLoadingMode, field, fieldSchema, params?.filter, recordDataBlocks, service]);
 
   useEffect(() => {
     if (shouldApplyFilter) addBlockToDataBlocks();
-  }, [params?.filter, service]);
+  }, [params.filter, service, dataLoadingMode, shouldApplyFilter, addBlockToDataBlocks]);
 
   useEffect(() => {
     return () => {
@@ -163,6 +177,7 @@ export const useFilterBlock = () => {
       // 这里的值有可能会变化，所以需要更新
       existingBlock.service = block.service;
       existingBlock.defaultFilter = block.defaultFilter;
+      existingBlock.dataLoadingMode = block.dataLoadingMode;
       return;
     }
     // 由于 setDataBlocks 是异步操作，所以上面的 existingBlock 在判断时有可能用的是旧的 dataBlocks,所以下面还需要根据 uid 进行去重操作

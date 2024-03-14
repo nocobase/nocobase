@@ -38,7 +38,7 @@ const InternalDetailsBlockProvider = (props) => {
     filterOption: service?.params?.[0]?.filter,
   });
   useEffect(() => {
-    if (!_.isEmpty(filter)) {
+    if (!_.isEmpty(filter) && !service.loading) {
       service?.run({ ...service?.params?.[0], filter });
     }
   }, [JSON.stringify(filter)]);
@@ -80,7 +80,7 @@ export const useDetailsBlockProps = () => {
         })
         .catch(console.error);
     }
-  }, [ctx.service.loading]);
+  }, [ctx.form, ctx.service?.data?.data, ctx.service.loading]);
   return {
     form: ctx.form,
   };

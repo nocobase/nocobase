@@ -12,11 +12,12 @@ import {
   SchemaSettingsTemplate,
   mergeFilter,
   useCollection,
-  useCollectionManager,
   useDesignable,
   useFormBlockContext,
   SchemaSettings,
   useCollectionManager_deprecated,
+  setDataLoadingModeSettingsItem,
+  useDataLoadingMode,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { useMapTranslation } from '../locale';
@@ -127,6 +128,7 @@ export const mapBlockSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'defaultZoomLevel',
       Component: SchemaSettingsModalItem,
@@ -177,6 +179,7 @@ export const mapBlockSettings = new SchemaSettings({
         const field = useField();
         const { service } = useMapBlockContext();
         const { dn } = useDesignable();
+        const dataLoadingMode = useDataLoadingMode();
         return {
           collectionName: name,
           defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
@@ -187,10 +190,14 @@ export const mapBlockSettings = new SchemaSettings({
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
             const filters = service.params?.[1]?.filters || {};
-            service.run(
-              { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
-              { filters },
-            );
+
+            if (dataLoadingMode === 'auto') {
+              service.run(
+                { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
+                { filters },
+              );
+            }
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
