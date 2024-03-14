@@ -36,7 +36,7 @@ function Demo() {
 }
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Add Block',
   // 插入位置
   insertPosition: 'beforeEnd',
@@ -55,7 +55,7 @@ const myInitializer = new SchemaInitializer({
 });
 
 const AddBlockButton = observer(() => {
-  const { render } = useSchemaInitializerRender('MyInitializer');
+  const { render } = useSchemaInitializerRender('myInitializer');
   return render();
 });
 

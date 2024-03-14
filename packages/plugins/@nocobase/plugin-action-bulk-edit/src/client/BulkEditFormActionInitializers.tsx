@@ -1,6 +1,10 @@
-import { SchemaInitializer } from '@nocobase/client';
+import { CompatibleSchemaInitializer, SchemaInitializer } from '@nocobase/client';
 import { BulkEditSubmitActionInitializer } from './BulkEditSubmitActionInitializer';
-export const BulkEditFormActionInitializers = new SchemaInitializer({
+
+/**
+ * @deprecated
+ */
+export const BulkEditFormActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'BulkEditFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
@@ -22,3 +26,29 @@ export const BulkEditFormActionInitializers = new SchemaInitializer({
     },
   ],
 });
+
+export const bulkEditFormActionInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'bulkEditForm:configureActions',
+    title: '{{t("Configure actions")}}',
+    icon: 'SettingOutlined',
+    items: [
+      {
+        type: 'itemGroup',
+        title: '{{t("Enable actions")}}',
+        name: 'enableActions',
+        children: [
+          {
+            name: 'submit',
+            title: '{{t("Submit")}}',
+            Component: BulkEditSubmitActionInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
+          },
+        ],
+      },
+    ],
+  },
+  BulkEditFormActionInitializers_deprecated,
+);

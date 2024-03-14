@@ -4,7 +4,7 @@ test.describe('where filter form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Filter form');
     await expect(page.getByLabel('block-item-CardItem-users-filter-form')).toBeVisible();
   });
@@ -14,7 +14,7 @@ test.describe('configure fields', () => {
   test('display collection fields & display association fields & add text', async ({ page, mockPage }) => {
     await mockPage(oneEmptyFilterFormBlock).goto();
 
-    const formItemInitializer = page.getByLabel('schema-initializer-Grid-FilterFormItemInitializers-general');
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-filterForm:configureFields-general');
 
     // add fields
     await formItemInitializer.hover();
@@ -72,7 +72,7 @@ test.describe('configure actions', () => {
   test('filter & reset', async ({ page, mockPage }) => {
     await mockPage(oneEmptyFilterFormBlock).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-FilterFormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-filterForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 
@@ -84,7 +84,7 @@ test.describe('configure actions', () => {
     await expect(page.getByLabel('action-Action-Reset-general-filter-form')).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-FilterFormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-filterForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 

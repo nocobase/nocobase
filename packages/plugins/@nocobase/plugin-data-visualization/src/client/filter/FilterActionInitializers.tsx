@@ -3,8 +3,8 @@ import { useForm } from '@formily/react';
 import {
   Action,
   ActionInitializer,
+  CompatibleSchemaInitializer,
   GeneralSchemaDesigner,
-  SchemaInitializer,
   SchemaSettingsDivider,
   SchemaSettingsRemove,
 } from '@nocobase/client';
@@ -125,7 +125,10 @@ const ChartFilterCollapseInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const chartFilterActionInitializers: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ */
+export const chartFilterActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartFilterActionInitializers',
   'data-testid': 'configure-actions-button-of-chart-filter',
   title: '{{t("Configure actions")}}',
@@ -167,3 +170,49 @@ export const chartFilterActionInitializers: SchemaInitializer = new SchemaInitia
     },
   ],
 });
+
+export const chartFilterActionInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'chartFilterForm:configureActions',
+    'data-testid': 'configure-actions-button-of-chart-filter',
+    title: '{{t("Configure actions")}}',
+    icon: 'SettingOutlined',
+    items: [
+      {
+        name: 'enbaleActions',
+        type: 'itemGroup',
+        title: '{{t("Enable actions")}}',
+        children: [
+          {
+            name: 'filter',
+            type: 'item',
+            title: '{{t("Filter")}}',
+            component: ChartFilterActionInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
+          },
+          {
+            name: 'reset',
+            type: 'item',
+            title: '{{t("Reset")}}',
+            component: ChartFilterResetInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
+          },
+          {
+            name: 'collapse',
+            type: 'item',
+            title: '{{t("Collapse")}}',
+            component: ChartFilterCollapseInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
+          },
+        ],
+      },
+    ],
+  },
+  chartFilterActionInitializers_deprecated,
+);

@@ -1,7 +1,9 @@
-import { SchemaInitializerItemType } from '../../../../application';
 import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 
-// 表单的操作配置
+/**
+ * @deprecated
+ * 表单的操作配置
+ */
 export const formActionInitializers = new SchemaInitializer({
   name: 'FormActionInitializers',
   title: '{{t("Configure actions")}}',
@@ -27,7 +29,7 @@ export const formActionInitializers = new SchemaInitializer({
       type: 'divider',
     },
     {
-      name: 'custom',
+      name: 'customize',
       type: 'subMenu',
       title: '{{t("Customize")}}',
       children: [

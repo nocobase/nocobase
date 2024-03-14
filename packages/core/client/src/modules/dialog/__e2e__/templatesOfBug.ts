@@ -13,7 +13,7 @@ export const T2797: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           '921il71tsii': {
@@ -59,7 +59,7 @@ export const T2797: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -74,7 +74,7 @@ export const T2797: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -94,7 +94,7 @@ export const T2797: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             'x-index': 1,
                             properties: {
                               actions: {
@@ -161,7 +161,7 @@ export const T2797: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     'x-index': 1,
                                                     properties: {
                                                       uq6k35ibdum: {
@@ -214,7 +214,7 @@ export const T2797: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         'x-index': 1,
                                                                         'x-uid': '1d3zru9pi2o',
                                                                         'x-async': false,
@@ -223,7 +223,7 @@ export const T2797: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -286,7 +286,7 @@ export const T2797: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-index': 1,
                                                                                             properties: {
                                                                                               i7919iug0zf: {
@@ -367,7 +367,7 @@ export const T2797: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'FormItemInitializers',
+                                                                                                                    'form:configureFields',
                                                                                                                   'x-index': 1,
                                                                                                                   'x-uid':
                                                                                                                     'k9p2rqt49v1',
@@ -382,7 +382,7 @@ export const T2797: PageConfig = {
                                                                                                                       '2.0',
                                                                                                                     type: 'void',
                                                                                                                     'x-initializer':
-                                                                                                                      'UpdateFormActionInitializers',
+                                                                                                                      'editForm:configureActions',
                                                                                                                     'x-component':
                                                                                                                       'ActionBar',
                                                                                                                     'x-component-props':
@@ -594,7 +594,7 @@ export const T2838: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           ocvzef7y4nh: {
@@ -638,7 +638,7 @@ export const T2838: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -653,7 +653,7 @@ export const T2838: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -673,7 +673,7 @@ export const T2838: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             'x-index': 1,
                             properties: {
                               actions: {
@@ -740,7 +740,7 @@ export const T2838: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     'x-index': 1,
                                                     properties: {
                                                       w9u8i9nzh10: {
@@ -791,8 +791,7 @@ export const T2838: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -856,7 +855,7 @@ export const T2838: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-index': 1,
                                                                                             properties: {
                                                                                               nclrn6m8w40: {
@@ -935,7 +934,7 @@ export const T2838: PageConfig = {
                                                                                                                       '2.0',
                                                                                                                     type: 'void',
                                                                                                                     'x-initializer':
-                                                                                                                      'ReadPrettyFormActionInitializers',
+                                                                                                                      'details:configureActions',
                                                                                                                     'x-component':
                                                                                                                       'ActionBar',
                                                                                                                     'x-component-props':
@@ -1039,7 +1038,7 @@ export const T2838: PageConfig = {
                                                                                                                                                       'x-component':
                                                                                                                                                         'Grid',
                                                                                                                                                       'x-initializer':
-                                                                                                                                                        'RecordBlockInitializers',
+                                                                                                                                                        'popup:common:addBlock',
                                                                                                                                                       'x-index': 1,
                                                                                                                                                       properties:
                                                                                                                                                         {
@@ -1133,7 +1132,7 @@ export const T2838: PageConfig = {
                                                                                                                                                                                             'x-component':
                                                                                                                                                                                               'Grid',
                                                                                                                                                                                             'x-initializer':
-                                                                                                                                                                                              'FormItemInitializers',
+                                                                                                                                                                                              'form:configureFields',
                                                                                                                                                                                             'x-index': 1,
                                                                                                                                                                                             properties:
                                                                                                                                                                                               {
@@ -1222,7 +1221,7 @@ export const T2838: PageConfig = {
                                                                                                                                                                                                 '2.0',
                                                                                                                                                                                               type: 'void',
                                                                                                                                                                                               'x-initializer':
-                                                                                                                                                                                                'UpdateFormActionInitializers',
+                                                                                                                                                                                                'editForm:configureActions',
                                                                                                                                                                                               'x-component':
                                                                                                                                                                                                 'ActionBar',
                                                                                                                                                                                               'x-component-props':
@@ -1344,7 +1343,7 @@ export const T2838: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'ReadPrettyFormItemInitializers',
+                                                                                                                    'details:configureFields',
                                                                                                                   'x-index': 2,
                                                                                                                   'x-uid':
                                                                                                                     '1et421zrsz4',
@@ -1400,8 +1399,7 @@ export const T2838: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         'x-index': 2,
                                                                         'x-uid': 'j4qxeoy1pqw',
                                                                         'x-async': false,

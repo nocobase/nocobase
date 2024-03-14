@@ -6,7 +6,7 @@ import { Alert, Flex, ModalProps, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
-import { useApp } from '../../../application';
+import { isInitializersSame, useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
@@ -139,7 +139,7 @@ export function AssignedFieldValues() {
     type: 'void',
     'x-uid': uid(),
     'x-component': 'Grid',
-    'x-initializer': 'CustomFormItemInitializers',
+    'x-initializer': 'assignFieldValuesForm:configureFields',
   };
   const tips = {
     'customize:update': t(
@@ -671,7 +671,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           const fieldSchema = useFieldSchema();
           return (
             fieldSchema['x-action'] === 'submit' &&
-            fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
+            isInitializersSame(fieldSchema.parent?.['x-initializer'], 'createForm:configureActions')
           );
         },
       },
@@ -745,6 +745,10 @@ export function SecondConFirm() {
     />
   );
 }
+
+/**
+ * @deprecated
+ */
 export const actionSettings = new SchemaSettings({
   name: 'ActionSettings',
   items: actionSettingsItems,

@@ -1,16 +1,21 @@
 import { Plugin } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
+import { calendarBlockSettings } from './calendar/Calender.Settings';
 import { CalendarCollectionTemplate } from './collection-templates/calendar';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
-import { CalendarActionInitializers, CalendarFormActionInitializers } from './schema-initializer/initializers';
+import {
+  CalendarActionInitializers_deprecated,
+  CalendarFormActionInitializers,
+  calendarActionInitializers,
+  deleteEventActionInitializer,
+} from './schema-initializer/initializers';
 import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } from './schema-initializer/items';
-import { calendarBlockSettings } from './calendar/Calender.Settings';
 
 export class PluginCalendarClient extends Plugin {
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
-    this.app.schemaInitializerManager.addItem('BlockInitializers', 'dataBlocks.calendar', {
+    this.app.schemaInitializerManager.addItem('page:addBlock', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',
     });
@@ -22,8 +27,12 @@ export class PluginCalendarClient extends Plugin {
     });
     this.app.addScopes({ useCalendarBlockProps });
     this.schemaSettingsManager.add(calendarBlockSettings);
-    this.app.schemaInitializerManager.add(CalendarActionInitializers);
+    this.app.schemaInitializerManager.add(CalendarActionInitializers_deprecated);
+    this.app.schemaInitializerManager.add(calendarActionInitializers);
     this.app.schemaInitializerManager.add(CalendarFormActionInitializers);
+    this.app.schemaInitializerManager
+      .get('details:configureActions')
+      .add('enableActions.deleteEvent', deleteEventActionInitializer);
   }
 }
 
