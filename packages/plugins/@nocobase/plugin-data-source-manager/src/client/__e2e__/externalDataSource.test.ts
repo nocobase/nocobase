@@ -21,7 +21,7 @@ test.describe('add external data source', () => {
       page.getByLabel('action-Action-Test Connection').click(),
     ]);
     const response = await (await request.response()).json();
-    expect(response).toMatchObject({
+    await expect(response).toMatchObject({
       data: {
         success: true,
       },
@@ -47,17 +47,35 @@ test.describe('configure external data source', () => {
 });
 
 test.describe('configure collection field', () => {
-  //进入外部数据源数据表管理页
-  test('Configure Fields', async ({ page }) => {
+  //实时编辑字段标题
+  test('field display name', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/pg/collections');
     await page.getByLabel('orders').click();
-    //编辑标题
+    const fieldTitle = uid();
     //断言提交的data是否符合预期
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('/fields:update')),
-      page.getByLabel('action-Action-Submit').click(),
+      page.getByLabel('field-title-input').first().fill(fieldTitle),
     ]);
     const postData = request.postDataJSON();
+    await expect(postData).toMatchObject({
+      title: fieldTitle,
+    });
+  });
+  //实时编辑字段标题
+  test('field interface', async ({ page }) => {
+    await page.goto('/admin/settings/data-source-manager/pg/collections');
+    await page.getByLabel('orders').click();
+    const fieldTitle = uid();
+    //断言提交的data是否符合预期
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('/fields:update')),
+      page.getByLabel('field-title-input').first().fill(fieldTitle),
+    ]);
+    const postData = request.postDataJSON();
+    await expect(postData).toMatchObject({
+      title: fieldTitle,
+    });
   });
   // 字段配置
   test('add association field(oho)', async ({ page }) => {
