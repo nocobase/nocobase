@@ -9,7 +9,9 @@ export const FieldType = observer(
     const record = useRecord();
     const item = record;
     return !item?.possibleTypes ? (
-      <Tag aria-label={`field-type-${value}`}>{value}</Tag>
+      <Tag aria-label={`field-type-${value}`} role="button">
+        {value}
+      </Tag>
     ) : (
       <Select
         defaultValue={value}

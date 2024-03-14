@@ -38,6 +38,7 @@ export const CollectionFieldInterfaceSelect = observer(
       </Tag>
     ) : (
       <Select
+        aria-label="field-interface"
         defaultValue={value}
         style={{ width: '100%' }}
         popupMatchSelectWidth={false}
