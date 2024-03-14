@@ -675,3 +675,6 @@ test.describe("sourceKey, targetKey, optional field types are [string ',' bigInt
     expect(targetKeyOptions).toEqual(expect.arrayContaining(['ID', 'string', 'bigInt', 'integer', 'uuid', 'uid']));
   });
 });
+
+//排序字段，全局排序、分组排序
+test.describe('sort fied', () => {});
