@@ -13,7 +13,7 @@ export const setDataLoadingModeSettingsItem = {
 };
 
 export function useDataLoadingMode() {
-  const { dataLoadingMode } = useDataBlockProps();
+  const { dataLoadingMode } = useDataBlockProps() || {};
   return dataLoadingMode || 'auto';
 }
 
