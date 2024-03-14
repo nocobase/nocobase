@@ -38,7 +38,7 @@ const InternalDetailsBlockProvider = (props) => {
     filterOption: service?.params?.[0]?.filter,
   });
   useEffect(() => {
-    if (!_.isEmpty(filter)) {
+    if (!_.isEmpty(filter) && !service.loading) {
       service?.run({ ...service?.params?.[0], filter });
     }
   }, [JSON.stringify(filter)]);

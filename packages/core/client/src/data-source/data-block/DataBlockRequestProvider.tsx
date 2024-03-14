@@ -6,11 +6,13 @@ import { CollectionRecordProvider, CollectionRecord } from '../collection-record
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
 import { useDataSourceHeaders } from '../utils';
+import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
 
 function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
+  const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
   if (params.filterByTk === undefined) {
@@ -36,13 +38,13 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 
   // 因为修改 Schema 会导致 params 对象发生变化，所以这里使用 `DeepCompare`
   useDeepCompareEffect(() => {
-    if (action) {
+    if (action && dataLoadingMode === 'auto') {
       request.run();
     }
   }, [params, action, record]);
 
   useUpdateEffect(() => {
-    if (action) {
+    if (action && dataLoadingMode === 'auto') {
       request.run();
     }
   }, [resource]);

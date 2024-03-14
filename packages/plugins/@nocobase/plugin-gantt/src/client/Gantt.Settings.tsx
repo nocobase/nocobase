@@ -6,9 +6,11 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsTemplate,
   removeNullCondition,
+  setDataLoadingModeSettingsItem,
   useCollection,
   useCollection_deprecated,
   useCompile,
+  useDataLoadingMode,
   useDesignable,
   useFormBlockContext,
 } from '@nocobase/client';
@@ -206,6 +208,7 @@ export const oldGanttSettings = new SchemaSettings({
         const field = useField();
         const { service } = useGanttBlockContext();
         const { dn } = useDesignable();
+        const dataLoadingMode = useDataLoadingMode();
         return {
           collectionName: name,
           defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
@@ -216,7 +219,11 @@ export const oldGanttSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service.params?.[0], filter });
+
+            if (dataLoadingMode === 'auto') {
+              service.run({ ...service.params?.[0], filter });
+            }
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -373,6 +380,7 @@ export const ganttSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'endDateField',
       Component: SchemaSettingsSelectItem,
@@ -446,6 +454,7 @@ export const ganttSettings = new SchemaSettings({
         const field = useField();
         const { service } = useGanttBlockContext();
         const { dn } = useDesignable();
+        const dataLoadingMode = useDataLoadingMode();
         return {
           collectionName: name,
           defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
@@ -456,7 +465,11 @@ export const ganttSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service.params?.[0], filter });
+
+            if (dataLoadingMode === 'auto') {
+              service.run({ ...service.params?.[0], filter });
+            }
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
