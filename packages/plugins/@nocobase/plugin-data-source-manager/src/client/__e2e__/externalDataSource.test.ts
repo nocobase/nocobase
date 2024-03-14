@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/e2e';
+import { expect, test, expectSettingsMenu } from '@nocobase/test/e2e';
 import { uid } from '@nocobase/utils';
 
 test.describe('add external data source', () => {
@@ -107,16 +107,53 @@ test.describe('configure collection field', () => {
         'x-validator': 'email',
       }),
     );
+    await page.getByLabel('field-interface').first().click();
+    await page.getByRole('option', { name: 'Single line text' }).locator('div').click();
+  });
+  test('synchronize(refresh) external data source collection', async ({ page }) => {});
+});
+
+test.describe('add association field', () => {
+  test('support association field adding', async ({ page }) => {
+    await page.goto('/admin/settings/data-source-manager/pg/collections');
+    await page.getByLabel('action-Action.Link-Configure fields').first().click();
+    await expectSettingsMenu({
+      page,
+      showMenu: async () => {
+        await page.getByRole('button', { name: 'plus Add field' }).hover();
+      },
+      supportedOptions: [
+        'One to one (has one)',
+        'One to one (belongs to)',
+        'One to many',
+        'Many to one',
+        'Many to many',
+      ],
+    });
   });
   // 字段配置
-  test('add association field(oho)', async ({ page }) => {
-    await page.goto('/');
-    await page.getByTestId('plugin-settings-button').click();
-    await page.getByRole('link', { name: 'Data sources' }).click();
-    await page.getByLabel('pg-Configure').click();
-    await expect(await page.getByRole('menuitem', { name: 'Collections' })).toBeVisible();
-    await expect(await page.getByLabel('action-Action-Refresh-')).toBeVisible();
-  });
+  test('oho', async ({ page }) => {
+    const ohoFieldTitle = uid();
+    await page.goto('/admin/settings/data-source-manager/pg/collections');
+    await page.getByLabel('action-Action.Link-Configure fields').first().click();
+    await page.getByRole('button', { name: 'plus Add field' }).hover();
+    await page.getByRole('menuitem', { name: 'One to one (has one)' }).click();
 
-  test('synchronize(refresh) external data source collection', async ({ page }) => {});
+    await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill(ohoFieldTitle);
+    await page.getByLabel('block-item-Select-fields-Target collection').click();
+    await page.getByRole('option', { name: 'users' }).locator('div').click();
+    await page.getByLabel('block-item-ForeignKey-fields-').locator('input').click();
+
+    // ForeignKey 选项符合预期
+    const foreignKeyOptions = await page
+      .locator('.rc-virtual-list')
+      .nth(1)
+      .evaluate((element) => {
+        const optionElements = element.querySelectorAll('.ant-select-item-option');
+        return Array.from(optionElements).map((option) => option.textContent);
+      });
+
+    // 断言下拉列表是否符合预期
+    expect(foreignKeyOptions).toEqual(expect.arrayContaining(['user_uuid', 'username']));
+  });
 });
