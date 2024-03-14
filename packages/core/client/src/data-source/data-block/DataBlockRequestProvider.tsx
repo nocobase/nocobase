@@ -114,7 +114,7 @@ export const BlockRequestProvider: FC = ({ children }) => {
     <BlockRequestContext.Provider value={currentRequest}>
       {action !== 'list' ? (
         <CollectionRecordProvider
-          isNew={action === undefined}
+          isNew={action == null}
           record={currentRequest.data?.data}
           parentRecord={memoizedParentRecord}
         >

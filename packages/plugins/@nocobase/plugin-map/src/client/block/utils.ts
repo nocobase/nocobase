@@ -25,7 +25,7 @@ export const createMapBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': 'MapActionInitializers',
+        'x-initializer': 'map:configureActions',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -65,7 +65,7 @@ export const createMapBlockSchema = (options) => {
                       grid: {
                         type: 'void',
                         'x-component': 'Grid',
-                        'x-initializer': 'RecordBlockInitializers',
+                        'x-initializer': 'popup:common:addBlock',
                         properties: {},
                       },
                     },

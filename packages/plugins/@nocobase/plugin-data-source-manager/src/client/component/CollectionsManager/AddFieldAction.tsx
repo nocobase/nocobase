@@ -22,6 +22,7 @@ import {
   useCurrentAppInfo,
   useAPIClient,
   useFieldInterfaceOptions,
+  useDataSourceManager,
 } from '@nocobase/client';
 import { ForeignKey } from './components';
 
@@ -157,6 +158,7 @@ const useCreateCollectionField = () => {
   const api = useAPIClient();
   const record = useRecord();
   const { name: dataSourceKey } = useParams();
+  const dm = useDataSourceManager();
   return {
     async run() {
       await form.submit();
@@ -176,6 +178,7 @@ const useCreateCollectionField = () => {
           data: values,
         });
         ctx.setVisible(false);
+        dm.getDataSource(dataSourceKey).reload();
         await form.reset();
         field.data.loading = false;
         refresh();

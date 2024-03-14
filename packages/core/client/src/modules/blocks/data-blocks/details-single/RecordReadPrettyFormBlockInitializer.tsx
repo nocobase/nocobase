@@ -30,7 +30,7 @@ export function useCreateSingleDetailsSchema() {
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
-    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
+    block !== 'TableField' ? itemConfig.actionInitializers || 'details:configureActions' : null;
 
   const templateWrap = useCallback(
     (templateSchema, options) => {

@@ -24,6 +24,22 @@ describe('string operator', () => {
     });
   });
 
+  it('should escape underscore in inlcude operator', async () => {
+    const u1 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u1',
+      },
+    });
+
+    const u1Res = await db.getRepository('users').findOne({
+      filter: {
+        'name.$includes': '_',
+      },
+    });
+
+    expect(u1Res).toBeNull();
+  });
+
   it('should query with include operator', async () => {
     const u1 = await db.getRepository('users').create({
       values: {

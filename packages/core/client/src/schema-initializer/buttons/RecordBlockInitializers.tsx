@@ -1,9 +1,9 @@
-import { Schema, useFieldSchema } from '@formily/react';
+import { Schema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
 import {
   useCollection,
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCreateAssociationDetailsBlock,
   useCreateAssociationDetailsWithoutPagination,
   useCreateAssociationFormBlock,
@@ -12,7 +12,7 @@ import {
   useCreateAssociationTableBlock,
   useCreateEditFormBlock,
 } from '../..';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 import { gridRowColWrap } from '../utils';
 import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
 
@@ -257,7 +257,10 @@ function useRecordBlocks() {
   return res;
 }
 
-export const recordBlockInitializers = new SchemaInitializer({
+/**
+ * @deprecated
+ */
+export const recordBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'RecordBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
@@ -354,3 +357,104 @@ export const recordBlockInitializers = new SchemaInitializer({
     },
   ],
 });
+
+export const recordBlockInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'popup:common:addBlock',
+    wrap: gridRowColWrap,
+    title: '{{t("Add block")}}',
+    icon: 'PlusOutlined',
+    items: [
+      {
+        type: 'itemGroup',
+        name: 'dataBlocks',
+        title: '{{t("Data blocks")}}',
+        useChildren: useRecordBlocks,
+      },
+      {
+        name: 'filterBlocks',
+        title: '{{t("Filter blocks")}}',
+        type: 'itemGroup',
+        useVisible() {
+          const collection = useCollection();
+          return useMemo(
+            () =>
+              collection.fields.some(
+                (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
+              ),
+            [collection.fields],
+          );
+        },
+        children: [
+          {
+            name: 'filterForm',
+            title: '{{t("Form")}}',
+            Component: 'FilterFormBlockInitializer',
+            useComponentProps() {
+              const collection = useCollection_deprecated();
+              const toManyField = useMemo(
+                () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
+                [collection.fields],
+              );
+
+              return {
+                filterCollections({ collection }) {
+                  if (collection) {
+                    return toManyField.some((field) => field.target === collection.name);
+                  }
+                },
+                onlyCurrentDataSource: true,
+                showChildren: true,
+              };
+            },
+          },
+          {
+            name: 'filterCollapse',
+            title: '{{t("Collapse")}}',
+            Component: 'FilterCollapseBlockInitializer',
+            useComponentProps() {
+              const collection = useCollection();
+              const toManyField = useMemo(
+                () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
+                [collection.fields],
+              );
+
+              return {
+                filterCollections({ collection }) {
+                  if (collection) {
+                    return toManyField.some((field) => field.target === collection.name);
+                  }
+                },
+                onlyCurrentDataSource: true,
+                showChildren: true,
+              };
+            },
+          },
+        ],
+      },
+      // {
+      //   type: 'itemGroup',
+      //   name: 'relationshipBlocks',
+      //   title: '{{t("Relationship blocks")}}',
+      //   useChildren: useRelationFields,
+      //   useVisible() {
+      //     const res = useRelationFields();
+      //     return res.length > 0;
+      //   },
+      // },
+      {
+        type: 'itemGroup',
+        name: 'otherBlocks',
+        title: '{{t("Other blocks")}}',
+        children: [
+          {
+            name: 'markdown',
+            title: '{{t("Markdown")}}',
+            Component: 'MarkdownBlockInitializer',
+          },
+        ],
+      },
+    ],
+  },
+  recordBlockInitializers_deprecated,
+);

@@ -1,7 +1,10 @@
-import { SchemaInitializerItemType } from '../../../application';
 import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
+import { SchemaInitializerItemType } from '../../../application/schema-initializer/types';
 import { useAssociatedFields } from '../../../filter-provider/utils';
 
+/**
+ * @deprecated
+ */
 export const associationFilterInitializer = new SchemaInitializer({
   name: 'AssociationFilter.Initializer',
   style: {

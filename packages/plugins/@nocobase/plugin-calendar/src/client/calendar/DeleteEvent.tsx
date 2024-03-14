@@ -14,7 +14,7 @@ export const DeleteEvent = observer(
     const { visible, setVisible } = useActionContext();
     const { exclude = [], cron, ...record } = useRecord();
     const { close } = useContext(DeleteEventContext);
-    const startDate = formatDate(dayjs(record.__parent.__event.start));
+    const startDate = formatDate(dayjs(record.__parent?.__event.start));
     const filterByTk = useFilterByTk();
     const { resource, service, __parent } = useBlockRequestContext();
     const [value, onChange] = useState(startDate);

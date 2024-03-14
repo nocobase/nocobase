@@ -56,7 +56,7 @@ export const DetailsBlockInitializer = ({
           actionInitializers:
             (collection.template !== 'view' || collection?.writableView) &&
             collection.template !== 'sql' &&
-            'DetailsActionInitializers',
+            'detailsWithPaging:configureActions',
           settings: 'blockSettings:multiDataDetails',
         });
         insert(schema);

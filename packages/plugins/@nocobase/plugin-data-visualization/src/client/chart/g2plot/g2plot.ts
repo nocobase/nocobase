@@ -70,7 +70,7 @@ export class G2PlotChart extends Chart {
   getReference() {
     return {
       title: this.title,
-      link: `https://ant-design-charts.antgroup.com/api/plots/${this.name}`,
+      link: `https://g2plot.antv.antgroup.com/api/plots/${this.name}`,
     };
   }
 }

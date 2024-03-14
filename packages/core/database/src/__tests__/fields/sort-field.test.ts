@@ -90,6 +90,41 @@ describe('string field', () => {
     console.log(end - begin);
   });
 
+  it('should init sorted value with null scopeValue', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'group',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Test.repository.create({
+      values: [
+        {
+          group: null,
+          name: 'r5',
+        },
+        {
+          group: null,
+          name: 'r6',
+        },
+      ],
+    });
+
+    Test.setField('sort', { type: 'sort', scopeKey: 'group' });
+
+    await db.sync();
+  });
+
   it('should init sorted value with scopeKey', async () => {
     const Test = db.collection({
       name: 'tests',

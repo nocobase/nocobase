@@ -735,8 +735,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   const { removeActiveFieldName } = useFormActiveFields() || {};
   const { form }: { form: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
-
-  if (!fieldSchema?.['x-initializer']) {
+  if (!fieldSchema?.['x-initializer'] && fieldSchema?.['x-decorator'] === 'FormItem') {
     const recursiveInitializerSchema = recursiveParent(fieldSchema);
     if (recursiveInitializerSchema) {
       fieldSchema = recursiveInitializerSchema;
@@ -890,8 +889,8 @@ export const useCollectionDataSourceItems = ({
 
 export const createDetailsBlockSchema = (options) => {
   const {
-    formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'DetailsActionInitializers',
+    formItemInitializers = 'details:configureFields',
+    actionInitializers = 'detailsWithPaging:configureActions',
     collection,
     dataSource,
     association,
@@ -969,9 +968,9 @@ export const createDetailsBlockSchema = (options) => {
 
 export const createListBlockSchema = (options) => {
   const {
-    formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'ListActionInitializers',
-    itemActionInitializers = 'ListItemActionInitializers',
+    formItemInitializers = 'details:configureFields',
+    actionInitializers = 'list:configureActions',
+    itemActionInitializers = 'list:configureItemActions',
     collection,
     dataSource,
     association,
@@ -1057,9 +1056,9 @@ export const createListBlockSchema = (options) => {
 
 export const createGridCardBlockSchema = (options) => {
   const {
-    formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'GridCardActionInitializers',
-    itemActionInitializers = 'GridCardItemActionInitializers',
+    formItemInitializers = 'details:configureFields',
+    actionInitializers = 'gridCard:configureActions',
+    itemActionInitializers = 'gridCard:configureItemActions',
     collection,
     association,
     template,
@@ -1147,8 +1146,8 @@ export const createGridCardBlockSchema = (options) => {
 };
 export const createFormBlockSchema = (options) => {
   const {
-    formItemInitializers = 'FormItemInitializers',
-    actionInitializers = 'FormActionInitializers',
+    formItemInitializers = 'form:configureFields',
+    actionInitializers = 'createForm:configureActions',
     collection,
     resource,
     dataSource,
@@ -1220,8 +1219,8 @@ export const createFormBlockSchema = (options) => {
 
 export const createFilterFormBlockSchema = (options) => {
   const {
-    formItemInitializers = 'FilterFormItemInitializers',
-    actionInitializers = 'FilterFormActionInitializers',
+    formItemInitializers = 'filterForm:configureFields',
+    actionInitializers = 'filterForm:configureActions',
     collection,
     resource,
     association,
@@ -1291,8 +1290,8 @@ export const createFilterFormBlockSchema = (options) => {
  */
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
-    formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'ReadPrettyFormActionInitializers',
+    formItemInitializers = 'details:configureFields',
+    actionInitializers = 'details:configureActions',
     collection,
     association,
     dataSource,
@@ -1392,7 +1391,7 @@ export const createTableBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': tableActionInitializers ?? 'TableActionInitializers',
+        'x-initializer': tableActionInitializers ?? 'table:configureActions',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -1403,7 +1402,7 @@ export const createTableBlockSchema = (options) => {
       },
       [uid()]: {
         type: 'array',
-        'x-initializer': tableColumnInitializers ?? 'TableColumnInitializers',
+        'x-initializer': tableColumnInitializers ?? 'table:configureColumns',
         'x-component': 'TableV2',
         'x-component-props': {
           rowKey: 'id',
@@ -1420,7 +1419,7 @@ export const createTableBlockSchema = (options) => {
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
             'x-designer': 'TableV2.ActionColumnDesigner',
-            'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
+            'x-initializer': tableActionColumnInitializers ?? 'table:configureItemActions',
             properties: {
               [uid()]: {
                 type: 'void',
@@ -1463,7 +1462,7 @@ export const createCollapseBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-action': 'associateFilter',
-        'x-initializer': 'AssociationFilterInitializers',
+        'x-initializer': 'filterCollapse:configureFields',
         'x-component': 'AssociationFilter',
         properties: {},
       },
@@ -1496,7 +1495,7 @@ export const createTableSelectorSchema = (options) => {
     properties: {
       [uid()]: {
         type: 'void',
-        'x-initializer': 'TableActionInitializers',
+        'x-initializer': 'table:configureActions',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -1507,7 +1506,7 @@ export const createTableSelectorSchema = (options) => {
       },
       value: {
         type: 'array',
-        'x-initializer': 'TableColumnInitializers',
+        'x-initializer': 'table:configureColumns',
         'x-component': 'TableV2.Selector',
         'x-component-props': {
           rowSelection: {
