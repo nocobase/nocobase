@@ -91,7 +91,6 @@ export const gridCardBlockSettings = new SchemaSettings({
         const { form } = useFormBlockContext();
         const field = useField();
         const { dn } = useDesignable();
-        const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
 
         return {
           collectionName: name,

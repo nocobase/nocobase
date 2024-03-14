@@ -8,7 +8,7 @@ import { useCollection_deprecated, useSortFields } from '../../../../collection-
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsBlockTitleItem, SchemaSettingsTemplate } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
-import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
+import { setDataLoadingModeSettingsItem, useDataLoadingMode } from './setDataLoadingModeSettingsItem';
 
 export const multiDataDetailsBlockSettings = new SchemaSettings({
   name: 'blockSettings:multiDataDetails',
@@ -27,6 +27,7 @@ export const multiDataDetailsBlockSettings = new SchemaSettings({
         const field = useField();
         const { service } = useDetailsBlockContext();
         const { dn } = useDesignable();
+        const dataLoadingMode = useDataLoadingMode();
         return {
           collectionName: name,
           defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
@@ -37,7 +38,11 @@ export const multiDataDetailsBlockSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service.params?.[0], filter });
+
+            if (dataLoadingMode === 'auto') {
+              service.run({ ...service.params?.[0], filter });
+            }
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

@@ -11,6 +11,7 @@ import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
   useCollectionRecord,
+  useDataLoadingMode,
   useDataSourceHeaders,
   useFormActiveFields,
   useFormBlockContext,
@@ -198,6 +199,10 @@ export const useCreateActionProps = () => {
   const collectValues = useCollectValuesToSubmit();
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
+  const dataLoadingMode = useDataLoadingMode();
+
+  console.log('dataLoadingMode', dataLoadingMode);
+
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
