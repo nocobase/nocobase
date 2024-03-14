@@ -97,7 +97,7 @@ function useRecordBlocks() {
     },
     {
       name: 'editForm',
-      title: '{{t("Edit form")}}',
+      title: '{{t("Form (Edit)")}}',
       Component: 'FormBlockInitializer',
       collectionName: collection.name,
       dataSource: collection.dataSource,
@@ -127,7 +127,7 @@ function useRecordBlocks() {
     },
     {
       name: 'createForm',
-      title: '{{t("Create form")}}',
+      title: '{{t("Form (Add new)")}}',
       Component: 'FormBlockInitializer',
       collectionName: collection.name,
       dataSource: collection.dataSource,

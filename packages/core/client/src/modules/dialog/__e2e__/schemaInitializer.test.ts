@@ -78,7 +78,7 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     // add blocks
     await addBlock(['table Details right', 'General']);
-    await addBlock(['form Edit form']);
+    await addBlock(['form Form (Edit)']);
     await addBlock(['Markdown']);
 
     await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
@@ -165,7 +165,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('menuitem', { name: 'Details' }).hover();
     await page.getByRole('menuitem', { name: 'General' }).click();
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
-    await page.getByRole('menuitem', { name: 'form Edit form' }).first().click();
+    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().click();
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
     await page.mouse.move(300, 0);
@@ -178,9 +178,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 下拉列表中，可选择以下区块进行创建
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
     await expect(page.getByRole('menuitem', { name: 'table Details right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Edit form' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Create form right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Create form right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'form Form (Edit)' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'table Table right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'ordered-list List right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'ordered-list Grid Card right' })).toBeVisible();
