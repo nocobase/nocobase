@@ -50,6 +50,9 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
           .ant-menu-sub {
             max-height: 50vh !important;
           }
+          .ant-menu-item {
+            margin-block: 0;
+          }
           .ant-menu-root {
             margin: 0 -${token.margin}px;
             .ant-menu-submenu-title {

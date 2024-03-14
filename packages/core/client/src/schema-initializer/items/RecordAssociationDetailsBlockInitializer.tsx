@@ -1,5 +1,5 @@
 import { FormOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
@@ -40,3 +40,28 @@ export const RecordAssociationDetailsBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationDetailsBlock() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createAssociationDetailsBlock = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      insert(
+        createDetailsBlockSchema({
+          collection: field.target,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+          rowKey: collection.filterTargetKey || 'id',
+          settings: 'blockSettings:multiDataDetails',
+        }),
+      );
+    },
+    [getCollection, insert],
+  );
+
+  return { createAssociationDetailsBlock };
+}

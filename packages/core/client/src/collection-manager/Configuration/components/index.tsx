@@ -221,11 +221,11 @@ export const ForeignKey = observer(
     const { getCollection } = useCollectionManager_deprecated();
     const record = useRecord();
     const field: any = useField();
-    const { collectionName, target, type, through, name } = record;
+    const { collectionName, target, type, through, name, template } = record;
     const value = record[field.props.name];
     const compile = useCompile();
     const form = useForm();
-    const [initialValue, setInitialValue] = useState(value || field.initialValue);
+    const [initialValue, setInitialValue] = useState(value || (template === 'view' ? null : field.initialValue));
     useEffect(() => {
       const effectField = ['belongsTo'].includes(type)
         ? collectionName
@@ -251,9 +251,10 @@ export const ForeignKey = observer(
         }
       }
     }, [type]);
+    const Compoent = template === 'view' ? Select : AutoComplete;
     return (
       <div>
-        <AutoComplete
+        <Compoent
           disabled={disabled}
           value={initialValue}
           options={options}

@@ -101,7 +101,7 @@ export default {
         [allCollections],
       );
       const [openMenuKeys, setOpenMenuKeys] = useState([]);
-      const searchedChildren = useMenuSearch(childItems, openMenuKeys);
+      const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys });
       return {
         name: 'updateRecordForm',
         key: 'updateRecordForm',

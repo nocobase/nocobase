@@ -61,7 +61,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
     }).replaceAll('&gt;', '>');
   }, [message, nameValue, type, t, blockType]);
 
-  if (designable || process.env.NODE_ENV === 'development') {
+  if (designable) {
     if (type === 'Field') {
       return <Text type="secondary">{messageValue}</Text>;
     }

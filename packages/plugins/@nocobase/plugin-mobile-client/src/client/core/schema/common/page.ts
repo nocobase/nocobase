@@ -7,7 +7,7 @@ export const PageSchema = {
     grid: {
       type: 'void',
       'x-component': 'Grid',
-      'x-initializer': 'MBlockInitializers',
+      'x-initializer': 'mobilePage:addBlock',
       'x-component-props': {
         showDivider: false,
       },

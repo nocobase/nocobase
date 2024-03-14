@@ -290,7 +290,16 @@ export const useTableSelectorProps = () => {
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-  }, [ctx?.service?.loading]);
+  }, [
+    collectionField?.foreignKey,
+    ctx?.field?.data?.selectedRowKeys,
+    ctx?.service?.data?.data,
+    ctx?.service?.data?.meta?.count,
+    ctx?.service?.data?.meta?.page,
+    ctx?.service?.data?.meta?.pageSize,
+    ctx?.service?.loading,
+    field,
+  ]);
   return {
     loading: ctx?.service?.loading,
     showIndex: false,

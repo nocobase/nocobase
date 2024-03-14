@@ -1,6 +1,9 @@
 import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../../../schema-initializer/utils';
 
+/**
+ * @deprecated
+ */
 export const recordFormBlockInitializers = new SchemaInitializer({
   name: 'RecordFormBlockInitializers',
   title: '{{ t("Add block") }}',

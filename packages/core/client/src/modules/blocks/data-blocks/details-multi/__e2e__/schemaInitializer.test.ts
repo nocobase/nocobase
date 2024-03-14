@@ -3,17 +3,18 @@ import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase
 test.describe('where multi data details block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Details');
     await expect(page.getByLabel('block-item-CardItem-users-details')).toBeVisible();
   });
 });
 
 test.describe('configure fields', () => {
-  test('display collection fields & display association fields & add text', async ({ page, mockPage }) => {
+  test('display collection fields & display association fields & add text', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
+    await mockRecord('general');
 
-    const formItemInitializer = page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general');
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-details:configureFields-general');
 
     // add fields
     await formItemInitializer.hover();
@@ -60,10 +61,11 @@ test.describe('configure fields', () => {
 });
 
 test.describe('configure actions', () => {
-  test('edit & delete & duplicate', async ({ page, mockPage }) => {
+  test('edit & delete & duplicate', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
+    await mockRecord('general');
 
-    await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
@@ -75,7 +77,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
