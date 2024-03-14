@@ -28,6 +28,8 @@ export const ViewDatabaseConnectionAction = () => {
         type="link"
         style={{ padding: '0px' }}
         disabled={!record.enabled}
+        role="button"
+        raia-label={`${record.key}-Configure`}
         onClick={() => {
           navigate(getConnectionCollectionPath(record.key));
         }}
