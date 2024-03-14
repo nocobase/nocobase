@@ -8,10 +8,10 @@ import lodash from 'lodash';
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
+  CompatibleSchemaInitializer,
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
-  SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemType,
   SchemaInitializerItems,
@@ -103,7 +103,7 @@ function CustomFormBlockInitializer() {
                 grid: {
                   type: 'void',
                   'x-component': 'Grid',
-                  'x-initializer': 'AddCustomFormField',
+                  'x-initializer': 'workflowManual:customForm:configureFields',
                 },
                 actions: {
                   type: 'void',
@@ -116,7 +116,7 @@ function CustomFormBlockInitializer() {
                       flexWrap: 'wrap',
                     },
                   },
-                  'x-initializer': 'AddActionButton',
+                  'x-initializer': 'workflowManual:form:configureActions',
                   properties: {
                     resolve: {
                       type: 'void',
@@ -322,13 +322,27 @@ const CustomItemsComponent = (props) => {
   );
 };
 
-export const addCustomFormField: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ */
+export const addCustomFormField_deprecated = new CompatibleSchemaInitializer({
   name: 'AddCustomFormField',
   wrap: gridRowColWrap,
   insertPosition: 'beforeEnd',
   title: "{{t('Configure fields')}}",
   ItemsComponent: CustomItemsComponent,
 });
+
+export const addCustomFormField = new CompatibleSchemaInitializer(
+  {
+    name: 'workflowManual:customForm:configureFields',
+    wrap: gridRowColWrap,
+    insertPosition: 'beforeEnd',
+    title: "{{t('Configure fields')}}",
+    ItemsComponent: CustomItemsComponent,
+  },
+  addCustomFormField_deprecated,
+);
 
 function CustomFormFieldInitializer() {
   const itemConfig = useSchemaInitializerItem();

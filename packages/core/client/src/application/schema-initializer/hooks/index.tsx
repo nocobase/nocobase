@@ -41,6 +41,7 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
           return {
             key: item.key,
             label: element,
+            associationField: item.associationField,
           };
         }
         if (item.type === 'itemGroup') {
@@ -73,6 +74,7 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
         return {
           key,
           label,
+          associationField: item.associationField,
           onClick: (info) => {
             if (info.key !== key) return;
             if (item.onClick) {

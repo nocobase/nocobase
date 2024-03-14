@@ -29,11 +29,12 @@ test.describe('multi data details block schema settings', () => {
 });
 
 test.describe('actions schema settings', () => {
-  test('edit & delete & duplicate', async ({ page, mockPage }) => {
+  test('edit & delete & duplicate', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
+    await mockRecord('general');
 
     // 创建 Edit & Delete 两个按钮
-    await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.mouse.move(0, 300);

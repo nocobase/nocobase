@@ -26,6 +26,7 @@ import { removeNullCondition } from '../filter';
 import { useCompile } from '../../';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { FixedBlockDesignerItem } from '../page/FixedBlockDesignerItem';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();
@@ -66,7 +67,7 @@ export const EditSortField = () => {
 };
 
 export const TableBlockDesigner = () => {
-  const { name, title, sortable } = useCollection_deprecated();
+  const { name, title } = useCollection_deprecated();
   const { getCollectionField, getCollection } = useCollectionManager_deprecated();
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -75,7 +76,6 @@ export const TableBlockDesigner = () => {
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const record = useRecord();
 
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
@@ -268,6 +268,7 @@ export const TableBlockDesigner = () => {
           }}
         />
       )}
+      <SetDataLoadingMode />
       <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}

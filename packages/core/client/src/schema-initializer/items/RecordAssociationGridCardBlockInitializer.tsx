@@ -1,11 +1,14 @@
 import { TableOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createGridCardBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 
+/**
+ * @deprecated
+ */
 export const RecordAssociationGridCardBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
@@ -41,3 +44,28 @@ export const RecordAssociationGridCardBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationGridCardBlock() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createAssociationGridCardBlock = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      insert(
+        createGridCardBlockSchema({
+          rowKey: collection.filterTargetKey,
+          collection: field.target,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+          settings: 'blockSettings:gridCard',
+        }),
+      );
+    },
+    [getCollection, insert],
+  );
+
+  return { createAssociationGridCardBlock };
+}

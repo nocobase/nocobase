@@ -19,11 +19,11 @@ const InternalDetailsBlockProvider = (props) => {
       createForm({
         readPretty,
       }),
-    [],
+    [readPretty],
   );
   const { resource, service } = useBlockRequestContext();
   const parentRecord = useCollectionParentRecord();
-  const currentRecord = service?.data?.data?.[0] || {};
+  const currentRecord = (action === 'list' ? service?.data?.data?.[0] : service?.data?.data) || {};
   const detailsBLockValue = useMemo(() => {
     return {
       action,
@@ -38,7 +38,7 @@ const InternalDetailsBlockProvider = (props) => {
     filterOption: service?.params?.[0]?.filter,
   });
   useEffect(() => {
-    if (!_.isEmpty(filter)) {
+    if (!_.isEmpty(filter) && !service.loading) {
       service?.run({ ...service?.params?.[0], filter });
     }
   }, [JSON.stringify(filter)]);
@@ -65,6 +65,9 @@ export const DetailsBlockProvider = (props) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const useDetailsBlockContext = () => {
   return useContext(DetailsBlockContext);
 };
@@ -73,14 +76,15 @@ export const useDetailsBlockProps = () => {
   const ctx = useDetailsBlockContext();
   useEffect(() => {
     if (!ctx.service.loading) {
+      const data = ctx.action === 'list' ? ctx.service?.data?.data?.[0] : ctx.service?.data?.data;
       ctx.form
         .reset()
         .then(() => {
-          ctx.form.setValues(ctx.service?.data?.data?.[0] || {});
+          ctx.form.setValues(data || {});
         })
         .catch(console.error);
     }
-  }, [ctx.service.loading]);
+  }, [ctx.action, ctx.form, ctx.service?.data?.data, ctx.service.loading]);
   return {
     form: ctx.form,
   };

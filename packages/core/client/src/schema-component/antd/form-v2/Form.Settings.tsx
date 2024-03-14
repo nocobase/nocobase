@@ -16,7 +16,11 @@ import {
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
+import { setDataLoadingModeSettingsItem } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
+/**
+ * @deprecated
+ */
 export const formSettings = new SchemaSettings({
   name: 'FormSettings',
   items: [
@@ -83,6 +87,9 @@ export const formSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const readPrettyFormSettings = new SchemaSettings({
   name: 'ReadPrettyFormSettings',
   items: [
@@ -122,6 +129,9 @@ export const readPrettyFormSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const formDetailsSettings = new SchemaSettings({
   name: 'FormDetailsSettings',
   items: [
@@ -160,6 +170,7 @@ export const formDetailsSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'sortingRules',
       type: 'modal',

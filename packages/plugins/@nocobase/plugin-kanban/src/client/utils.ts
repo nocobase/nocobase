@@ -23,7 +23,7 @@ export const createKanbanBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': 'KanbanActionInitializers',
+        'x-initializer': 'kanban:configureActions',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -91,7 +91,7 @@ export const createKanbanBlockSchema = (options) => {
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'RecordBlockInitializers',
+                            'x-initializer': 'popup:common:addBlock',
                             properties: {},
                           },
                         },

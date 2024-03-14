@@ -101,7 +101,7 @@ test.describe('table block schema settings', () => {
       ).toBeChecked();
       await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
       // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
       await page.getByLabel('schema-initializer-TableV2-').click();
@@ -141,7 +141,7 @@ test.describe('table block schema settings', () => {
     }
 
     async function createColumnItem(page: Page, fieldName: string) {
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: fieldName, exact: true }).click();
       await page.mouse.move(300, 0);
     }
@@ -213,7 +213,7 @@ test.describe('table block schema settings', () => {
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
       await page.mouse.move(300, 0);
@@ -567,7 +567,7 @@ test.describe('actions schema settings', () => {
   test.describe('popup', () => {
     const addSomeCustomActions = async (page: Page) => {
       // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'View' }).click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
@@ -624,7 +624,7 @@ test.describe('actions schema settings', () => {
   test.describe('update record', () => {
     const addSomeCustomActions = async (page: Page) => {
       // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'View' }).click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
@@ -677,13 +677,13 @@ test.describe('actions schema settings', () => {
 
       // 添加一行数据
       // TODO: 使用 mockRecord 为 tree 表添加一行数据无效
-      await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-table:configureActions-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).click();
       await page.getByRole('button', { name: 'Add new' }).click();
-      await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
       await page.mouse.move(300, 0);
-      await page.getByLabel('schema-initializer-ActionBar-CreateFormActionInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.mouse.move(300, 0);
       await page.getByRole('button', { name: 'Submit' }).click();

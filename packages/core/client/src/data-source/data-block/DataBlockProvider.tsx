@@ -24,6 +24,7 @@ export interface AllDataBlockProps {
   parentRecord?: CollectionRecord;
   requestService?: UseRequestService<any>;
   requestOptions?: UseRequestOptions;
+  dataLoadingMode?: 'auto' | 'manual';
   [index: string]: any;
 }
 
