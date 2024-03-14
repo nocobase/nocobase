@@ -23,6 +23,7 @@ import { removeNullCondition } from '../filter';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { RecordPickerContext } from '../../antd/record-picker';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection_deprecated();
@@ -126,6 +127,7 @@ export const TableSelectorDesigner = () => {
           }}
         />
       )}
+      <SetDataLoadingMode />
       {!dragSort && (
         <SchemaSettingsModalItem
           title={t('Set default sorting rules')}
