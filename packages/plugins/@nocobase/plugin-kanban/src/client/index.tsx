@@ -1,14 +1,14 @@
+import { Action, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
-import { Plugin, Action, CurrentAppInfoProvider, SchemaComponentOptions } from '@nocobase/client';
 import { Kanban } from './Kanban';
 import { KanbanCard } from './Kanban.Card';
-import { KanbanCardDesigner, kanbanCardInitializers } from './Kanban.Card.Designer';
+import { KanbanCardDesigner, kanbanCardInitializers, kanbanCardInitializers_deprecated } from './Kanban.Card.Designer';
 import { KanbanCardViewer } from './Kanban.CardViewer';
 import { KanbanDesigner } from './Kanban.Designer';
-import { kanbanActionInitializers } from './KanbanActionInitializers';
-import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
-import { KanbanBlockInitializer } from './KanbanBlockInitializer';
 import { kanbanSettings } from './Kanban.Settings';
+import { kanbanActionInitializers, kanbanActionInitializers_deprecated } from './KanbanActionInitializers';
+import { KanbanBlockInitializer } from './KanbanBlockInitializer';
+import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 
 Kanban.Card = KanbanCard;
 Kanban.CardAdder = Action;
@@ -35,11 +35,13 @@ KanbanPluginProvider.displayName = 'KanbanPluginProvider';
 class KanbanPlugin extends Plugin {
   async load() {
     this.app.use(KanbanPluginProvider);
+    this.app.schemaInitializerManager.add(kanbanCardInitializers_deprecated);
     this.app.schemaInitializerManager.add(kanbanCardInitializers);
+    this.app.schemaInitializerManager.add(kanbanActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(kanbanActionInitializers);
     this.app.schemaSettingsManager.add(kanbanSettings);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.kanban', {
       title: '{{t("Kanban")}}',
       Component: 'KanbanBlockInitializer',

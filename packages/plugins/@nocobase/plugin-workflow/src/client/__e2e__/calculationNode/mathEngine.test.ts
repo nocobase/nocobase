@@ -558,7 +558,7 @@ test.skip('Collection event add data trigger, get front manual node add form sin
               version: '2.0',
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'AddBlockButton',
+              'x-initializer': 'workflowManual:popup:configureUserInterface:addBlock',
               name: 'grid',
               properties: {
                 '59t231zx5vx': {
@@ -603,7 +603,7 @@ test.skip('Collection event add data trigger, get front manual node add form sin
                                   version: '2.0',
                                   type: 'void',
                                   'x-component': 'Grid',
-                                  'x-initializer': 'FormItemInitializers',
+                                  'x-initializer': 'form:configureFields',
                                   name: 'grid',
                                   properties: {
                                     yt2rbpepdsl: {
@@ -641,7 +641,7 @@ test.skip('Collection event add data trigger, get front manual node add form sin
                                   _isJSONSchemaObject: true,
                                   version: '2.0',
                                   type: 'void',
-                                  'x-initializer': 'AddActionButton',
+                                  'x-initializer': 'workflowManual:form:configureActions',
                                   'x-component': 'ActionBar',
                                   'x-component-props': {
                                     layout: 'one-column',

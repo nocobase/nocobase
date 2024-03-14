@@ -1,7 +1,7 @@
 import { Plugin, SchemaInitializerItemType } from '@nocobase/client';
 import WorkflowPlugin, {
-  useTriggerWorkflowsActionProps,
   useRecordTriggerWorkflowsActionProps,
+  useTriggerWorkflowsActionProps,
 } from '@nocobase/plugin-workflow/client';
 
 import ActionTrigger from './ActionTrigger';

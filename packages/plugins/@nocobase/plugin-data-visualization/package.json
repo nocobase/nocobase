@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "0.20.0-alpha.9",
+  "version": "0.20.0-alpha.10",
   "displayName": "Data visualization",
   "displayName.zh-CN": "数据可视化",
   "description": "Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.",
@@ -10,7 +10,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-visualization",
   "devDependencies": {
     "@ant-design/icons": "5.x",
-    "@ant-design/plots": "^1.2.5",
+    "@ant-design/plots": "^2.1.4",
     "@emotion/css": "^11.7.1",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
