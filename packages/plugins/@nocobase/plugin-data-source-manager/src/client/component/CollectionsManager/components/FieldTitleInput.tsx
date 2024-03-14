@@ -38,7 +38,7 @@ export const FieldTitleInput = observer(
     useEffect(() => {
       setTitleValue(value);
     }, [value]);
-    return <Input value={titleValue} onChange={handleChange} />;
+    return <Input value={titleValue} onChange={handleChange} aria-label="field-title-input" />;
   },
   { displayName: 'FieldTitleInput' },
 );
