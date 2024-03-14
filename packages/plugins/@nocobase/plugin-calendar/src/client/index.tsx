@@ -24,7 +24,7 @@ export class PluginCalendarClient extends Plugin {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',
     });
-    this.app.schemaInitializerManager.addItem('RecordBlockInitializers', 'dataBlocks.calendar', {
+    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',
       useVisible() {

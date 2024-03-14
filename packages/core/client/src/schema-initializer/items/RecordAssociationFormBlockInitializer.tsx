@@ -82,8 +82,8 @@ export function useCreateAssociationFormBlock() {
       const collection = getCollection(field.target);
       const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
       const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
-        ? 'UpdateFormActionInitializers'
-        : 'CreateFormActionInitializers';
+        ? 'editForm:configureActions'
+        : 'createForm:configureActions';
 
       insert(
         createFormBlockSchema({
@@ -107,8 +107,8 @@ export function useCreateAssociationFormBlock() {
       const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
       const collection = getCollection(field.target);
       const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
-        ? 'UpdateFormActionInitializers'
-        : 'CreateFormActionInitializers';
+        ? 'editForm:configureActions'
+        : 'createForm:configureActions';
 
       if (item.template.componentName === 'FormItem') {
         const blockSchema = createFormBlockSchema({

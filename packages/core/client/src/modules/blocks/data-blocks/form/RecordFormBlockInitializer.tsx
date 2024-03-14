@@ -50,7 +50,7 @@ export function useCreateEditFormBlock() {
           action: 'get',
           useSourceId: '{{ useSourceIdFromParentRecord }}',
           useParams: '{{ useParamsFromRecord }}',
-          actionInitializers: 'UpdateFormActionInitializers',
+          actionInitializers: 'editForm:configureActions',
           settings: 'blockSettings:editForm',
         }),
       );
@@ -68,7 +68,7 @@ export function useCreateEditFormBlock() {
           action: 'get',
           useSourceId: '{{ useSourceIdFromParentRecord }}',
           useParams: '{{ useParamsFromRecord }}',
-          actionInitializers: 'UpdateFormActionInitializers',
+          actionInitializers: 'editForm:configureActions',
           template: templateSchema,
           settings: 'blockSettings:editForm',
         });

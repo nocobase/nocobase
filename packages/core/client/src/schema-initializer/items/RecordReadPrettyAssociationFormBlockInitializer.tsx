@@ -77,7 +77,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager_deprecated();
   const { block } = useBlockRequestContext();
-  const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
+  const actionInitializers = block !== 'TableField' ? 'details:configureActions' : null;
 
   const createAssociationDetailsWithoutPagination = useCallback(
     ({ item }) => {
