@@ -265,8 +265,8 @@ export const recordBlockInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'currentRecordBlocks',
-      title: '{{t("Current record blocks")}}',
+      name: 'dataBlocks',
+      title: '{{t("Data blocks")}}',
       useChildren: useRecordBlocks,
     },
     {
