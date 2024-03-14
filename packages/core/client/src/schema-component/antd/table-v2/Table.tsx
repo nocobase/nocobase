@@ -289,7 +289,6 @@ export const Table: any = observer(
     const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
     const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
     const [selectedRow, setSelectedRow] = useState([]);
-    const dataSource = useMemo(() => field?.value?.slice?.()?.filter?.(Boolean), [field.value?.length]);
     const isRowSelect = rowSelection?.type !== 'none';
     const defaultRowKeyMap = useRef(new Map());
 
@@ -442,6 +441,10 @@ export const Table: any = observer(
       },
       [rowKey, defaultRowKey],
     );
+
+    const dataSourceKeys = field?.value?.map(getRowKey);
+    const memoizedDataSourceKeys = useDeepMemoized(dataSourceKeys);
+    const dataSource = useMemo(() => field?.value?.slice?.()?.filter?.(Boolean), [memoizedDataSourceKeys]);
 
     const memoizedRowSelection = useDeepMemoized(rowSelection);
 
