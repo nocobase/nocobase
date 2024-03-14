@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../../../schema-component';
 import { SchemaSettingsModalItem, useCollectionState } from '../../../../schema-settings';
 import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
-import { useDataBlockProps } from '../../../../data-source';
+import { useDataBlockProps, useDataBlockRequest } from '../../../../data-source';
 
 export const setDataLoadingModeSettingsItem = {
   name: 'setDataLoadingMode',
@@ -24,6 +24,7 @@ function SetDataLoadingMode() {
   const fieldSchema = useFieldSchema();
   const { name } = useCollection_deprecated();
   const { getEnableFieldTree, getOnLoadData } = useCollectionState(name);
+  const request = useDataBlockRequest();
 
   return (
     <SchemaSettingsModalItem
@@ -58,6 +59,12 @@ function SetDataLoadingMode() {
           },
         });
         dn.refresh();
+
+        if (dataLoadingMode === 'auto') {
+          request.run();
+        } else {
+          request.mutate(undefined);
+        }
       }}
     />
   );
