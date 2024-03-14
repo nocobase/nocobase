@@ -24,6 +24,7 @@ export interface ActionContextProps {
   snapshot?: boolean;
   openSize?: OpenSize;
   containerRefKey?: string;
+  formValueChangedRef?: React.MutableRefObject<boolean>;
   formValueChanged?: boolean;
   setFormValueChanged?: (v: boolean) => void;
   fieldSchema?: Schema;

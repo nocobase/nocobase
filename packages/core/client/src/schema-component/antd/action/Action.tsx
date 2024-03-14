@@ -3,7 +3,7 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
@@ -52,7 +52,7 @@ export const Action: ComposedAction = observer(
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
-    const [formValueChanged, setFormValueChanged] = useState(false);
+    // const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
     const { run, element } = useAction(actionCallback);
@@ -151,12 +151,18 @@ export const Action: ComposedAction = observer(
       );
     };
 
+    const formValueChangedRef = useRef(false);
+    const setFormValueChanged = useCallback((value) => {
+      formValueChangedRef.current = value;
+    }, []);
+
     const result = (
       <ActionContextProvider
         button={renderButton()}
         visible={visible}
         setVisible={setVisible}
-        formValueChanged={formValueChanged}
+        formValueChangedRef={formValueChangedRef}
+        formValueChanged={formValueChangedRef.current}
         setFormValueChanged={setFormValueChanged}
         openMode={openMode}
         openSize={openSize}
