@@ -50,5 +50,7 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
+export * from './unixTimestamp';
+export * from './nanoIDInput';
 
 import './index.less';

@@ -434,7 +434,9 @@ export class ManualNode {
       .getByRole('button', { name: 'Configure' });
     this.assigneesDropDown = page.getByTestId('select-single');
     this.configureUserInterfaceButton = page.getByRole('button', { name: 'Configure user interface' });
-    this.addBlockButton = page.getByLabel('schema-initializer-Grid-AddBlockButton-workflows');
+    this.addBlockButton = page.getByLabel(
+      'schema-initializer-Grid-workflowManual:popup:configureUserInterface:addBlock-workflows',
+    );
     this.triggerDataMenu = page.getByRole('menuitem', { name: 'Trigger data' });
     this.nodeDataMenu = page.getByRole('menuitem', { name: 'Node result right' });
     this.customFormMenu = page.getByRole('menuitem', { name: 'Custom form' });

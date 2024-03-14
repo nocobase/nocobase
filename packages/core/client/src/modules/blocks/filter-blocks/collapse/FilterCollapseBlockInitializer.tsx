@@ -4,14 +4,16 @@ import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { createCollapseBlockSchema } from '../../../../schema-initializer/utils';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { Collection } from '../../../../data-source';
+import { Collection, CollectionFieldOptions } from '../../../../data-source';
 
 export const FilterCollapseBlockInitializer = ({
-  filterMenuItemChildren,
+  filterCollections,
   onlyCurrentDataSource,
+  showChildren,
 }: {
-  filterMenuItemChildren: (collection: Collection) => boolean;
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
+  showChildren?: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
@@ -31,7 +33,8 @@ export const FilterCollapseBlockInitializer = ({
         });
         insert(schema);
       }}
-      filter={filterMenuItemChildren}
+      filter={filterCollections}
+      showChildren={showChildren}
     />
   );
 };

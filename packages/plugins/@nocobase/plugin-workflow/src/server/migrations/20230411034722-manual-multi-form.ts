@@ -113,7 +113,7 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
       },
       properties: {
         grid: Object.assign(formBlock.properties.grid, {
-          'x-initializer': 'AddCustomFormField',
+          'x-initializer': 'workflowManual:customForm:configureFields',
         }),
         // 7.
         actions: {
@@ -126,7 +126,7 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
               marginTop: '1.5em',
             },
           },
-          'x-initializer': 'AddActionButton',
+          'x-initializer': 'workflowManual:form:configureActions',
           properties: schema.actions,
         },
       },

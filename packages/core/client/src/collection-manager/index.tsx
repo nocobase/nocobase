@@ -25,3 +25,4 @@ export * from './collectionPlugin';
 export * from './mixins/InheritanceCollectionMixin';
 export * from './sub-table';
 export * from './CollectionHistoryProvider';
+export * from './utils';
