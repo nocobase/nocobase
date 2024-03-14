@@ -117,7 +117,7 @@ export const tableSelectorInitializers = new CompatibleSchemaInitializer(
               title: '{{t("Form")}}',
               Component: 'FilterFormBlockInitializer',
               componentProps: {
-                filterMenuItemChildren() {
+                filterCollections() {
                   return false;
                 },
                 onlyCurrentDataSource: true,
@@ -130,7 +130,7 @@ export const tableSelectorInitializers = new CompatibleSchemaInitializer(
               title: '{{t("Collapse")}}',
               Component: 'FilterCollapseBlockInitializer',
               componentProps: {
-                filterMenuItemChildren() {
+                filterCollections() {
                   return false;
                 },
                 onlyCurrentDataSource: true,

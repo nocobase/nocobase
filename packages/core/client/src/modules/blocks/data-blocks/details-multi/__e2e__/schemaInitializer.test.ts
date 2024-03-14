@@ -10,8 +10,9 @@ test.describe('where multi data details block can be added', () => {
 });
 
 test.describe('configure fields', () => {
-  test('display collection fields & display association fields & add text', async ({ page, mockPage }) => {
+  test('display collection fields & display association fields & add text', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
+    await mockRecord('general');
 
     const formItemInitializer = page.getByLabel('schema-initializer-Grid-details:configureFields-general');
 
@@ -60,8 +61,9 @@ test.describe('configure fields', () => {
 });
 
 test.describe('configure actions', () => {
-  test('edit & delete & duplicate', async ({ page, mockPage }) => {
+  test('edit & delete & duplicate', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
+    await mockRecord('general');
 
     await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();

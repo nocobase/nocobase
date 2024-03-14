@@ -111,7 +111,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
 
     async function addBlock(names: string[]) {
-      await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
+      await page.getByLabel('schema-initializer-Grid-popup').hover();
       for (const name of names) {
         await page.getByRole('menuitem', { name }).click();
       }
