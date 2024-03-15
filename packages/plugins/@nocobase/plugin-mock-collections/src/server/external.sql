@@ -101,3 +101,63 @@ CREATE TABLE "test_table" (
                                 "polygon" polygon
 );
 
+
+-- 创建 authors 表
+CREATE TABLE authors (
+    author_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    author_name VARCHAR(100) NOT NULL
+);
+
+-- 创建 posts 表
+CREATE TABLE posts (
+    post_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_title VARCHAR(100) NOT NULL,
+    post_content TEXT NOT NULL,
+    author_id UUID REFERENCES authors(author_id)
+);
+
+-- 创建 comments 表
+CREATE TABLE comments (
+    comment_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    comment_content TEXT NOT NULL,
+    post_id UUID REFERENCES posts(post_id),
+    author_id UUID REFERENCES authors(author_id)
+);
+
+-- 创建 tags 表
+CREATE TABLE tags (
+    tag_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tag_name VARCHAR(100) NOT NULL
+);
+
+-- 创建 post_tags 关联表
+CREATE TABLE post_tags (
+    post_id UUID REFERENCES posts(post_id),
+    tag_id UUID REFERENCES tags(tag_id),
+    PRIMARY KEY (post_id, tag_id)
+);
+
+-- 向 authors 表插入测试数据
+INSERT INTO authors (author_name) VALUES
+    ('Author1'),
+    ('Author2');
+
+-- 向 posts 表插入测试数据
+INSERT INTO posts (post_title, post_content, author_id) VALUES
+    ('Post1', 'This is the content of Post1', (SELECT author_id FROM authors WHERE author_name = 'Author1')),
+    ('Post2', 'This is the content of Post2', (SELECT author_id FROM authors WHERE author_name = 'Author2'));
+
+-- 向 comments 表插入测试数据
+INSERT INTO comments (comment_content, post_id, author_id) VALUES
+    ('This is a comment on Post1', (SELECT post_id FROM posts WHERE post_title = 'Post1'), (SELECT author_id FROM authors WHERE author_name = 'Author1')),
+    ('This is a comment on Post2', (SELECT post_id FROM posts WHERE post_title = 'Post2'), (SELECT author_id FROM authors WHERE author_name = 'Author2'));
+
+-- 向 tags 表插入测试数据
+INSERT INTO tags (tag_name) VALUES
+    ('Tag1'),
+    ('Tag2');
+
+-- 建立 posts 和 tags 之间的关系
+INSERT INTO post_tags (post_id, tag_id) VALUES
+    ((SELECT post_id FROM posts WHERE post_title = 'Post1'), (SELECT tag_id FROM tags WHERE tag_name = 'Tag1')),
+    ((SELECT post_id FROM posts WHERE post_title = 'Post2'), (SELECT tag_id FROM tags WHERE tag_name = 'Tag2'));
