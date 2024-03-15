@@ -70,8 +70,10 @@ test.describe('configure collection field', () => {
   test('field interface', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/pg/collections');
     await page.getByLabel('action-Action.Link-Configure fields').first().click();
-    await page.getByLabel('field-interface').first().click();
-
+    const stringField = await page.getByLabel('field-interface');
+    const input = await stringField.locator('input[value="Single line text"]').first();
+    console.log(stringField);
+    await input.click();
     const interfaceOptions = await page
       .locator('.rc-virtual-list')
       .last()
@@ -203,9 +205,12 @@ test.describe('add association field', () => {
 
   test('m2o targetKey & forignkey', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/pg/collections');
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    await page.getByRole('textbox').nth(1).fill('users');
+    await page.getByRole('button', { name: 'Submit' }).click();
     await page.getByLabel('action-Action.Link-Configure fields').first().click();
     await page.getByRole('button', { name: 'plus Add field' }).hover();
-    await page.getByRole('menuitem', { name: 'Many to many' }).click();
+    await page.getByRole('menuitem', { name: 'Many to one' }).click();
 
     await page.getByLabel('block-item-Select-fields-Target collection').click();
     await page.getByRole('option', { name: 'users' }).locator('div').click();
@@ -276,7 +281,15 @@ test.describe('add association field', () => {
 });
 
 test.describe('add block', () => {
-  test('data block ', async ({ page }) => {});
+  test('data block ', async ({ page, mockPage }) => {
+    const nocobasePage = mockPage();
+    await nocobasePage.goto();
+    await page.getByLabel('schema-initializer-Grid-page').click();
+    await page.getByText('Table').hover();
+    //多数源选项/数据表
+    await expect(await page.getByRole('menuitem', { name: 'Main' })).toBeVisible();
+    await expect(await page.getByRole('menuitem', { name: 'pg' })).toBeVisible();
+  });
   test('filter block ', async ({ page }) => {});
   test('association block ', async ({ page }) => {});
 });

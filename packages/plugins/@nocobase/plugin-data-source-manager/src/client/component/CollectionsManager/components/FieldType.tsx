@@ -14,6 +14,9 @@ export const FieldType = observer(
       </Tag>
     ) : (
       <Select
+        aria-label={`field-type-${value}`}
+        //@ts-ignore
+        role="button"
         defaultValue={value}
         popupMatchSelectWidth={false}
         style={{ width: '100%' }}
