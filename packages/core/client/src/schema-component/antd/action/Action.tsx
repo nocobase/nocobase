@@ -52,7 +52,7 @@ export const Action: ComposedAction = observer(
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
-    // const [formValueChanged, setFormValueChanged] = useState(false);
+    const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
     const { run, element } = useAction(actionCallback);
@@ -151,18 +151,12 @@ export const Action: ComposedAction = observer(
       );
     };
 
-    const formValueChangedRef = useRef(false);
-    const setFormValueChanged = useCallback((value) => {
-      formValueChangedRef.current = value;
-    }, []);
-
     const result = (
       <ActionContextProvider
         button={renderButton()}
         visible={visible}
         setVisible={setVisible}
-        formValueChangedRef={formValueChangedRef}
-        formValueChanged={formValueChangedRef.current}
+        formValueChanged={formValueChanged}
         setFormValueChanged={setFormValueChanged}
         openMode={openMode}
         openSize={openSize}
