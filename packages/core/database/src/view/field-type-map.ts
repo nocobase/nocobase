@@ -61,6 +61,7 @@ const mysql = {
   datetime: 'date',
   timestamp: 'date',
   json: ['json', 'array'],
+  enum: 'string',
 };
 
 const sqlite = {
