@@ -331,7 +331,7 @@ export class Gateway extends EventEmitter {
         from: 'node',
       })
       .then(async () => {
-        if (!(await mainApp.isStarted())) {
+        if (!isStart && !(await mainApp.isStarted())) {
           await mainApp.stop({ logging: false });
         }
       })
@@ -339,7 +339,7 @@ export class Gateway extends EventEmitter {
         if (e.code !== 'commander.helpDisplayed') {
           mainApp.log.error(e);
         }
-        if (!(await mainApp.isStarted())) {
+        if (!isStart && !(await mainApp.isStarted())) {
           await mainApp.stop({ logging: false });
         }
       });
