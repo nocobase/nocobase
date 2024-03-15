@@ -6,7 +6,7 @@ import { Alert, Flex, ModalProps, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
-import { useApp } from '../../../application';
+import { isInitializersSame, useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
@@ -89,11 +89,11 @@ export function ButtonEditor(props) {
         field.title = title;
         field.componentProps.icon = icon;
         field.componentProps.danger = type === 'danger';
-        field.componentProps.type = type;
+        field.componentProps.type = type || field.componentProps.type;
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
-        fieldSchema['x-component-props'].type = type;
+        fieldSchema['x-component-props'].type = type || field.componentProps.type;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
@@ -139,7 +139,7 @@ export function AssignedFieldValues() {
     type: 'void',
     'x-uid': uid(),
     'x-component': 'Grid',
-    'x-initializer': 'CustomFormItemInitializers',
+    'x-initializer': 'assignFieldValuesForm:configureFields',
   };
   const tips = {
     'customize:update': t(
@@ -167,7 +167,7 @@ export function AssignedFieldValues() {
       <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
         <SchemaSettingsActionModalItem
           title={t('Assign field values')}
-          maskClosable={false}
+          // maskClosable={false}
           initialSchema={initialSchema}
           initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
           modalTip={tips[actionType]}
@@ -671,7 +671,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           const fieldSchema = useFieldSchema();
           return (
             fieldSchema['x-action'] === 'submit' &&
-            fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
+            isInitializersSame(fieldSchema.parent?.['x-initializer'], 'createForm:configureActions')
           );
         },
       },
@@ -745,6 +745,10 @@ export function SecondConFirm() {
     />
   );
 }
+
+/**
+ * @deprecated
+ */
 export const actionSettings = new SchemaSettings({
   name: 'ActionSettings',
   items: actionSettingsItems,

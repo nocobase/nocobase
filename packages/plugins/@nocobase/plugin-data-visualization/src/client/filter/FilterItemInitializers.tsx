@@ -10,11 +10,11 @@ import {
   CollectionManagerProvider,
   CollectionProvider,
   DEFAULT_DATA_SOURCE_KEY,
+  CompatibleSchemaInitializer,
   FormDialog,
   HTMLEncode,
   SchemaComponent,
   SchemaComponentOptions,
-  SchemaInitializer,
   SchemaInitializerItem,
   gridRowColWrap,
   useCollectionManager_deprecated,
@@ -89,7 +89,6 @@ export const ChartFilterFormItem = observer(
     const [collection] = collectionField.split('.');
     const { getIsChartCollectionExists } = useChartData();
     const exists = (schema.name as string).startsWith('custom.') || getIsChartCollectionExists(dataSource, collection);
-
     return (
       <CollectionManagerProvider dataSource={dataSource}>
         <CollectionProvider name={collection} allowNull={!collection}>
@@ -242,8 +241,8 @@ export const ChartFilterCustomItemInitializer: React.FC<{
 });
 ChartFilterCustomItemInitializer.displayName = 'ChartFilterCustomItemInitializer';
 
-export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'ChartFilterItemInitializers',
+const filterItemInitializers = {
+  name: 'chartFilterForm:configureFields',
   'data-testid': 'configure-fields-button-of-chart-filter-item',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
@@ -294,4 +293,17 @@ export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitiali
       },
     },
   ],
+};
+
+/**
+ * @deprecated
+ */
+export const chartFilterItemInitializers_deprecated = new CompatibleSchemaInitializer({
+  ...filterItemInitializers,
+  name: 'ChartFilterItemInitializers',
 });
+
+export const chartFilterItemInitializers = new CompatibleSchemaInitializer(
+  filterItemInitializers,
+  chartFilterItemInitializers_deprecated,
+);

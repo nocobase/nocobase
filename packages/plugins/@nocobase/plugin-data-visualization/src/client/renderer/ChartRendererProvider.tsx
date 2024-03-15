@@ -1,6 +1,7 @@
 import { useFieldSchema } from '@formily/react';
 import {
   CollectionManagerProvider,
+  DEFAULT_DATA_SOURCE_KEY,
   MaybeCollectionProvider,
   useAPIClient,
   useDataSourceManager,
@@ -68,7 +69,7 @@ export const ChartRendererContext = createContext<
 ChartRendererContext.displayName = 'ChartRendererContext';
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
-  const { query, config, collection, transform, dataSource } = props;
+  const { query, config, collection, transform, dataSource = DEFAULT_DATA_SOURCE_KEY } = props;
   const { addChart } = useContext(ChartDataContext);
   const { ready, form, enabled } = useContext(ChartFilterContext);
   const { getFilter, hasFilter, appendFilter } = useChartFilter();
@@ -116,6 +117,8 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
           })
           .then((res) => {
             resolve(res?.data?.data);
+          })
+          .finally(() => {
             if (!manual && schema?.['x-uid']) {
               addChart(schema?.['x-uid'], { dataSource, collection, service, query });
             }

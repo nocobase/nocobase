@@ -12,6 +12,7 @@ import {
 } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { setDataLoadingModeSettingsItem, useDataLoadingMode } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableSelectorBlockSettings = new SchemaSettings({
   name: 'blockSettings:tableSelector',
@@ -26,6 +27,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
         const { form } = useFormBlockContext();
         const { service, extraFilter } = useTableSelectorContext();
         const { dn } = useDesignable();
+        const dataLoadingMode = useDataLoadingMode();
         const onDataScopeSubmit = useCallback(
           ({ filter }) => {
             filter = removeNullCondition(filter);
@@ -43,7 +45,11 @@ export const tableSelectorBlockSettings = new SchemaSettings({
                 serviceFilter = extraFilter;
               }
             }
-            service.run({ ...service.params?.[0], filter: serviceFilter, page: 1 });
+
+            if (dataLoadingMode === 'auto') {
+              service.run({ ...service.params?.[0], filter: serviceFilter, page: 1 });
+            }
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -51,7 +57,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
               },
             });
           },
-          [dn, field.decoratorProps, fieldSchema, service, extraFilter],
+          [field.decoratorProps, fieldSchema, extraFilter, dataLoadingMode, dn, service],
         );
 
         return {
@@ -223,6 +229,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
         return !dragSort;
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',
       type: 'select',

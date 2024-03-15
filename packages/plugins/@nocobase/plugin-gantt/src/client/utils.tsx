@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useCompile, useCollection_deprecated } from '@nocobase/client';
+import { useCollection_deprecated, useCompile } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const useGanttTranslation = () => {
@@ -55,7 +55,7 @@ export const createGanttBlockSchema = (options) => {
                 marginBottom: 24,
               },
             },
-            'x-initializer': 'GanttActionInitializers',
+            'x-initializer': 'gantt:configureActions',
             properties: {},
           },
           table: {
@@ -68,7 +68,7 @@ export const createGanttBlockSchema = (options) => {
               },
             },
 
-            'x-initializer': 'TableColumnInitializers',
+            'x-initializer': 'table:configureColumns',
             'x-component': 'TableV2',
             'x-component-props': {
               rowKey: 'id',
@@ -86,7 +86,7 @@ export const createGanttBlockSchema = (options) => {
                 'x-decorator': 'TableV2.Column.ActionBar',
                 'x-component': 'TableV2.Column',
                 'x-designer': 'TableV2.ActionColumnDesigner',
-                'x-initializer': 'TableActionColumnInitializers',
+                'x-initializer': 'table:configureItemActions',
                 properties: {
                   actions: {
                     type: 'void',
@@ -129,7 +129,7 @@ export const createGanttBlockSchema = (options) => {
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'RecordBlockInitializers',
+                            'x-initializer': 'popup:common:addBlock',
                             properties: {},
                           },
                         },

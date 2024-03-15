@@ -1,5 +1,6 @@
 import {
   Collection,
+  CollectionFieldInterfaceManager,
   CollectionFieldOptions,
   CollectionManager,
   SchemaInitializerItemType,
@@ -93,8 +94,6 @@ export const useChartFilter = () => {
   const { charts } = useContext(ChartDataContext);
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-  const { getCollection, getInterface, getCollectionFields, getCollectionJoinField } =
-    useCollectionManager_deprecated();
   const { fields: fieldProps, form } = useContext(ChartFilterContext);
 
   const getChartFilterFields = ({
@@ -106,7 +105,7 @@ export const useChartFilter = () => {
     dataSource: string;
     collection: Collection;
     cm: CollectionManager;
-    fim: collectionFieldInterfaceManager;
+    fim: CollectionFieldInterfaceManager;
   }) => {
     const fields = cm.getCollectionFields(collection.name);
     const field2item = (field: any, title: string, name: string, fieldName: string) => {
@@ -313,7 +312,7 @@ export const useChartFilter = () => {
         if (field?.target) {
           name = `${fieldName}.${field.targetKey || 'id'}`;
         }
-        const [collection, ...fields] = fieldName.split('.');
+        const [collection, ...fields] = name.split('.');
         const value = getValuesByPath(values, name);
         const op = operator?.value || '$eq';
         if (collection !== 'custom') {
@@ -341,7 +340,7 @@ export const useChartFilter = () => {
     );
   };
 
-  const appendFilter = (chart: { collection: string; query: any }, filterValues: any) => {
+  const appendFilter = (chart: { dataSource: string; collection: string; query: any }, filterValues: any) => {
     const { dataSource, collection, query } = chart;
     let newQuery = { ...query };
     const originFilter = { ...(newQuery.filter || {}) };

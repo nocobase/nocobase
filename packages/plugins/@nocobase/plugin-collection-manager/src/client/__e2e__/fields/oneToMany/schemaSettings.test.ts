@@ -496,23 +496,16 @@ test.describe('form item & view form', () => {
     });
   });
 
-  test('field component', async ({ page, mockPage, mockRecords }) => {
-    await (async (mockPage, mockRecords) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const record = (await mockRecords('general', 1))[0];
-      await nocoPage.goto();
+  test('field component', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
-      return record;
-    })(mockPage, mockRecords);
-    await (async (page: Page) => {
-      await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
-    })(page);
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'oneToMany');
+    await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
+    await page.getByLabel(`block-item-CollectionField-general-form-general.oneToMany-oneToMany`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.oneToMany`)
+      .hover();
     await page.getByRole('menuitem', { name: 'Field component' }).click();
 
     // 断言支持的选项

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { TableOutlined } from '@ant-design/icons';
 
 import { useCollectionManager_deprecated } from '../../collection-manager';
@@ -6,6 +6,9 @@ import { useSchemaTemplateManager } from '../../schema-templates';
 import { createTableBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
+/**
+ * @deprecated
+ */
 export const RecordAssociationBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
@@ -39,3 +42,27 @@ export const RecordAssociationBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationTableBlock() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createAssociationTableBlock = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      insert(
+        createTableBlockSchema({
+          rowKey: collection.filterTargetKey,
+          collection: field.target,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+        }),
+      );
+    },
+    [getCollection, insert],
+  );
+
+  return { createAssociationTableBlock };
+}
