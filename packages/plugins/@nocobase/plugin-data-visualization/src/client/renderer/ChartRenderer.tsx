@@ -71,7 +71,7 @@ export const ChartRenderer: React.FC & {
   }
 
   if (!(data && data.length)) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure and run query')} />;
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
   }
 
   return <C />;

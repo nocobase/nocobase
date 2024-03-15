@@ -7,7 +7,9 @@ import {
   ACLCollectionFieldProvider,
   BlockItem,
   CollectionFieldProvider,
+  CollectionManagerProvider,
   CollectionProvider,
+  DEFAULT_DATA_SOURCE_KEY,
   FormDialog,
   HTMLEncode,
   SchemaComponent,
@@ -16,6 +18,7 @@ import {
   SchemaInitializerItem,
   gridRowColWrap,
   useCollectionManager_deprecated,
+  useDataSourceManager,
   useDesignable,
   useGlobalTheme,
   useSchemaInitializerItem,
@@ -50,6 +53,7 @@ const ErrorFallback = ({ error }) => {
 
 export const ChartFilterFormItem = observer(
   (props: any) => {
+    const { t } = useChartsTranslation();
     const field = useField<Field>();
     const schema = useFieldSchema();
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
@@ -80,21 +84,32 @@ export const ChartFilterFormItem = observer(
         },
       );
     }, [showTitle]);
+    const dataSource = schema?.['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
     const collectionField = schema?.['x-collection-field'] || '';
     const [collection] = collectionField.split('.');
+    const { getIsChartCollectionExists } = useChartData();
+    const exists = (schema.name as string).startsWith('custom.') || getIsChartCollectionExists(dataSource, collection);
 
     return (
-      <CollectionProvider name={collection} allowNull={!collection}>
-        <CollectionFieldProvider name={schema.name} allowNull={!schema['x-collection-field']}>
-          <ACLCollectionFieldProvider>
-            <BlockItem className={'nb-form-item'}>
-              <ErrorBoundary onError={(err) => console.log(err)} FallbackComponent={ErrorFallback}>
-                <FormItem className={className} {...props} extra={extra} />
-              </ErrorBoundary>
-            </BlockItem>
-          </ACLCollectionFieldProvider>
-        </CollectionFieldProvider>
-      </CollectionProvider>
+      <CollectionManagerProvider dataSource={dataSource}>
+        <CollectionProvider name={collection} allowNull={!collection}>
+          <CollectionFieldProvider name={schema.name} allowNull={!schema['x-collection-field']}>
+            <ACLCollectionFieldProvider>
+              <BlockItem className={'nb-form-item'}>
+                {exists ? (
+                  <ErrorBoundary onError={(err) => console.log(err)} FallbackComponent={ErrorFallback}>
+                    <FormItem className={className} {...props} extra={extra} />
+                  </ErrorBoundary>
+                ) : (
+                  <div style={{ color: '#ccc', marginBottom: '10px' }}>
+                    {t('The chart using the collection of this field have been deleted. Please  remove this field.')}
+                  </div>
+                )}
+              </BlockItem>
+            </ACLCollectionFieldProvider>
+          </CollectionFieldProvider>
+        </CollectionProvider>
+      </CollectionManagerProvider>
     );
   },
   { displayName: 'ChartFilterFormItem' },
@@ -239,23 +254,30 @@ export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitiali
       name: 'displayFields',
       title: '{{ t("Display fields") }}',
       useChildren: () => {
-        const { getCollection } = useCollectionManager_deprecated();
-        const { getChartCollections } = useChartData();
+        const { t } = useChartsTranslation();
+        const { chartCollections, showDataSource } = useChartData();
         const { getChartFilterFields } = useChartFilter();
-        const collections = getChartCollections();
+        const dm = useDataSourceManager();
+        const fim = dm.collectionFieldInterfaceManager;
 
         return useMemo(() => {
-          return collections.map((name: any) => {
-            const collection = getCollection(name);
-            const fields = getChartFilterFields(collection);
-            return {
-              name: collection.key,
-              type: 'subMenu',
-              title: collection.title,
-              children: fields,
-            };
-          });
-        }, [collections]);
+          return chartCollections.map(
+            ({ dataSource, collection: name }: { dataSource: string; collection: string }) => {
+              const ds = dm.getDataSource(dataSource);
+              const cm = ds.collectionManager;
+              const collection = cm.getCollection(name);
+              const fields = getChartFilterFields({ dataSource, collection, cm, fim });
+              return {
+                name: collection.key,
+                type: 'subMenu',
+                title: showDataSource
+                  ? `${Schema.compile(ds.displayName, { t })} / ${Schema.compile(collection.title, { t })}`
+                  : collection.title,
+                children: fields,
+              };
+            },
+          );
+        }, [chartCollections, showDataSource]);
       },
     },
     {

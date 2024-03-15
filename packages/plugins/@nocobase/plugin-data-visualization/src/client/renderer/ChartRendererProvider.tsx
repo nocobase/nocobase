@@ -83,8 +83,8 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
         if (enabled && !form) return resolve(undefined);
         const filterValues = getFilter();
         const queryWithFilter =
-          !manual && hasFilter({ collection, query }, filterValues)
-            ? appendFilter({ collection, query }, filterValues)
+          !manual && hasFilter({ dataSource, collection, query }, filterValues)
+            ? appendFilter({ dataSource, collection, query }, filterValues)
             : query;
         api
           .request({
@@ -117,7 +117,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
           .then((res) => {
             resolve(res?.data?.data);
             if (!manual && schema?.['x-uid']) {
-              addChart(schema?.['x-uid'], { collection, service, query });
+              addChart(schema?.['x-uid'], { dataSource, collection, service, query });
             }
           })
           .catch(reject);

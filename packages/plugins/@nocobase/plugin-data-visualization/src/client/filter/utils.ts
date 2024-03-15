@@ -1,3 +1,4 @@
+import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { moment2str } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 
@@ -174,4 +175,19 @@ export const setDefaultValue = async (field: any, variables: any) => {
     field.setInitialValue(transformedValue);
     field.loading = false;
   }
+};
+
+export const FILTER_FIELD_PREFIX_SEPARATOR = '-';
+
+export const getFilterFieldPrefix = (dataSource: string, fieldName: string) => {
+  return dataSource ? `${dataSource}${FILTER_FIELD_PREFIX_SEPARATOR}${fieldName}` : fieldName;
+};
+
+// [dataSource-]collection.fieldName.associateName
+export const parseFilterFieldName = (name: string) => {
+  const [prefix, fieldName] = name.split(FILTER_FIELD_PREFIX_SEPARATOR);
+  if (fieldName) {
+    return { dataSource: prefix, fieldName };
+  }
+  return { dataSource: DEFAULT_DATA_SOURCE_KEY, fieldName: prefix };
 };
