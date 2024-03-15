@@ -4,13 +4,17 @@ import devDynamicImport from '../.plugins/index';
 
 export const app = new Application({
   apiClient: {
-    baseURL: process.env.API_BASE_URL,
+    // @ts-ignore
+    baseURL: window['__nocobase_api_base_url__'] || '/api/',
   },
-  publicPath: process.env.APP_PUBLIC_PATH,
+  // @ts-ignore
+  publicPath: window['__nocobase_public_path__'] || '/',
   plugins: [NocoBaseClientPresetPlugin],
   ws: {
-    url: process.env.WEBSOCKET_URL,
-    basename: process.env.WS_PATH || '/ws',
+    // @ts-ignore
+    url: window['__nocobase_ws_url__'] || '',
+    // @ts-ignore
+    basename: window['__nocobase_ws_path__'] || '/ws',
   },
   loadRemotePlugins: true,
   devDynamicImport,

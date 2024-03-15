@@ -180,6 +180,7 @@ exports.generateAppDir = function generateAppDir() {
   } else {
     process.env.APP_PACKAGE_ROOT = appPkgPath;
   }
+  buildIndexHtml();
 };
 
 exports.genTsConfigPaths = function genTsConfigPaths() {
@@ -257,17 +258,29 @@ function parseEnv(name) {
   }
 }
 
-exports.buildIndexHtml = function buildIndexHtml() {
+function buildIndexHtml(force = false) {
   const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
   if (!fs.existsSync(file)) {
     return;
   }
-  const data = fs.readFileSync(file, 'utf-8');
+  const tpl = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html.tpl`;
+  if (force && fs.existsSync(tpl)) {
+    fs.rmSync(tpl);
+  }
+  if (!fs.existsSync(tpl)) {
+    fs.copyFileSync(file, tpl);
+  }
+  const data = fs.readFileSync(tpl, 'utf-8');
   const replacedData = data
-    .replace(/\{\{publicPath\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
+    .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
+    .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
     .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
   fs.writeFileSync(file, replacedData, 'utf-8');
 };
+
+exports.buildIndexHtml = buildIndexHtml;
 
 exports.initEnv = function initEnv() {
   const env = {

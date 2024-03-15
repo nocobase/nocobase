@@ -31,6 +31,6 @@ module.exports = (cli) => {
         !options.dts ? '--no-dts' : '',
         options.sourcemap ? '--sourcemap' : '',
       ]);
-      buildIndexHtml();
+      buildIndexHtml(true);
     });
 };
