@@ -161,3 +161,15 @@ INSERT INTO tags (tag_name) VALUES
 INSERT INTO post_tags (post_id, tag_id) VALUES
     ((SELECT post_id FROM posts WHERE post_title = 'Post1'), (SELECT tag_id FROM tags WHERE tag_name = 'Tag1')),
     ((SELECT post_id FROM posts WHERE post_title = 'Post2'), (SELECT tag_id FROM tags WHERE tag_name = 'Tag2'));
+
+
+-- 创建无主键的表 test_table_no_pk
+CREATE TABLE test_table_no_pk (
+    column1 VARCHAR(100),
+    column2 INT
+);
+
+-- 向 test_table_no_pk 表插入测试数据
+INSERT INTO test_table_no_pk (column1, column2) VALUES
+    ('TestData1', 1),
+    ('TestData2', 2);
