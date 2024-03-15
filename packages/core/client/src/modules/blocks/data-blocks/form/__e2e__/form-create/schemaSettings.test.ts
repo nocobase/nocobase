@@ -350,7 +350,7 @@ test.describe('creation form block schema settings', () => {
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).toBeVisible();
 
     // 创建区块的时候，可以选择刚才保存的模板 --------------------------------------------------
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'General right' }).hover();
 
@@ -359,7 +359,7 @@ test.describe('creation form block schema settings', () => {
     await page.getByRole('menuitem', { name: 'new_form_template (Fields only)' }).click();
 
     // Reference template
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'General right' }).hover();
     await page.getByRole('menuitem', { name: 'General right' }).click();
@@ -549,7 +549,7 @@ test.describe('creation form block schema settings', () => {
         .hover();
       await page.mouse.move(100, 0);
 
-      await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
+      await page.getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
       await page.getByRole('menuitem', { name: 'Nickname' }).click();
       await page.getByRole('menuitem', { name: 'Username' }).click();
 
@@ -622,7 +622,7 @@ test.describe('creation form block schema settings', () => {
         .hover();
       await page.mouse.move(100, 0);
 
-      await page.getByLabel('schema-initializer-AssociationField.SubTable-TableColumnInitializers-users').hover();
+      await page.getByLabel('schema-initializer-AssociationField.SubTable-table:configureColumns-users').hover();
       await page.getByRole('menuitem', { name: 'Nickname' }).click();
       await page.getByRole('menuitem', { name: 'Username' }).click();
 
@@ -719,7 +719,7 @@ test.describe('creation form block schema settings', () => {
             version: '2.0',
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
+            'x-initializer': 'page:addBlock',
             properties: {
               gdj0ceke8ac: {
                 _isJSONSchemaObject: true,
@@ -764,7 +764,7 @@ test.describe('creation form block schema settings', () => {
                                 version: '2.0',
                                 type: 'void',
                                 'x-component': 'Grid',
-                                'x-initializer': 'FormItemInitializers',
+                                'x-initializer': 'form:configureFields',
                                 properties: {
                                   gnw25oyqe56: {
                                     _isJSONSchemaObject: true,
@@ -810,7 +810,7 @@ test.describe('creation form block schema settings', () => {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
                                 type: 'void',
-                                'x-initializer': 'FormActionInitializers',
+                                'x-initializer': 'createForm:configureActions',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   layout: 'one-column',
@@ -879,7 +879,7 @@ test.describe('creation form block schema settings', () => {
             version: '2.0',
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
+            'x-initializer': 'page:addBlock',
             properties: {
               ibb0kjq3kyl: {
                 _isJSONSchemaObject: true,
@@ -919,7 +919,7 @@ test.describe('creation form block schema settings', () => {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'TableActionInitializers',
+                            'x-initializer': 'table:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
@@ -980,7 +980,7 @@ test.describe('creation form block schema settings', () => {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'CreateFormBlockInitializers',
+                                                'x-initializer': 'popup:addNew:addBlock',
                                                 'x-uid': 'w224zhqyair',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -1014,7 +1014,7 @@ test.describe('creation form block schema settings', () => {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'array',
-                            'x-initializer': 'TableColumnInitializers',
+                            'x-initializer': 'table:configureColumns',
                             'x-component': 'TableV2',
                             'x-component-props': {
                               rowKey: 'id',
@@ -1033,7 +1033,7 @@ test.describe('creation form block schema settings', () => {
                                 'x-decorator': 'TableV2.Column.ActionBar',
                                 'x-component': 'TableV2.Column',
                                 'x-designer': 'TableV2.ActionColumnDesigner',
-                                'x-initializer': 'TableActionColumnInitializers',
+                                'x-initializer': 'table:configureItemActions',
                                 properties: {
                                   actions: {
                                     _isJSONSchemaObject: true,
@@ -1094,7 +1094,7 @@ test.describe('creation form block schema settings', () => {
                                                         version: '2.0',
                                                         type: 'void',
                                                         'x-component': 'Grid',
-                                                        'x-initializer': 'RecordBlockInitializers',
+                                                        'x-initializer': 'popup:common:addBlock',
                                                         'x-uid': 's49vs6v3qs0',
                                                         'x-async': false,
                                                         'x-index': 1,
@@ -1160,7 +1160,7 @@ test.describe('creation form block schema settings', () => {
         'x-index': 1,
       },
     }).goto();
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     //使用复制模板
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Users' }).hover();
@@ -1171,25 +1171,25 @@ test.describe('creation form block schema settings', () => {
 
     //在新建操作中使用引用模板
     await page.getByLabel('action-Action-Add new-create-users-table').click();
-    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
     await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
 
     //在编辑操作中使用引用模板
     await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
-    await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').click();
-    await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-users').click();
+    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
 
     //修改引用模板
-    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
+    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
     await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步

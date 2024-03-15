@@ -132,10 +132,10 @@ export const useSelfAndChildrenCollections = (collectionName: string) => {
   return options;
 };
 
-export const useCollectionFilterOptions = (collection: any) => {
+export const useCollectionFilterOptions = (collection: any, dataSource?: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   return useMemo(() => {
-    const fields = getCollectionFields(collection);
+    const fields = getCollectionFields(collection, dataSource);
     const field2option = (field, depth) => {
       if (!field.interface) {
         return;
@@ -165,7 +165,7 @@ export const useCollectionFilterOptions = (collection: any) => {
         option['children'] = children;
       }
       if (nested) {
-        const targetFields = getCollectionFields(field.target);
+        const targetFields = getCollectionFields(field.target, dataSource);
         const options = getOptions(targetFields, depth + 1).filter(Boolean);
         option['children'] = option['children'] || [];
         option['children'].push(...options);
@@ -184,7 +184,7 @@ export const useCollectionFilterOptions = (collection: any) => {
     };
     const options = getOptions(fields, 1);
     return options;
-  }, [_.isString(collection) ? collection : collection?.name]);
+  }, [_.isString(collection) ? collection : collection?.name, dataSource]);
 };
 
 export const useCollectionFilterOptionsV2 = (collection: any) => {

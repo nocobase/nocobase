@@ -7,11 +7,13 @@ import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
 import { useDataSourceHeaders } from '../utils';
 import _ from 'lodash';
+import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
 
 function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
+  const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
   const service = useMemo(() => {
@@ -37,13 +39,13 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 
   // 因为修改 Schema 会导致 params 对象发生变化，所以这里使用 `DeepCompare`
   useDeepCompareEffect(() => {
-    if (action) {
+    if (action && dataLoadingMode === 'auto') {
       request.run();
     }
   }, [params, action, record]);
 
   useUpdateEffect(() => {
-    if (action) {
+    if (action && dataLoadingMode === 'auto') {
       request.run();
     }
   }, [resource]);
@@ -115,7 +117,7 @@ export const BlockRequestProvider: FC = ({ children }) => {
     <BlockRequestContext.Provider value={currentRequest}>
       {action !== 'list' ? (
         <CollectionRecordProvider
-          isNew={action === undefined}
+          isNew={action == null}
           record={currentRequest.data?.data}
           parentRecord={memoizedParentRecord}
         >
@@ -132,9 +134,5 @@ export const BlockRequestProvider: FC = ({ children }) => {
 
 export const useDataBlockRequest = <T extends {}>(): UseRequestResult<{ data: T }> => {
   const context = useContext(BlockRequestContext);
-  if (!context) {
-    throw new Error('useDataBlockRequest() must be used within a DataBlockRequestProvider');
-  }
-
   return context;
 };

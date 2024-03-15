@@ -16,7 +16,7 @@ export const oneTableBlockWithDatetimeFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           irc4mhtog83: {
             _isJSONSchemaObject: true,
@@ -58,7 +58,7 @@ export const oneTableBlockWithDatetimeFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -73,7 +73,7 @@ export const oneTableBlockWithDatetimeFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -92,7 +92,7 @@ export const oneTableBlockWithDatetimeFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               gk4b4e4wp8b: {
                                 _isJSONSchemaObject: true,
@@ -192,7 +192,7 @@ export const oneFormBlockWithDatetimeFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           annx4g65mtu: {
             _isJSONSchemaObject: true,
@@ -239,7 +239,7 @@ export const oneFormBlockWithDatetimeFields: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               '269bdhc35j2': {
                                 _isJSONSchemaObject: true,

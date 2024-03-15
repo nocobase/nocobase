@@ -17,9 +17,9 @@ export const AuditLogsBlockInitializer = () => {
   const schema = createTableBlockSchema({
     collection: 'auditLogs',
     rowKey: 'id',
-    tableActionInitializers: 'AuditLogsTableActionInitializers',
-    tableColumnInitializers: 'AuditLogsTableColumnInitializers',
-    tableActionColumnInitializers: 'AuditLogsTableActionColumnInitializers',
+    tableActionInitializers: 'auditLogsTable:configureActions',
+    tableColumnInitializers: 'auditLogsTable:configureColumns',
+    tableActionColumnInitializers: 'auditLogsTable:configureItemActions',
     tableBlockProvider: 'AuditLogsBlockProvider',
     disableTemplate: true,
   });

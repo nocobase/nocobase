@@ -31,46 +31,14 @@ describe('CollectionDeletedPlaceholder', () => {
   });
 
   describe('name exist', () => {
-    test("designable: true & process.env.NODE_ENV === 'development', render `Result` component", () => {
-      const NODE_ENV = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-
+    test('designable: true, render `Result` component', () => {
       renderApp('test', true);
 
-      process.env.NODE_ENV = NODE_ENV;
-
       expect(document.body.innerHTML).toContain('ant-result');
     });
 
-    test("designable: false & process.env.NODE_ENV === 'development', render `Result` component", () => {
-      const NODE_ENV = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-
+    test('designable: false, render nothing', () => {
       renderApp('test', false);
-
-      process.env.NODE_ENV = NODE_ENV;
-
-      expect(document.body.innerHTML).toContain('ant-result');
-    });
-
-    test("designable: true & process.env.NODE_ENV !== 'development', render `Result` component", () => {
-      const NODE_ENV = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
-      renderApp('test', true);
-
-      process.env.NODE_ENV = NODE_ENV;
-
-      expect(document.body.innerHTML).toContain('ant-result');
-    });
-
-    test("designable: false & process.env.NODE_ENV !== 'development', render nothing", () => {
-      const NODE_ENV = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
-      renderApp('test', false);
-
-      process.env.NODE_ENV = NODE_ENV;
 
       expect(screen.getByTestId('app').innerHTML.length).toBe(0);
     });
