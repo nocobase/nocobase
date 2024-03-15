@@ -50,6 +50,7 @@ class ReferencesMap {
 
       if (newPriority > existPriority) {
         existReference.onDelete = reference.onDelete;
+        existReference.priority = reference.priority;
       } else if (newPriority === existPriority && newPriority === PRIORITY_MAP['user']) {
         throw new Error(
           `On Delete Conflict, exist reference ${JSON.stringify(existReference)}, new reference ${JSON.stringify(
@@ -78,7 +79,7 @@ class ReferencesMap {
       return null;
     }
 
-    const keys = Object.keys(reference).filter((k) => k !== 'onDelete');
+    const keys = Object.keys(reference).filter((k) => k !== 'onDelete' && k !== 'priority');
 
     return references.find((ref) => keys.every((key) => ref[key] === reference[key]));
   }

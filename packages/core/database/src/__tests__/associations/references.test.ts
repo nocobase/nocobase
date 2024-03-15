@@ -46,6 +46,7 @@ describe('association references', () => {
 
     const references = db.referenceMap.getReferences('users');
 
+    expect(references.length).toBe(1);
     expect(references[0].priority).toBe('user');
   });
 });
