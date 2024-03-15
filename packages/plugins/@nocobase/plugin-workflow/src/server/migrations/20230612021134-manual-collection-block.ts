@@ -64,7 +64,7 @@ function migrateSchema(schema = {}): object {
               type: 'void',
               name: 'grid',
               'x-component': 'Grid',
-              'x-initializer': 'ReadPrettyFormItemInitializers',
+              'x-initializer': 'details:configureFields',
               properties: grid.properties,
             },
           },

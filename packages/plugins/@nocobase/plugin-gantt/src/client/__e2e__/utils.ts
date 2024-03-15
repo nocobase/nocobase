@@ -140,7 +140,7 @@ export const oneEmptyGantt: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           gl57m4hyewf: {
             _isJSONSchemaObject: true,
@@ -197,7 +197,7 @@ export const oneEmptyGantt: PageConfig = {
                                 marginBottom: 24,
                               },
                             },
-                            'x-initializer': 'GanttActionInitializers',
+                            'x-initializer': 'gantt:configureActions',
                             'x-uid': 'guwovmwt4c0',
                             'x-async': false,
                             'x-index': 1,
@@ -213,7 +213,7 @@ export const oneEmptyGantt: PageConfig = {
                                 maxWidth: '35%',
                               },
                             },
-                            'x-initializer': 'TableColumnInitializers',
+                            'x-initializer': 'table:configureColumns',
                             'x-component': 'TableV2',
                             'x-component-props': {
                               rowKey: 'id',
@@ -233,7 +233,7 @@ export const oneEmptyGantt: PageConfig = {
                                 'x-decorator': 'TableV2.Column.ActionBar',
                                 'x-component': 'TableV2.Column',
                                 'x-designer': 'TableV2.ActionColumnDesigner',
-                                'x-initializer': 'TableActionColumnInitializers',
+                                'x-initializer': 'table:configureItemActions',
                                 properties: {
                                   actions: {
                                     _isJSONSchemaObject: true,
@@ -296,7 +296,7 @@ export const oneEmptyGantt: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'RecordBlockInitializers',
+                                            'x-initializer': 'popup:common:addBlock',
                                             'x-uid': 'gxtfjqzxbfu',
                                             'x-async': false,
                                             'x-index': 1,

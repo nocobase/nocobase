@@ -292,8 +292,13 @@ function FinallyButton({
           type={componentType}
           icon={<DownOutlined />}
           buttonsRender={([leftButton, rightButton]) => [
-            leftButton,
-            React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+            React.cloneElement(leftButton as React.ReactElement<any, string>, {
+              style: props?.style,
+            }),
+            React.cloneElement(rightButton as React.ReactElement<any, string>, {
+              loading: false,
+              style: props?.style,
+            }),
           ]}
           menu={menu}
           onClick={(info) => {
@@ -306,7 +311,13 @@ function FinallyButton({
       ) : (
         <Dropdown menu={menu}>
           {
-            <Button aria-label={props['aria-label']} icon={icon} type={componentType} danger={props.danger}>
+            <Button
+              aria-label={props['aria-label']}
+              icon={icon}
+              type={componentType}
+              danger={props.danger}
+              style={props?.style}
+            >
               {props.children} <DownOutlined />
             </Button>
           }
@@ -337,9 +348,9 @@ function FinallyButton({
       </Button>
     );
   }
-
   return (
     <Button
+      {...props}
       aria-label={props['aria-label']}
       type={componentType}
       disabled={field.disabled}

@@ -145,7 +145,15 @@ export const useTableBlockProps = () => {
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-  }, [ctx?.service?.loading]);
+  }, [
+    ctx?.field?.data?.selectedRowKeys,
+    ctx?.service?.data?.data,
+    ctx?.service?.data?.meta?.count,
+    ctx?.service?.data?.meta?.page,
+    ctx?.service?.data?.meta?.pageSize,
+    ctx?.service?.loading,
+    field,
+  ]);
   return {
     childrenColumnName: ctx.childrenColumnName,
     loading: ctx?.service?.loading,
@@ -199,6 +207,9 @@ export const useTableBlockProps = () => {
         const storedFilter = block.service.params?.[1]?.filters || {};
 
         if (selectedRow.includes(record[ctx.rowKey])) {
+          if (block.dataLoadingMode === 'manual') {
+            return block.clearData();
+          }
           delete storedFilter[uid];
         } else {
           storedFilter[uid] = {

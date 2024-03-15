@@ -31,12 +31,12 @@ const createFilterSchema = () => {
           grid: {
             type: 'void',
             'x-component': 'ChartFilterGrid',
-            'x-initializer': 'ChartFilterItemInitializers',
+            'x-initializer': 'chartFilterForm:configureFields',
             properties: {},
           },
           actions: {
             type: 'void',
-            'x-initializer': 'ChartFilterActionInitializers',
+            'x-initializer': 'chartFilterForm:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',

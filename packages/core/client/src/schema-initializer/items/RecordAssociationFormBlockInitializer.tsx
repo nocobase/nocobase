@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { FormOutlined } from '@ant-design/icons';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
@@ -6,6 +6,9 @@ import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 
+/**
+ * @deprecated
+ */
 export const RecordAssociationFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
@@ -23,11 +26,11 @@ export const RecordAssociationFormBlockInitializer = () => {
       onClick={async ({ item }) => {
         const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
         const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
-          ? 'UpdateFormActionInitializers'
-          : 'CreateFormActionInitializers';
+          ? 'editForm:configureActions'
+          : 'createForm:configureActions';
 
         if (item.template) {
-          const s = await getTemplateSchemaByMode(item);
+          const template = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
             const blockSchema = createFormBlockSchema({
               collection: collectionName,
@@ -38,7 +41,7 @@ export const RecordAssociationFormBlockInitializer = () => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers,
-              template: s,
+              template: template,
               settings: 'blockSettings:createForm',
             });
             if (item.mode === 'reference') {
@@ -46,7 +49,7 @@ export const RecordAssociationFormBlockInitializer = () => {
             }
             insert(blockSchema);
           } else {
-            insert(s);
+            insert(template);
           }
         } else {
           insert(
@@ -68,3 +71,67 @@ export const RecordAssociationFormBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationFormBlock() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createAssociationFormBlock = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+      const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
+      const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
+        ? 'editForm:configureActions'
+        : 'createForm:configureActions';
+
+      insert(
+        createFormBlockSchema({
+          collection: field.target,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+          action,
+          useSourceId: '{{ useSourceIdFromParentRecord }}',
+          useParams: '{{ useParamsFromRecord }}',
+          actionInitializers,
+          settings: 'blockSettings:createForm',
+        }),
+      );
+    },
+    [getCollection, insert],
+  );
+
+  const templateWrap = useCallback(
+    (templateSchema, { item }) => {
+      const field = item.associationField;
+      const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
+      const collection = getCollection(field.target);
+      const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
+        ? 'editForm:configureActions'
+        : 'createForm:configureActions';
+
+      if (item.template.componentName === 'FormItem') {
+        const blockSchema = createFormBlockSchema({
+          collection: field.target,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+          action,
+          useSourceId: '{{ useSourceIdFromParentRecord }}',
+          useParams: '{{ useParamsFromRecord }}',
+          actionInitializers,
+          template: templateSchema,
+          settings: 'blockSettings:createForm',
+        });
+        if (item.mode === 'reference') {
+          blockSchema['x-template-key'] = item.template.key;
+        }
+        return blockSchema;
+      } else {
+        return templateSchema;
+      }
+    },
+    [getCollection],
+  );
+
+  return { createAssociationFormBlock, templateWrap };
+}

@@ -6,7 +6,6 @@ describe('Details', () => {
   it('should render correctly', () => {
     render(<App1 />);
 
-    expect(screen.getByText('this is name')).toBeInTheDocument();
-    expect(screen.getByText('this is age')).toBeInTheDocument();
+    expect(screen.getByText('No data')).toBeInTheDocument();
   });
 });
