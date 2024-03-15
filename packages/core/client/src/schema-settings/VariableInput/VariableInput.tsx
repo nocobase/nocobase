@@ -237,7 +237,6 @@ export function useCompatOldVariables(props: {
   });
   const { currentRecordSettings } = useCurrentRecordVariable({
     schema: uiSchema,
-    collectionName: blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,

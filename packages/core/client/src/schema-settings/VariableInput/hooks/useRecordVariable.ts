@@ -51,7 +51,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
-    collectionName: props.collectionName || collectionName,
+    collectionName: collectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
   });

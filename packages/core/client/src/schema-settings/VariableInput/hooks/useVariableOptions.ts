@@ -77,7 +77,6 @@ export const useVariableOptions = ({
   });
   const { currentRecordSettings, shouldDisplayCurrentRecord } = useCurrentRecordVariable({
     schema: uiSchema,
-    collectionName: blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,

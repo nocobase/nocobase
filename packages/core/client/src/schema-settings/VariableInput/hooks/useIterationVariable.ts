@@ -5,6 +5,7 @@ import { CollectionFieldOptions } from '../../../data-source/collection/Collecti
 import { useFlag } from '../../../flag-provider';
 import { useSubFormValue } from '../../../schema-component/antd/association-field/hooks';
 import { useBaseVariable } from './useBaseVariable';
+import { useCollection } from '../../../data-source';
 
 /**
  * @deprecated
@@ -73,7 +74,8 @@ export const useCurrentObjectVariable = ({
   targetFieldSchema?: Schema;
 } = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
-  const { formValue: currentObjectCtx, collection } = useSubFormValue();
+  const collection = useCollection();
+  const { formValue: currentObjectCtx, collection: collectionOfCurrentObject } = useSubFormValue();
   const { isInSubForm, isInSubTable } = useFlag() || {};
   const { t } = useTranslation();
   const currentObjectSettings = useBaseVariable({
@@ -83,7 +85,7 @@ export const useCurrentObjectVariable = ({
     maxDepth: 4,
     name: '$iteration',
     title: t('Current object'),
-    collectionName: collection?.name,
+    collectionName: collectionOfCurrentObject?.name || collection?.name,
     noDisabled,
     returnFields: (fields, option) => {
       // fix https://nocobase.height.app/T-2277
@@ -100,7 +102,7 @@ export const useCurrentObjectVariable = ({
 
   return {
     /** 是否显示变量 */
-    shouldDisplayCurrentObject: (isInSubForm || isInSubTable) && currentObjectCtx,
+    shouldDisplayCurrentObject: isInSubForm || isInSubTable,
     /** 变量的值 */
     currentObjectCtx,
     /** 变量的配置项 */
