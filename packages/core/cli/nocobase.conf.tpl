@@ -44,7 +44,7 @@ server {
     }
 
     location {{publicPath}} {
-        alias {{cwd}}/node_modules/@nocobase/app/dist/client;
+        alias {{cwd}}/node_modules/@nocobase/app/dist/client/;
         try_files $uri $uri/ /index.html;
         add_header Last-Modified $date_gmt;
         add_header Cache-Control 'no-store, no-cache';
