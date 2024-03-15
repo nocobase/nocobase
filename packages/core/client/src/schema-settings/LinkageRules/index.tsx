@@ -167,7 +167,7 @@ export const FormLinkageRules = observer(
     );
 
     return (
-      <FormBlockContext.Provider value={{ form, type: formBlockType }}>
+      <FormBlockContext.Provider value={{ form, type: formBlockType, collectionName }}>
         <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
             <SchemaComponent components={components} schema={schema} />
