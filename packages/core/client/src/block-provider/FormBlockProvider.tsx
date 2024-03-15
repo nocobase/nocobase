@@ -3,7 +3,7 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
-import { useCollectionParentRecordData, useCollectionRecord } from '../data-source';
+import { CollectionRecord, useCollectionParentRecordData, useCollectionRecord } from '../data-source';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
@@ -22,6 +22,7 @@ export const FormBlockContext = createContext<{
   formBlockRef?: any;
   collectionName?: string;
   params?: any;
+  formRecord?: CollectionRecord;
   [key: string]: any;
 }>({});
 FormBlockContext.displayName = 'FormBlockContext';
@@ -54,8 +55,9 @@ const InternalFormBlockProvider = (props) => {
       updateAssociationValues,
       formBlockRef,
       collectionName: collection,
+      formRecord: record,
     };
-  }, [action, collection, ctx, field, form, params, resource, service, updateAssociationValues]);
+  }, [action, collection, ctx, field, form, params, record, resource, service, updateAssociationValues]);
 
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
