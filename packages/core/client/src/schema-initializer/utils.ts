@@ -4,6 +4,7 @@ import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  DataSource,
   SchemaInitializerItemType,
   useCollection,
   useCollectionManager,
@@ -838,11 +839,13 @@ export const useCollectionDataSourceItems = ({
   filter = () => true,
   onlyCurrentDataSource = false,
   showAssociationFields,
+  filterDataSource,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource?: boolean;
   showAssociationFields?: boolean;
+  filterDataSource?: (dataSource?: DataSource) => boolean;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -850,11 +853,14 @@ export const useCollectionDataSourceItems = ({
   const collection = useCollection();
   const associationFields = useAssociationFields({ componentName, filterCollections: filter, showAssociationFields });
 
-  let allCollections = dm.getAllCollections((collection) => {
-    if (onlyCurrentDataSource && collection.dataSource !== dataSourceKey) {
-      return false;
-    }
-    return filter({ collection });
+  let allCollections = dm.getAllCollections({
+    filterCollection: (collection) => {
+      if (onlyCurrentDataSource && collection.dataSource !== dataSourceKey) {
+        return false;
+      }
+      return filter({ collection });
+    },
+    filterDataSource,
   });
   if (onlyCurrentDataSource) {
     allCollections = allCollections.filter((collection) => collection.key === dataSourceKey);
