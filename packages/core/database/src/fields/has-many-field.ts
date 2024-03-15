@@ -8,7 +8,7 @@ import {
   Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
-import { Reference } from '../features/ReferencesMap';
+import { buildReference, Reference } from '../features/references-map';
 import { checkIdentifier } from '../utils';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
@@ -89,13 +89,13 @@ export class HasManyField extends RelationField {
   reference(association): Reference {
     const sourceKey = association.sourceKey;
 
-    return {
+    return buildReference({
       sourceCollectionName: this.database.modelCollection.get(association.target).name,
       sourceField: association.foreignKey,
       targetField: sourceKey,
       targetCollectionName: this.database.modelCollection.get(association.source).name,
       onDelete: this.options.onDelete,
-    };
+    });
   }
 
   checkAssociationKeys() {

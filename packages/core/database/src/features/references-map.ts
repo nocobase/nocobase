@@ -1,30 +1,56 @@
+export type ReferencePriority = 'default' | 'user';
+
 export interface Reference {
   sourceCollectionName: string;
   sourceField: string;
   targetField: string;
   targetCollectionName: string;
   onDelete: string;
+  priority: ReferencePriority;
 }
+
+const DEFAULT_ON_DELETE = 'NO ACTION';
+
+export function buildReference(options: Partial<Reference>): Reference {
+  const { sourceCollectionName, sourceField, targetField, targetCollectionName, onDelete, priority } = options;
+
+  return {
+    sourceCollectionName,
+    sourceField,
+    targetField,
+    targetCollectionName,
+    onDelete: (onDelete || DEFAULT_ON_DELETE).toUpperCase(),
+    priority: assignPriority(priority, onDelete),
+  };
+}
+
+function assignPriority(priority: string | undefined, onDelete: string | undefined): ReferencePriority {
+  if (priority) {
+    return priority as ReferencePriority;
+  }
+
+  return onDelete ? 'user' : 'default';
+}
+
+const PRIORITY_MAP = {
+  default: 1,
+  user: 2,
+};
 
 class ReferencesMap {
   protected map: Map<string, Reference[]> = new Map();
 
   addReference(reference: Reference) {
-    if (!reference.onDelete) {
-      reference.onDelete = 'NO ACTION';
-    }
-
-    reference.onDelete = reference.onDelete.toUpperCase();
-
     const existReference = this.existReference(reference);
 
     if (existReference && existReference.onDelete !== reference.onDelete) {
-      if (reference.onDelete === 'SET NULL') {
-        // using existing reference
-        return;
-      } else if (existReference.onDelete === 'SET NULL') {
+      // check two references onDelete priority, using the higher priority, if both are the same, throw error
+      const existPriority = PRIORITY_MAP[existReference.priority];
+      const newPriority = PRIORITY_MAP[reference.priority];
+
+      if (newPriority > existPriority) {
         existReference.onDelete = reference.onDelete;
-      } else {
+      } else if (newPriority === existPriority && newPriority === PRIORITY_MAP['user']) {
         throw new Error(
           `On Delete Conflict, exist reference ${JSON.stringify(existReference)}, new reference ${JSON.stringify(
             reference,
