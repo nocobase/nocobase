@@ -4,6 +4,7 @@ import type { Application } from '../../application/Application';
 import { type DataSourceOptions, DataSource, LocalDataSource, DataSourceFactory } from './DataSource';
 import { type CollectionTemplateFactory, CollectionTemplateManager } from '../collection-template';
 import { type CollectionFieldInterfaceFactory, CollectionFieldInterfaceManager } from '../collection-field-interface';
+import _ from 'lodash';
 
 export const DEFAULT_DATA_SOURCE_KEY = 'main';
 export const DEFAULT_DATA_SOURCE_TITLE = '{{t("Main")}}';
@@ -55,8 +56,9 @@ export class DataSourceManager {
     this.getDataSources().forEach((dataSource) => dataSource.collectionManager.reAddCollections());
   }
 
-  getDataSources() {
-    return Object.values(this.dataSourceInstancesMap);
+  getDataSources(filterCollection?: (dataSource: DataSource) => boolean) {
+    const allDataSources = Object.values(this.dataSourceInstancesMap);
+    return filterCollection ? _.filter(allDataSources, filterCollection) : allDataSources;
   }
 
   getDataSource(key?: string) {
@@ -81,15 +83,22 @@ export class DataSourceManager {
   }
 
   getAllCollections(
-    predicate?: (collection: Collection) => boolean,
+    options: {
+      filterCollection?: (collection: Collection) => boolean;
+      filterDataSource?: (dataSource: DataSource) => boolean;
+    } = {},
   ): (DataSourceOptions & { collections: Collection[] })[] {
-    return this.getDataSources().reduce<(DataSourceOptions & { collections: Collection[] })[]>((acc, dataSource) => {
-      acc.push({
-        ...dataSource.getOptions(),
-        collections: dataSource.collectionManager.getCollections(predicate),
-      });
-      return acc;
-    }, []);
+    const { filterCollection, filterDataSource } = options;
+    return this.getDataSources(filterDataSource).reduce<(DataSourceOptions & { collections: Collection[] })[]>(
+      (acc, dataSource) => {
+        acc.push({
+          ...dataSource.getOptions(),
+          collections: dataSource.collectionManager.getCollections(filterCollection),
+        });
+        return acc;
+      },
+      [],
+    );
   }
 
   addFieldInterfaceGroups(options: Record<string, { label: string; order?: number }>) {

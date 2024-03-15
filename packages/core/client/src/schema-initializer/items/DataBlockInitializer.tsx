@@ -12,6 +12,7 @@ import { Collection, CollectionFieldOptions } from '../../data-source/collection
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
+import { DataSource } from '../../data-source';
 
 const MENU_ITEM_HEIGHT = 40;
 const STEP = 15;
@@ -269,6 +270,7 @@ export interface DataBlockInitializerProps {
   name: string;
   title: string;
   filter?: (options: { collection: Collection; associationField: CollectionFieldOptions }) => boolean;
+  filterDataSource?: (dataSource: DataSource) => boolean;
   componentType: string;
   onlyCurrentDataSource?: boolean;
   hideSearch?: boolean;
@@ -290,6 +292,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     hideSearch,
     showAssociationFields,
     showChildren,
+    filterDataSource,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -311,6 +314,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   const items = useCollectionDataSourceItems({
     componentName: componentType,
     filter,
+    filterDataSource,
     onlyCurrentDataSource,
     showAssociationFields,
   });
