@@ -177,7 +177,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/')) {
-      req.url = req.url.replace(new RegExp(`^${APP_PUBLIC_PATH}`), '/');
+      req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
         public: resolve(process.cwd()),
@@ -206,7 +206,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
-      req.url = req.url.replace(new RegExp(`^${APP_PUBLIC_PATH}`), '/');
+      req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
         public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,

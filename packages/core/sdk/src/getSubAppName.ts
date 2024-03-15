@@ -1,10 +1,11 @@
 const getSubAppName = (publicPath = '/') => {
-  const pattern = `^${publicPath}apps/([^/]*)/`;
-  const match = window.location.pathname.match(pattern);
-  if (!match) {
-    return '';
+  const prefix = `${publicPath}apps/`;
+  if (!window.location.pathname.startsWith(prefix)) {
+    return;
   }
-  return match[1];
+  const pathname = window.location.pathname.substring(prefix.length);
+  const args = pathname.split('/', 1);
+  return args[0] || '';
 };
 
 export default getSubAppName;
