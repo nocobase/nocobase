@@ -17,7 +17,7 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
       'x-validator': 'uuid',
     },
   };
-  availableTypes = ['string', 'uid'];
+  availableTypes = ['uuid', 'string'];
   properties = {
     'uiSchema.title': {
       type: 'string',
