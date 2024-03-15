@@ -19,6 +19,7 @@ import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 /**
  * @deprecated - 已使用 SchemaSettings 替代
@@ -154,6 +155,7 @@ export const ListDesigner = () => {
           });
         }}
       />
+      <SetDataLoadingMode />
       <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}

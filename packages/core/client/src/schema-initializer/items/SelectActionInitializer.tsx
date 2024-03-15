@@ -23,7 +23,7 @@ export const SelectActionInitializer = (props) => {
           grid: {
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'TableSelectorInitializers',
+            'x-initializer': 'popup:tableSelector:addBlock',
             properties: {},
           },
           footer: {
@@ -41,7 +41,7 @@ export const SelectActionInitializer = (props) => {
                     'x-component': 'Action',
                     // 'x-designer': 'Action.Designer',
                     'x-toolbar': 'ActionSchemaToolbar',
-                    'x-settings': 'actionSettings:updateSubmit',
+                    'x-settings': 'actionSettings:submit',
                     'x-component-props': {
                       type: 'primary',
                       htmlType: 'submit',

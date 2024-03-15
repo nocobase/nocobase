@@ -1,7 +1,7 @@
 import { Plugin, SchemaInitializerItemType } from '@nocobase/client';
 import WorkflowPlugin, {
-  useTriggerWorkflowsActionProps,
   useRecordTriggerWorkflowsActionProps,
+  useTriggerWorkflowsActionProps,
 } from '@nocobase/plugin-workflow/client';
 
 import ActionTrigger from './ActionTrigger';
@@ -76,25 +76,25 @@ export default class extends Plugin {
     const FormActionInitializers = this.app.schemaInitializerManager.get('FormActionInitializers');
     FormActionInitializers.add('customize.submitToWorkflow', submitToWorkflowActionInitializer);
 
-    const CreateFormActionInitializers = this.app.schemaInitializerManager.get('CreateFormActionInitializers');
+    const CreateFormActionInitializers = this.app.schemaInitializerManager.get('createForm:configureActions');
     CreateFormActionInitializers.add('customize.submitToWorkflow', submitToWorkflowActionInitializer);
 
-    const UpdateFormActionInitializers = this.app.schemaInitializerManager.get('UpdateFormActionInitializers');
+    const UpdateFormActionInitializers = this.app.schemaInitializerManager.get('editForm:configureActions');
     UpdateFormActionInitializers.add('customize.submitToWorkflow', submitToWorkflowActionInitializer);
 
-    const DetailsActionInitializers = this.app.schemaInitializerManager.get('DetailsActionInitializers');
+    const DetailsActionInitializers = this.app.schemaInitializerManager.get('detailsWithPaging:configureActions');
     DetailsActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
 
-    const ReadPrettyFormActionInitializers = this.app.schemaInitializerManager.get('ReadPrettyFormActionInitializers');
+    const ReadPrettyFormActionInitializers = this.app.schemaInitializerManager.get('details:configureActions');
     ReadPrettyFormActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionInitializer);
 
-    const TableActionColumnInitializers = this.app.schemaInitializerManager.get('TableActionColumnInitializers');
+    const TableActionColumnInitializers = this.app.schemaInitializerManager.get('table:configureItemActions');
     TableActionColumnInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionLinkInitializer);
 
-    const GridCardItemActionInitializers = this.app.schemaInitializerManager.get('GridCardItemActionInitializers');
+    const GridCardItemActionInitializers = this.app.schemaInitializerManager.get('gridCard:configureItemActions');
     GridCardItemActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionLinkInitializer);
 
-    const ListItemActionInitializers = this.app.schemaInitializerManager.get('ListItemActionInitializers');
+    const ListItemActionInitializers = this.app.schemaInitializerManager.get('list:configureItemActions');
     ListItemActionInitializers.add('customize.submitToWorkflow', recordTriggerWorkflowActionLinkInitializer);
   }
 }

@@ -8,11 +8,11 @@ import {
   BlockItem,
   CollectionFieldProvider,
   CollectionProvider,
+  CompatibleSchemaInitializer,
   FormDialog,
   HTMLEncode,
   SchemaComponent,
   SchemaComponentOptions,
-  SchemaInitializer,
   SchemaInitializerItem,
   gridRowColWrap,
   useCollectionManager_deprecated,
@@ -227,7 +227,10 @@ export const ChartFilterCustomItemInitializer: React.FC<{
 });
 ChartFilterCustomItemInitializer.displayName = 'ChartFilterCustomItemInitializer';
 
-export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ */
+export const chartFilterItemInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartFilterItemInitializers',
   'data-testid': 'configure-fields-button-of-chart-filter-item',
   wrap: gridRowColWrap,
@@ -273,3 +276,53 @@ export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitiali
     },
   ],
 });
+
+export const chartFilterItemInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'chartFilterForm:configureFields',
+    'data-testid': 'configure-fields-button-of-chart-filter-item',
+    wrap: gridRowColWrap,
+    icon: 'SettingOutlined',
+    title: '{{ t("Configure fields") }}',
+    items: [
+      {
+        type: 'itemGroup',
+        name: 'displayFields',
+        title: '{{ t("Display fields") }}',
+        useChildren: () => {
+          const { getCollection } = useCollectionManager_deprecated();
+          const { getChartCollections } = useChartData();
+          const { getChartFilterFields } = useChartFilter();
+          const collections = getChartCollections();
+
+          return useMemo(() => {
+            return collections.map((name: any) => {
+              const collection = getCollection(name);
+              const fields = getChartFilterFields(collection);
+              return {
+                name: collection.key,
+                type: 'subMenu',
+                title: collection.title,
+                children: fields,
+              };
+            });
+          }, [collections]);
+        },
+      },
+      {
+        name: 'divider',
+        type: 'divider',
+      },
+      {
+        name: 'custom',
+        type: 'item',
+        title: lang('Custom'),
+        Component: () => {
+          const { insertAdjacent } = useDesignable();
+          return <ChartFilterCustomItemInitializer insert={(s: Schema) => insertAdjacent('beforeEnd', s)} />;
+        },
+      },
+    ],
+  },
+  chartFilterItemInitializers_deprecated,
+);

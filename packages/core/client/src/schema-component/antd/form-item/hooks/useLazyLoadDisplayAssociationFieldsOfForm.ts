@@ -11,6 +11,7 @@ import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
 import { isDisplayField } from '../utils';
+import { untracked } from '@formily/reactive';
 
 /**
  * 用于懒加载 Form 区块中只用于展示的关联字段的值
@@ -31,7 +32,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { getAssociationAppends } = useAssociationNames();
 
   const schemaName = fieldSchema.name.toString();
-  const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
+  const formValue = untracked(() => _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values));
   const collectionFieldRef = useRef(null);
   const sourceCollectionFieldRef = useRef(null);
 

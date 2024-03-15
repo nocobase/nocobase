@@ -3,7 +3,7 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';

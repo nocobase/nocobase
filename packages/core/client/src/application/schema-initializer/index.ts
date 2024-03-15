@@ -4,4 +4,5 @@ export * from './types';
 export * from './context';
 export * from './components';
 export * from './SchemaInitializer';
+export * from './CompatibleSchemaInitializer';
 export * from './SchemaInitializerManager';

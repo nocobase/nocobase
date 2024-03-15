@@ -424,6 +424,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
           collectionName,
           resourceName,
           componentName,
+          dataSourceKey: collection.dataSource,
           name: values.name,
           uid: gridSchema['x-uid'],
         });

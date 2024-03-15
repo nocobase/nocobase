@@ -8,7 +8,6 @@ import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
 import { isEqual } from 'lodash';
-import { useWhyDidYouUpdate } from 'ahooks';
 import { useDeepMemoized } from '../application';
 
 export const TableBlockContext = createContext<any>({});
@@ -98,7 +97,7 @@ export const TableBlockProvider = (props) => {
         return collection.fields.find((f) => f.treeChildren);
       }
     }
-  }, [resourceName, isTree, collection.fields, getCollectionField]);
+  }, [resourceName, isTree, collection?.fields, getCollectionField]);
 
   const childrenColumnName = treeField?.name || 'children';
 
@@ -236,6 +235,9 @@ export const useTableBlockProps = () => {
           const storedFilter = block.service.params?.[1]?.filters || {};
 
           if (selectedRow.includes(record[ctx.rowKey])) {
+            if (block.dataLoadingMode === 'manual') {
+              return block.clearData();
+            }
             delete storedFilter[uid];
           } else {
             storedFilter[uid] = {

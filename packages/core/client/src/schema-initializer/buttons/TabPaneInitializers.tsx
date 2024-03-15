@@ -16,11 +16,11 @@ export const TabPaneInitializers = (props?: any) => {
     const ctx = useActionContext();
     let initializer = gridInitializer;
     if (!initializer) {
-      initializer = 'RecordBlockInitializers';
+      initializer = 'popup:common:addBlock';
       if (isCreate || !record) {
-        initializer = 'CreateFormBlockInitializers';
+        initializer = 'popup:addNew:addBlock';
       } else if (isBulkEdit) {
-        initializer = 'BulkEditBlockInitializers';
+        initializer = 'popup:bulkEdit:addBlock';
       }
     }
     return {
@@ -138,18 +138,27 @@ export const TabPaneInitializersForBulkEditFormBlock = (props) => {
   return <TabPaneInitializers {...props} isBulkEdit />;
 };
 
-export const tabPaneInitializers = new SchemaInitializer({
+/**
+ * @deprecated
+ */
+export const tabPaneInitializers_deprecated = new SchemaInitializer({
   name: 'TabPaneInitializers',
   Component: TabPaneInitializers,
   popover: false,
 });
 
+/**
+ * @deprecated
+ */
 export const tabPaneInitializersForRecordBlock = new SchemaInitializer({
   name: 'TabPaneInitializersForCreateFormBlock',
   Component: TabPaneInitializersForCreateFormBlock,
   popover: false,
 });
 
+/**
+ * @deprecated
+ */
 export const tabPaneInitializersForBulkEditFormBlock = new SchemaInitializer({
   name: 'TabPaneInitializersForBulkEditFormBlock',
   Component: TabPaneInitializersForBulkEditFormBlock,

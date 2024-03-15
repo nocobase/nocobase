@@ -10,7 +10,7 @@ export const T2183 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           '1n5r9s23amo': {
             _isJSONSchemaObject: true,
@@ -50,7 +50,7 @@ export const T2183 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -87,7 +87,7 @@ export const T2183 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -106,7 +106,7 @@ export const T2183 = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -169,7 +169,7 @@ export const T2186 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           '0r1mwh6fgdj': {
             _isJSONSchemaObject: true,
@@ -209,7 +209,7 @@ export const T2186 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -246,7 +246,7 @@ export const T2186 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -265,7 +265,7 @@ export const T2186 = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -328,7 +328,7 @@ export const T2187 = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           zp24b63pujf: {
             _isJSONSchemaObject: true,
@@ -368,7 +368,7 @@ export const T2187 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -383,7 +383,7 @@ export const T2187 = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -402,7 +402,7 @@ export const T2187 = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -468,7 +468,7 @@ export const T2187 = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'CreateFormBlockInitializers',
+                                                    'x-initializer': 'popup:addNew:addBlock',
                                                     properties: {
                                                       qvyfk3a9a2g: {
                                                         _isJSONSchemaObject: true,
@@ -513,7 +513,7 @@ export const T2187 = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           h191s1ni4am: {
                                                                             _isJSONSchemaObject: true,
@@ -573,7 +573,7 @@ export const T2187 = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'CreateFormActionInitializers',
+                                                                        'x-initializer': 'createForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
