@@ -278,7 +278,7 @@ function buildIndexHtml(force = false) {
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
     .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
   fs.writeFileSync(file, replacedData, 'utf-8');
-};
+}
 
 exports.buildIndexHtml = buildIndexHtml;
 
