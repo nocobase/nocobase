@@ -11,7 +11,19 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
 
-export const FormBlockContext = createContext<any>({});
+export const FormBlockContext = createContext<{
+  form?: any;
+  type?: 'update' | 'create';
+  action?: string;
+  field?: any;
+  service?: any;
+  resource?: any;
+  updateAssociationValues?: any;
+  formBlockRef?: any;
+  collectionName?: string;
+  params?: any;
+  [key: string]: any;
+}>({});
 FormBlockContext.displayName = 'FormBlockContext';
 
 const InternalFormBlockProvider = (props) => {
@@ -28,7 +40,7 @@ const InternalFormBlockProvider = (props) => {
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useCollectionRecord();
-  const formBlockValue = useMemo(() => {
+  const formBlockValue: any = useMemo(() => {
     return {
       ...ctx,
       params,
@@ -43,7 +55,7 @@ const InternalFormBlockProvider = (props) => {
       formBlockRef,
       collectionName: collection,
     };
-  }, [action, field, form, params, resource, service, updateAssociationValues]);
+  }, [action, collection, ctx, field, form, params, resource, service, updateAssociationValues]);
 
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;

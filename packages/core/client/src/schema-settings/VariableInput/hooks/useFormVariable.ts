@@ -57,7 +57,6 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
  * @returns
  */
 export const useCurrentFormVariable = ({
-  collectionName,
   collectionField,
   schema,
   noDisabled,
@@ -66,7 +65,7 @@ export const useCurrentFormVariable = ({
 }: Props = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
-  const { form } = useFormBlockContext();
+  const { form, collectionName } = useFormBlockContext();
   const currentFormSettings = useBaseVariable({
     collectionField,
     uiSchema: schema,

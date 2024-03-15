@@ -61,13 +61,11 @@ export const useIterationVariable = ({
  * @returns
  */
 export const useCurrentObjectVariable = ({
-  currentCollection,
   collectionField,
   schema,
   noDisabled,
   targetFieldSchema,
 }: {
-  currentCollection?: string;
   collectionField?: CollectionFieldOptions;
   schema?: any;
   noDisabled?: boolean;
@@ -75,7 +73,7 @@ export const useCurrentObjectVariable = ({
   targetFieldSchema?: Schema;
 } = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
-  const { formValue: currentObjectCtx } = useSubFormValue();
+  const { formValue: currentObjectCtx, collection } = useSubFormValue();
   const { isInSubForm, isInSubTable } = useFlag() || {};
   const { t } = useTranslation();
   const currentObjectSettings = useBaseVariable({
@@ -85,7 +83,7 @@ export const useCurrentObjectVariable = ({
     maxDepth: 4,
     name: '$iteration',
     title: t('Current object'),
-    collectionName: currentCollection,
+    collectionName: collection?.name,
     noDisabled,
     returnFields: (fields, option) => {
       // fix https://nocobase.height.app/T-2277
@@ -102,7 +100,7 @@ export const useCurrentObjectVariable = ({
 
   return {
     /** 是否显示变量 */
-    shouldDisplayCurrentObject: isInSubForm || isInSubTable,
+    shouldDisplayCurrentObject: (isInSubForm || isInSubTable) && currentObjectCtx,
     /** 变量的值 */
     currentObjectCtx,
     /** 变量的配置项 */
