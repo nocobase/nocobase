@@ -247,6 +247,71 @@ const usePaginationProps = (pagination1, pagination2) => {
   return result.total <= result.pageSize ? false : result;
 };
 
+const headerClass = css`
+  max-width: 300px;
+  white-space: nowrap;
+  &:hover .general-schema-designer {
+    display: block;
+  }
+`;
+
+const cellClass = css`
+  max-width: 300px;
+  white-space: nowrap;
+  .nb-read-pretty-input-number {
+    text-align: right;
+  }
+  .ant-color-picker-trigger {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+`;
+
+const rowSelectCheckboxWrapperClass = css`
+  position: relative;
+  display: flex;
+  float: left;
+  align-items: center;
+  justify-content: space-evenly;
+  padding-right: 8px;
+  .nb-table-index {
+    opacity: 0;
+  }
+  &:not(.checked) {
+    .nb-table-index {
+      opacity: 1;
+    }
+  }
+`;
+
+const rowSelectCheckboxWrapperClassHover = css`
+  &:hover {
+    .nb-table-index {
+      opacity: 0;
+    }
+    .nb-origin-node {
+      display: block;
+    }
+  }
+`;
+
+const rowSelectCheckboxContentClass = css`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+`;
+
+const rowSelectCheckboxCheckedClassHover = css`
+  position: absolute;
+  right: 50%;
+  transform: translateX(50%);
+  &:not(.checked) {
+    display: none;
+  }
+`;
+
 export const Table: any = observer(
   (props: {
     useProps?: () => any;
@@ -280,6 +345,7 @@ export const Table: any = observer(
     const field = useArrayField(others);
     const columns = useTableColumns(others);
     const schema = useFieldSchema();
+    const { designable } = useDesignable();
     const collection = useCollection();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
@@ -292,18 +358,19 @@ export const Table: any = observer(
     const isRowSelect = rowSelection?.type !== 'none';
     const defaultRowKeyMap = useRef(new Map());
 
+    const highlightRowCss = useMemo(() => {
+      return css`
+        & > td {
+          background-color: ${token.controlItemBgActiveHover} !important;
+        }
+        &:hover > td {
+          background-color: ${token.controlItemBgActiveHover} !important;
+        }
+      `;
+    }, [token.controlItemBgActiveHover]);
+
     const highlightRow = useMemo(
-      () =>
-        onClickRow
-          ? css`
-              & > td {
-                background-color: ${token.controlItemBgActiveHover} !important;
-              }
-              &:hover > td {
-                background-color: ${token.controlItemBgActiveHover} !important;
-              }
-            `
-          : '',
+      () => (onClickRow ? highlightRowCss : ''),
       [onClickRow, token.controlItemBgActiveHover],
     );
 
@@ -330,36 +397,29 @@ export const Table: any = observer(
       }
     }, [expandFlag, allIncludesChildren]);
 
-    const components = useMemo(() => {
-      return {
-        header: {
-          wrapper: (props) => {
+    const headerWrapperComponent = useMemo(() => {
+      return designable
+        ? (props) => {
             return (
               <DndContext>
                 <thead {...props} />
               </DndContext>
             );
-          },
-          cell: (props) => {
-            return (
-              <th
-                {...props}
-                className={cls(
-                  props.className,
-                  css`
-                    max-width: 300px;
-                    white-space: nowrap;
-                    &:hover .general-schema-designer {
-                      display: block;
-                    }
-                  `,
-                )}
-              />
-            );
-          },
-        },
-        body: {
-          wrapper: (props) => {
+          }
+        : undefined;
+    }, [designable]);
+
+    const headerCellComponent = useMemo(() => {
+      return designable
+        ? (props) => {
+            return <th {...props} className={cls(props.className, headerClass)} />;
+          }
+        : undefined;
+    }, [designable]);
+
+    const bodyWrapperComponent = useMemo(() => {
+      return designable
+        ? (props) => {
             return (
               <DndContext
                 onDragEnd={(e) => {
@@ -378,33 +438,36 @@ export const Table: any = observer(
                 <tbody {...props} />
               </DndContext>
             );
-          },
-          row: (props) => {
-            return <SortableRow {...props}></SortableRow>;
-          },
-          cell: (props) => (
-            <td
-              {...props}
-              className={classNames(
-                props.className,
-                css`
-                  max-width: 300px;
-                  white-space: nowrap;
-                  .nb-read-pretty-input-number {
-                    text-align: right;
-                  }
-                  .ant-color-picker-trigger {
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                  }
-                `,
-              )}
-            />
-          ),
+          }
+        : undefined;
+    }, [designable, onRowDragEnd, field]);
+
+    const bodyRowComponent = useMemo(() => {
+      return designable
+        ? (props) => {
+            return <SortableRow {...props} />;
+          }
+        : undefined;
+    }, [designable]);
+
+    const bodyCellComponent = useMemo(() => {
+      return (props) => {
+        return <td {...props} className={classNames(props.className, cellClass)} />;
+      };
+    }, []);
+    const components = useMemo(() => {
+      return {
+        header: {
+          wrapper: headerWrapperComponent,
+          cell: headerCellComponent,
+        },
+        body: {
+          wrapper: bodyWrapperComponent,
+          row: bodyRowComponent,
+          cell: bodyCellComponent,
         },
       };
-    }, [field, onRowDragEnd]);
+    }, [headerWrapperComponent, headerCellComponent, bodyWrapperComponent, bodyRowComponent, bodyCellComponent]);
 
     /**
      * 为没有设置 key 属性的表格行生成一个唯一的 key
@@ -483,49 +546,11 @@ export const Table: any = observer(
                   <div
                     role="button"
                     aria-label={`table-index-${index}`}
-                    className={classNames(
-                      checked ? 'checked' : null,
-                      css`
-                        position: relative;
-                        display: flex;
-                        float: left;
-                        align-items: center;
-                        justify-content: space-evenly;
-                        padding-right: 8px;
-                        .nb-table-index {
-                          opacity: 0;
-                        }
-                        &:not(.checked) {
-                          .nb-table-index {
-                            opacity: 1;
-                          }
-                        }
-                      `,
-                      {
-                        [css`
-                          &:hover {
-                            .nb-table-index {
-                              opacity: 0;
-                            }
-                            .nb-origin-node {
-                              display: block;
-                            }
-                          }
-                        `]: isRowSelect,
-                      },
-                    )}
+                    className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                      [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                    })}
                   >
-                    <div
-                      className={classNames(
-                        checked ? 'checked' : null,
-                        css`
-                          position: relative;
-                          display: flex;
-                          align-items: center;
-                          justify-content: space-evenly;
-                        `,
-                      )}
-                    >
+                    <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
                       {dragSort && <SortHandle id={getRowKey(record)} />}
                       {showIndex && <TableIndex index={index} />}
                     </div>
@@ -534,14 +559,7 @@ export const Table: any = observer(
                         className={classNames(
                           'nb-origin-node',
                           checked ? 'checked' : null,
-                          css`
-                            position: absolute;
-                            right: 50%;
-                            transform: translateX(50%);
-                            &:not(.checked) {
-                              display: none;
-                            }
-                          `,
+                          rowSelectCheckboxCheckedClassHover,
                         )}
                       >
                         {originNode}
