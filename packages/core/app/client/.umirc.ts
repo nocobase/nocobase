@@ -17,20 +17,26 @@ const indexGenerator = new IndexGenerator(outputPluginPath, pluginDirs);
 indexGenerator.generate();
 
 const publicPath = process.env.APP_PUBLIC_PATH || '/';
-
 export default defineConfig({
   title: 'Loading...',
   devtool: process.env.NODE_ENV === 'development' ? 'source-map' : false,
-  favicons: [`${publicPath}favicon/favicon.ico`],
+  favicons: [`{{publicPath}}favicon/favicon.ico`],
   metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
   links: [
-    { rel: 'apple-touch-icon', size: '180x180', ref: `${publicPath}favicon/apple-touch-icon.png` },
-    { rel: 'icon', type: 'image/png', size: '32x32', ref: `${publicPath}favicon/favicon-32x32.png` },
-    { rel: 'icon', type: 'image/png', size: '16x16', ref: `${publicPath}favicon/favicon-16x16.png` },
-    { rel: 'manifest', href: `${publicPath}favicon/site.webmanifest` },
-    { rel: 'stylesheet', href: `${publicPath}global.css` },
+    { rel: 'apple-touch-icon', size: '180x180', ref: `{{publicPath}}favicon/apple-touch-icon.png` },
+    { rel: 'icon', type: 'image/png', size: '32x32', ref: `{{publicPath}}favicon/favicon-32x32.png` },
+    { rel: 'icon', type: 'image/png', size: '16x16', ref: `{{publicPath}}favicon/favicon-16x16.png` },
+    { rel: 'manifest', href: `{{publicPath}}favicon/site.webmanifest` },
+    { rel: 'stylesheet', href: `{{publicPath}}global.css` },
   ],
-  headScripts: [`${publicPath}browser-checker.js`],
+  headScripts: [
+    {
+      src: `{{publicPath}}browser-checker.js`,
+    },
+    {
+      content: `window['__webpack_public_path__'] = '{{publicPath}}';`,
+    },
+  ],
   outputPath: path.resolve(__dirname, '../dist/client'),
   hash: true,
   alias: {
@@ -43,7 +49,7 @@ export default defineConfig({
   proxy: {
     ...umiConfig.proxy,
   },
-  publicPath,
+  publicPath: 'auto',
   fastRefresh: false, // 热更新会导致 Context 丢失，不开启
   mfsu: false,
   esbuildMinifyIIFE: true,

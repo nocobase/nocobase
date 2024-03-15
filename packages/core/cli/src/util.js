@@ -257,6 +257,18 @@ function parseEnv(name) {
   }
 }
 
+exports.buildIndexHtml = function buildIndexHtml() {
+  const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
+  if (!fs.existsSync(file)) {
+    return;
+  }
+  const data = fs.readFileSync(file, 'utf-8');
+  const replacedData = data
+    .replace(/\{\{publicPath\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
+  fs.writeFileSync(file, replacedData, 'utf-8');
+};
+
 exports.initEnv = function initEnv() {
   const env = {
     APP_ENV: 'development',
@@ -280,7 +292,7 @@ exports.initEnv = function initEnv() {
     PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
     CACHE_DEFAULT_STORE: 'memory',
     CACHE_MEMORY_MAX: 2000,
-    PLUGIN_STATICS_PATH: '/static/plugins',
+    PLUGIN_STATICS_PATH: '/static/plugins/',
     LOGGER_BASE_PATH: 'storage/logs',
     APP_SERVER_BASE_URL: '',
     APP_PUBLIC_PATH: '/',

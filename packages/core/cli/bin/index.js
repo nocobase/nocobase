@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 const chalk = require('chalk');
-const { initEnv, genTsConfigPaths } = require('../src/util');
+const { initEnv, genTsConfigPaths, buildIndexHtml } = require('../src/util');
 
 initEnv();
 genTsConfigPaths();
+buildIndexHtml();
 
 if (require('semver').satisfies(process.version, '<16')) {
   console.error(chalk.red('[nocobase cli]: Node.js version must be >= 16'));
