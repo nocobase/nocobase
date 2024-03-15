@@ -2,7 +2,7 @@ import { NocoBaseBuildInPlugin, Plugin } from '@nocobase/client';
 
 const getCurrentTimezone = () => {
   const timezoneOffset = new Date().getTimezoneOffset() / -60;
-  const timezone = String(timezoneOffset).padStart(2, '0') + ':00';
+  const timezone = String(Math.abs(timezoneOffset)).padStart(2, '0') + ':00';
   return (timezoneOffset > 0 ? '+' : '-') + timezone;
 };
 
