@@ -5,6 +5,7 @@ import { CollectionFieldOptions } from '../../../data-source/collection/Collecti
 import { useFlag } from '../../../flag-provider';
 import { useSubFormValue } from '../../../schema-component/antd/association-field/hooks';
 import { useBaseVariable } from './useBaseVariable';
+import { useCollection } from '../../../data-source';
 
 /**
  * @deprecated
@@ -61,13 +62,11 @@ export const useIterationVariable = ({
  * @returns
  */
 export const useCurrentObjectVariable = ({
-  currentCollection,
   collectionField,
   schema,
   noDisabled,
   targetFieldSchema,
 }: {
-  currentCollection?: string;
   collectionField?: CollectionFieldOptions;
   schema?: any;
   noDisabled?: boolean;
@@ -75,7 +74,8 @@ export const useCurrentObjectVariable = ({
   targetFieldSchema?: Schema;
 } = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
-  const { formValue: currentObjectCtx } = useSubFormValue();
+  const collection = useCollection();
+  const { formValue: currentObjectCtx, collection: collectionOfCurrentObject } = useSubFormValue();
   const { isInSubForm, isInSubTable } = useFlag() || {};
   const { t } = useTranslation();
   const currentObjectSettings = useBaseVariable({
@@ -85,7 +85,7 @@ export const useCurrentObjectVariable = ({
     maxDepth: 4,
     name: '$iteration',
     title: t('Current object'),
-    collectionName: currentCollection,
+    collectionName: collectionOfCurrentObject?.name || collection?.name,
     noDisabled,
     returnFields: (fields, option) => {
       // fix https://nocobase.height.app/T-2277
