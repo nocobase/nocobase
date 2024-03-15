@@ -145,15 +145,7 @@ export const useTableBlockProps = () => {
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-  }, [
-    ctx?.field?.data?.selectedRowKeys,
-    ctx?.service?.data?.data,
-    ctx?.service?.data?.meta?.count,
-    ctx?.service?.data?.meta?.page,
-    ctx?.service?.data?.meta?.pageSize,
-    ctx?.service?.loading,
-    field,
-  ]);
+  }, [ctx?.service?.data, ctx?.service?.loading]); // 这里如果依赖了 ctx?.field?.data?.selectedRowKeys 的话，会导致这个问题：
   return {
     childrenColumnName: ctx.childrenColumnName,
     loading: ctx?.service?.loading,
