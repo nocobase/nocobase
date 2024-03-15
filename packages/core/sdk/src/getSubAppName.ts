@@ -1,5 +1,6 @@
-const getSubAppName = () => {
-  const match = window.location.pathname.match(/^\/apps\/([^/]*)\/?/);
+const getSubAppName = (publicPath = '/') => {
+  const pattern = `^${publicPath}apps/([^/]*)/`;
+  const match = window.location.pathname.match(pattern);
   if (!match) {
     return '';
   }

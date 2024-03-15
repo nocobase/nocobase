@@ -1,3 +1,3 @@
 export * from './APIClient';
-export { default as getSubAppName } from './getSubAppName';
 
+export { default as getSubAppName } from './getSubAppName';

@@ -280,7 +280,10 @@ exports.initEnv = function initEnv() {
     PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
     CACHE_DEFAULT_STORE: 'memory',
     CACHE_MEMORY_MAX: 2000,
+    PLUGIN_STATICS_PATH: '/static/plugins',
     LOGGER_BASE_PATH: 'storage/logs',
+    APP_SERVER_BASE_URL: '',
+    APP_PUBLIC_PATH: '/',
   };
 
   if (
@@ -318,5 +321,17 @@ exports.initEnv = function initEnv() {
     if (!process.env[key]) {
       process.env[key] = env[key];
     }
+  }
+
+  if (process.env.APP_PUBLIC_PATH) {
+    const publicPath = process.env.APP_PUBLIC_PATH.replace(/\/$/g, '');
+    const keys = ['API_BASE_PATH', 'WS_PATH', 'PLUGIN_STATICS_PATH'];
+    for (const key of keys) {
+      process.env[key] = publicPath + process.env[key];
+    }
+  }
+
+  if (process.env.APP_SERVER_BASE_URL && !process.env.API_BASE_URL) {
+    process.env.API_BASE_URL = process.env.APP_SERVER_BASE_URL + process.env.API_BASE_PATH;
   }
 };

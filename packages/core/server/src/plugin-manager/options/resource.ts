@@ -5,7 +5,6 @@ import Application from '../../application';
 import { getExposeUrl } from '../clientStaticUtils';
 import PluginManager from '../plugin-manager';
 //@ts-ignore
-import { version } from '../../../package.json';
 
 export default {
   name: 'pm',
@@ -131,7 +130,10 @@ export default {
           try {
             return {
               ...item.toJSON(),
-              url: `${getExposeUrl(item.packageName, PLUGIN_CLIENT_ENTRY_FILE)}?version=${item.version}`,
+              url: `${process.env.APP_SERVER_BASE_URL}${getExposeUrl(
+                item.packageName,
+                PLUGIN_CLIENT_ENTRY_FILE,
+              )}?version=${item.version}`,
             };
           } catch {
             return false;
