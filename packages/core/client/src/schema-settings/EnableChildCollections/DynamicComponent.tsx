@@ -15,7 +15,6 @@ export const ChildDynamicComponent = observer(
       collectionField,
     });
     const { currentObjectSettings } = useCurrentObjectVariable({
-      currentCollection: collectionField?.collectionName,
       schema: collectionField?.uiSchema,
       collectionField,
     });
