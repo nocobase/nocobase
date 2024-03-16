@@ -19,16 +19,29 @@ indexGenerator.generate();
 export default defineConfig({
   title: 'Loading...',
   devtool: process.env.NODE_ENV === 'development' ? 'source-map' : false,
-  favicons: ['/favicon/favicon.ico'],
+  favicons: [`{{env.APP_PUBLIC_PATH}}favicon/favicon.ico`],
   metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
   links: [
-    { rel: 'apple-touch-icon', size: '180x180', ref: '/favicon/apple-touch-icon.png' },
-    { rel: 'icon', type: 'image/png', size: '32x32', ref: '/favicon/favicon-32x32.png' },
-    { rel: 'icon', type: 'image/png', size: '16x16', ref: '/favicon/favicon-16x16.png' },
-    { rel: 'manifest', href: '/favicon/site.webmanifest' },
-    { rel: 'stylesheet', href: '/global.css' },
+    { rel: 'apple-touch-icon', size: '180x180', ref: `{{env.APP_PUBLIC_PATH}}favicon/apple-touch-icon.png` },
+    { rel: 'icon', type: 'image/png', size: '32x32', ref: `{{env.APP_PUBLIC_PATH}}favicon/favicon-32x32.png` },
+    { rel: 'icon', type: 'image/png', size: '16x16', ref: `{{env.APP_PUBLIC_PATH}}favicon/favicon-16x16.png` },
+    { rel: 'manifest', href: `{{env.APP_PUBLIC_PATH}}favicon/site.webmanifest` },
+    { rel: 'stylesheet', href: `{{env.APP_PUBLIC_PATH}}global.css` },
   ],
-  headScripts: ['/browser-checker.js'],
+  headScripts: [
+    {
+      src: `{{env.APP_PUBLIC_PATH}}browser-checker.js`,
+    },
+    {
+      content: `
+        window['__webpack_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
+        window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';
+        window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
+        window['__nocobase_ws_url__'] = '{{env.WS_URL}}';
+        window['__nocobase_ws_path__'] = '{{env.WS_PATH}}';
+      `,
+    },
+  ],
   outputPath: path.resolve(__dirname, '../dist/client'),
   hash: true,
   alias: {
@@ -41,6 +54,7 @@ export default defineConfig({
   proxy: {
     ...umiConfig.proxy,
   },
+  publicPath: 'auto',
   fastRefresh: false, // 热更新会导致 Context 丢失，不开启
   mfsu: false,
   esbuildMinifyIIFE: true,

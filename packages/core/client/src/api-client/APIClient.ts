@@ -1,4 +1,4 @@
-import { APIClient as APIClientSDK } from '@nocobase/sdk';
+import { APIClient as APIClientSDK, getSubAppName } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
@@ -39,9 +39,9 @@ export class APIClient extends APIClientSDK {
   interceptors() {
     this.axios.interceptors.request.use((config) => {
       config.headers['X-With-ACL-Meta'] = true;
-      const match = location.pathname.match(/^\/apps\/([^/]*)\//);
-      if (match) {
-        config.headers['X-App'] = match[1];
+      const appName = this.app ? getSubAppName(this.app.getPublicPath()) : null;
+      if (appName) {
+        config.headers['X-App'] = appName;
       }
       return config;
     });

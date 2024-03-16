@@ -115,7 +115,7 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
     },
     plugins: ['nocobase'],
     resourcer: {
-      prefix: '/api',
+      prefix: process.env.API_BASE_PATH,
     },
   };
 };

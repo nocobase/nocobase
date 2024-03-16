@@ -9,7 +9,7 @@ export const service = async (ctx: Context, next: Next) => {
   if (appName && appName !== 'main') {
     const appSupervisor = AppSupervisor.getInstance();
     if (appSupervisor?.runningMode !== 'single') {
-      prefix = `/apps/${appName}`;
+      prefix = process.env.APP_PUBLIC_PATH + `apps/${appName}`;
     }
   }
 
