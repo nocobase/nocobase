@@ -508,7 +508,12 @@ export const Table: any = observer(
       [rowKey, defaultRowKey],
     );
 
-    const dataSource = useMemo(() => [...(field?.value || [])].filter(Boolean), [loading, field?.value]);
+    const dataSourceKeys = field?.value?.map(getRowKey);
+    const memoizedDataSourceKeys = useDeepMemoized(dataSourceKeys);
+    const dataSource = useMemo(
+      () => [...(field?.value || [])].filter(Boolean),
+      [loading, field?.value, field?.value?.length, memoizedDataSourceKeys],
+    );
 
     const memoizedRowSelection = useDeepMemoized(rowSelection);
 
