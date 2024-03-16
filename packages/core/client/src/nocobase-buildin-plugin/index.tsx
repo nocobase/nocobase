@@ -10,6 +10,7 @@ import { useAPIClient } from '../api-client';
 import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { BlockSchemaComponentPlugin } from '../block-provider';
+import { CollectionPlugin } from '../collection-manager';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
@@ -22,7 +23,6 @@ import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
-import { CollectionPlugin } from '../collection-manager';
 
 const AppSpin = () => {
   return (
@@ -36,7 +36,7 @@ const useErrorProps = (app: Application, error: any) => {
     return {};
   }
   const err = error?.response?.data?.errors?.[0] || error;
-  const subApp = getSubAppName();
+  const subApp = getSubAppName(app.getPublicPath());
   switch (err.code) {
     case 'USER_HAS_NO_ROLES_ERR':
       return {

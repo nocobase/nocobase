@@ -48,7 +48,7 @@ export class Auth {
     if (typeof window === 'undefined') {
       return;
     }
-    const appName = getSubAppName();
+    const appName = getSubAppName(this.api['app'] ? this.api['app'].getPublicPath() : '/');
     if (!appName) {
       return;
     }
