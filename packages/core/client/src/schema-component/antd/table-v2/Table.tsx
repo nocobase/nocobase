@@ -648,6 +648,7 @@ export const Table: any = observer(
       tableLayout: 'auto',
       ...others,
       ...restProps,
+      loading,
       pagination: paginationProps,
       components,
       onChange: onTableChange,
@@ -688,6 +689,7 @@ export const Table: any = observer(
             tableLayout="auto"
             {...others}
             {...restProps}
+            loading={loading}
             pagination={paginationProps}
             components={components}
             onChange={onTableChange}

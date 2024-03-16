@@ -9,7 +9,6 @@ import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestCont
 import { findFilterTargets, useParsedFilter } from './hooks';
 import { isEqual } from 'lodash';
 import { useDeepMemoized } from '../application';
-import { useWhyDidYouUpdate } from 'ahooks';
 
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
