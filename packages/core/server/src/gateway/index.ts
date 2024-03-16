@@ -170,7 +170,7 @@ export class Gateway extends EventEmitter {
     const { pathname } = parse(req.url);
     const { PLUGIN_STATICS_PATH, APP_PUBLIC_PATH } = process.env;
 
-    if (pathname === '/__umi/api/bundle-status') {
+    if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
       res.end('ok');
       return;

@@ -3,7 +3,7 @@ import { observer, useForm } from '@formily/react';
 import { FormItem, Input, SchemaComponent, useApp, useRecord } from '@nocobase/client';
 import { getSubAppName } from '@nocobase/sdk';
 import { Card, message } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { lang, useSamlTranslation } from './locale';
 
 const schema = {
@@ -74,10 +74,18 @@ const Usage = observer(
     const { t } = useSamlTranslation();
 
     const app = useApp();
-    const appName = getSubAppName(app.getPublicPath()) || 'main';
     const name = form.values.name ?? record.name;
-    const { protocol, host } = window.location;
-    const url = `${protocol}//${host}/api/saml:redirect?authenticator=${name}&__appName=${appName}`;
+
+    const url = useMemo(() => {
+      const options = app.getOptions();
+      const apiBaseURL: string = options?.apiClient?.['baseURL'];
+      const { protocol, host } = window.location;
+      const appName = getSubAppName(app.getPublicPath()) || 'main';
+
+      return apiBaseURL.startsWith('http')
+        ? `${apiBaseURL}saml:redirect?authenticator=${name}&__appName=${appName}`
+        : `${protocol}//${host}${apiBaseURL}saml:redirect?authenticator=${name}&__appName=${appName}`;
+    }, [app, name]);
 
     const copy = (text: string) => {
       navigator.clipboard.writeText(text);
