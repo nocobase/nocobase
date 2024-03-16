@@ -147,6 +147,8 @@ export class Chart implements ChartType {
             xIndex = i;
           }
         });
+        xIndex = xIndex || 0;
+        xField = xField || getField(fields, dimensions[xIndex]);
         const restFields = dimensions.filter((_, i) => i !== xIndex).map((i) => getField(fields, i));
         if (restFields.length === 1) {
           seriesField = restFields[0];
