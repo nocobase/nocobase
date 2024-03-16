@@ -1,6 +1,5 @@
+import { transform } from 'lodash';
 import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
-import { FieldOption } from '../../hooks';
-import { QueryProps } from '../../renderer';
 import configs from './configs';
 
 export class G2PlotChart extends Chart {
@@ -29,15 +28,6 @@ export class G2PlotChart extends Chart {
     const meta = {};
     // Some charts render wrong when the field name contains a dot in G2Plot
     const replace = (key: string) => key.replace(/\./g, '_');
-    Object.entries(fieldProps).forEach(([key, props]) => {
-      if (key.includes('.')) {
-        key = replace(key);
-      }
-      meta[key] = {
-        formatter: props.transformer,
-        alias: props.label,
-      };
-    });
     general = Object.entries(general).reduce((obj, [key, value]) => {
       obj[key] = value;
       if (key.includes('Field')) {
@@ -49,7 +39,40 @@ export class G2PlotChart extends Chart {
       }
       return obj;
     }, {});
-    return {
+    const config = {
+      legend: {
+        color: {
+          itemLabelText: (datnum) => {
+            const props = fieldProps[datnum.label];
+            const transformer = props?.transformer;
+            return props?.label || (transformer ? transformer(datnum.label) : datnum.label);
+          },
+        },
+      },
+      tooltip: (d, index, data, column) => {
+        const field = column.y.field;
+        const props = fieldProps[field];
+        const name = props?.label || field;
+        const transformer = props?.transformer;
+        const value = column.y.value[index];
+        return { name, value: transformer ? transformer(value) : value };
+      },
+      axis: {
+        x: {
+          labelFormatter: (datnum) => {
+            const props = fieldProps[general.xField];
+            const transformer = props?.transformer;
+            return transformer ? transformer(datnum) : datnum;
+          },
+        },
+        y: {
+          labelFormatter: (datnum) => {
+            const props = fieldProps[general.yField];
+            const transformer = props?.transformer;
+            return transformer ? transformer(datnum) : datnum;
+          },
+        },
+      },
       data: data.map((item) => {
         const obj = {};
         Object.entries(item).forEach(([key, value]) => {
@@ -60,11 +83,27 @@ export class G2PlotChart extends Chart {
         });
         return obj;
       }),
-      meta,
-      animation: false,
+      theme: 'classic',
+      animate: {
+        enter: {
+          type: false,
+        },
+        update: {
+          type: false,
+        },
+        exit: {
+          type: false,
+        },
+      },
+      colorField: general.seriesField,
+      stack: general.isStack,
+      percent: general.isPercent ? true : undefined,
+      ...(general.smooth ? { shapeField: 'smooth' } : {}),
       ...general,
+      seriesField: general.isGroup ? general.seriesField : undefined,
       ...advanced,
     };
+    return config;
   }
 
   getReference() {
