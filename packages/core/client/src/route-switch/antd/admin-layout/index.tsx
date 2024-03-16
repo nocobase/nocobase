@@ -275,12 +275,36 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
   );
 };
 
-export const InternalAdminLayout = (props: any) => {
-  const sideMenuRef = useRef<HTMLDivElement>();
-  const result = useSystemSettings();
-  // const { service } = useCollectionManager_deprecated();
+const AdminSideBar = ({ sideMenuRef }) => {
   const params = useParams<any>();
+  if (!params.name) return null;
+  return (
+    <Layout.Sider
+      className={css`
+        height: 100%;
+        /* position: fixed; */
+        position: relative;
+        left: 0;
+        top: 0;
+        background: rgba(0, 0, 0, 0);
+        z-index: 100;
+        .ant-layout-sider-children {
+          top: var(--nb-header-height);
+          position: fixed;
+          width: 200px;
+          height: calc(100vh - var(--nb-header-height));
+        }
+      `}
+      theme={'light'}
+      ref={sideMenuRef}
+    ></Layout.Sider>
+  );
+};
+
+export const InternalAdminLayout = () => {
+  const result = useSystemSettings();
   const { token } = useToken();
+  const sideMenuRef = useRef<HTMLDivElement>();
   return (
     <Layout>
       <GlobalStyleForAdminLayout />
@@ -390,27 +414,7 @@ export const InternalAdminLayout = (props: any) => {
           </div>
         </div>
       </Layout.Header>
-      {params.name && (
-        <Layout.Sider
-          className={css`
-            height: 100%;
-            /* position: fixed; */
-            position: relative;
-            left: 0;
-            top: 0;
-            background: rgba(0, 0, 0, 0);
-            z-index: 100;
-            .ant-layout-sider-children {
-              top: var(--nb-header-height);
-              position: fixed;
-              width: 200px;
-              height: calc(100vh - var(--nb-header-height));
-            }
-          `}
-          theme={'light'}
-          ref={sideMenuRef}
-        ></Layout.Sider>
-      )}
+      <AdminSideBar sideMenuRef={sideMenuRef} />
       <Layout.Content
         className={css`
           display: flex;

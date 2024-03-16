@@ -9,6 +9,7 @@ import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestCont
 import { findFilterTargets, useParsedFilter } from './hooks';
 import { isEqual } from 'lodash';
 import { useDeepMemoized } from '../application';
+import { useWhyDidYouUpdate } from 'ahooks';
 
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
@@ -181,14 +182,11 @@ export const useTableBlockProps = () => {
           }
         : false;
     }, [params?.page, params?.pageSize, params?.paginate]),
-    onRowSelectionChange: useCallback(
-      (selectedRowKeys) => {
-        ctx.field.data = ctx?.field?.data || {};
-        ctx.field.data.selectedRowKeys = selectedRowKeys;
-        ctx?.field?.onRowSelect?.(selectedRowKeys);
-      },
-      [ctx.field],
-    ),
+    onRowSelectionChange: useCallback((selectedRowKeys) => {
+      ctx.field.data = ctx?.field?.data || {};
+      ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx?.field?.onRowSelect?.(selectedRowKeys);
+    }, []),
     onRowDragEnd: useCallback(
       async ({ from, to }) => {
         await ctx.resource.move({
@@ -271,11 +269,8 @@ export const useTableBlockProps = () => {
       },
       [ctx.rowKey, fieldSchema, getDataBlocks],
     ),
-    onExpand: useCallback(
-      (expanded, record) => {
-        ctx?.field.onExpandClick?.(expanded, record);
-      },
-      [ctx.field],
-    ),
+    onExpand: useCallback((expanded, record) => {
+      ctx?.field.onExpandClick?.(expanded, record);
+    }, []),
   };
 };
