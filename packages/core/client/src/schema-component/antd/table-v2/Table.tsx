@@ -60,6 +60,17 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
 
   const hasChangedColumns = useDeepMemoized(getSchemaArrJSON(columnsSchema));
 
+  const schemaToolbarBigger = useMemo(() => {
+    return css`
+      .nb-action-link {
+        margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.marginSM}px;
+      }
+    `;
+  }, [token.paddingContentVerticalLG, token.marginSM]);
+
+  const collection = useCollection();
+
   const columns = useMemo(
     () =>
       columnsSchema?.map((s: Schema) => {
@@ -79,20 +90,11 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           render: (v, record) => {
             const index = field.value?.indexOf(record);
             return (
-              <SubFormProvider value={record}>
+              <SubFormProvider value={{ value: record, collection }}>
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
-                      <span
-                        role="button"
-                        className={css`
-                          // 扩大 SchemaToolbar 的面积
-                          .nb-action-link {
-                            margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-                            padding: ${token.paddingContentVerticalLG}px ${token.marginSM}px;
-                          }
-                        `}
-                      >
+                      <span role="button" className={schemaToolbarBigger}>
                         <RecursionField
                           basePath={field.address.concat(record.__index || index)}
                           schema={s}
