@@ -342,6 +342,7 @@ export const Table: any = observer(
       rowKey,
       required,
       onExpand,
+      loading,
       ...others
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
@@ -507,9 +508,7 @@ export const Table: any = observer(
       [rowKey, defaultRowKey],
     );
 
-    const dataSourceKeys = field?.value?.map(getRowKey);
-    const memoizedDataSourceKeys = useDeepMemoized(dataSourceKeys);
-    const dataSource = useMemo(() => field?.value?.slice?.()?.filter?.(Boolean), [memoizedDataSourceKeys]);
+    const dataSource = useMemo(() => [...(field?.value || [])].filter(Boolean), [loading, field?.value]);
 
     const memoizedRowSelection = useDeepMemoized(rowSelection);
 
