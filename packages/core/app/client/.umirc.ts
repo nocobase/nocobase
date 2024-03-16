@@ -16,27 +16,30 @@ const outputPluginPath = path.join(__dirname, 'src', '.plugins');
 const indexGenerator = new IndexGenerator(outputPluginPath, pluginDirs);
 indexGenerator.generate();
 
+const isDevCmd = !!process.env.IS_DEV_CMD;
+const appPublicPath = isDevCmd ? '/' : '{{env.APP_PUBLIC_PATH}}';
+
 export default defineConfig({
   title: 'Loading...',
   devtool: process.env.NODE_ENV === 'development' ? 'source-map' : false,
-  favicons: [`{{env.APP_PUBLIC_PATH}}favicon/favicon.ico`],
+  favicons: [`${appPublicPath}favicon/favicon.ico`],
   metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
   links: [
-    { rel: 'apple-touch-icon', size: '180x180', ref: `{{env.APP_PUBLIC_PATH}}favicon/apple-touch-icon.png` },
-    { rel: 'icon', type: 'image/png', size: '32x32', ref: `{{env.APP_PUBLIC_PATH}}favicon/favicon-32x32.png` },
-    { rel: 'icon', type: 'image/png', size: '16x16', ref: `{{env.APP_PUBLIC_PATH}}favicon/favicon-16x16.png` },
-    { rel: 'manifest', href: `{{env.APP_PUBLIC_PATH}}favicon/site.webmanifest` },
-    { rel: 'stylesheet', href: `{{env.APP_PUBLIC_PATH}}global.css` },
+    { rel: 'apple-touch-icon', size: '180x180', ref: `${appPublicPath}favicon/apple-touch-icon.png` },
+    { rel: 'icon', type: 'image/png', size: '32x32', ref: `${appPublicPath}favicon/favicon-32x32.png` },
+    { rel: 'icon', type: 'image/png', size: '16x16', ref: `${appPublicPath}favicon/favicon-16x16.png` },
+    { rel: 'manifest', href: `${appPublicPath}favicon/site.webmanifest` },
+    { rel: 'stylesheet', href: `${appPublicPath}global.css` },
   ],
   headScripts: [
     {
-      src: `{{env.APP_PUBLIC_PATH}}browser-checker.js`,
+      src: `${appPublicPath}browser-checker.js`,
     },
     {
-      content: `
+      content: isDevCmd ? '' : `
         window['__webpack_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
-        window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';
         window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
+        window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';
         window['__nocobase_ws_url__'] = '{{env.WS_URL}}';
         window['__nocobase_ws_path__'] = '{{env.WS_PATH}}';
       `,
