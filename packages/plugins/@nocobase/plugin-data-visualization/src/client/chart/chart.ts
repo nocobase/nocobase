@@ -121,6 +121,7 @@ export class Chart implements ChartType {
     let xField: FieldOption;
     let yField: FieldOption;
     let seriesField: FieldOption;
+    let colorField: FieldOption;
     let yFields: FieldOption[];
     const getField = (fields: FieldOption[], selected: { field: string | string[]; alias?: string }) => {
       if (selected.alias) {
@@ -146,17 +147,17 @@ export class Chart implements ChartType {
             xIndex = i;
           }
         });
-        if (xIndex) {
-          // If there is a time field, the other field is used as the series field by default.
-          const index = xIndex === 0 ? 1 : 0;
-          seriesField = getField(fields, dimensions[index]);
-        } else {
-          xField = getField(fields, dimensions[0]);
-          seriesField = getField(fields, dimensions[1]);
+        const restFields = dimensions.filter((_, i) => i !== xIndex).map((i) => getField(fields, i));
+        if (restFields.length === 1) {
+          seriesField = restFields[0];
+          colorField = restFields[0];
+        } else if (restFields.length > 1) {
+          colorField = restFields[0];
+          seriesField = restFields[1];
         }
       }
     }
-    return { xField, yField, seriesField, yFields };
+    return { xField, yField, seriesField, colorField, yFields };
   }
 
   /**
