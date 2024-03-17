@@ -1,11 +1,10 @@
-import React from 'react';
-import { SchemaComponent } from '@nocobase/client';
-import { Card, message } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { observer, useForm } from '@formily/react';
-import { useRecord, FormItem, Input } from '@nocobase/client';
-import { lang, useSamlTranslation } from './locale';
+import { FormItem, Input, SchemaComponent, useApp, useRecord } from '@nocobase/client';
 import { getSubAppName } from '@nocobase/sdk';
+import { Card, message } from 'antd';
+import React, { useMemo } from 'react';
+import { lang, useSamlTranslation } from './locale';
 
 const schema = {
   type: 'object',
@@ -74,10 +73,19 @@ const Usage = observer(
     const record = useRecord();
     const { t } = useSamlTranslation();
 
-    const app = getSubAppName() || 'main';
+    const app = useApp();
     const name = form.values.name ?? record.name;
-    const { protocol, host } = window.location;
-    const url = `${protocol}//${host}/api/saml:redirect?authenticator=${name}&__appName=${app}`;
+
+    const url = useMemo(() => {
+      const options = app.getOptions();
+      const apiBaseURL: string = options?.apiClient?.['baseURL'];
+      const { protocol, host } = window.location;
+      const appName = getSubAppName(app.getPublicPath()) || 'main';
+
+      return apiBaseURL.startsWith('http')
+        ? `${apiBaseURL}saml:redirect?authenticator=${name}&__appName=${appName}`
+        : `${protocol}//${host}${apiBaseURL}saml:redirect?authenticator=${name}&__appName=${appName}`;
+    }, [app, name]);
 
     const copy = (text: string) => {
       navigator.clipboard.writeText(text);

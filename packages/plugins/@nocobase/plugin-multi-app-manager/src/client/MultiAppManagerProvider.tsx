@@ -20,10 +20,10 @@ const MultiAppManager = () => {
     },
   );
   const { t } = usePluginUtils();
-  const app = useApp();
+  const instance = useApp();
   const items = [
     ...(data?.data || []).map((app) => {
-      let link = `/apps/${app.name}/admin/`;
+      let link = instance.getRouteUrl(`/apps/${app.name}/admin/`);
       if (app.options?.standaloneDeployment && app.cname) {
         link = `//${app.cname}`;
       }
@@ -38,7 +38,9 @@ const MultiAppManager = () => {
     }),
     {
       key: '.manager',
-      label: <Link to={app.pluginSettingsManager.getRoutePath('multi-app-manager')}>{t('Manage applications')}</Link>,
+      label: (
+        <Link to={instance.pluginSettingsManager.getRoutePath('multi-app-manager')}>{t('Manage applications')}</Link>
+      ),
     },
   ];
   return (

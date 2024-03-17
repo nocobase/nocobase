@@ -11,9 +11,9 @@ import restart from './restart';
 import start from './start';
 import stop from './stop';
 import upgrade from './upgrade';
-
+import consoleCommand from './console';
 export function registerCli(app: Application) {
-  // console(app);
+  consoleCommand(app);
   dbAuth(app);
   createMigration(app);
   dbClean(app);

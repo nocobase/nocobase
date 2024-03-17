@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "0.20.0-alpha.10",
+  "version": "0.20.0-alpha.12",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
@@ -8,12 +8,12 @@
     "nocobase": "./bin/index.js"
   },
   "dependencies": {
-    "@nocobase/app": "0.20.0-alpha.10",
+    "@nocobase/app": "0.20.0-alpha.12",
     "@types/fs-extra": "^11.0.1",
     "@umijs/utils": "3.5.20",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
-    "dotenv": "^10.0.0",
+    "dotenv": "^16.0.0",
     "execa": "^5.1.1",
     "fast-glob": "^3.3.1",
     "fs-extra": "^11.1.1",
@@ -25,7 +25,7 @@
     "tsx": "^4.6.2"
   },
   "devDependencies": {
-    "@nocobase/devtools": "0.20.0-alpha.10"
+    "@nocobase/devtools": "0.20.0-alpha.12"
   },
   "repository": {
     "type": "git",

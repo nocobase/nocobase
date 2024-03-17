@@ -1,6 +1,6 @@
 const { resolve } = require('path');
 const { Command } = require('commander');
-const { run, nodeCheck, isPackageValid } = require('../util');
+const { run, nodeCheck, isPackageValid, buildIndexHtml } = require('../util');
 
 /**
  *
@@ -31,5 +31,6 @@ module.exports = (cli) => {
         !options.dts ? '--no-dts' : '',
         options.sourcemap ? '--sourcemap' : '',
       ]);
+      buildIndexHtml(true);
     });
 };
