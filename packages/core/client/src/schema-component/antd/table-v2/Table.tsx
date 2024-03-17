@@ -18,6 +18,7 @@ import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
+  useCollection,
   useCollection_deprecated,
   useCollectionParentRecordData,
   useSchemaInitializerRender,
@@ -44,6 +45,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const parentRecordData = useCollectionParentRecordData();
+  const collection = useCollection();
+
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
@@ -68,7 +71,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           return (
-            <SubFormProvider value={record}>
+            <SubFormProvider value={{ value: record, collection }}>
               <RecordIndexProvider index={record.__index || index}>
                 <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>

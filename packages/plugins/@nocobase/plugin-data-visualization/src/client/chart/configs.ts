@@ -49,4 +49,5 @@ export default {
   xField: (props: FieldConfigProps) => selectField({ name: 'xField', title: 'xField', required: true, ...props }),
   yField: (props: FieldConfigProps) => selectField({ name: 'yField', title: 'yField', required: true, ...props }),
   seriesField: (props: FieldConfigProps) => selectField({ name: 'seriesField', title: 'seriesField', ...props }),
+  colorField: (props: FieldConfigProps) => selectField({ name: 'colorField', title: 'colorField', ...props }),
 };

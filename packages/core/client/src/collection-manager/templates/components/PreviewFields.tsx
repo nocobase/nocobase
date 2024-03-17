@@ -84,10 +84,16 @@ const PreviewCom = (props) => {
             const fieldsData = Object.values(data?.data?.fields)?.map((v: any) => {
               if (v.source) {
                 const option = fields?.data.find((h) => h.name === v.name) || v;
-                return { ...v, uiSchema: omit(option.uiSchema, 'rawTitle') };
+                return {
+                  ...v,
+                  uiSchema: { ...omit(option.uiSchema, 'rawTitle'), title: option.uiSchema?.title || option.name },
+                };
               } else {
                 const option = fields?.data.find((h) => h.name === v.name) || v;
-                return { ...option, uiSchema: omit(option.uiSchema, 'rawTitle') };
+                return {
+                  ...option,
+                  uiSchema: { ...omit(option.uiSchema, 'rawTitle'), title: option.uiSchema?.title || option.name },
+                };
               }
             });
             field.value = fieldsData;

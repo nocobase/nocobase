@@ -274,7 +274,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         }),
         plugins: plugins.includes('nocobase') ? ['nocobase'] : plugins,
         resourcer: {
-          prefix: '/api',
+          prefix: process.env.API_BASE_PATH,
         },
         logger: {
           ...mainApp.options.logger,

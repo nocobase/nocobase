@@ -8,6 +8,7 @@ const { isPackageValid, generateAppDir } = require('../util');
 module.exports = (cli) => {
   generateAppDir();
   require('./global')(cli);
+  require('./create-nginx-conf')(cli);
   require('./build')(cli);
   require('./tar')(cli);
   require('./dev')(cli);

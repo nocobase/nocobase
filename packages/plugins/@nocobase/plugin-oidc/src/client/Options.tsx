@@ -1,9 +1,9 @@
 import { CopyOutlined } from '@ant-design/icons';
 import { ArrayItems, FormTab } from '@formily/antd-v5';
 import { observer } from '@formily/react';
-import { FormItem, Input, SchemaComponent } from '@nocobase/client';
+import { FormItem, Input, SchemaComponent, useApp } from '@nocobase/client';
 import { Card, Space, message } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { lang, useOidcTranslation } from './locale';
 
 const schema = {
@@ -327,9 +327,16 @@ const schema = {
 const Usage = observer(
   () => {
     const { t } = useOidcTranslation();
+    const app = useApp();
 
-    const { protocol, host } = window.location;
-    const url = `${protocol}//${host}/api/oidc:redirect`;
+    const url = useMemo(() => {
+      const options = app.getOptions();
+      const apiBaseURL: string = options?.apiClient?.['baseURL'];
+      const { protocol, host } = window.location;
+      return apiBaseURL.startsWith('http')
+        ? `${apiBaseURL}oidc:redirect`
+        : `${protocol}//${host}${apiBaseURL}oidc:redirect`;
+    }, [app]);
 
     const copy = (text: string) => {
       navigator.clipboard.writeText(text);

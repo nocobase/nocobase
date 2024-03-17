@@ -1,4 +1,4 @@
-import { SchemaComponent, useRecord } from '@nocobase/client';
+import { SchemaComponent, useApp, useRecord } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { schema } from './settings/schemas/applications';
@@ -6,10 +6,11 @@ import { usePluginUtils } from './utils';
 
 const useLink = () => {
   const record = useRecord();
+  const app = useApp();
   if (record.options?.standaloneDeployment && record.cname) {
     return `//${record.cname}`;
   }
-  return `/apps/${record.name}/admin/`;
+  return app.getRouteUrl(`/apps/${record.name}/admin/`);
 };
 
 const AppVisitor = () => {
