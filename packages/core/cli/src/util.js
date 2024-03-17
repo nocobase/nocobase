@@ -348,15 +348,17 @@ exports.initEnv = function initEnv() {
     }
   }
 
-  if (process.env.APP_PUBLIC_PATH) {
+  if (!process.env.__env_modified__ && process.env.APP_PUBLIC_PATH) {
     const publicPath = process.env.APP_PUBLIC_PATH.replace(/\/$/g, '');
     const keys = ['API_BASE_PATH', 'WS_PATH', 'PLUGIN_STATICS_PATH'];
     for (const key of keys) {
       process.env[key] = publicPath + process.env[key];
     }
+    process.env.__env_modified__ = true;
   }
 
-  if (process.env.APP_SERVER_BASE_URL && !process.env.API_BASE_URL) {
+  if (!process.env.__env_modified__ && process.env.APP_SERVER_BASE_URL && !process.env.API_BASE_URL) {
     process.env.API_BASE_URL = process.env.APP_SERVER_BASE_URL + process.env.API_BASE_PATH;
+    process.env.__env_modified__ = true;
   }
 };
