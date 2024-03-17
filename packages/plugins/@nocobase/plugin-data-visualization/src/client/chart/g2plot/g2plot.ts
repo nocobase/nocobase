@@ -28,9 +28,9 @@ export class G2PlotChart extends Chart {
       legend: {
         color: {
           itemLabelText: (datnum: { label: string }) => {
-            const props = fieldProps[datnum.label];
+            const props = fieldProps[general.seriesField];
             const transformer = props?.transformer;
-            return props?.label || (transformer ? transformer(datnum.label) : datnum.label);
+            return transformer ? transformer(datnum.label) : datnum.label;
           },
         },
       },

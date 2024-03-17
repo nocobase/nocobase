@@ -76,8 +76,7 @@ export class DualAxes extends G2PlotChart {
             yField,
             colorField: () => {
               const props = fieldProps[yField];
-              const transformer = props?.transformer;
-              return props?.label || (transformer ? transformer(yField) : yField);
+              return props?.label || yField;
             },
             axis: {
               y: {
