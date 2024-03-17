@@ -1,10 +1,11 @@
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Dropdown, Menu } from 'antd';
+import { Dropdown, Menu, Popover } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DropdownVisibleContext, useToken } from '..';
+import { DropdownVisibleContext, usePlugin, useToken } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
+import { observer } from '@formily/reactive-react';
 
 /**
  * @note If you want to change here, Note the Setting block on the mobile side
@@ -66,48 +67,66 @@ const SettingsMenu: React.FC<{
   return <Menu items={items} />;
 };
 
-export const Help = () => {
-  const [visible, setVisible] = useState(false);
-  const { token } = useToken();
+const helpClassName = css`
+  display: inline-block;
+  vertical-align: top;
+  width: 46px;
+  height: 46px;
+  &:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+`;
 
-  return (
-    <div
-      className={css`
-        display: inline-block;
-        vertical-align: top;
-        width: 46px;
-        height: 46px;
-        &:hover {
-          background: rgba(255, 255, 255, 0.1) !important;
-        }
-      `}
-    >
-      <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
-        <Dropdown
-          open={visible}
-          onOpenChange={(visible) => {
-            setVisible(visible);
-          }}
-          dropdownRender={() => {
-            return <SettingsMenu />;
-          }}
-        >
-          <span
-            data-testid="help-button"
-            className={css`
-              max-width: 160px;
-              overflow: hidden;
-              display: inline-block;
-              line-height: 12px;
-              white-space: nowrap;
-              text-overflow: ellipsis;
-            `}
-            style={{ cursor: 'pointer', padding: '16px', color: token.colorTextHeaderMenu }}
+export const Help = observer(
+  () => {
+    const [visible, setVisible] = useState(false);
+    const { token } = useToken();
+    const customBrandPlugin: any = usePlugin('@nocobase/plugin-custom-brand');
+
+    const icon = (
+      <span
+        data-testid="help-button"
+        className={css`
+          max-width: 160px;
+          overflow: hidden;
+          display: inline-block;
+          line-height: 12px;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        `}
+        style={{ cursor: 'pointer', padding: '16px', color: token.colorTextHeaderMenu }}
+      >
+        <QuestionCircleOutlined />
+      </span>
+    );
+
+    if (customBrandPlugin?.options?.options?.about) {
+      return (
+        <div className={helpClassName}>
+          <Popover content={<div dangerouslySetInnerHTML={{ __html: customBrandPlugin.options.options.about }}></div>}>
+            {icon}
+          </Popover>
+        </div>
+      );
+    }
+
+    return (
+      <div className={helpClassName}>
+        <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
+          <Dropdown
+            open={visible}
+            onOpenChange={(visible) => {
+              setVisible(visible);
+            }}
+            dropdownRender={() => {
+              return <SettingsMenu />;
+            }}
           >
-            <QuestionCircleOutlined />
-          </span>
-        </Dropdown>
-      </DropdownVisibleContext.Provider>
-    </div>
-  );
-};
+            {icon}
+          </Dropdown>
+        </DropdownVisibleContext.Provider>
+      </div>
+    );
+  },
+  { displayName: 'Help' },
+);
