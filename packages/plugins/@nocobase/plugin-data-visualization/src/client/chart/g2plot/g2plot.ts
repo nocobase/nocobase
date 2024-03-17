@@ -1,4 +1,3 @@
-import { transform } from 'lodash';
 import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 import configs from './configs';
 
@@ -25,31 +24,17 @@ export class G2PlotChart extends Chart {
   };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps) {
-    const meta = {};
-    // Some charts render wrong when the field name contains a dot in G2Plot
-    const replace = (key: string) => key.replace(/\./g, '_');
-    general = Object.entries(general).reduce((obj, [key, value]) => {
-      obj[key] = value;
-      if (key.includes('Field')) {
-        if (Array.isArray(value)) {
-          obj[key] = value.map((v) => (v?.includes('.') ? replace(v) : v));
-        } else if (typeof value === 'string' && value.includes('.')) {
-          obj[key] = replace(value);
-        }
-      }
-      return obj;
-    }, {});
     const config = {
       legend: {
         color: {
-          itemLabelText: (datnum) => {
-            const props = fieldProps[datnum.label];
+          itemLabelText: (datnum: { label: string }) => {
+            const props = fieldProps[general.seriesField];
             const transformer = props?.transformer;
-            return props?.label || (transformer ? transformer(datnum.label) : datnum.label);
+            return transformer ? transformer(datnum.label) : datnum.label;
           },
         },
       },
-      tooltip: (d, index, data, column) => {
+      tooltip: (d, index: number, data, column: any) => {
         const field = column.y.field;
         const props = fieldProps[field];
         const name = props?.label || field;
@@ -59,30 +44,21 @@ export class G2PlotChart extends Chart {
       },
       axis: {
         x: {
-          labelFormatter: (datnum) => {
+          labelFormatter: (datnum: any) => {
             const props = fieldProps[general.xField];
             const transformer = props?.transformer;
             return transformer ? transformer(datnum) : datnum;
           },
         },
         y: {
-          labelFormatter: (datnum) => {
+          labelFormatter: (datnum: any) => {
             const props = fieldProps[general.yField];
             const transformer = props?.transformer;
             return transformer ? transformer(datnum) : datnum;
           },
         },
       },
-      data: data.map((item) => {
-        const obj = {};
-        Object.entries(item).forEach(([key, value]) => {
-          if (key.includes('.')) {
-            key = replace(key);
-          }
-          obj[key] = value;
-        });
-        return obj;
-      }),
+      data,
       theme: 'classic',
       animate: {
         enter: {
