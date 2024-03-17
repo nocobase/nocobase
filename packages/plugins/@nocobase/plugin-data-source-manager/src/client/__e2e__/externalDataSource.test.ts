@@ -1,7 +1,7 @@
 import { expect, test, expectSettingsMenu } from '@nocobase/test/e2e';
 import { uid } from '@nocobase/utils';
 
-const PGDataSource = 'pg';
+export const PGDataSource = 'pg';
 const o2mAssociationField = 'o2m';
 
 //添加数据源
@@ -296,9 +296,9 @@ test.describe('add block', () => {
     await page.getByRole('menuitem', { name: PGDataSource }).click();
     await page.getByRole('menuitem', { name: 'users' }).click();
     await page.getByLabel('block-item-CardItem-users-').hover();
-    await expect(page.getByLabel('block-item-CardItem-users-').locator('.ant-space-item').innerText()).toBe(
-      `${PGDataSource} > users`,
-    );
+    await expect(
+      await page.getByLabel('block-item-CardItem-users-').locator('.ant-space-item').first().innerText(),
+    ).toBe(`${PGDataSource} > users`);
   });
   test('filter block ', async ({ page, mockPage }) => {
     const nocobasePage = mockPage();
@@ -310,9 +310,9 @@ test.describe('add block', () => {
     await expect(await page.getByRole('menuitem', { name: PGDataSource })).toBeVisible();
     await page.getByRole('menuitem', { name: 'users' }).click();
     await page.getByLabel('block-item-CardItem-users-').hover();
-    await expect(page.getByLabel('block-item-CardItem-users-').locator('.ant-space-item').innerText()).toBe(
-      `${PGDataSource} > users`,
-    );
+    await expect(
+      await page.getByLabel('block-item-CardItem-users-').locator('.ant-space-item').first().innerText(),
+    ).toBe(`${PGDataSource} > users`);
   });
   test('association block ', async ({ page }) => {});
 });
