@@ -226,7 +226,7 @@ export const ACLActionProvider = (props) => {
   const resource = useResourceName();
   const { parseAction } = useACLRoleContext();
   const schema = useFieldSchema();
-  let actionPath = schema['x-acl-action'];
+  let actionPath = schema['x-acl-action'] || schema['x-action'];
   const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
   if (!actionPath && resource && schema['x-action']) {
     actionPath = `${resource}:${schema['x-action']}`;
