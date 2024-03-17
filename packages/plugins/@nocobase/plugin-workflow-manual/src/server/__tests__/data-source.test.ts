@@ -60,7 +60,8 @@ describe('workflow > instructions > manual', () => {
               f1: {
                 type: 'create',
                 actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
-                collection: 'another:posts',
+                collection: 'posts',
+                dataSource: 'another',
               },
             },
           },
@@ -109,7 +110,8 @@ describe('workflow > instructions > manual', () => {
                   { status: JOB_STATUS.RESOLVED, key: 'resolve' },
                   { status: JOB_STATUS.PENDING, key: 'pending' },
                 ],
-                collection: 'another:posts',
+                collection: 'posts',
+                dataSource: 'another',
               },
             },
           },
@@ -176,7 +178,8 @@ describe('workflow > instructions > manual', () => {
               f1: {
                 type: 'update',
                 actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
-                collection: 'another:posts',
+                collection: 'posts',
+                dataSource: 'another',
                 filter: {
                   id: post.id,
                 },

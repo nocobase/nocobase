@@ -4,7 +4,7 @@ export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
     // @ts-ignore
     const { db } = this.workflow.app.dataSourceManager.dataSources.get(
-      node.config.dataSource ?? 'main',
+      node.config.dataSource || 'main',
     ).collectionManager;
     if (!db) {
       throw new Error(`type of data source "${node.config.dataSource}" is not database`);
