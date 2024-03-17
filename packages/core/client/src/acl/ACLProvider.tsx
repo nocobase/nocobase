@@ -151,7 +151,7 @@ const useAllowedActions = () => {
 const useResourceName = () => {
   const service = useResourceActionContext();
   const result = useBlockRequestContext() || { service };
-  return result?.props?.resource || result?.service?.defaultRequest?.resource;
+  return result?.props?.resource || result.props.collection || result?.service?.defaultRequest?.resource;
 };
 
 export function useACLRoleContext() {
@@ -238,6 +238,7 @@ export const ACLActionProvider = (props) => {
     return <>{props.children}</>;
   }
   const params = parseAction(actionPath, { schema, recordPkValue });
+  console.log(resource, actionPath, schema, params);
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
