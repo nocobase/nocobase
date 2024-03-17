@@ -401,57 +401,49 @@ export const Table: any = observer(
     }, [expandFlag, allIncludesChildren]);
 
     const headerWrapperComponent = useMemo(() => {
-      return designable
-        ? (props) => {
-            return (
-              <DndContext>
-                <thead {...props} />
-              </DndContext>
-            );
-          }
-        : undefined;
-    }, [designable]);
+      return (props) => {
+        return (
+          <DndContext>
+            <thead {...props} />
+          </DndContext>
+        );
+      };
+    }, []);
 
     const headerCellComponent = useMemo(() => {
-      return designable
-        ? (props) => {
-            return <th {...props} className={cls(props.className, headerClass)} />;
-          }
-        : undefined;
-    }, [designable]);
+      return (props) => {
+        return <th {...props} className={cls(props.className, headerClass)} />;
+      };
+    }, []);
 
     const bodyWrapperComponent = useMemo(() => {
-      return designable
-        ? (props) => {
-            return (
-              <DndContext
-                onDragEnd={(e) => {
-                  if (!e.active || !e.over) {
-                    console.warn('move cancel');
-                    return;
-                  }
-                  const fromIndex = e.active?.data.current?.sortable?.index;
-                  const toIndex = e.over?.data.current?.sortable?.index;
-                  const from = field.value[fromIndex] || e.active;
-                  const to = field.value[toIndex] || e.over;
-                  void field.move(fromIndex, toIndex);
-                  onRowDragEnd({ from, to });
-                }}
-              >
-                <tbody {...props} />
-              </DndContext>
-            );
-          }
-        : undefined;
-    }, [designable, onRowDragEnd, field]);
+      return (props) => {
+        return (
+          <DndContext
+            onDragEnd={(e) => {
+              if (!e.active || !e.over) {
+                console.warn('move cancel');
+                return;
+              }
+              const fromIndex = e.active?.data.current?.sortable?.index;
+              const toIndex = e.over?.data.current?.sortable?.index;
+              const from = field.value[fromIndex] || e.active;
+              const to = field.value[toIndex] || e.over;
+              void field.move(fromIndex, toIndex);
+              onRowDragEnd({ from, to });
+            }}
+          >
+            <tbody {...props} />
+          </DndContext>
+        );
+      };
+    }, [onRowDragEnd, field]);
 
     const bodyRowComponent = useMemo(() => {
-      return designable
-        ? (props) => {
-            return <SortableRow {...props} />;
-          }
-        : undefined;
-    }, [designable]);
+      return (props) => {
+        return <SortableRow {...props} />;
+      };
+    }, []);
 
     const bodyCellComponent = useMemo(() => {
       return (props) => {
@@ -512,7 +504,7 @@ export const Table: any = observer(
     const memoizedDataSourceKeys = useDeepMemoized(dataSourceKeys);
     const dataSource = useMemo(
       () => [...(field?.value || [])].filter(Boolean),
-      [loading, field?.value, field?.value?.length, memoizedDataSourceKeys],
+      [field?.value, field?.value?.length, memoizedDataSourceKeys],
     );
 
     const memoizedRowSelection = useDeepMemoized(rowSelection);
