@@ -1,11 +1,13 @@
-import { Application } from '@nocobase/server';
-import Database from '@nocobase/database';
+import { MockDatabase } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { MockServer } from '@nocobase/test';
+
 import type { WorkflowModel as WorkflowModelType } from '../../types';
+import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > instructions > update', () => {
-  let app: Application;
-  let db: Database;
+  let app: MockServer;
+  let db: MockDatabase;
   let PostRepo;
   let WorkflowModel;
   let workflow: WorkflowModelType;
@@ -184,6 +186,42 @@ describe('workflow > instructions > update', () => {
 
       const w2Exes = await w2.getExecutions();
       expect(w2Exes.length).toBe(1);
+    });
+  });
+
+  describe('multiple data source', () => {
+    it('update one', async () => {
+      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const post = await AnotherPostRepo.create({ values: { title: 't1' } });
+      const p1s = await AnotherPostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'another:posts',
+          params: {
+            filter: {
+              // @ts-ignore
+              id: post.id,
+            },
+            values: {
+              title: 't2',
+            },
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(1);
+      expect(p2s[0].title).toBe('t2');
     });
   });
 });

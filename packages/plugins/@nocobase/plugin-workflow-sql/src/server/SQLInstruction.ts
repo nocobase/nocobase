@@ -2,7 +2,13 @@ import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plu
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
-    const { sequelize } = (<typeof FlowNodeModel>node.constructor).database;
+    // @ts-ignore
+    const { db } = this.workflow.app.dataSourceManager.dataSources.get(
+      node.config.dataSource ?? 'main',
+    ).collectionManager;
+    if (!db) {
+      throw new Error(`type of data source "${node.config.dataSource}" is not database`);
+    }
     const sql = processor.getParsedValue(node.config.sql ?? '', node.id).trim();
     if (!sql) {
       return {
@@ -10,7 +16,8 @@ export default class extends Instruction {
       };
     }
 
-    const result = await sequelize.query(sql, {
+    // @ts-ignore
+    const result = await db.sequelize.query(sql, {
       transaction: processor.transaction,
       // plain: true,
       // model: db.getCollection(node.config.collection).model

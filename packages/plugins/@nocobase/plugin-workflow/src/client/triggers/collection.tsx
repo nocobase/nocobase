@@ -31,6 +31,11 @@ export default class extends Trigger {
   fieldset = {
     collection: {
       ...collection,
+      'x-component-props': {
+        dataSourceFilter(item) {
+          return item.options.key === 'main' || item.options.isDBInstance;
+        },
+      },
       ['x-reactions']: [
         ...collection['x-reactions'],
         {
@@ -192,7 +197,7 @@ export default class extends Trigger {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       Component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}',
+      dataPath: '$context.data',
     };
   }
 }

@@ -1,11 +1,11 @@
-import Database from '@nocobase/database';
+import { MockDatabase } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { Application } from '@nocobase/server';
 import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > triggers > collection', () => {
   let app: Application;
-  let db: Database;
+  let db: MockDatabase;
   let CategoryRepo;
   let PostRepo;
   let CommentRepo;
@@ -505,6 +505,48 @@ describe('workflow > triggers > collection', () => {
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
       expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
+  describe('multiple data source', () => {
+    let anotherDB: MockDatabase;
+    beforeEach(async () => {
+      // @ts-ignore
+      anotherDB = app.dataSourceManager.dataSources.get('another').collectionManager.db;
+    });
+
+    it('collection trigger on another', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'another:posts',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      const AnotherPostRepo = anotherDB.getRepository('posts');
+      const anotherPost = await AnotherPostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[0].context.data.title).toBe('t2');
+
+      const p1s = await PostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(1);
     });
   });
 });

@@ -55,4 +55,37 @@ describe('workflow > instructions > destroy', () => {
       expect(count).toBe(0);
     });
   });
+
+  describe('multiple data source', () => {
+    it('destroy one', async () => {
+      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const post = await AnotherPostRepo.create({ values: { title: 't1' } });
+      const p1s = await AnotherPostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const n1 = await workflow.createNode({
+        type: 'destroy',
+        config: {
+          collection: 'another:posts',
+          params: {
+            filter: {
+              // @ts-ignore
+              id: post.id,
+            },
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
+
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(0);
+    });
+  });
 });

@@ -1,9 +1,11 @@
 import React from 'react';
+import { uid } from '@formily/shared';
 
 import {
   CollectionProvider_deprecated,
   SchemaInitializerItem,
   SchemaInitializerItemType,
+  parseCollectionName,
   useCollectionManager_deprecated,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
@@ -13,23 +15,29 @@ import {
 
 import { traverseSchema } from '../utils';
 
-function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
+function InnerCollectionBlockInitializer({ collection, dataPath, ...props }) {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager_deprecated();
   const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemType[];
-  const resolvedCollection = getCollection(collection);
+  let resolvedCollection;
+  if (typeof collection === 'string') {
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+    resolvedCollection = getCollection(collectionName, dataSourceName);
+  } else {
+    resolvedCollection = collection;
+  }
 
   async function onConfirm({ item }) {
     const template = item.template ? await getTemplateSchemaByMode(item) : null;
     const result = {
       type: 'void',
-      name: resolvedCollection.name,
+      name: uid(),
       title: resolvedCollection.title,
       'x-decorator': 'DetailsBlockProvider',
       'x-decorator-props': {
         collection,
-        dataSource,
+        dataPath,
       },
       'x-component': 'CardItem',
       'x-component-props': {
@@ -68,8 +76,16 @@ function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
 
 export function CollectionBlockInitializer() {
   const itemConfig = useSchemaInitializerItem();
+  let dataSource, collection;
+  if (typeof itemConfig.collection === 'string') {
+    const parsed = parseCollectionName(itemConfig.collection);
+    dataSource = parsed[0];
+    collection = parsed[1];
+  } else {
+    collection = itemConfig.collection;
+  }
   return (
-    <CollectionProvider_deprecated collection={itemConfig.collection}>
+    <CollectionProvider_deprecated dataSource={dataSource} collection={collection}>
       <InnerCollectionBlockInitializer {...itemConfig} />
     </CollectionProvider_deprecated>
   );
