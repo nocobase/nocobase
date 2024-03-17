@@ -361,7 +361,7 @@ test.describe('destroy', () => {
     await page.reload();
     await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
   });
-  test('individual collection permission', async ({ page, mockPage, mockRole, updateRole }) => {
+  test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord, updateRole }) => {
     await mockPage().goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
@@ -382,8 +382,11 @@ test.describe('destroy', () => {
     }, roleData);
     await page.reload();
     await mockPage(oneTableBlock).goto();
+    await mockRecord('general');
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Delete')).not.toBeVisible();
+
     await updateRole({
       name: roleData.name,
       resources: [
@@ -401,6 +404,7 @@ test.describe('destroy', () => {
     });
     await page.reload();
     await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Delete')).toBeVisible();
   });
   test('individual collection permission support new data block', async ({ page, mockPage, mockRole, updateRole }) => {
     await mockPage().goto();
