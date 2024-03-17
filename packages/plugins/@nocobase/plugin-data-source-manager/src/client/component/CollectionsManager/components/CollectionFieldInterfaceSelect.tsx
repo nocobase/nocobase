@@ -38,7 +38,7 @@ export const CollectionFieldInterfaceSelect = observer(
       </Tag>
     ) : (
       <Select
-        aria-label="field-interface"
+        aria-label={`field-interface-${record?.type}`}
         //@ts-ignore
         role="button"
         defaultValue={value}
