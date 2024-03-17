@@ -226,7 +226,7 @@ export const ACLActionProvider = (props) => {
   const resource = useResourceName();
   const { parseAction } = useACLRoleContext();
   const schema = useFieldSchema();
-  let actionPath = schema['x-acl-action'] || schema['x-action'];
+  let actionPath = schema['x-acl-action'];
   const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
   if (!actionPath && resource && schema['x-action']) {
     actionPath = `${resource}:${schema['x-action']}`;
@@ -238,7 +238,6 @@ export const ACLActionProvider = (props) => {
     return <>{props.children}</>;
   }
   const params = parseAction(actionPath, { schema, recordPkValue });
-  console.log(resource, actionPath, schema, params);
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
