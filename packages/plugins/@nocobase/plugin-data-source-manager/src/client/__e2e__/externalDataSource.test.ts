@@ -314,7 +314,18 @@ test.describe('add block', () => {
       await page.getByLabel('block-item-CardItem-users-').locator('.ant-space-item').first().innerText(),
     ).toBe(`${PGDataSource} > users`);
   });
-  test('association block ', async ({ page }) => {});
+  test('association block ', async ({ page, mockPage }) => {
+    const nocobasePage = mockPage();
+    await nocobasePage.goto();
+    await page.getByLabel('schema-initializer-Grid-page').click();
+    await page.getByText('Table').hover();
+    await page.getByRole('menuitem', { name: PGDataSource }).click();
+    await page.getByRole('menuitem', { name: 'authors' }).click();
+    await page.getByLabel('block-item-CardItem-authors-').hover();
+    await expect(
+      await page.getByLabel('block-item-CardItem-authors-').locator('.ant-space-item').first().innerText(),
+    ).toBe(`${PGDataSource} > authors`);
+  });
 });
 
 test.describe('add filed', () => {
