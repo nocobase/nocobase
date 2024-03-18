@@ -1181,8 +1181,6 @@ export const createFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // action: 'get',
-      // useParams: '{{ useParamsFromRecord }}',
     },
     'x-toolbar': 'BlockSchemaToolbar',
     ...(settings ? { 'x-settings': settings } : { 'x-designer': designer }),
