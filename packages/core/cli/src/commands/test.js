@@ -19,6 +19,7 @@ function addTestCommand(name, cli) {
     .arguments('[paths...]')
     .allowUnknownOption()
     .action(async (paths, opts) => {
+      process.argv.push('--disable-console-intercept');
       if (name === 'test:server') {
         process.env.TEST_ENV = 'server-side';
       } else if (name === 'test:client') {
@@ -51,12 +52,7 @@ function addTestCommand(name, cli) {
       if (opts.singleThread === 'false') {
         process.argv.splice(process.argv.indexOf('--single-thread=false'), 1);
       }
-      const cliArgs = [
-        '--max_old_space_size=14096',
-        './node_modules/.bin/vitest',
-        ' --disable-console-intercept',
-        ...process.argv.slice(3),
-      ];
+      const cliArgs = ['--max_old_space_size=14096', './node_modules/.bin/vitest', ...process.argv.slice(3)];
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         await run('node', cliArgs);
         return;
