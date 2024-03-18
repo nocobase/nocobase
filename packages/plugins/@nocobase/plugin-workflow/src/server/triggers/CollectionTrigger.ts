@@ -109,6 +109,9 @@ export default class CollectionTrigger extends Trigger {
 
   on(workflow: WorkflowModel) {
     const { collection, mode } = workflow.config;
+    if (!collection) {
+      return;
+    }
     const [dataSourceName, collectionName] = parseCollectionName(collection);
     // @ts-ignore
     const { db } = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName).collectionManager ?? {};
@@ -137,6 +140,9 @@ export default class CollectionTrigger extends Trigger {
 
   off(workflow: WorkflowModel) {
     const { collection, mode } = workflow.config;
+    if (!collection) {
+      return;
+    }
     const [dataSourceName, collectionName] = parseCollectionName(collection);
     // @ts-ignore
     const { db } = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName).collectionManager ?? {};

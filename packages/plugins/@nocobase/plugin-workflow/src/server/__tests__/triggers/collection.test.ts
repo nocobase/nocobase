@@ -28,6 +28,16 @@ describe('workflow > triggers > collection', () => {
   afterEach(() => app.destroy());
 
   describe('toggle', () => {
+    it('create without config should ok', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {},
+      });
+
+      expect(workflow).toBeDefined();
+    });
+
     it('when collection change', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
