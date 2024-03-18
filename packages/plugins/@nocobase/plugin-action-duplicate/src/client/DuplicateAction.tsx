@@ -4,23 +4,20 @@ import {
   ActionContextProvider,
   CollectionProvider_deprecated,
   RecordProvider,
-  CollectionProvider,
   FormBlockContext,
-  CollectionRecordProvider,
   fetchTemplateData,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
   useCollectionManager_deprecated,
-  useCollection_deprecated,
   useDesignable,
   useFormBlockContext,
   useCollectionParentRecordData,
   useRecord,
-  useCollectionRecord,
+  useCollection,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const actionDesignerCss = css`
@@ -63,9 +60,18 @@ export const actionDesignerCss = css`
   }
 `;
 
+const generalSchemaDesignerCss = css`
+  .general-schema-designer {
+    top: -10px;
+    bottom: -10px;
+    left: -10px;
+    right: -10px;
+  }
+`;
+
 export const DuplicateAction = observer(
   (props: any) => {
-    const { children } = props;
+    const { children, onMouseEnter, onMouseLeave } = props;
     const { message } = App.useApp();
     const field = useField();
     const fieldSchema = useFieldSchema();
@@ -80,7 +86,7 @@ export const DuplicateAction = observer(
     const parentRecordData = useCollectionParentRecordData();
     const { id, __collection } = record;
     const ctx = useActionContext();
-    const { name } = useCollection_deprecated();
+    const { name } = useCollection() || {};
     const { getCollectionFields } = useCollectionManager_deprecated();
     const { t } = useTranslation();
     const collectionFields = getCollectionFields(__collection || name);
@@ -130,18 +136,72 @@ export const DuplicateAction = observer(
         }
       }
     };
+    const [btnHover, setBtnHover] = useState(false);
+    const handleMouseEnter = useCallback(
+      (e) => {
+        setBtnHover(true);
+        onMouseEnter?.(e);
+      },
+      [onMouseEnter],
+    );
+    const handleMouseMove = useCallback(
+      (e) => {
+        setBtnHover(true);
+        onMouseEnter?.(e);
+      },
+      [onMouseLeave],
+    );
+    const buttonElement = isLinkBtn ? (
+      <a
+        className="nb-action-link"
+        role={props.role}
+        aria-label={props['aria-label']}
+        //@ts-ignore
+        disabled={disabled}
+        style={{
+          opacity: designable && field?.data?.hidden && 0.1,
+          cursor: loading ? 'not-allowed' : 'pointer',
+          position: 'relative',
+        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseMove={handleMouseMove}
+        onClick={handelDuplicate}
+      >
+        {loading ? t('Duplicating') : children || t('Duplicate')}
+      </a>
+    ) : (
+      <Button
+        role={props.role}
+        aria-label={props['aria-label']}
+        disabled={disabled}
+        style={{
+          opacity: designable && field?.data?.hidden && 0.1,
+        }}
+        {...props}
+        onMouseEnter={handleMouseEnter}
+        onMouseMove={handleMouseMove}
+        onClick={handelDuplicate}
+      >
+        {loading ? t('Duplicating') : children || t('Duplicate')}
+      </Button>
+    );
+
+    if (!btnHover) {
+      return (
+        <div
+          className={cx(actionDesignerCss, {
+            [generalSchemaDesignerCss]: isLinkBtn,
+          })}
+        >
+          {buttonElement}
+        </div>
+      );
+    }
 
     return (
       <div
         className={cx(actionDesignerCss, {
-          [css`
-            .general-schema-designer {
-              top: -10px;
-              bottom: -10px;
-              left: -10px;
-              right: -10px;
-            }
-          `]: isLinkBtn,
+          [generalSchemaDesignerCss]: isLinkBtn,
         })}
       >
         <FormBlockContext.Provider
@@ -155,36 +215,7 @@ export const DuplicateAction = observer(
           }}
         >
           <div>
-            {isLinkBtn ? (
-              <a
-                className="nb-action-link"
-                role={props.role}
-                aria-label={props['aria-label']}
-                //@ts-ignore
-                disabled={disabled}
-                style={{
-                  opacity: designable && field?.data?.hidden && 0.1,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  position: 'relative',
-                }}
-                onClick={handelDuplicate}
-              >
-                {loading ? t('Duplicating') : children || t('Duplicate')}
-              </a>
-            ) : (
-              <Button
-                role={props.role}
-                aria-label={props['aria-label']}
-                disabled={disabled}
-                style={{
-                  opacity: designable && field?.data?.hidden && 0.1,
-                }}
-                {...props}
-                onClick={handelDuplicate}
-              >
-                {loading ? t('Duplicating') : children || t('Duplicate')}
-              </Button>
-            )}
+            {buttonElement}
             <CollectionProvider_deprecated name={duplicateCollection || name}>
               <RecordProvider
                 record={{ ...record, __collection: duplicateCollection || __collection }}

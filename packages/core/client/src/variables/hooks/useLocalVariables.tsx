@@ -1,6 +1,5 @@
 import { Form } from '@formily/core';
 import { useMemo } from 'react';
-import { useCollection_deprecated } from '../../collection-manager';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
 import { useDatetimeVariable } from '../../schema-settings/VariableInput/hooks/useDateVariable';
 import { useCurrentFormVariable } from '../../schema-settings/VariableInput/hooks/useFormVariable';
@@ -8,6 +7,7 @@ import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/ho
 import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
 import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
 import { VariableOption } from '../types';
+import { useCollection } from '../../data-source/collection/CollectionProvider';
 
 interface Props {
   collectionName?: string;
@@ -20,7 +20,8 @@ const useLocalVariables = (props?: Props) => {
   const { currentParentRecordCtx, collectionName: collectionNameOfParentRecord } = useCurrentParentRecordVariable();
   const { datetimeCtx } = useDatetimeVariable();
   const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
-  const { name: currentCollectionName } = useCollection_deprecated();
+  const collection = useCollection();
+  const currentCollectionName = collection?.name;
   let { name } = useBlockCollection();
 
   if (props?.collectionName) {

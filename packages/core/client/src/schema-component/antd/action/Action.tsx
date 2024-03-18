@@ -46,6 +46,8 @@ export const Action: ComposedAction = observer(
       actionCallback,
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
+      onMouseEnter,
+      onMouseLeave,
       ...others
     } = useProps(props);
     const aclCtx = useACLActionParamsContext();
@@ -63,17 +65,22 @@ export const Action: ComposedAction = observer(
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
-    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-    let actionTitle = title || compile(fieldSchema.title);
-    actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
+    const [btnHover, setBtnHover] = useState(false);
+
+    const actionTitle = useMemo(() => {
+      const res = title || compile(fieldSchema.title);
+      return lodash.isString(res) ? t(res) : res;
+    }, [title, fieldSchema.title, t]);
 
     useEffect(() => {
+      if (!btnHover) return;
       field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
@@ -88,7 +95,7 @@ export const Action: ComposedAction = observer(
             });
           });
         });
-    }, [field, linkageRules, localVariables, record, variables]);
+    }, [btnHover, field, linkageRules, localVariables, record, variables]);
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
@@ -126,34 +133,63 @@ export const Action: ComposedAction = observer(
       };
     }, [designable, field?.data?.hidden, style]);
 
+    const handleMouseEnter = useCallback(
+      (e) => {
+        setBtnHover(true);
+        onMouseEnter?.(e);
+      },
+      [onMouseEnter],
+    );
+    const handleMouseMove = useCallback(
+      (e) => {
+        setBtnHover(true);
+        onMouseEnter?.(e);
+      },
+      [onMouseLeave],
+    );
+
     const renderButton = () => {
       if (!designable && (field?.data?.hidden || !aclCtx)) {
         return null;
       }
 
+      const C = tarComponent || Button;
+      const btnProps = {
+        role: 'button',
+        'aria-label': getAriaLabel(),
+        ...others,
+        loading: field?.data?.loading,
+        icon: icon ? <Icon type={icon} /> : null,
+        disabled,
+        style: buttonStyle,
+        onClick: handleButtonClick,
+        className: classnames(componentCls, hashId, className, 'nb-action'),
+        type: props.type === 'danger' ? undefined : props.type,
+        onMouseEnter: handleMouseEnter,
+        onMouseMove: handleMouseMove,
+      };
+
+      if (!btnHover) {
+        return <C {...btnProps}>{actionTitle}</C>;
+      }
+
       return (
-        <SortableItem
-          role="button"
-          aria-label={getAriaLabel()}
-          {...others}
-          loading={field?.data?.loading}
-          icon={icon ? <Icon type={icon} /> : null}
-          disabled={disabled}
-          style={buttonStyle}
-          onClick={handleButtonClick}
-          component={tarComponent || Button}
-          className={classnames(componentCls, hashId, className, 'nb-action')}
-          type={props.type === 'danger' ? undefined : props.type}
-        >
+        <SortableItem component={C} {...btnProps}>
           {actionTitle}
           <Designer {...designerProps} />
         </SortableItem>
       );
     };
 
+    const buttonElement = renderButton();
+
+    if (!btnHover) {
+      return buttonElement;
+    }
+
     const result = (
       <ActionContextProvider
-        button={renderButton()}
+        button={buttonElement}
         visible={visible}
         setVisible={setVisible}
         formValueChanged={formValueChanged}

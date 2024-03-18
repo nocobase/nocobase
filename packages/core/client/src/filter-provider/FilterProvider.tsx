@@ -159,8 +159,14 @@ export const DataBlockCollector = ({
  */
 export const useFilterBlock = () => {
   const ctx = React.useContext(FilterContext);
+  const dataBlocksRef = useRef<DataBlock[]>([]);
+
+  useEffect(() => {
+    dataBlocksRef.current = ctx?.dataBlocks || [];
+  }, [ctx?.dataBlocks]);
+
   // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
-  const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.dataBlocks || [], [ctx?.dataBlocks]);
+  const getDataBlocks = useCallback<() => DataBlock[]>(() => dataBlocksRef.current, []);
 
   if (!ctx) {
     return {
