@@ -152,7 +152,6 @@ export const Action: ComposedAction = observer(
         </SortableItem>
       );
     };
-    console.log(openSize, props);
     const result = (
       <ActionContextProvider
         button={renderButton()}
