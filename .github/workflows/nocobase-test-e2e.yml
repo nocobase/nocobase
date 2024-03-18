@@ -51,6 +51,18 @@ jobs:
           ref: main
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+        - name: Set variables
+        run: |
+          target_directory="./packages/pro-plugins/@nocobase"
+          subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
+          trimmed_variable=$(echo "$subdirectories" | xargs)
+          packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
+          pluginNames="${trimmed_variable//plugin-/}"
+          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
+          APPEND_PRESET_LOCAL_PLUGINS="notifications,disable-pm-add,${pluginNames// /,}"
+          echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+        id: vars
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v3
         with:
@@ -68,18 +80,6 @@ jobs:
             ${{ runner.os }}-yarn-
       - run: yarn install
       - run: ls -a ./node_modules/@nocobase
-      - name: Set variables
-        run: |
-          target_directory="./packages/pro-plugins/@nocobase"
-          subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
-          trimmed_variable=$(echo "$subdirectories" | xargs)
-          packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
-          pluginNames="${trimmed_variable//plugin-/}"
-          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
-          APPEND_PRESET_LOCAL_PLUGINS="notifications,disable-pm-add,${pluginNames// /,}"
-          echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
-          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
-        id: vars
       - name: yarn build
         run: yarn build
         env:
