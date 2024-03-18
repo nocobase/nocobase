@@ -9,7 +9,7 @@ export class UrlFieldInterface extends CollectionFieldInterface {
   order = 5;
   title = '{{t("URL")}}';
   default = {
-    type: 'string',
+    type: 'text',
     uiSchema: {
       type: 'string',
       'x-component': 'Input.URL',
