@@ -461,14 +461,14 @@ const _test = base.extend<ExtendUtils>({
 
     await use(updateRole);
   },
-  mockExternalDataSource: async ({ page }, use) => {
+  mockExternalDataSource: async ({ browser }, use) => {
     const mockExternalDataSource = async (DataSourceSetting: DataSourceSetting) => {
       return createExternalDataSource(DataSourceSetting);
     };
 
     await use(mockExternalDataSource);
   },
-  destoryExternalDataSource: async ({ page }, use) => {
+  destoryExternalDataSource: async ({ browser }, use) => {
     const destoryDataSource = async (key: string) => {
       return destoryExternalDataSource(key);
     };
@@ -790,9 +790,8 @@ const destoryExternalDataSource = async (key) => {
   });
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const result = await api.post(`/api/dataSources:destroy`, {
+  const result = await api.post(`/api/dataSources:destroy?filterByTk=${key}`, {
     headers,
-    data: { filterByTk: key },
   });
 
   if (!result.ok()) {

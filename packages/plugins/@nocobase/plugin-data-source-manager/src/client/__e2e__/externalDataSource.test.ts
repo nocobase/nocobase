@@ -20,9 +20,9 @@ test.describe('external data source', () => {
   let dataSource;
 
   test.beforeAll(async ({ mockExternalDataSource }) => {
+    // // 在上下文中创建新页面
     dataSource = await mockExternalDataSource(PGDataSourceSetting);
   });
-
   test.afterAll(async ({ destoryExternalDataSource }) => {
     await destoryExternalDataSource(PGDataSource);
   });
@@ -336,6 +336,7 @@ test.describe('external data source', () => {
       await page.getByRole('menuitem', { name: 'form Form right' }).nth(1).click();
       await expect(await page.getByRole('menuitem', { name: 'Main' })).toBeVisible();
       await expect(await page.getByRole('menuitem', { name: PGDataSource })).toBeVisible();
+      await page.getByRole('menuitem', { name: PGDataSource }).click();
       await page.getByRole('menuitem', { name: 'users' }).click();
       await page.getByLabel('block-item-CardItem-users-').hover();
       await expect(
