@@ -42,7 +42,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          ref: main
+          path: packages/pro-plugins
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v3
         with:
@@ -51,7 +59,16 @@ jobs:
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
-
+     - name: Set variables
+        run: |
+          target_directory="./packages/pro-plugins/@nocobase"
+          subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
+          trimmed_variable=$(echo "$subdirectories" | xargs)
+          packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
+          pluginNames="${trimmed_variable//plugin-/}"
+          APPEND_PRESET_BUILT_IN_PLUGINS="mock-collections,${pluginNames// /,}"
+          echo "var2=$APPEND_PRESET_BUILT_IN_PLUGINS" >> $GITHUB_OUTPUT
+        id: vars
       - uses: actions/cache@v3
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
@@ -78,4 +95,5 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
+          APPEND_PRESET_BUILT_IN_PLUGINS: ${{ steps.vars.outputs.var2 }}
     timeout-minutes: 120
