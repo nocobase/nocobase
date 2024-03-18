@@ -49,11 +49,12 @@ class SystemLoggerTransport extends Transport {
   }
 
   log(info: any, callback: any) {
-    const { level, message, reqId, app, [SPLAT]: args } = info;
+    const { level, message, reqId, app, stack, [SPLAT]: args } = info;
     const logger = level === 'error' && this.errorLogger ? this.errorLogger : this.logger;
     const { module, submodule, method, ...meta } = args?.[0] || {};
     logger.log({
       level,
+      stack,
       message,
       meta,
       module: module || info['module'] || '',
