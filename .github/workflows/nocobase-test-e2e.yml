@@ -59,7 +59,7 @@ jobs:
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
-     - name: Set variables
+      - name: Set variables
         run: |
           target_directory="./packages/pro-plugins/@nocobase"
           subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
