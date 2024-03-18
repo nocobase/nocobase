@@ -59,6 +59,14 @@ jobs:
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
+      - uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - run: yarn install
       - name: Set variables
         run: |
           target_directory="./packages/pro-plugins/@nocobase"
@@ -69,16 +77,7 @@ jobs:
           APPEND_PRESET_BUILT_IN_PLUGINS="mock-collections,${pluginNames// /,}"
           echo "var2=$APPEND_PRESET_BUILT_IN_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
-      - uses: actions/cache@v3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
       - run: ls -a ./node_modules/@nocobase
-      - run: yarn install
       - name: yarn build
         run: yarn build
         env:
