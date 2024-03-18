@@ -218,7 +218,9 @@ describe('workflow > instructions > sql', () => {
 
   describe('multiple data source', () => {
     it('query on another data source', async () => {
-      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const anotherSource = app.dataSourceManager.dataSources.get('another');
+      const PostCollection = anotherSource.collectionManager.getCollection('posts');
+      const { repository: AnotherPostRepo } = PostCollection;
       const post = await AnotherPostRepo.create({ values: { title: 't1' } });
       const p1s = await AnotherPostRepo.find();
       expect(p1s.length).toBe(1);
@@ -227,7 +229,7 @@ describe('workflow > instructions > sql', () => {
         type: 'sql',
         config: {
           dataSource: 'another',
-          sql: 'select * from posts',
+          sql: `select * from ${PostCollection.quotedTableName()}`,
         },
       });
 
