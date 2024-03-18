@@ -1,5 +1,6 @@
 import { Plugin } from '@nocobase/server';
 import backupFilesResourcer from './resourcers/backup-files';
+import addRestoreCommand from './commands/restore-command';
 
 export default class Duplicator extends Plugin {
   beforeLoad() {
@@ -7,6 +8,8 @@ export default class Duplicator extends Plugin {
       name: `pm.${this.name}`,
       actions: ['backupFiles:*'],
     });
+
+    addRestoreCommand(this.app);
   }
 
   async load() {
