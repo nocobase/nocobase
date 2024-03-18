@@ -19,7 +19,7 @@ import { parse } from '@nocobase/utils/client';
 import lodash from 'lodash';
 import { getFormulaComponent, getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
-import { getFilterFieldPrefix, parseFilterFieldName } from '../filter/utils';
+import { findSchema, getFilterFieldPrefix, parseFilterFieldName } from '../filter/utils';
 
 export const useCustomFieldInterface = () => {
   const { getInterface } = useCollectionManager_deprecated();
@@ -61,6 +61,9 @@ export const useChartData = () => {
       .filter((chart) => chart)
       .reduce((mp, chart) => {
         const { dataSource, collection } = chart;
+        if (mp[dataSource]?.includes(collection)) {
+          return mp;
+        }
         mp[dataSource] = [...(mp[dataSource] || []), collection];
         return mp;
       }, {});
@@ -140,6 +143,7 @@ export const useChartFilter = () => {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         Component: 'CollectionFieldInitializer',
+        find: findSchema,
         remove: (schema, cb) => {
           cb(schema, {
             breakRemoveOn: {
@@ -196,6 +200,7 @@ export const useChartFilter = () => {
         type: 'item',
         title: child.title || child.name,
         Component: 'CollectionFieldInitializer',
+        find: findSchema,
         remove: (schema, cb) => {
           cb(schema, {
             breakRemoveOn: {
@@ -230,7 +235,7 @@ export const useChartFilter = () => {
         return;
       }
       title = title ? `${title} / ${fieldTitle}` : fieldTitle;
-      if (children?.length && !['chinaRegion', 'createdBy', 'updatedBy'].includes(field.interface)) {
+      if (children?.length && !['chinaRegion', 'createdBy', 'updatedBy', 'attachment'].includes(field.interface)) {
         const items = children.map((child: any) =>
           children2item(child, title, `${name}.${field.name}`, `${fieldName}.${field.name}`),
         );
