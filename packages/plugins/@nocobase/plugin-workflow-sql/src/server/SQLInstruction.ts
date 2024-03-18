@@ -7,9 +7,10 @@ export default class extends Instruction {
       node.config.dataSource || 'main',
     ).collectionManager;
     if (!db) {
+      console.error('--------------- data source is not a database');
       throw new Error(`type of data source "${node.config.dataSource}" is not database`);
     }
-    const sql = processor.getParsedValue(node.config.sql ?? '', node.id).trim();
+    const sql = processor.getParsedValue(node.config.sql || '', node.id).trim();
     if (!sql) {
       return {
         status: JOB_STATUS.RESOLVED,
