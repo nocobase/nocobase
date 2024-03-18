@@ -57,7 +57,7 @@ jobs:
       - name: Install project dependencies
         run: yarn --prefer-offline
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false
+        run: yarn test --server --single-thread=false --disable-console-intercept
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
@@ -114,7 +114,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          yarn test --server --single-thread=false
+          yarn test --server --single-thread=false --disable-console-intercept
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
@@ -167,7 +167,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          yarn test --server --single-thread=false
+          yarn test --server --single-thread=false --disable-console-intercept
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mysql
@@ -217,7 +217,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          yarn test --server --single-thread=false
+          yarn test --server --single-thread=false --disable-console-intercept
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mariadb
