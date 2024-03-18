@@ -17,16 +17,22 @@ export default class extends Instruction {
       };
     }
 
-    // @ts-ignore
-    const result = await db.sequelize.query(sql, {
-      transaction: processor.transaction,
-      // plain: true,
-      // model: db.getCollection(node.config.collection).model
-    });
+    try {
+      // @ts-ignore
+      const result = await db.sequelize.query(sql, {
+        transaction: processor.transaction,
+        // plain: true,
+        // model: db.getCollection(node.config.collection).model
+      });
+      console.log('----------', result);
 
-    return {
-      result,
-      status: JOB_STATUS.RESOLVED,
-    };
+      return {
+        result,
+        status: JOB_STATUS.RESOLVED,
+      };
+    } catch (ex) {
+      console.error('--------------- sql error', ex);
+      throw ex;
+    }
   }
 }
