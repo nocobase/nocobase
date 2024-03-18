@@ -67,6 +67,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
       - run: yarn install
+      - run: ls -a ./node_modules/@nocobase
       - name: Set variables
         run: |
           target_directory="./packages/pro-plugins/@nocobase"
@@ -74,10 +75,11 @@ jobs:
           trimmed_variable=$(echo "$subdirectories" | xargs)
           packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
           pluginNames="${trimmed_variable//plugin-/}"
-          APPEND_PRESET_BUILT_IN_PLUGINS="mock-collections,${pluginNames// /,}"
-          echo "var2=$APPEND_PRESET_BUILT_IN_PLUGINS" >> $GITHUB_OUTPUT
+          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
+          APPEND_PRESET_LOCAL_PLUGINS="notifications,disable-pm-add,${pluginNames// /,}"
+          echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
-      - run: ls -a ./node_modules/@nocobase
       - name: yarn build
         run: yarn build
         env:
