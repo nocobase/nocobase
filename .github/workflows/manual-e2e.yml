@@ -1,15 +1,15 @@
 name: manual-e2e
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 on: 
   workflow_dispatch:
     inputs:
       branch:
         description: 'nocobase/pro-plugins repository branch'
         required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.branch }}
+  cancel-in-progress: true
 
 jobs:
   e2e-test-postgres:
@@ -36,7 +36,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Checkout pro-plugins
+      - name: Checkout pro-plugins - ${{ inputs.branch }}
         uses: actions/checkout@v3
         with:
           repository: nocobase/pro-plugins
