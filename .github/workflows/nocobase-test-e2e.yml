@@ -51,7 +51,7 @@ jobs:
           ref: main
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-        - name: Set variables
+      - name: Set variables
         run: |
           target_directory="./packages/pro-plugins/@nocobase"
           subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
