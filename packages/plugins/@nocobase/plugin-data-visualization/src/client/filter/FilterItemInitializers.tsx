@@ -124,7 +124,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   const { theme } = useGlobalTheme();
   const { insert } = props;
   const itemConfig = useSchemaInitializerItem();
-  const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
+  const dm = useDataSourceManager();
   const sourceFields = useChartFilterSourceFields();
   const { options: fieldComponents, values: fieldComponentValues } = useFieldComponents();
   const handleClick = useCallback(async () => {
@@ -191,8 +191,17 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       },
       effects() {
         onFieldValueChange('source', (field) => {
-          const name = field.value?.join('.');
-          const props = getCollectionJoinField(name);
+          if (!field.value) {
+            return;
+          }
+          const [dataSource, ...fields] = field.value;
+          const ds = dm.getDataSource(dataSource);
+          if (!ds) {
+            return;
+          }
+          const cm = ds.collectionManager;
+          const name = fields.join('.');
+          const props = cm.getCollectionField(name);
           if (!props) {
             return;
           }
@@ -260,22 +269,26 @@ const filterItemInitializers = {
         const fim = dm.collectionFieldInterfaceManager;
 
         return useMemo(() => {
-          return chartCollections.map(
-            ({ dataSource, collection: name }: { dataSource: string; collection: string }) => {
-              const ds = dm.getDataSource(dataSource);
-              const cm = ds.collectionManager;
-              const collection = cm.getCollection(name);
-              const fields = getChartFilterFields({ dataSource, collection, cm, fim });
-              return {
-                name: collection.key,
-                type: 'subMenu',
-                title: showDataSource
-                  ? `${Schema.compile(ds.displayName, { t })} / ${Schema.compile(collection.title, { t })}`
-                  : collection.title,
-                children: fields,
-              };
-            },
-          );
+          const options = Object.entries(chartCollections).map(([dataSource, collections]) => {
+            const ds = dm.getDataSource(dataSource);
+            return {
+              name: ds.key,
+              title: Schema.compile(ds.displayName, { t }),
+              type: 'subMenu',
+              children: collections.map((name) => {
+                const cm = ds.collectionManager;
+                const collection = cm.getCollection(name);
+                const fields = getChartFilterFields({ dataSource, collection, cm, fim });
+                return {
+                  name: collection.key,
+                  title: Schema.compile(collection.title, { t }),
+                  type: 'subMenu',
+                  children: fields,
+                };
+              }),
+            };
+          });
+          return showDataSource ? options : options[0]?.children || [];
         }, [chartCollections, showDataSource]);
       },
     },

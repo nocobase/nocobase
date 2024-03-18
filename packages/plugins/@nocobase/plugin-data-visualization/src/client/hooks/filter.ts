@@ -54,30 +54,25 @@ export const useCustomFieldInterface = () => {
 export const useChartData = () => {
   const { charts } = useContext(ChartDataContext);
 
-  const chartCollections = useMemo(() => {
-    const mp = new Map();
-    Object.values(charts)
+  const chartCollections: {
+    [dataSource: string]: string[];
+  } = useMemo(() => {
+    return Object.values(charts)
       .filter((chart) => chart)
-      .forEach((chart) => {
-        mp.set(`${chart.dataSource}-${chart.collection}`, {
-          collection: chart.collection,
-          dataSource: chart.dataSource,
-        });
-      });
-    return Array.from(mp.values());
+      .reduce((mp, chart) => {
+        const { dataSource, collection } = chart;
+        mp[dataSource] = [...(mp[dataSource] || []), collection];
+        return mp;
+      }, {});
   }, [charts]);
 
   const showDataSource = useMemo(() => {
-    const dataSourcesSet = chartCollections.reduce((set, { dataSource }) => {
-      set.add(dataSource);
-      return set;
-    }, new Set<string>());
-    return dataSourcesSet.size > 1;
+    return Object.keys(chartCollections).length > 1;
   }, [chartCollections]);
 
   const getIsChartCollectionExists = useCallback(
     (dataSource: string, collection: string) => {
-      return chartCollections.some((item) => item.collection === collection && item.dataSource === dataSource);
+      return chartCollections[dataSource]?.includes(collection) || false;
     },
     [chartCollections],
   );
@@ -332,7 +327,6 @@ export const useChartFilter = () => {
   const hasFilter = (chart: { dataSource: string; collection: string; query: any }, filterValues: any) => {
     const { dataSource, collection, query } = chart;
     const { parameters } = parse(query.filter || '');
-    console.log(filterValues);
     return (
       chart &&
       (filterValues[getFilterFieldPrefix(dataSource, collection)] ||
@@ -433,13 +427,15 @@ export const useFilterVariable = () => {
 export const useChartFilterSourceFields = () => {
   const { t } = useChartsTranslation();
   const { chartCollections } = useChartData();
-  const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
+  const dm = useDataSourceManager();
+  const fim = dm.collectionFieldInterfaceManager;
+
   const { values } = useFieldComponents();
-  const field2option = (field: any, depth: number) => {
+  const field2option = (cm: CollectionManager, field: any, depth: number) => {
     if (!field.interface) {
       return;
     }
-    const fieldInterface = getInterface(field.interface);
+    const fieldInterface = fim.getFieldInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
     }
@@ -455,8 +451,8 @@ export const useChartFilterSourceFields = () => {
       return item;
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target);
-      const items = targetFields.map((targetField) => field2option(targetField, depth + 1));
+      const targetFields = cm.getCollectionFields(field.target);
+      const items = targetFields.map((targetField) => field2option(cm, targetField, depth + 1));
       return {
         value: field.name,
         label: t(field?.uiSchema?.title || field.name),
@@ -470,25 +466,25 @@ export const useChartFilterSourceFields = () => {
   };
 
   return useMemo(() => {
-    const options = [];
-    chartCollections.forEach((name) => {
-      const collection = getCollection(name);
-      const children = [];
-      const fields = getCollectionFields(collection);
-      fields.forEach((field) => {
-        const option = field2option(field, 1);
-        if (option) {
-          children.push(option);
-        }
-      });
-      if (children.length) {
-        options.push({
-          value: name,
-          label: t(collection.title),
-          children,
-        });
-      }
+    const options = Object.entries(chartCollections).map(([dataSource, collections]) => {
+      const ds = dm.getDataSource(dataSource);
+      return {
+        value: dataSource,
+        label: Schema.compile(ds.displayName, { t }),
+        children: collections.map((name: string) => {
+          const cm = ds.collectionManager;
+          const collection = cm.getCollection(name);
+          const fields = cm.getCollectionFields(name);
+          const children = fields.map((field) => field2option(cm, field, 1)).filter((item) => item);
+          return {
+            value: name,
+            label: Schema.compile(collection.title, { t }),
+            children,
+          };
+        }),
+      };
     });
+
     return options;
   }, [chartCollections]);
 };
