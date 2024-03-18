@@ -8,7 +8,7 @@ APP_KEY=test-key-e2e
 SOCKET_PATH=storage/gateway-e2e.sock
 __E2E__=true
 
-APPEND_PRESET_BUILT_IN_PLUGINS=mock-collections,data-source-external-postgres
+APPEND_PRESET_BUILT_IN_PLUGINS=mock-collections
 
 API_BASE_PATH=/api/
 API_BASE_URL=
