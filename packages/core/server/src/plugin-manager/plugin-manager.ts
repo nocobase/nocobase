@@ -161,7 +161,16 @@ export class PluginManager {
   }
 
   getPlugins() {
-    return this.app.pm.pluginInstances;
+    const names = new Map();
+    const sorted = new Map();
+    for (const [P, pluginInstance] of this.app.pm.pluginInstances) {
+      names.set(pluginInstance.name, [P, pluginInstance]);
+    }
+    for (const name of [...names.keys()].sort()) {
+      const [P, i] = names.get(name);
+      sorted.set(P, i);
+    }
+    return sorted;
   }
 
   getAliases() {
