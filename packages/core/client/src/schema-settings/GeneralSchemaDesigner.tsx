@@ -56,13 +56,22 @@ export interface GeneralSchemaDesignerProps {
    * @default true
    */
   draggable?: boolean;
+  showDataSource?: boolean;
 }
 
 /**
  * @deprecated use `SchemaToolbar` instead
  */
 export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any) => {
-  const { disableInitializer, title, template, schemaSettings, contextValue, draggable = true } = props;
+  const {
+    disableInitializer,
+    title,
+    template,
+    schemaSettings,
+    contextValue,
+    draggable = true,
+    showDataSource = true,
+  } = props;
   const { dn, designable } = useDesignable();
   const field = useField();
   const { t } = useTranslation();
@@ -112,7 +121,9 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
           <div className={classNames('general-schema-designer-title', titleCss)}>
             <Space size={2}>
               <span className={'title-tag'}>
-                {dataSource ? `${compile(dataSource?.displayName)} > ${compile(title)}` : compile(title)}
+                {showDataSource && dataSource
+                  ? `${compile(dataSource?.displayName)} > ${compile(title)}`
+                  : compile(title)}
               </span>
               {template && (
                 <span className={'title-tag'}>
