@@ -59,31 +59,6 @@ export const useBlockResource = () => {
   return useContext(BlockResourceContext) || resource;
 };
 
-interface UseResourceProps {
-  resource: any;
-  association?: any;
-  useSourceId?: any;
-  collection?: any;
-  dataSource?: any;
-  block?: any;
-}
-
-const useAssociation = (props) => {
-  const { association } = props;
-  const { getCollectionField } = useCollectionManager_deprecated();
-  if (typeof association === 'string') {
-    return getCollectionField(association);
-  } else if (association?.collectionName && association?.name) {
-    return getCollectionField(`${association?.collectionName}.${association?.name}`);
-  }
-};
-
-const useActionParams = (props) => {
-  const { useParams } = props;
-  const params = useParams?.() || {};
-  return { ...props.params, ...params };
-};
-
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
