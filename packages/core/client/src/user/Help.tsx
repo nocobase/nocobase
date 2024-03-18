@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { DropdownVisibleContext, usePlugin, useToken } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { observer } from '@formily/reactive-react';
+import { parseHTML } from '@nocobase/utils/client';
 
 /**
  * @note If you want to change here, Note the Setting block on the mobile side
@@ -82,6 +83,7 @@ export const Help = observer(
     const [visible, setVisible] = useState(false);
     const { token } = useToken();
     const customBrandPlugin: any = usePlugin('@nocobase/plugin-custom-brand');
+    const data = useCurrentAppInfo();
 
     const icon = (
       <span
@@ -101,9 +103,16 @@ export const Help = observer(
     );
 
     if (customBrandPlugin?.options?.options?.about) {
+      const appVersion = `<span class="nb-app-version">v${data?.data?.version}</span>`;
+      const content = parseHTML(customBrandPlugin.options.options.about, { appVersion });
+
       return (
         <div className={helpClassName}>
-          <Popover content={<div dangerouslySetInnerHTML={{ __html: customBrandPlugin.options.options.about }}></div>}>
+          <Popover
+            // nb-about 的样式定义在 plugin-custom-brand 插件中
+            rootClassName="nb-about"
+            content={<div dangerouslySetInnerHTML={{ __html: content }}></div>}
+          >
             {icon}
           </Popover>
         </div>
