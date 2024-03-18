@@ -51,7 +51,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await formEventTriggerNode.nodeConfigure.click();
     await formEventTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await formEventTriggerNode.submitButton.click();
 
     //配置录入数据区块
@@ -143,7 +144,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await formEventTriggerNode.nodeConfigure.click();
     await formEventTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await formEventTriggerNode.submitButton.click();
 
     //配置录入数据区块
@@ -649,8 +651,11 @@ test.describe('Configuration page copy to new version', () => {
     // 3、预期结果：新版本工作流配置内容同旧版本一样
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await formEventTriggerNode.nodeConfigure.click();
-    await expect(page.getByRole('button', { name: triggerNodeCollectionDisplayName })).toBeVisible();
-
+    await expect(
+      page
+        .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+        .getByText(`Main / ${triggerNodeCollectionDisplayName}`),
+    ).toBeVisible();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });

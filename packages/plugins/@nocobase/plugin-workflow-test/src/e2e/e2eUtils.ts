@@ -722,6 +722,28 @@ export const apiSubmitRecordTriggerFormEvent = async (triggerWorkflows: string, 
   return await result.json();
 };
 
+// 获取数据源个数
+export const apiGetDataSourceCount = async () => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.get(`/api/dataSources:list?pageSize=50`, {
+    headers,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
+    {
+        "data": 1
+    }
+    */
+  return (await result.json()).meta.count;
+};
+
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
     .find((item) => item.origin === APP_BASE_URL)
@@ -783,4 +805,5 @@ export default module.exports = {
   apiCreateRecordTriggerFormEvent,
   apiSubmitRecordTriggerFormEvent,
   apiFilterList,
+  apiGetDataSourceCount,
 };

@@ -47,7 +47,9 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    // await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -101,7 +103,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record updated', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -157,7 +160,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added or updated', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -218,7 +222,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added or updated', { exact: true }).click();
     // 设置触发器过滤条件
@@ -285,7 +290,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record updated', { exact: true }).click();
     // 设置触发器过滤条件
@@ -723,7 +729,12 @@ test.describe('Configuration page copy to new version', () => {
     // 3、预期结果：新版本工作流配置内容同旧版本一样
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
-    await expect(page.getByRole('button', { name: triggerNodeCollectionDisplayName })).toBeVisible();
+    // await expect(page.getByRole('button', { name: `Main / ${triggerNodeCollectionDisplayName}` })).toBeVisible();
+    await expect(
+      page
+        .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+        .getByText(`Main / ${triggerNodeCollectionDisplayName}`),
+    ).toBeVisible();
 
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);

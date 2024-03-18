@@ -92,7 +92,9 @@ export class ApprovalTriggerNode {
     this.node = page.getByText('TriggeraConfigure');
     this.nodeTitle = page.locator('textarea').filter({ hasText: triggerName });
     this.nodeConfigure = page.getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
     this.checkWthdrawable = page.getByLabel('Withdrawable');
     this.configureUserInterfaceButton = page.getByRole('button', { name: 'Configure user interface' });
     this.addBlockButton = page.getByRole('button', { name: 'Add block' });
@@ -164,7 +166,9 @@ export class ScheduleTriggerNode {
     this.RrpeatModeDropdown = page.getByLabel('block-item-RepeatField-workflows-Repeat mode');
 
     this.dataTableTimeFieldOptions = page.getByLabel('Based on date field of collection');
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
     this.startTimeDropdown = page.getByLabel('block-item-OnField-workflows-Starts on');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
@@ -187,7 +191,10 @@ export class CollectionTriggerNode {
     this.node = page.getByLabel(`Trigger-${triggerName}`);
     this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
     this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    // this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
     this.triggerOnDropdown = page
       .getByLabel('block-item-Select-workflows-Trigger on')
       .getByRole('button', { name: 'Trigger on' });
@@ -212,7 +219,9 @@ export class FormEventTriggerNode {
     this.node = page.getByLabel(`Trigger-${triggerName}`);
     this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
     this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
     this.relationalDataDropdown = page.getByTestId('select-field-Preload associations');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
@@ -269,7 +278,9 @@ export class QueryRecordNode {
     this.nodeConfigure = page
       .getByLabel(`Query record-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
     this.allowMultipleDataBoxesForResults = page.getByLabel('Allow multiple records as');
     this.addSortFieldsButton = page.getByRole('button', { name: 'plus Add sort field' });
     this.pageNumberEditBox = page.getByLabel('variable-constant');
@@ -299,7 +310,9 @@ export class CreateRecordNode {
     this.nodeConfigure = page
       .getByLabel(`Create record-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
     this.addFieldsButton = page.getByRole('button', { name: 'plus Add field' });
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
@@ -326,7 +339,9 @@ export class UpdateRecordNode {
     this.nodeConfigure = page
       .getByLabel(`Update record-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
     this.batchUpdateModeRadio = page
       .getByLabel('block-item-IndividualHooksRadioWithTooltip-workflows-Update mode')
       .getByLabel('Update in a batch');
@@ -356,7 +371,9 @@ export class DeleteRecordNode {
     this.nodeConfigure = page
       .getByLabel(`Delete record-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-delete-${nodeName}`, { exact: true });
@@ -395,11 +412,12 @@ export class AggregateNode {
     this.minRadio = page.getByLabel('MIN', { exact: true });
     this.dataTableDataRadio = page.getByLabel('Data of collection');
     this.linkedDataTableDataRadio = page.getByLabel('Data of associated collection');
-    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' });
-    // this.aggregatedFieldDropDown = page.getByLabel('block-item-FieldsSelect-workflows-Field to aggregate').getByRole('textbox').getByRole('combobox');
-    this.aggregatedFieldDropDown = page.locator(
-      'input.ant-select-selection-search-input[role="combobox"][aria-haspopup="listbox"]',
-    );
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Data of collection')
+      .locator('.ant-select-selection-search-input');
+    this.aggregatedFieldDropDown = page
+      .getByLabel('block-item-FieldsSelect-workflows-Field to aggregate')
+      .locator('.ant-select-selection-search-input');
     this.distinctCheckBox = page
       .getByLabel('block-item-Checkbox-workflows-Distinct')
       .locator('input.ant-checkbox-input[type="checkbox"]');
