@@ -1,0 +1,78 @@
+import { ISchema } from '@formily/react';
+import { uid } from '@formily/shared';
+
+export const createTableBLockSchemaV2 = (options: {
+  collectionName: string;
+  dataSource?: string;
+  rowKey?: string;
+}): ISchema => {
+  const { collectionName, dataSource, rowKey } = options;
+
+  return {
+    type: 'void',
+    'x-decorator': 'TableBlockProvider',
+    'x-acl-action': `${collectionName}:list`,
+    'x-use-decorator-props': '{{ useTableBlockDecoratorProps }}',
+    'x-decorator-props': {
+      collection: collectionName,
+      dataSource,
+      action: 'list',
+      params: {
+        pageSize: 20,
+      },
+      rowKey,
+      showIndex: true,
+      dragSort: false,
+    },
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': 'blockSettings:table',
+    'x-component': 'CardItem',
+    'x-filter-targets': [],
+    properties: {
+      actions: {
+        type: 'void',
+        'x-initializer': 'table:configureActions',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 'var(--nb-spacing)',
+          },
+        },
+        properties: {},
+      },
+      [uid()]: {
+        type: 'array',
+        'x-initializer': 'table:configureColumns',
+        'x-component': 'TableV2',
+        'x-component-props': {
+          rowKey: 'id',
+          rowSelection: {
+            type: 'checkbox',
+          },
+          useProps: '{{ useTableBlockProps }}',
+        },
+        properties: {
+          actions: {
+            type: 'void',
+            title: '{{ t("Actions") }}',
+            'x-action-column': 'actions',
+            'x-decorator': 'TableV2.Column.ActionBar',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.ActionColumnDesigner',
+            'x-initializer': 'table:configureItemActions',
+            properties: {
+              [uid()]: {
+                type: 'void',
+                'x-decorator': 'DndContext',
+                'x-component': 'Space',
+                'x-component-props': {
+                  split: '|',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+};
