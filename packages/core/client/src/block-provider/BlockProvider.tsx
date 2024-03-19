@@ -211,7 +211,10 @@ export const BlockProvider = (props: {
   useParams?: any;
 }) => {
   const { name, dataSource, association, useParams, parentRecord } = props;
+
+  // TODO: 防止重复计算
   const sourceId = useDataBlockSourceId({ association });
+
   const paramsFromHook = useParams?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();

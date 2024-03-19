@@ -1,11 +1,11 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollectionManager_deprecated } from '../../../../collection-manager/hooks/useCollectionManager_deprecated';
-import { useParsedFilter } from 'packages/core/client/src/block-provider/hooks/useParsedFilter';
+import { useParsedFilter } from '../../../../block-provider/hooks/useParsedFilter';
 import { useMemo } from 'react';
+import { useDataBlockSourceId } from '../../../../block-provider/hooks/useDataBlockSourceId';
 
 export const useTableBlockDecoratorProps = (props) => {
   const params = useTableBlockParams(props);
-  const sourceId = useTableBlockSourceId();
+  const sourceId = useTableBlockSourceId(props);
 
   return {
     params,
@@ -38,6 +38,7 @@ export function useTableBlockParams(props) {
   }, [fieldSchema, parsedFilter, props.dragSort, props.params]);
 }
 
-function useTableBlockSourceId() {
-  return {};
+function useTableBlockSourceId(props) {
+  const sourceId = useDataBlockSourceId({ association: props.association });
+  return sourceId;
 }
