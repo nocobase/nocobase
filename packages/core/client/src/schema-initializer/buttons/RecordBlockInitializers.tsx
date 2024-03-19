@@ -92,6 +92,7 @@ function useRecordBlocks() {
             [templateWrap, templateWrapOfAssociationDetailsWithoutPagination],
           ),
           showAssociationFields: true,
+          hideChildrenIfSingleCollection: true,
         };
       },
     },
@@ -119,6 +120,7 @@ function useRecordBlocks() {
           createBlockSchema: createEditFormBlock,
           templateWrap: templateWrap,
           showAssociationFields: true,
+          hideChildrenIfSingleCollection: true,
         };
       },
       useVisible() {
@@ -305,7 +307,6 @@ export const recordBlockInitializers_deprecated = new CompatibleSchemaInitialize
                 }
               },
               onlyCurrentDataSource: true,
-              showChildren: true,
             };
           },
         },
@@ -327,7 +328,6 @@ export const recordBlockInitializers_deprecated = new CompatibleSchemaInitialize
                 }
               },
               onlyCurrentDataSource: true,
-              showChildren: true,
             };
           },
         },
@@ -404,7 +404,6 @@ export const recordBlockInitializers = new CompatibleSchemaInitializer(
                   }
                 },
                 onlyCurrentDataSource: true,
-                showChildren: true,
               };
             },
           },
@@ -426,7 +425,6 @@ export const recordBlockInitializers = new CompatibleSchemaInitializer(
                   }
                 },
                 onlyCurrentDataSource: true,
-                showChildren: true,
               };
             },
           },
