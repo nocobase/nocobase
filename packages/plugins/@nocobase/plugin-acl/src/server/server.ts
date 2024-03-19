@@ -10,10 +10,10 @@ import { checkAction } from './actions/role-check';
 import { roleCollectionsResource } from './actions/role-collections';
 import { setDefaultRole } from './actions/user-setDefaultRole';
 import { setCurrentRole } from './middlewares/setCurrentRole';
+import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
-import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -179,6 +179,7 @@ export class PluginACL extends Plugin {
         'roles.resources:*',
         'uiSchemas:getProperties',
         'roles.menuUiSchemas:*',
+        'roles.users:*',
       ],
     });
 
