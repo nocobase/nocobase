@@ -1,30 +1,21 @@
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
+import { uid } from '@nocobase/utils/client';
 
-export const createTableBlockUISchema = (options: {
-  collectionName: string;
-  dataSource?: string;
-  rowKey?: string;
-  association?: string;
-}): ISchema => {
-  const { collectionName, dataSource, rowKey, association } = options;
-
+export function createAuditLogsBlockSchema(): ISchema {
   return {
     type: 'void',
-    'x-decorator': 'TableBlockProvider',
-    'x-acl-action': `${collectionName}:list`,
-    'x-use-decorator-props': '{{ useTableBlockDecoratorProps }}',
+    'x-decorator': 'AuditLogsBlockProvider',
+    'x-acl-action': `auditLogs:list`,
     'x-decorator-props': {
-      collection: collectionName,
-      association,
-      dataSource,
+      collection: 'auditLogs',
       action: 'list',
       params: {
         pageSize: 20,
       },
-      rowKey,
+      rowKey: 'id',
       showIndex: true,
       dragSort: false,
+      disableTemplate: true,
     },
     'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'blockSettings:table',
@@ -33,7 +24,7 @@ export const createTableBlockUISchema = (options: {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': 'table:configureActions',
+        'x-initializer': 'auditLogsTable:configureActions',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -44,7 +35,7 @@ export const createTableBlockUISchema = (options: {
       },
       [uid()]: {
         type: 'array',
-        'x-initializer': 'table:configureColumns',
+        'x-initializer': 'auditLogsTable:configureColumns',
         'x-component': 'TableV2',
         'x-component-props': {
           rowKey: 'id',
@@ -61,7 +52,7 @@ export const createTableBlockUISchema = (options: {
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
             'x-designer': 'TableV2.ActionColumnDesigner',
-            'x-initializer': 'table:configureItemActions',
+            'x-initializer': 'auditLogsTable:configureItemActions',
             properties: {
               [uid()]: {
                 type: 'void',
@@ -77,4 +68,4 @@ export const createTableBlockUISchema = (options: {
       },
     },
   };
-};
+}

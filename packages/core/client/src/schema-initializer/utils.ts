@@ -1356,6 +1356,12 @@ export const createReadPrettyFormBlockSchema = (options) => {
   return schema;
 };
 
+/**
+ * @deprecated
+ * 已弃用，可以使用 createTableBlockUISchema 替换
+ * @param options
+ * @returns
+ */
 export const createTableBlockSchema = (options) => {
   const {
     collection,
