@@ -1,4 +1,4 @@
-import { set, get } from 'lodash';
+import { get, set } from 'lodash';
 import React, { ComponentType } from 'react';
 import {
   BrowserRouter,
@@ -10,8 +10,8 @@ import {
   RouteObject,
   useRoutes,
 } from 'react-router-dom';
-import { BlankComponent, RouterContextCleaner } from './components';
 import { Application } from './Application';
+import { BlankComponent, RouterContextCleaner } from './components';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -96,6 +96,10 @@ export class RouterManager {
 
   setType(type: RouterOptions['type']) {
     this.options.type = type;
+  }
+
+  getBasename() {
+    return this.options.basename;
   }
 
   setBasename(basename: string) {

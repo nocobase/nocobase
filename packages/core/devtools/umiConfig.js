@@ -8,11 +8,11 @@ const path = require('path');
 console.log('VERSION: ', packageJson.version);
 
 function getUmiConfig() {
-  const { APP_PORT, API_BASE_URL } = process.env;
+  const { APP_PORT, API_BASE_URL, APP_PUBLIC_PATH } = process.env;
   const API_BASE_PATH = process.env.API_BASE_PATH || '/api/';
   const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${APP_PORT}`;
-  const LOCAL_STORAGE_BASE_URL = '/storage/uploads/';
-  const STATIC_PATH = '/static/';
+  const LOCAL_STORAGE_BASE_URL = 'storage/uploads/';
+  const STATIC_PATH = 'static/';
 
   function getLocalStorageProxy() {
     if (LOCAL_STORAGE_BASE_URL.startsWith('http')) {
@@ -20,11 +20,11 @@ function getUmiConfig() {
     }
 
     return {
-      [LOCAL_STORAGE_BASE_URL]: {
+      [APP_PUBLIC_PATH + LOCAL_STORAGE_BASE_URL]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
       },
-      [STATIC_PATH]: {
+      [APP_PUBLIC_PATH + STATIC_PATH]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
       },
@@ -37,6 +37,7 @@ function getUmiConfig() {
       return memo;
     }, {}),
     define: {
+      'process.env.APP_PUBLIC_PATH': process.env.APP_PUBLIC_PATH,
       'process.env.WS_PATH': process.env.WS_PATH,
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
       'process.env.APP_ENV': process.env.APP_ENV,

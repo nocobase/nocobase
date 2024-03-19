@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { defaultProps, operators, recordPickerViewer } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import { defaultProps, recordPickerViewer } from './properties';
 
 export class CreatedByFieldInterface extends CollectionFieldInterface {
   name = 'createdBy';
@@ -32,28 +32,30 @@ export class CreatedByFieldInterface extends CollectionFieldInterface {
     ...defaultProps,
   };
   filterable = {
-    children: [
-      {
-        name: 'id',
-        title: '{{t("ID")}}',
-        operators: operators.id,
-        schema: {
-          title: '{{t("ID")}}',
-          type: 'number',
-          'x-component': 'InputNumber',
-        },
-      },
-      {
-        name: 'nickname',
-        title: '{{t("Nickname")}}',
-        operators: operators.string,
-        schema: {
-          title: '{{t("Nickname")}}',
-          type: 'string',
-          'x-component': 'Input',
-        },
-      },
-    ],
+    nested: true,
+    children: [],
+    // children: [
+    //   {
+    //     name: 'id',
+    //     title: '{{t("ID")}}',
+    //     operators: operators.id,
+    //     schema: {
+    //       title: '{{t("ID")}}',
+    //       type: 'number',
+    //       'x-component': 'InputNumber',
+    //     },
+    //   },
+    //   {
+    //     name: 'nickname',
+    //     title: '{{t("Nickname")}}',
+    //     operators: operators.string,
+    //     schema: {
+    //       title: '{{t("Nickname")}}',
+    //       type: 'string',
+    //       'x-component': 'Input',
+    //     },
+    //   },
+    // ],
   };
 
   schemaInitialize(schema: ISchema, { block }: { block: string }): void {

@@ -1,6 +1,6 @@
 import { Context, Next } from '@nocobase/actions';
-import { SAMLAuth } from '../saml-auth';
 import { AppSupervisor } from '@nocobase/server';
+import { SAMLAuth } from '../saml-auth';
 
 export const redirect = async (ctx: Context, next: Next) => {
   const { authenticator, __appName: appName } = ctx.action.params || {};
@@ -9,7 +9,7 @@ export const redirect = async (ctx: Context, next: Next) => {
   if (appName && appName !== 'main') {
     const appSupervisor = AppSupervisor.getInstance();
     if (appSupervisor?.runningMode !== 'single') {
-      prefix = `/apps/${appName}`;
+      prefix = process.env.APP_PUBLIC_PATH + `apps/${appName}`;
     }
   }
   const auth = (await ctx.app.authManager.get(authenticator, ctx)) as SAMLAuth;
