@@ -1,4 +1,6 @@
+import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
+import { untracked } from '@formily/reactive';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import _ from 'lodash';
@@ -23,6 +25,7 @@ import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
+import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { isVariable } from '../../variables/utils/isVariable';
@@ -30,9 +33,6 @@ import { transformVariableValue } from '../../variables/utils/transformVariableV
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { Field, Form } from '@formily/core';
-import { untracked } from '@formily/reactive';
-import { isSubMode } from '../../schema-component/antd/association-field/util';
 
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
@@ -961,6 +961,34 @@ export const useRemoveActionProps = (associationName) => {
       await resource.remove({
         values: [value.id],
       });
+    },
+  };
+};
+
+export const useDisassociateActionProps = () => {
+  const filterByTk = useFilterByTk();
+  const { resource, service, block, __parent } = useBlockRequestContext();
+  const { setVisible } = useActionContext();
+  return {
+    async onClick() {
+      await resource.remove({
+        values: [filterByTk],
+      });
+
+      const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
+      if (count % pageSize === 1 && page !== 1) {
+        service.run({
+          ...service?.params?.[0],
+          page: page - 1,
+        });
+      } else {
+        service?.refresh?.();
+      }
+
+      if (block && block !== 'TableField') {
+        __parent?.service?.refresh?.();
+        setVisible?.(false);
+      }
     },
   };
 };

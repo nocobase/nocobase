@@ -4,13 +4,14 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { SchemaInitializerActionModal } from '../../../../application/schema-initializer/components/SchemaInitializerActionModal';
+import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
+import { useSchemaInitializer } from '../../../../application/schema-initializer/context';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { useDataBlockProps } from '../../../../data-source';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
-import { SchemaInitializerActionModal } from '../../../../application/schema-initializer/components/SchemaInitializerActionModal';
-import { useSchemaInitializer } from '../../../../application/schema-initializer/context';
-import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
-import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 
 export const Resizable = () => {
   const { t } = useTranslation();
@@ -314,6 +315,27 @@ export const tableActionColumnInitializers = new CompatibleSchemaInitializer(
             useVisible() {
               const collection = useCollection_deprecated();
               return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+            },
+          },
+          {
+            type: 'item',
+            title: '{{t("Disassociate")}}',
+            name: 'disassociate',
+            Component: 'DisassociateActionInitializer',
+            schema: {
+              'x-component': 'Action.Link',
+              'x-action': 'disassociate',
+              'x-acl-action': 'destroy',
+              'x-decorator': 'ACLActionProvider',
+            },
+            useVisible() {
+              const props = useDataBlockProps();
+              const collection = useCollection_deprecated();
+              return (
+                !!props?.association &&
+                (collection.template !== 'view' || collection?.writableView) &&
+                collection.template !== 'sql'
+              );
             },
           },
           {
