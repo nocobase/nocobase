@@ -53,7 +53,7 @@ jobs:
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Set variables
         run: |
-          APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//')
+          APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
       - name: Use Node.js ${{ matrix.node_version }}
@@ -90,5 +90,5 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-          APPEND_PRESET_BUILT_IN_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
     timeout-minutes: 120

@@ -1,3 +1,4 @@
+import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { importModule, isURL } from '@nocobase/utils';
 import { fsExists } from '@nocobase/utils/plugin-symlink';
@@ -161,16 +162,7 @@ export class PluginManager {
   }
 
   getPlugins() {
-    const names = new Map();
-    const sorted = new Map();
-    for (const [P, pluginInstance] of this.app.pm.pluginInstances) {
-      names.set(pluginInstance.name, [P, pluginInstance]);
-    }
-    for (const name of [...names.keys()].sort()) {
-      const [P, i] = names.get(name);
-      sorted.set(P, i);
-    }
-    return sorted;
+    return this.app.pm.pluginInstances;
   }
 
   getAliases() {
@@ -293,6 +285,9 @@ export class PluginManager {
     this.pluginInstances.set(P, instance);
     if (options.name) {
       this.pluginAliases.set(options.name, instance);
+    }
+    if (options.packageName) {
+      this.pluginAliases.set(options.packageName, instance);
     }
     if (insert && options.name) {
       await this.repository.updateOrCreate({
@@ -433,7 +428,19 @@ export class PluginManager {
   }
 
   async enable(name: string | string[]) {
-    const pluginNames = _.castArray(name);
+    let pluginNames = _.castArray(name);
+    const enableAll = name === 'all' || name?.[0] === 'all';
+    if (enableAll) {
+      const items = await this.repository.find();
+      pluginNames = items.map((item: any) => item.name);
+      const sorter = new Topo.Sorter<string>();
+      for (const pluginName of pluginNames) {
+        const plugin = this.get(pluginName);
+        const peerDependencies = Object.keys(plugin.options?.packageJson?.peerDependencies || {});
+        sorter.add(pluginName, { after: peerDependencies, group: plugin.options.packageName });
+      }
+      pluginNames = sorter.nodes;
+    }
     this.app.log.debug(`enabling plugin ${pluginNames.join(',')}`);
     this.app.setMaintainingMessage(`enabling plugin ${pluginNames.join(',')}`);
     const toBeUpdated = [];
@@ -446,9 +453,17 @@ export class PluginManager {
         continue;
       }
       await this.app.emitAsync('beforeEnablePlugin', pluginName);
-      await plugin.beforeEnable();
-      plugin.enabled = true;
-      toBeUpdated.push(pluginName);
+      try {
+        await plugin.beforeEnable();
+        plugin.enabled = true;
+        toBeUpdated.push(pluginName);
+      } catch (error) {
+        if (enableAll) {
+          console.error(error);
+        } else {
+          throw error;
+        }
+      }
     }
     if (toBeUpdated.length === 0) {
       return;
@@ -466,7 +481,7 @@ export class PluginManager {
       this.app.log.debug(`syncing database in enable plugin ${pluginNames.join(',')}...`);
       this.app.setMaintainingMessage(`syncing database in enable plugin ${pluginNames.join(',')}...`);
       await this.app.db.sync();
-      for (const pluginName of pluginNames) {
+      for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         if (!plugin.installed) {
           this.app.log.debug(`installing plugin ${pluginName}...`);
@@ -483,7 +498,7 @@ export class PluginManager {
           installed: true,
         },
       });
-      for (const pluginName of pluginNames) {
+      for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         this.app.log.debug(`emit afterEnablePlugin event...`);
         await plugin.afterEnable();
@@ -501,6 +516,7 @@ export class PluginManager {
           installed: false,
         },
       });
+
       await this.app.tryReloadOrRestart({
         recover: true,
       });
@@ -805,7 +821,7 @@ export class PluginManager {
   async list(options: any = {}) {
     const { locale = 'en-US', isPreset = false } = options;
     return Promise.all(
-      [...this.getAliases()]
+      [...this.getPlugins().keys()]
         .map((name) => {
           const plugin = this.get(name);
           if (!isPreset && plugin.options.isPreset) {
