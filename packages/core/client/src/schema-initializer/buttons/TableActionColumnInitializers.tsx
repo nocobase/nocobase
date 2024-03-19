@@ -6,9 +6,10 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaInitializerActionModal, SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCollection } from '../../collection-manager';
+import { useCollection, useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { useBlockRequestContext } from '../../block-provider/BlockProvider';
 
 export const Resizable = () => {
   const { t } = useTranslation();
@@ -149,6 +150,27 @@ export const tableActionColumnInitializers = new SchemaInitializer({
           useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+          },
+        },
+        {
+          type: 'item',
+          title: '{{t("Disassociate")}}',
+          name: 'disassociate',
+          Component: 'DisassociateActionInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'disassociate',
+            'x-acl-action': 'destroy',
+            'x-decorator': 'ACLActionProvider',
+          },
+          useVisible() {
+            const { props } = useBlockRequestContext();
+            const collection = useCollection();
+            return (
+              !!props?.association &&
+              (collection.template !== 'view' || collection?.writableView) &&
+              collection.template !== 'sql'
+            );
           },
         },
         {

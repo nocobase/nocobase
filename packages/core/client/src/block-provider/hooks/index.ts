@@ -929,6 +929,34 @@ export const useRemoveActionProps = (associationName) => {
   };
 };
 
+export const useDisassociateActionProps = () => {
+  const filterByTk = useFilterByTk();
+  const { resource, service, block, __parent } = useBlockRequestContext();
+  const { setVisible } = useActionContext();
+  return {
+    async onClick() {
+      await resource.remove({
+        values: [filterByTk],
+      });
+
+      const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
+      if (count % pageSize === 1 && page !== 1) {
+        service.run({
+          ...service?.params?.[0],
+          page: page - 1,
+        });
+      } else {
+        service?.refresh?.();
+      }
+
+      if (block && block !== 'TableField') {
+        __parent?.service?.refresh?.();
+        setVisible?.(false);
+      }
+    },
+  };
+};
+
 export const useDetailPrintActionProps = () => {
   const { formBlockRef } = useFormBlockContext();
 
