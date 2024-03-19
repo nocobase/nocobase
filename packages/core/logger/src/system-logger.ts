@@ -83,12 +83,6 @@ function child(defaultRequestMetadata: any) {
       value: function (info: any) {
         const infoClone = Object.assign({}, defaultRequestMetadata, info);
 
-        // Object.assign doesn't copy inherited Error
-        // properties so we have to do that explicitly
-        //
-        // Remark (indexzero): we should remove this
-        // since the errors format will handle this case.
-        //
         if (info instanceof Error) {
           infoClone.stack = info.stack;
           infoClone.message = info.message;
@@ -105,6 +99,9 @@ export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger =
   const logger = winston.createLogger({
     transports: [new SystemLoggerTransport(options)],
   });
+
+  // Since error.cause is not supported by child logger of winston
+  // we have to use a proxy to rewrite child method
   return new Proxy(logger, {
     get(target, prop) {
       if (prop === 'child') {
