@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
 import { AppSupervisor, Gateway } from '@nocobase/server';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
 import { PluginMultiAppManager } from '../server';
@@ -20,6 +20,29 @@ describe('multiple apps', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should merge database options', async () => {
+    const name = `td_${uid()}`;
+
+    await db.getRepository('applications').create({
+      values: {
+        name,
+        options: {
+          plugins: [],
+          database: {
+            underscored: true,
+          },
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    const subApp = await AppSupervisor.getInstance().getApp(name);
+
+    expect(subApp.db.options.underscored).toBeTruthy();
   });
 
   it('should register db creator', async () => {
