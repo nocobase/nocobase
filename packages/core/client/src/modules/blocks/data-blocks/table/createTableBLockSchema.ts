@@ -13,7 +13,7 @@ export const createTableBlockUISchema = (options: {
     type: 'void',
     'x-decorator': 'TableBlockProvider',
     'x-acl-action': `${collectionName}:list`,
-    'x-use-decorator-props': '{{ useTableBlockDecoratorProps }}',
+    'x-use-decorator-props': 'useTableBlockDecoratorProps',
     'x-decorator-props': {
       collection: collectionName,
       association,

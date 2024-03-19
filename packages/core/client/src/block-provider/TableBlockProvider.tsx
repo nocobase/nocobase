@@ -8,6 +8,7 @@ import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table/useTableBlockDecoratorProps';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
@@ -75,16 +76,37 @@ const InternalTableBlockProvider = (props: Props) => {
   );
 };
 
-export const TableBlockProvider = (props) => {
-  const resourceName = props.resource || props.association;
+/**
+ * 用于兼容旧版本的 schema，当不需要兼容时可直接移除该方法
+ * @param props
+ * @returns
+ */
+const useTableBlockParamsCompat = (props) => {
+  const fieldSchema = useFieldSchema();
 
-  // TODO: 兼容旧版本的同时，降低计算量
-  const params = useTableBlockParams(props);
+  let params;
+  // 1. 新版本的 schema 存在 x-use-decorator-props 属性
+  if (fieldSchema['x-use-decorator-props']) {
+    params = props.params;
+  } else {
+    // 2. 旧版本的 schema 不存在 x-use-decorator-props 属性
+    // 因为 schema 中是否存在 x-use-decorator-props 是固定不变的，所以这里可以使用 hooks
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    params = useTableBlockParams(props);
+  }
+
+  return params;
+};
+
+export const TableBlockProvider = withDynamicSchemaProps((props) => {
+  const resourceName = props.resource || props.association;
 
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager_deprecated(props.dataSource);
   const collection = getCollection(props.collection, props.dataSource);
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+  const params = useTableBlockParamsCompat(props);
+
   let childrenColumnName = 'children';
   if (collection?.tree && treeTable !== false) {
     if (resourceName?.includes('.')) {
@@ -112,7 +134,7 @@ export const TableBlockProvider = (props) => {
       </FormContext.Provider>
     </SchemaComponentOptions>
   );
-};
+});
 
 export const useTableBlockContext = () => {
   return useContext(TableBlockContext);

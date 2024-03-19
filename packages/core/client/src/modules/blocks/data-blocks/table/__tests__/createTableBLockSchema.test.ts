@@ -9,7 +9,7 @@ describe('createTableBLockSchemaV2', () => {
       type: 'void',
       'x-decorator': 'TableBlockProvider',
       'x-acl-action': 'users:list',
-      'x-use-decorator-props': '{{ useTableBlockDecoratorProps }}',
+      'x-use-decorator-props': 'useTableBlockDecoratorProps',
       'x-decorator-props': {
         collection: 'users',
         dataSource: undefined,

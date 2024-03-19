@@ -194,6 +194,22 @@ export const useBlockContext = () => {
 };
 
 /**
+ * 用于兼容旧版本 Schema
+ */
+const useDataBlockSourceIdCompat = (props) => {
+  const fieldSchema = useFieldSchema();
+
+  // 如果存在 x-use-decorator-props，说明是新版 Schema
+  if (fieldSchema['x-use-decorator-props']) {
+    return props.sourceId;
+  } else {
+    // 是否存在 x-use-decorator-props 是固定不变的，所以这里可以使用 hooks
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useDataBlockSourceId(props);
+  }
+};
+
+/**
  * @deprecated use `DataBlockProvider` instead
  */
 export const BlockProvider = (props: {
@@ -211,9 +227,7 @@ export const BlockProvider = (props: {
   useParams?: any;
 }) => {
   const { name, dataSource, association, useParams, parentRecord } = props;
-
-  // TODO: 防止重复计算
-  const sourceId = useDataBlockSourceId({ association });
+  const sourceId = useDataBlockSourceIdCompat(props);
 
   const paramsFromHook = useParams?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
