@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: nocobase/pro-plugins
-          ref: T-3332
+          ref: T-3613
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Set variables
