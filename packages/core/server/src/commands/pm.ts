@@ -23,7 +23,7 @@ export default (app: Application) => {
       try {
         await app.pm.addViaCLI(name, _.cloneDeep(options));
       } catch (error) {
-        throw new PluginCommandError(`Failed to add plugin: ${error.message}`);
+        throw new PluginCommandError(`Failed to add plugin`, { cause: error });
       }
     });
 
@@ -42,7 +42,7 @@ export default (app: Application) => {
           packageName,
         });
       } catch (error) {
-        throw new PluginCommandError(`Failed to update plugin: ${error.message}`);
+        throw new PluginCommandError(`Failed to update plugin`, { cause: error });
       }
     });
 
@@ -54,7 +54,7 @@ export default (app: Application) => {
       try {
         await app.pm.enable(plugins);
       } catch (error) {
-        throw new PluginCommandError(`Failed to enable plugin: ${error.message}`);
+        throw new PluginCommandError(`Failed to enable plugin`, { cause: error });
       }
     });
 
@@ -66,7 +66,7 @@ export default (app: Application) => {
       try {
         await app.pm.disable(plugins);
       } catch (error) {
-        throw new PluginCommandError(`Failed to disable plugin: ${error.message}`);
+        throw new PluginCommandError(`Failed to disable plugin`, { cause: error });
       }
     });
 
