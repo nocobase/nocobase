@@ -47,7 +47,6 @@ export const Action: ComposedAction = observer(
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
       onMouseEnter,
-      onMouseLeave,
       ...others
     } = useProps(props);
     const aclCtx = useACLActionParamsContext();
@@ -74,7 +73,7 @@ export const Action: ComposedAction = observer(
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-    const [btnHover, setBtnHover] = useState(false);
+    const [btnHover, setBtnHover] = useState(popover);
 
     const actionTitle = useMemo(() => {
       const res = title || compile(fieldSchema.title);
@@ -104,6 +103,8 @@ export const Action: ComposedAction = observer(
         if (isPortalInBody(e.target as Element)) {
           return;
         }
+
+        setBtnHover(true);
 
         e.preventDefault();
         e.stopPropagation();
@@ -135,27 +136,16 @@ export const Action: ComposedAction = observer(
       };
     }, [designable, field?.data?.hidden, style]);
 
-    const handleMouseEnter = useCallback(
-      (e) => {
-        setBtnHover(true);
-        onMouseEnter?.(e);
-      },
-      [onMouseEnter],
-    );
-    const handleMouseMove = useCallback(
-      (e) => {
-        setBtnHover(true);
-        onMouseEnter?.(e);
-      },
-      [onMouseLeave],
-    );
+    const handleMouseEnter = useCallback(() => {
+      setBtnHover(true);
+      onMouseEnter?.();
+    }, [onMouseEnter]);
 
     const renderButton = () => {
       if (!designable && (field?.data?.hidden || !aclCtx)) {
         return null;
       }
 
-      const C = tarComponent || Button;
       const btnProps = {
         role: 'button',
         'aria-label': getAriaLabel(),
@@ -165,18 +155,13 @@ export const Action: ComposedAction = observer(
         disabled,
         style: buttonStyle,
         onClick: handleButtonClick,
+        onMouseEnter: handleMouseEnter,
         className: classnames(componentCls, hashId, className, 'nb-action'),
         type: props.type === 'danger' ? undefined : props.type,
-        onMouseEnter: handleMouseEnter,
-        onMouseMove: handleMouseMove,
       };
 
-      if (!btnHover) {
-        return <C {...btnProps}>{actionTitle}</C>;
-      }
-
       return (
-        <SortableItem component={C} {...btnProps}>
+        <SortableItem component={tarComponent || Button} {...btnProps}>
           {actionTitle}
           <Designer {...designerProps} />
         </SortableItem>
