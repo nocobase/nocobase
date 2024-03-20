@@ -57,7 +57,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         properties: {
           ...omit(properties, 'category', 'inherits', 'moreOptions'),
           filterTargetKey: {
-            title: '{{t("Filter TargetKey")}}',
+            title: '{{t("Filter target key")}}',
             type: 'single',
             'x-decorator': 'FormItem',
             'x-component': 'Select',
