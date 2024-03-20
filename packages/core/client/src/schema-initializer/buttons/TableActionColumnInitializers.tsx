@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaInitializerActionModal, SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCollection, useCollection } from '../../collection-manager';
+import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 import { useBlockRequestContext } from '../../block-provider/BlockProvider';
