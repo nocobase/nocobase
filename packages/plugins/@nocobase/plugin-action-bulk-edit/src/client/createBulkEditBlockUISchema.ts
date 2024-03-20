@@ -2,17 +2,15 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 /**
- * 创建新增表单的 UI Schema
+ * 创建批量编辑表单的 UI Schema
  * @returns
  */
-export function createCreateFormBlockUISchema(options: {
+export function createBulkEditBlockUISchema(options: {
   collectionName: string;
   dataSource: string;
   association?: string;
-  templateSchema?: ISchema;
-  isCusomeizeCreate?: boolean;
 }): ISchema {
-  const { collectionName, association, dataSource, templateSchema, isCusomeizeCreate } = options;
+  const { collectionName, association, dataSource } = options;
   const resourceName = association || collectionName;
 
   if (!collectionName || !dataSource) {
@@ -30,7 +28,6 @@ export function createCreateFormBlockUISchema(options: {
       dataSource,
       collection: collectionName,
       association,
-      isCusomeizeCreate,
     },
     'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'blockSettings:createForm',
@@ -43,15 +40,15 @@ export function createCreateFormBlockUISchema(options: {
           useProps: '{{ useCreateFormBlockProps }}',
         },
         properties: {
-          grid: templateSchema || {
+          grid: {
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'form:configureFields',
+            'x-initializer': 'bulkEditForm:configureFields',
             properties: {},
           },
           [uid()]: {
             type: 'void',
-            'x-initializer': 'createForm:configureActions',
+            'x-initializer': 'bulkEditForm:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',

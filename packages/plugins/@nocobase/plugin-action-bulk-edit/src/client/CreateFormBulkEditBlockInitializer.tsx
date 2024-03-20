@@ -1,15 +1,16 @@
 import { FormOutlined } from '@ant-design/icons';
-import React from 'react';
 import {
+  SchemaInitializerItem,
   useBlockAssociationContext,
   useCollection_deprecated,
-  useSchemaTemplateManager,
-  createFormBlockSchema,
   useRecordCollectionDataSourceItems,
-  SchemaInitializerItem,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  useSchemaTemplateManager,
 } from '@nocobase/client';
+import { createCreateFormBlockUISchema } from 'packages/core/client/src/modules/blocks/data-blocks/form/createCreateFormBlockUISchema';
+import React from 'react';
+import { createBulkEditBlockUISchema } from './createBulkEditBlockUISchema';
 
 export const CreateFormBulkEditBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -26,12 +27,11 @@ export const CreateFormBulkEditBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
-            const blockSchema = createFormBlockSchema({
-              actionInitializers: 'createForm:configureActions',
+            const blockSchema = createCreateFormBlockUISchema({
               association,
-              collection: collection.name,
+              collectionName: collection.name,
               dataSource: collection.dataSource,
-              template: s,
+              templateSchema: s,
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -42,11 +42,9 @@ export const CreateFormBulkEditBlockInitializer = () => {
           }
         } else {
           insert(
-            createFormBlockSchema({
-              formItemInitializers: 'bulkEditForm:configureFields',
-              actionInitializers: 'bulkEditForm:configureActions',
+            createBulkEditBlockUISchema({
               association,
-              collection: collection.name,
+              collectionName: collection.name,
               dataSource: collection.dataSource,
             }),
           );

@@ -1,6 +1,7 @@
 import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import _ from 'lodash';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,13 +13,12 @@ import {
   useFormActiveFields,
   useFormBlockContext,
 } from '../';
-import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
+import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
+import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
+import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
-import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
-import _ from 'lodash';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -1150,6 +1150,13 @@ export const createGridCardBlockSchema = (options) => {
   };
   return schema;
 };
+
+/**
+ * @deprecated
+ * 已弃用，请使用 createCreateFormBlockUISchema 或者 createEditFormBlockUISchema 替代
+ * @param options
+ * @returns
+ */
 export const createFormBlockSchema = (options: {
   formItemInitializers?: string;
   actionInitializers?: string;
