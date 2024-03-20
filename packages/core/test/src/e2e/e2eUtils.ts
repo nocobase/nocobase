@@ -119,6 +119,7 @@ interface AclRoleSetting {
   key?: string;
   //菜单权限配置
   menuUiSchemas?: string[];
+  dataSourceKey?: string;
 }
 
 interface DatabaseSetting {
@@ -730,8 +731,9 @@ const updateRole = async (roleSetting: AclRoleSetting) => {
   const state = await api.storageState();
   const headers = getHeaders(state);
   const name = roleSetting.name;
+  const dataSourceKey = roleSetting.dataSourceKey || 'main';
 
-  const result = await api.post(`/api/roles:update?filterByTk=${name}`, {
+  const result = await api.post(`/api/dataSources/${dataSourceKey}/roles:update?filterByTk=${name}`, {
     headers,
     data: { ...roleSetting },
   });
