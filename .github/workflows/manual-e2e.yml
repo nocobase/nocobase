@@ -43,18 +43,11 @@ jobs:
           ref: ${{ inputs.branch }}
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      # - name: Set variables
-      #   run: |
-      #     target_directory="./packages/pro-plugins/@nocobase"
-      #     subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
-      #     trimmed_variable=$(echo "$subdirectories" | xargs)
-      #     packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
-      #     pluginNames="${trimmed_variable//plugin-/}"
-      #     BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
-      #     APPEND_PRESET_LOCAL_PLUGINS="notifications,disable-pm-add,${pluginNames// /,}"
-      #     echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
-      #     echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
-      #   id: vars
+      - name: Set variables
+        run: |
+          APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+        id: vars
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v3
         with:
@@ -89,5 +82,5 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-          APPEND_PRESET_BUILT_IN_PLUGINS: mock-collections,workflow-response-message,workflow-request-interceptor,workflow-json-query,workflow-approval,telemetry-prometheus,data-source-external-postgres,embed,data-source-external-mysql,workflow-variable,collection-fdw,demo-platform,departments,data-source-external-mariadb
+          APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
     timeout-minutes: 120
