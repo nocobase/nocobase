@@ -62,6 +62,8 @@ describe('workflow > instructions > update', () => {
     });
 
     it('params: from job of node', async () => {
+      const p1 = await PostRepo.create({ values: { title: 't1' }, hooks: false });
+
       const n1 = await workflow.createNode({
         type: 'query',
         config: {
@@ -100,6 +102,9 @@ describe('workflow > instructions > update', () => {
       // should get from db
       const post = await PostRepo.findById(id);
       expect(post.title).toBe('changed');
+
+      await p1.reload();
+      expect(p1.title).toBe('t1');
     });
   });
 
