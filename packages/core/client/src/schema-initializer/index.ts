@@ -1,4 +1,5 @@
 import { Plugin } from '../application/Plugin';
+import { DisassociateActionInitializer } from '../modules/actions/disassociate/DisassociateActionInitializer';
 import {
   blockInitializers,
   createFormActionInitializers,
@@ -56,6 +57,7 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.addComponents({
       ...initializerComponents,
       ...items,
+      DisassociateActionInitializer,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers);

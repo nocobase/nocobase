@@ -9,6 +9,7 @@ import { SchemaInitializer } from '../../application/schema-initializer/SchemaIn
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { useBlockRequestContext } from '../../block-provider/BlockProvider';
 
 export const Resizable = () => {
   const { t } = useTranslation();
@@ -149,6 +150,27 @@ export const tableActionColumnInitializers = new SchemaInitializer({
           useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+          },
+        },
+        {
+          type: 'item',
+          title: '{{t("Disassociate")}}',
+          name: 'disassociate',
+          Component: 'DisassociateActionInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'disassociate',
+            'x-acl-action': 'destroy',
+            'x-decorator': 'ACLActionProvider',
+          },
+          useVisible() {
+            const { props } = useBlockRequestContext();
+            const collection = useCollection();
+            return (
+              !!props?.association &&
+              (collection.template !== 'view' || collection?.writableView) &&
+              collection.template !== 'sql'
+            );
           },
         },
         {

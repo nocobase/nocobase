@@ -33,6 +33,7 @@ const availableActions: {
   },
   destroy: {
     displayName: '{{t("Delete")}}',
+    aliases: ['destroy', 'remove'],
     type: 'old-data',
   },
 };
