@@ -21,6 +21,7 @@ import {
   useResourceContext,
   useCancelAction,
 } from '@nocobase/client';
+import { NAMESPACE } from '../../locale';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
   if (!schema) {
@@ -57,7 +58,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         properties: {
           ...omit(properties, 'category', 'inherits', 'moreOptions'),
           filterTargetKey: {
-            title: '{{t("Filter target key")}}',
+            title: `{{ t("Filter target key",{ ns: "${NAMESPACE}" }) }}`,
             type: 'single',
             'x-decorator': 'FormItem',
             'x-component': 'Select',
