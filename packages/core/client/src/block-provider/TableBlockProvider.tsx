@@ -266,7 +266,7 @@ export const useTableBlockProps = () => {
         // 更新表格的选中状态
         setSelectedRow((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : [...value]));
       },
-      [ctx.rowKey, fieldSchema],
+      [ctx.rowKey, fieldSchema, getDataBlocks],
     ),
     onExpand: useCallback((expanded, record) => {
       ctx?.field.onExpandClick?.(expanded, record);
