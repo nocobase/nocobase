@@ -8,7 +8,7 @@ export const DisassociateActionInitializer = (props) => {
     'x-action': 'disassociate',
     'x-component': 'Action',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:disassociate',
+    'x-designer': 'Action.Designer',
     'x-component-props': {
       icon: 'DeleteOutlined',
       confirm: {

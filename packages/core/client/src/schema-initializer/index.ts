@@ -1,6 +1,5 @@
 import { Plugin } from '../application/Plugin';
 import { DisassociateActionInitializer } from '../modules/actions/disassociate/DisassociateActionInitializer';
-import { disassociateActionSettings } from '../modules/actions/disassociate/disassociateActionSettings';
 import {
   blockInitializers,
   createFormActionInitializers,
@@ -89,8 +88,5 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(tabPaneInitializers);
     this.app.schemaInitializerManager.add(tabPaneInitializersForRecordBlock);
     this.app.schemaInitializerManager.add(tabPaneInitializersForBulkEditFormBlock);
-
-    // TODO: 移到 SchemaSettingsPlugin
-    this.app.schemaSettingsManager.add(disassociateActionSettings);
   }
 }
