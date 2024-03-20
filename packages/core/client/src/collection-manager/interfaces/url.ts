@@ -15,7 +15,7 @@ export class UrlFieldInterface extends CollectionFieldInterface {
       'x-component': 'Input.URL',
     },
   };
-  availableTypes = ['string'];
+  availableTypes = ['string', 'text'];
   schemaInitialize(schema: ISchema, { block }) {}
   properties = {
     ...defaultProps,

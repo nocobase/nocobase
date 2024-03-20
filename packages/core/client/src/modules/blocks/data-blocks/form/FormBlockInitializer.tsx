@@ -13,6 +13,7 @@ export const FormBlockInitializer = ({
   componentType = 'FormItem',
   templateWrap,
   showAssociationFields,
+  hideChildrenIfSingleCollection,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
@@ -31,6 +32,7 @@ export const FormBlockInitializer = ({
     },
   ) => any;
   showAssociationFields?: boolean;
+  hideChildrenIfSingleCollection?: boolean;
 }) => {
   const { insert } = useSchemaInitializer();
   const itemConfig = useSchemaInitializerItem();
@@ -80,6 +82,7 @@ export const FormBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       showAssociationFields={showAssociationFields}
+      hideChildrenIfSingleCollection={hideChildrenIfSingleCollection}
     />
   );
 };

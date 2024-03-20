@@ -25,19 +25,21 @@ export const listExcludeRole = async (ctx: Context, next: Next) => {
     },
   });
   const userIds = users.map((user: { id: number }) => user.id);
+  if (userIds.length) {
+    ctx.action.mergeParams({
+      filter: {
+        id: {
+          $notIn: userIds,
+        },
+      },
+    });
+  }
+  const { filter } = ctx.action.params;
   const [rows, count] = await repo.findAndCount({
     context: ctx,
     offset: (page - 1) * pageSize,
     limit: pageSize,
-    // Ensure memberIds is not empty to resolve strange issue:
-    // notIn: [] will be translated to "WHERE id IS NULL"
-    filter: userIds.length
-      ? {
-          id: {
-            $notIn: userIds,
-          },
-        }
-      : {},
+    filter,
   });
   ctx.body = {
     count,

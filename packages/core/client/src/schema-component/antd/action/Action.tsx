@@ -41,7 +41,7 @@ export const Action: ComposedAction = observer(
       title,
       onClick,
       style,
-      openSize,
+      openSize: os,
       disabled: propsDisabled,
       actionCallback,
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
@@ -62,6 +62,8 @@ export const Action: ComposedAction = observer(
     const record = useRecord();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
+    const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
@@ -150,7 +152,6 @@ export const Action: ComposedAction = observer(
         </SortableItem>
       );
     };
-
     const result = (
       <ActionContextProvider
         button={renderButton()}
