@@ -1150,7 +1150,21 @@ export const createGridCardBlockSchema = (options) => {
   };
   return schema;
 };
-export const createFormBlockSchema = (options) => {
+export const createFormBlockSchema = (options: {
+  formItemInitializers?: string;
+  actionInitializers?: string;
+  collection: string;
+  resource?: string;
+  dataSource?: string;
+  association?: string;
+  action?: string;
+  actions?: Record<string, any>;
+  template?: any;
+  title?: string;
+  settings?: any;
+  'x-designer'?: string;
+  [key: string]: any;
+}) => {
   const {
     formItemInitializers = 'form:configureFields',
     actionInitializers = 'createForm:configureActions',
@@ -1181,8 +1195,6 @@ export const createFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // action: 'get',
-      // useParams: '{{ useParamsFromRecord }}',
     },
     'x-toolbar': 'BlockSchemaToolbar',
     ...(settings ? { 'x-settings': settings } : { 'x-designer': designer }),
