@@ -28,7 +28,6 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
       type: 'string',
       title: '{{t("Field name")}}',
       required: true,
-      'x-disabled': true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       description:
