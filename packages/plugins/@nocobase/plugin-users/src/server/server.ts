@@ -5,9 +5,13 @@ import { resolve } from 'path';
 
 import * as actions from './actions/users';
 import { Cache } from '@nocobase/cache';
+import { UserModel } from './models/UserModel';
 
 export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
+    this.db.registerModels({
+      UserModel,
+    });
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
         return {
@@ -116,7 +120,6 @@ export default class PluginUsersServer extends Plugin {
 
   async load() {
     await this.importCollections(resolve(__dirname, 'collections'));
-
     this.db.addMigrations({
       namespace: 'users',
       directory: resolve(__dirname, 'migrations'),
