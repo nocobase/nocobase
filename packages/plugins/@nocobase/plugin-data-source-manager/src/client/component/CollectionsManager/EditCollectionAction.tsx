@@ -56,6 +56,14 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         title: '{{ t("Edit collection") }}',
         properties: {
           ...omit(properties, 'category', 'inherits', 'moreOptions'),
+          filterTargetKey: {
+            title: '{{t("Filter TargetKey")}}',
+            type: 'single',
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            enum: '{{filterTargetKeyOptions}}',
+            'x-visible': '{{isView}}',
+          },
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
@@ -147,6 +155,12 @@ const EditCollectionAction = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
 
+  const filterTargetKeyOptions = record.fields?.map((item: any) => {
+    return {
+      label: item.uiSchema?.title ? compile(item.uiSchema.title) : item.name,
+      value: item.name,
+    };
+  });
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -177,6 +191,8 @@ const EditCollectionAction = (props) => {
             useUpdateCollectionActionAndRefreshCM,
             useCancelAction,
             createOnly: false,
+            filterTargetKeyOptions,
+            isView: record.view,
             ...scope,
           }}
         />
