@@ -49,13 +49,13 @@ class SystemLoggerTransport extends Transport {
   }
 
   log(info: any, callback: any) {
-    const { level, message, reqId, app, stack, [SPLAT]: args } = info;
+    const { level, message, reqId, app, stack, cause, [SPLAT]: args } = info;
     const logger = level === 'error' && this.errorLogger ? this.errorLogger : this.logger;
     const { module, submodule, method, ...meta } = args?.[0] || {};
     logger.log({
       level,
-      stack,
       message,
+      stack,
       meta,
       module: module || info['module'] || '',
       submodule: submodule || info['submodule'] || '',
@@ -63,11 +63,51 @@ class SystemLoggerTransport extends Transport {
       app,
       reqId,
     });
+    if (cause) {
+      logger.log({
+        level,
+        message: cause.message,
+        stack: cause.stack,
+        app,
+        reqId,
+      });
+    }
     callback(null, true);
   }
 }
 
-export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger =>
-  winston.createLogger({
+function child(defaultRequestMetadata: any) {
+  const logger = this;
+  return Object.create(logger, {
+    write: {
+      value: function (info: any) {
+        const infoClone = Object.assign({}, defaultRequestMetadata, info);
+
+        if (info instanceof Error) {
+          infoClone.stack = info.stack;
+          infoClone.message = info.message;
+          infoClone.cause = info.cause;
+        }
+
+        logger.write(infoClone);
+      },
+    },
+  });
+}
+
+export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger => {
+  const logger = winston.createLogger({
     transports: [new SystemLoggerTransport(options)],
   });
+
+  // Since error.cause is not supported by child logger of winston
+  // we have to use a proxy to rewrite child method
+  return new Proxy(logger, {
+    get(target, prop) {
+      if (prop === 'child') {
+        return child.bind(target);
+      }
+      return Reflect.get(target, prop);
+    },
+  });
+};
