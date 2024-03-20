@@ -412,12 +412,18 @@ export class Dumper extends AppMigrator {
 
       if (collectionField) {
         // is a field
-        return {
+        const fieldAttributes: any = {
           field: attr.field,
           isCollectionField: true,
           type: collectionField.type,
           typeOptions: collectionField.options,
         };
+
+        if (fieldAttributes.typeOptions?.defaultValue?.constructor?.name === 'UUIDV4') {
+          delete fieldAttributes.typeOptions.defaultValue;
+        }
+
+        return fieldAttributes;
       }
 
       return {
