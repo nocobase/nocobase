@@ -312,7 +312,7 @@ export const useChartFilter = () => {
         if (field?.target) {
           name = `${fieldName}.${field.targetKey || 'id'}`;
         }
-        const [collection, ...fields] = name.split('.');
+        const [collection, ...fields] = fieldName.split('.');
         const value = getValuesByPath(values, name);
         const op = operator?.value || '$eq';
         if (collection !== 'custom') {
