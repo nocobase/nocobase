@@ -30,7 +30,6 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && apt-get update && apt-get install -y nginx
 
 RUN rm -rf /etc/nginx/sites-enabled/default
-COPY ./nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
 WORKDIR /app/nocobase

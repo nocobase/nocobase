@@ -1,34 +1,13 @@
 import { define, observable } from '@formily/reactive';
 import { getSubAppName } from '@nocobase/sdk';
-
-export const getWebSocketURL = () => {
-  if (!process.env.API_BASE_URL) {
-    return;
-  }
-  const subApp = getSubAppName();
-  const queryString = subApp ? `?__appName=${subApp}` : '';
-  const wsPath = process.env.WS_PATH || '/ws';
-  if (process.env.WEBSOCKET_URL) {
-    const url = new URL(process.env.WEBSOCKET_URL);
-    if (url.hostname === 'localhost') {
-      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-      return `${protocol}://${location.hostname}:${url.port}${wsPath}${queryString}`;
-    }
-    return `${process.env.WEBSOCKET_URL}${queryString}`;
-  }
-  try {
-    const url = new URL(process.env.API_BASE_URL);
-    return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}${wsPath}${queryString}`;
-  } catch (error) {
-    return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${wsPath}${queryString}`;
-  }
-};
+import { Application } from './Application';
 
 export type WebSocketClientOptions = {
   reconnectInterval?: number;
   reconnectAttempts?: number;
   pingInterval?: number;
   url?: string;
+  basename?: string;
   protocols?: string | string[];
   onServerDown?: any;
 };
@@ -38,6 +17,7 @@ export class WebSocketClient {
   protected _reconnectTimes = 0;
   protected events = [];
   protected options: WebSocketClientOptions;
+  app: Application;
   enabled: boolean;
   connected = false;
   serverDown = false;
@@ -55,6 +35,34 @@ export class WebSocketClient {
       connected: observable.ref,
       lastMessage: observable.ref,
     });
+  }
+
+  getURL() {
+    if (!this.app) {
+      return;
+    }
+    const options = this.app.getOptions();
+    const apiBaseURL = options?.apiClient?.['baseURL'];
+    if (!apiBaseURL) {
+      return;
+    }
+    const subApp = getSubAppName(this.app.getPublicPath());
+    const queryString = subApp ? `?__appName=${subApp}` : '';
+    const wsPath = this.options.basename || '/ws';
+    if (this.options.url) {
+      const url = new URL(this.options.url);
+      if (url.hostname === 'localhost') {
+        const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+        return `${protocol}://${location.hostname}:${url.port}${wsPath}${queryString}`;
+      }
+      return `${this.options.url}${queryString}`;
+    }
+    try {
+      const url = new URL(apiBaseURL);
+      return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}${wsPath}${queryString}`;
+    } catch (error) {
+      return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${wsPath}${queryString}`;
+    }
   }
 
   get reconnectAttempts() {
@@ -90,7 +98,7 @@ export class WebSocketClient {
       return;
     }
     this._reconnectTimes++;
-    const ws = new WebSocket(this.options.url || getWebSocketURL(), this.options.protocols);
+    const ws = new WebSocket(this.getURL(), this.options.protocols);
     let pingIntervalTimer: any;
     ws.onopen = () => {
       console.log('[nocobase-ws]: connected.');

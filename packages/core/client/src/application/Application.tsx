@@ -9,14 +9,14 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 
+import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
 import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
+import { i18n } from '../i18n';
 import { PluginManager, PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
-import { APIClient, APIClientProvider } from '../api-client';
-import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
@@ -25,10 +25,10 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
 
-import { type DataSourceManagerOptions, DataSourceManager } from '../data-source/data-source/DataSourceManager';
-import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
 import { CollectionField } from '../data-source/collection-field/CollectionField';
+import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
+import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
 
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
@@ -44,6 +44,7 @@ export type DevDynamicImport = (packageName: string) => Promise<{ default: typeo
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
   name?: string;
+  publicPath?: string;
   apiClient?: APIClientOptions | APIClient;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
@@ -116,9 +117,10 @@ export class Application {
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
     this.ws = new WebSocketClient(options.ws);
+    this.ws.app = this;
     this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
-    this.name = this.options.name || getSubAppName() || 'main';
+    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
   }
 
   private initRequireJs() {
@@ -155,6 +157,18 @@ export class Application {
       path: '*',
       Component: this.components['AppNotFound'],
     });
+  }
+
+  getOptions() {
+    return this.options;
+  }
+
+  getPublicPath() {
+    return this.options.publicPath || '/';
+  }
+
+  getRouteUrl(pathname: string) {
+    return this.options.publicPath.replace(/\/$/g, '') + pathname;
   }
 
   getCollectionManager(dataSource?: string) {

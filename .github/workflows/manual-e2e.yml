@@ -1,0 +1,86 @@
+name: manual-e2e
+
+on: 
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'nocobase/pro-plugins repository branch'
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.branch }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-test-postgres:
+    strategy:
+      matrix:
+        node_version: ['18']
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:11
+        # Provide the password for postgres
+        env:
+          POSTGRES_USER: nocobase
+          POSTGRES_PASSWORD: password
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Checkout pro-plugins - ${{ inputs.branch }}
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          ref: ${{ inputs.branch }}
+          path: packages/pro-plugins
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: Set variables
+        run: |
+          APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+        id: vars
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - run: yarn install
+      - run: ls -a ./node_modules/@nocobase
+      - name: yarn build
+        run: yarn build
+        env:
+          __E2E__: true
+      - run: npx playwright install chromium --with-deps
+      - name: Test with postgres
+        run: yarn e2e p-test
+        env:
+          __E2E__: true
+          APP_ENV: production
+          LOGGER_LEVEL: error
+          DB_DIALECT: postgres
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_USER: nocobase
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase
+          APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+    timeout-minutes: 120

@@ -9,13 +9,13 @@ export class UrlFieldInterface extends CollectionFieldInterface {
   order = 5;
   title = '{{t("URL")}}';
   default = {
-    type: 'string',
+    type: 'text',
     uiSchema: {
       type: 'string',
       'x-component': 'Input.URL',
     },
   };
-  availableTypes = ['string'];
+  availableTypes = ['string', 'text'];
   schemaInitialize(schema: ISchema, { block }) {}
   properties = {
     ...defaultProps,

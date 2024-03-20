@@ -5,7 +5,7 @@ export class UuidField extends Field {
   constructor(options?: any, context?: FieldContext) {
     super(
       {
-        defaultValue: DataTypes.UUIDV4,
+        defaultValue: new DataTypes.UUIDV4(),
         ...options,
       },
       context,

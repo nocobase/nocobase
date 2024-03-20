@@ -151,7 +151,7 @@ const useAllowedActions = () => {
 const useResourceName = () => {
   const service = useResourceActionContext();
   const result = useBlockRequestContext() || { service };
-  return result?.props?.resource || result?.service?.defaultRequest?.resource;
+  return result?.props?.resource || result?.props?.collection || result?.service?.defaultRequest?.resource;
 };
 
 export function useACLRoleContext() {
