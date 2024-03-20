@@ -7,7 +7,6 @@ export default class extends Instruction {
       node.config.dataSource || 'main',
     ).collectionManager;
     if (!db) {
-      console.error('--------------- data source is not a database');
       throw new Error(`type of data source "${node.config.dataSource}" is not database`);
     }
     const sql = processor.getParsedValue(node.config.sql || '', node.id).trim();
@@ -17,22 +16,16 @@ export default class extends Instruction {
       };
     }
 
-    try {
-      // @ts-ignore
-      const result = await db.sequelize.query(sql, {
-        transaction: processor.transaction,
-        // plain: true,
-        // model: db.getCollection(node.config.collection).model
-      });
-      console.log('----------', result);
+    // @ts-ignore
+    const result = await db.sequelize.query(sql, {
+      transaction: processor.transaction,
+      // plain: true,
+      // model: db.getCollection(node.config.collection).model
+    });
 
-      return {
-        result,
-        status: JOB_STATUS.RESOLVED,
-      };
-    } catch (ex) {
-      console.error('--------------- sql error', ex);
-      throw ex;
-    }
+    return {
+      result,
+      status: JOB_STATUS.RESOLVED,
+    };
   }
 }
