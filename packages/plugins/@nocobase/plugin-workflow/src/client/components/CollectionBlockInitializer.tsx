@@ -74,19 +74,20 @@ function InnerCollectionBlockInitializer({ collection, dataPath, ...props }) {
   return <SchemaInitializerItem {...props} onClick={onConfirm} items={items} />;
 }
 
-export function CollectionBlockInitializer() {
+export function CollectionBlockInitializer(props) {
   const itemConfig = useSchemaInitializerItem();
+  const sourceCollection = props?.collection ?? itemConfig.collection;
   let dataSource, collection;
-  if (typeof itemConfig.collection === 'string') {
-    const parsed = parseCollectionName(itemConfig.collection);
+  if (typeof sourceCollection === 'string') {
+    const parsed = parseCollectionName(sourceCollection);
     dataSource = parsed[0];
     collection = parsed[1];
   } else {
-    collection = itemConfig.collection;
+    collection = sourceCollection;
   }
   return (
     <CollectionProvider_deprecated dataSource={dataSource} collection={collection}>
-      <InnerCollectionBlockInitializer {...itemConfig} />
+      <InnerCollectionBlockInitializer {...itemConfig} {...props} />
     </CollectionProvider_deprecated>
   );
 }
