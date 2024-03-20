@@ -151,14 +151,16 @@ export const useCollectionOptions = () => {
     const params = parseAction(`${collection.name}:list`);
     return params;
   });
-  const options = allCollections.map(({ key, displayName, collections }) => ({
-    value: key,
-    label: displayName,
-    children: collections.map((collection) => ({
-      value: collection.name,
-      label: collection.title,
-    })),
-  }));
+  const options = allCollections
+    .filter(({ key, isDBInstance }) => key === DEFAULT_DATA_SOURCE_KEY || isDBInstance)
+    .map(({ key, displayName, collections }) => ({
+      value: key,
+      label: displayName,
+      children: collections.map((collection) => ({
+        value: collection.name,
+        label: collection.title,
+      })),
+    }));
   return useMemo(() => Schema.compile(options, { t }), [options]);
 };
 

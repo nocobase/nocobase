@@ -2,6 +2,7 @@ import { BarChartOutlined, LineChartOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import {
   CompatibleSchemaInitializer,
+  DEFAULT_DATA_SOURCE_KEY,
   DataBlockInitializer,
   SchemaInitializerItem,
   useACLRoleContext,
@@ -29,6 +30,9 @@ const ChartInitializer = () => {
     <DataBlockInitializer
       {...itemConfig}
       filter={filter}
+      filterDataSource={(ds) => {
+        return ds.key === DEFAULT_DATA_SOURCE_KEY || ds.getOptions().isDBInstance;
+      }}
       icon={<BarChartOutlined />}
       componentType={'Chart'}
       onCreateBlockSchema={async ({ item }) => {
