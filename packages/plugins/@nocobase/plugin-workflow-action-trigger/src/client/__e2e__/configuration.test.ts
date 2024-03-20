@@ -9,6 +9,7 @@ import {
   apiUpdateWorkflowTrigger,
   appendJsonCollectionName,
   generalWithNoRelationalFields,
+  apiGetDataSourceCount,
 } from '@nocobase/plugin-workflow-test/e2e';
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
@@ -61,6 +62,10 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
+    const dataSourcesCount = await apiGetDataSourceCount();
+    if (dataSourcesCount > 1) {
+      await page.getByRole('menuitem', { name: 'Main right' }).hover();
+    }
     await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}` }).click();
 
     // 移开鼠标，关闭菜单
@@ -154,6 +159,10 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
+    const dataSourcesCount = await apiGetDataSourceCount();
+    if (dataSourcesCount > 1) {
+      await page.getByRole('menuitem', { name: 'Main right' }).hover();
+    }
     await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}` }).click();
 
     // 移开鼠标，关闭菜单
