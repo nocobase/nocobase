@@ -1,44 +1,41 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-/**
- * 创建新增表单的 UI Schema
- * @returns
- */
-export function createCreateFormBlockUISchema(options: {
+export function createEditFormBlockUISchema(options: {
   collectionName: string;
   dataSource: string;
   association?: string;
   templateSchema?: ISchema;
 }): ISchema {
-  const { collectionName, association, dataSource, templateSchema } = options;
+  const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
 
   if (!collectionName || !dataSource) {
     throw new Error('collectionName and dataSource are required');
   }
 
-  const schema: ISchema = {
+  return {
     type: 'void',
     'x-acl-action-props': {
-      skipScopeCheck: true,
+      skipScopeCheck: false,
     },
-    'x-acl-action': `${resourceName}:create`,
+    'x-acl-action': `${resourceName}:update`,
     'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
+      action: 'get',
       dataSource,
       collection: collectionName,
       association,
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:createForm',
+    'x-settings': 'blockSettings:editForm',
     'x-component': 'CardItem',
     properties: {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
         'x-component-props': {
-          useProps: '{{ useCreateFormBlockProps }}',
+          useProps: '{{ useEditFormBlockProps }}',
         },
         properties: {
           grid: templateSchema || {
@@ -49,7 +46,7 @@ export function createCreateFormBlockUISchema(options: {
           },
           [uid()]: {
             type: 'void',
-            'x-initializer': 'createForm:configureActions',
+            'x-initializer': 'editForm:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',
@@ -62,5 +59,4 @@ export function createCreateFormBlockUISchema(options: {
       },
     },
   };
-  return schema;
 }

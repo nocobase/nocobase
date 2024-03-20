@@ -15,6 +15,8 @@ import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
 import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
+import { useCreateFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockProps';
+import { useEditFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -36,6 +38,8 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useSourceIdFromParentRecord,
         useParamsFromRecord,
         useFormBlockProps,
+        useCreateFormBlockProps,
+        useEditFormBlockProps,
         useFormFieldProps,
         useDetailsBlockProps,
         useTableFieldProps,
@@ -79,6 +83,8 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useSourceIdFromParentRecord,
       useParamsFromRecord,
       useFormBlockProps,
+      useCreateFormBlockProps,
+      useEditFormBlockProps,
       useFormFieldProps,
       useDetailsBlockProps,
       useTableFieldProps,
