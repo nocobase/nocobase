@@ -29,7 +29,7 @@ FormBlockContext.displayName = 'FormBlockContext';
 
 const InternalFormBlockProvider = (props) => {
   const ctx = useFormBlockContext();
-  const { action, readPretty, params, association, collection } = props;
+  const { action, readPretty, params, collection } = props;
   const field = useField();
   const form = useMemo(
     () =>

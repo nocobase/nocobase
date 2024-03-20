@@ -26,6 +26,7 @@ export function createCreateFormBlockUISchema(options: {
     },
     'x-acl-action': `${resourceName}:create`,
     'x-decorator': 'FormBlockProvider',
+    'x-use-decorator-props': 'useCreateFormBlockDecoratorProps',
     'x-decorator-props': {
       dataSource,
       collection: collectionName,

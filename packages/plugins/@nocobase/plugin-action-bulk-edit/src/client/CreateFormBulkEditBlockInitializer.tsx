@@ -1,6 +1,7 @@
 import { FormOutlined } from '@ant-design/icons';
 import {
   SchemaInitializerItem,
+  createCreateFormBlockUISchema,
   useBlockAssociationContext,
   useCollection_deprecated,
   useRecordCollectionDataSourceItems,
@@ -8,7 +9,6 @@ import {
   useSchemaInitializerItem,
   useSchemaTemplateManager,
 } from '@nocobase/client';
-import { createCreateFormBlockUISchema } from 'packages/core/client/src/modules/blocks/data-blocks/form/createCreateFormBlockUISchema';
 import React from 'react';
 import { createBulkEditBlockUISchema } from './createBulkEditBlockUISchema';
 

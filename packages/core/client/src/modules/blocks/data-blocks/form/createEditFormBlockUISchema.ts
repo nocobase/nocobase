@@ -21,6 +21,7 @@ export function createEditFormBlockUISchema(options: {
     },
     'x-acl-action': `${resourceName}:update`,
     'x-decorator': 'FormBlockProvider',
+    'x-use-decorator-props': 'useEditFormBlockDecoratorProps',
     'x-decorator-props': {
       action: 'get',
       dataSource,
