@@ -22,8 +22,6 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
   const collection = getCollection(collectionName);
 
   const resource = `${field.collectionName}.${field.name}`;
-  const { block } = useBlockRequestContext();
-  const actionInitializers = block !== 'TableField' ? 'details:configureActions' : null;
 
   return (
     <SchemaInitializerItem
@@ -34,7 +32,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'ReadPrettyFormItem') {
             const blockSchema = createDetailsBlockSchema({
-              actionInitializers,
+              actionInitializers: 'details:configureActions',
               collection: collectionName,
               dataSource: collection.dataSource,
               resource,
@@ -55,7 +53,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
         } else {
           insert(
             createDetailsBlockSchema({
-              actionInitializers,
+              actionInitializers: 'details:configureActions',
               collection: collectionName,
               resource,
               association: resource,
@@ -76,8 +74,6 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
 export function useCreateAssociationDetailsWithoutPagination() {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager_deprecated();
-  const { block } = useBlockRequestContext();
-  const actionInitializers = block !== 'TableField' ? 'details:configureActions' : null;
 
   const createAssociationDetailsWithoutPagination = useCallback(
     ({ item }) => {
@@ -86,7 +82,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
 
       insert(
         createDetailsBlockSchema({
-          actionInitializers,
+          actionInitializers: 'details:configureActions',
           collection: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
@@ -97,7 +93,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
         }),
       );
     },
-    [actionInitializers, getCollection, insert],
+    [getCollection, insert],
   );
 
   const templateWrap = useCallback(
@@ -107,7 +103,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
 
       if (item.template.componentName === 'ReadPrettyFormItem') {
         const blockSchema = createDetailsBlockSchema({
-          actionInitializers,
+          actionInitializers: 'details:configureActions',
           collection: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
@@ -125,7 +121,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
         return templateSchema;
       }
     },
-    [actionInitializers, getCollection],
+    [getCollection],
   );
 
   return { createAssociationDetailsWithoutPagination, templateWrap };

@@ -24,20 +24,16 @@ export const RecordReadPrettyFormBlockInitializer = () => {
 };
 
 export function useCreateSingleDetailsSchema() {
-  const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const association = useBlockAssociationContext();
-  const { block } = useBlockRequestContext();
-  const actionInitializers =
-    block !== 'TableField' ? itemConfig.actionInitializers || 'details:configureActions' : null;
 
   const templateWrap = useCallback(
     (templateSchema, options) => {
       const { item } = options;
       if (item.template.componentName === 'ReadPrettyFormItem') {
         const blockSchema = createDetailsBlockSchema({
-          actionInitializers,
+          actionInitializers: 'details:configureActions',
           association,
           collection: item.collectionName || item.name,
           dataSource: item.dataSource,
@@ -55,7 +51,7 @@ export function useCreateSingleDetailsSchema() {
         return templateSchema;
       }
     },
-    [actionInitializers, association],
+    [association],
   );
 
   const createSingleDetailsSchema = useCallback(
@@ -66,7 +62,7 @@ export function useCreateSingleDetailsSchema() {
       } else {
         insert(
           createDetailsBlockSchema({
-            actionInitializers,
+            actionInitializers: 'details:configureActions',
             association,
             collection: item.collectionName || item.name,
             dataSource: item.dataSource,
@@ -78,7 +74,7 @@ export function useCreateSingleDetailsSchema() {
         );
       }
     },
-    [actionInitializers, association, getTemplateSchemaByMode, insert, templateWrap],
+    [association, getTemplateSchemaByMode, insert, templateWrap],
   );
 
   return { createSingleDetailsSchema, templateWrap };
