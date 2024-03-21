@@ -2,7 +2,7 @@ import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
   useCollection_deprecated,
@@ -10,7 +10,10 @@ import {
   FixedBlockWrapper,
   BlockProvider,
   useBlockRequestContext,
+  useCollection,
+  useDeepMemoized,
 } from '@nocobase/client';
+import { isEqual } from 'lodash';
 import { toColumns } from './Kanban';
 
 export const KanbanBlockContext = createContext<any>({});
@@ -138,20 +141,19 @@ export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
-  const primaryKey = useCollection_deprecated().getPrimaryKey();
+  const primaryKey = useCollection()?.getPrimaryKey();
+  const responseData = useDeepMemoized(ctx?.service?.data?.data);
+
   useEffect(() => {
-    if (!ctx?.service?.loading) {
-      field.value = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
-      setDataSource(toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey));
-    }
-    // field.loading = ctx?.service?.loading;
-  }, [ctx?.service?.loading]);
-  return {
-    setDataSource,
-    dataSource,
-    groupField: ctx.groupField,
-    disableCardDrag: useDisableCardDrag(),
-    async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
+    const data = toColumns(ctx.groupField, responseData, primaryKey);
+    field.value = data;
+    setDataSource(data);
+  }, [responseData]);
+
+  const disableCardDrag = useDisableCardDrag();
+
+  const onCardDragEnd = useCallback(
+    async ({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) => {
       const sourceColumn = columns.find((column) => column.id === fromColumnId);
       const destinationColumn = columns.find((column) => column.id === toColumnId);
       const sourceCard = sourceColumn?.cards?.[fromPosition];
@@ -169,5 +171,14 @@ export const useKanbanBlockProps = () => {
       }
       await ctx.resource.move(values);
     },
+    [ctx?.sortField],
+  );
+
+  return {
+    setDataSource,
+    dataSource,
+    groupField: ctx.groupField,
+    disableCardDrag,
+    onCardDragEnd,
   };
 };

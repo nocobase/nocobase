@@ -3,7 +3,7 @@ import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-k
 import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
 import { useFormBlockType } from '../../../block-provider';
 import { DndContext } from '../../common/dnd-context';
@@ -19,6 +19,9 @@ GridContext.displayName = 'GridContext';
 
 const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
 const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
+
+const MemorizedRecursionField = React.memo(RecursionField);
+MemorizedRecursionField.displayName = 'MemorizedRecursionField';
 
 const ColDivider = (props) => {
   const { token } = useToken();
@@ -308,7 +311,7 @@ export const Grid: any = observer(
     const field = useField();
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
-    const InitializerComponent = (props) => render(props);
+    const InitializerComponent = useCallback((props) => render(props), []);
     const addr = field.address.toString();
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
@@ -318,10 +321,18 @@ export const Grid: any = observer(
       gridRef.current && setPrintContent?.(gridRef.current);
     }, [gridRef.current]);
 
+    const gridContextValue = useMemo(() => {
+      return {
+        ref: gridRef,
+        fieldSchema,
+        renderSchemaInitializer: render,
+        InitializerComponent,
+        showDivider,
+      };
+    }, [fieldSchema, render, InitializerComponent, showDivider]);
+
     return wrapSSR(
-      <GridContext.Provider
-        value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render, InitializerComponent, showDivider }}
-      >
+      <GridContext.Provider value={gridContextValue}>
         <div className={`nb-grid ${componentCls} ${hashId}`} style={{ position: 'relative' }} ref={gridRef}>
           <DndWrapper dndContext={props.dndContext}>
             {showDivider ? (
@@ -339,8 +350,8 @@ export const Grid: any = observer(
             ) : null}
             {rows.map((schema, index) => {
               return (
-                <React.Fragment key={index}>
-                  <RecursionField name={schema.name} schema={schema} />
+                <React.Fragment key={schema.name}>
+                  <MemorizedRecursionField name={schema.name} schema={schema} />
                   {showDivider ? (
                     <RowDivider
                       rows={rows}
@@ -375,8 +386,25 @@ Grid.Row = observer(
     const { showDivider } = useGridContext();
     const { type } = useFormBlockType();
 
+    const ctxValue = useMemo(() => {
+      return {
+        schema: fieldSchema,
+        cols,
+      };
+    }, [fieldSchema, cols]);
+
+    const mapProperties = useCallback(
+      (schema) => {
+        if (type === 'update') {
+          schema.default = null;
+        }
+        return schema;
+      },
+      [type],
+    );
+
     return (
-      <GridRowContext.Provider value={{ schema: fieldSchema, cols }}>
+      <GridRowContext.Provider value={ctxValue}>
         <div
           className={cls('nb-grid-row', 'CardRow', {
             showDivider,
@@ -397,17 +425,8 @@ Grid.Row = observer(
           )}
           {cols.map((schema, index) => {
             return (
-              <React.Fragment key={index}>
-                <RecursionField
-                  name={schema.name}
-                  schema={schema}
-                  mapProperties={(schema) => {
-                    if (type === 'update') {
-                      schema.default = null;
-                    }
-                    return schema;
-                  }}
-                />
+              <React.Fragment key={schema.name}>
+                <MemorizedRecursionField name={schema.name} schema={schema} mapProperties={mapProperties} />
                 {showDivider && (
                   <ColDivider
                     cols={cols}

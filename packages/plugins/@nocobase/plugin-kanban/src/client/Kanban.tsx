@@ -8,7 +8,7 @@ import {
   useProps,
 } from '@nocobase/client';
 import { Spin, Tag } from 'antd';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { Board } from './board';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 import { useStyles } from './style';
@@ -56,6 +56,9 @@ export const toColumns = (groupField: any, dataSource: Array<any> = [], primaryK
   return Object.values(columns);
 };
 
+const MemorizedRecursionField = React.memo(RecursionField);
+MemorizedRecursionField.displayName = 'MemorizedRecursionField';
+
 export const Kanban: any = observer(
   (props: any) => {
     const { styles } = useStyles();
@@ -81,17 +84,24 @@ export const Kanban: any = observer(
         ),
       [],
     );
-    const handleCardRemove = (card, column) => {
-      const updatedBoard = Board.removeCard({ columns: field.value }, column, card);
-      field.value = updatedBoard.columns;
-      setDataSource(updatedBoard.columns);
-    };
-    const handleCardDragEnd = (card, fromColumn, toColumn) => {
-      onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
-      const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
-      field.value = updatedBoard.columns;
-      setDataSource(updatedBoard.columns);
-    };
+    const handleCardRemove = useCallback(
+      (card, column) => {
+        const updatedBoard = Board.removeCard({ columns: field.value }, column, card);
+        field.value = updatedBoard.columns;
+        setDataSource(updatedBoard.columns);
+      },
+      [field],
+    );
+    const handleCardDragEnd = useCallback(
+      (card, fromColumn, toColumn) => {
+        onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
+        const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
+        field.value = updatedBoard.columns;
+        setDataSource(updatedBoard.columns);
+      },
+      [field],
+    );
+
     return (
       <Spin wrapperClassName={styles.nbKanban} spinning={field.loading || false}>
         <Board
@@ -125,7 +135,7 @@ export const Kanban: any = observer(
                       cardIndex,
                     }}
                   >
-                    <RecursionField name={schemas.card.name} schema={schemas.card} />
+                    <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
                   </KanbanCardContext.Provider>
                 </RecordProvider>
               )
@@ -138,7 +148,7 @@ export const Kanban: any = observer(
             return (
               <KanbanColumnContext.Provider value={{ column, groupField }}>
                 <SchemaComponentOptions scope={{ useCreateActionProps }}>
-                  <RecursionField name={schemas.cardAdder.name} schema={schemas.cardAdder} />
+                  <MemorizedRecursionField name={schemas.cardAdder.name} schema={schemas.cardAdder} />
                 </SchemaComponentOptions>
               </KanbanColumnContext.Provider>
             );
