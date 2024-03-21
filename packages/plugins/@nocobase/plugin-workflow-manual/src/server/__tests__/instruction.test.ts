@@ -1106,9 +1106,7 @@ describe('workflow > instructions > manual', () => {
                 type: 'update',
                 actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
                 collection: 'posts',
-                params: {
-                  filter: { title: 't1' },
-                },
+                filter: { title: 't1' },
               },
             },
           },
