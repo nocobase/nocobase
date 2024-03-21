@@ -15,24 +15,22 @@ const itemCss = css`
   gap: 8px;
 `;
 
+const gridCardCss = css`
+  height: 100%;
+  > .ant-card-body {
+    padding: 24px 24px 0px;
+    height: 100%;
+  }
+  .nb-action-bar {
+    padding: 5px 0;
+  }
+`;
+
 export const GridCardItem = (props) => {
   const field = useField<ObjectField>();
   const parentRecordData = useCollectionParentRecordData();
   return (
-    <Card
-      role="button"
-      aria-label="grid-card-item"
-      className={css`
-        height: 100%;
-        > .ant-card-body {
-          padding: 24px 24px 0px;
-          height: 100%;
-        }
-        .nb-action-bar {
-          padding: 5px 0;
-        }
-      `}
-    >
+    <Card role="button" aria-label="grid-card-item" className={gridCardCss}>
       <div className={itemCss}>
         <RecordProvider record={field.value} parent={parentRecordData}>
           {props.children}

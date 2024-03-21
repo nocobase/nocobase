@@ -18,6 +18,20 @@ import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDispla
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 import { CollectionFieldProvider } from '../../../data-source';
 
+Item.displayName = 'FormilyFormItem';
+
+const formItemWrapCss = css`
+  & .ant-space {
+    flex-wrap: wrap;
+  }
+`;
+
+const formItemLabelCss = css`
+  > .ant-formily-item-label {
+    display: none;
+  }
+`;
+
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
@@ -52,20 +66,9 @@ export const FormItem: any = observer(
       );
     }, [field.description]);
     const className = useMemo(() => {
-      return cx(
-        css`
-          & .ant-space {
-            flex-wrap: wrap;
-          }
-        `,
-        {
-          [css`
-            > .ant-formily-item-label {
-              display: none;
-            }
-          `]: showTitle === false,
-        },
-      );
+      return cx(formItemWrapCss, {
+        [formItemLabelCss]: showTitle === false,
+      });
     }, [showTitle]);
     const fieldSchema = useFieldSchema();
 

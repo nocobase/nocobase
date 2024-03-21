@@ -161,19 +161,13 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   if (associationFilterSchema) {
     return (
       <Component {...field.componentProps}>
-        <Row
-          className={css`
-            height: 100%;
-          `}
-          gutter={16}
-          wrap={false}
-        >
+        <Row style={{ height: '100%' }} gutter={16} wrap={false}>
           <Col
-            className={css`
-              width: 200px;
-              flex: 0 0 auto;
-            `}
-            style={props.associationFilterStyle}
+            style={{
+              ...(props.associationFilterStyle || {}),
+              width: 200,
+              flex: '0 0 auto',
+            }}
           >
             <RecursionField
               schema={fieldSchema}
@@ -182,17 +176,17 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
             />
           </Col>
           <Col
-            className={css`
-              flex: 1 1 auto;
-              min-width: 0;
-            `}
+            style={{
+              flex: '1 1 auto',
+              minWidth: 0,
+            }}
           >
             <div
-              className={css`
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-              `}
+              style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
             >
               <RecursionField
                 schema={fieldSchema}
