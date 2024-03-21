@@ -18,11 +18,12 @@ export const RolesMenu: React.FC & {
   Item: React.FC<{ item: any; onEdit: () => void }>;
 } = () => {
   const { t } = useACLTranslation();
-  const { data, mutate, loading } = useResourceActionContext();
+  const { data, mutate } = useResourceActionContext();
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState(null);
   const { role, setRole } = useContext(RolesManagerContext);
   const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(false);
   const api = useAPIClient();
 
   const loadMore = useCallback(async () => {
@@ -30,7 +31,7 @@ export const RolesMenu: React.FC & {
     if (!meta || meta.page >= meta.totalPage) {
       return;
     }
-
+    setLoading(true);
     const res = await api.resource('roles').list({
       page: meta.page + 1,
       pageSize: meta.pageSize,
@@ -42,6 +43,7 @@ export const RolesMenu: React.FC & {
       appends: [],
     });
     mutate(res?.data || {});
+    setLoading(false);
   }, [data]);
   const { lastItem, setLastItem } = useLoadMoreObserver({ loadMore });
 
@@ -102,15 +104,12 @@ export const RolesMenu: React.FC & {
   return (
     <>
       {roles.length ? (
-        <>
-          <Menu
-            style={{ border: 'none', maxHeight: '65vh', overflowY: 'auto' }}
-            items={items}
-            selectedKeys={[role?.name]}
-            onSelect={handleSelect}
-          />
-          {loading && <Spin />}
-        </>
+        <Menu
+          style={{ border: 'none', maxHeight: '65vh', overflowY: 'auto' }}
+          items={[...items, ...(loading ? [{ key: 'loading', label: <Spin /> }] : [])]}
+          selectedKeys={[role?.name]}
+          onSelect={handleSelect}
+        />
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
       )}
