@@ -16,6 +16,7 @@ import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorPro
 import * as bp from './hooks';
 import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
 import { useFilterFormBlockProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockProps';
+import { useFilterFormBlockDecoratorProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockDecoratorProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -43,6 +44,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableBlockProps,
         useTableSelectorProps,
         useFilterFormBlockProps,
+        useFilterFormBlockDecoratorProps,
       }}
     >
       {props.children}
@@ -87,6 +89,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableBlockProps,
       useTableSelectorProps,
       useFilterFormBlockProps,
+      useFilterFormBlockDecoratorProps,
     });
   }
 }

@@ -15,6 +15,7 @@ export const createFilterFormBlockSchema = (options: {
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'FilterFormBlockProvider',
+    'x-use-decorator': 'useFilterFormBlockDecoratorProps',
     'x-decorator-props': {
       dataSource,
       collection: collectionName,
