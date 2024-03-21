@@ -17,7 +17,7 @@ import {
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
-import mustHaveFilter from './decorators/must-have-filter-decorator';
+import mustHaveFilter, { isValidFilter } from './decorators/must-have-filter-decorator';
 import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
@@ -718,7 +718,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
 
-    if (options.filter) {
+    if (options.filter && isValidFilter(options.filter)) {
       if (
         this.collection.model.primaryKeyAttributes.length !== 1 &&
         !lodash.get(this.collection.options, 'filterTargetKey')

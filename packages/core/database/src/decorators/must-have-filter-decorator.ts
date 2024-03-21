@@ -1,14 +1,26 @@
-const isEmptyFilter = (filter: any) => {
-  if (filter === undefined || filter === null) {
-    return true;
+export function isValidFilter(condition: any) {
+  const group = condition.$and || condition.$or;
+  if (!group) {
+    return false;
   }
 
-  if (typeof filter === 'object' && Object.keys(filter).length === 0) {
-    return true;
-  }
+  return group.some((item) => {
+    if (item.$and || item.$or) {
+      return isValidFilter(item);
+    }
+    const [name] = Object.keys(item);
+    if (!name || !item[name]) {
+      return false;
+    }
+    const [op] = Object.keys(item[name]);
 
-  return false;
-};
+    if (!op || typeof item[name][op] === 'undefined') {
+      return false;
+    }
+
+    return true;
+  });
+}
 
 const mustHaveFilter = () => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
   const oldValue = descriptor.value;
@@ -20,7 +32,7 @@ const mustHaveFilter = () => (target: any, propertyKey: string, descriptor: Prop
       return oldValue.apply(this, args);
     }
 
-    if (isEmptyFilter(options?.filter) && !options?.filterByTk && !options?.forceUpdate) {
+    if (!isValidFilter(options?.filter) && !options?.filterByTk && !options?.forceUpdate) {
       throw new Error(`must provide filter or filterByTk for ${propertyKey} call, or set forceUpdate to true`);
     }
 

@@ -231,6 +231,38 @@ describe('update', () => {
     expect(err.message).toContain('must provide filter or filterByTk for update call');
   });
 
+  it('should not update items when filter is not a valid filter object', async () => {
+    await db.getRepository('posts').create({
+      values: [
+        {
+          title: 'p1',
+        },
+        {
+          title: 'p2',
+        },
+      ],
+    });
+
+    let err;
+
+    try {
+      await db.getRepository('posts').update({
+        values: {
+          title: 'p3',
+        },
+        filter: {
+          $and: [],
+          $or: [],
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+    expect(err.message).toContain('must provide filter or filterByTk for update call');
+  });
+
   it('should not update items without filter or filterByPk', async () => {
     await db.getRepository('posts').create({
       values: {
