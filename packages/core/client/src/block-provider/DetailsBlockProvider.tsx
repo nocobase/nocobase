@@ -72,6 +72,11 @@ export const useDetailsBlockContext = () => {
   return useContext(DetailsBlockContext);
 };
 
+/**
+ * @deprecated
+ * 即将废弃，请用 useDetailsBlockWithPagingProps 或者 useDetailsBlockWithoutPagingProps
+ * @returns
+ */
 export const useDetailsBlockProps = () => {
   const ctx = useDetailsBlockContext();
   useEffect(() => {

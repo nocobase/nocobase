@@ -893,7 +893,18 @@ export const useCollectionDataSourceItems = ({
   return res;
 };
 
-export const createDetailsBlockSchema = (options) => {
+export const createDetailsBlockSchema = (options: {
+  collection: string;
+  dataSource: string;
+  rowKey?: string;
+  formItemInitializers?: string;
+  actionInitializers?: string;
+  association?: string;
+  template?: any;
+  settings?: string;
+  action?: string;
+  [key: string]: any;
+}) => {
   const {
     formItemInitializers = 'details:configureFields',
     actionInitializers = 'detailsWithPaging:configureActions',
