@@ -93,7 +93,9 @@ export const RoleUsersManager: React.FC = () => {
   const handleSelectRoleUsers = (_: number[], rows: any[]) => {
     selectedRoleUsers.current = rows;
   };
+
   const useAddRoleUsers = () => {
+    const { role } = useContext(RolesManagerContext);
     const api = useAPIClient();
     const { setVisible } = useActionContext();
     const { refresh } = useResourceActionContext();
