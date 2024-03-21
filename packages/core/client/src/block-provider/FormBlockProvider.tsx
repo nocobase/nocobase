@@ -10,7 +10,7 @@ import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
-import { withDynamicSchemaProps } from '../application';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 export const FormBlockContext = createContext<{
   form?: any;
