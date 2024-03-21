@@ -17,6 +17,8 @@ import * as bp from './hooks';
 import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
 import { useDetailsBlockWithoutPagingProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsBlockWithoutPagingProps';
 import { useDetailsBlockWithPagingProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsBlockWithPagingProps';
+import { useDetailsBlockWithoutPagingDecoratorProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsBlockWithoutPagingDecoratorProps';
+import { useDetailsBlockWithPagingDecoratorProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsBlockWithPagingDecoratorProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -42,6 +44,8 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useDetailsBlockProps,
         useDetailsBlockWithoutPagingProps,
         useDetailsBlockWithPagingProps,
+        useDetailsBlockWithoutPagingDecoratorProps,
+        useDetailsBlockWithPagingDecoratorProps,
         useTableFieldProps,
         useTableBlockProps,
         useTableSelectorProps,
@@ -87,6 +91,8 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useDetailsBlockProps,
       useDetailsBlockWithoutPagingProps,
       useDetailsBlockWithPagingProps,
+      useDetailsBlockWithoutPagingDecoratorProps,
+      useDetailsBlockWithPagingDecoratorProps,
       useTableFieldProps,
       useTableBlockProps,
       useTableSelectorProps,

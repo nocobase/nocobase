@@ -20,6 +20,7 @@ export function createDetailsBlockWithPagingUISchema(options: {
     type: 'void',
     'x-acl-action': `${resourceName}:view`,
     'x-decorator': 'DetailsBlockProvider',
+    'x-use-decorator-props': 'useDetailsBlockWithPagingDecoratorProps',
     'x-decorator-props': {
       dataSource,
       collection: collectionName,

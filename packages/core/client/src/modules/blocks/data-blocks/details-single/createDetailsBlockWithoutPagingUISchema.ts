@@ -18,6 +18,7 @@ export function createDetailsBlockWithoutPagingUISchema(options: {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
     'x-decorator': 'DetailsBlockProvider',
+    'x-use-decorator-props': 'useDetailsBlockWithoutPagingDecoratorProps',
     'x-decorator-props': {
       dataSource,
       collection: collectionName,
