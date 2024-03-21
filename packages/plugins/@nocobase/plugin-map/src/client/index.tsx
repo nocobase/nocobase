@@ -1,4 +1,4 @@
-import { CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import { Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { MapBlockOptions } from './block';
 import { mapActionInitializers, mapActionInitializers_deprecated } from './block/MapActionInitializers';
@@ -8,11 +8,9 @@ import { fields } from './fields';
 import { NAMESPACE, generateNTemplate } from './locale';
 const MapProvider = React.memo((props) => {
   return (
-    <CurrentAppInfoProvider>
-      <SchemaComponentOptions components={{ Map }}>
-        <MapBlockOptions>{props.children}</MapBlockOptions>
-      </SchemaComponentOptions>
-    </CurrentAppInfoProvider>
+    <SchemaComponentOptions components={{ Map }}>
+      <MapBlockOptions>{props.children}</MapBlockOptions>
+    </SchemaComponentOptions>
   );
 });
 MapProvider.displayName = 'MapProvider';
