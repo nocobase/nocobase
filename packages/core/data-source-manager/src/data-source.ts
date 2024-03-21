@@ -5,6 +5,7 @@ import compose from 'koa-compose';
 import { loadDefaultActions } from './load-default-actions';
 import { ResourceManager } from './resource-manager';
 import { ICollectionManager } from './types';
+import validateFilterParams from './middlewares/validate-filter-params';
 
 export type DataSourceOptions = any;
 
@@ -36,6 +37,7 @@ export abstract class DataSource extends EventEmitter {
 
     this.collectionManager = this.createCollectionManager(options);
     this.resourceManager.registerActionHandlers(loadDefaultActions(this));
+    this.resourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['acl'] });
 
     if (options.acl !== false) {
       this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
