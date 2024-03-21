@@ -7,7 +7,7 @@ import { useCollectionParentRecord } from '../data-source/collection-record/Coll
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
-import { withDynamicSchemaProps } from '../application';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 export const DetailsBlockContext = createContext<any>({});
 DetailsBlockContext.displayName = 'DetailsBlockContext';
