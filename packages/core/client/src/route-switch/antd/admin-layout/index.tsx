@@ -9,12 +9,12 @@ import {
   CurrentAppInfoProvider,
   CurrentUser,
   NavigateIfNotSignIn,
+  OverrideSchemaComponentRefresher,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
-  SchemaComponentProvider,
   findByUid,
   findMenuItem,
   useACLRoleContext,
@@ -205,9 +205,9 @@ const MenuEditor = (props) => {
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <SchemaComponentProvider inherit>
+      <OverrideSchemaComponentRefresher>
         <SchemaComponent memoized scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }} schema={schema} />
-      </SchemaComponentProvider>
+      </OverrideSchemaComponentRefresher>
     </SchemaIdContext.Provider>
   );
 };

@@ -5,8 +5,8 @@ import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  OverrideSchemaComponentRefresher,
   SchemaComponent,
-  SchemaComponentProvider,
   useDesignable,
   useFormBlockContext,
   useSchemaInitializerRender,
@@ -361,9 +361,9 @@ export const Grid: any = observer(
               return (
                 <React.Fragment key={schema.name || schema['x-uid']}>
                   {shouldKeepApart ? (
-                    <SchemaComponentProvider inherit>
-                      <SchemaComponent schema={schema} />
-                    </SchemaComponentProvider>
+                    <OverrideSchemaComponentRefresher>
+                      <SchemaComponent name={schema.name || schema['x-uid']} schema={schema} />
+                    </OverrideSchemaComponentRefresher>
                   ) : (
                     <MemorizedRecursionField name={schema.name || schema['x-uid']} schema={schema} />
                   )}
