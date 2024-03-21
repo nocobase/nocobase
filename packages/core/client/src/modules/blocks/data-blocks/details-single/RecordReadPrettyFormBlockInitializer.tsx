@@ -1,11 +1,11 @@
 import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { useBlockAssociationContext, useBlockRequestContext } from '../../../../block-provider';
+import { useBlockAssociationContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
-import { createDetailsBlockWithoutPagingUISchema } from './createDetailsBlockWIthoutPagingUISchema';
+import { createDetailsBlockWithoutPagingUISchema } from './createDetailsBlockWithoutPagingUISchema';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();

@@ -6,7 +6,7 @@ export function createDetailsBlockWithoutPagingUISchema(options: {
   dataSource: string;
   association?: string;
   templateSchema?: ISchema;
-}) {
+}): ISchema {
   const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
 
@@ -14,7 +14,7 @@ export function createDetailsBlockWithoutPagingUISchema(options: {
     throw new Error('collectionName and dataSource are required');
   }
 
-  const schema: ISchema = {
+  return {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
     'x-decorator': 'DetailsBlockProvider',
@@ -24,7 +24,7 @@ export function createDetailsBlockWithoutPagingUISchema(options: {
       collection: collectionName,
       association,
       readPretty: true,
-      action: 'list',
+      action: 'get',
     },
     'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'blockSettings:singleDataDetails',
@@ -59,5 +59,4 @@ export function createDetailsBlockWithoutPagingUISchema(options: {
       },
     },
   };
-  return schema;
 }

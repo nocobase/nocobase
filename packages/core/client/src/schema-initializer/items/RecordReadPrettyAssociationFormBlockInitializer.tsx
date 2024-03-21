@@ -5,7 +5,7 @@ import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem }
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../utils';
 import { useCollectionManager_deprecated } from '../../collection-manager';
-import { createDetailsBlockWithoutPagingUISchema } from '../../modules/blocks/data-blocks/details-single/createDetailsBlockWIthoutPagingUISchema';
+import { createDetailsBlockWithoutPagingUISchema } from '../../modules/blocks/data-blocks/details-single/createDetailsBlockWithoutPagingUISchema';
 
 /**
  * @deprecated
