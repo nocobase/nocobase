@@ -1,4 +1,4 @@
-import { createDetailsBlockWithoutPagingUISchema } from '../createDetailsBlockWIthoutPagingUISchema';
+import { createDetailsBlockWithoutPagingUISchema } from '../createDetailsBlockWithoutPagingUISchema';
 
 // Mock uid to always return a fixed value
 vi.mock('@formily/shared', () => ({
