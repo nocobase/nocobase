@@ -6,6 +6,7 @@ export * from './common';
 export * from './date';
 export * from './forEach';
 export * from './getValuesByPath';
+export * from './isValidFilter';
 export * from './json-templates';
 export * from './log';
 export * from './merge';

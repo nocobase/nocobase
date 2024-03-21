@@ -15,9 +15,11 @@ import {
   UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
 } from 'sequelize';
+import { isValidFilter } from '@nocobase/utils';
+
 import { Collection } from './collection';
 import { Database } from './database';
-import mustHaveFilter, { isValidFilter } from './decorators/must-have-filter-decorator';
+import mustHaveFilter from './decorators/must-have-filter-decorator';
 import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';

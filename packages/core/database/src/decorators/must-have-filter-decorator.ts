@@ -1,32 +1,4 @@
-export function isValidFilter(condition: any) {
-  // Check if condition is a non-empty object
-  if (typeof condition === 'object' && condition !== null && Object.keys(condition).length > 0) {
-    return true;
-  }
-
-  const group = condition.$and || condition.$or;
-
-  if (!group) {
-    return false;
-  }
-
-  return group.some((item) => {
-    if (item.$and || item.$or) {
-      return isValidFilter(item);
-    }
-    const [name] = Object.keys(item);
-    if (!name || !item[name]) {
-      return false;
-    }
-    const [op] = Object.keys(item[name]);
-
-    if (!op || typeof item[name][op] === 'undefined') {
-      return false;
-    }
-
-    return true;
-  });
-}
+import { isValidFilter } from '@nocobase/utils';
 
 const mustHaveFilter = () => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
   const oldValue = descriptor.value;
