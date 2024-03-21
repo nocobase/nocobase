@@ -2,7 +2,7 @@ import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
 
 import { useCollection_deprecated } from '../../../../collection-manager';
-import { createTableSelectorSchema } from '../../../../schema-initializer/utils';
+import { createTableSelectorSchema } from './createTableSelectorSchema';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 
 export const TableSelectorInitializer = () => {
@@ -18,9 +18,8 @@ export const TableSelectorInitializer = () => {
         insert(
           createTableSelectorSchema({
             rowKey: collection.filterTargetKey,
-            collection: collection.name,
+            collectionName: collection.name,
             dataSource: collection.dataSource,
-            resource: collection.name,
           }),
         );
       }}

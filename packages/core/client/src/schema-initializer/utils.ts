@@ -1478,55 +1478,6 @@ export const createCollapseBlockSchema = (options) => {
   return schema;
 };
 
-export const createTableSelectorSchema = (options) => {
-  const { collection, dataSource, resource, rowKey, ...others } = options;
-  const schema: ISchema = {
-    type: 'void',
-    'x-acl-action': `${resource || collection}:list`,
-    'x-decorator': 'TableSelectorProvider',
-    'x-decorator-props': {
-      collection,
-      resource: resource || collection,
-      dataSource,
-      action: 'list',
-      params: {
-        pageSize: 20,
-      },
-      rowKey,
-      ...others,
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:tableSelector',
-    'x-component': 'CardItem',
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-initializer': 'table:configureActions',
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
-        properties: {},
-      },
-      value: {
-        type: 'array',
-        'x-initializer': 'table:configureColumns',
-        'x-component': 'TableV2.Selector',
-        'x-component-props': {
-          rowSelection: {
-            type: 'checkbox',
-          },
-          useProps: '{{ useTableSelectorProps }}',
-        },
-        properties: {},
-      },
-    },
-  };
-  return schema;
-};
-
 const getChildren = ({
   collections,
   dataSource,
