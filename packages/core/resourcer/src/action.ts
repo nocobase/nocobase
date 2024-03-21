@@ -1,10 +1,9 @@
-import { assign, MergeStrategies, prePerfHooksWrap, requireModule } from '@nocobase/utils';
+import { assign, MergeStrategies, requireModule } from '@nocobase/utils';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import Middleware, { MiddlewareType } from './middleware';
 import Resource from './resource';
 import { HandlerType } from './resourcer';
-import { RecordableHistogram, performance } from 'perf_hooks';
 
 export type ActionType = string | HandlerType | ActionOptions;
 
@@ -161,27 +160,38 @@ export interface ActionParams {
    */
   values?: any;
   /**
-   * 当前资源的主体，对应的表名或 Model 名称
+   * This method is deprecated and should not be used.
+   * Use {@link action.resourceName.split(',')[0]} instead.
+   * @deprecated
    */
   resourceName?: string;
   /**
-   * 资源标识符
+   * This method is deprecated and should not be used.
+   * Use {@link filterByTk} instead.
+   * @deprecated
    */
   resourceIndex?: string;
   /**
-   * 资源的从属关系
+   * This method is deprecated and should not be used.
+   * Use {@link action.resourceName.split(',')[1]} instead.
+   * @deprecated
    */
   associatedName?: string;
   /**
-   * 从属关系的标识符
+   * This method is deprecated and should not be used.
+   * Use {@link action.sourceId} instead.
+   * @deprecated
    */
   associatedIndex?: string;
   /**
-   * 从属关系的当前实例
+   * This method is deprecated and should not be used.
+   * @deprecated
    */
   associated?: any;
   /**
-   * 资源提供哪些行为或方法
+   * This method is deprecated and should not be used.
+   * Use {@link action.actionName} instead.
+   * @deprecated
    */
   actionName?: string;
   /**
@@ -204,11 +214,23 @@ export class Action {
   public params: ActionParams = {};
 
   public actionName: string;
+
   public resourceName: string;
+
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link this.sourceId} instead.
+   * @deprecated
+   */
   public resourceOf: any;
+
+  public sourceId: any;
 
   public readonly middlewares: Array<Middleware> = [];
 
+  /**
+   * @internal
+   */
   constructor(options: ActionOptions) {
     options = requireModule(options);
     if (typeof options === 'function') {
@@ -221,15 +243,22 @@ export class Action {
     this.mergeParams(params);
   }
 
+  /**
+   * @internal
+   */
   toJSON() {
     return {
       actionName: this.actionName,
       resourceName: this.resourceName,
-      resourceOf: this.resourceOf,
+      resourceOf: this.sourceId,
+      sourceId: this.sourceId,
       params: this.params,
     };
   }
 
+  /**
+   * @internal
+   */
   clone() {
     const options = _.cloneDeep(this.options);
     delete options.middleware;
@@ -241,6 +270,9 @@ export class Action {
     return action;
   }
 
+  /**
+   * @internal
+   */
   setContext(context: any) {
     this.context = context;
   }
@@ -266,34 +298,55 @@ export class Action {
     });
   }
 
+  /**
+   * @internal
+   */
   setResource(resource: Resource) {
     this.resource = resource;
     return this;
   }
 
+  /**
+   * @internal
+   */
   getResource() {
     return this.resource;
   }
 
+  /**
+   * @internal
+   */
   getOptions(): ActionOptions {
     return this.options;
   }
 
+  /**
+   * @internal
+   */
   setName(name: ActionName) {
     this.name = name;
     return this;
   }
 
+  /**
+   * @internal
+   */
   getName() {
     return this.name;
   }
 
+  /**
+   * @internal
+   */
   getMiddlewareHandlers() {
     return this.middlewares
       .filter((middleware) => middleware.canAccess(this.name))
       .map((middleware) => middleware.getHandler());
   }
 
+  /**
+   * @internal
+   */
   getHandler() {
     const handler = requireModule(this.handler || this.resource.resourcer.getRegisteredHandler(this.name));
     if (typeof handler !== 'function') {
@@ -303,6 +356,9 @@ export class Action {
     return handler;
   }
 
+  /**
+   * @internal
+   */
   getHandlers() {
     const handlers = [
       ...this.resource.resourcer.getMiddlewares(),
@@ -315,10 +371,16 @@ export class Action {
     return handlers;
   }
 
+  /**
+   * @internal
+   */
   async execute(context: any, next?: any) {
     return await compose(this.getHandlers())(context, next);
   }
 
+  /**
+   * @internal
+   */
   static toInstanceMap(actions: object, resource?: Resource) {
     return new Map(
       Object.entries(actions).map(([key, options]) => {
