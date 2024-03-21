@@ -19,6 +19,7 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import sqlResourcer from './resourcers/sql';
 import viewResourcer from './resourcers/views';
+import validateFilterParams from './middlewares/validate-filter-params';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -252,6 +253,11 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
       await next();
+    });
+
+    this.app.resourcer.use(validateFilterParams, {
+      tag: 'validate-filter-params',
+      after: ['acl'],
     });
 
     this.app.acl.allow('collections', 'list', 'loggedIn');

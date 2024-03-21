@@ -85,6 +85,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     tag: 'parseVariables',
     after: 'acl',
   });
+
   app.resourcer.use(dateTemplate, { tag: 'dateTemplate', after: 'acl' });
 
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });

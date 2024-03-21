@@ -150,6 +150,10 @@ export class MockServer extends Application {
                       url += `/${filterByTk}`;
                     }
 
+                    if (restParams.filter) {
+                      restParams.filter = JSON.stringify(restParams.filter);
+                    }
+
                     const queryString = qs.stringify(restParams, { arrayFormat: 'brackets' });
 
                     let request;
