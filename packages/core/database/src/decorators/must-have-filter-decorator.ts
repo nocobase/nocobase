@@ -1,5 +1,11 @@
 export function isValidFilter(condition: any) {
+  // Check if condition is a non-empty object
+  if (typeof condition === 'object' && condition !== null && Object.keys(condition).length > 0) {
+    return true;
+  }
+
   const group = condition.$and || condition.$or;
+
   if (!group) {
     return false;
   }
