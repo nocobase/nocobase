@@ -48,6 +48,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
+import validateFilterParams from './middlewares/validate-filter-params';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -976,7 +977,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
+    this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
+
     this.resourcer.use(this._authManager.middleware(), { tag: 'auth' });
+    this.resourcer.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     if (this.options.acl !== false) {
       this.resourcer.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
