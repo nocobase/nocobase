@@ -10,6 +10,7 @@ import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
+import { withDynamicSchemaProps } from '../application';
 
 export const FormBlockContext = createContext<{
   form?: any;
@@ -89,7 +90,7 @@ export const useIsDetailBlock = () => {
   return ctx.type !== 'create' && fieldSchema?.['x-acl-action'] !== 'create' && fieldSchema?.['x-action'] !== 'create';
 };
 
-export const FormBlockProvider = (props) => {
+export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
   const { collection, isCusomeizeCreate } = props;
@@ -120,7 +121,7 @@ export const FormBlockProvider = (props) => {
       </BlockProvider>
     </TemplateBlockProvider>
   );
-};
+});
 
 export const useFormBlockContext = () => {
   return useContext(FormBlockContext);
