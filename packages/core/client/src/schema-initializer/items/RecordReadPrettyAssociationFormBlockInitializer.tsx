@@ -3,8 +3,9 @@ import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { useRecordCollectionDataSourceItems } from '../utils';
 import { useCollectionManager_deprecated } from '../../collection-manager';
+import { createDetailsBlockWithoutPagingUISchema } from '../../modules/blocks/data-blocks/details-single/createDetailsBlockWIthoutPagingUISchema';
 
 /**
  * @deprecated
@@ -30,17 +31,11 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'ReadPrettyFormItem') {
-            const blockSchema = createDetailsBlockSchema({
-              actionInitializers: 'details:configureActions',
-              collection: collectionName,
+            const blockSchema = createDetailsBlockWithoutPagingUISchema({
+              collectionName: collectionName,
               dataSource: collection.dataSource,
-              resource,
               association: resource,
-              action: 'get',
-              useSourceId: '{{ useSourceIdFromParentRecord }}',
-              useParams: '{{ useParamsFromRecord }}',
-              template: s,
-              settings: 'blockSettings:singleDataDetails',
+              templateSchema: s,
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -51,16 +46,10 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
           }
         } else {
           insert(
-            createDetailsBlockSchema({
-              actionInitializers: 'details:configureActions',
-              collection: collectionName,
-              resource,
+            createDetailsBlockWithoutPagingUISchema({
+              collectionName: collectionName,
               association: resource,
               dataSource: collection.dataSource,
-              action: 'get',
-              useSourceId: '{{ useSourceIdFromParentRecord }}',
-              useParams: '{{ useParamsFromRecord }}',
-              settings: 'blockSettings:singleDataDetails',
             }),
           );
         }
@@ -80,15 +69,10 @@ export function useCreateAssociationDetailsWithoutPagination() {
       const collection = getCollection(field.target);
 
       insert(
-        createDetailsBlockSchema({
-          actionInitializers: 'details:configureActions',
-          collection: field.target,
+        createDetailsBlockWithoutPagingUISchema({
+          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
-          action: 'get',
-          useSourceId: '{{ useSourceIdFromParentRecord }}',
-          useParams: '{{ useParamsFromRecord }}',
-          settings: 'blockSettings:singleDataDetails',
         }),
       );
     },
@@ -101,16 +85,11 @@ export function useCreateAssociationDetailsWithoutPagination() {
       const collection = getCollection(field.target);
 
       if (item.template.componentName === 'ReadPrettyFormItem') {
-        const blockSchema = createDetailsBlockSchema({
-          actionInitializers: 'details:configureActions',
-          collection: field.target,
+        const blockSchema = createDetailsBlockWithoutPagingUISchema({
+          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
-          action: 'get',
-          useSourceId: '{{ useSourceIdFromParentRecord }}',
-          useParams: '{{ useParamsFromRecord }}',
-          template: templateSchema,
-          settings: 'blockSettings:singleDataDetails',
+          templateSchema: templateSchema,
         });
         if (item.mode === 'reference') {
           blockSchema['x-template-key'] = item.template.key;

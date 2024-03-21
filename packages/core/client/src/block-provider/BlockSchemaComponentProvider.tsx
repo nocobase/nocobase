@@ -15,7 +15,7 @@ import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
 import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
-import { useDetailsBlockWithoutPagingProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsBlockWithoutPagingProps';
+import { useDetailsBlockWithoutPagingProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsBlockWithoutPagingProps';
 import { useDetailsBlockWithPagingProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsBlockWithPagingProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`

@@ -4,7 +4,8 @@ import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem }
 import { useBlockAssociationContext, useBlockRequestContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
-import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
+import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
+import { createDetailsBlockWithoutPagingUISchema } from './createDetailsBlockWIthoutPagingUISchema';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -32,16 +33,11 @@ export function useCreateSingleDetailsSchema() {
     (templateSchema, options) => {
       const { item } = options;
       if (item.template.componentName === 'ReadPrettyFormItem') {
-        const blockSchema = createDetailsBlockSchema({
-          actionInitializers: 'details:configureActions',
+        const blockSchema = createDetailsBlockWithoutPagingUISchema({
           association,
-          collection: item.collectionName || item.name,
+          collectionName: item.collectionName || item.name,
           dataSource: item.dataSource,
-          action: 'get',
-          useSourceId: '{{ useSourceIdFromParentRecord }}',
-          useParams: '{{ useParamsFromRecord }}',
-          template: templateSchema,
-          settings: 'blockSettings:singleDataDetails',
+          templateSchema: templateSchema,
         });
         if (item.mode === 'reference') {
           blockSchema['x-template-key'] = item.template.key;
@@ -61,15 +57,10 @@ export function useCreateSingleDetailsSchema() {
         insert(templateWrap(template, { item }));
       } else {
         insert(
-          createDetailsBlockSchema({
-            actionInitializers: 'details:configureActions',
+          createDetailsBlockWithoutPagingUISchema({
             association,
-            collection: item.collectionName || item.name,
+            collectionName: item.collectionName || item.name,
             dataSource: item.dataSource,
-            action: 'get',
-            useSourceId: '{{ useSourceIdFromParentRecord }}',
-            useParams: '{{ useParamsFromRecord }}',
-            settings: 'blockSettings:singleDataDetails',
           }),
         );
       }
