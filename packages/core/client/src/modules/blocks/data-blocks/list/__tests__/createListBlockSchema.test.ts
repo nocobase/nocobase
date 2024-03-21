@@ -26,6 +26,7 @@ describe('createListBlockSchema', () => {
       type: 'void',
       'x-acl-action': 'user:view',
       'x-decorator': 'List.Decorator',
+      'x-use-decorator-props': 'useListBlockDecoratorProps',
       'x-decorator-props': {
         collection: 'users',
         dataSource: 'users',

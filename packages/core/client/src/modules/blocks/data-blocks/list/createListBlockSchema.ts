@@ -14,6 +14,7 @@ export const createListBlockSchema = (options: {
     type: 'void',
     'x-acl-action': `${resourceName}:view`,
     'x-decorator': 'List.Decorator',
+    'x-use-decorator-props': 'useListBlockDecoratorProps',
     'x-decorator-props': {
       collection: collectionName,
       dataSource,
