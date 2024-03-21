@@ -31,14 +31,13 @@ export const createFilterFormBlockSchema = (options: {
         type: 'void',
         'x-component': 'FormV2',
         'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
+          useProps: '{{ useFilterFormBlockProps }}',
         },
         properties: {
           grid: templateSchema || {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': 'filterForm:configureFields',
-            properties: {},
           },
           [uid()]: {
             type: 'void',
@@ -50,7 +49,6 @@ export const createFilterFormBlockSchema = (options: {
                 float: 'right',
               },
             },
-            properties: {},
           },
         },
       },
