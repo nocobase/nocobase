@@ -176,9 +176,9 @@ export const Action: ComposedAction = observer(
 
     const buttonElement = renderButton();
 
-    if (!btnHover) {
-      return buttonElement;
-    }
+    // if (!btnHover) {
+    //   return buttonElement;
+    // }
 
     const result = (
       <ActionContextProvider
