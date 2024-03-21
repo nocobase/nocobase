@@ -349,7 +349,7 @@ export const useParamsFromRecord = () => {
   if (record.__collection && collectionField && !['oho', 'm2o', 'obo'].includes(collectionField.interface)) {
     obj['targetCollection'] = record.__collection;
   }
-  if (!filterByTk) {
+  if (!filterByTk && Object.keys(filter).length > 0) {
     obj['filter'] = filter;
   }
   return obj;
