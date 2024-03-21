@@ -1,4 +1,4 @@
-import { useDataBlockSourceId } from 'packages/core/client/src/block-provider/hooks/useDataBlockSourceId';
+import { useDataBlockSourceId } from '../../../../../block-provider/hooks/useDataBlockSourceId';
 
 export function useListBlockDecoratorProps(props) {
   let sourceId;
