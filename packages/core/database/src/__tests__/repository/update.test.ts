@@ -202,6 +202,35 @@ describe('update', () => {
     expect(p1.toJSON()['tags']).toEqual([]);
   });
 
+  it('should not update items when filter is empty', async () => {
+    await db.getRepository('posts').create({
+      values: [
+        {
+          title: 'p1',
+        },
+        {
+          title: 'p2',
+        },
+      ],
+    });
+
+    let err;
+
+    try {
+      await db.getRepository('posts').update({
+        values: {
+          title: 'p3',
+        },
+        filter: {},
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+    expect(err.message).toContain('must provide filter or filterByTk for update call');
+  });
+
   it('should not update items without filter or filterByPk', async () => {
     await db.getRepository('posts').create({
       values: {

@@ -1,3 +1,15 @@
+const isEmptyFilter = (filter: any) => {
+  if (filter === undefined || filter === null) {
+    return true;
+  }
+
+  if (typeof filter === 'object' && Object.keys(filter).length === 0) {
+    return true;
+  }
+
+  return false;
+};
+
 const mustHaveFilter = () => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
   const oldValue = descriptor.value;
 
@@ -8,7 +20,7 @@ const mustHaveFilter = () => (target: any, propertyKey: string, descriptor: Prop
       return oldValue.apply(this, args);
     }
 
-    if (!options?.filter && !options?.filterByTk && !options?.forceUpdate) {
+    if (isEmptyFilter(options?.filter) && !options?.filterByTk && !options?.forceUpdate) {
       throw new Error(`must provide filter or filterByTk for ${propertyKey} call, or set forceUpdate to true`);
     }
 
