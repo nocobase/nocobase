@@ -9,7 +9,6 @@ export const useLoadMoreObserver = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const observeExposure = useCallback(
     (lastItem: React.RefObject<any>) => {
-      console.log(lastItem);
       if (!lastItem) {
         return;
       }
