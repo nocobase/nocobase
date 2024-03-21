@@ -257,7 +257,7 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.resourcer.use(validateFilterParams, {
       tag: 'validate-filter-params',
-      after: ['acl'],
+      before: ['acl'],
     });
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
