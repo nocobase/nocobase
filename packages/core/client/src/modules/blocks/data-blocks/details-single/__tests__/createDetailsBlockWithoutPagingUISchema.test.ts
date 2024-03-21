@@ -67,7 +67,7 @@ describe('createDetailsBlockWithoutPagingUISchema', () => {
         "x-component": "CardItem",
         "x-decorator": "DetailsBlockProvider",
         "x-decorator-props": {
-          "action": "list",
+          "action": "get",
           "association": undefined,
           "collection": "users",
           "dataSource": "usersDataSource",
