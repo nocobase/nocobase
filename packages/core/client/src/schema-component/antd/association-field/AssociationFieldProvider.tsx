@@ -32,9 +32,13 @@ export const AssociationFieldProvider = observer(
 
     const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
 
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!field.readPretty);
 
     useEffect(() => {
+      if (field.readPretty) {
+        return;
+      }
+
       setLoading(true);
       if (!collectionField) {
         setLoading(false);
