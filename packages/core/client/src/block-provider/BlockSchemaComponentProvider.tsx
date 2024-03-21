@@ -15,6 +15,7 @@ import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
 import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
+import { useGridCardBlockDecoratorProps } from '../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockDecoratorProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -41,6 +42,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableFieldProps,
         useTableBlockProps,
         useTableSelectorProps,
+        useGridCardBlockDecoratorProps,
       }}
     >
       {props.children}
@@ -84,6 +86,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableFieldProps,
       useTableBlockProps,
       useTableSelectorProps,
+      useGridCardBlockDecoratorProps,
     });
   }
 }

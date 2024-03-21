@@ -10,10 +10,15 @@ export const createGridCardBlockSchema = (options: {
   const { collectionName, association, templateSchema, dataSource, rowKey } = options;
   const resourceName = association || collectionName;
 
+  if (!collectionName || !dataSource) {
+    throw new Error('collectionName and dataSource are required');
+  }
+
   return {
     type: 'void',
     'x-acl-action': `${resourceName}:view`,
     'x-decorator': 'GridCard.Decorator',
+    'x-use-decorator-props': 'useGridCardBlockDecoratorProps',
     'x-decorator-props': {
       collection: collectionName,
       association,
