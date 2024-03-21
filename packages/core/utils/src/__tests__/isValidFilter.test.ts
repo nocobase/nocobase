@@ -18,5 +18,6 @@ describe('isValidFilter', () => {
     expect(isValidFilter({ $or: [{ name: { $eq: 'test' } }] })).toBe(true);
     expect(isValidFilter({ $and: [{ $or: [{ name: { $eq: 'test' } }] }] })).toBe(true);
     expect(isValidFilter({ $or: [{ $and: [{ name: { $eq: 'test' } }] }] })).toBe(true);
+    expect(isValidFilter({ $and: [], $or: [{ name: 'test' }] })).toBe(true);
   });
 });

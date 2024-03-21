@@ -3,13 +3,17 @@ export function isValidFilter(condition: any) {
     return false;
   }
 
-  const group = condition.$and || condition.$or;
+  const groups = [condition.$and, condition.$or].filter(Boolean);
 
-  if (!group) {
+  if (groups.length == 0) {
     return Object.keys(condition).length > 0;
   }
 
-  return group.some((item) => {
+  return groups.some((item) => {
+    if (Array.isArray(item)) {
+      return item.some(isValidFilter);
+    }
+
     if (item.$and || item.$or) {
       return isValidFilter(item);
     }
