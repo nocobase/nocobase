@@ -228,7 +228,11 @@ function PageContent(
     })
   ) : (
     <FixedBlock height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
-      <div className={`pageWithFixedBlockCss nb-page-content`}>{props.children}</div>
+      <div className={`pageWithFixedBlockCss nb-page-content`}>
+        <OverrideSchemaComponentRefresher>
+          <SchemaComponent schema={fieldSchema} />
+        </OverrideSchemaComponentRefresher>
+      </div>
     </FixedBlock>
   );
 }

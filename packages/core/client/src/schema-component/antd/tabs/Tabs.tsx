@@ -24,7 +24,7 @@ export const Tabs: any = observer(
           key,
           label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
           children: (
-            <PaneRoot {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
+            <PaneRoot key={key} {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
               <OverrideSchemaComponentRefresher>
                 <SchemaComponent schema={schema} />
               </OverrideSchemaComponentRefresher>
