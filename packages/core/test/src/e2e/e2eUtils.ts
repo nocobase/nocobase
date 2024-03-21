@@ -731,9 +731,12 @@ const updateRole = async (roleSetting: AclRoleSetting) => {
   const state = await api.storageState();
   const headers = getHeaders(state);
   const name = roleSetting.name;
-  const dataSourceKey = roleSetting.dataSourceKey || 'main';
+  const dataSourceKey = roleSetting.dataSourceKey;
 
-  const result = await api.post(`/api/dataSources/${dataSourceKey}/roles:update?filterByTk=${name}`, {
+  const url = !dataSourceKey
+    ? `/api/roles:update?filterByTk=${name}`
+    : `/api/dataSources/${dataSourceKey}/roles:update?filterByTk=${name}`;
+  const result = await api.post(url, {
     headers,
     data: { ...roleSetting },
   });
