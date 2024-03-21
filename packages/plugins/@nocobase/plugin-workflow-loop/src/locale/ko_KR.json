@@ -1,0 +1,10 @@
+{
+  "Loop": "루프",
+  "Loop target": "루프 대상",
+  "Loop index": "현재 인덱스",
+  "Loop length": "루프 길이",
+  "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": 
+    "루프 노드를 사용하면 여러 데이터 세트에 동일한 작업을 수행할 수 있습니다. 이러한 세트의 소스는 쿼리 노드에서 가져온 여러 레코드이거나 단일 레코드의 여러 관련 레코드일 수 있습니다. 루프 노드는 특정 횟수만큼 반복하거나 문자열의 각 문자를 반복하는 데에도 사용할 수 있습니다. 그러나 과도한 루핑은 성능 문제를 일으킬 수 있으므로 주의해서 사용하십시오.",
+  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": 
+    "단일 숫자는 루프 카운트로 처리되고, 단일 문자열은 문자 배열로 처리되며, 다른 배열이 아닌 값은 배열로 변환됩니다. 루프 노드는 루프 카운트에 도달하거나 배열 루프가 완료되었을 때 종료됩니다. 루프를 종료하려면 루프에 조건 노드를 추가할 수도 있습니다."
+}

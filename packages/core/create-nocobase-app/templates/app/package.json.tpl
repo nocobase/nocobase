@@ -2,10 +2,11 @@
   "name": "{{{name}}}",
   "private": true,
   "workspaces": [
-    "packages/*/*"
+    "packages/*/*",
+    "packages/*/*/*"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18"
   },
   "scripts": {
     "nocobase": "nocobase",
@@ -15,6 +16,8 @@
     "clean": "nocobase clean",
     "build": "nocobase build",
     "test": "nocobase test",
+    "e2e": "nocobase e2e",
+    "tar": "nocobase tar",
     "postinstall": "nocobase postinstall",
     "lint": "eslint ."
   },

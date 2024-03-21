@@ -9,23 +9,26 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
-import { RecordProvider } from '../../../';
+import { CollectionProvider_deprecated, RecordProvider, useFormBlockContext, useCollectionRecordData } from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
-const useTableSelectorProps = () => {
+export const useTableSelectorProps = () => {
   const field: any = useField();
-  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [], onChange } = useContext(
-    RecordPickerContext,
-  );
+  const {
+    multiple,
+    options = [],
+    setSelectedRows,
+    selectedRows: rcSelectRows = [],
+    onChange,
+  } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   const { setVisible } = useActionContext();
   return {
@@ -58,17 +61,19 @@ const useTableSelectorProps = () => {
 
 export const InternalPicker = observer(
   (props: any) => {
-    const { value, multiple, onChange, quickUpload, selectFile, shouldMountElement, ...others } = props;
+    const { value, multiple, openSize, onChange, quickUpload, selectFile, shouldMountElement, ...others } = props;
     const field: any = useField();
     const fieldNames = useFieldNames(props);
     const [visibleSelector, setVisibleSelector] = useState(false);
     const fieldSchema = useFieldSchema();
     const insertSelector = useInsertSchema('Selector');
     const { options: collectionField } = useAssociationFieldContext();
+    const { collectionName } = useFormBlockContext();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const isAllowAddNew = fieldSchema['x-add-new'];
     const [selectedRows, setSelectedRows] = useState([]);
+    const recordData = useCollectionRecordData();
     const options = useMemo(() => {
       if (value && Object.keys(value).length > 0) {
         const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
@@ -82,7 +87,6 @@ export const InternalPicker = observer(
       }
       return [];
     }, [value, fieldNames?.label]);
-
     const pickerProps = {
       size: 'small',
       fieldNames,
@@ -95,6 +99,7 @@ export const InternalPicker = observer(
       selectedRows,
       setSelectedRows,
       collectionField,
+      currentFormCollection: collectionName,
     };
 
     const getValue = () => {
@@ -121,6 +126,9 @@ export const InternalPicker = observer(
           }
           setVisible(false);
         },
+        style: {
+          display: multiple !== false && ['o2m', 'm2m'].includes(collectionField?.interface) ? 'block' : 'none',
+        },
       };
     };
     return (
@@ -128,6 +136,8 @@ export const InternalPicker = observer(
         <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
           <div style={{ width: '100%' }}>
             <Select
+              role="button"
+              data-testid="select-data-picker"
               style={{ width: '100%' }}
               popupMatchSelectWidth={false}
               {...others}
@@ -160,7 +170,7 @@ export const InternalPicker = observer(
             />
           </div>
           {isAllowAddNew && (
-            <RecordProvider record={null}>
+            <RecordProvider isNew record={null} parent={recordData}>
               <RecursionField
                 onlyRenderProperties
                 basePath={field.address}
@@ -174,16 +184,22 @@ export const InternalPicker = observer(
         </Input.Group>
         <ActionContextProvider
           value={{
+            openSize: fieldSchema['x-component-props']?.['openSize'] || openSize,
             openMode: 'drawer',
             visible: visibleSelector,
             setVisible: setVisibleSelector,
           }}
         >
           <RecordPickerProvider {...pickerProps}>
-            <CollectionProvider name={collectionField?.target}>
+            <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
-                  <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
+                  <SchemaComponentOptions
+                    scope={{
+                      usePickActionProps,
+                      useTableSelectorProps,
+                    }}
+                  >
                     <RecursionField
                       onlyRenderProperties
                       basePath={field.address}
@@ -195,7 +211,7 @@ export const InternalPicker = observer(
                   </SchemaComponentOptions>
                 </TableSelectorParamsProvider>
               </FormProvider>
-            </CollectionProvider>
+            </CollectionProvider_deprecated>
           </RecordPickerProvider>
         </ActionContextProvider>
       </>

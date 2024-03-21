@@ -1,25 +1,31 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
+
 import {
   ActionContextProvider,
   cx,
   SchemaComponent,
   useAPIClient,
+  useApp,
   useCompile,
   useDocumentTitle,
+  usePlugin,
   useResourceActionContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-import { Breadcrumb, Dropdown, Space, Tag } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+
+import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
 import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
-import { instructions } from './nodes';
 import useStyles from './style';
 import { linkNodes } from './utils';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
 import { StatusButton } from './components/StatusButton';
+import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
+import { useTranslation } from 'react-i18next';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -32,6 +38,7 @@ function attachJobs(nodes, jobs: any[] = []): void {
     node.jobs.push(item);
     item.node = {
       id: node.id,
+      key: node.key,
       title: node.title,
       type: node.type,
     };
@@ -42,6 +49,7 @@ function attachJobs(nodes, jobs: any[] = []): void {
 }
 
 function JobModal() {
+  const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
   const { viewJob: job, setViewJob } = useFlowContext();
   const { styles } = useStyles();
@@ -55,7 +63,7 @@ function JobModal() {
         schema={{
           type: 'void',
           properties: {
-            [`${job?.id}-modal`]: {
+            [`${job?.id}-${job?.updatedAt}-modal`]: {
               type: 'void',
               'x-decorator': 'Form',
               'x-decorator-props': {
@@ -164,7 +172,7 @@ function ExecutionsDropdown(props) {
   const onClick = useCallback(
     ({ key }) => {
       if (key != execution.id) {
-        navigate(`/admin/settings/workflow/executions/${key}`);
+        navigate(getWorkflowExecutionsPath(key));
       }
     },
     [execution],
@@ -203,21 +211,45 @@ function ExecutionsDropdown(props) {
 }
 
 export function ExecutionCanvas() {
+  const { t } = useTranslation();
   const compile = useCompile();
-  const { data, loading } = useResourceActionContext();
+  const { data, loading, refresh } = useResourceActionContext();
   const { setTitle } = useDocumentTitle();
   const [viewJob, setViewJob] = useState(null);
+  const app = useApp();
+  const apiClient = useAPIClient();
   useEffect(() => {
     const { workflow } = data?.data ?? {};
     setTitle?.(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
   }, [data?.data]);
 
+  const onCancel = useCallback(() => {
+    Modal.confirm({
+      title: lang('Cancel the execution'),
+      icon: <ExclamationCircleFilled />,
+      content: lang('Are you sure you want to cancel the execution?'),
+      onOk: () => {
+        apiClient
+          .resource('executions')
+          .cancel({
+            filterByTk: data?.data.id,
+          })
+          .then(() => {
+            message.success(t('Operation succeeded'));
+            refresh();
+          })
+          .catch((response) => {
+            console.error(response.data.error);
+          });
+      },
+    });
+  }, [data?.data]);
+
   if (!data?.data) {
     if (loading) {
-      return <div>{lang('Loading')}</div>;
-    } else {
-      return <div>{lang('Load failed')}</div>;
+      return <Spin />;
     }
+    return <Result status="404" title="Not found" />;
   }
 
   const { jobs = [], workflow: { nodes = [], revisions = [], ...workflow } = {}, ...execution } = data?.data ?? {};
@@ -243,14 +275,19 @@ export function ExecutionCanvas() {
         <header>
           <Breadcrumb
             items={[
-              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
-              { title: <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link> },
+              { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
+              { title: <Link to={getWorkflowDetailPath(workflow.id)}>{workflow.title}</Link> },
               { title: <ExecutionsDropdown /> },
             ]}
           />
         </header>
         <aside>
           <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
+          {execution.status ? null : (
+            <Tooltip title={lang('Cancel the execution')}>
+              <Button type="link" danger onClick={onCancel} shape="circle" size="small" icon={<StopOutlined />} />
+            </Tooltip>
+          )}
           <time>{str2moment(execution.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
         </aside>
       </div>

@@ -1,6 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import type { WorkflowModel as WorkflowModelType } from '../../types';
 
 describe('workflow > instructions > update', () => {
@@ -78,7 +78,7 @@ describe('workflow > instructions > update', () => {
           collection: 'posts',
           params: {
             filter: {
-              id: `{{$jobsMapByNodeId.${n1.id}.id}}`,
+              id: `{{$jobsMapByNodeKey.${n1.key}.id}}`,
             },
             values: {
               title: 'changed',

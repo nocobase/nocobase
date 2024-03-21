@@ -1,162 +1,78 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaInitializerChildren } from '../../application';
 import { useCompile } from '../../schema-component';
-import { SchemaInitializer } from '../SchemaInitializer';
 import {
-  gridRowColWrap,
   useAssociatedFormItemInitializerFields,
   useFilterAssociatedFormItemInitializerFields,
-  useFilterFormItemInitializerFields,
   useFilterInheritsFormItemInitializerFields,
-  useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
 
-// 表单里配置字段
-export const FormItemInitializers = (props: any) => {
+export const ParentCollectionFields = () => {
+  const inheritFields = useInheritsFormItemInitializerFields();
   const { t } = useTranslation();
-  const { insertPosition, component } = props;
+  const compile = useCompile();
+  if (!inheritFields?.length) return null;
+  const res = [];
+  inheritFields.forEach((inherit) => {
+    Object.values(inherit)[0].length &&
+      res.push({
+        type: 'itemGroup',
+        divider: true,
+        title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+        children: Object.values(inherit)[0],
+      });
+  });
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
+};
+
+export const AssociatedFields = () => {
   const associationFields = useAssociatedFormItemInitializerFields({
     readPretty: true,
     block: 'Form',
   });
-  const inheritFields = useInheritsFormItemInitializerFields();
-  const compile = useCompile();
-  const fieldItems: any[] = [
+  const { t } = useTranslation();
+  if (associationFields.length === 0) return null;
+  const schema: any = [
     {
       type: 'itemGroup',
-      title: t('Display fields'),
-      children: useFormItemInitializerFields(),
+      title: t('Display association fields'),
+      children: associationFields,
     },
   ];
-  if (inheritFields?.length > 0) {
-    inheritFields.forEach((inherit) => {
-      Object.values(inherit)[0].length &&
-        fieldItems.push(
-          {
-            type: 'divider',
-          },
-          {
-            type: 'itemGroup',
-            title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-            children: Object.values(inherit)[0],
-          },
-        );
-    });
-  }
-  associationFields.length > 0 &&
-    fieldItems.push(
-      {
-        type: 'divider',
-      },
-      {
-        type: 'itemGroup',
-        title: t('Display association fields'),
-        children: associationFields,
-      },
-    );
-
-  fieldItems.push(
-    {
-      type: 'divider',
-    },
-    {
-      type: 'item',
-      title: t('Add text'),
-      component: 'BlockInitializer',
-      schema: {
-        type: 'void',
-        'x-editable': false,
-        'x-decorator': 'FormItem',
-        'x-designer': 'Markdown.Void.Designer',
-        'x-component': 'Markdown.Void',
-        'x-component-props': {
-          content: t('This is a demo text, **supports Markdown syntax**.'),
-        },
-      },
-    },
-  );
-  return (
-    <SchemaInitializer.Button
-      wrap={gridRowColWrap}
-      icon={'SettingOutlined'}
-      items={fieldItems}
-      insertPosition={insertPosition}
-      component={component}
-      title={component ? null : t('Configure fields')}
-    />
-  );
+  return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-export const FilterFormItemInitializers = (props: any) => {
-  const { t } = useTranslation();
-  const { insertPosition, component } = props;
-  const associationFields = useFilterAssociatedFormItemInitializerFields();
+export const FilterParentCollectionFields = () => {
   const inheritFields = useFilterInheritsFormItemInitializerFields();
+  const { t } = useTranslation();
   const compile = useCompile();
-  const fieldItems: any[] = [
-    {
-      type: 'itemGroup',
-      title: t('Display fields'),
-      children: useFilterFormItemInitializerFields(),
-    },
-  ];
+  const res = [];
   if (inheritFields?.length > 0) {
     inheritFields.forEach((inherit) => {
       Object.values(inherit)[0].length &&
-        fieldItems.push(
-          {
-            type: 'divider',
-          },
-          {
-            type: 'itemGroup',
-            title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-            children: Object.values(inherit)[0],
-          },
-        );
+        res.push({
+          divider: true,
+          type: 'itemGroup',
+          title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+          children: Object.values(inherit)[0],
+        });
     });
   }
 
-  associationFields.length > 0 &&
-    fieldItems.push(
-      {
-        type: 'divider',
-      },
-      {
-        type: 'itemGroup',
-        title: t('Display association fields'),
-        children: associationFields,
-      },
-    );
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
+};
 
-  fieldItems.push(
+export const FilterAssociatedFields = () => {
+  const associationFields = useFilterAssociatedFormItemInitializerFields();
+  const { t } = useTranslation();
+  const res: any[] = [
     {
-      type: 'divider',
+      type: 'itemGroup',
+      title: t('Display association fields'),
+      children: associationFields,
     },
-    {
-      type: 'item',
-      title: t('Add text'),
-      component: 'BlockInitializer',
-      schema: {
-        type: 'void',
-        'x-editable': false,
-        'x-decorator': 'FormItem',
-        'x-designer': 'Markdown.Void.Designer',
-        'x-component': 'Markdown.Void',
-        'x-component-props': {
-          content: t('This is a demo text, **supports Markdown syntax**.'),
-        },
-      },
-    },
-  );
-  return (
-    <SchemaInitializer.Button
-      wrap={gridRowColWrap}
-      icon={'SettingOutlined'}
-      items={fieldItems}
-      insertPosition={insertPosition}
-      component={component}
-      title={component ? null : t('Configure fields')}
-    />
-  );
+  ];
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };

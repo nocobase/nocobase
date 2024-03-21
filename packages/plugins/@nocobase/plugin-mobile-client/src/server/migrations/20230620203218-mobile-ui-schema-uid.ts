@@ -2,7 +2,12 @@ import { Model } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
+  appVersion = '<0.14.0-alpha.1';
   async up() {
+    const result = await this.app.version.satisfies('<0.14.0-alpha.1');
+    if (!result) {
+      return;
+    }
     const systemSettings = this.db.getRepository('systemSettings');
     let instance: Model = await systemSettings.findOne();
     if (instance?.options?.mobileSchemaUid) {

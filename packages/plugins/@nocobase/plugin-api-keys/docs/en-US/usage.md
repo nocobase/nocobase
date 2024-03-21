@@ -14,6 +14,8 @@ Here's an example using cURL:
 curl '{domain}/api/roles:check' -H 'Authorization: Bearer {API key}'
 ```
 
+> Warning: When using the `Docker` image to use `NocoBase`, make sure you have configured the [APP_KEY](https://docs.nocobase.com/api/env#app_key) environment variable, otherwise the API key will be invalid after each restart.
+
 ## Deleting an API key
 
 After deleting the API key, it will no longer be usable.

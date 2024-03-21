@@ -1,5 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
+import path from 'path';
 import { getConfiguration, setConfiguration } from './actions';
 import { CircleField, LineStringField, PointField, PolygonField } from './fields';
 import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
@@ -24,9 +24,7 @@ export class MapPlugin extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.app.resource({
       name: 'map-configuration',

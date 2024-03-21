@@ -11,6 +11,14 @@ function isNumeric(str: any) {
 
 export class DateValueParser extends BaseValueParser {
   async setValue(value: any) {
+    if (typeof value === 'string') {
+      const match = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
+      if (match) {
+        const m = dayjs(`${match[1]}-${match[2]}-${match[3]} 00:00:00.000`);
+        this.value = m.toISOString();
+        return;
+      }
+    }
     if (dayjs.isDayjs(value)) {
       this.value = value;
     } else if (isDate(value)) {

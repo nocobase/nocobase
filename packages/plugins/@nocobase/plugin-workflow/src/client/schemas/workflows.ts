@@ -1,9 +1,10 @@
 import { ISchema, useForm } from '@formily/react';
+import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 // import { triggers } from '../triggers';
+import React from 'react';
 import { executionSchema } from './executions';
 
 const collection = {
@@ -88,6 +89,27 @@ const workflowFieldset = {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
+  sync: {
+    type: 'boolean',
+    title: `{{ t("Execute mode", { ns: "${NAMESPACE}" }) }}`,
+    description: `{{ t("Execute workflow asynchronously or synchronously based on trigger type, and could not be changed after created.", { ns: "${NAMESPACE}" }) }}`,
+    'x-decorator': 'FormItem',
+    'x-component': 'SyncOptionSelect',
+    'x-component-props': {
+      options: [
+        {
+          label: `{{ t("Asynchronously", { ns: "${NAMESPACE}" }) }}`,
+          value: false,
+          tooltip: `{{ t("Will be executed in the background as a queued task.", { ns: "${NAMESPACE}" }) }}`,
+        },
+        {
+          label: `{{ t("Synchronously", { ns: "${NAMESPACE}" }) }}`,
+          value: true,
+          tooltip: `{{ t("For user actions that require immediate feedback. Can not use asynchronous nodes in such mode, and it is not recommended to perform time-consuming operations under synchronous mode.", { ns: "${NAMESPACE}" }) }}`,
+        },
+      ],
+    },
+  },
   enabled: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
@@ -100,14 +122,6 @@ const workflowFieldset = {
     type: 'object',
     'x-component': 'fieldset',
     properties: {
-      // NOTE: not to expose this option for now, because hard to track errors
-      // useTransaction: {
-      //   type: 'boolean',
-      //   title: `{{ t("Use transaction", { ns: "${NAMESPACE}" }) }}`,
-      //   description: `{{ t("Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.", { ns: "${NAMESPACE}" }) }}`,
-      //   'x-decorator': 'FormItem',
-      //   'x-component': 'Checkbox',
-      // },
       deleteExecutionOnStatus: {
         type: 'array',
         title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
@@ -142,7 +156,7 @@ export const workflowSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider',
+      'x-component': 'CollectionProvider_deprecated',
       'x-component-props': {
         collection,
       },
@@ -170,6 +184,18 @@ export const workflowSchema: ISchema = {
               },
               'x-align': 'left',
             },
+            delete: {
+              type: 'void',
+              title: '{{t("Delete")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
+            },
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
@@ -191,6 +217,7 @@ export const workflowSchema: ISchema = {
                   properties: {
                     title: workflowFieldset.title,
                     type: workflowFieldset.type,
+                    sync: workflowFieldset.sync,
                     description: workflowFieldset.description,
                     options: workflowFieldset.options,
                     footer: {
@@ -215,18 +242,6 @@ export const workflowSchema: ISchema = {
                       },
                     },
                   },
-                },
-              },
-            },
-            delete: {
-              type: 'void',
-              title: '{{t("Delete")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ cm.useBulkDestroyAction }}',
-                confirm: {
-                  title: "{{t('Delete record')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
                 },
               },
             },
@@ -289,7 +304,13 @@ export const workflowSchema: ISchema = {
                   type: 'number',
                   'x-decorator': 'OpenDrawer',
                   'x-decorator-props': {
-                    component: 'a',
+                    component: function Com(props) {
+                      const record = useRecord();
+                      return React.createElement('a', {
+                        'aria-label': `executed-${record.title}`,
+                        ...props,
+                      });
+                    },
                   },
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
@@ -311,7 +332,7 @@ export const workflowSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    view: {
+                    configure: {
                       type: 'void',
                       'x-component': 'WorkflowLink',
                     },
@@ -334,6 +355,7 @@ export const workflowSchema: ISchema = {
                           properties: {
                             title: workflowFieldset.title,
                             enabled: workflowFieldset.enabled,
+                            sync: workflowFieldset.sync,
                             description: workflowFieldset.description,
                             options: workflowFieldset.options,
                             footer: {

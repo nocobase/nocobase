@@ -1,5 +1,5 @@
 import { FormItem } from '@formily/antd-v5';
-import { Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Application, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {

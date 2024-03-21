@@ -26,6 +26,58 @@ describe('destroy action with acl', () => {
     await app.destroy();
   });
 
+  it('should create role through user resource', async () => {
+    const UserCollection = app.db.getCollection('users');
+
+    const user = await UserCollection.repository.create({
+      values: {
+        name: 'test_user',
+      },
+    });
+
+    const userRolesRepository = app.db.getRepository('users.roles', user.get('id'));
+    const roleName = 'r_voluptas-assumenda-omnis';
+    await userRolesRepository.create({
+      values: {
+        name: roleName,
+        snippets: ['!ui.*', '!pm', '!pm.*'],
+        title: 'r_harum-qui-doloremque',
+        resources: [
+          {
+            usingActionsConfig: true,
+            actions: [
+              {
+                name: 'create',
+                fields: ['id', 'nickname', 'username', 'email', 'phone', 'password', 'roles'],
+                scope: null,
+              },
+              {
+                name: 'view',
+                fields: ['id', 'nickname', 'username', 'email', 'phone', 'password', 'roles'],
+                scope: {
+                  name: '数据范围',
+                  scope: {
+                    createdById: '{{ ctx.state.currentUser.id }}',
+                  },
+                },
+              },
+            ],
+            name: 'users',
+          },
+        ],
+      },
+    });
+
+    const role = await app.db.getRepository('roles').findOne({
+      filter: {
+        name: roleName,
+      },
+      appends: ['resources'],
+    });
+
+    expect(role.get('resources').length).toBe(1);
+  });
+
   it('should load the association collection when the source collection does not have the createdById field', async () => {
     const A = app.collection({
       name: 'a',

@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import moment from 'moment';
+import dayjs from 'dayjs';
 
 import { connect, mapProps } from '@formily/react';
 import { useBoolean } from 'ahooks';
@@ -7,7 +7,7 @@ import { Input, Radio, Space } from 'antd';
 import React, { useState } from 'react';
 import { useToken } from '../../';
 
-const date = moment();
+const date = dayjs();
 
 const spaceCSS = css`
   width: 100%;
@@ -16,7 +16,7 @@ const spaceCSS = css`
   }
 `;
 export const DateFormatCom = (props?) => {
-  const date = moment();
+  const date = dayjs();
   return (
     <div style={{ display: 'inline-flex' }}>
       <span>{props.format}</span>
@@ -57,7 +57,6 @@ const InternalExpiresRadio = (props) => {
       onChange(v.target.value);
     }
   };
-
   return (
     <Space className={spaceCSS}>
       <Radio.Group value={isCustom ? 'custom' : props.value} onChange={onSelectChange}>
@@ -65,15 +64,12 @@ const InternalExpiresRadio = (props) => {
           {props.options.map((v) => {
             if (v.value === 'custom') {
               return (
-                <Radio value={v.value}>
+                <Radio value={v.value} key={v.value}>
                   <Input
                     style={{ width: '150px' }}
                     defaultValue={targetValue}
                     onChange={(e) => {
-                      if (
-                        e.target.value &&
-                        moment(timeFormat ? date.format() : date.toLocaleString(), e.target.value).isValid()
-                      ) {
+                      if (e.target.value) {
                         setCustomFormatPreview(date.format(e.target.value));
                       } else {
                         setCustomFormatPreview(null);
@@ -87,7 +83,13 @@ const InternalExpiresRadio = (props) => {
                 </Radio>
               );
             }
-            return <Radio value={v.value}>{v.label}</Radio>;
+            return (
+              <Radio value={v.value} key={v.value} aria-label={v.value}>
+                <span role="button" aria-label={v.value}>
+                  {v.label}
+                </span>
+              </Radio>
+            );
           })}
         </Space>
       </Radio.Group>

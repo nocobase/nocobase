@@ -1,6 +1,6 @@
 import { Switch } from '@formily/antd-v5';
 import { useField } from '@formily/react';
-import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettingsModalItem } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
 import { useSchemaPatch } from '../../hooks';
@@ -11,7 +11,7 @@ export const HeaderDesigner = () => {
   const { t } = useTranslation();
   return (
     <GeneralSchemaDesigner draggable={false}>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Edit info')}
         components={{ Switch }}
         initialValues={field.componentProps}

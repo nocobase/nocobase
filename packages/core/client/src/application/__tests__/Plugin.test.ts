@@ -4,13 +4,6 @@ import { Application } from '../Application';
 import { Plugin } from '../Plugin';
 
 describe('Plugin', () => {
-  beforeAll(() => {
-    const mock = new MockAdapter(axios);
-    mock.onGet('pm:listEnabled').reply(200, {
-      data: [],
-    });
-  });
-
   it('lifecycle', async () => {
     const afterAdd = vitest.fn();
     const beforeLoad = vitest.fn();
@@ -66,7 +59,64 @@ describe('PluginManager', () => {
     expect(fn2).toBeCalledWith(config);
   });
 
-  it('dynamic Plugins', async () => {
+  it('remote plugins', async () => {
+    const mock = new MockAdapter(axios);
+    mock.onGet('pm:listEnabled').reply(200, {
+      data: [
+        {
+          name: '@nocobase/demo',
+          packageName: '@nocobase/demo',
+          url: 'https://demo1.com',
+        },
+        {
+          name: '@nocobase/demo2',
+          packageName: '@nocobase/demo2',
+          url: 'https://demo2.com',
+        },
+      ],
+    });
+
+    // mock requirejs
+    const remoteFn = vi.fn();
+
+    const demo1Mock = vi.fn();
+    const demo2Mock = vi.fn();
+    class Demo1Plugin extends Plugin {
+      async load() {
+        demo1Mock();
+      }
+    }
+
+    class Demo2Plugin extends Plugin {
+      async load() {
+        demo2Mock();
+      }
+    }
+
+    const mockPluginsModules = (pluginData, resolve) => {
+      remoteFn();
+      resolve({ default: Demo1Plugin }, { default: Demo2Plugin });
+    };
+
+    const requirejs: any = {
+      requirejs: mockPluginsModules,
+    };
+
+    requirejs.requirejs.config = vi.fn();
+    requirejs.requirejs.requirejs = vi.fn();
+
+    const app = new Application({
+      loadRemotePlugins: true,
+    });
+    app.requirejs = requirejs;
+
+    await app.load();
+
+    expect(remoteFn).toBeCalledTimes(1);
+    expect(demo1Mock).toBeCalledTimes(1);
+  });
+
+  it('Load other plugins through plugins', async () => {
     const fn2 = vitest.fn();
     const config = { a: 1 };
     class Demo2 extends Plugin {
@@ -93,6 +143,10 @@ describe('PluginManager', () => {
       async afterAdd() {
         expect(this.pm).toBe(this.app.pm);
         expect(this.router).toBe(this.app.router);
+        expect(this.pluginManager).toBe(this.app.pluginManager);
+        expect(this.pluginSettingsManager).toBe(this.app.pluginSettingsManager);
+        expect(this.schemaInitializerManager).toBe(this.app.schemaInitializerManager);
+        expect(this.schemaSettingsManager).toBe(this.app.schemaSettingsManager);
       }
     }
     const app = new Application({ plugins: [[DemoPlugin, { name: 'demo' }]] });

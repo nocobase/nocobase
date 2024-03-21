@@ -4,15 +4,14 @@ import { afterCreate, afterDestroy, afterUpdate } from './hooks';
 
 export default class PluginActionLogs extends Plugin {
   async beforeLoad() {
-    this.db.on('afterCreate', afterCreate(this.app));
-    this.db.on('afterUpdate', afterUpdate(this.app));
-    this.db.on('afterDestroy', afterDestroy(this.app));
+    this.db.on('afterCreate', afterCreate);
+    this.db.on('afterUpdate', afterUpdate);
+    this.db.on('afterDestroy', afterDestroy);
   }
 
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
+
     this.db.addMigrations({
       namespace: 'audit-logs',
       directory: path.resolve(__dirname, './migrations'),

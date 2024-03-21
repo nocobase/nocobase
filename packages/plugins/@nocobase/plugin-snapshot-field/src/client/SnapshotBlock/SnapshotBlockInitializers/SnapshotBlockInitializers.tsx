@@ -1,44 +1,76 @@
-import React from 'react';
-import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
-import { useSnapshotTranslation } from '../../locale';
+import { CompatibleSchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import { NAMESPACE } from '../../locale';
 
-export const SnapshotBlockInitializers = (props: any) => {
-  const { t } = useSnapshotTranslation();
-  const { insertPosition, component } = props;
-  return (
-    <SchemaInitializer.Button
-      wrap={gridRowColWrap}
-      insertPosition={insertPosition}
-      component={component}
-      title={component ? null : t('Add block')}
-      icon={'PlusOutlined'}
-      items={[
+/**
+ * @deprecated
+ */
+export const snapshotBlockInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'SnapshotBlockInitializers',
+  wrap: gridRowColWrap,
+  title: `{{t("Add block", { ns: "${NAMESPACE}" })}}`,
+  icon: 'PlusOutlined',
+  items: [
+    {
+      type: 'itemGroup',
+      title: '{{t("Current record blocks")}}',
+      name: 'currentRecordBlocks',
+      children: [
         {
-          type: 'itemGroup',
-          title: '{{t("Current record blocks")}}',
-          children: [
-            {
-              key: 'details',
-              type: 'item',
-              title: '{{t("Details")}}',
-              component: 'SnapshotBlockInitializersDetailItem',
-              actionInitializers: 'CalendarFormActionInitializers',
-            },
-          ],
+          name: 'details',
+          title: '{{t("Details")}}',
+          Component: 'SnapshotBlockInitializersDetailItem',
+          actionInitializers: 'details:configureActions',
         },
+      ],
+    },
+    {
+      type: 'itemGroup',
+      title: '{{t("Other blocks")}}',
+      name: 'otherBlocks',
+      children: [
         {
-          type: 'itemGroup',
-          title: '{{t("Other blocks")}}',
-          children: [
-            {
-              key: 'markdown',
-              type: 'item',
-              title: '{{t("Markdown")}}',
-              component: 'MarkdownBlockInitializer',
-            },
-          ],
+          name: 'markdown',
+          title: '{{t("Markdown")}}',
+          Component: 'MarkdownBlockInitializer',
         },
-      ]}
-    />
-  );
-};
+      ],
+    },
+  ],
+});
+
+export const snapshotBlockInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'popup:snapshot:addBlock',
+    wrap: gridRowColWrap,
+    title: `{{t("Add block", { ns: "${NAMESPACE}" })}}`,
+    icon: 'PlusOutlined',
+    items: [
+      {
+        type: 'itemGroup',
+        title: '{{t("Current record blocks")}}',
+        name: 'currentRecordBlocks',
+        children: [
+          {
+            name: 'details',
+            title: '{{t("Details")}}',
+            Component: 'SnapshotBlockInitializersDetailItem',
+            actionInitializers: 'details:configureActions',
+          },
+        ],
+      },
+      {
+        type: 'itemGroup',
+        title: '{{t("Other blocks")}}',
+        name: 'otherBlocks',
+        children: [
+          {
+            name: 'markdown',
+            title: '{{t("Markdown")}}',
+            Component: 'MarkdownBlockInitializer',
+          },
+        ],
+      },
+    ],
+  },
+  snapshotBlockInitializers_deprecated,
+);

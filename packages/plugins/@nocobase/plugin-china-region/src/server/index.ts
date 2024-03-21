@@ -16,9 +16,7 @@ export class PluginChinaRegion extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
 
     this.app.acl.allow('chinaRegions', 'list', 'loggedIn');
 

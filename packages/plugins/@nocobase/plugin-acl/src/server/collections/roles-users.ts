@@ -1,8 +1,9 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   name: 'rolesUsers',
-  duplicator: 'optional',
-  namespace: 'acl.acl',
+  dumpRules: {
+    group: 'user',
+  },
   fields: [{ type: 'boolean', name: 'default' }],
-} as CollectionOptions;
+});

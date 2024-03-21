@@ -6,30 +6,34 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useGlobalTheme,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { createMapBlockSchema, findNestedOption } from './utils';
 
-export const MapBlockInitializer = (props) => {
-  const { insert } = props;
+export const MapBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
-  const { getCollectionFieldsOptions } = useCollectionManager();
+  const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
   const { t } = useMapTranslation();
   const { theme } = useGlobalTheme();
-
   return (
     <DataBlockInitializer
-      {...props}
       componentType={'Map'}
       icon={<TableOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon'], {
           association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
+          dataSource: item.dataSource,
         });
-        const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string');
+        const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string', {
+          dataSource: item.dataSource,
+        });
         const values = await FormDialog(
           t('Create map block'),
           () => {
@@ -82,13 +86,16 @@ export const MapBlockInitializer = (props) => {
         insert(
           createMapBlockSchema({
             collection: item.name,
+            dataSource: item.dataSource,
             fieldNames: {
               ...values,
             },
+            settings: 'blockSettings:map',
           }),
         );
       }}
       title={t('Map block')}
+      {...itemConfig}
     />
   );
 };

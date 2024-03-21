@@ -1,12 +1,11 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import {
-  CollectionManagerContext,
-  CollectionManagerProvider,
+  ExtendCollectionsProvider,
   FormProvider,
   SchemaComponent,
   TableBlockProvider,
-  useCollection,
+  useCollection_deprecated,
   useCompile,
   useRecord,
 } from '@nocobase/client';
@@ -104,6 +103,7 @@ const Value = observer(
 );
 
 const IsAssociationBlock = createContext(null);
+IsAssociationBlock.displayName = 'IsAssociationBlock';
 
 export const AuditLogs: any = () => {
   const isAssoc = useContext(IsAssociationBlock);
@@ -171,7 +171,7 @@ export const AuditLogs: any = () => {
                 'x-decorator': 'TableV2.Column.ActionBar',
                 'x-component': 'TableV2.Column',
                 'x-designer': 'TableV2.ActionColumnDesigner',
-                'x-initializer': 'TableActionColumnInitializers',
+                'x-initializer': 'table:configureItemActions',
                 properties: {
                   actions: {
                     type: 'void',
@@ -184,7 +184,9 @@ export const AuditLogs: any = () => {
                       o80rypwmeeg: {
                         type: 'void',
                         title: '{{ t("View") }}',
-                        'x-designer': 'Action.Designer',
+                        // 'x-designer': 'Action.Designer',
+                        'x-toolbar': 'ActionSchemaToolbar',
+                        'x-settings': 'actionSettings:view',
                         'x-component': 'Action.Link',
                         'x-component-props': {
                           openMode: 'drawer',
@@ -460,9 +462,8 @@ export const AuditLogs: any = () => {
 
 AuditLogs.Decorator = observer(
   (props: any) => {
-    const parent = useCollection();
+    const parent = useCollection_deprecated();
     const record = useRecord();
-    const { interfaces } = useContext(CollectionManagerContext);
     let filter = props?.params?.filter;
     if (parent.name) {
       const filterByTk = record?.[parent.filterTargetKey || 'id'];
@@ -500,9 +501,9 @@ AuditLogs.Decorator = observer(
     };
     return (
       <IsAssociationBlock.Provider value={!!parent.name}>
-        <CollectionManagerProvider collections={[collection]} interfaces={interfaces}>
+        <ExtendCollectionsProvider collections={[collection]}>
           <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
-        </CollectionManagerProvider>
+        </ExtendCollectionsProvider>
       </IsAssociationBlock.Provider>
     );
   },

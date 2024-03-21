@@ -1,5 +1,9 @@
 name: Release
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     tags:
@@ -8,7 +12,7 @@ on:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
-    container: node:16
+    container: node:18
     steps:
       -
         name: Checkout

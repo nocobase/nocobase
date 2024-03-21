@@ -1,0 +1,21 @@
+{
+  "name": "@nocobase/plugin-action-print",
+  "version": "0.20.0-alpha.15",
+  "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/action-print",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-print",
+  "displayName": "Action: Print",
+  "displayName.zh-CN": "操作：打印",
+  "description": "Calls the browser's print function to print a record.",
+  "description.zh-CN": "调用浏览器的打印功能实现单条数据的打印。",
+  "license": "AGPL-3.0",
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "keywords": [
+    "Actions"
+  ]
+}

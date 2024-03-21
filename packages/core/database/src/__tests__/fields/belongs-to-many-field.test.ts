@@ -7,10 +7,114 @@ describe('belongs to many field', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should check belongs to many association keys', async () => {
+    const PostTag = db.collection({
+      name: 'postsTags',
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+        },
+        {
+          type: 'text',
+          name: 'postId',
+        },
+        {
+          type: 'text',
+          name: 'tagId',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const Tag = db.collection({
+      name: 'tags',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    let error;
+
+    try {
+      Post.setField('tags', {
+        type: 'belongsToMany',
+        through: 'postsTags',
+        target: 'tags',
+        foreignKey: 'postId',
+        otherKey: 'tagId',
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+
+    console.log(error.message);
+  });
+
+  it('should define belongs to many when change alias name', async () => {
+    const Through = db.collection({
+      name: 't1',
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+        },
+      ],
+    });
+
+    const A = db.collection({
+      name: 'a',
+    });
+
+    const B = db.collection({
+      name: 'b',
+    });
+
+    await db.sync();
+
+    let error;
+
+    expect(Object.keys(A.model.associations).length).toEqual(0);
+    try {
+      A.setField('t1', {
+        type: 'belongsToMany',
+        through: 't1',
+        target: 't1',
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+
+    expect(Object.keys(A.model.associations).length).toEqual(0);
+    let error2;
+    try {
+      A.setField('xxx', {
+        type: 'belongsToMany',
+        through: 't1',
+        target: 't1',
+      });
+    } catch (e) {
+      error2 = e;
+    }
+
+    expect(error2).not.toBeDefined();
   });
 
   it('should define belongs to many relation through exists pivot collection', async () => {

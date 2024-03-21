@@ -1,12 +1,12 @@
 import { useField, useForm } from '@formily/react';
 import { Cascader, Input, Select, Spin, Table, Tag } from 'antd';
-import { last } from 'lodash';
+import { last, omit } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceActionContext, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
-import { getOptions } from '../../Configuration/interfaces';
-import { useCollectionManager } from '../../hooks/useCollectionManager';
+import { useFieldInterfaceOptions } from '../../Configuration/interfaces';
+import { useCollectionManager_deprecated } from '../../hooks/useCollectionManager_deprecated';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -32,15 +32,16 @@ const PreviewCom = (props) => {
   const field: any = useField();
   const form = useForm();
   const { getCollection, getInterface, getCollectionFields, getInheritCollections, getParentCollectionFields } =
-    useCollectionManager();
+    useCollectionManager_deprecated();
   const compile = useCompile();
-  const initOptions = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
+  const options = useFieldInterfaceOptions();
+  const initOptions = options.filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
     const data = [];
     sourceCollections.forEach((item) => {
       const collection = getCollection(item);
       const inherits = getInheritCollections(item);
-      const result = inherits.map((v) => {
+      const result: any[] = inherits.map((v) => {
         const fields = getParentCollectionFields(v, item);
         return {
           type: 'group',
@@ -59,12 +60,12 @@ const PreviewCom = (props) => {
       const children = collection.fields
         .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
         ?.map((v) => {
-          return { value: v.name, label: t(v.uiSchema?.title) };
+          return { value: v.name, key: v.name, label: t(v.uiSchema?.title || v.name) };
         })
         .concat(result);
       data.push({
         value: item,
-        label: t(collection.title),
+        label: t(collection.title || collection.name),
         children,
       });
     });
@@ -82,9 +83,17 @@ const PreviewCom = (props) => {
             setDataSource([]);
             const fieldsData = Object.values(data?.data?.fields)?.map((v: any) => {
               if (v.source) {
-                return v;
+                const option = fields?.data.find((h) => h.name === v.name) || v;
+                return {
+                  ...v,
+                  uiSchema: { ...omit(option.uiSchema, 'rawTitle'), title: option.uiSchema?.title || option.name },
+                };
               } else {
-                return fields?.data.find((h) => h.name === v.name) || v;
+                const option = fields?.data.find((h) => h.name === v.name) || v;
+                return {
+                  ...option,
+                  uiSchema: { ...omit(option.uiSchema, 'rawTitle'), title: option.uiSchema?.title || option.name },
+                };
               }
             });
             field.value = fieldsData;
@@ -184,7 +193,7 @@ const PreviewCom = (props) => {
             {data.map((group) => (
               <Select.OptGroup key={group.key} label={compile(group.label)}>
                 {group.children.map((item) => (
-                  <Select.Option key={item.value} value={item.value}>
+                  <Select.Option key={item.value} value={item.name}>
                     {compile(item.label)}
                   </Select.Option>
                 ))}
@@ -203,9 +212,12 @@ const PreviewCom = (props) => {
         const item = dataSource[index];
         return (
           <Input
-            value={item?.uiSchema?.title || text}
+            defaultValue={item?.uiSchema?.title || text}
             onChange={(e) =>
-              handleFieldChange({ ...item, uiSchema: { ...item?.uiSchema, title: e.target.value } }, index)
+              handleFieldChange(
+                { ...item, uiSchema: { ...omit(item?.uiSchema, 'rawTitle'), title: e.target.value } },
+                index,
+              )
             }
           />
         );

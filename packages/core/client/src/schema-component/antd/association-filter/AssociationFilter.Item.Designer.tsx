@@ -2,37 +2,37 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import {
-  useCollection,
-  useCollectionFilterOptions,
-  useCollectionManager,
-  useSortFields,
-} from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+  GeneralSchemaDesigner,
+  SchemaSettingsDefaultSortingRules,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useCompile, useDesignable } from '../../hooks';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
 
   const field = useField();
   const { t } = useTranslation();
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
 
-  const collectionField = getField(fieldSchema['name']!) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const filterEnum = collectionField?.target ? useCollectionFilterOptions(collectionField?.target) : [];
-  const defaultFilter = fieldSchema?.['x-component-props']?.params?.filter || {};
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
 
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { dn } = useDesignable();
 
   const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
 
   const options = targetFields
-    // .filter(
-    //   (field) => field?.interface && ['id', 'input', 'phone', 'email', 'integer', 'number'].includes(field?.interface),
-    // )
     .filter((field) => !field?.target && field.type !== 'boolean')
     .map((field) => ({
       value: field?.name,
@@ -44,6 +44,8 @@ export const AssociationFilterItemDesigner = (props) => {
       ['x-uid']: fieldSchema['x-uid'],
     };
     const fieldNames = {
+      ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+      ...fieldSchema['x-component-props']?.['fieldNames'],
       label,
     };
     fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
@@ -55,23 +57,9 @@ export const AssociationFilterItemDesigner = (props) => {
     dn.refresh();
   };
 
-  const sortFields = useSortFields(collectionField?.target);
-  const defaultSort = fieldSchema?.['x-component-props']?.params?.sort || [];
-  const sort = defaultSort?.map((item: string) => {
-    return item.startsWith('-')
-      ? {
-          field: item.substring(1),
-          direction: 'desc',
-        }
-      : {
-          field: item,
-          direction: 'asc',
-        };
-  });
-
   return (
     <GeneralSchemaDesigner {...props} disableInitializer={true}>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Custom title')}
         schema={
           {
@@ -102,7 +90,7 @@ export const AssociationFilterItemDesigner = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.SwitchItem
+      <SchemaSettingsSwitchItem
         title={t('Default collapse')}
         checked={field.componentProps.defaultCollapse}
         onChange={(v) => {
@@ -117,22 +105,10 @@ export const AssociationFilterItemDesigner = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                enum: filterEnum,
-                'x-component': 'Filter',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettingsDataScope
+        collectionName={collectionField?.target}
+        defaultFilter={fieldSchema?.['x-component-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           _.set(field.componentProps, 'params', {
             ...field.componentProps?.params,
@@ -147,30 +123,15 @@ export const AssociationFilterItemDesigner = (props) => {
           });
         }}
       />
-      <SchemaSettings.DefaultSortingRules
-        sort={sort}
-        sortFields={sortFields}
-        onSubmit={({ sort }) => {
-          _.set(field.componentProps, 'params', {
-            ...field.componentProps?.params,
-            sort: sort.map((item) => {
-              return item.direction === 'desc' ? `-${item.field}` : item.field;
-            }),
-          });
-          fieldSchema['x-component-props']['params'] = field.componentProps.params;
-          dn.emit('patch', {
-            schema: fieldSchema,
-          });
-        }}
-      />
-      <SchemaSettings.SelectItem
+      <SchemaSettingsDefaultSortingRules name={collectionField?.target} />
+      <SchemaSettingsSelectItem
         key="title-field"
         title={t('Title field')}
         options={options}
         value={fieldSchema['x-component-props']?.fieldNames?.label}
         onChange={onTitleFieldChange}
       />
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         breakRemoveOn={{
           'x-component': 'Grid',
         }}

@@ -1,81 +1,146 @@
-import { gridRowColWrap } from '@nocobase/client';
+import { CompatibleSchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
-// 页面里添加区块
-export const MBlockInitializers = {
+/**
+ * @deprecated
+ */
+export const mBlockInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'MBlockInitializers',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,
   items: [
     {
-      key: 'dataBlocks',
+      name: 'dataBlocks',
       type: 'itemGroup',
       title: '{{t("Data blocks")}}',
       children: [
         {
-          key: 'GridCard',
+          name: 'gridCard',
           type: 'item',
           title: '{{t("Grid Card")}}',
-          component: 'GridCardBlockInitializer',
+          Component: 'GridCardBlockInitializer',
         },
         {
-          key: 'table',
-          type: 'item',
+          name: 'table',
           title: '{{t("Table")}}',
-          component: 'TableBlockInitializer',
+          Component: 'TableBlockInitializer',
         },
         {
-          key: 'form',
-          type: 'item',
+          name: 'form',
           title: '{{t("Form")}}',
-          component: 'FormBlockInitializer',
+          Component: 'FormBlockInitializer',
         },
         {
-          key: 'details',
-          type: 'item',
+          name: 'details',
           title: '{{t("Details")}}',
-          component: 'DetailsBlockInitializer',
+          Component: 'DetailsBlockInitializer',
         },
         {
-          key: 'calendar',
-          type: 'item',
+          name: 'calendar',
           title: '{{t("Calendar")}}',
-          component: 'CalendarBlockInitializer',
+          Component: 'CalendarBlockInitializer',
         },
         {
-          key: 'mapBlock',
-          type: 'item',
+          name: 'mapBlock',
           title: generateNTemplate('Map'),
-          component: 'MapBlockInitializer',
+          Component: 'MapBlockInitializer',
         },
       ],
     },
     {
-      key: 'otherBlocks',
+      name: 'otherBlocks',
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',
       children: [
         {
-          key: 'menu',
-          type: 'item',
+          name: 'menu',
           title: generateNTemplate('Menu'),
-          component: 'MMenuBlockInitializer',
-          sort: 100,
+          Component: 'MMenuBlockInitializer',
         },
         {
-          key: 'markdown',
-          type: 'item',
+          name: 'markdown',
           title: '{{t("Markdown")}}',
-          component: 'MarkdownBlockInitializer',
+          Component: 'MarkdownBlockInitializer',
         },
         {
-          key: 'settings',
-          type: 'item',
+          name: 'settings',
           title: generateNTemplate('Settings'),
-          component: 'MSettingsBlockInitializer',
-          sort: 100,
+          Component: 'MSettingsBlockInitializer',
         },
       ],
     },
   ],
-};
+});
+
+export const mBlockInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'mobilePage:addBlock',
+    title: '{{t("Add block")}}',
+    icon: 'PlusOutlined',
+    wrap: gridRowColWrap,
+    items: [
+      {
+        name: 'dataBlocks',
+        type: 'itemGroup',
+        title: '{{t("Data blocks")}}',
+        children: [
+          {
+            name: 'gridCard',
+            type: 'item',
+            title: '{{t("Grid Card")}}',
+            Component: 'GridCardBlockInitializer',
+          },
+          {
+            name: 'table',
+            title: '{{t("Table")}}',
+            Component: 'TableBlockInitializer',
+          },
+          {
+            name: 'form',
+            title: '{{t("Form")}}',
+            Component: 'FormBlockInitializer',
+          },
+          {
+            name: 'details',
+            title: '{{t("Details")}}',
+            Component: 'DetailsBlockInitializer',
+          },
+          {
+            name: 'calendar',
+            title: '{{t("Calendar")}}',
+            Component: 'CalendarBlockInitializer',
+          },
+          {
+            name: 'mapBlock',
+            title: generateNTemplate('Map'),
+            Component: 'MapBlockInitializer',
+          },
+        ],
+      },
+      {
+        name: 'otherBlocks',
+        type: 'itemGroup',
+        title: '{{t("Other blocks")}}',
+        children: [
+          {
+            name: 'menu',
+            title: generateNTemplate('Menu'),
+            Component: 'MMenuBlockInitializer',
+          },
+          {
+            name: 'markdown',
+            title: '{{t("Markdown")}}',
+            Component: 'MarkdownBlockInitializer',
+          },
+          {
+            name: 'settings',
+            title: generateNTemplate('Settings'),
+            Component: 'MSettingsBlockInitializer',
+          },
+        ],
+      },
+    ],
+  },
+  mBlockInitializers_deprecated,
+);

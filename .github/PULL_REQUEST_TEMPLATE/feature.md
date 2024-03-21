@@ -1,28 +1,28 @@
-## Description (需求描述)
+## Description
 
 <!-- Describe the new feature or modification to an existing feature clearly and consciously. -->
 
-## Motivation (需求背景)
+## Motivation
 
 <!-- Explain the reason for adding or modifying this feature. -->
 
-## Key changes (关键改动)
+## Key changes
 
 <!-- Provide a technically detailed description of the key changes made. -->
 
-- Frontend (前端)
-- Backend (后端)
+- Frontend
+- Backend
 
-## Test plan (测试计划)
+## Test plan
 
-### Suggestions (测试建议)
+### Suggestions
 
 <!-- Provide any suggestions or recommendations for improvements in the testing plan. -->
 
-### Underlying risk (潜在风险)
+### Underlying risk
 
 <!-- Identify any potential risks or issues that may arise from the new feature or modification. -->
 
-## Showcase (结果展示)
+## Showcase
 
 <!-- Including any screenshots of the new feature or modification. -->

@@ -1,13 +1,16 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { App, Button, Popover } from 'antd';
+import { isPortalInBody } from '@nocobase/utils/client';
+import { App, Button } from 'antd';
 import classnames from 'classnames';
-import lodash from 'lodash';
-import React, { useEffect, useState } from 'react';
+import { default as lodash } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useActionContext } from '../..';
+import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
+import { useACLActionParamsContext } from '../../../acl';
 import { Icon } from '../../../icon';
-import { useRecord } from '../../../record-provider';
+import { RecordProvider, useRecord } from '../../../record-provider';
+import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
@@ -20,6 +23,7 @@ import { ActionPage } from './Action.Page';
 import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
 import { useA } from './hooks';
+import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
 
@@ -36,77 +40,111 @@ export const Action: ComposedAction = observer(
       icon,
       title,
       onClick,
+      style,
+      openSize: os,
+      disabled: propsDisabled,
+      actionCallback,
+      /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
+      addChild,
       ...others
     } = useProps(props);
+    const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
-    const { run, element } = useAction();
+    const { run, element } = useAction(actionCallback);
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
-    const values = useRecord();
+    const record = useRecord();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-    const disabled = form.disabled || field.disabled || props.disabled;
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+
+    const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
+    const variables = useVariables();
+    const localVariables = useLocalVariables({ currentForm: { values: record } as any });
+    const { getAriaLabel } = useGetAriaLabelOfAction(title);
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
     useEffect(() => {
-      field.linkageProperty = {};
+      field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
-          return v.actions?.map((h) => {
-            linkageAction(h.operator, field, v.condition, values);
+          v.actions?.forEach((h) => {
+            linkageAction({
+              operator: h.operator,
+              field,
+              condition: v.condition,
+              variables,
+              localVariables,
+            });
           });
         });
-    }, [linkageRules, values, designable]);
+    }, [field, linkageRules, localVariables, record, variables]);
+
+    const handleButtonClick = useCallback(
+      (e: React.MouseEvent) => {
+        if (isPortalInBody(e.target as Element)) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!disabled && aclCtx) {
+          const onOk = () => {
+            onClick?.(e);
+            setVisible(true);
+            run();
+          };
+          if (confirm?.content) {
+            modal.confirm({
+              title: t(confirm.title, { title: actionTitle }),
+              content: t(confirm.content, { title: actionTitle }),
+              onOk,
+            });
+          } else {
+            onOk();
+          }
+        }
+      },
+      [confirm, disabled, modal, onClick, run],
+    );
+
+    const buttonStyle = useMemo(() => {
+      return {
+        ...style,
+        opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+      };
+    }, [designable, field?.data?.hidden, style]);
 
     const renderButton = () => {
-      if (!designable && field?.data?.hidden) {
+      if (!designable && (field?.data?.hidden || !aclCtx)) {
         return null;
       }
+
       return (
         <SortableItem
-          data-testid={`${fieldSchema['x-action'] || fieldSchema.name}-action`}
+          role="button"
+          aria-label={getAriaLabel()}
           {...others}
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
-          style={{
-            ...others.style,
-            opacity: designable && field?.data?.hidden && 0.1,
-          }}
-          onClick={(e: React.MouseEvent) => {
-            if (!disabled) {
-              e.preventDefault();
-              e.stopPropagation();
-              const onOk = () => {
-                onClick?.(e);
-                setVisible(true);
-                run();
-              };
-              if (confirm) {
-                modal.confirm({
-                  ...confirm,
-                  onOk,
-                });
-              } else {
-                onOk();
-              }
-            }
-          }}
+          style={buttonStyle}
+          onClick={handleButtonClick}
           component={tarComponent || Button}
-          className={classnames(componentCls, hashId, className)}
+          className={classnames(componentCls, hashId, className, 'nb-action')}
           type={props.type === 'danger' ? undefined : props.type}
         >
           {actionTitle}
@@ -114,8 +152,7 @@ export const Action: ComposedAction = observer(
         </SortableItem>
       );
     };
-
-    return wrapSSR(
+    const result = (
       <ActionContextProvider
         button={renderButton()}
         visible={visible}
@@ -131,8 +168,19 @@ export const Action: ComposedAction = observer(
         {!popover && renderButton()}
         {!popover && props.children}
         {element}
-      </ActionContextProvider>,
+      </ActionContextProvider>
     );
+
+    // fix https://nocobase.height.app/T-3235/description
+    if (addChild) {
+      return wrapSSR(
+        <RecordProvider record={null} parent={record}>
+          {result}
+        </RecordProvider>,
+      );
+    }
+
+    return wrapSSR(result);
   },
   { displayName: 'Action' },
 );
@@ -141,7 +189,7 @@ Action.Popover = observer(
   (props) => {
     const { button, visible, setVisible } = useActionContext();
     return (
-      <Popover
+      <StablePopover
         {...props}
         destroyTooltipOnHide
         open={visible}
@@ -151,7 +199,7 @@ Action.Popover = observer(
         content={props.children}
       >
         {button}
-      </Popover>
+      </StablePopover>
     );
   },
   { displayName: 'Action.Popover' },

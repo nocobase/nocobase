@@ -1,6 +1,7 @@
 import { Migration } from '@nocobase/server';
 
-export default class AlertSubTableMigration extends Migration {
+export default class extends Migration {
+  appVersion = '<=0.7.0-alpha.83';
   async up() {
     const result = await this.app.version.satisfies('<=0.7.0-alpha.83');
     if (!result) {

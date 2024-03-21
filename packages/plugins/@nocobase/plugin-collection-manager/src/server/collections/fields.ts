@@ -1,8 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'collection-manager.collections',
-  duplicator: 'required',
+  dumpRules: 'required',
+  shared: true,
   name: 'fields',
   autoGenId: false,
   model: 'FieldModel',

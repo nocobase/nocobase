@@ -2,14 +2,14 @@ import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { useEffect } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection } from '../../../collection-manager';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionBar } from '../action';
 
 export const TableField: any = observer(
   (props) => {
     const fieldSchema = useFieldSchema();
-    const { getField } = useCollection();
+    const { getField } = useCollection_deprecated();
     const field = useField<Field>();
     const collectionField = getField(fieldSchema.name);
     const compile = useCompile();

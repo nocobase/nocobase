@@ -3,6 +3,7 @@ lib/
 esm/
 es/
 .env
+.env.e2e
 .DS_Store
 yarn-error.log
 lerna-debug.log
@@ -21,6 +22,7 @@ docker/**/storage
 cache/diskstore-*
 *.nbdump
 storage/duplicator/*
+storage/backups/*
 **/.dumi/tmp
 **/.dumi/tmp-test
 **/.dumi/tmp-production
@@ -30,4 +32,13 @@ storage/plugins
 storage/tar
 storage/tmp
 storage/app.watch.ts
+storage/logs-e2e
+storage/uploads-e2e
+storage/.pm2-*
 tsconfig.paths.json
+/playwright
+/storage/playwright
+.swc
+ncc-cache/
+yarn--**
+v8-compile-cache-**

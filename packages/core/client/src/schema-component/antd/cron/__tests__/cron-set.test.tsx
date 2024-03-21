@@ -1,5 +1,5 @@
+import { render, screen, userEvent } from '@nocobase/test/client';
 import React from 'react';
-import { render, screen, userEvent } from 'testUtils';
 import Cron from '../demos/demo1';
 import CronSet from '../demos/demo2';
 

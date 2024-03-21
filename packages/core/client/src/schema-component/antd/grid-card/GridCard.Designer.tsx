@@ -4,14 +4,24 @@ import { Slider } from 'antd';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionFilterOptions, useSortFields } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;
@@ -19,15 +29,15 @@ const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
 }, {});
 
 export const GridCardDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const field = useField();
-  const dataSource = useCollectionFilterOptions(name);
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+  const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
@@ -73,7 +83,7 @@ export const GridCardDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaComponentOptions components={{ Slider }}>
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set the count of columns displayed in a row')}
           initialValues={columnCount}
           schema={
@@ -94,25 +104,10 @@ export const GridCardDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.ModalItem
-          title={t('Set the data scope')}
-          schema={
-            {
-              type: 'object',
-              title: t('Set the data scope'),
-              properties: {
-                filter: {
-                  default: defaultFilter,
-                  // title: '数据范围',
-                  enum: dataSource,
-                  'x-component': 'Filter',
-                  'x-component-props': {
-                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  },
-                },
-              },
-            } as ISchema
-          }
+        <SchemaSettingsDataScope
+          collectionName={name}
+          defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+          form={form}
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);
             _.set(fieldSchema, 'x-decorator-props.params.filter', filter);
@@ -125,7 +120,7 @@ export const GridCardDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set default sorting rules')}
           components={{ ArrayItems }}
           schema={
@@ -215,7 +210,8 @@ export const GridCardDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.SelectItem
+        <SetDataLoadingMode />
+        <SchemaSettingsSelectItem
           title={t('Records per page')}
           value={field.decoratorProps?.params?.pageSize || 20}
           options={pageSizeOptions.map((v) => ({ value: v }))}
@@ -230,9 +226,9 @@ export const GridCardDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.Template componentName={'GridCard'} collectionName={name} resourceName={defaultResource} />
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
+        <SchemaSettingsTemplate componentName={'GridCard'} collectionName={name} resourceName={defaultResource} />
+        <SchemaSettingsDivider />
+        <SchemaSettingsRemove
           removeParentsIfNoChildren
           breakRemoveOn={{
             'x-component': 'Grid',

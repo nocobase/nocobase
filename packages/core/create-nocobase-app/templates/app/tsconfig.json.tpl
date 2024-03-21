@@ -16,14 +16,6 @@
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
-    "baseUrl": ".",
-    "paths": {
-      "@{{{name}}}/app-*": [
-        "packages/app/*/src"
-      ],
-      "@{{{name}}}/plugin-*": [
-        "packages/plugins/plugin-*/src"
-      ]
-    }
+    "baseUrl": "."
   }
 }

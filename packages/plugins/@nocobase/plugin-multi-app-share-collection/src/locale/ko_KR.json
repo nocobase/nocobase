@@ -1,0 +1,12 @@
+{
+  "Share collections": "데이터 테이블 공유",
+  "Unshared collections": "공유되지 않은 데이터 테이블",
+  "Shared collections": "공유된 데이터 테이블",
+  "All categories": "모든 카테고리",
+  "Enter name or title...": "이름 또는 제목 입력...",
+  "Are you sure to add the following collections?": "다음 데이터 테이블을 추가하시겠습니까?",
+  "Are you sure to remove the following collections?": "다음 데이터 테이블을 제거하시겠습니까?",
+  "Collection display name": "제목",
+  "Collection name": "식별자",
+  "Collection category": "카테고리"  
+}

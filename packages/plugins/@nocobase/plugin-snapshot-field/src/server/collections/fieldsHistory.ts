@@ -1,13 +1,12 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'snapshot-field.snapshot-field',
-  duplicator: 'required',
+export default defineCollection({
+  dumpRules: 'required',
   name: 'fieldsHistory',
-  title: '{{t("Fields history")}}',
   autoGenId: false,
   model: 'FieldModel',
   timestamps: false,
+  shared: true,
   sortable: {
     name: 'sort',
     scopeKey: 'collectionName',
@@ -72,4 +71,4 @@ export default {
       defaultValue: {},
     },
   ],
-} as CollectionOptions;
+});

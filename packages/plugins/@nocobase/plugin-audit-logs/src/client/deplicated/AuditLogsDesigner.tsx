@@ -1,43 +1,32 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
-  SchemaSettings,
-  useCollection,
-  useCollectionFilterOptions,
+  SchemaSettingsDataScope,
+  SchemaSettingsDivider,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  useCollection_deprecated,
   useDesignable,
+  useFormBlockContext,
   useTableBlockContext,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const AuditLogsDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
+  const { form } = useFormBlockContext();
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   return (
     <GeneralSchemaDesigner title={title || name}>
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-decorator-props': {},
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettingsDataScope
+        collectionName={name}
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           const params = field.decoratorProps.params || {};
           params.filter = filter;
@@ -52,7 +41,7 @@ export const AuditLogsDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.SelectItem
+      <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
@@ -76,8 +65,8 @@ export const AuditLogsDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

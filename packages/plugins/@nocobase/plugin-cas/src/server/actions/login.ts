@@ -1,14 +1,11 @@
 import { Context, Next } from '@nocobase/actions';
 import { CASAuth } from '../auth';
-import { COOKIE_KEY_AUTHENTICATOR } from '../../constants';
 
 export const login = async (ctx: Context, next: Next) => {
-  const { authenticator } = ctx.action.params;
-  ctx.cookies.set(COOKIE_KEY_AUTHENTICATOR, authenticator, {
-    httpOnly: true,
-  });
+  const { authenticator, redirect = '/admin' } = ctx.action.params;
   const auth = (await ctx.app.authManager.get(authenticator, ctx)) as CASAuth;
-  const { casUrl, serviceUrl } = auth.getOptions();
-  ctx.redirect(`${casUrl}/login?service=${serviceUrl}`);
+  const { casUrl } = auth.getOptions();
+  const service = auth.getService(authenticator, ctx.app.name, redirect);
+  ctx.redirect(`${casUrl}/login?service=${service}`);
   next();
 };

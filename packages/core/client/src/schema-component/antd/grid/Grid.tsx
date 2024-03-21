@@ -1,17 +1,21 @@
 import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
+import { useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
+import { useFormBlockType } from '../../../block-provider';
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 
 const GridRowContext = createContext<any>({});
+GridRowContext.displayName = 'GridRowContext';
 const GridColContext = createContext<any>({});
+GridColContext.displayName = 'GridColContext';
 const GridContext = createContext<any>({});
+GridContext.displayName = 'GridContext';
 
 const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
 const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
@@ -303,7 +307,8 @@ export const Grid: any = observer(
     const gridRef = useRef(null);
     const field = useField();
     const fieldSchema = useFieldSchema();
-    const { render, InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
+    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
+    const InitializerComponent = (props) => render(props);
     const addr = field.address.toString();
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
@@ -353,7 +358,7 @@ export const Grid: any = observer(
               );
             })}
           </DndWrapper>
-          <InitializerComponent />
+          {render()}
         </div>
       </GridContext.Provider>,
     );
@@ -368,6 +373,7 @@ Grid.Row = observer(
     const addr = field.address.toString();
     const cols = useColProperties();
     const { showDivider } = useGridContext();
+    const { type } = useFormBlockType();
 
     return (
       <GridRowContext.Provider value={{ schema: fieldSchema, cols }}>
@@ -392,7 +398,16 @@ Grid.Row = observer(
           {cols.map((schema, index) => {
             return (
               <React.Fragment key={index}>
-                <RecursionField name={schema.name} schema={schema} />
+                <RecursionField
+                  name={schema.name}
+                  schema={schema}
+                  mapProperties={(schema) => {
+                    if (type === 'update') {
+                      schema.default = null;
+                    }
+                    return schema;
+                  }}
+                />
                 {showDivider && (
                   <ColDivider
                     cols={cols}
@@ -433,8 +448,7 @@ Grid.Col = observer(
       }
       return { width };
     }, [cols?.length, schema?.['x-component-props']?.['width']]);
-
-    const { setNodeRef } = useDroppable({
+    const { isOver, setNodeRef } = useDroppable({
       id: field.address.toString(),
       data: {
         insertAdjacent: 'beforeEnd',
@@ -442,9 +456,41 @@ Grid.Col = observer(
         wrapSchema: (s) => s,
       },
     });
+    const [active, setActive] = useState(false);
+
+    const droppableStyle = useMemo(() => {
+      if (!isOver)
+        return {
+          height: '100%',
+        };
+
+      return {
+        background: `linear-gradient(to top,  ${new TinyColor(token.colorSettings)
+          .setAlpha(0.1)
+          .toHex8String()} 20%, transparent 20%)`,
+        borderTopRightRadius: '10px',
+        borderTopLeftRadius: '10px',
+        height: '100%',
+      };
+    }, [active, isOver]);
+
+    useDndMonitor({
+      onDragStart(event) {
+        setActive(true);
+      },
+      onDragMove(event) {},
+      onDragOver(event) {},
+      onDragEnd(event) {
+        setActive(false);
+      },
+      onDragCancel(event) {
+        setActive(false);
+      },
+    });
+
     return (
       <GridColContext.Provider value={{ cols, schema }}>
-        <div ref={setNodeRef} style={style} className={cls('nb-grid-col')}>
+        <div ref={setNodeRef} style={{ ...style, ...droppableStyle }} className={cls('nb-grid-col')}>
           {props.children}
         </div>
       </GridColContext.Provider>
@@ -452,3 +498,19 @@ Grid.Col = observer(
   },
   { displayName: 'Grid.Row' },
 );
+
+Grid.wrap = (schema: ISchema) => {
+  return {
+    type: 'void',
+    'x-component': 'Grid.Row',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'Grid.Col',
+        properties: {
+          [schema.name || uid()]: schema,
+        },
+      },
+    },
+  };
+};

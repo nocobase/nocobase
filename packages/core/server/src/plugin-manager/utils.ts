@@ -1,4 +1,4 @@
-import { isURL } from '@nocobase/utils';
+import { importModule, isURL } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
@@ -9,6 +9,7 @@ import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
 import semver from 'semver';
+import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticUtils';
 import {
   APP_NAME,
   DEFAULT_PLUGIN_PATH,
@@ -20,7 +21,6 @@ import {
 } from './constants';
 import deps from './deps';
 import { PluginData } from './types';
-import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticUtils';
 
 /**
  * get temp dir
@@ -191,7 +191,7 @@ export async function downloadAndUnzipToTempDir(fileUrl: string, authToken?: str
     throw new Error(`decompress ${fileUrl} failed`);
   }
 
-  const packageJson = requireNoCache(packageJsonPath);
+  const packageJson = await readJSONFileContent(packageJsonPath);
   const mainFile = path.join(tempPackageContentDir, packageJson.main);
   if (!fs.existsSync(mainFile)) {
     await removeTmpDir(tempFile, tempPackageContentDir);
@@ -337,16 +337,18 @@ export function removePluginPackage(packageName: string) {
  * @example
  * getPackageJson('dayjs') => { name: 'dayjs', version: '1.0.0', ... }
  */
-export function getPackageJson(pluginName: string) {
+export async function getPackageJson(pluginName: string) {
   const packageDir = getStoragePluginDir(pluginName);
-  return getPackageJsonByLocalPath(packageDir);
+  return await getPackageJsonByLocalPath(packageDir);
 }
 
-export function getPackageJsonByLocalPath(localPath: string) {
+export async function getPackageJsonByLocalPath(localPath: string) {
   if (!fs.existsSync(localPath)) {
     return null;
   } else {
-    return requireNoCache(path.join(localPath, 'package.json'));
+    const fullPath = path.join(localPath, 'package.json');
+    const data = await fs.promises.readFile(fullPath, { encoding: 'utf-8' });
+    return JSON.parse(data);
   }
 }
 
@@ -394,9 +396,13 @@ export function removeRequireCache(fileOrPackageName: string) {
   delete require.cache[fileOrPackageName];
 }
 
-export function requireNoCache(fileOrPackageName: string) {
-  removeRequireCache(fileOrPackageName);
-  return require(fileOrPackageName);
+export async function requireNoCache(fileOrPackageName: string) {
+  return await importModule(fileOrPackageName);
+}
+
+export async function readJSONFileContent(filePath: string) {
+  const data = await fs.promises.readFile(filePath, { encoding: 'utf-8' });
+  return JSON.parse(data);
 }
 
 export function requireModule(m: any) {
@@ -409,14 +415,14 @@ export function requireModule(m: any) {
   return m.__esModule ? m.default : m;
 }
 
-function getExternalVersionFromDistFile(packageName: string): false | Record<string, string> {
+async function getExternalVersionFromDistFile(packageName: string): Promise<false | Record<string, string>> {
   const { exists, filePath } = getPackageFilePathWithExistCheck(packageName, 'dist/externalVersion.js');
   if (!exists) {
     return false;
   }
 
   try {
-    return requireNoCache(filePath);
+    return await requireNoCache(filePath);
   } catch (e) {
     console.error(e);
     return false;
@@ -500,7 +506,7 @@ export interface DepCompatible {
 export async function getCompatible(packageName: string) {
   let externalVersion: Record<string, string>;
   if (!process.env.IS_DEV_CMD) {
-    const res = getExternalVersionFromDistFile(packageName);
+    const res = await getExternalVersionFromDistFile(packageName);
     if (!res) {
       return false;
     } else {

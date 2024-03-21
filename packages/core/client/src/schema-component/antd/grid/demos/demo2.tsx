@@ -7,12 +7,14 @@ import {
   FormItem,
   Grid,
   Input,
+  Application,
+  Plugin,
   SchemaComponent,
   SchemaComponentProvider,
 } from '@nocobase/client';
 import React from 'react';
 
-import { mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 
 const { apiClient, mockRequest } = mockAPIClient();
 mockRequest.onGet('/auth:check').reply(() => {
@@ -68,7 +70,7 @@ const schema: ISchema = {
   },
 };
 
-export default function App() {
+const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <CurrentUserProvider>
@@ -78,4 +80,23 @@ export default function App() {
       </CurrentUserProvider>
     </APIClientProvider>
   );
+};
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', {
+      path: '/',
+      Component: Root,
+    });
+  }
 }
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  plugins: [MyPlugin],
+});
+
+export default app.getRootComponent();

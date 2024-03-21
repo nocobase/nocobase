@@ -69,29 +69,31 @@ export class FormulaField extends Field {
   };
 
   updateFieldData = async (instance, { transaction }) => {
-    if (this.collection.name === instance.collectionName && instance.name === this.options.name) {
-      this.options = Object.assign(this.options, instance.options);
-      const { name } = this.options;
+    if (this.collection.name !== instance.collectionName || instance.name !== this.options.name) {
+      return;
+    }
 
-      const records = await this.collection.repository.find({
-        order: [this.collection.model.primaryKeyAttribute],
-        transaction,
-      });
+    this.options = Object.assign(this.options, instance.options);
+    const { name } = this.options;
 
-      for (const record of records) {
-        const scope = record.toJSON();
-        const result = this.calculate(scope);
-        await record.update(
-          {
-            [name]: result,
-          },
-          {
-            transaction,
-            silent: true,
-            hooks: false,
-          },
-        );
-      }
+    const records = await this.collection.repository.find({
+      order: [this.collection.model.primaryKeyAttribute],
+      transaction,
+    });
+
+    for (const record of records) {
+      const scope = record.toJSON();
+      const result = this.calculate(scope);
+      await record.update(
+        {
+          [name]: result,
+        },
+        {
+          transaction,
+          silent: true,
+          hooks: false,
+        },
+      );
     }
   };
 

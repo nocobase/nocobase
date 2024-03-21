@@ -7,6 +7,7 @@ import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';
 
 export const TableFieldContext = createContext<any>({});
+TableFieldContext.displayName = 'TableFieldContext';
 
 const InternalTableFieldProvider = (props) => {
   const { params = {}, showIndex, dragSort, fieldName } = props;
@@ -122,11 +123,12 @@ export class TableFieldResource {
 }
 
 export const WithoutTableFieldResource = createContext(null);
+WithoutTableFieldResource.displayName = 'WithoutTableFieldResource';
 
 export const TableFieldProvider = (props) => {
   return (
     <WithoutTableFieldResource.Provider value={false}>
-      <BlockProvider block={'TableField'} {...props}>
+      <BlockProvider name="table-field" block={'TableField'} {...props}>
         <InternalTableFieldProvider {...props} />
       </BlockProvider>
     </WithoutTableFieldResource.Provider>
@@ -146,7 +148,7 @@ export const useTableFieldProps = () => {
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
     }
-  }, [ctx?.service?.loading]);
+  }, [ctx?.field?.data?.selectedRowKeys, ctx?.service?.data?.data, ctx?.service?.loading, field]);
   return {
     size: 'middle',
     loading: ctx?.service?.loading,

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EllipsisWithTooltip, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
-import { useCollectionManager } from '../../hooks/useCollectionManager';
+import { useCollectionManager_deprecated } from '../../hooks/useCollectionManager_deprecated';
 
 const mapFields = ['lineString', 'point', 'circle', 'polygon'];
 export const PreviewTable = (props) => {
@@ -13,7 +13,7 @@ export const PreviewTable = (props) => {
   const [previewData, setPreviewData] = useState([]);
   const compile = useCompile();
   const [loading, setLoading] = useState(false);
-  const { getInterface, getCollectionFields } = useCollectionManager();
+  const { getInterface, getCollectionFields } = useCollectionManager_deprecated();
   const api = useAPIClient();
   const { t } = useTranslation();
   const form = useForm();
@@ -21,7 +21,7 @@ export const PreviewTable = (props) => {
     if (databaseView) {
       getPreviewData();
     }
-  }, [form.values.fields]);
+  }, [viewName, schema]);
 
   useEffect(() => {
     const pColumns = formatPreviewColumns(fields);
@@ -70,7 +70,7 @@ export const PreviewTable = (props) => {
                   'x-component': schema && fieldSource ? 'CollectionField' : 'Input',
                   'x-read-pretty': true,
                   'x-collection-field': fieldSource?.join('.'),
-                  default: content,
+                  default: item.interface === 'json' ? JSON.stringify(content) : content,
                 },
               },
             };

@@ -4,7 +4,11 @@ import React, { Fragment, useRef, useState } from 'react';
 import { WithoutTableFieldResource } from '../../../block-provider';
 // TODO: 不要使用 '../../../block-provider' 这个路径引用 BlockAssociationContext，在 Vitest 中会报错，待修复
 import { BlockAssociationContext } from '../../../block-provider/BlockProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
+import {
+  CollectionProvider_deprecated,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+} from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -31,12 +35,12 @@ export const ReadPrettyRecordPicker: React.FC = observer(
     const { ellipsis } = props;
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
-    const { getCollectionJoinField } = useCollectionManager();
+    const { getCollectionJoinField } = useCollectionManager_deprecated();
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     // const field = useField<Field>();
     const fieldNames = useFieldNames(props);
     const [visible, setVisible] = useState(false);
-    const { getField } = useCollection();
+    const { getField } = useCollection_deprecated();
     const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
     const [record, setRecord] = useState({});
     const compile = useCompile();
@@ -56,7 +60,7 @@ export const ReadPrettyRecordPicker: React.FC = observer(
         const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
         const text = getLabelFormatValue(labelUiSchema, val, true);
         return (
-          <Fragment key={`${record.id}_${index}`}>
+          <Fragment key={`${record[fieldNames.value]}_${index}`}>
             {/* test-record-picker-read-pretty-item 用于在单元测试中方便选中元素 */}
             <span className="test-record-picker-read-pretty-item">
               {snapshot || isTagsMode ? (
@@ -98,18 +102,20 @@ export const ReadPrettyRecordPicker: React.FC = observer(
       const collectionFieldNames = fieldSchema?.['x-collection-field']?.split('.');
 
       return collectionFieldNames && collectionFieldNames.length > 2 ? (
-        <RecordProvider record={recordCtx[collectionFieldNames[1]]}>
-          <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+        <RecordProvider record={record} parent={recordCtx[collectionFieldNames[1]]}>
+          {renderWithoutTableFieldResourceProvider()}
         </RecordProvider>
       ) : (
-        <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+        <RecordProvider record={record} parent={recordCtx}>
+          {renderWithoutTableFieldResourceProvider()}
+        </RecordProvider>
       );
     };
 
     return collectionField ? (
       <div>
         <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
-          <CollectionProvider name={collectionField.target ?? collectionField.targetCollection}>
+          <CollectionProvider_deprecated name={collectionField.target ?? collectionField.targetCollection}>
             <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
               {renderRecords()}
             </EllipsisWithTooltip>
@@ -118,7 +124,7 @@ export const ReadPrettyRecordPicker: React.FC = observer(
             >
               {renderRecordProvider()}
             </ActionContextProvider>
-          </CollectionProvider>
+          </CollectionProvider_deprecated>
         </BlockAssociationContext.Provider>
       </div>
     ) : null;

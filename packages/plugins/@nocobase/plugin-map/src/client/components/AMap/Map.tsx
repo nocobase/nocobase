@@ -2,7 +2,7 @@ import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
-import { css, useCollection } from '@nocobase/client';
+import { css, useApp, useCollection_deprecated } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -91,7 +91,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const mouseTool = useRef<any>();
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const type = useMemo<MapEditorType>(() => {
     if (props.type) return props.type;
     const collectionField = getField(fieldSchema?.name);
@@ -293,6 +293,14 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
   // 当值变更时，toggle mouseTool
   useEffect(() => {
+    if (!value && (mouseTool.current || editor.current)) {
+      toRemoveOverlay();
+      if (editor.current) {
+        editor.current.setTarget();
+        editor.current.close();
+      }
+      onChange?.(null);
+    }
     if (!mouseTool.current || !editor.current) return;
     const target = editor.current.getTarget();
     if (target) {
@@ -365,11 +373,13 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     errMessage,
   }));
 
+  const app = useApp();
+
   if (!accessKey || errMessage) {
     return (
       <Alert
         action={
-          <Button type="primary" onClick={() => navigate('/admin/settings/map/configuration')}>
+          <Button type="primary" onClick={() => navigate(app.pluginSettingsManager.getRoutePath('map'))}>
             {t('Go to the configuration page')}
           </Button>
         }
@@ -463,3 +473,4 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     </div>
   );
 });
+AMapComponent.displayName = 'AMapComponent';

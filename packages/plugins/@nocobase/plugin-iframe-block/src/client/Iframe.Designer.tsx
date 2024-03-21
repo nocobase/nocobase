@@ -1,6 +1,13 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { GeneralSchemaDesigner, SchemaSettings, useAPIClient, useDesignable } from '@nocobase/client';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  useAPIClient,
+  useDesignable,
+} from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,9 +24,11 @@ export const IframeDesigner = () => {
       values: { html },
     };
     if (htmlId) {
+      // eslint-disable-next-line no-unsafe-optional-chaining
       const { data } = await api.resource('iframeHtml').update?.({ ...options, filterByTk: htmlId });
       return data?.data?.[0] || { id: htmlId };
     } else {
+      // eslint-disable-next-line no-unsafe-optional-chaining
       const { data } = await api.resource('iframeHtml').create?.(options);
       return data?.data;
     }
@@ -47,7 +56,7 @@ export const IframeDesigner = () => {
 
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Edit iframe')}
         asyncGetInitialValues={async () => {
           const values = {
@@ -56,6 +65,7 @@ export const IframeDesigner = () => {
             height,
           };
           if (htmlId) {
+            // eslint-disable-next-line no-unsafe-optional-chaining
             const { data } = await api.resource('iframeHtml').get?.({ filterByTk: htmlId });
             values['html'] = data?.data?.html || '';
           }
@@ -119,8 +129,8 @@ export const IframeDesigner = () => {
         }
         onSubmit={submitHandler}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

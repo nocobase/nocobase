@@ -1,5 +1,13 @@
 import { useField, useFieldSchema } from '@formily/react';
-import { css, cx, GeneralSchemaDesigner, SchemaSettings, SortableItem, useDesigner } from '@nocobase/client';
+import {
+  css,
+  cx,
+  GeneralSchemaDesigner,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SortableItem,
+  useDesigner,
+} from '@nocobase/client';
 import { TabBarItemProps } from 'antd-mobile';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
@@ -37,14 +45,14 @@ export const Designer = () => {
 
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Edit info')}
         initialValues={field.componentProps}
         schema={tabItemSchema}
         onSubmit={onUpdateComponentProps}
-      ></SchemaSettings.ModalItem>
+      ></SchemaSettingsModalItem>
       {tabItems > 1 ? (
-        <SchemaSettings.Remove
+        <SchemaSettingsRemove
           key="remove"
           removeParentsIfNoChildren
           confirm={{
@@ -53,7 +61,7 @@ export const Designer = () => {
           breakRemoveOn={{
             'x-component': 'MTabBar',
           }}
-        ></SchemaSettings.Remove>
+        ></SchemaSettingsRemove>
       ) : null}
     </GeneralSchemaDesigner>
   );

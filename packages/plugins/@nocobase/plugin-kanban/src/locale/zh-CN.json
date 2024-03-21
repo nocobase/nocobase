@@ -1,0 +1,8 @@
+{
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "用于看板卡片的排序，只能选择与分组字段相对应的排序字段",
+  "Global sorting": "全局排序",
+  "Create sort field": "创建排序字段",
+  "Convert the following integer fields to sorting fields": "将以下整数字段转为排序字段",
+  "Sorting field":"排序字段",
+  "Grouped sorting based on":"基于分组字段"
+}

@@ -1,21 +1,22 @@
-import React, { useContext, useMemo, useRef } from 'react';
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import {
   BlockAssociationContext,
-  BlockRequestContext,
+  BlockRequestContext_deprecated,
   BlockResourceContext,
+  CollectionManagerProvider,
   FormBlockContext,
   MaybeCollectionProvider,
   RecordProvider,
   useBlockRequestContext,
   useBlockResource,
-  useCollectionManager,
+  useCollectionManager_deprecated,
   useDesignable,
   useRecord,
   useResource,
 } from '@nocobase/client';
 import { Spin } from 'antd';
+import React, { useMemo, useRef } from 'react';
 
 const InternalFormBlockProvider = (props) => {
   const { action, readPretty } = props;
@@ -55,7 +56,7 @@ const InternalFormBlockProvider = (props) => {
   );
 };
 
-const BlockRequestProvider = (props) => {
+const BlockRequestProvider_deprecated = (props) => {
   const field = useField();
   const resource = useBlockResource();
   const service = {
@@ -64,33 +65,35 @@ const BlockRequestProvider = (props) => {
       data: useRecord(),
     },
   };
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useBlockRequestContext();
   return (
-    <BlockRequestContext.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
+    <BlockRequestContext_deprecated.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
       {props.children}
-    </BlockRequestContext.Provider>
+    </BlockRequestContext_deprecated.Provider>
   );
 };
 
 const BlockProvider = (props) => {
-  const { collection, association } = props;
+  const { collection, association, dataSource } = props;
   const resource = useResource(props);
 
   return (
-    <MaybeCollectionProvider collection={collection}>
-      <BlockAssociationContext.Provider value={association}>
-        <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
-        </BlockResourceContext.Provider>
-      </BlockAssociationContext.Provider>
-    </MaybeCollectionProvider>
+    <CollectionManagerProvider dataSource={dataSource}>
+      <MaybeCollectionProvider collection={collection}>
+        <BlockAssociationContext.Provider value={association}>
+          <BlockResourceContext.Provider value={resource}>
+            <BlockRequestProvider_deprecated {...props}>{props.children}</BlockRequestProvider_deprecated>
+          </BlockResourceContext.Provider>
+        </BlockAssociationContext.Provider>
+      </MaybeCollectionProvider>
+    </CollectionManagerProvider>
   );
 };
 
 export const SnapshotBlockProvider = (props) => {
   const record = useRecord();
   const { __tableName } = record;
-  const { getInheritCollections } = useCollectionManager();
+  const { getInheritCollections } = useCollectionManager_deprecated(props.dataSource);
   const inheritCollections = getInheritCollections(__tableName);
   const { designable } = useDesignable();
   const flag =

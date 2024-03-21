@@ -2,7 +2,8 @@ import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
   Icon,
-  SchemaSettings,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
   SortableItem,
   css,
   cx,
@@ -62,13 +63,13 @@ const MenuItemDesigner: React.FC = () => {
 
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Edit menu info')}
         initialValues={field.componentProps}
         schema={menuItemSchema}
         onSubmit={onUpdateComponentProps}
       />
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         key="remove"
         removeParentsIfNoChildren
         confirm={{

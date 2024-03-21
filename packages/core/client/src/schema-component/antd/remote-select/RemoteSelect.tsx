@@ -1,15 +1,17 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
-import dayjs from 'dayjs';
 import { Divider, SelectProps, Tag } from 'antd';
-import _, { uniqBy } from 'lodash';
+import dayjs from 'dayjs';
+import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { mergeFilter } from '../../../filter-provider/utils';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { useDataSourceHeaders } from '../../../data-source/utils';
+import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -22,6 +24,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   targetField?: any;
   service: ResourceActionOptions<P>;
   CustomDropdownRender?: (v: any) => any;
+  optionFilter?: (option: any) => boolean;
 };
 
 const InternalRemoteSelect = connect(
@@ -37,16 +40,19 @@ const InternalRemoteSelect = connect(
       mapOptions,
       targetField: _targetField,
       CustomDropdownRender,
+      optionFilter,
       ...others
     } = props;
+    const dataSource = useDataSourceKey();
+    const headers = useDataSourceHeaders(dataSource);
     const [open, setOpen] = useState(false);
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
-    const { getField } = useCollection();
+    const { getField } = useCollection_deprecated();
     const searchData = useRef(null);
-    const { getCollectionJoinField, getInterface } = useCollectionManager();
-    const collectionField = getField(fieldSchema.name);
+    const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
+    const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
     const targetField =
       _targetField ||
       (collectionField?.target &&
@@ -76,19 +82,27 @@ const InternalRemoteSelect = connect(
                       const option = targetField.uiSchema.enum.find((i) => i.value === item);
                       if (option) {
                         return (
-                          <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
+                          <Tag role="button" key={index} color={option.color} style={{ marginRight: 3 }}>
                             {option?.label || item}
                           </Tag>
                         );
                       } else {
-                        return <Tag key={item}>{item}</Tag>;
+                        return (
+                          <Tag role="button" key={item}>
+                            {item}
+                          </Tag>
+                        );
                       }
                     })
                     .reverse();
                 } else {
                   const item = targetField.uiSchema.enum.find((i) => i.value === label);
                   if (item) {
-                    label = <Tag color={item.color}>{item.label}</Tag>;
+                    label = (
+                      <Tag role="button" color={item.color}>
+                        {item.label}
+                      </Tag>
+                    );
                   }
                 }
               }
@@ -120,6 +134,7 @@ const InternalRemoteSelect = connect(
       {
         action: 'list',
         ...service,
+        headers,
         params: {
           pageSize: 200,
           ...service?.params,
@@ -127,7 +142,7 @@ const InternalRemoteSelect = connect(
         },
       },
       {
-        manual: manual && Object.prototype.toString.call(value) === '[object Object]',
+        manual,
         debounceWait: wait,
       },
     );
@@ -184,8 +199,9 @@ const InternalRemoteSelect = connect(
       }
       const valueOptions =
         (v != null && (Array.isArray(v) ? v : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) || [];
-      return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
-    }, [value, defaultValue, data?.data, fieldNames.value]);
+      const filtered = typeof optionFilter === 'function' ? data.data.filter(optionFilter) : data.data;
+      return uniqBy(filtered.concat(valueOptions ?? []), fieldNames.value);
+    }, [value, defaultValue, data?.data, fieldNames.value, optionFilter]);
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
       searchData.current = null;

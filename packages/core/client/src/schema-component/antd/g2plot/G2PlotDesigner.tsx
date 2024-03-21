@@ -2,7 +2,12 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+} from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
 const validateJSON = {
@@ -33,7 +38,7 @@ export const G2PlotDesigner = () => {
   const api = useAPIClient();
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Edit chart')}
         schema={
           {
@@ -78,11 +83,13 @@ export const G2PlotDesigner = () => {
           if (typeof fn === 'function') {
             const result = fn.bind({ api })();
             if (result?.then) {
-              result.then((data) => {
-                if (Array.isArray(data)) {
-                  field.componentProps.config.data = data;
-                }
-              });
+              result
+                .then((data) => {
+                  if (Array.isArray(data)) {
+                    field.componentProps.config.data = data;
+                  }
+                })
+                .catch(console.error);
             }
           } else {
             field.componentProps.config = conf;
@@ -100,8 +107,8 @@ export const G2PlotDesigner = () => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

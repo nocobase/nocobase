@@ -4,6 +4,7 @@ import { merge } from '@formily/shared';
 import type { ComponentTokenMap, GlobalToken } from 'antd/es/theme/interface';
 import { CustomToken } from '../../../global-theme';
 import { useConfig, usePrefixCls, useToken } from './hooks';
+import { useMemo } from 'react';
 
 export type OverrideComponent = keyof ComponentTokenMap | string;
 
@@ -27,7 +28,7 @@ export type TokenWithCommonCls<T> = T & {
 
 export type GenerateStyle<
   ComponentToken extends object = TokenWithCommonCls<GlobalToken>,
-  ReturnType = CSSInterpolation
+  ReturnType = CSSInterpolation,
 > = (token: ComponentToken, options?: any) => ReturnType;
 
 export const genCommonStyle = (token: any, componentPrefixCls: string): CSSObject => {
@@ -72,32 +73,40 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
     const prefixCls = usePrefixCls(component);
     const rootPrefixCls = getPrefixCls();
 
-    return {
-      wrapSSR: useStyleRegister(
-        {
-          theme: theme as any,
-          token,
-          hashId,
-          path: ['formily-antd', component, prefixCls, iconPrefixCls],
-        },
-        () => {
-          const componentCls = `.${prefixCls}`;
-          const mergedToken: TokenWithCommonCls<CustomToken> = merge(token, {
-            componentCls,
-            prefixCls,
-            iconCls: `.${iconPrefixCls}`,
-            antCls: `.${rootPrefixCls}`,
-          });
+    const wrapSSR = useStyleRegister(
+      {
+        theme: theme as any,
+        token,
+        hashId,
+        path: ['formily-antd', component, prefixCls, iconPrefixCls],
+      },
+      () => {
+        const componentCls = `.${prefixCls}`;
+        const mergedToken: TokenWithCommonCls<CustomToken> = merge(token, {
+          componentCls,
+          prefixCls,
+          iconCls: `.${iconPrefixCls}`,
+          antCls: `.${rootPrefixCls}`,
+        });
 
-          const styleInterpolation = styleFn(mergedToken, props, {
-            hashId,
-            prefixCls,
-            rootPrefixCls,
-            iconPrefixCls,
-          });
-          return [genCommonStyle(token, prefixCls), styleInterpolation];
-        },
-      ),
+        const styleInterpolation = styleFn(mergedToken, props, {
+          hashId,
+          prefixCls,
+          rootPrefixCls,
+          iconPrefixCls,
+        });
+        return [genCommonStyle(token, prefixCls), styleInterpolation];
+      },
+    );
+
+    // useStyleRegister 有 BUG，会导致重复渲染，所以这里做了一层缓存
+    // 等 https://github.com/ant-design/cssinjs/pull/176 合并后，可以去掉这层缓存
+    const memoizedWrapSSR = useMemo(() => {
+      return wrapSSR;
+    }, [theme, token, hashId, prefixCls, iconPrefixCls, rootPrefixCls, props]);
+
+    return {
+      wrapSSR: memoizedWrapSSR,
       hashId,
       componentCls: prefixCls,
       rootPrefixCls,

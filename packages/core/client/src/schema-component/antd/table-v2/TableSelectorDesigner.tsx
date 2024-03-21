@@ -1,29 +1,41 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
-import React from 'react';
+import _ from 'lodash';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableSelectorContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
+import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useSortFields } from '../../../collection-manager/action-hooks';
+import { useRecord } from '../../../record-provider';
+import { useLocalVariables, useVariables } from '../../../variables';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
-import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
+import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
+import { RecordPickerContext } from '../../antd/record-picker';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const TableSelectorDesigner = () => {
-  const { name, title } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name, title } = useCollection_deprecated();
+  const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
+
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
+  const { form } = useFormBlockContext();
   const sortFields = useSortFields(name);
   const { service, extraFilter } = useTableSelectorContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
@@ -39,36 +51,24 @@ export const TableSelectorDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { dragSort } = field.decoratorProps;
+  const record = useRecord();
+  const variables = useVariables();
+  const { currentFormCollection } = useContext(RecordPickerContext);
+  const localVariables = useLocalVariables({ collectionName: currentFormCollection });
   return (
     <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                },
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettingsDataScope
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-          let serviceFilter = cloneDeep(filter);
+          let serviceFilter = _.cloneDeep(filter);
           if (extraFilter) {
             if (serviceFilter) {
               serviceFilter = {
@@ -86,9 +86,28 @@ export const TableSelectorDesigner = () => {
             },
           });
         }}
+        collectionName={name}
+        dynamicComponent={(props) => {
+          return (
+            <VariableInput
+              {...props}
+              form={form}
+              collectionField={props.collectionField}
+              record={record}
+              shouldChange={getShouldChange({
+                collectionField: props.collectionField,
+                variables,
+                localVariables,
+                getAllCollectionsInheritChain,
+              })}
+              currentFormCollectionName={currentFormCollection}
+              currentIterationCollectionName={collectionField.collectionName}
+            />
+          );
+        }}
       />
       {collection?.tree && collectionField?.target === collectionField?.collectionName && (
-        <SchemaSettings.SwitchItem
+        <SchemaSettingsSwitchItem
           title={t('Tree table')}
           defaultChecked={true}
           checked={field.decoratorProps.treeTable !== false}
@@ -108,8 +127,9 @@ export const TableSelectorDesigner = () => {
           }}
         />
       )}
+      <SetDataLoadingMode />
       {!dragSort && (
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set default sorting rules')}
           components={{ ArrayItems }}
           schema={
@@ -203,7 +223,7 @@ export const TableSelectorDesigner = () => {
         />
       )}
 
-      <SchemaSettings.SelectItem
+      <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
@@ -227,8 +247,8 @@ export const TableSelectorDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

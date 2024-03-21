@@ -1,5 +1,5 @@
+import { render, screen, userEvent } from '@nocobase/test/client';
 import React from 'react';
-import { render, screen, userEvent } from 'testUtils';
 import App1 from '../demos/demo1';
 
 describe('RichText', () => {

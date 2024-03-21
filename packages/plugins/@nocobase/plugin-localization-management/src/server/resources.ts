@@ -1,27 +1,27 @@
-import { Cache, createCache } from '@nocobase/cache';
-import { Database } from '@nocobase/database';
+import { Cache } from '@nocobase/cache';
+import { Database, Transaction } from '@nocobase/database';
 
 export default class Resources {
   cache: Cache;
   db: Database;
-  CACHE_KEY_PREFIX = 'localization:';
 
-  constructor(db: Database) {
-    this.cache = createCache();
+  constructor(db: Database, cache: Cache) {
+    this.cache = cache;
     this.db = db;
   }
 
-  async getTexts() {
-    return await this.cache.wrap(`${this.CACHE_KEY_PREFIX}texts`, async () => {
+  async getTexts(transaction?: Transaction) {
+    return await this.cache.wrap(`texts`, async () => {
       return await this.db.getRepository('localizationTexts').find({
         fields: ['id', 'module', 'text'],
         raw: true,
+        transaction,
       });
     });
   }
 
   async getTranslations(locale: string) {
-    return await this.cache.wrap(`${this.CACHE_KEY_PREFIX}translations:${locale}`, async () => {
+    return await this.cache.wrap(`translations:${locale}`, async () => {
       return await this.db.getRepository('localizationTranslations').find({
         fields: ['textId', 'translation'],
         filter: { locale },
@@ -51,28 +51,24 @@ export default class Resources {
     return resources;
   }
 
-  async filterExists(texts: (string | { text: string })[]) {
-    let existTexts = await this.getTexts();
-    existTexts = existTexts.map((item) => item.text);
+  async filterExists(texts: { text: string; module: string }[], transaction?: Transaction) {
+    const existTexts = await this.getTexts(transaction);
     return texts.filter((text) => {
-      if (typeof text === 'string') {
-        return !existTexts.includes(text);
-      }
-      return !existTexts.includes(text.text);
+      return !existTexts.find((item: any) => item.text === text.text && item.module === text.module);
     });
   }
 
-  async updateCacheTexts(texts: any[]) {
+  async updateCacheTexts(texts: any[], transaction?: Transaction) {
     const newTexts = texts.map((text) => ({
       id: text.id,
       module: text.module,
       text: text.text,
     }));
-    const existTexts = await this.getTexts();
-    await this.cache.set(`${this.CACHE_KEY_PREFIX}texts`, [...existTexts, ...newTexts]);
+    const existTexts = await this.getTexts(transaction);
+    await this.cache.set(`texts`, [...existTexts, ...newTexts]);
   }
 
   async resetCache(locale: string) {
-    await this.cache.del(`${this.CACHE_KEY_PREFIX}translations:${locale}`);
+    await this.cache.del(`translations:${locale}`);
   }
 }

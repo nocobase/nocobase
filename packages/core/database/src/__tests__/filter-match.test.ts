@@ -1,4 +1,4 @@
-import { Database, Model } from '..';
+import { Database } from '..';
 import { filterMatch } from '../filter-match';
 import { mockDatabase } from './index';
 
@@ -7,6 +7,7 @@ describe('filterMatch', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {

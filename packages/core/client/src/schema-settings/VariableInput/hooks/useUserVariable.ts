@@ -1,105 +1,85 @@
-import { error } from '@nocobase/utils/client';
-import { useMemo } from 'react';
+import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useGetFilterOptions } from '../../../schema-component';
-import { FieldOption, Option } from '../type';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
+import { DEFAULT_DATA_SOURCE_KEY } from '../../../data-source/data-source/DataSourceManager';
+import { useCurrentUserContext } from '../../../user';
+import { useBaseVariable } from './useBaseVariable';
 
-interface GetOptionsParams {
-  schema: any;
-  depth: number;
+/**
+ * @deprecated
+ * 该 hook 已废弃，请使用 `useCurrentUserVariable` 代替
+ *
+ * 变量：`当前用户`
+ * @param param0
+ * @returns
+ */
+export const useUserVariable = ({
+  collectionField,
+  uiSchema,
+  noDisabled,
+  targetFieldSchema,
+  maxDepth = 3,
+}: {
+  collectionField: CollectionFieldOptions_deprecated;
+  uiSchema: any;
   maxDepth?: number;
-  loadChildren?: (option: Option) => Promise<void>;
-  compile: (value: string) => any;
-}
-
-const getChildren = (
-  options: FieldOption[],
-  { schema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
-): Option[] => {
-  const result = options
-    .map((option): Option => {
-      if (!option.target) {
-        return {
-          key: option.name,
-          value: option.name,
-          label: compile(option.title),
-          // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-          disabled: schema?.['x-component'] !== option.schema?.['x-component'],
-          isLeaf: true,
-          depth,
-        };
-      }
-
-      if (depth >= maxDepth) {
-        return null;
-      }
-
-      return {
-        key: option.name,
-        value: option.name,
-        label: compile(option.title),
-        isLeaf: false,
-        field: option,
-        depth,
-        loadChildren,
-      };
-    })
-    .filter(Boolean);
+  noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
+}) => {
+  const { t } = useTranslation();
+  const result = useBaseVariable({
+    collectionField,
+    uiSchema,
+    maxDepth,
+    name: '$user',
+    title: t('Current user'),
+    collectionName: 'users',
+    dataSource: DEFAULT_DATA_SOURCE_KEY,
+    noDisabled,
+    targetFieldSchema,
+  });
 
   return result;
 };
 
-export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDepth?: number }) => {
+/**
+ * 变量：`当前用户`
+ * @param param0
+ * @returns
+ */
+export const useCurrentUserVariable = ({
+  collectionField,
+  uiSchema,
+  noDisabled,
+  targetFieldSchema,
+  maxDepth = 3,
+}: {
+  collectionField?: CollectionFieldOptions;
+  uiSchema?: any;
+  maxDepth?: number;
+  noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
+} = {}) => {
   const { t } = useTranslation();
-  const compile = useCompile();
-  const getFilterOptions = useGetFilterOptions();
+  const data = useCurrentUserContext();
+  const currentUserSettings = useBaseVariable({
+    collectionField,
+    uiSchema,
+    maxDepth,
+    name: '$user',
+    title: t('Current user'),
+    collectionName: 'users',
+    noDisabled,
+    targetFieldSchema,
+  });
 
-  const loadChildren = (option: Option): Promise<void> => {
-    if (!option.field?.target) {
-      return new Promise((resolve) => {
-        error('Must be set field target');
-        resolve(void 0);
-      });
-    }
-
-    const collectionName = option.field.target;
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const children =
-          getChildren(getFilterOptions(collectionName), {
-            schema,
-            depth: option.depth + 1,
-            maxDepth,
-            loadChildren,
-            compile,
-          }) || [];
-
-        if (children.length === 0) {
-          option.disabled = true;
-          resolve();
-          return;
-        }
-        option.children = children;
-        resolve();
-
-        // 延迟 5 毫秒，防止阻塞主线程，导致 UI 卡顿
-      }, 5);
-    });
+  return {
+    /** 变量的配置项 */
+    currentUserSettings,
+    /** 变量的值 */
+    currentUserCtx: data?.data?.data,
   };
-
-  const result = useMemo(() => {
-    return {
-      label: t('Current user'),
-      value: '$user',
-      key: '$user',
-      isLeaf: false,
-      field: {
-        target: 'users',
-      },
-      depth: 0,
-      loadChildren,
-    } as Option;
-  }, [schema?.['x-component']]);
-
-  return result;
 };

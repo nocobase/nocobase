@@ -9,6 +9,7 @@ describe('Array field repository', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     TestCollection = db.collection({
       name: 'test',
       fields: [

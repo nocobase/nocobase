@@ -1,24 +1,61 @@
-import { mockServer, MockServer } from '@nocobase/test';
-import SnapshotFieldPlugin from '../server';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('actions', () => {
   let app: MockServer;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       acl: false,
-      plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager'],
+      plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager', 'snapshot-field'],
     });
-
-    app.plugin(SnapshotFieldPlugin, { name: 'snapshot-field' });
-
-    await app.loadAndInstall({ clean: true });
   });
 
   afterEach(async () => {
-    await app.cleanDb();
     await app.destroy();
+  });
+
+  it('should not throw error when create field with reverse field', async () => {
+    const agent = app.agent();
+
+    await app.db.getRepository('fieldsHistory').create({
+      values: {
+        key: 'testKey',
+        collectionName: 'targets',
+        name: 'test',
+      },
+    });
+
+    await agent.resource('collections').create({
+      values: {
+        name: 'tests',
+      },
+    });
+
+    await agent.resource('collections').create({
+      values: {
+        name: 'targets',
+      },
+    });
+
+    const response = await agent.resource('fields').create({
+      values: {
+        type: 'hasMany',
+        name: 'targets',
+        collectionName: 'tests',
+        foreignKey: 'test_id',
+        onDelete: 'SET NULL',
+        target: 'targets',
+        interface: 'o2m',
+        reverseField: {
+          interface: 'm2o',
+          type: 'belongsTo',
+          name: 'test',
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
   });
 
   it('fieldsHistory collectionName and name conflict between tables', async () => {

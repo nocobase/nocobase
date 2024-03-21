@@ -1,8 +1,7 @@
 import { Collection, Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
-import PluginUiSchema from '../server';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
@@ -16,23 +15,12 @@ describe('ui_schema repository', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
+      plugins: ['ui-schema-storage'],
     });
 
     db = app.db;
-
-    await db.clean({ drop: true });
-
-    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
-
-    await app.load();
-    await db.sync({
-      force: false,
-      alter: {
-        drop: false,
-      },
-    });
     repository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
     treePathCollection = db.getCollection('uiSchemaTreePath');
   });
@@ -194,6 +182,39 @@ describe('ui_schema repository', () => {
       'x-uid': 'root',
       'x-async': false,
     });
+  });
+
+  it('should create a copy', async () => {
+    const s = await repository.insert({
+      'x-uid': 'n1',
+      name: 'a',
+      type: 'object',
+      properties: {
+        b: {
+          'x-uid': 'n2',
+          type: 'object',
+          properties: {
+            c: { 'x-uid': 'n3' },
+          },
+        },
+        d: {
+          'x-uid': 'n4',
+          properties: {
+            e: {
+              'x-uid': 'n5',
+            },
+          },
+        },
+      },
+    });
+    const s2 = await repository.duplicate(s['x-uid']);
+    expect(s2.name).toEqual(s.name);
+    expect(s2['x-uid']).not.toEqual(s['x-uid']);
+  });
+
+  it('should be null', async () => {
+    const s2 = await repository.duplicate('test-null');
+    expect(s2).toBeNull();
   });
 
   describe('schema', () => {
@@ -363,6 +384,28 @@ describe('ui_schema repository', () => {
       });
 
       const schema = await repository.getJsonSchema('n2');
+      expect(schema).toBeDefined();
+    });
+
+    it('should get root async json schema', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        async: true,
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      const schema = await repository.getJsonSchema('n1');
       expect(schema).toBeDefined();
     });
 
@@ -1114,7 +1157,7 @@ describe('ui_schema repository', () => {
   });
 
   it('should insert big schema', async () => {
-    const schema = require('./fixtures/data').default;
+    const schema = (await import('./fixtures/data')).default;
 
     console.time('test');
     await repository.insertNewSchema(schema);
@@ -1193,7 +1236,7 @@ describe('ui_schema repository', () => {
       },
     };
     await repository.insert(tree);
-    const schema = require('./fixtures/data').default;
+    const schema = (await import('./fixtures/data')).default;
 
     await repository.insertAdjacent('afterEnd', 'A', schema);
     const rootUid = schema['x-uid'];

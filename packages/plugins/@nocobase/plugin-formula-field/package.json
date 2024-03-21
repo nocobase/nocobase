@@ -1,12 +1,14 @@
 {
   "name": "@nocobase/plugin-formula-field",
-  "displayName": "Formula field",
-  "displayName.zh-CN": "公式字段",
-  "description": "You can configure and store calculation results between multi-field values of the same record, supporting both mathjs and excel functions engines.",
-  "description.zh-CN": "可以配置并存储同一条记录的多字段值之间的计算结果，支持 mathjs 和 excel functions 两种引擎",
-  "version": "0.14.0-alpha.6",
+  "displayName": "Collection field: Formula",
+  "displayName.zh-CN": "数据表字段：公式",
+  "description": "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.",
+  "description.zh-CN": "可以配置并存储同一条记录的多字段值之间的计算结果，支持 Math.js 和 Excel formula functions 两种引擎",
+  "version": "0.20.0-alpha.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/field-formula",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/field-formula",
   "devDependencies": {
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
@@ -22,5 +24,9 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
-  }
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "keywords": [
+    "Collection fields"
+  ]
 }

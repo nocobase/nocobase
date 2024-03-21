@@ -164,9 +164,9 @@ export class ACL extends EventEmitter {
 
     const snippetAllowed = aclRole.snippetAllowed(`${resource}:${action}`);
 
-    if (snippetAllowed === false) {
-      return null;
-    }
+    // if (snippetAllowed === false) {
+    //   return null;
+    // }
 
     const fixedParams = this.fixedParamsManager.getParams(resource, action);
 
@@ -264,7 +264,8 @@ export class ACL extends EventEmitter {
           ctx: {
             state,
           },
-          $user: async () => state.currentUser,
+          $user: getUser(ctx),
+          $nRole: () => state.currentRole,
         },
       });
       json.filter = filter;
@@ -386,4 +387,25 @@ export class ACL extends EventEmitter {
   protected isAvailableAction(actionName: string) {
     return this.availableActions.has(this.resolveActionAlias(actionName));
   }
+}
+
+function getUser(ctx) {
+  return async ({ fields }) => {
+    const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
+    ctx.logger?.info('filter-parse: ', { userFields });
+    if (!ctx.state.currentUser) {
+      return;
+    }
+    if (!userFields.length) {
+      return;
+    }
+    const user = await ctx.db.getRepository('users').findOne({
+      filterByTk: ctx.state.currentUser.id,
+      fields: userFields,
+    });
+    ctx.logger?.info('filter-parse: ', {
+      $user: user?.toJSON(),
+    });
+    return user;
+  };
 }

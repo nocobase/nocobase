@@ -1,25 +1,25 @@
-## Description (Bug 描述)
+## Description
 
-### Steps to reproduce (复现步骤)
+### Steps to reproduce
 
 <!-- Clear steps to reproduce the bug. -->
 
-### Expected behavior (预期行为)
+### Expected behavior
 
 <!--- Describe what the expected behavior should be when the code is executed without the bug. -->
 
-### Actual behavior (实际行为)
+### Actual behavior
 
 <!-- Describe what actually happens when the code is executed with the bug. -->
 
-## Related issues (相关 issue)
+## Related issues
 
 <!-- Include any related issues or previous bug reports related to this bug. -->
 
-## Reason (原因)
+## Reason
 
 <!-- Explain what caused the bug to occur. -->
 
-## Solution (解决方案)
+## Solution
 
 <!-- Describe solution to the bug clearly and consciously. -->

@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { useContext, useEffect } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
 import { useFilterOptions } from '../../../schema-component';
-import { FilterDynamicComponent } from '../FilterDynamicComponent';
+import { VariableInput } from '../../../schema-settings';
 import { RoleResourceCollectionContext } from '../RolesResourcesActions';
 
 export const rolesResourcesScopesCollection = {
@@ -140,11 +140,10 @@ export const scopesSchema: ISchema = {
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Filter',
                                       'x-component-props': {
-                                        dynamicComponent: FilterDynamicComponent,
+                                        dynamicComponent: VariableInput,
                                         useProps() {
                                           const ctx = useContext(RoleResourceCollectionContext);
                                           const options = useFilterOptions(ctx.name);
-                                          console.log('ctx.name', ctx.name, options);
                                           return {
                                             options,
                                           };
@@ -269,7 +268,7 @@ export const scopesSchema: ISchema = {
                                               'x-decorator': 'FormItem',
                                               'x-component': 'Filter',
                                               'x-component-props': {
-                                                dynamicComponent: FilterDynamicComponent,
+                                                dynamicComponent: VariableInput,
                                                 useProps() {
                                                   const ctx = useContext(RoleResourceCollectionContext);
                                                   const options = useFilterOptions(ctx.name);

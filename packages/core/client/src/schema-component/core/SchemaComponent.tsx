@@ -1,6 +1,11 @@
 import { IRecursionFieldProps, ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
+import { SchemaComponentContext } from '../context';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
+
+type SchemaComponentOnChange = {
+  onChange?: (s: Schema) => void;
+};
 
 function toSchema(schema?: any) {
   if (Schema.isSchemaInstance(schema)) {
@@ -21,22 +26,36 @@ const useMemoizedSchema = (schema) => {
   return useMemo(() => toSchema(schema), []);
 };
 
-const RecursionSchemaComponent = (props: ISchemaFieldProps) => {
+const RecursionSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnChange) => {
   const { components, scope, schema, ...others } = props;
+  const ctx = useContext(SchemaComponentContext);
+  const s = useMemo(() => toSchema(schema), [schema]);
   return (
-    <SchemaComponentOptions inherit components={components} scope={scope}>
-      <RecursionField {...others} schema={toSchema(schema)} />
-    </SchemaComponentOptions>
+    <SchemaComponentContext.Provider
+      value={{
+        ...ctx,
+        refresh: () => {
+          ctx.refresh?.();
+          props.onChange?.(s);
+        },
+      }}
+    >
+      <SchemaComponentOptions inherit components={components} scope={scope}>
+        <RecursionField {...others} schema={s} />
+      </SchemaComponentOptions>
+    </SchemaComponentContext.Provider>
   );
 };
 
-const MemoizedSchemaComponent = (props: ISchemaFieldProps) => {
+const MemoizedSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnChange) => {
   const { schema, ...others } = props;
   const s = useMemoizedSchema(schema);
   return <RecursionSchemaComponent {...others} schema={s} />;
 };
 
-export const SchemaComponent = (props: (ISchemaFieldProps | IRecursionFieldProps) & { memoized?: boolean }) => {
+export const SchemaComponent = (
+  props: (ISchemaFieldProps | IRecursionFieldProps) & { memoized?: boolean } & SchemaComponentOnChange,
+) => {
   const { memoized, ...others } = props;
   if (memoized) {
     return <MemoizedSchemaComponent {...others} />;

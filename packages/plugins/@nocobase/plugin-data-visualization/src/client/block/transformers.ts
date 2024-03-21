@@ -1,8 +1,10 @@
 import dayjs from 'dayjs';
 
+export type Transformer = (val: any, locale?: string) => string | number;
+
 const transformers: {
   [key: string]: {
-    [key: string]: (val: any, locale?: string) => string | number;
+    [key: string]: Transformer;
   };
 } = {
   datetime: {

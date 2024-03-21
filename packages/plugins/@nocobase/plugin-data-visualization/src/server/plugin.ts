@@ -1,6 +1,7 @@
-import { Cache, createCache } from '@nocobase/cache';
+import { Cache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
+import { resolve } from 'path';
 
 export class DataVisualizationPlugin extends Plugin {
   cache: Cache;
@@ -18,10 +19,19 @@ export class DataVisualizationPlugin extends Plugin {
   }
 
   async load() {
-    this.cache = createCache({
-      ttl: 30, // seconds
-      max: 1000,
+    this.db.addMigrations({
+      namespace: 'data-visulization',
+      directory: resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
+    this.cache = await this.app.cacheManager.createCache({
+      name: 'data-visualization',
       store: 'memory',
+      ttl: 30 * 1000, // millseconds
+      max: 1000,
     });
   }
 

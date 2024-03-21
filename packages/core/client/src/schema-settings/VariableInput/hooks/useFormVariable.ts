@@ -1,123 +1,101 @@
-import { useMemo } from 'react';
+import { Form } from '@formily/core';
+import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useGetFilterOptions } from '../../../schema-component';
-import { FieldOption, Option } from '../type';
+import { useFormBlockContext } from '../../../block-provider';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { useBaseVariable } from './useBaseVariable';
 
-interface GetOptionsParams {
-  depth: number;
-  operator?: string;
-  maxDepth: number;
-  count?: number;
-  loadChildren?: (option: Option) => Promise<void>;
-  getFilterOptions?: (collectionName: string) => any[];
-  compile: (value: string) => any;
+interface Props {
+  collectionName?: string;
+  collectionField?: CollectionFieldOptions_deprecated;
   schema?: any;
+  noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
+  form?: Form;
 }
 
-const getChildren = (
-  options: FieldOption[],
-  { depth, maxDepth, loadChildren, compile, schema }: GetOptionsParams,
-): Option[] => {
-  const result = options
-    .map((option): Option => {
-      if (!option.target) {
-        return {
-          key: option.name,
-          value: option.name,
-          label: compile(option.title),
-          depth,
-          // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-          disabled: schema && schema?.['x-component'] !== option.schema?.['x-component'],
-        };
-      }
+/**
+ * @deprecated
+ * 该 hook 已废弃，请使用 `useCurrentFormVariable` 代替
+ *
+ * 变量：`当前表单`
+ * @param param0
+ * @returns
+ */
+export const useFormVariable = ({ collectionName, collectionField, schema, noDisabled, targetFieldSchema }: Props) => {
+  // const { getActiveFieldsName } = useFormActiveFields() || {};
+  const { t } = useTranslation();
+  const result = useBaseVariable({
+    collectionField,
+    uiSchema: schema,
+    targetFieldSchema,
+    maxDepth: 4,
+    name: '$nForm',
+    title: t('Current form'),
+    collectionName: collectionName,
+    noDisabled,
+    returnFields: (fields, option) => {
+      // fix https://nocobase.height.app/T-2277
+      return fields;
+      // const activeFieldsName = getActiveFieldsName?.('form') || [];
 
-      if (depth >= maxDepth) {
-        return null;
-      }
+      // return option.depth === 0
+      //   ? fields.filter((field) => {
+      //       return activeFieldsName.includes(field.name);
+      //     })
+      //   : fields;
+    },
+  });
 
-      return {
-        key: option.name,
-        value: option.name,
-        label: compile(option.title),
-        isLeaf: false,
-        field: option,
-        depth,
-        loadChildren,
-      };
-    })
-    .filter(Boolean);
   return result;
 };
-export const useFormVariable = ({
-  blockForm,
-  rootCollection,
-  operator,
-  level,
+
+/**
+ * 变量：`当前表单`
+ * @param param0
+ * @returns
+ */
+export const useCurrentFormVariable = ({
+  collectionField,
   schema,
-}: {
-  blockForm?: any;
-  rootCollection: string;
-  operator?: any;
-  level?: number;
-  schema?: any;
-}) => {
-  const compile = useCompile();
+  noDisabled,
+  targetFieldSchema,
+  form: _form,
+}: Props = {}) => {
+  // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
-  const getFilterOptions = useGetFilterOptions();
-  const loadChildren = (option: any): Promise<void> => {
-    if (!option.field?.target) {
-      return new Promise((resolve) => {
-        resolve(void 0);
-      });
-    }
+  const { form, collectionName } = useFormBlockContext();
+  const currentFormSettings = useBaseVariable({
+    collectionField,
+    uiSchema: schema,
+    targetFieldSchema,
+    maxDepth: 4,
+    name: '$nForm',
+    title: t('Current form'),
+    collectionName: collectionName,
+    noDisabled,
+    returnFields: (fields, option) => {
+      // fix https://nocobase.height.app/T-2277
+      return fields;
+      // const activeFieldsName = getActiveFieldsName?.('form') || [];
 
-    const collectionName = option.field.target;
-    const fields = getFilterOptions(collectionName);
-    const allowFields =
-      option.depth === 0
-        ? fields.filter((field) => {
-            return Object.keys(blockForm.fields).some((name) => name.includes(`.${field.name}`));
-          })
-        : fields;
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const children =
-          getChildren(allowFields, {
-            depth: option.depth + 1,
-            maxDepth: 4,
-            loadChildren,
-            compile,
-            schema,
-          }) || [];
-        if (children.length === 0) {
-          option.disabled = true;
-          resolve();
-          return;
-        }
-        option.children = children;
-        resolve();
+      // return option.depth === 0
+      //   ? fields.filter((field) => {
+      //       return activeFieldsName.includes(field.name);
+      //     })
+      //   : fields;
+    },
+  });
 
-        // 延迟 5 毫秒，防止阻塞主线程，导致 UI 卡顿
-      }, 5);
-    });
+  const formInstance = _form || form;
+
+  return {
+    /** 变量配置 */
+    currentFormSettings,
+    /** 变量值 */
+    currentFormCtx: formInstance?.values,
+    /** 用来判断是否可以显示`当前表单`变量 */
+    shouldDisplayCurrentForm: formInstance && !formInstance.readPretty,
   };
-
-  const label = t('Current form');
-
-  const result = useMemo(() => {
-    return (
-      blockForm && {
-        label,
-        value: '$form',
-        key: '$form',
-        isLeaf: false,
-        field: {
-          target: rootCollection,
-        },
-        depth: 0,
-        loadChildren,
-      }
-    );
-  }, [rootCollection]);
-  return result;
 };

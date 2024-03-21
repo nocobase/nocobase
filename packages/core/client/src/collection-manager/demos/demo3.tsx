@@ -3,10 +3,10 @@ import {
   APIClient,
   APIClientProvider,
   CollectionFieldProvider,
-  CollectionProvider,
+  CollectionProvider_deprecated,
   compose,
   RecordProvider,
-  useCollectionField,
+  useCollectionField_deprecated,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 
@@ -43,25 +43,22 @@ const providers = [
   // 提供当前数据表行记录的上下文
   [RecordProvider, { record }],
   // 提供数据表配置的上下文
-  [CollectionProvider, { collection }],
+  [CollectionProvider_deprecated, { collection }],
   // 提供字段配置上的下文
   [CollectionFieldProvider, { name: 'tags' }],
 ];
 
 export default compose(...providers)(() => {
-  const { resource } = useCollectionField();
+  const { resource } = useCollectionField_deprecated();
   const [items, setItems] = useState([]);
   useEffect(() => {
     // 请求地址为 /posts/1/tags:list
-    resource.list().then((response) => {
-      setItems(response?.data?.data);
-    });
+    resource
+      .list()
+      .then((response) => {
+        setItems(response?.data?.data);
+      })
+      .catch(console.error);
   }, []);
-  return (
-    <div>
-      {items?.map((item, key) => (
-        <div key={key}>{item.name}</div>
-      ))}
-    </div>
-  );
+  return <div>{items?.map((item, key) => <div key={key}>{item.name}</div>)}</div>;
 });

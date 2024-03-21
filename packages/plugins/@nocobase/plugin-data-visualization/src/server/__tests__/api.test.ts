@@ -1,20 +1,17 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
-import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/query';
-import ChartsV2Plugin from '../plugin';
+import { MockServer, createMockServer } from '@nocobase/test';
 import compose from 'koa-compose';
+import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/query';
 
 describe('api', () => {
   let app: MockServer;
   let db: Database;
 
   beforeAll(async () => {
-    app = mockServer({
+    app = await createMockServer({
       acl: true,
-      plugins: ['users', 'auth'],
+      plugins: ['users', 'auth', 'data-visualization'],
     });
-    app.plugin(ChartsV2Plugin);
-    await app.loadAndInstall({ clean: true });
     db = app.db;
 
     db.collection({

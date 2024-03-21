@@ -7,7 +7,8 @@ export const EXECUTION_STATUS = {
   ABORTED: -3,
   CANCELED: -4,
   REJECTED: -5,
-};
+  RETRY_NEEDED: -6,
+} as const;
 
 export const JOB_STATUS = {
   PENDING: 0,
@@ -17,10 +18,5 @@ export const JOB_STATUS = {
   ABORTED: -3,
   CANCELED: -4,
   REJECTED: -5,
-};
-
-export const BRANCH_INDEX = {
-  DEFAULT: null,
-  ON_TRUE: 1,
-  ON_FALSE: 0,
-};
+  RETRY_NEEDED: -6,
+} as const;

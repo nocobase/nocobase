@@ -1,8 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'ui-schema-storage.uiSchemas',
-  duplicator: 'required',
+  dumpRules: 'required',
   name: 'uiSchemaTemplates',
   autoGenId: false,
   fields: [
@@ -29,18 +28,18 @@ export default defineCollection({
       name: 'resourceName',
     },
     {
+      type: 'string',
+      name: 'collectionName',
+    },
+    {
+      type: 'string',
+      name: 'dataSourceKey',
+    },
+    {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'uiSchemas',
       foreignKey: 'uid',
-    },
-    {
-      type: 'belongsTo',
-      name: 'collection',
-      target: 'collections',
-      foreignKey: 'collectionName',
-      targetKey: 'name',
-      onDelete: 'CASCADE',
     },
   ],
 });

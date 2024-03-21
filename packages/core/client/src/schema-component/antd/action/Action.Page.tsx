@@ -28,7 +28,7 @@ export const ActionPage: ComposedActionDrawer = observer(
         {containerRef?.current &&
           visible &&
           createPortal(
-            <div className="nb-action-page">
+            <div data-testid="action-page" className="nb-action-page">
               <RecursionField
                 basePath={field.address}
                 schema={schema}

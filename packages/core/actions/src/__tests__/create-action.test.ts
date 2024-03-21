@@ -108,4 +108,13 @@ describe('create action', () => {
     expect(await tag.hasPost(p1)).toBeTruthy();
     expect(tag.get('name')).toEqual('hello');
   });
+
+  test('create with empty values', async () => {
+    const response = await app.agent().resource('posts').create({});
+    expect(response.statusCode).toEqual(200);
+    const p1 = await Post.repository.findOne();
+
+    const response2 = await app.agent().resource('posts.comments', p1.get('id')).create({});
+    expect(response2.statusCode).toEqual(200);
+  });
 });

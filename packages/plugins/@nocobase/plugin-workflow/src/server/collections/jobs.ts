@@ -1,9 +1,11 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'workflow.executionLogs',
-  duplicator: 'optional',
+  dumpRules: {
+    group: 'log',
+  },
   name: 'jobs',
+  shared: true,
   fields: [
     {
       type: 'belongsTo',
@@ -13,6 +15,10 @@ export default {
       type: 'belongsTo',
       name: 'node',
       target: 'flow_nodes',
+    },
+    {
+      type: 'string',
+      name: 'nodeKey',
     },
     {
       type: 'belongsTo',

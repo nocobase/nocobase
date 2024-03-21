@@ -67,6 +67,7 @@ export const StrategyActions = connect((props) => {
             render: (enabled, action) => (
               <Checkbox
                 checked={enabled}
+                aria-label={`${action.name}_checkbox`}
                 onChange={(e) => {
                   if (enabled) {
                     delete scopes[action.name];
@@ -84,6 +85,7 @@ export const StrategyActions = connect((props) => {
             render: (scope, action) =>
               !action.onNewRecord && (
                 <Select
+                  data-testid="select-data-scope"
                   popupMatchSelectWidth={false}
                   size={'small'}
                   value={scope}

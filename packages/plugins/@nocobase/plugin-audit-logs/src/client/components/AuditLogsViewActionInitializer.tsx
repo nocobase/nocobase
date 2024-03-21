@@ -1,12 +1,14 @@
 import { ActionInitializer } from '@nocobase/client';
 import React from 'react';
 
-export const AuditLogsViewActionInitializer = (props) => {
+export const AuditLogsViewActionInitializer = () => {
   const schema = {
     type: 'void',
     title: '{{ t("View") }}',
     'x-action': 'view',
-    'x-designer': 'Action.Designer',
+    // 'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:view',
     'x-component': 'Action',
     'x-component-props': {
       openMode: 'drawer',
@@ -204,7 +206,7 @@ export const AuditLogsViewActionInitializer = (props) => {
                                                                   grid: {
                                                                     type: 'void',
                                                                     'x-component': 'Grid',
-                                                                    'x-initializer': 'RecordBlockInitializers',
+                                                                    'x-initializer': 'popup:common:addBlock',
                                                                   },
                                                                 },
                                                               },
@@ -337,5 +339,5 @@ export const AuditLogsViewActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializer schema={schema} />;
 };

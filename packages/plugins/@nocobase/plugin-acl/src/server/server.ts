@@ -1,6 +1,6 @@
-import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
-import { Collection, RelationField, snakeCase } from '@nocobase/database';
+import { Cache } from '@nocobase/cache';
+import { Collection, RelationField } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
@@ -10,6 +10,7 @@ import { checkAction } from './actions/role-check';
 import { roleCollectionsResource } from './actions/role-collections';
 import { setDefaultRole } from './actions/user-setDefaultRole';
 import { setCurrentRole } from './middlewares/setCurrentRole';
+import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
@@ -123,18 +124,24 @@ export class PluginACL extends Plugin {
     });
   }
 
-  async writeRolesToACL() {
+  async writeRolesToACL(options) {
     const roles = (await this.app.db.getRepository('roles').find({
       appends: ['resources', 'resources.actions'],
     })) as RoleModel[];
 
     for (const role of roles) {
-      await this.writeRoleToACL(role);
+      await this.writeRoleToACL(role, options);
     }
   }
 
-  async writeRoleToACL(role: RoleModel, transaction: any = null) {
-    role.writeToAcl({ acl: this.acl });
+  async writeRoleToACL(role: RoleModel, options: any = {}) {
+    const transaction = options?.transaction;
+
+    role.writeToAcl({ acl: this.acl, withOutStrategy: true });
+
+    if (options.withOutResources) {
+      return;
+    }
 
     let resources = role.get('resources') as RoleResourceModel[];
 
@@ -172,6 +179,7 @@ export class PluginACL extends Plugin {
         'roles.resources:*',
         'uiSchemas:getProperties',
         'roles.menuUiSchemas:*',
+        'roles.users:*',
       ],
     });
 
@@ -229,15 +237,44 @@ export class PluginACL extends Plugin {
     });
 
     this.app.on('acl:writeRoleToACL', async (roleModel: RoleModel) => {
-      await this.writeRoleToACL(roleModel);
+      await this.writeRoleToACL(roleModel, {
+        withOutResources: true,
+      });
+
+      await this.app.db.getRepository('dataSourcesRoles').updateOrCreate({
+        values: {
+          roleName: roleModel.get('name'),
+          dataSourceKey: 'main',
+          strategy: roleModel.get('strategy'),
+        },
+        filterKeys: ['roleName', 'dataSourceKey'],
+      });
     });
 
     this.app.db.on('roles.afterSaveWithAssociations', async (model, options) => {
       const { transaction } = options;
 
-      await this.writeRoleToACL(model, transaction);
+      await this.writeRoleToACL(model, {
+        withOutResources: true,
+      });
 
-      // model is default
+      // this will update or create a record in dataSourcesRoles
+      await this.app.db.getRepository('dataSourcesRoles').updateOrCreate({
+        values: {
+          roleName: model.get('name'),
+          dataSourceKey: 'main',
+          strategy: model.get('strategy'),
+        },
+        filterKeys: ['roleName', 'dataSourceKey'],
+        transaction,
+      });
+
+      await this.app.emitAsync('acl:writeResources', {
+        roleName: model.get('name'),
+        transaction,
+      });
+
+      //  role is default
       if (model.get('default')) {
         await this.app.db.getRepository('roles').update({
           values: {
@@ -270,19 +307,12 @@ export class PluginACL extends Plugin {
       await this.writeResourceToACL(resource, transaction);
     });
 
-    this.app.db.on('rolesResources.afterDestroy', async (model, options) => {
-      const role = this.acl.getRole(model.get('roleName'));
-
-      if (role) {
-        role.revokeResource(model.get('name'));
-      }
-    });
-
     this.app.db.on('collections.afterDestroy', async (model, options) => {
       const { transaction } = options;
-      await this.app.db.getRepository('rolesResources').destroy({
+      await this.app.db.getRepository('dataSourcesRolesResources').destroy({
         filter: {
           name: model.get('name'),
+          dataSourceKey: 'main',
         },
         transaction,
       });
@@ -295,20 +325,21 @@ export class PluginACL extends Plugin {
 
       const fieldName = model.get('name');
 
-      const resourceActions = (await this.app.db.getRepository('rolesResourcesActions').find({
+      const resourceActions = await this.app.db.getRepository('dataSourcesRolesResourcesActions').find({
         filter: {
           'resource.name': collectionName,
+          'resource.dataSourceKey': 'main',
         },
         transaction,
         appends: ['resource'],
-      })) as RoleResourceActionModel[];
+      });
 
       for (const resourceAction of resourceActions) {
         const fields = resourceAction.get('fields') as string[];
         const newFields = [...fields, fieldName];
 
-        await this.app.db.getRepository('rolesResourcesActions').update({
-          filterByTk: resourceAction.get('id') as number,
+        await this.app.db.getRepository('dataSourcesRolesResourcesActions').update({
+          filterByTk: resourceAction.get('id'),
           values: {
             fields: newFields,
           },
@@ -324,10 +355,11 @@ export class PluginACL extends Plugin {
         const collectionName = model.get('collectionName');
         const fieldName = model.get('name');
 
-        const resourceActions = await this.app.db.getRepository('rolesResourcesActions').find({
+        const resourceActions = await this.app.db.getRepository('dataSourcesRolesResourcesActions').find({
           filter: {
             'resource.name': collectionName,
             'fields.$anyOf': [fieldName],
+            'resource.dataSourceKey': 'main',
           },
           transaction: options.transaction,
         });
@@ -336,7 +368,7 @@ export class PluginACL extends Plugin {
           const fields = resourceAction.get('fields') as string[];
           const newFields = fields.filter((field) => field != fieldName);
 
-          await this.app.db.getRepository('rolesResourcesActions').update({
+          await this.app.db.getRepository('dataSourcesRolesResourcesActions').update({
             filterByTk: resourceAction.get('id') as number,
             values: {
               fields: newFields,
@@ -347,17 +379,32 @@ export class PluginACL extends Plugin {
       });
     });
 
+    // Delete cache when the roles of a user changed
+    this.app.db.on('rolesUsers.afterSave', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`roles:${model.get('userId')}`);
+    });
+    this.app.db.on('rolesUsers.afterDestroy', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`roles:${model.get('userId')}`);
+    });
+
     const writeRolesToACL = async (app, options) => {
       const exists = await this.app.db.collectionExistsInDb('roles');
       if (exists) {
-        this.log.info('write roles to ACL');
-        await this.writeRolesToACL();
+        this.log.info('write roles to ACL', { method: 'writeRolesToACL' });
+        await this.writeRolesToACL(options);
       }
     };
 
     // sync database role data to acl
-    this.app.on('afterLoad', writeRolesToACL);
-    this.app.on('afterInstall', writeRolesToACL);
+    this.app.on('afterStart', async () => {
+      await writeRolesToACL(this.app, {
+        withOutResources: true,
+      });
+    });
+
+    // this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {
       if (plugin.getName() !== 'users') {
@@ -414,7 +461,8 @@ export class PluginACL extends Plugin {
           },
         ],
       });
-      const rolesResourcesScopes = this.app.db.getRepository('rolesResourcesScopes');
+
+      const rolesResourcesScopes = this.app.db.getRepository('dataSourcesRolesResourcesScopes');
       await rolesResourcesScopes.createMany({
         records: [
           {
@@ -433,6 +481,9 @@ export class PluginACL extends Plugin {
       });
     });
 
+    this.app.on('beforeSignOut', ({ userId }) => {
+      this.app.cache.del(`roles:${userId}`);
+    });
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
@@ -605,6 +656,11 @@ export class PluginACL extends Plugin {
         if (action == 'destroy' && !ctx.action.resourceName.includes('.')) {
           const repository = actionUtils.getRepositoryFromParams(ctx);
 
+          if (!repository) {
+            await next();
+            return;
+          }
+
           // params after merge with fixed params
           const filteredCount = await repository.count(ctx.permission.mergedParams);
 
@@ -625,235 +681,7 @@ export class PluginACL extends Plugin {
       },
     );
 
-    const withACLMeta = async (ctx: any, next) => {
-      await next();
-
-      if (!ctx.action || !ctx.get('X-With-ACL-Meta') || ctx.status !== 200) {
-        return;
-      }
-
-      const { resourceName, actionName } = ctx.action;
-
-      if (!['list', 'get'].includes(actionName)) {
-        return;
-      }
-
-      const collection = ctx.db.getCollection(resourceName);
-
-      if (!collection) {
-        return;
-      }
-
-      const Model = collection.model;
-
-      const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
-
-      const dataPath = ctx.body?.rows ? 'body.rows' : 'body';
-      let listData = lodash.get(ctx, dataPath);
-
-      if (actionName == 'get') {
-        listData = lodash.castArray(listData);
-      }
-
-      const inspectActions = ['view', 'update', 'destroy'];
-
-      const actionsParams = [];
-
-      for (const action of inspectActions) {
-        const actionCtx: any = {
-          db: ctx.db,
-          action: {
-            actionName: action,
-            name: action,
-            params: {},
-            resourceName: ctx.action.resourceName,
-            resourceOf: ctx.action.resourceOf,
-            mergeParams() {},
-          },
-          state: {
-            currentRole: ctx.state.currentRole,
-            currentUser: (() => {
-              if (!ctx.state.currentUser) {
-                return null;
-              }
-              if (ctx.state.currentUser.toJSON) {
-                return ctx.state.currentUser?.toJSON();
-              }
-
-              return ctx.state.currentUser;
-            })(),
-          },
-          permission: {},
-          throw(...args) {
-            throw new NoPermissionError(...args);
-          },
-        };
-
-        try {
-          await this.app.acl.getActionParams(actionCtx);
-        } catch (e) {
-          if (e instanceof NoPermissionError) {
-            continue;
-          }
-
-          throw e;
-        }
-
-        actionsParams.push([
-          action,
-          actionCtx.permission?.can === null && !actionCtx.permission.skip
-            ? null
-            : actionCtx.permission?.parsedParams || {},
-          actionCtx,
-        ]);
-      }
-
-      const ids = (() => {
-        if (collection.options.tree) {
-          if (listData.length == 0) return [];
-          const getAllNodeIds = (data) => [data[primaryKeyField], ...(data.children || []).flatMap(getAllNodeIds)];
-          return listData.map((tree) => getAllNodeIds(tree.toJSON())).flat();
-        }
-
-        return listData.map((item) => item[primaryKeyField]);
-      })();
-
-      const conditions = [];
-
-      const allAllowed = [];
-
-      for (const [action, params, actionCtx] of actionsParams) {
-        if (!params) {
-          continue;
-        }
-
-        if (lodash.isEmpty(params) || lodash.isEmpty(params.filter)) {
-          allAllowed.push(action);
-          continue;
-        }
-
-        const queryParams = collection.repository.buildQueryOptions({
-          ...params,
-          context: actionCtx,
-        });
-
-        const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
-          Model.getTableName(),
-          {
-            where: (() => {
-              const filterObj = queryParams.where;
-
-              if (!this.db.options.underscored) {
-                return filterObj;
-              }
-
-              const isAssociationKey = (key) => {
-                return key.startsWith('$') && key.endsWith('$');
-              };
-
-              // change camelCase to snake_case
-              const iterate = (rootObj, path = []) => {
-                const obj = path.length == 0 ? rootObj : lodash.get(rootObj, path);
-
-                if (Array.isArray(obj)) {
-                  for (let i = 0; i < obj.length; i++) {
-                    if (obj[i] === null) {
-                      continue;
-                    }
-
-                    if (typeof obj[i] === 'object') {
-                      iterate(rootObj, [...path, i]);
-                    }
-                  }
-
-                  return;
-                }
-
-                Reflect.ownKeys(obj).forEach((key) => {
-                  if (Array.isArray(obj) && key == 'length') {
-                    return;
-                  }
-
-                  if ((typeof obj[key] === 'object' && obj[key] !== null) || typeof obj[key] === 'symbol') {
-                    iterate(rootObj, [...path, key]);
-                  }
-
-                  if (typeof key === 'string' && key !== snakeCase(key)) {
-                    const setKey = isAssociationKey(key)
-                      ? (() => {
-                          const parts = key.split('.');
-
-                          parts[parts.length - 1] = lodash.snakeCase(parts[parts.length - 1]);
-
-                          const result = parts.join('.');
-
-                          return result.endsWith('$') ? result : `${result}$`;
-                        })()
-                      : snakeCase(key);
-                    const setValue = lodash.cloneDeep(obj[key]);
-                    lodash.unset(rootObj, [...path, key]);
-
-                    lodash.set(rootObj, [...path, setKey], setValue);
-                  }
-                });
-              };
-
-              iterate(filterObj);
-
-              return filterObj;
-            })(),
-            attributes: [primaryKeyField],
-            includeIgnoreAttributes: false,
-          },
-          Model,
-        );
-
-        const whereCase = actionSql.match(/WHERE (.*?);/)[1];
-
-        conditions.push({
-          whereCase,
-          action,
-          include: queryParams.include,
-        });
-      }
-
-      const results = await collection.model.findAll({
-        where: {
-          [primaryKeyField]: ids,
-        },
-        attributes: [
-          primaryKeyField,
-          ...conditions.map((condition) => {
-            return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
-          }),
-        ],
-        include: conditions.map((condition) => condition.include).flat(),
-      });
-
-      const allowedActions = inspectActions
-        .map((action) => {
-          if (allAllowed.includes(action)) {
-            return [action, ids];
-          }
-
-          return [action, results.filter((item) => Boolean(item.get(action))).map((item) => item.get(primaryKeyField))];
-        })
-        .reduce((acc, [action, ids]) => {
-          acc[action] = ids;
-          return acc;
-        }, {});
-
-      if (actionName == 'get') {
-        ctx.bodyMeta = {
-          ...(ctx.bodyMeta || {}),
-          allowedActions: allowedActions,
-        };
-      }
-
-      if (actionName == 'list') {
-        ctx.body.allowedActions = allowedActions;
-      }
-    };
+    const withACLMeta = createWithACLMetaMiddleware();
 
     // append allowedActions to list & get response
     this.app.use(
@@ -870,6 +698,7 @@ export class PluginACL extends Plugin {
 
   async install() {
     const repo = this.db.getRepository<any>('collections');
+
     if (repo) {
       await repo.db2cm('roles');
     }
@@ -877,10 +706,11 @@ export class PluginACL extends Plugin {
 
   async load() {
     await this.importCollections(resolve(__dirname, 'collections'));
+
     this.db.extendCollection({
       name: 'rolesUischemas',
-      namespace: 'acl.acl',
-      duplicator: 'required',
+      dumpRules: 'required',
+      origin: this.options.packageName,
     });
   }
 }

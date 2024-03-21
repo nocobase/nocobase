@@ -3,6 +3,7 @@ import { DataTypes } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
+  appVersion = '<0.9.0-alpha.3';
   async up() {
     const match = await this.app.version.satisfies('<0.9.0-alpha.3');
     if (!match) {
@@ -25,22 +26,6 @@ export default class extends Migration {
       await queryInterface.changeColumn(
         db.getCollection('flow_nodes').model.getTableName(),
         'config',
-        {
-          type: DataTypes.JSON,
-        },
-        { transaction },
-      );
-      await queryInterface.changeColumn(
-        db.getCollection('executions').model.getTableName(),
-        'context',
-        {
-          type: DataTypes.JSON,
-        },
-        { transaction },
-      );
-      await queryInterface.changeColumn(
-        db.getCollection('jobs').model.getTableName(),
-        'result',
         {
           type: DataTypes.JSON,
         },

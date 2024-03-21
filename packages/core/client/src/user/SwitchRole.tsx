@@ -1,7 +1,8 @@
-import { MenuProps, Select } from 'antd';
+import { MenuProps } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../api-client';
+import { SelectWithTitle } from '../common';
 import { useCurrentRoles } from './CurrentUserProvider';
 
 export const useSwitchRole = () => {
@@ -13,35 +14,24 @@ export const useSwitchRole = () => {
       key: 'role',
       eventKey: 'SwitchRole',
       label: (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+        <SelectWithTitle
+          title={t('Switch role')}
+          fieldNames={{
+            label: 'title',
+            value: 'name',
           }}
-        >
-          {t('Switch role')}{' '}
-          <Select
-            style={{ minWidth: 100 }}
-            bordered={false}
-            popupMatchSelectWidth={false}
-            fieldNames={{
-              label: 'title',
-              value: 'name',
-            }}
-            options={roles}
-            value={api.auth.role}
-            onChange={async (roleName) => {
-              api.auth.setRole(roleName);
-              await api.resource('users').setDefaultRole({ values: { roleName } });
-              location.reload();
-              window.location.reload();
-            }}
-          />
-        </div>
+          options={roles}
+          defaultValue={api.auth.role}
+          onChange={async (roleName) => {
+            api.auth.setRole(roleName);
+            await api.resource('users').setDefaultRole({ values: { roleName } });
+            location.reload();
+            window.location.reload();
+          }}
+        />
       ),
     };
-  }, [api, history, roles]);
+  }, [api, roles, t]);
 
   if (roles.length <= 1) {
     return null;

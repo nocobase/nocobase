@@ -1,6 +1,6 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 describe('workflow > actions > workflows', () => {
   let app: MockServer;

@@ -7,12 +7,13 @@ import { cloneDeep } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
+import { useCollectionRecordData } from '../../data-source';
 import { RecordProvider } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useCollectionManager } from '../hooks';
-import { useOptions } from '../hooks/useOptions';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
+import { useFieldInterfaceOptions } from './interfaces';
 
 const getSchema = (schema: IField): ISchema => {
   if (!schema) {
@@ -95,11 +96,11 @@ const useCreateSubField = () => {
 };
 
 export const AddSubFieldAction = () => {
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
-  const options = useOptions();
+  const options = useFieldInterfaceOptions();
   const { t } = useTranslation();
   const items = useMemo(() => {
     return options.map((option) => {
@@ -127,6 +128,7 @@ export const AddSubFieldAction = () => {
       items,
     };
   }, [items]);
+  const recordData = useCollectionRecordData();
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
@@ -135,7 +137,7 @@ export const AddSubFieldAction = () => {
           {t('Add field')}
         </Button>
       </Dropdown>
-      <RecordProvider record={{}}>
+      <RecordProvider record={{}} parent={recordData}>
         <SchemaComponent
           schema={schema}
           components={{ ...components, ArrayTable }}

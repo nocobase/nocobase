@@ -15,7 +15,7 @@ export const Options = () => {
           public: {
             type: 'object',
             properties: {
-              allowSignup: {
+              allowSignUp: {
                 'x-decorator': 'FormItem',
                 type: 'boolean',
                 title: '{{t("Allow to sign up")}}',

@@ -5,7 +5,7 @@ import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
 
-const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `http://localhost:${APP_PORT}/storage/uploads`;
+const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
 
 describe('action', () => {
   let app;

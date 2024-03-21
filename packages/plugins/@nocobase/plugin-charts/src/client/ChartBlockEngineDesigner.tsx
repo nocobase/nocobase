@@ -6,7 +6,9 @@ import {
   GeneralSchemaDesigner,
   SchemaComponent,
   SchemaComponentOptions,
-  SchemaSettings,
+  SchemaSettingsDivider,
+  SchemaSettingsItem,
+  SchemaSettingsRemove,
   css,
   i18n,
   useAPIClient,
@@ -58,12 +60,12 @@ const validateJSON = {
 
 export const ChartBlockEngineDesigner = () => {
   const fieldSchema = useFieldSchema();
-  const { chartBlockEngineMetaData } = fieldSchema?.['x-component-props'];
+  const { chartBlockEngineMetaData } = fieldSchema?.['x-component-props'] || {};
   return (
     <GeneralSchemaDesigner>
       <ChartBlockEngineDesignerInitializer chartBlockEngineMetaData={chartBlockEngineMetaData} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',
@@ -94,7 +96,8 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
   });
 
   return (
-    <SchemaSettings.Item
+    <SchemaSettingsItem
+      title={props.title || 'Edit chart block'}
       onClick={async () => {
         FormDialog(
           {
@@ -243,6 +246,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
       }}
     >
       {props.children || props.title || lang('Edit chart block')}
-    </SchemaSettings.Item>
+    </SchemaSettingsItem>
   );
 };

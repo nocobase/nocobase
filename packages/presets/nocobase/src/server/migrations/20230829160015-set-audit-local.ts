@@ -1,22 +1,10 @@
 import { Migration } from '@nocobase/server';
 
 export default class SetAuditPluginAsLocalMigration extends Migration {
+  on = 'beforeLoad';
+  appVersion = '<0.13.0-alpha.5';
   async up() {
-    const version = await this.app.version.satisfies('<=0.13.0-alpha.5');
-    if (!version) {
-      return;
-    }
-    const repository = this.context.db.getRepository('applicationPlugins');
-    const audit = await repository.findOne({
-      filter: {
-        name: 'audit-logs',
-        builtIn: true,
-      },
-    });
-    if (!audit) {
-      return;
-    }
-    await repository.update({
+    await this.pm.repository.update({
       values: {
         builtIn: false,
       },

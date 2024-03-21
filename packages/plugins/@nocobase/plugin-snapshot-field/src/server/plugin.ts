@@ -16,6 +16,7 @@ export class SnapshotFieldPlugin extends Plugin {
         filter: {
           name: collectionDoc.name,
         },
+        transaction,
       });
 
       if (existCollection) {
@@ -30,28 +31,38 @@ export class SnapshotFieldPlugin extends Plugin {
         transaction,
       });
 
-      await fieldsHistoryRepository.createMany({
-        records: collectionDoc.fields ?? [],
-        transaction,
-      });
+      // await fieldsHistoryRepository.createMany({
+      //   records: collectionDoc.fields ?? [],
+      //   transaction,
+      // });
     };
 
     this.app.db.on('collections.afterCreateWithAssociations', collectionHandler);
 
-    const fieldHandler = async (model: Model, { transaction }) => {
-      const fieldDoc = model.get();
+    const deleteField = async (field, transaction) => {
       const fieldsHistoryRepository = this.app.db.getRepository('fieldsHistory');
-      const existField: Model = await fieldsHistoryRepository.findOne({
-        filter: {
-          name: fieldDoc.name,
-          collectionName: fieldDoc.collectionName,
-        },
+
+      const { name, collectionName } = field;
+
+      await fieldsHistoryRepository.destroy({
+        filter: { name, collectionName },
+        transaction,
       });
-      if (existField) {
-        await existField.destroy({
-          transaction,
-        });
+    };
+
+    const fieldHandler = async (model: Model, { transaction }) => {
+      const fieldsHistoryRepository = this.app.db.getRepository('fieldsHistory');
+
+      const fieldDoc = model.get();
+
+      await deleteField(fieldDoc, transaction);
+
+      const reverseField = fieldDoc.reverseField;
+
+      if (reverseField) {
+        await deleteField(reverseField, transaction);
       }
+
       await fieldsHistoryRepository.create({
         values: JSON.parse(JSON.stringify(fieldDoc)),
         transaction,
@@ -76,9 +87,7 @@ export class SnapshotFieldPlugin extends Plugin {
 
   async load() {
     // 导入 collection
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
 
     this.app.db.registerFieldTypes({
       snapshot: SnapshotField,

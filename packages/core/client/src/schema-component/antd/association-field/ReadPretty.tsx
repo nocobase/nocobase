@@ -11,7 +11,6 @@ import { ReadPrettyInternalViewer } from './InternalViewer';
 const ReadPrettyAssociationField = observer(
   (props: any) => {
     const { currentMode } = useAssociationFieldContext();
-
     return (
       <>
         {['Select', 'Picker', 'CascadeSelect'].includes(currentMode) && <ReadPrettyInternalViewer {...props} />}

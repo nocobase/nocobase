@@ -1,13 +1,14 @@
 import { useField } from '@formily/react';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useCollectionManager } from '.';
-import { CollectionProvider, useRecord } from '..';
+import { useCollectionManager_deprecated } from '.';
+import { CollectionProvider_deprecated, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
 export const ResourceActionContext = createContext<
   Result<any, any> & { state?: any; setState?: any; dragSort?: boolean; defaultRequest?: any }
 >(null);
+ResourceActionContext.displayName = 'ResourceActionContext';
 
 interface ResourceActionProviderProps {
   type?: 'association' | 'collection';
@@ -18,6 +19,7 @@ interface ResourceActionProviderProps {
 }
 
 const ResourceContext = createContext<any>(null);
+ResourceContext.displayName = 'ResourceContext';
 
 const CollectionResourceActionProvider = (props) => {
   const { collection, request, uid, dragSort } = props;
@@ -50,7 +52,7 @@ const CollectionResourceActionProvider = (props) => {
   return (
     <ResourceContext.Provider value={{ type: 'collection', resource, collection }}>
       <ResourceActionContext.Provider value={{ ...service, defaultRequest: request, dragSort }}>
-        <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+        <CollectionProvider_deprecated collection={collection}>{props.children}</CollectionProvider_deprecated>
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>
   );
@@ -78,9 +80,9 @@ const AssociationResourceActionProvider = (props) => {
   );
   const resource = api.resource(request.resource, resourceOf);
   return (
-    <ResourceContext.Provider value={{ type: 'association', resource, association }}>
+    <ResourceContext.Provider value={{ type: 'association', resource, association, collection }}>
       <ResourceActionContext.Provider value={{ ...service, defaultRequest: request, dragSort }}>
-        <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+        <CollectionProvider_deprecated collection={collection}>{props.children}</CollectionProvider_deprecated>
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>
   );
@@ -89,7 +91,7 @@ const AssociationResourceActionProvider = (props) => {
 export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (props) => {
   // eslint-disable-next-line prefer-const
   let { collection, request } = props;
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   if (typeof collection === 'string') {
     collection = getCollection(collection);
   }

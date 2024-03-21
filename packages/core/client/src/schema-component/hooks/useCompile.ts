@@ -1,9 +1,16 @@
 import { Schema, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
-import { useContext, isValidElement } from 'react';
+import { isValidElement, useContext } from 'react';
+
+interface Props {
+  /**
+   * 不使用缓存
+   */
+  noCache?: boolean;
+}
 
 const compileCache = {};
 
-export const useCompile = () => {
+export const useCompile = ({ noCache }: Props = { noCache: false }) => {
   const options = useContext(SchemaOptionsContext);
   const scope = useContext(SchemaExpressionScopeContext);
   return (source: any, ext?: any) => {
@@ -33,6 +40,9 @@ export const useCompile = () => {
         return Schema.compile(source, mergedScope);
       }
       try {
+        if (noCache) {
+          return Schema.compile(source, mergedScope);
+        }
         compileCache[cacheKey] = compileCache[cacheKey] || Schema.compile(source, mergedScope);
         return compileCache[cacheKey];
       } catch (e) {

@@ -1,14 +1,14 @@
-import { observer, useField, connect, createSchemaField, FormProvider, useFieldSchema, Field } from '@formily/react';
-import { createForm, onFormValuesChange } from '@formily/core';
-import { uid } from '@formily/shared';
-import { Space, Tag, Spin, Select as AntdSelect, Input } from 'antd';
 import { ArrayItems, FormItem } from '@formily/antd-v5';
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { createForm, onFormValuesChange } from '@formily/core';
+import { FormProvider, connect, createSchemaField, observer, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
+import { Select as AntdSelect, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, SchemaComponent } from '../../../schema-component';
-import { useAPIClient, useCollectionManager } from '../../../';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { useAPIClient, useCollectionManager_deprecated } from '../../../';
+import { mergeFilter } from '../../../filter-provider/utils';
+import { SchemaComponent, useCompile } from '../../../schema-component';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 const EMPTY = 'N/A';
@@ -22,7 +22,7 @@ const SchemaField = createSchemaField({
 });
 
 const CascadeSelect = connect((props) => {
-  const { data, mapOptions, onChange } = props;
+  const { data, mapOptions, onChange, value } = props;
   const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any; value?: any }[]>([
     { key: undefined, children: [], value: null },
   ]);
@@ -33,7 +33,7 @@ const CascadeSelect = connect((props) => {
   const service = useServiceOptions(props);
   const { options: collectionField, field: associationField } = useAssociationFieldContext<any>();
   const resource = api.resource(collectionField.target);
-  const { getCollectionJoinField, getInterface } = useCollectionManager();
+  const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
   const fieldNames = associationField?.componentProps?.fieldNames;
   const targetField =
     collectionField?.target &&
@@ -47,10 +47,10 @@ const CascadeSelect = connect((props) => {
   }, [targetField]);
   const field: any = useField();
   useEffect(() => {
-    if (props.value) {
-      const values = Array.isArray(props.value)
-        ? extractLastNonNullValueObjects(props.value?.filter((v) => v.value), true)
-        : transformNestedData(props.value);
+    if (value) {
+      const values = Array.isArray(value)
+        ? extractLastNonNullValueObjects(value?.filter((v) => v.value), true)
+        : transformNestedData(value);
       const options = values?.map?.((v) => {
         return {
           key: v.parentId,
@@ -73,7 +73,7 @@ const CascadeSelect = connect((props) => {
               if (Array.isArray(label)) {
                 label = label
                   .map((item, index) => {
-                    const option = targetField.uiSchema.enum.find((i) => i.value === item);
+                    const option = (targetField.uiSchema.enum as any).find?.((i) => i.value === item);
                     if (option) {
                       return (
                         <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
@@ -86,7 +86,7 @@ const CascadeSelect = connect((props) => {
                   })
                   .reverse();
               } else {
-                const item = targetField.uiSchema.enum.find((i) => i.value === label);
+                const item = (targetField.uiSchema.enum as any).find?.((i) => i.value === label);
                 if (item) {
                   label = <Tag color={item.color}>{item.label}</Tag>;
                 }
@@ -130,8 +130,8 @@ const CascadeSelect = connect((props) => {
     const data = await handleGetOptions({ parentId: option?.id });
     const options = [...selectedOptions];
     options.splice(index + 1);
-    if (value) {
-      options[index] = { ...options[index], value: option };
+    options[index] = { ...options[index], value: option };
+    if (option?.id) {
       options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
     }
     setSelectedOptions(options);
@@ -302,23 +302,26 @@ export const InternalCascadeSelect = observer(
       },
     };
     return (
-      <FormProvider form={selectForm}>
-        {collectionField.interface === 'm2o' ? (
-          <SchemaComponent
-            components={{ FormItem }}
-            schema={{
-              ...fieldSchema,
-              default: field.value,
-              'x-component': AssociationCascadeSelect,
-              'x-component-props': {
-                ...props,
-              },
-            }}
-          />
-        ) : (
-          <SchemaField schema={schema} />
-        )}
-      </FormProvider>
+      props.value !== null && (
+        <FormProvider form={selectForm}>
+          {collectionField.interface === 'm2o' ? (
+            <SchemaComponent
+              components={{ FormItem }}
+              schema={{
+                ...fieldSchema,
+                default: field.value,
+                title: '',
+                'x-component': AssociationCascadeSelect,
+                'x-component-props': {
+                  ...props,
+                },
+              }}
+            />
+          ) : (
+            <SchemaField schema={schema} />
+          )}
+        </FormProvider>
+      )
     );
   },
   { displayName: 'InternalCascadeSelect' },

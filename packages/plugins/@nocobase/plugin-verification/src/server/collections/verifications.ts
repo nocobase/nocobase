@@ -1,7 +1,11 @@
-export default {
-  namespace: 'verification.verificationData',
-  duplicator: 'optional',
+import { defineCollection } from '@nocobase/database';
+
+export default defineCollection({
+  dumpRules: {
+    group: 'log',
+  },
   name: 'verifications',
+  shared: true,
   fields: [
     {
       type: 'uuid',
@@ -35,4 +39,4 @@ export default {
       target: 'verifications_providers',
     },
   ],
-};
+});

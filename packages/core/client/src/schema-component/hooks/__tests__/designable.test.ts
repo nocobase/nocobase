@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Schema } from '@formily/react';
 import { createDesignable, Designable } from '../useDesignable';
 

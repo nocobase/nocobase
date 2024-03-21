@@ -6,8 +6,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
-import { useCollectionManager } from '../../../collection-manager';
-import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
@@ -38,10 +38,10 @@ export interface ITemplate {
 const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const data = useDuplicatefieldsContext();
-  const { getCollectionJoinField } = useCollectionManager();
-  if (data) {
-    return data;
+  const { duplicateData } = useFormBlockContext();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  if (duplicateData) {
+    return duplicateData;
   }
   const { items = [], display = true } = findDataTemplates(fieldSchema);
   // 过滤掉已经被删除的字段
@@ -87,7 +87,7 @@ const useDataTemplates = () => {
 export const Templates = ({ style = {}, form }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const templateOptions = compatibleDataId(templates);
   const [targetTemplate, setTargetTemplate] = useState(defaultTemplate?.key || 'none');
   const [targetTemplateData, setTemplateData] = useState(null);
@@ -138,6 +138,7 @@ export const Templates = ({ style = {}, form }) => {
           forEach(data, (value, key) => {
             if (value) {
               form.values[key] = value;
+              form?.setInitialValuesIn?.(key, value);
             }
           });
         }
@@ -157,6 +158,9 @@ export const Templates = ({ style = {}, form }) => {
       <Space wrap>
         <label style={labelStyle}>{t('Data template')}: </label>
         <Select
+          // @ts-ignore
+          role="button"
+          data-testid="select-form-data-template"
           popupMatchSelectWidth={false}
           options={templateOptions}
           fieldNames={{ label: 'title', value: 'key' }}

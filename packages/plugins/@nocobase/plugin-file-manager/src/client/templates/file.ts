@@ -1,13 +1,12 @@
-import { getConfigurableProperties } from '@nocobase/client';
-import { CollectionOptions } from '@nocobase/database';
+import { CollectionTemplate, getConfigurableProperties } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
-export const file = {
-  name: 'file',
-  title: `{{t("File collection", { ns: "${NAMESPACE}" })}}`,
-  order: 3,
-  color: 'blue',
-  default: {
+export class FileCollectionTemplate extends CollectionTemplate {
+  name = 'file';
+  title = `{{t("File collection", { ns: "${NAMESPACE}" })}}`;
+  order = 3;
+  color = 'blue';
+  default = {
     createdBy: true,
     updatedBy: true,
     fields: [
@@ -85,7 +84,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: `{{t("Path")}}`,
+          title: `{{t("Path", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'Input',
           'x-read-pretty': true,
         },
@@ -112,7 +111,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: `{{t("Preview")}}`,
+          title: `{{t("Preview", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'Preview',
           'x-read-pretty': true,
         },
@@ -124,6 +123,12 @@ export const file = {
         target: 'storages',
         foreignKey: 'storageId',
         deletable: false,
+        uiSchema: {
+          type: 'string',
+          title: `{{t("Storage", { ns: "${NAMESPACE}" })}}`,
+          'x-component': 'Input',
+          'x-read-pretty': true,
+        },
       },
       // '其他文件信息（如图片的宽高）',
       {
@@ -133,8 +138,8 @@ export const file = {
         defaultValue: {},
       },
     ],
-  },
-  configurableProperties: {
+  };
+  configurableProperties = {
     ...getConfigurableProperties('title', 'name'),
     inherits: {
       ...getConfigurableProperties('inherits').inherits,
@@ -150,5 +155,6 @@ export const file = {
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadStorages)}}'],
     },
-  },
-} as CollectionOptions;
+    ...getConfigurableProperties('presetFields'),
+  };
+}

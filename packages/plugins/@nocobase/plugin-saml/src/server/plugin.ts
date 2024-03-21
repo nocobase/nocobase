@@ -4,6 +4,7 @@ import { metadata } from './actions/metadata';
 import { redirect } from './actions/redirect';
 import { SAMLAuth } from './saml-auth';
 import { authType } from '../constants';
+import { resolve } from 'path';
 
 export class SAMLPlugin extends Plugin {
   afterAdd() {}
@@ -11,6 +12,14 @@ export class SAMLPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
+    this.db.addMigrations({
+      namespace: 'auth',
+      directory: resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
     this.app.authManager.registerTypes(authType, {
       auth: SAMLAuth,
     });

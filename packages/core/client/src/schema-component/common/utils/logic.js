@@ -1,4 +1,7 @@
 /* globals define,module */
+
+import dayjs from 'dayjs';
+
 /*
 Using a Universal Module Loader that should be browser, require, and AMD friendly
 http://ricostacruz.com/cheatsheets/umdjs.html
@@ -146,50 +149,58 @@ export function getJsonLogic() {
       if (!a || !b) {
         return false;
       }
-      const milliseconds1 = new Date(a).getTime();
-      const milliseconds2 = new Date(b).getTime();
-      return milliseconds1 === milliseconds2;
+      if (!Array.isArray(a)) {
+        a = [a, a];
+      }
+      if (!Array.isArray(b)) {
+        b = [b, b];
+      }
+      a = a.map((date) => dayjs(date));
+      b = b.map((date) => dayjs(date));
+
+      return a[0].isBetween(b[0], b[1], null, '[]') && a[1].isBetween(b[0], b[1], null, '[]');
     },
     $dateBefore: function (a, b) {
       if (!a || !b) {
         return false;
       }
+      if (!Array.isArray(a)) {
+        a = [a, a];
+      }
+      if (!Array.isArray(b)) {
+        b = [b, b];
+      }
+      a = a.map((date) => dayjs(date));
+      b = b.map((date) => dayjs(date));
 
-      return new Date(a) < new Date(b);
+      return a[0].isBefore(b[0]) && a[1].isBefore(b[0]);
     },
     $dateNotBefore: function (a, b) {
-      if (!a || !b) {
-        return false;
-      }
-
-      return new Date(a) <= new Date(b);
+      return !operations.$dateBefore(a, b);
     },
     $dateAfter: function (a, b) {
       if (!a || !b) {
         return false;
       }
+      if (!Array.isArray(a)) {
+        a = [a, a];
+      }
+      if (!Array.isArray(b)) {
+        b = [b, b];
+      }
+      a = a.map((date) => dayjs(date));
+      b = b.map((date) => dayjs(date));
 
-      return new Date(a) > new Date(b);
+      return a[0].isAfter(b[1]) && a[1].isAfter(b[1]);
     },
     $dateNotAfter: function (a, b) {
-      if (!a || !b) {
-        return false;
-      }
-      return new Date(a) >= new Date(b);
+      return !operations.$dateAfter(a, b);
     },
     $dateBetween: function (a, b) {
-      if (!a || !b) {
-        return false;
-      }
-      const startTime = new Date(b?.[0]);
-      const endTime = new Date(b?.[1]);
-      return new Date(a) > startTime && new Date(a) < endTime;
+      return operations.$dateOn(a, b);
     },
     $dateNotOn: function (a, b) {
-      if (!a || !b) {
-        return false;
-      }
-      return new Date(a) != new Date(b);
+      return !operations.$dateOn(a, b);
     },
     $isTruly: function (a) {
       if (Array.isArray(a)) return a.some((k) => k === true || k === 1);

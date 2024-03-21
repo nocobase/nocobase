@@ -8,9 +8,8 @@ export class IframeBlockPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
+
     this.app.actions({
       'iframeHtml:getHtml': getHtml,
     });

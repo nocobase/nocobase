@@ -1,11 +1,10 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'collection-manager.collections',
-  duplicator: {
-    dumpable: 'required',
-    with: 'collectionCategory',
+  dumpRules: {
+    group: 'required',
   },
+  shared: true,
   name: 'collectionCategories',
   autoGenId: true,
   sortable: true,

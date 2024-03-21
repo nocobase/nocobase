@@ -2,7 +2,7 @@ import type { Application } from './Application';
 import type { Plugin } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
-export type PluginOptions<T = any> = { name?: string; config?: T };
+export type PluginOptions<T = any> = { name?: string; packageName?: string; config?: T };
 export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
 export type PluginData = {
   name: string;
@@ -19,6 +19,7 @@ export class PluginManager {
 
   constructor(
     protected _plugins: PluginType[],
+    protected loadRemotePlugins: boolean,
     protected app: Application,
   ) {
     this.app = app;
@@ -27,7 +28,9 @@ export class PluginManager {
 
   async init(_plugins: PluginType[]) {
     await this.initStaticPlugins(_plugins);
-    await this.initRemotePlugins();
+    if (this.loadRemotePlugins) {
+      await this.initRemotePlugins();
+    }
   }
 
   private async initStaticPlugins(_plugins: PluginType[] = []) {
@@ -39,24 +42,16 @@ export class PluginManager {
   }
 
   private async initRemotePlugins() {
-    try {
-      const res = await this.app.apiClient.request({ url: 'pm:listEnabled' });
-      const pluginList: PluginData[] = res?.data?.data || [];
-      const plugins = await getPlugins({
-        requirejs: this.app.requirejs,
-        pluginData: pluginList,
-        devDynamicImport: this.app.devDynamicImport,
-      });
-      for await (const plugin of plugins) {
-        await this.add(plugin);
-      }
-    } catch (error) {
-      if (401 === error?.response?.status) {
-        this.app.apiClient.auth.setRole(null);
-        window.location.reload();
-      } else {
-        throw error;
-      }
+    const res = await this.app.apiClient.request({ url: 'pm:listEnabled' });
+    const pluginList: PluginData[] = res?.data?.data || [];
+    const plugins = await getPlugins({
+      requirejs: this.app.requirejs,
+      pluginData: pluginList,
+      devDynamicImport: this.app.devDynamicImport,
+    });
+    for await (const [name, pluginClass] of plugins) {
+      const info = pluginList.find((item) => item.name === name);
+      await this.add(pluginClass, info);
     }
   }
 
@@ -68,16 +63,21 @@ export class PluginManager {
     if (opts.name) {
       this.pluginsAliases[opts.name] = instance;
     }
+
+    if (opts.packageName) {
+      this.pluginsAliases[opts.packageName] = instance;
+    }
+
     await instance.afterAdd();
   }
 
   get<T extends typeof Plugin>(PluginClass: T): InstanceType<T>;
   get<T extends {}>(name: string): T;
-  get(name: any) {
-    if (typeof name === 'string') {
-      return this.pluginsAliases[name];
+  get(nameOrPluginClass: any) {
+    if (typeof nameOrPluginClass === 'string') {
+      return this.pluginsAliases[nameOrPluginClass];
     }
-    return this.pluginInstances.get(name);
+    return this.pluginInstances.get(nameOrPluginClass.default || nameOrPluginClass);
   }
 
   private getInstance<T>(plugin: typeof Plugin, opts?: T) {

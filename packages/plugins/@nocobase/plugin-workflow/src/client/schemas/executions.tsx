@@ -6,14 +6,26 @@ import { ExecutionStatusOptions } from '../constants';
 import { NAMESPACE } from '../locale';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
+import { getWorkflowDetailPath } from '../constant';
 
 export const executionCollection = {
-  name: 'executions',
+  name: 'execution-executions',
   fields: [
+    {
+      interface: 'id',
+      type: 'bigInt',
+      name: 'id',
+      uiSchema: {
+        type: 'number',
+        title: '{{t("ID")}}',
+        'x-component': 'Input',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      } as ISchema,
+    },
     {
       interface: 'createdAt',
       type: 'datetime',
-      // field: 'createdAt',
       name: 'createdAt',
       uiSchema: {
         type: 'datetime',
@@ -32,12 +44,7 @@ export const executionCollection = {
         title: `{{t("Version", { ns: "${NAMESPACE}" })}}`,
         ['x-component']({ value }) {
           const { setVisible } = useActionContext();
-          return (
-            <Link
-              to={`/admin/settings/workflow/workflows/${value}`}
-              onClick={() => setVisible(false)}
-            >{`#${value}`}</Link>
-          );
+          return <Link to={getWorkflowDetailPath(value)} onClick={() => setVisible(false)}>{`#${value}`}</Link>;
         },
       } as ISchema,
     },
@@ -124,6 +131,18 @@ export const executionSchema = {
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
+            id: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                id: {
+                  type: 'number',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
             createdAt: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
@@ -155,9 +174,11 @@ export const executionSchema = {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
+              title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
               properties: {
                 status: {
                   type: 'number',
+                  'x-decorator': 'ExecutionStatusColumn',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
@@ -177,7 +198,6 @@ export const executionSchema = {
                   properties: {
                     link: {
                       type: 'void',
-                      title: `{{t("Details", { ns: "${NAMESPACE}" })}}`,
                       'x-component': 'ExecutionLink',
                     },
                   },

@@ -2,7 +2,7 @@ import DysmsApi, { SendSmsRequest } from '@alicloud/dysmsapi20170525';
 import * as OpenApi from '@alicloud/openapi-client';
 import { RuntimeOptions } from '@alicloud/tea-util';
 
-import { Provider } from '.';
+import { Provider } from './Provider';
 
 export default class extends Provider {
   client: DysmsApi;

@@ -2,15 +2,19 @@ import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
+import { omit } from 'lodash';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollection, useCollectionManager } from '../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { useApp } from '../application';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 
 export const ACLContext = createContext<any>({});
+ACLContext.displayName = 'ACLContext';
 
 // TODO: delete this，replace by `ACLPlugin`
 export const ACLProvider = (props) => {
@@ -35,6 +39,7 @@ export const ACLRolesCheckProvider = (props) => {
   const { setDesignable } = useDesignable();
   const { render } = useAppSpin();
   const api = useAPIClient();
+  const app = useApp();
   const result = useRequest<{
     data: {
       snippets: string[];
@@ -57,6 +62,7 @@ export const ACLRolesCheckProvider = (props) => {
         if (data?.data?.role !== api.auth.role) {
           api.auth.setRole(data?.data?.role);
         }
+        app.pluginSettingsManager.setAclSnippets(data?.data?.snippets || []);
       },
     },
   );
@@ -85,10 +91,13 @@ export const useACLContext = () => {
 };
 
 export const ACLActionParamsContext = createContext<any>({});
+ACLActionParamsContext.displayName = 'ACLActionParamsContext';
 
 export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
-  const data = ctx?.data?.data;
+  const dataSourceName = useDataSourceKey();
+  const { dataSources: dataSourcesAcl } = ctx?.data?.meta || {};
+  const data = { ...ctx?.data?.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
   const getActionAlias = (actionPath: string) => {
     const actionName = actionPath.split(':').pop();
     return data?.actionAlias?.[actionName] || actionName;
@@ -135,20 +144,20 @@ const getIgnoreScope = (options: any = {}) => {
 
 const useAllowedActions = () => {
   const service = useResourceActionContext();
-  const result = useBlockRequestContext() || { service };
-  return result?.allowedActions ?? result?.service?.data?.meta?.allowedActions;
+  const result = useBlockRequestContext();
+  return result?.allowedActions ?? service?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
   const service = useResourceActionContext();
   const result = useBlockRequestContext() || { service };
-  return result?.props?.resource || result?.service?.defaultRequest?.resource;
+  return result?.props?.resource || result?.props?.collection || result?.service?.defaultRequest?.resource;
 };
 
 export function useACLRoleContext() {
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const verifyScope = (actionName: string, recordPkValue: any) => {
     const actionAlias = getActionAlias(actionName);
     if (!Array.isArray(allowedActions?.[actionAlias])) {
@@ -205,18 +214,20 @@ export const useACLActionParamsContext = () => {
 };
 
 export const useRecordPkValue = () => {
-  const { getPrimaryKey } = useCollection();
+  const { getPrimaryKey } = useCollection_deprecated();
   const record = useRecord();
   const primaryKey = getPrimaryKey();
   return record?.[primaryKey];
 };
 
 export const ACLActionProvider = (props) => {
+  const { template, writableView } = useCollection_deprecated();
   const recordPkValue = useRecordPkValue();
   const resource = useResourceName();
   const { parseAction } = useACLRoleContext();
   const schema = useFieldSchema();
   let actionPath = schema['x-acl-action'];
+  const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
   if (!actionPath && resource && schema['x-action']) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
@@ -228,6 +239,13 @@ export const ACLActionProvider = (props) => {
   }
   const params = parseAction(actionPath, { schema, recordPkValue });
   if (!params) {
+    return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
+  }
+  //视图表无编辑权限时不显示
+  if (editablePath.includes(actionPath) || editablePath.includes(actionPath?.split(':')[1])) {
+    if (template !== 'view' || writableView) {
+      return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
+    }
     return null;
   }
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;

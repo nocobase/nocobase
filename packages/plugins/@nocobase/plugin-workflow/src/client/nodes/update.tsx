@@ -1,7 +1,7 @@
 import { useField, useForm } from '@formily/react';
 import React from 'react';
 
-import { useCollectionDataSource, useCollectionManager } from '@nocobase/client';
+import { useCollectionDataSource, useCollectionManager_deprecated } from '@nocobase/client';
 
 import CollectionFieldset from '../components/CollectionFieldset';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
@@ -10,9 +10,10 @@ import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { NAMESPACE, lang } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
 import { isValidFilter } from '../utils';
+import { Instruction } from '.';
 
 function IndividualHooksRadioWithTooltip({ onChange, ...props }) {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   const form = useForm();
   const { collection } = form.values;
   const fields = getCollectionFields(collection);
@@ -39,12 +40,12 @@ function IndividualHooksRadioWithTooltip({ onChange, ...props }) {
   return <RadioWithTooltip {...props} onChange={onValueChange} />;
 }
 
-export default {
-  title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-  type: 'update',
-  group: 'collection',
-  description: `{{t("Update records of a collection. You can use variables from upstream nodes as query conditions and field values.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Update record", { ns: "${NAMESPACE}" })}}`;
+  type = 'update';
+  group = 'collection';
+  description = `{{t("Update records of a collection. You can use variables from upstream nodes as query conditions and field values.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     collection,
     params: {
       type: 'object',
@@ -87,14 +88,13 @@ export default {
         },
       },
     },
-  },
-  view: {},
-  scope: {
+  };
+  scope = {
     useCollectionDataSource,
-  },
-  components: {
+  };
+  components = {
     FilterDynamicComponent,
     CollectionFieldset,
     IndividualHooksRadioWithTooltip,
-  },
-};
+  };
+}

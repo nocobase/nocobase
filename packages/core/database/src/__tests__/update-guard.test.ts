@@ -12,6 +12,7 @@ describe('update-guard', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
 
     User = db.collection({
       name: 'users',
@@ -351,8 +352,9 @@ describe('update-guard', () => {
 });
 
 describe('One2One Association', () => {
-  test('associationKeysToBeUpdate hasOne & BelongsTo', () => {
+  test('associationKeysToBeUpdate hasOne & BelongsTo', async () => {
     const db = mockDatabase();
+    await db.clean({ drop: true });
     const Post = db.collection({
       name: 'posts',
       fields: [{ type: 'belongsTo', name: 'user', targetKey: 'uid' }],

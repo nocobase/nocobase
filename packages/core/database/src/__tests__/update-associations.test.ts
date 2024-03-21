@@ -214,6 +214,7 @@ describe('update associations', () => {
     let Post: Collection;
     beforeEach(async () => {
       db = mockDatabase();
+      await db.clean({ drop: true });
       User = db.collection({
         name: 'users',
         fields: [
@@ -231,6 +232,8 @@ describe('update associations', () => {
       await db.close();
     });
     it('user.posts', async () => {
+      await User.model.create<any>({ name: 'user01' });
+      await User.model.create<any>({ name: 'user02' });
       const user1 = await User.model.create<any>({ name: 'user1' });
       await updateAssociations(user1, {
         posts: {
@@ -359,6 +362,7 @@ describe('update associations', () => {
 
     beforeEach(async () => {
       db = mockDatabase();
+      await db.clean({ drop: true });
       User = db.collection({
         name: 'users',
         fields: [

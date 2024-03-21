@@ -1,7 +1,6 @@
 import { AppSupervisor, Gateway } from '@nocobase/server';
-import { createWsClient, MockServer, mockServer, startServerWithRandomPort, waitSecond } from '@nocobase/test';
+import { MockServer, createMockServer, createWsClient, startServerWithRandomPort, waitSecond } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { PluginMultiAppManager } from '../server';
 
 describe('gateway with multiple apps', () => {
   let app: MockServer;
@@ -11,11 +10,9 @@ describe('gateway with multiple apps', () => {
   beforeEach(async () => {
     gateway = Gateway.getInstance();
 
-    app = mockServer();
-    await app.cleanDb();
-    app.plugin(PluginMultiAppManager);
-
-    await app.runCommand('install');
+    app = await createMockServer({
+      plugins: ['multi-app-manager'],
+    });
   });
 
   afterEach(async () => {
@@ -28,7 +25,7 @@ describe('gateway with multiple apps', () => {
 
   it('should boot main app with sub apps', async () => {
     const mainStatus = AppSupervisor.getInstance().getAppStatus('main');
-    expect(mainStatus).toEqual('initialized');
+    expect(mainStatus).toEqual('running');
 
     const subAppName = `td_${uid()}`;
 
@@ -62,7 +59,7 @@ describe('gateway with multiple apps', () => {
       },
     });
 
-    await waitSecond();
+    await waitSecond(3000);
     console.log(wsClient.messages);
     const lastMessage = wsClient.lastMessage();
 

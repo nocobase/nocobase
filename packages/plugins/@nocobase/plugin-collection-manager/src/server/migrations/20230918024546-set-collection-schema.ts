@@ -1,6 +1,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
+  appVersion = '<0.14.0-alpha.4';
   async up() {
     if (!this.db.inDialect('postgres')) {
       return;

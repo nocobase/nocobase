@@ -8,15 +8,17 @@ import {
   useField,
   useFieldSchema,
 } from '@formily/react';
+import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
-import { Icon, useAPIClient, useSchemaInitializer } from '../../../';
+import { Icon, useAPIClient, useSchemaInitializerRender } from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
+import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
@@ -27,6 +29,9 @@ const subMenuDesignerCss = css`
   margin-right: -34px;
   padding: 0 34px 0 24px;
   width: calc(100% + 58px);
+  height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -78,6 +83,7 @@ const designerCss = css`
   margin-right: -20px;
   padding: 0 20px;
   width: calc(100% + 40px);
+  height: 100%;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -136,6 +142,7 @@ const sideMenuClass = css`
   overflow-x: hidden;
   .ant-menu-item {
     > .ant-menu-title-content {
+      height: 100%;
       margin-left: -24px;
       margin-right: -16px;
       padding: 0 16px 0 24px;
@@ -148,6 +155,7 @@ const sideMenuClass = css`
   }
   .ant-menu-submenu-title {
     .ant-menu-title-content {
+      height: 100%;
       margin-left: -24px;
       margin-right: -34px;
       padding: 0 34px 0 24px;
@@ -194,10 +202,13 @@ const HeaderMenu = ({
   const items = useMemo(() => {
     const designerBtn = {
       key: 'x-designer-button',
-      disabled: true,
       style: { padding: '0 8px', order: 9999 },
-      label: render({ 'data-testid': 'add-menu-item-button-in-header', style: { background: 'none' } }),
+      label: render({
+        'data-testid': 'schema-initializer-Menu-header',
+        style: { background: 'none' },
+      }),
       notdelete: true,
+      disabled: true,
     };
     const result = getMenuItems(() => {
       return children;
@@ -216,7 +227,12 @@ const HeaderMenu = ({
         {...others}
         className={headerMenuClass}
         onSelect={(info: any) => {
-          const s = schema.properties[info.key];
+          const s = schema.properties?.[info.key];
+
+          if (!s) {
+            return;
+          }
+
           if (mode === 'mix') {
             if (s['x-component'] !== 'Menu.SubMenu') {
               onSelect?.(info);
@@ -271,9 +287,14 @@ const SideMenu = ({
 }) => {
   const { Component, getMenuItems } = useMenuItem();
 
+  // fix https://nocobase.height.app/T-3331/description
+  // 使用 ref 用来防止闭包问题
+  const sideMenuSchemaRef = useRef(sideMenuSchema);
+  sideMenuSchemaRef.current = sideMenuSchema;
+
   const items = useMemo(() => {
     const result = getMenuItems(() => {
-      return <RecursionField schema={sideMenuSchema} onlyRenderProperties />;
+      return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
     });
 
     if (designable) {
@@ -281,13 +302,13 @@ const SideMenu = ({
         key: 'x-designer-button',
         disabled: true,
         label: render({
-          'data-testid': 'add-menu-item-button-in-side',
+          'data-testid': 'schema-initializer-Menu-side',
           insert: (s) => {
             const dn = createDesignable({
               t,
               api,
               refresh,
-              current: sideMenuSchema,
+              current: sideMenuSchemaRef.current,
             });
             dn.loadAPIClientEvents();
             dn.insertAdjacent('beforeEnd', s);
@@ -299,7 +320,7 @@ const SideMenu = ({
     }
 
     return result;
-  }, [render, sideMenuSchema, designable, loading]);
+  }, [getMenuItems, designable, sideMenuSchema, render, t, api, refresh]);
 
   if (loading) {
     return null;
@@ -329,7 +350,6 @@ const SideMenu = ({
 };
 
 const MenuModeContext = createContext(null);
-
 MenuModeContext.displayName = 'MenuModeContext';
 
 const useSideMenuRef = () => {
@@ -363,7 +383,7 @@ export const Menu: ComposedMenu = observer(
     const schema = useFieldSchema();
     const { refresh } = useDesignable();
     const api = useAPIClient();
-    const { render } = useSchemaInitializer(schema['x-initializer']);
+    const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
     const sideMenuRef = useSideMenuRef();
     const [selectedKeys, setSelectedKeys] = useState<string[]>();
     const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
@@ -464,7 +484,7 @@ export const Menu: ComposedMenu = observer(
 
 Menu.Item = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -480,7 +500,12 @@ Menu.Item = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+              <SortableItem
+                role="button"
+                aria-label={t(field.title)}
+                className={designerCss}
+                removeParentsIfNoChildren={false}
+              >
                 <Icon type={icon} />
                 <span
                   style={{
@@ -514,7 +539,7 @@ Menu.Item = observer(
 
 Menu.URL = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -539,7 +564,7 @@ Menu.URL = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+              <SortableItem className={designerCss} removeParentsIfNoChildren={false} aria-label={t(field.title)}>
                 <Icon type={icon} />
                 <span
                   style={{
@@ -568,7 +593,7 @@ Menu.URL = observer(
 
 Menu.SubMenu = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { Component, getMenuItems } = useMenuItem();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
@@ -585,7 +610,11 @@ Menu.SubMenu = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
+              <SortableItem
+                className={subMenuDesignerCss}
+                removeParentsIfNoChildren={false}
+                aria-label={t(field.title)}
+              >
                 <Icon type={icon} />
                 {t(field.title)}
                 <Designer />

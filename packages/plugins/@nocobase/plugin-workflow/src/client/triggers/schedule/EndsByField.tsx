@@ -1,6 +1,6 @@
 import { css } from '@nocobase/client';
-import dayjs from 'dayjs';
 import { DatePicker, Select } from 'antd';
+import dayjs from 'dayjs';
 import React from 'react';
 import { useWorkflowTranslation } from '../../locale';
 import { OnField } from './OnField';
@@ -20,6 +20,7 @@ export function EndsByField({ value, onChange }) {
         onChange={(t) => {
           onChange(t ? (t === 'field' ? {} : new Date()) : null);
         }}
+        className="auto-width"
       >
         <Select.Option value={null}>{t('No end')}</Select.Option>
         <Select.Option value={'field'}>{t('By field')}</Select.Option>

@@ -7,6 +7,7 @@ interface CollectionNodeOptions {
   handelOpenPorts?: Function;
 }
 export const GraphCollectionContext = createContext(null);
+GraphCollectionContext.displayName = 'GraphCollectionContext';
 
 export const CollectionNodeProvder: React.FC<CollectionNodeOptions> = (props: any) => {
   const { record, setTargetNode, node, handelOpenPorts } = props;

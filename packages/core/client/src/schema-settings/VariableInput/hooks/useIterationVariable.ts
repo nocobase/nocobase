@@ -1,125 +1,111 @@
-import { useMemo } from 'react';
+import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useGetFilterOptions } from '../../../schema-component';
-import { FieldOption, Option } from '../type';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
+import { useFlag } from '../../../flag-provider';
+import { useSubFormValue } from '../../../schema-component/antd/association-field/hooks';
+import { useBaseVariable } from './useBaseVariable';
+import { useCollection } from '../../../data-source';
 
-interface GetOptionsParams {
-  depth: number;
-  operator?: string;
-  maxDepth: number;
-  count?: number;
-  loadChildren?: (option: Option) => Promise<void>;
-  getFilterOptions?: (collectionName: string) => any[];
-  compile: (value: string) => any;
-  schema: any;
-}
+/**
+ * @deprecated
+ * 该 hook 已废弃，请使用 `useCurrentObjectVariable` 代替
+ *
+ * 变量：`当前对象`
+ * @param param0
+ * @returns
+ */
+export const useIterationVariable = ({
+  currentCollection,
+  collectionField,
+  schema,
+  noDisabled,
+  targetFieldSchema,
+}: {
+  currentCollection: string;
+  collectionField: CollectionFieldOptions_deprecated;
+  schema?: any;
+  noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
+}) => {
+  // const { getActiveFieldsName } = useFormActiveFields() || {};
+  const { t } = useTranslation();
+  const result = useBaseVariable({
+    collectionField,
+    uiSchema: schema,
+    targetFieldSchema,
+    maxDepth: 4,
+    name: '$iteration',
+    title: t('Current object'),
+    collectionName: currentCollection,
+    noDisabled,
+    returnFields: (fields, option) => {
+      // fix https://nocobase.height.app/T-2277
+      return fields;
+      // const activeFieldsName = getActiveFieldsName?.('nester') || [];
 
-const getChildren = (
-  options: FieldOption[],
-  { depth, maxDepth, loadChildren, compile, schema }: GetOptionsParams,
-): Option[] => {
-  const result = options
-    .map((option): Option => {
-      if (!option.target) {
-        return {
-          key: option.name,
-          value: option.name,
-          label: compile(option.title),
-          depth,
-          // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-          disabled: schema && schema?.['x-component'] !== option.schema?.['x-component'],
-        };
-      }
+      // return option.depth === 0
+      //   ? fields.filter((field) => {
+      //       return activeFieldsName?.includes(field.name);
+      //     })
+      //   : fields;
+    },
+  });
 
-      if (depth >= maxDepth) {
-        return null;
-      }
-
-      return {
-        key: option.name,
-        value: option.name,
-        label: compile(option.title),
-        children: [],
-        isLeaf: false,
-        field: option,
-        depth,
-        loadChildren,
-      };
-    })
-    .filter(Boolean);
   return result;
 };
-export const useIterationVariable = ({
-  blockForm,
-  currentCollection,
-  operator,
+
+/**
+ * 变量：`当前对象`
+ * @param param0
+ * @returns
+ */
+export const useCurrentObjectVariable = ({
+  collectionField,
   schema,
-  level,
-  rootCollection,
+  noDisabled,
+  targetFieldSchema,
 }: {
-  blockForm?: any;
-  currentCollection: string;
-  rootCollection: string;
-  operator?: any;
+  collectionField?: CollectionFieldOptions;
   schema?: any;
-  level?: number;
-}) => {
+  noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
+} = {}) => {
+  // const { getActiveFieldsName } = useFormActiveFields() || {};
+  const collection = useCollection();
+  const { formValue: currentObjectCtx, collection: collectionOfCurrentObject } = useSubFormValue();
+  const { isInSubForm, isInSubTable } = useFlag() || {};
   const { t } = useTranslation();
-  const compile = useCompile();
-  const getFilterOptions = useGetFilterOptions();
-  const loadChildren = (option: any): Promise<void> => {
-    if (!option.field?.target) {
-      return new Promise((resolve) => {
-        resolve(void 0);
-      });
-    }
+  const currentObjectSettings = useBaseVariable({
+    collectionField,
+    uiSchema: schema,
+    targetFieldSchema,
+    maxDepth: 4,
+    name: '$iteration',
+    title: t('Current object'),
+    collectionName: collectionOfCurrentObject?.name || collection?.name,
+    noDisabled,
+    returnFields: (fields, option) => {
+      // fix https://nocobase.height.app/T-2277
+      return fields;
+      // const activeFieldsName = getActiveFieldsName?.('nester') || [];
 
-    const collectionName = option.field.target;
-    const fields = getFilterOptions(collectionName);
-    const allowFields =
-      option.depth === 0
-        ? fields.filter((field) => {
-            return Object.keys(blockForm.fields).some((name) => name.includes(`.${field.name}`));
-          })
-        : fields;
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const children =
-          getChildren(allowFields, {
-            depth: option.depth + 1,
-            maxDepth: 4,
-            loadChildren,
-            compile,
-            schema,
-          }) || [];
-        if (children.length === 0) {
-          option.disabled = true;
-          resolve();
-          return;
-        }
-        option.children = children;
-        resolve();
+      // return option.depth === 0
+      //   ? fields.filter((field) => {
+      //       return activeFieldsName?.includes(field.name);
+      //     })
+      //   : fields;
+    },
+  });
 
-        // 延迟 5 毫秒，防止阻塞主线程，导致 UI 卡顿
-      }, 5);
-    });
+  return {
+    /** 是否显示变量 */
+    shouldDisplayCurrentObject: isInSubForm || isInSubTable,
+    /** 变量的值 */
+    currentObjectCtx,
+    /** 变量的配置项 */
+    currentObjectSettings,
   };
-  const label = t('Current object');
-  const result = useMemo(() => {
-    return (
-      blockForm &&
-      currentCollection !== rootCollection && {
-        label: label,
-        value: '$iteration',
-        key: '$iteration',
-        isLeaf: false,
-        field: {
-          target: currentCollection,
-        },
-        depth: 0,
-        loadChildren,
-      }
-    );
-  }, [currentCollection]);
-  return result;
 };

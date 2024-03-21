@@ -6,7 +6,7 @@ import { getPopupContainer } from '../utils';
 
 const useUpdateCollectionField = (record) => {
   const collectionName = record.collectionName;
-  const { run } = useUpdateFieldAction({ collectionName, name: record.name, key: record.key });
+  const { run } = useUpdateFieldAction({ collectionName, name: record.name, key: record.id });
   return {
     async run() {
       await run();
@@ -14,10 +14,11 @@ const useUpdateCollectionField = (record) => {
   };
 };
 
-export const EditFieldAction = ({ item: record }) => {
+export const EditFieldAction = ({ item: record, parentItem: ParentRecord }) => {
   return (
     <EditCollectionFieldAction
       item={record}
+      parentItem={ParentRecord}
       scope={{
         useCancelAction,
         useUpdateCollectionField: () => useUpdateCollectionField(record),

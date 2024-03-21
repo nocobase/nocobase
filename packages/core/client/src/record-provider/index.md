@@ -4,19 +4,19 @@ group:
   order: 1
 ---
 
-# RecordProvider
+# CollectionRecordProvider
 
 「Record」在这里有着特殊的意义，表示数据表的行记录。
 
-## RecordProvider
+## CollectionRecordProvider
 
 提供当前行记录的上下文
 
 ```tsx | pure
-<RecordProvider record={{}}></RecordProvider>
+<CollectionRecordProvider record={{}}></CollectionRecordProvider>
 ```
 
-## useRecord()
+## useRecord ()
 
 ```ts
 interface User {
@@ -25,5 +25,5 @@ interface User {
   password: string;
 }
 
-const record = useRecord<User>();
+const record = useRecord <User>();
 ```

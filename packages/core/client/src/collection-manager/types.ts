@@ -1,43 +1,22 @@
-import { ISchema } from '@formily/react';
-import { ReactNode } from 'react';
+import type { ISchema } from '@formily/react';
+import type { ReactNode } from 'react';
+import type { CollectionManager, CollectionOptions } from '../data-source';
+
+export type { CollectionOptions } from '../data-source';
 
 export interface CollectionManagerOptions {
-  service?: any;
-  interfaces?: any;
-  collections?: any[];
-  templates?: any;
-  refreshCM?: () => Promise<void>;
+  instance?: CollectionManager;
   children?: ReactNode;
-  updateCollection?: (collection: any) => void;
 }
 
-export interface FieldOptions {
-  type: string;
-  interface?: string;
-  uiSchema?: ISchema;
-
-  [key: string]: any;
-}
-
-export interface CollectionOptions {
-  name?: string;
-  title?: string;
-  filterTargetKey?: string;
-  targetKey?: string;
-  sortable?: any;
-  fields?: FieldOptions[];
-  inherits?: string[];
-  tree?: string;
-  template?: string;
-  writableView?: boolean;
-}
+export type FieldOptions = any;
 
 export interface ICollectionProviderProps {
   name?: string;
   fields?: any;
 }
 
-export interface CollectionFieldOptions {
+export interface CollectionFieldOptions_deprecated {
   name?: any;
   collectionName?: string;
   sourceKey?: string; // association field

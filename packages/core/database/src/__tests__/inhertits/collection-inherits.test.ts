@@ -2,9 +2,9 @@ import { BelongsToManyRepository } from '@nocobase/database';
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
-import pgOnly from './helper';
+import { isPg } from '@nocobase/test';
 
-pgOnly()('collection inherits', () => {
+describe.runIf(isPg())('collection inherits', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -364,7 +364,7 @@ pgOnly()('collection inherits', () => {
     });
   });
 
-  it('should create inherits from empty table', async () => {
+  it('should throw error when create inherits from empty table', async () => {
     const empty = db.collection({
       name: 'empty',
       timestamps: false,
@@ -389,22 +389,20 @@ pgOnly()('collection inherits', () => {
       fields: [{ type: 'string', name: 'name' }],
     });
 
-    await db.sync({
-      force: false,
-      alter: {
-        drop: false,
-      },
-    });
+    let error;
+    try {
+      await db.sync({
+        force: false,
+        alter: {
+          drop: false,
+        },
+      });
+    } catch (e) {
+      error = e;
+    }
 
-    expect(inherits instanceof InheritedCollection).toBeTruthy();
-
-    const record = await inherits.repository.create({
-      values: {
-        name: 'test',
-      },
-    });
-
-    expect(record.get('name')).toEqual('test');
+    expect(error).toBeTruthy();
+    expect(error.message.includes("can't inherit from")).toBeTruthy();
   });
 
   it('should not throw error when fields have same type with parent', async () => {

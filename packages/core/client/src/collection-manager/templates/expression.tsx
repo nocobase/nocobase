@@ -1,13 +1,13 @@
 import { getOptions } from '@nocobase/evaluators/client';
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
 
-export const expression: ICollectionTemplate = {
-  name: 'expression',
-  title: '{{t("Expression collection")}}',
-  order: 4,
-  color: 'orange',
-  default: {
+export class ExpressionCollectionTemplate extends CollectionTemplate {
+  name = 'expression';
+  title = '{{t("Expression collection")}}';
+  order = 4;
+  color = 'orange';
+  default = {
     createdBy: true,
     updatedBy: true,
     createdAt: true,
@@ -50,9 +50,16 @@ export const expression: ICollectionTemplate = {
         },
       },
     ],
-  },
-  availableFieldInterfaces: {
+  };
+  availableFieldInterfaces = {
     include: [],
-  },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category', 'description'),
-};
+  };
+  configurableProperties = getConfigurableProperties(
+    'title',
+    'name',
+    'inherits',
+    'category',
+    'description',
+    'presetFields',
+  );
+}

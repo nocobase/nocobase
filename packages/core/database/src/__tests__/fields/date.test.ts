@@ -8,6 +8,7 @@ describe('date-field', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.collection({
       name: 'tests',
       fields: [{ name: 'date1', type: 'date' }],

@@ -9,11 +9,13 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
+import { useStyles as useAClStyles } from '../../../acl/style';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
+import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
@@ -32,6 +34,7 @@ export const Page = (props) => {
   const fieldSchema = useFieldSchema();
   const dn = useDesignable();
   const { theme } = useGlobalTheme();
+  const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
 
   // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
   const [hasMounted, setHasMounted] = useState(false);
@@ -58,6 +61,7 @@ export const Page = (props) => {
   );
   const [height, setHeight] = useState(0);
   const { wrapSSR, hashId, componentCls } = useStyles();
+  const aclStyles = useAClStyles();
 
   const handleErrors = (error) => {
     console.error(error);
@@ -66,7 +70,7 @@ export const Page = (props) => {
   const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
   return wrapSSR(
     <FilterBlockProvider>
-      <div className={`${componentCls} ${hashId}`}>
+      <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
         <PageDesigner title={fieldSchema.title || title} />
         <div
           ref={(ref) => {
@@ -78,7 +82,7 @@ export const Page = (props) => {
               className={classNames('pageHeaderCss', pageHeaderTitle || enablePageTabs ? '' : 'height0')}
               ghost={false}
               // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
-              title={t(pageHeaderTitle || ' ')}
+              title={pageHeaderTitle || ' '}
               {...others}
               footer={
                 enablePageTabs && (
@@ -97,6 +101,7 @@ export const Page = (props) => {
                       tabBarExtraContent={
                         dn.designable && (
                           <Button
+                            aria-label={getAriaLabel('tabs')}
                             icon={<PlusOutlined />}
                             className={'addTabBtn'}
                             type={'dashed'}
@@ -141,7 +146,7 @@ export const Page = (props) => {
                                 title,
                                 'x-icon': icon,
                                 'x-component': 'Grid',
-                                'x-initializer': 'BlockInitializers',
+                                'x-initializer': 'page:addBlock',
                                 properties: {},
                               });
                             }}

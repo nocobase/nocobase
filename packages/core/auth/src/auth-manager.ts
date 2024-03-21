@@ -1,15 +1,20 @@
 import { Context, Next } from '@nocobase/actions';
-import { Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
 
-type Storer = {
-  get: (name: string) => Promise<Model>;
-};
+export interface Authenticator {
+  authType: string;
+  options: Record<string, any>;
+  [key: string]: any;
+}
 
-type AuthManagerOptions = {
+export interface Storer {
+  get: (name: string) => Promise<Authenticator>;
+}
+
+export type AuthManagerOptions = {
   authKey: string;
   default?: string;
   jwt?: JwtOptions;
@@ -21,11 +26,11 @@ type AuthConfig = {
 };
 
 export class AuthManager {
+  jwt: JwtService;
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
-  jwt: JwtService;
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
@@ -45,8 +50,8 @@ export class AuthManager {
    * @description Add a new authenticate type and the corresponding authenticator.
    * The types will show in the authenticators list of the admin panel.
    *
-   * @param {string} authType - The type of the authenticator. It is required to be unique.
-   * @param {AuthConfig} authConfig - Configurations of the kind of authenticator.
+   * @param authType - The type of the authenticator. It is required to be unique.
+   * @param authConfig - Configurations of the kind of authenticator.
    */
   registerTypes(authType: string, authConfig: AuthConfig) {
     this.authTypes.register(authType, authConfig);
@@ -66,8 +71,8 @@ export class AuthManager {
   /**
    * get
    * @description Get authenticator instance by name.
-   * @param {string} name - The name of the authenticator.
-   * @return {Promise<Auth>} authenticator instance.
+   * @param name - The name of the authenticator.
+   * @return authenticator instance.
    */
   async get(name: string, ctx: Context) {
     if (!this.storer) {
@@ -91,7 +96,7 @@ export class AuthManager {
   middleware() {
     return async (ctx: Context & { auth: Auth }, next: Next) => {
       const token = ctx.getBearerToken();
-      if (token && (await ctx.app.authManager.jwt.blacklist.has(token))) {
+      if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
         return ctx.throw(401, ctx.t('token is not available'));
       }
 
@@ -102,7 +107,7 @@ export class AuthManager {
         ctx.auth = authenticator;
       } catch (err) {
         ctx.auth = {} as Auth;
-        ctx.app.logger.warn(`auth, ${err.message}`);
+        ctx.logger.warn(err.message, { method: 'check', authenticator: name });
         return next();
       }
       if (authenticator) {

@@ -2,6 +2,7 @@ import { Migration } from '@nocobase/server';
 import { afterCreateForForeignKeyField } from '../hooks/afterCreateForForeignKeyField';
 
 export default class DropForeignKeysMigration extends Migration {
+  appVersion = '<0.8.0-alpha.9';
   async up() {
     const result = await this.app.version.satisfies('<0.8.0');
 

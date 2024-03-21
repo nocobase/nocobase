@@ -1,8 +1,7 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'acl.acl',
-  duplicator: 'required',
+export default defineCollection({
+  dumpRules: 'required',
   name: 'rolesResourcesScopes',
   fields: [
     {
@@ -22,4 +21,4 @@ export default {
       name: 'scope',
     },
   ],
-} as CollectionOptions;
+});

@@ -3,6 +3,8 @@ lib/
 esm/
 es/
 .env
+.env.test
+.env.e2e
 .DS_Store
 yarn-error.log
 lerna-debug.log
@@ -16,5 +18,5 @@ coverage
 docs-dist/
 .npmrc
 dist/
-docker/**/storage
+/docker/**/storage
 /storage/.app-dev

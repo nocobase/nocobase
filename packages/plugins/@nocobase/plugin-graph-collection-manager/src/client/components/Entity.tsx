@@ -4,13 +4,12 @@ import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   CollectionCategroriesContext,
-  CollectionProvider,
-  PopoverWithStopPropagation,
+  CollectionProvider_deprecated,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
-  collection,
-  useCollectionManager,
+  StablePopover,
+  useCollectionManager_deprecated,
   useCompile,
   useCurrentAppInfo,
   useRecord,
@@ -27,12 +26,13 @@ import {
   useValuesFromRecord,
 } from '../action-hooks';
 import useStyles from '../style';
-import { getPopupContainer, useGCMTranslation } from '../utils';
+import { getPopupContainer, useGCMTranslation, collection } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
 import { ConnectAssociationAction } from './ConnectAssociationAction';
 import { ConnectChildAction } from './ConnectChildAction';
 import { ConnectParentAction } from './ConnectParentAction';
+import { DeleteCollectionAction } from './DeleteCollectionAction';
 import { EditCollectionAction } from './EditCollectionAction';
 import { EditFieldAction } from './EditFieldAction';
 import { FieldSummary } from './FieldSummary';
@@ -57,7 +57,7 @@ const OperationButton: any = React.memo((props: any) => {
   // 获取当前字段列表
   const useCurrentFields = () => {
     const record = useRecord();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     const fields = getCollectionFields(record.collectionName || record.name) as any[];
     return fields;
   };
@@ -120,23 +120,23 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 delete: {
                   type: 'void',
                   'x-action': 'destroy',
-                  'x-component': 'Action',
+                  'x-component': 'Action.Link',
                   'x-visible': '{{isInheritField}}',
                   'x-component-props': {
                     component: DeleteOutlined,
                     icon: 'DeleteOutlined',
                     className: 'btn-del',
                     confirm: {
-                      title: "{{t('Delete record')}}",
                       getContainer: getPopupContainer,
-                      collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                      title: "{{t('Delete record')}}",
+                      content: "{{t('Are you sure you want to delete it?')}}",
                     },
                     useAction: () =>
                       useDestroyFieldActionAndRefreshCM({
@@ -155,9 +155,9 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                       targetCollection: name,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 view: {
@@ -170,8 +170,8 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 connectAssociation: {
@@ -196,7 +196,7 @@ const OperationButton: any = React.memo((props: any) => {
     </div>
   );
 });
-
+OperationButton.displayName = 'OperationButton';
 const PopoverContent = React.forwardRef((props: any, ref) => {
   const { property, node, ...other } = props;
   const {
@@ -206,7 +206,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
   } = node;
   const compile = useCompile();
   const { styles } = useStyles();
-  const { getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager_deprecated();
   const [isHovered, setIsHovered] = useState(false);
   const CollectionConten = React.useCallback((data) => {
     const { type, name, primaryKey, allowNull, autoIncrement } = data;
@@ -256,7 +256,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
         }}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <PopoverWithStopPropagation
+        <StablePopover
           content={CollectionConten(property)}
           getPopupContainer={getPopupContainer}
           mouseLeaveDelay={0}
@@ -275,13 +275,14 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
             <Badge color={typeColor(property)} />
             {compile(property.uiSchema?.title)}
           </div>
-        </PopoverWithStopPropagation>
+        </StablePopover>
         <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
         {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>
     </div>
   );
 });
+PopoverContent.displayName = 'PopoverContent';
 
 const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
   const {
@@ -377,7 +378,7 @@ const Entity: React.FC<{
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategroriesContext);
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
-  const { category } = item;
+  const { category = [] } = item;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
     return targetGraph.collections?.map((collection: any) => ({
@@ -403,7 +404,7 @@ const Entity: React.FC<{
       className={styles.entityContainer}
       style={{ boxShadow: attrs?.boxShadow, border: select ? '2px dashed #f5a20a' : 0 }}
     >
-      {category.map((v, index) => {
+      {category?.map((v, index) => {
         return (
           <Badge.Ribbon
             key={index}
@@ -422,7 +423,7 @@ const Entity: React.FC<{
         <div className={styles.tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
-              <CollectionProvider collection={collection}>
+              <CollectionProvider_deprecated collection={collection}>
                 <SchemaComponent
                   scope={{
                     useUpdateCollectionActionAndRefreshCM,
@@ -436,13 +437,14 @@ const Entity: React.FC<{
                   components={{
                     EditOutlined,
                     EditCollectionAction,
+                    DeleteCollectionAction,
                     ConnectChildAction,
                     ConnectParentAction,
                     ...options.components,
                   }}
                   schema={{
                     type: 'object',
-                    name: uid(),
+                    name: node.id,
                     properties: {
                       connectParent: {
                         type: 'void',
@@ -475,23 +477,20 @@ const Entity: React.FC<{
                       delete: {
                         type: 'void',
                         'x-action': 'destroy',
-                        'x-component': 'Action',
+                        'x-component': 'DeleteCollectionAction',
                         'x-component-props': {
-                          component: DeleteOutlined,
-                          icon: 'DeleteOutlined',
                           className: 'btn-del',
-                          confirm: {
-                            title: "{{t('Delete record')}}",
-                            getContainer: getPopupContainer,
-                            collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                          getContainer: getPopupContainer,
+                          item: collectionData.current,
+                          useAction: () => {
+                            return useDestroyActionAndRefreshCM({ name, id });
                           },
-                          useAction: () => useDestroyActionAndRefreshCM({ name, id }),
                         },
                       },
                     },
                   }}
                 />
-              </CollectionProvider>
+              </CollectionProvider_deprecated>
             </CollectionNodeProvder>
           </SchemaComponentProvider>
         </div>

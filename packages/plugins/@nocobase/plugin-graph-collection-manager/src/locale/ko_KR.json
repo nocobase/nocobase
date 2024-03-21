@@ -1,0 +1,16 @@
+{
+  "Graph Collection": "그래픽 데이터 테이블",
+  "Collection List": "데이터 테이블 목록",
+  "Full Screen": "전체 화면",
+  "Collection Search": "테이블 검색",
+  "Create Collection": "데이터 테이블 생성",
+  "All Fields": "모두",
+  "Association Fields": "연관 필드",
+  "Choices fields": "선택 필드",
+  "All relationships": "모든 관계",
+  "Entity relationship only": "엔터티 관계만",
+  "Inheritance relationship only": "상속 관계만",
+  "Graphical interface": "그래픽 인터페이스",
+  "Auto layout": "자동 레이아웃",
+  "Selection": "선택 모드"  
+}

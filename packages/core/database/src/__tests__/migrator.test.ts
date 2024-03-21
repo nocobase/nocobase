@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Database, Migration, mockDatabase } from '@nocobase/database';
 import { resolve } from 'path';
 
@@ -40,7 +41,7 @@ describe('migrator', () => {
   });
 
   test('up and down', async () => {
-    const spy = jest.fn();
+    const spy = vi.fn();
     db.addMigration({
       name: 'migration1',
       migration: class extends Migration {

@@ -1,5 +1,5 @@
+import { render, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import { render, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 
 // jsdom does not support canvas, so we need to skip this test

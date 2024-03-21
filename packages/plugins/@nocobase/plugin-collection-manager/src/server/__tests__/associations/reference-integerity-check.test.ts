@@ -1,16 +1,15 @@
 import Database from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('reference integrity check', () => {
   let db: Database;
   let app: MockServer;
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       database: {
         tablePrefix: '',
       },
     });
-    await app.db.clean({ drop: true });
     db = app.db;
   });
 

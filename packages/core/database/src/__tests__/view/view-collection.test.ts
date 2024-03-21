@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { uid } from '@nocobase/utils';
 import { Database, mockDatabase } from '../../index';
 import { ViewCollection } from '../../view-collection';
@@ -399,7 +400,7 @@ describe('create view', () => {
       ],
     });
 
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     db.on('beforeSync', jestFn);
 

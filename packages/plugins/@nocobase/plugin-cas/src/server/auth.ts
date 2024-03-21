@@ -1,8 +1,6 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
-import { Model } from '@nocobase/database';
 import { AuthModel } from '@nocobase/plugin-auth';
 import axios from 'axios';
-import { COOKIE_KEY_AUTHENTICATOR, COOKIE_KEY_TICKET } from '../constants';
 
 export class CASAuth extends BaseAuth {
   constructor(config: AuthConfig) {
@@ -13,63 +11,82 @@ export class CASAuth extends BaseAuth {
     });
   }
 
-  async signOut() {
-    const ctx = this.ctx;
-    ctx.cookies.set(COOKIE_KEY_TICKET, '');
-    ctx.cookies.set(COOKIE_KEY_AUTHENTICATOR, '');
-    await super.signOut();
-  }
-
-  getOptions() {
+  getOptions(): {
+    casUrl?: string;
+    serviceUrl?: string;
+    autoSignup?: boolean;
+  } {
     const opts = this.options || {};
     return {
       ...opts,
-      serviceUrl: `${opts.serviceDomain}/api/cas:service`,
-    } as {
-      casUrl?: string;
-      serviceUrl?: string;
-      autoSignup?: boolean;
+      serviceUrl: `${opts.serviceDomain}${process.env.API_BASE_PATH}cas:service`,
     };
   }
 
-  serviceValidate(ticket) {
-    const { casUrl, serviceUrl } = this.getOptions();
-    const url = `${casUrl}/serviceValidate?ticket=${ticket}&service=${serviceUrl}`;
-    return axios.get(url).catch((err) => {
-      throw new Error('CSA serviceValidate error: ' + err.message);
+  getService(authenticator: string, appName: string, redirect: string) {
+    const { serviceUrl } = this.getOptions();
+    return encodeURIComponent(`${serviceUrl}?authenticator=${authenticator}&__appName=${appName}&redirect=${redirect}`);
+  }
+
+  async serviceValidate(ticket: string) {
+    const { casUrl } = this.getOptions();
+    const { authenticator, __appName: appName, redirect = '/admin' } = this.ctx.action.params;
+    const service = this.getService(authenticator, appName, redirect);
+    const url = `${casUrl}/serviceValidate?ticket=${ticket}&service=${service}`;
+    this.ctx.logger.debug(`serviceValidate url: ${url}`, {
+      module: 'auth',
+      submodule: 'cas',
+      method: 'serviceValidate',
     });
+    try {
+      const res = await axios.get(url);
+      return res;
+    } catch (error) {
+      throw new Error('CSA serviceValidate error: ' + error.message);
+    }
   }
 
   async validate() {
     const ctx = this.ctx;
-    let user: Model;
     const { autoSignup } = this.getOptions();
-    const ticket = ctx.cookies.get(COOKIE_KEY_TICKET);
-    const res = ticket ? await this.serviceValidate(ticket) : null;
-    const pattern = /<(?:cas|sso):user>(.*?)<\/(?:cas|sso):user>/;
-    const nickname = res?.data.match(pattern)?.[1];
-    if (nickname) {
-      const userRepo = this.userCollection.repository;
-      user = await userRepo.findOne({
-        filter: { nickname },
-      });
-      if (user) {
-        await this.authenticator.addUser(user, {
-          through: {
-            uuid: nickname,
-          },
-        });
-        return user;
-      }
+    const { ticket } = ctx.action.params;
+    if (!ticket) {
+      throw new Error('Missing ticket');
     }
-    // New data
+    const res = await this.serviceValidate(ticket);
+    ctx.logger.debug(res?.data, { module: 'auth', submodule: 'cas', method: 'validate' });
+    const pattern = /<(?:cas|sso):user>(.*?)<\/(?:cas|sso):user>/;
+    const username = res?.data.match(pattern)?.[1];
+    if (!username) {
+      throw new Error('Invalid ticket');
+    }
     const authenticator = this.authenticator as AuthModel;
-    if (autoSignup) {
-      user = await authenticator.findOrCreateUser(nickname, {
-        nickname: nickname,
+    let user = await authenticator.findUser(username);
+    if (user) {
+      return user;
+    }
+    // Bind existed user
+    user = await this.userRepository.findOne({
+      filter: { username },
+    });
+    if (user) {
+      await this.authenticator.addUser(user, {
+        through: {
+          uuid: username,
+        },
       });
       return user;
     }
-    return user;
+    // New data
+    if (!autoSignup) {
+      throw new Error('User not found');
+    }
+    if (!this.validateUsername(username as string)) {
+      throw new Error('Username must be 2-16 characters in length (excluding @.<>"\'/)');
+    }
+    return await authenticator.newUser(username, {
+      username: username,
+      nickname: username,
+    });
   }
 }

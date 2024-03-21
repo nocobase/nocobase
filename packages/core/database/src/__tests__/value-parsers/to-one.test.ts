@@ -7,6 +7,7 @@ describe('number value parser', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.collection({
       name: 'posts',
       fields: [

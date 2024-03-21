@@ -3,8 +3,8 @@ import {
   useActionContext,
   useAPIClient,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
   useCompile,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -34,8 +34,8 @@ export const useDownloadXlsxTemplateAction = () => {
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { getCollectionJoinField, getCollectionField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
+  const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
+  const { name, title, getField } = useCollection_deprecated();
   const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
   return {
@@ -87,8 +87,8 @@ export const useImportStartAction = () => {
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { getCollectionJoinField, getCollectionField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
+  const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
+  const { name, title, getField } = useCollection_deprecated();
   const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
   const form = useForm();

@@ -2,11 +2,13 @@ import { TinyColor } from '@ctrl/tinycolor';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { cx } from '@emotion/css';
 import { Schema, observer, useField, useFieldSchema } from '@formily/react';
-import React, { HTMLAttributes, createContext, useContext } from 'react';
+import React, { HTMLAttributes, createContext, useContext, useMemo } from 'react';
 import { useToken } from '../../antd/__builtins__';
 
 export const DraggableContext = createContext(null);
+DraggableContext.displayName = 'DraggableContext';
 export const SortableContext = createContext(null);
+SortableContext.displayName = 'SortableContext';
 
 export const SortableProvider = (props) => {
   const { id, data, children } = props;
@@ -38,6 +40,7 @@ export const Sortable = (props: any) => {
   return React.createElement(
     component || 'div',
     {
+      role: 'none',
       ...others,
       className: cx('nb-sortable-designer', props.className),
       ref: setNodeRef,
@@ -49,18 +52,18 @@ export const Sortable = (props: any) => {
 
 const useSortableItemProps = (props) => {
   const id = useSortableItemId(props);
+  const schema = useFieldSchema();
   if (props.schema) {
     return { ...props, id };
   }
-  const schema = useFieldSchema();
   return { ...props, id, schema };
 };
 
 const useSortableItemId = (props) => {
+  const field = useField();
   if (props.id) {
     return props.id;
   }
-  const field = useField();
   return field.address.toString();
 };
 
@@ -73,15 +76,17 @@ interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {
 export const SortableItem: React.FC<SortableItemProps> = observer(
   (props) => {
     const { schema, id, eid, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
+
+    const data = useMemo(() => {
+      return {
+        insertAdjacent: 'afterEnd',
+        schema: schema,
+        removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
+      };
+    }, [schema, removeParentsIfNoChildren]);
+
     return (
-      <SortableProvider
-        id={id}
-        data={{
-          insertAdjacent: 'afterEnd',
-          schema: schema,
-          removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
-        }}
-      >
+      <SortableProvider id={id} data={data}>
         <Sortable id={eid} {...others}>
           {props.children}
         </Sortable>
@@ -93,20 +98,15 @@ export const SortableItem: React.FC<SortableItemProps> = observer(
 
 export const DragHandler = (props) => {
   const { draggable } = useContext(SortableContext);
-  const { isDragging, attributes, listeners, setNodeRef, transform } = draggable;
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const { attributes, listeners, setNodeRef } = draggable;
 
   return (
     <div
       style={{
         display: 'inline-block',
-        width: 12,
-        height: 12,
-        lineHeight: '12px',
+        width: 14,
+        height: 14,
+        lineHeight: '14px',
         textAlign: 'left',
       }}
     >
@@ -118,13 +118,12 @@ export const DragHandler = (props) => {
           zIndex: 1,
           // backgroundColor: '#333',
           lineHeight: 0,
-          height: 2,
-          width: 2,
           fontSize: 0,
           display: 'inline-block',
         }}
         {...listeners}
         {...attributes}
+        role="none"
       >
         <span style={{ cursor: 'move', fontSize: 14 }}>{props.children}</span>
       </div>

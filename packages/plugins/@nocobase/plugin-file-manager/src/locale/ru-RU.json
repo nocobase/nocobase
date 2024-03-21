@@ -1,0 +1,18 @@
+{
+  "File manager": "Файловые хранилища",
+  "Attachment": "Вложение",
+  "MIME type": "Подтвердить",
+  "Allow uploading multiple files": "Позволить загружать много файлов",
+  "Storage display name": "Имя храшилища на экране",
+  "Storage name": "Имя хранилища",
+  "Storage type": "Тип Хранилища",
+  "Default storage": "Хранилище по умолчанию",
+  "Storage base URL": "Базовый URL хранилища",
+  "Destination": "Назначение",
+  "Use the built-in static file server": "Использовать встроенный статический файл-сервер",
+  "Local storage": "Локальное хранилище",
+  "Aliyun OSS": "Aliyun OSS",
+  "Amazon S3": "Amazon S3",
+  "Tencent COS": "Tencent COS",
+  "Filename": "Имя файла"
+}

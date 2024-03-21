@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { mockServer, MockServer } from '@nocobase/test';
 import { Plugin } from '../plugin';
 import Plugin1 from './plugins/plugin1';
@@ -62,7 +63,7 @@ describe('plugin', () => {
 
   describe.skip('enable', function () {
     it('should call beforeEnable', async () => {
-      const beforeEnable = jest.fn();
+      const beforeEnable = vi.fn();
 
       class TestPlugin extends Plugin {
         async beforeEnable() {

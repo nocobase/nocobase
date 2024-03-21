@@ -4,10 +4,12 @@ import React from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '..';
+import { useToken } from '../../style';
 
 export const DesignableSwitch = () => {
   const { designable, setDesignable } = useDesignable();
   const { t } = useTranslation();
+  const { token } = useToken();
   const style = {};
   if (designable) {
     style['backgroundColor'] = 'var(--colorSettings)';
@@ -21,7 +23,7 @@ export const DesignableSwitch = () => {
       <Button
         data-testid={'ui-editor-button'}
         // selected={designable}
-        icon={<HighlightOutlined />}
+        icon={<HighlightOutlined style={{ color: token.colorTextHeaderMenu }} />}
         title={t('UI Editor')}
         // subtitle={'Ctrl+Shift+U'}
         style={style}

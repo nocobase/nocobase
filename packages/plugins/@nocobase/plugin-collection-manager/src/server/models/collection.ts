@@ -1,5 +1,6 @@
 import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
 import lodash from 'lodash';
+import { QueryInterfaceDropTableOptions } from 'sequelize';
 import { FieldModel } from './field';
 
 interface LoadOptions extends Transactionable {
@@ -14,6 +15,15 @@ export class CollectionModel extends MagicAttributeModel {
     return (<any>this.constructor).database;
   }
 
+  toJSON() {
+    const json = super.toJSON();
+    if (!json.filterTargetKey) {
+      const collection = this.db.getCollection(json.name);
+      json.filterTargetKey = collection?.filterTargetKey;
+    }
+    return json;
+  }
+
   async load(loadOptions: LoadOptions = {}) {
     const { skipExist, skipField, resetFields, transaction } = loadOptions;
     const name = this.get('name');
@@ -21,9 +31,16 @@ export class CollectionModel extends MagicAttributeModel {
     let collection: Collection;
 
     const collectionOptions = {
+      origin: '@nocobase/plugin-collection-manager',
       ...this.get(),
       fields: [],
+      loadedFromCollectionManager: true,
     };
+
+    if (!this.db.inDialect('postgres') && collectionOptions.schema) {
+      delete collectionOptions.schema;
+    }
+
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
 
@@ -37,6 +54,10 @@ export class CollectionModel extends MagicAttributeModel {
 
       collection.updateOptions(collectionOptions);
     } else {
+      if (!collectionOptions.dumpRules) {
+        lodash.set(collectionOptions, 'dumpRules.group', 'custom');
+      }
+
       collection = this.db.collection(collectionOptions);
     }
 
@@ -76,6 +97,18 @@ export class CollectionModel extends MagicAttributeModel {
       fields = fields.filter((field) => options.includeFields.includes(field.name));
     }
 
+    if (this.options.view && fields.find((f) => f.name == 'id')) {
+      // set id field to primary key, other primary key to false
+      fields = fields.map((field) => {
+        if (field.name == 'id') {
+          field.set('primaryKey', true);
+        } else {
+          field.set('primaryKey', false);
+        }
+        return field;
+      });
+    }
+
     // @ts-ignore
     const instances: FieldModel[] = fields;
 
@@ -84,7 +117,7 @@ export class CollectionModel extends MagicAttributeModel {
     }
   }
 
-  async remove(options?: any) {
+  async remove(options?: Transactionable & QueryInterfaceDropTableOptions) {
     const { transaction } = options || {};
     const name = this.get('name');
     const collection = this.db.getCollection(name);
@@ -108,15 +141,29 @@ export class CollectionModel extends MagicAttributeModel {
       }
     }
 
-    await collection.removeFromDb({
-      transaction,
-    });
+    await collection.removeFromDb(options);
   }
 
   async migrate(options?: SyncOptions & Transactionable) {
+    const pendingFieldsTargetToThis = this.db.pendingFields.get(this.get('name')) || [];
+    const getPendingField = () =>
+      pendingFieldsTargetToThis.map((field) => {
+        return {
+          name: field.get('name'),
+          collectionName: field.get('collectionName'),
+        };
+      });
+
+    const beforePendingFields = getPendingField();
+
     const collection = await this.load({
       transaction: options?.transaction,
     });
+
+    const afterPendingFields = getPendingField();
+
+    const resolvedPendingFields = lodash.differenceWith(beforePendingFields, afterPendingFields, lodash.isEqual);
+    const resolvedPendingFieldsCollections = lodash.uniq(resolvedPendingFields.map((field) => field.collectionName));
 
     // postgres support zero column table, other database should not sync it to database
     // @ts-ignore
@@ -125,13 +172,19 @@ export class CollectionModel extends MagicAttributeModel {
     }
 
     try {
-      await collection.sync({
+      const syncOptions = {
         force: false,
         alter: {
           drop: false,
         },
         ...options,
-      });
+      };
+
+      await collection.sync(syncOptions);
+
+      for (const collectionName of resolvedPendingFieldsCollections) {
+        await this.db.getCollection(collectionName).sync(syncOptions);
+      }
     } catch (error) {
       console.error(error);
       const name = this.get('name');

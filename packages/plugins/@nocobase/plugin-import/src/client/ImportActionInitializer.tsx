@@ -1,7 +1,14 @@
 import type { ISchema } from '@formily/react';
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { SchemaInitializer, css, useCollection, useDesignable, useToken } from '@nocobase/client';
+import {
+  SchemaInitializerSwitch,
+  css,
+  useCollection_deprecated,
+  useDesignable,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
 import React from 'react';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -39,10 +46,11 @@ const initImportSettings = (fields) => {
   return { importColumns, explain: '' };
 };
 
-export const ImportActionInitializer = (props) => {
-  const { item, insert } = props;
-  const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', item.find, item.remove);
-  const { name } = useCollection();
+export const ImportActionInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
+  const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', itemConfig.find, itemConfig.remove);
+  const { name } = useCollection_deprecated();
   const fields = useFields(name);
   const schema: ISchema = {
     type: 'void',
@@ -51,7 +59,8 @@ export const ImportActionInitializer = (props) => {
     'x-action-settings': {
       importSettings: { importColumns: [], explain: '' },
     },
-    'x-designer': 'ImportDesigner',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:import',
     'x-component': 'Action',
     'x-component-props': {
       icon: 'CloudUploadOutlined',
@@ -168,16 +177,17 @@ export const ImportActionInitializer = (props) => {
     },
   };
   return (
-    <SchemaInitializer.SwitchItem
+    <SchemaInitializerSwitch
+      {...itemConfig}
       checked={exists}
-      title={item.title}
+      title={itemConfig.title}
       onClick={() => {
         if (exists) {
           return remove();
         }
         schema['x-action-settings']['importSettings'] = initImportSettings(fields);
-        const s = merge(schema || {}, item.schema || {});
-        item?.schemaInitialize?.(s);
+        const s = merge(schema || {}, itemConfig.schema || {});
+        itemConfig?.schemaInitialize?.(s);
         insert(s);
       }}
     />

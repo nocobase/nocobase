@@ -1,7 +1,8 @@
 import { Database } from '@nocobase/database';
 import { AppSupervisor, Gateway } from '@nocobase/server';
-import { MockServer, mockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
+import { vi } from 'vitest';
 import { PluginMultiAppManager } from '../server';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -11,21 +12,41 @@ describe('multiple apps', () => {
   let db: Database;
 
   beforeEach(async () => {
-    app = mockServer({});
+    app = await createMockServer({
+      plugins: ['multi-app-manager'],
+    });
     db = app.db;
-    await app.cleanDb();
-    app.plugin(PluginMultiAppManager);
-
-    await app.runCommand('install');
-    await app.runCommand('start');
   });
 
   afterEach(async () => {
     await app.destroy();
   });
 
+  it('should merge database options', async () => {
+    const name = `td_${uid()}`;
+
+    await db.getRepository('applications').create({
+      values: {
+        name,
+        options: {
+          plugins: [],
+          database: {
+            underscored: true,
+          },
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    const subApp = await AppSupervisor.getInstance().getApp(name);
+
+    expect(subApp.db.options.underscored).toBeTruthy();
+  });
+
   it('should register db creator', async () => {
-    const fn = jest.fn();
+    const fn = vi.fn();
 
     const appPlugin = app.getPlugin<PluginMultiAppManager>(PluginMultiAppManager);
     const defaultDbCreator = appPlugin.appDbCreator;
@@ -190,7 +211,7 @@ describe('multiple apps', () => {
 
     expect(AppSupervisor.getInstance().hasApp(name)).toBeFalsy();
 
-    Gateway.getInstance().appSelector = () => name;
+    Gateway.getInstance().addAppSelectorMiddleware((ctx) => (ctx.resolvedAppName = name));
 
     await AppSupervisor.getInstance().getApp(name);
 
@@ -214,7 +235,7 @@ describe('multiple apps', () => {
 
     await AppSupervisor.getInstance().removeApp(subAppName);
 
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     AppSupervisor.getInstance().on('afterAppAdded', (subApp) => {
       subApp.on('afterUpgrade', () => {
@@ -244,6 +265,7 @@ describe('multiple apps', () => {
         waitSubAppInstall: true,
       },
     });
+
     await AppSupervisor.getInstance().removeApp(subAppName);
 
     await app.start();
@@ -264,6 +286,51 @@ describe('multiple apps', () => {
     await app.start();
 
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
+  });
+
+  it('should start automatically with quick start', async () => {
+    const subAppName = `t_${uid()}`;
+
+    const subApp = await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {
+          plugins: ['nocobase'],
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    await AppSupervisor.getInstance().removeApp(subAppName);
+
+    await app.start();
+
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
+
+    await subApp.update({
+      options: {
+        autoStart: true,
+      },
+    });
+
+    await AppSupervisor.getInstance().removeApp(subAppName);
+
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
+
+    await app.stop();
+
+    await app.db.reconnect();
+    await AppSupervisor.getInstance().getApp(subAppName, {
+      upgrading: true,
+    });
+
+    await app.start();
+    await sleep(10000);
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
+    const appStatus = AppSupervisor.getInstance().getAppStatus(subAppName);
+    expect(appStatus).toEqual('running');
   });
 
   it('should get same obj ref when asynchronously access with same sub app name', async () => {

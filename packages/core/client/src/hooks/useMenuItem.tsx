@@ -10,7 +10,9 @@ type Item = MenuProps['items'][0] & {
 };
 
 export const GetMenuItemContext = createContext<{ collectMenuItem?(item: Item): void; onChange?: () => void }>(null);
+GetMenuItemContext.displayName = 'GetMenuItemContext';
 export const GetMenuItemsContext = createContext<{ pushMenuItem?(item: Item): void }>(null);
+GetMenuItemsContext.displayName = 'GetMenuItemsContext';
 
 /**
  * 用于为 SchemaInitializer.Item 组件提供一些方法，比如收集菜单项数据
@@ -33,7 +35,7 @@ export const useMenuItem = () => {
   const renderItems = useRef<() => JSX.Element>(null);
   const shouldRerender = useRef(false);
 
-  const Component = useCallback(() => {
+  const Component = useCallback(({ limitCount }) => {
     if (!shouldRerender.current) {
       return null;
     }
@@ -41,6 +43,16 @@ export const useMenuItem = () => {
 
     if (renderItems.current) {
       return renderItems.current();
+    }
+
+    if (limitCount && list.current.length > limitCount) {
+      return (
+        <>
+          {list.current.slice(0, limitCount).map((Com, index) => (
+            <Com key={index} />
+          ))}
+        </>
+      );
     }
 
     return (

@@ -2,18 +2,30 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrayItems } from '@formily/antd-v5';
-import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings';
+import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
+import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
+import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
+import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
 
-const useLabelFields = (collectionName?: any) => {
+export const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   if (!collectionName) {
     return [];
   }
@@ -30,7 +42,7 @@ const useLabelFields = (collectionName?: any) => {
 
 export const useColorFields = (collectionName?: any) => {
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager_deprecated();
   if (!collectionName) {
     return [];
   }
@@ -46,7 +58,8 @@ export const useColorFields = (collectionName?: any) => {
 };
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
-  const { getInterface, getCollection } = useCollectionManager();
+  const { form } = useFormBlockContext();
+  const { getInterface, getCollection } = useCollectionManager_deprecated();
   const field: any = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();
@@ -55,13 +68,13 @@ export const TableColumnDesigner = (props) => {
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
   const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
-  const intefaceCfg = getInterface(collectionField?.interface);
+  const interfaceCfg = getInterface(collectionField?.interface);
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
   const { currentMode } = useAssociationFieldContext();
-  const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
-  const dataSource = useCollectionFilterOptions(collectionField?.target);
+  const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue({ collectionField, fieldSchema });
+
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
   const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'snapshot'].includes(
     collectionField?.interface,
@@ -78,7 +91,7 @@ export const TableColumnDesigner = (props) => {
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
   return (
     <GeneralSchemaDesigner disableInitializer>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Custom column title')}
         schema={
           {
@@ -111,24 +124,10 @@ export const TableColumnDesigner = (props) => {
         }}
       />
       {isSelectFieldMode && !field.readPretty && !uiSchema?.['x-read-pretty'] && isSubTableColumn && (
-        <SchemaSettings.ModalItem
-          title={t('Set the data scope')}
-          schema={
-            {
-              type: 'object',
-              title: t('Set the data scope'),
-              properties: {
-                filter: {
-                  default: defaultFilter,
-                  enum: dataSource,
-                  'x-component': 'Filter',
-                  'x-component-props': {
-                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  },
-                },
-              },
-            } as ISchema
-          }
+        <SchemaSettingsDataScope
+          collectionName={collectionField?.target}
+          defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
+          form={form}
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);
             set(field.componentProps, 'service.params.filter', filter);
@@ -147,7 +146,7 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Column width')}
         schema={
           {
@@ -178,8 +177,8 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {intefaceCfg && intefaceCfg.sortable === true && !currentMode && (
-        <SchemaSettings.SwitchItem
+      {interfaceCfg && interfaceCfg.sortable === true && !currentMode && (
+        <SchemaSettingsSwitchItem
           title={t('Sortable')}
           checked={field.componentProps.sorter}
           onChange={(v) => {
@@ -203,8 +202,8 @@ export const TableColumnDesigner = (props) => {
         collectionField?.interface,
       ) &&
         !isFileField &&
-        readOnlyMode === 'read-pretty' && (
-          <SchemaSettings.SwitchItem
+        (readOnlyMode === 'read-pretty' || field.readPretty || field.readOnly) && (
+          <SchemaSettingsSwitchItem
             title={t('Enable link')}
             checked={fieldSchema['x-component-props']?.enableLink !== false}
             onChange={(flag) => {
@@ -229,7 +228,7 @@ export const TableColumnDesigner = (props) => {
           />
         )}
       {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           title={t('Title field')}
           options={options}
           value={fieldNames?.['label']}
@@ -257,7 +256,7 @@ export const TableColumnDesigner = (props) => {
         />
       )}
       {isAssociationField && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           key="field-mode"
           title={t('Field component')}
           options={
@@ -288,7 +287,7 @@ export const TableColumnDesigner = (props) => {
       )}
 
       {['Tag'].includes(fieldMode) && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           key="title-field"
           title={t('Tag color field')}
           options={colorFieldOptions}
@@ -310,7 +309,7 @@ export const TableColumnDesigner = (props) => {
         />
       )}
       {isSubTableColumn && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
-        <SchemaSettings.SwitchItem
+        <SchemaSettingsSwitchItem
           key="required"
           title={t('Required')}
           checked={fieldSchema.required as boolean}
@@ -335,7 +334,7 @@ export const TableColumnDesigner = (props) => {
         !field?.readPretty &&
         collectionField?.interface !== 'o2m' &&
         !isPatternDisabled(fieldSchema) && (
-          <SchemaSettings.SelectItem
+          <SchemaSettingsSelectItem
             key="pattern"
             title={t('Pattern')}
             options={[
@@ -392,11 +391,11 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
-      {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
+      {isDateField && <SchemaSettingsDateFormat fieldSchema={fieldSchema} />}
       {isSubTableColumn &&
         !field?.readPretty &&
         ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface) && (
-          <SchemaSettings.SortingRule
+          <SchemaSettingsSortingRule
             fieldSchema={fieldSchema}
             onSubmitCallBack={(sortArr) => {
               const path = field.path?.splice(field.path?.length - 1, 1);
@@ -407,11 +406,9 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
-      {isSubTableColumn && !field?.readPretty && isShowDefaultValue(collectionField, getInterface) && (
-        <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />
-      )}
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      {isAllowToSetDefaultValue(isSubTableColumn) && <SchemaSettingsDefaultValue fieldSchema={fieldSchema} />}
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren={!isSubTableColumn}
         breakRemoveOn={{
           'x-component': 'Grid',

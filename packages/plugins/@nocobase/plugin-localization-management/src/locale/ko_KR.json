@@ -1,0 +1,23 @@
+{
+  "Edit": "편집",
+  "Add new": "새로 추가",
+  "Localization management": "다국어 관리",
+  "No data": "데이터 없음",
+  "Delete text": "원본 삭제",
+  "Delete translation": "번역 삭제",
+  "Module": "모듈",
+  "Text": "원본 텍스트",
+  "Translation": "번역",
+  "Sync": "동기화",
+  "Current language": "현재 언어",
+  "Keyword": "키워드",
+  "All": "모두",
+  "No translation": "번역 없음",
+  "System & Plugins": "시스템 및 플러그인",
+  "User interfaces": "사용자 인터페이스",
+  "Collections & Fields": "컬렉션 및 필드",
+  "Please select the resources you want to synchronize": "동기화하려는 리소스를 선택하세요",
+  "Menu": "메뉴",
+  "Publish": "게시",
+  "Translations": "번역"  
+}

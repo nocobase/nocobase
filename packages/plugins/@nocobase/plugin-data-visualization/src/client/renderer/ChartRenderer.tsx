@@ -1,21 +1,25 @@
 import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
-  SchemaSettings,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDivider,
+  SchemaSettingsItem,
+  SchemaSettingsRemove,
   gridRowColWrap,
   useAPIClient,
-  useCollection,
+  useCollection_deprecated,
   useDesignable,
 } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
 import React, { useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ChartConfigContext } from '../configure/ChartConfigure';
+import { ChartConfigContext } from '../configure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getField } from '../utils';
-import { useCharts } from '../chart/library';
 import { ChartRendererContext } from './ChartRendererProvider';
+import { useChart } from '../chart/group';
+import { ChartDataContext } from '../block/ChartDataProvider';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC & {
@@ -30,8 +34,7 @@ export const ChartRenderer: React.FC & {
   const advanced = config?.advanced || {};
   const api = useAPIClient();
 
-  const charts = useCharts();
-  const chart = charts[config?.chartType];
+  const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
   const Component = chart?.render({
@@ -42,7 +45,7 @@ export const ChartRenderer: React.FC & {
       if (!props[name]) {
         const field = getField(fields, name.split('.'));
         const transformer = transformers[name];
-        props[name] = { ...field, transformer };
+        props[name] = { label: field?.label || name, transformer, interface: field?.interface };
       }
       return props;
     }, {}),
@@ -76,34 +79,42 @@ export const ChartRenderer: React.FC & {
 ChartRenderer.Designer = function Designer() {
   const { t } = useChartsTranslation();
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
+  const { removeChart } = useContext(ChartDataContext);
   const { service } = useContext(ChartRendererContext);
   const field = useField();
   const schema = useFieldSchema();
   const { insertAdjacent } = useDesignable();
-  const { name, title } = useCollection();
+  const { name, title, dataSource } = useCollection_deprecated();
   return (
     <GeneralSchemaDesigner disableInitializer title={title || name}>
-      <SchemaSettings.Item
+      <SchemaSettingsItem
+        title="Configure"
         key="configure"
-        onClick={() => {
-          setCurrent({ schema, field, collection: name, service, data: service?.data });
+        onClick={async () => {
+          setCurrent({ schema, field, dataSource, collection: name, service, data: service.data });
           setVisible(true);
         }}
       >
         {t('Configure')}
-      </SchemaSettings.Item>
-      <SchemaSettings.Item
+      </SchemaSettingsItem>
+      <SchemaSettingsItem
+        title="Duplicate"
         key="duplicate"
         onClick={() => insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])))}
       >
         {t('Duplicate')}
-      </SchemaSettings.Item>
-      <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      </SchemaSettingsItem>
+      <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         // removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'ChartV2Block',
+        }}
+        confirm={{
+          onOk: () => {
+            removeChart(schema['x-uid']);
+          },
         }}
       />
     </GeneralSchemaDesigner>

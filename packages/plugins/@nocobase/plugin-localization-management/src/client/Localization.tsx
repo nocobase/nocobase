@@ -4,9 +4,10 @@ import { Field, useField, useForm } from '@formily/react';
 import {
   FormProvider,
   Input,
-  PopoverWithStopPropagation,
   Radio,
   SchemaComponent,
+  Select,
+  StablePopover,
   locale,
   useAPIClient,
   useActionContext,
@@ -14,8 +15,9 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
+import { useMemoizedFn } from 'ahooks';
 import { Input as AntdInput, Button, Card, Checkbox, Col, Divider, Row, Tag, Typography, message } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocalTranslation } from './locale';
 import { localizationSchema } from './schemas/localization';
 const { Text } = Typography;
@@ -115,7 +117,7 @@ const Sync = () => {
   };
 
   return (
-    <PopoverWithStopPropagation
+    <StablePopover
       placement="bottomRight"
       content={
         <>
@@ -158,15 +160,28 @@ const Sync = () => {
       >
         {t('Sync')}
       </Button>
-    </PopoverWithStopPropagation>
+    </StablePopover>
+  );
+};
+
+const useModules = () => {
+  const { t: lang } = useLocalTranslation();
+  const t = useMemoizedFn(lang);
+  const { data } = useResourceActionContext();
+  return useMemo(
+    () =>
+      data?.meta?.modules?.map((module) => ({
+        value: module.value,
+        label: t(module.label),
+      })) || [],
+    [data?.meta?.modules, t],
   );
 };
 
 const Filter = () => {
   const { t } = useLocalTranslation();
-  const { run, refresh } = useResourceActionContext();
-  const api = useAPIClient();
-  const locale = api.auth.getLocale();
+  const { run } = useResourceActionContext();
+  const modules = useModules();
   const form = useMemo<Form>(
     () =>
       createForm({
@@ -181,9 +196,26 @@ const Filter = () => {
       ...(values || form.values),
     });
   };
+  useEffect(() => {
+    const module = form.query('module').take() as any;
+    module.dataSource = modules;
+  }, [form, modules]);
+
   return (
     <FormProvider form={form}>
       <div style={{ display: 'flex' }}>
+        <Field
+          name="module"
+          dataSource={modules}
+          component={[
+            Select,
+            {
+              allowClear: true,
+              placeholder: t('Module'),
+              onChange: (module: string) => filter({ ...form.values, module }),
+            },
+          ]}
+        />
         <Field
           name="keyword"
           component={[
@@ -192,6 +224,7 @@ const Filter = () => {
               placeholder: t('Keyword'),
               allowClear: true,
               style: {
+                marginLeft: '8px',
                 width: 'fit-content',
               },
               onSearch: (keyword) => filter({ ...form.values, keyword }),
@@ -247,6 +280,7 @@ export const Localization = () => {
           useBulkDestroyTranslationAction,
           useUpdateTranslationAction,
           usePublishAction,
+          useModules,
         }}
       />
     </Card>

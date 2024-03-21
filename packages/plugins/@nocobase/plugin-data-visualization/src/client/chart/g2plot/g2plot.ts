@@ -1,6 +1,4 @@
-import { Chart, ChartProps, RenderProps } from '../chart';
-import { FieldOption } from '../../hooks';
-import { QueryProps } from '../../renderer';
+import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 import configs from './configs';
 
 export class G2PlotChart extends Chart {
@@ -14,19 +12,7 @@ export class G2PlotChart extends Chart {
     this.addConfigs(configs);
   }
 
-  init(
-    fields: FieldOption[],
-    {
-      measures,
-      dimensions,
-    }: {
-      measures?: QueryProps['measures'];
-      dimensions?: QueryProps['dimensions'];
-    },
-  ): {
-    general?: any;
-    advanced?: any;
-  } {
+  init: ChartType['init'] = (fields, { measures, dimensions }) => {
     const { xField, yField, seriesField } = this.infer(fields, { measures, dimensions });
     return {
       general: {
@@ -35,54 +21,71 @@ export class G2PlotChart extends Chart {
         seriesField: seriesField?.value,
       },
     };
-  }
+  };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps) {
-    const meta = {};
-    // Some charts render wrong when the field name contains a dot in G2Plot
-    const replace = (key: string) => key.replace(/\./g, '_');
-    Object.entries(fieldProps).forEach(([key, props]) => {
-      if (key.includes('.')) {
-        key = replace(key);
-      }
-      meta[key] = {
-        formatter: props.transformer,
-        alias: props.label,
-      };
-    });
-    general = Object.entries(general).reduce((obj, [key, value]) => {
-      obj[key] = value;
-      if (key.includes('Field')) {
-        if (Array.isArray(value)) {
-          obj[key] = value.map((v) => (v?.includes('.') ? replace(v) : v));
-        } else if (typeof value === 'string' && value.includes('.')) {
-          obj[key] = replace(value);
-        }
-      }
-      return obj;
-    }, {});
-    return {
-      data: data.map((item) => {
-        const obj = {};
-        Object.entries(item).forEach(([key, value]) => {
-          if (key.includes('.')) {
-            key = replace(key);
-          }
-          obj[key] = value;
-        });
-        return obj;
-      }),
-      meta,
-      animation: false,
+    const config = {
+      legend: {
+        color: {
+          itemLabelText: (datnum: { label: string }) => {
+            const props = fieldProps[general.seriesField];
+            const transformer = props?.transformer;
+            return transformer ? transformer(datnum.label) : datnum.label;
+          },
+        },
+      },
+      tooltip: (d, index: number, data, column: any) => {
+        const field = column.y.field;
+        const props = fieldProps[field];
+        const name = props?.label || field;
+        const transformer = props?.transformer;
+        const value = column.y.value[index];
+        return { name, value: transformer ? transformer(value) : value };
+      },
+      axis: {
+        x: {
+          labelFormatter: (datnum: any) => {
+            const props = fieldProps[general.xField];
+            const transformer = props?.transformer;
+            return transformer ? transformer(datnum) : datnum;
+          },
+        },
+        y: {
+          labelFormatter: (datnum: any) => {
+            const props = fieldProps[general.yField];
+            const transformer = props?.transformer;
+            return transformer ? transformer(datnum) : datnum;
+          },
+        },
+      },
+      data,
+      theme: 'classic',
+      animate: {
+        enter: {
+          type: false,
+        },
+        update: {
+          type: false,
+        },
+        exit: {
+          type: false,
+        },
+      },
+      colorField: general.seriesField,
+      stack: general.isStack,
+      percent: general.isPercent ? true : undefined,
+      ...(general.smooth ? { shapeField: 'smooth' } : {}),
       ...general,
+      seriesField: general.isGroup ? general.seriesField : undefined,
       ...advanced,
     };
+    return config;
   }
 
   getReference() {
     return {
       title: this.title,
-      link: `https://charts.ant.design/api/plots/${this.name}`,
+      link: `https://g2plot.antv.antgroup.com/api/plots/${this.name}`,
     };
   }
 }

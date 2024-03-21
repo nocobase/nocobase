@@ -4,6 +4,7 @@ import { useActionContext, useBlockRequestContext, useRecord } from '@nocobase/c
 import { Alert, Modal, Space, Typography } from 'antd';
 import React from 'react';
 import { generateNTemplate } from '../../locale';
+import apiKeysCollection from '../../collections/apiKeys';
 import { useTranslation } from '../locale';
 const { useModal } = Modal;
 
@@ -62,7 +63,7 @@ export const configurationSchema: ISchema = {
       type: 'void',
       'x-decorator': 'TableBlockProvider',
       'x-decorator-props': {
-        collection: 'apiKeys',
+        collection: apiKeysCollection,
         resource: 'apiKeys',
         action: 'list',
         params: {

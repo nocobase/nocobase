@@ -37,8 +37,9 @@ const InternalRangePicker = connect(
 
 export const DatePicker = (props) => {
   const { utc = true } = useDatePickerContext();
+  const value = Array.isArray(props.value) ? props.value[0] : props.value;
   props = { utc, ...props };
-  return <InternalDatePicker {...props} />;
+  return <InternalDatePicker {...props} value={value} />;
 };
 
 DatePicker.ReadPretty = ReadPretty.DatePicker;

@@ -2,14 +2,13 @@ import { Schema, useFieldSchema } from '@formily/react';
 import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
-import { mergeFilter } from '../block-provider';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
 import {
-  Collection,
-  CollectionFieldOptions,
+  Collection_deprecated,
+  CollectionFieldOptions_deprecated,
   FieldOptions,
-  useCollection,
-  useCollectionManager,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
 } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
@@ -22,14 +21,29 @@ export enum FilterBlockType {
   COLLAPSE,
 }
 
+export const mergeFilter = (filters: any[], op = '$and') => {
+  const items = filters.filter((f) => {
+    if (f && typeof f === 'object' && !Array.isArray(f)) {
+      return Object.values(f).filter((v) => v !== undefined).length;
+    }
+  });
+  if (items.length === 0) {
+    return {};
+  }
+  if (items.length === 1) {
+    return items[0];
+  }
+  return { [op]: items };
+};
+
 export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[], block: DataBlock) => {
-  return block.associatedFields?.filter((field) =>
-    inheritCollectionsChain.some((collectionName) => collectionName === field.target),
+  return block.associatedFields?.filter(
+    (field) => inheritCollectionsChain?.some((collectionName) => collectionName === field.target),
   );
 };
 
 export const getSupportFieldsByForeignKey = (
-  filterBlockCollection: ReturnType<typeof useCollection>,
+  filterBlockCollection: ReturnType<typeof useCollection_deprecated>,
   block: DataBlock,
 ) => {
   return block.foreignKeyFields?.filter((foreignKeyField) => {
@@ -47,8 +61,8 @@ export const getSupportFieldsByForeignKey = (
 export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   const { getDataBlocks } = useFilterBlock();
   const fieldSchema = useFieldSchema();
-  const collection = useCollection();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const collection = useCollection_deprecated();
+  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
 
   // Form 和 Collapse 仅支持同表的数据区块
   if (filterBlockType === FilterBlockType.FORM || filterBlockType === FilterBlockType.COLLAPSE) {
@@ -66,7 +80,8 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
       return (
         fieldSchema['x-uid'] !== block.uid &&
         (isSameCollection(block.collection, collection) ||
-          getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block)?.length ||
+          getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name, collection.dataSource), block)
+            ?.length ||
           getSupportFieldsByForeignKey(collection, block)?.length)
       );
     });
@@ -76,15 +91,27 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
 export const transformToFilter = (
   values: Record<string, any>,
   fieldSchema: Schema,
-  getCollectionJoinField: (name: string) => CollectionFieldOptions,
+  getCollectionJoinField: (name: string) => CollectionFieldOptions_deprecated,
   collectionName: string,
 ) => {
   const { operators } = findFilterOperators(fieldSchema);
 
   values = flatten(values, {
     breakOn({ value, path }) {
-      // 日期字段的 `$dateBetween` 操作符的值是一个数组，需要特殊处理
-      if (operators[path] === '$dateBetween') {
+      // 下面操作符的值是一个数组，需要特殊处理
+      if (
+        [
+          '$match',
+          '$notMatch',
+          '$anyOf',
+          '$noneOf',
+          '$childIn',
+          '$childNotIn',
+          '$dateBetween',
+          '$in',
+          '$notIn',
+        ].includes(operators[path])
+      ) {
         return true;
       }
 
@@ -130,7 +157,7 @@ export const transformToFilter = (
 };
 
 export const useAssociatedFields = () => {
-  const { fields } = useCollection();
+  const { fields } = useCollection_deprecated();
 
   return fields.filter((field) => isAssocField(field)) || [];
 };
@@ -141,8 +168,8 @@ export const isAssocField = (field?: FieldOptions) => {
   );
 };
 
-export const isSameCollection = (c1: Collection, c2: Collection) => {
-  return c1.name === c2.name;
+export const isSameCollection = (c1: Collection_deprecated, c2: Collection_deprecated) => {
+  return c1.name === c2.name && c1.dataSource === c2.dataSource;
 };
 
 export const useFilterAPI = () => {

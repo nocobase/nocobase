@@ -1,18 +1,26 @@
-import { APIClient as APIClientSDK } from '@nocobase/sdk';
+import { APIClient as APIClientSDK, getSubAppName } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
 import { Application } from '../application';
 
+function notify(type, messages, instance) {
+  if (!messages?.length) {
+    return;
+  }
+  instance[type]({
+    message: messages.map?.((item: any) => {
+      return React.createElement('div', {}, typeof item === 'string' ? item : item.message);
+    }),
+  });
+}
+
 const handleErrorMessage = (error, notification) => {
   const reader = new FileReader();
   reader.readAsText(error?.response?.data, 'utf-8');
   reader.onload = function () {
-    notification.error({
-      message: JSON.parse(reader.result as string).errors?.map?.((error: any) => {
-        return React.createElement('div', {}, error.message);
-      }),
-    });
+    const messages = JSON.parse(reader.result as string).errors;
+    notify('error', messages, notification);
   };
 };
 
@@ -31,9 +39,9 @@ export class APIClient extends APIClientSDK {
   interceptors() {
     this.axios.interceptors.request.use((config) => {
       config.headers['X-With-ACL-Meta'] = true;
-      const match = location.pathname.match(/^\/apps\/([^/]*)\//);
-      if (match) {
-        config.headers['X-App'] = match[1];
+      const appName = this.app ? getSubAppName(this.app.getPublicPath()) : null;
+      if (appName) {
+        config.headers['X-App'] = appName;
       }
       return config;
     });
@@ -57,7 +65,20 @@ export class APIClient extends APIClientSDK {
 
   useNotificationMiddleware() {
     this.axios.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        if (response.data?.messages?.length) {
+          const messages = response.data.messages.filter((item) => {
+            const lastTime = errorCache.get(typeof item === 'string' ? item : item.message);
+            if (lastTime && new Date().getTime() - lastTime < 500) {
+              return false;
+            }
+            errorCache.set(item.message, new Date().getTime());
+            return true;
+          });
+          notify('success', messages, this.notification);
+        }
+        return response;
+      },
       (error) => {
         if (this.silence) {
           throw error;
@@ -79,11 +100,10 @@ export class APIClient extends APIClientSDK {
           if (this.app.maintaining) {
             this.app.error = error?.response?.data?.error;
             throw error;
-            return;
           } else if (this.app.error) {
             this.app.error = null;
           }
-          let errs = error?.response?.data?.errors || [{ message: 'Server error' }];
+          let errs = error?.response?.data?.errors || error?.response?.data?.messages || [{ message: 'Server error' }];
           errs = errs.filter((error) => {
             const lastTime = errorCache.get(error.message);
             if (lastTime && new Date().getTime() - lastTime < 500) {
@@ -95,11 +115,8 @@ export class APIClient extends APIClientSDK {
           if (errs.length === 0) {
             throw error;
           }
-          this.notification.error({
-            message: errs?.map?.((error: any) => {
-              return React.createElement('div', {}, error.message);
-            }),
-          });
+
+          notify('error', errs, this.notification);
         }
         throw error;
       },

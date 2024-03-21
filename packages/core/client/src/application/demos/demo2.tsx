@@ -1,9 +1,6 @@
+import { Application, Plugin, RouterManager, useApp } from '@nocobase/client';
 import React, { useMemo } from 'react';
 import { Link, Navigate, Outlet, useParams } from 'react-router-dom';
-import { Application } from '../Application';
-import { useApp } from '../hooks';
-import { Plugin } from '../Plugin';
-import { RouterManager } from '../RouterManager';
 
 const Root = () => {
   return (

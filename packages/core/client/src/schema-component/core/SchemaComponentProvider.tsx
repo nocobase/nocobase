@@ -1,7 +1,6 @@
 import { createForm } from '@formily/core';
 import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useCookieState } from 'ahooks';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext } from '../context';
@@ -44,28 +43,37 @@ const Registry = {
 Schema.registerCompiler(Registry.compile);
 
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
-  const { designable, components, children } = props;
-  const [, setUid] = useState(uid());
+  const { designable, onDesignableChange, components, children } = props;
+  const [uidValue, setUid] = useState(uid());
   const [formId, setFormId] = useState(uid());
   const form = useMemo(() => props.form || createForm(), [formId]);
   const { t } = useTranslation();
-  const scope = { ...props.scope, t, randomString };
-  const [active, setActive] = useCookieState('useCookieDesignable', {
-    defaultValue: designable ? 'true' : 'false',
-  });
+  const scope = useMemo(() => {
+    return { ...props.scope, t, randomString };
+  }, [props.scope, t]);
+  const [active, setActive] = useState(designable);
+
+  const schemaComponentContextValue = useMemo(
+    () => ({
+      scope,
+      components,
+      reset: () => setFormId(uid()),
+      refresh: () => {
+        setUid(uid());
+      },
+      designable: typeof designable === 'boolean' ? designable : active,
+      setDesignable: (value) => {
+        if (typeof designable !== 'boolean') {
+          setActive(value);
+        }
+        onDesignableChange?.(value);
+      },
+    }),
+    [uidValue, scope, components, designable, active],
+  );
+
   return (
-    <SchemaComponentContext.Provider
-      value={{
-        scope,
-        components,
-        reset: () => setFormId(uid()),
-        refresh: () => setUid(uid()),
-        designable: active === 'true',
-        setDesignable(value) {
-          setActive(value ? 'true' : 'false');
-        },
-      }}
-    >
+    <SchemaComponentContext.Provider value={schemaComponentContextValue}>
       <FormProvider form={form}>
         <SchemaComponentOptions inherit scope={scope} components={components}>
           {children}
@@ -74,3 +82,4 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
     </SchemaComponentContext.Provider>
   );
 };
+SchemaComponentProvider.displayName = 'SchemaComponentProvider';

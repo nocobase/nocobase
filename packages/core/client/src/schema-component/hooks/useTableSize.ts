@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 export const useTableSize = () => {
   const [height, setTableHeight] = useState(0);
   const [width, setTableWidth] = useState(0);
-  const elementRef = useRef<HTMLDivElement>();
+  const elementRef = useRef<HTMLDivElement>(null);
 
   const calcTableSize = useCallback(() => {
     if (!elementRef.current) return;
@@ -21,7 +21,7 @@ export const useTableSize = () => {
   }, []);
 
   const tableSizeRefCallback: React.RefCallback<HTMLDivElement> = (ref) => {
-    elementRef.current = ref;
+    elementRef.current = ref && ref.children ? (ref.children[0] as HTMLDivElement) : null;
     calcTableSize();
   };
 

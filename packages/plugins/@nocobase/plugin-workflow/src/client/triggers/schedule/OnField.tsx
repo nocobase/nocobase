@@ -26,6 +26,7 @@ export function OnField({ value, onChange }) {
         onChange={(field) => onChange({ ...value, field })}
         filter={dateFieldFilter}
         placeholder={t('Select field')}
+        className="auto-width"
       />
       {value.field ? (
         <Select
@@ -39,6 +40,7 @@ export function OnField({ value, onChange }) {
             { value: -1, label: t('Before') },
             { value: 1, label: t('After') },
           ]}
+          className="auto-width"
         />
       ) : null}
       {dir ? (
@@ -56,6 +58,7 @@ export function OnField({ value, onChange }) {
               { value: 60000, label: lang('Minutes') },
               { value: 1000, label: lang('Seconds') },
             ]}
+            className="auto-width"
           />
         </>
       ) : null}

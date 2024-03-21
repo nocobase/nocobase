@@ -6,9 +6,9 @@ import {
   APIClientProvider,
   Action,
   ActionBar,
+  Application,
   BlockItem,
   CollectionField,
-  CollectionManagerProvider,
   CurrentUserProvider,
   FormItem,
   Input,
@@ -19,7 +19,7 @@ import {
   TableV2,
 } from '@nocobase/client';
 import React from 'react';
-import { mainCollections, mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 import data from './mockData';
 
 const { apiClient, mockRequest } = mockAPIClient();
@@ -161,7 +161,7 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Root = () => {
   const components = {
     TableSelectorProvider,
     TableV2,
@@ -177,12 +177,16 @@ export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <CurrentUserProvider>
-        <CollectionManagerProvider collections={mainCollections}>
-          <SchemaComponentProvider components={components}>
-            <SchemaComponent schema={schema} />
-          </SchemaComponentProvider>
-        </CollectionManagerProvider>
+        <SchemaComponentProvider components={components}>
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
       </CurrentUserProvider>
     </APIClientProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

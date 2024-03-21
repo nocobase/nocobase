@@ -1,39 +1,76 @@
-// 表格操作配置
-export const SubTableActionInitializers = {
+import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
+
+/**
+ * @deprecated
+ * 表格操作配置
+ */
+export const subTableActionInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'SubTableActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
     marginLeft: 8,
   },
-  // size: 'small',
   items: [
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'addNew',
           title: "{{t('Add new')}}",
-          component: 'CreateActionInitializer',
+          Component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
-            // 'x-component-props': {
-            //   size: 'small',
-            // },
           },
         },
         {
-          type: 'item',
+          name: 'delete',
           title: "{{t('Delete')}}",
-          component: 'BulkDestroyActionInitializer',
+          Component: 'BulkDestroyActionInitializer',
           schema: {
             'x-align': 'right',
-            // 'x-component-props': {
-            //   size: 'small',
-            // },
           },
         },
       ],
     },
   ],
-};
+});
+
+export const subTableActionInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'subTable:configureActions',
+    title: "{{t('Configure actions')}}",
+    icon: 'SettingOutlined',
+    style: {
+      marginLeft: 8,
+    },
+    items: [
+      {
+        type: 'itemGroup',
+        title: "{{t('Enable actions')}}",
+        name: 'enableActions',
+        children: [
+          {
+            name: 'addNew',
+            title: "{{t('Add new')}}",
+            Component: 'CreateActionInitializer',
+            schema: {
+              'x-align': 'right',
+            },
+          },
+          {
+            name: 'delete',
+            title: "{{t('Delete')}}",
+            Component: 'BulkDestroyActionInitializer',
+            schema: {
+              'x-align': 'right',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  subTableActionInitializers_deprecated,
+);

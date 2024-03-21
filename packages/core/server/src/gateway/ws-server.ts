@@ -1,10 +1,11 @@
 import { Gateway, IncomingRequest } from '../gateway';
-import WebSocket from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import lodash from 'lodash';
+import { Logger } from '@nocobase/logger';
 
 declare class WebSocketWithId extends WebSocket {
   id: string;
@@ -26,9 +27,10 @@ function getPayloadByErrorCode(code, options) {
 export class WSServer {
   wss: WebSocket.Server;
   webSocketClients = new Map<string, WebSocketClient>();
+  logger: Logger;
 
   constructor() {
-    this.wss = new WebSocket.Server({ noServer: true });
+    this.wss = new WebSocketServer({ noServer: true });
 
     this.wss.on('connection', (ws: WebSocketWithId, request: IncomingMessage) => {
       const client = this.addNewConnection(ws, request);

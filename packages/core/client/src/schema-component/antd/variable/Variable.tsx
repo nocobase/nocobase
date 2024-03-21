@@ -1,20 +1,16 @@
-import React, { createContext, useContext } from 'react';
 import { connect, mapReadPretty } from '@formily/react';
+import React, { createContext, useContext } from 'react';
 
-import { IField } from '../../../collection-manager';
 import { Input } from './Input';
 import { JSONInput } from './JSONInput';
 import { RawTextArea } from './RawTextArea';
 import { TextArea } from './TextArea';
 
 const VariableScopeContext = createContext([]);
+VariableScopeContext.displayName = 'VariableScopeContext';
 
 export function VariableScopeProvider({ scope = [], children }) {
-  return (
-    <VariableScopeContext.Provider value={scope}>
-      {children}
-    </VariableScopeContext.Provider>
-  )
+  return <VariableScopeContext.Provider value={scope}>{children}</VariableScopeContext.Provider>;
 }
 
 export function useVariableScope() {
@@ -34,7 +30,3 @@ Variable.RawTextArea = connect(RawTextArea);
 Variable.JSON = connect(JSONInput);
 
 export default Variable;
-
-export function isInvariable(value: IField) {
-  return !!value?.invariable;
-}

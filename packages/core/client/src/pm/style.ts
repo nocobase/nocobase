@@ -7,9 +7,9 @@ export const useStyles = createStyles(({ token }) => {
       cursor: 'not-allowed',
     },
     pageHeader: {
-      paddingBottom: 0,
       backgroundColor: token.colorBgContainer,
       paddingTop: token.paddingSM,
+      paddingBottom: 0,
       paddingInline: token.paddingLG,
       '.ant-page-header-footer': { marginBlockStart: '0' },
       '& .ant-tabs-nav': {

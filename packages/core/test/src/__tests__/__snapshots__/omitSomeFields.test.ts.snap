@@ -1,0 +1,32 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`omitSomeFields > should omit key & collectionName 1`] = `
+[
+  {
+    "description": null,
+    "fields": [
+      {
+        "allowNull": false,
+        "autoIncrement": true,
+        "description": null,
+        "interface": "id",
+        "name": "id",
+        "parentKey": null,
+        "primaryKey": true,
+        "reverseKey": null,
+        "type": "bigInt",
+        "uiSchema": {
+          "title": "{{t("ID")}}",
+          "type": "number",
+          "x-component": "InputNumber",
+          "x-read-pretty": true,
+        },
+      },
+    ],
+    "hidden": false,
+    "inherit": false,
+    "name": "t_0a1w7khj0y7",
+    "title": "a",
+  },
+]
+`;

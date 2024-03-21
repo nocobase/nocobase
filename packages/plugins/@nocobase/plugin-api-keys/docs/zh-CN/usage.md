@@ -14,6 +14,8 @@ cURL 的例子如下
 curl '{domain}/api/roles:check' -H 'Authorization: Bearer {API key}'
 ```
 
+> Warning: 当你使用 `Docker` 镜像来使用 `NocoBase` 时，请确保你配置了 [APP_KEY](https://docs-cn.nocobase.com/api/env#app_key) 环境变量，否则 API key 将在每次重启后失效。
+
 ## 删除 API key
 
 删除 API key 后，该 Key 将无法继续使用。

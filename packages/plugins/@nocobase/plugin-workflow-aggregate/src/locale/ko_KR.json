@@ -1,0 +1,12 @@
+{
+  "Aggregate": "집계 조회",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.":
+    "데이터 테이블의 여러 레코드 또는 레코드의 관련 데이터에 대한 카운트, 합계, 최대값, 최소값, 평균값을 찾습니다.",
+  "Aggregator function": "집계 함수",
+  "Target type": "대상 유형",
+  "Data of collection": "데이터 테이블 데이터",
+  "Data of associated collection": "관련 데이터 테이블 데이터",
+  "Field to aggregate": "집계할 필드",
+  "Distinct": "중복 제거",
+  "Query result": "쿼리 결과"  
+}

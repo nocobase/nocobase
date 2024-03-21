@@ -1,22 +1,74 @@
-import Database from '@nocobase/database';
-import PluginACL from '@nocobase/plugin-acl';
-import UsersPlugin from '@nocobase/plugin-users';
-import { mockServer, MockServer } from '@nocobase/test';
-import { userPluginConfig } from './utils';
+import Database, { Collection as DBCollection } from '@nocobase/database';
+import { createMockServer, MockServer } from '@nocobase/test';
+
 describe('createdBy/updatedBy', () => {
   let api: MockServer;
   let db: Database;
+  let Collection: DBCollection;
+  let Field: DBCollection;
 
   beforeEach(async () => {
-    api = mockServer();
-    api.plugin(UsersPlugin, userPluginConfig);
-    api.plugin(PluginACL, { name: 'acl' });
-    await api.loadAndInstall({ clean: true });
+    api = await createMockServer({
+      plugins: ['acl', 'users', 'collection-manager', 'error-handler', 'data-source-manager'],
+    });
     db = api.db;
+
+    Collection = db.getCollection('collections');
+    Field = db.getCollection('fields');
   });
 
   afterEach(async () => {
     await api.destroy();
+  });
+
+  it('should add createdBy field', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'a',
+        autoGenId: true,
+        timestamps: false,
+        title: 'A',
+      },
+      context: {},
+    });
+
+    const A = db.getCollection('a');
+
+    await Field.repository.create({
+      values: {
+        name: 'xxxxxx',
+        type: 'belongsTo',
+        collectionName: 'a',
+        target: 'users',
+        foreignKey: 'createdById',
+        uiSchema: {
+          type: 'object',
+          title: '{{t("Created by")}}',
+          'x-component': 'AssociationField',
+          'x-component-props': { fieldNames: { value: 'id', label: 'nickname' } },
+          'x-read-pretty': true,
+        },
+        interface: 'createdBy',
+      },
+      context: {},
+    });
+
+    const currentUser = await db.getCollection('users').model.create();
+
+    await A.repository.create({
+      context: {
+        state: {
+          currentUser,
+        },
+      },
+    });
+
+    const p2 = await A.repository.findOne({
+      appends: ['xxxxxx'],
+    });
+
+    const data = p2.toJSON();
+    expect(data.xxxxxx.id).toBe(currentUser.id);
   });
 
   describe('collection definition', () => {
@@ -50,8 +102,8 @@ describe('createdBy/updatedBy', () => {
       });
 
       const data = p2.toJSON();
-      expect(data.createdBy.id).toBe(currentUser.get('id'));
-      expect(data.updatedBy.id).toBe(currentUser.get('id'));
+      expect(data.createdBy.id).toBe(currentUser.id);
+      expect(data.updatedBy.id).toBe(currentUser.id);
     });
 
     it('case 3', async () => {

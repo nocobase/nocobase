@@ -1,24 +1,22 @@
 import { uid } from '@formily/shared';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const chinaRegion: IField = {
-  name: 'chinaRegion',
-  type: 'object',
-  group: 'choices',
-  order: 7,
-  title: '{{t("China region")}}',
-  isAssociation: true,
-  default: {
+export class ChinaRegionFieldInterface extends CollectionFieldInterface {
+  name = 'chinaRegion';
+  type = 'object';
+  group = 'choices';
+  order = 7;
+  title = '{{t("China region")}}';
+  isAssociation = true;
+  default = {
     interface: 'chinaRegion',
     type: 'belongsToMany',
     target: 'chinaRegions',
     targetKey: 'code',
     sortBy: 'level',
-    // name,
     uiSchema: {
       type: 'array',
-      // title,
       'x-component': 'Cascader',
       'x-component-props': {
         useDataSource: '{{ useChinaRegionDataSource }}',
@@ -33,9 +31,9 @@ export const chinaRegion: IField = {
         },
       },
     },
-  },
-  availableTypes: ['belongsToMany'],
-  initialize: (values: any) => {
+  };
+  availableTypes = ['belongsToMany'];
+  initialize(values: any): void {
     if (!values.through) {
       values.through = `t_${uid()}`;
     }
@@ -51,8 +49,9 @@ export const chinaRegion: IField = {
     if (!values.targetKey) {
       values.targetKey = 'id';
     }
-  },
-  properties: {
+  }
+
+  properties = {
     ...defaultProps,
     'uiSchema.x-component-props.maxLevel': {
       type: 'number',
@@ -74,8 +73,9 @@ export const chinaRegion: IField = {
       'x-content': '{{t("Must select to the last level")}}',
       'x-decorator': 'FormItem',
     },
-  },
-  filterable: {
+  };
+
+  filterable = {
     children: [
       {
         name: 'name',
@@ -88,5 +88,5 @@ export const chinaRegion: IField = {
         },
       },
     ],
-  },
-};
+  };
+}

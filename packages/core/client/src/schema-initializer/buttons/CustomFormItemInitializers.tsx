@@ -1,45 +1,69 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../schema-component';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { gridRowColWrap, useCustomFormItemInitializerFields, useInheritsFormItemInitializerFields } from '../utils';
+import { SchemaInitializerChildren } from '../../application/schema-initializer/components/SchemaInitializerChildren';
+import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 
 // 表单里配置字段
-export const CustomFormItemInitializers = (props: any) => {
+const ParentCollectionFields = () => {
+  const inheritFields = useInheritsFormItemInitializerFields({ component: 'AssignedField' });
   const { t } = useTranslation();
   const compile = useCompile();
-  const { insertPosition, component } = props;
-  const inheritFields = useInheritsFormItemInitializerFields({ component: 'AssignedField' });
-  const fieldItems: any[] = [
+  if (!inheritFields?.length) return null;
+  const res = [];
+  inheritFields.forEach((inherit) => {
+    Object.values(inherit)[0].length &&
+      res.push({
+        type: 'itemGroup',
+        divider: true,
+        title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+        children: Object.values(inherit)[0],
+      });
+  });
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
+};
+
+/**
+ * @deprecated
+ */
+export const customFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'CustomFormItemInitializers',
+  wrap: gridRowColWrap,
+  icon: 'SettingOutlined',
+  title: '{{t("Configure fields")}}',
+  items: [
     {
       type: 'itemGroup',
-      title: t('Configure fields'),
-      children: useCustomFormItemInitializerFields(),
+      title: '{{t("Configure fields")}}',
+      name: 'configureFields',
+      useChildren: useCustomFormItemInitializerFields,
     },
-  ];
-  if (inheritFields?.length > 0) {
-    inheritFields.forEach((inherit) => {
-      Object.values(inherit)[0].length &&
-        fieldItems.push(
-          {
-            type: 'divider',
-          },
-          {
-            type: 'itemGroup',
-            title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-            children: Object.values(inherit)[0],
-          },
-        );
-    });
-  }
-  return (
-    <SchemaInitializer.Button
-      wrap={gridRowColWrap}
-      icon={'SettingOutlined'}
-      items={fieldItems}
-      insertPosition={insertPosition}
-      component={component}
-      title={component ? null : t('Configure fields')}
-    />
-  );
-};
+    {
+      name: 'parentCollectionFields',
+      Component: ParentCollectionFields,
+    },
+  ],
+});
+
+export const customFormItemInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'assignFieldValuesForm:configureFields',
+    wrap: gridRowColWrap,
+    icon: 'SettingOutlined',
+    title: '{{t("Configure fields")}}',
+    items: [
+      {
+        type: 'itemGroup',
+        title: '{{t("Configure fields")}}',
+        name: 'configureFields',
+        useChildren: useCustomFormItemInitializerFields,
+      },
+      {
+        name: 'parentCollectionFields',
+        Component: ParentCollectionFields,
+      },
+    ],
+  },
+  customFormItemInitializers_deprecated,
+);

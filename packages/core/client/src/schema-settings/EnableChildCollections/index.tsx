@@ -1,7 +1,7 @@
 import { observer, useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import React from 'react';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionManager_deprecated } from '../../collection-manager';
 import { SchemaComponent, useCompile } from '../../schema-component';
 
 export const EnableChildCollections = observer(
@@ -10,7 +10,7 @@ export const EnableChildCollections = observer(
     const { defaultValues, collectionName } = useProps();
     const form = useForm();
     const compile = useCompile();
-    const { getChildrenCollections } = useCollectionManager();
+    const { getChildrenCollections } = useCollectionManager_deprecated();
     const childrenCollections = getChildrenCollections(collectionName);
 
     const useAsyncDataSource = (service: any) => {

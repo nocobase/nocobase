@@ -1,6 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 describe('workflow > instructions > query', () => {
@@ -130,7 +130,7 @@ describe('workflow > instructions > query', () => {
           collection: 'posts',
           params: {
             filter: {
-              title: `{{$jobsMapByNodeId.${n1.id}.data.title}}`,
+              title: `{{$jobsMapByNodeKey.${n1.key}.data.title}}`,
             },
           },
         },

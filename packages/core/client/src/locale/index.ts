@@ -38,7 +38,7 @@ export const dayjsLocale = {
   'km-KH': 'km',
   // 'kmr-IQ': { label: 'kmr_IQ' },
   'kn-IN': 'kn',
-  'ko-KR': 'kko',
+  'ko-KR': 'ko',
   'ku-IQ': 'ku',
   'lt-LT': 'lt',
   'lv-LV': 'lv',

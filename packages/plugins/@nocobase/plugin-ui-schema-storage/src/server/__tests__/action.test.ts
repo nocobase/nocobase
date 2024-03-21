@@ -1,31 +1,16 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
-import PluginUiSchema from '../server';
+import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('action test', () => {
   let app: MockServer;
   let db: Database;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
+      plugins: ['ui-schema-storage'],
     });
-
     db = app.db;
-
-    await db.clean({ drop: true });
-
-    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
-
-    await app.load();
-    await db.sync({
-      force: false,
-      alter: {
-        drop: false,
-      },
-    });
-
-    await app.start();
   });
 
   afterEach(async () => {
@@ -269,7 +254,7 @@ describe('action test', () => {
   });
 
   test('insert adjacent with bit schema', async () => {
-    const schema = require('./fixtures/data').default;
+    const schema = (await import('./fixtures/data')).default;
 
     await app
       .agent()

@@ -1,27 +1,38 @@
 import { connect, mapReadPretty } from '@formily/react';
+import { isNum } from '@formily/shared';
 import { InputNumber } from 'antd';
 import * as math from 'mathjs';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ReadPretty } from '../input-number/ReadPretty';
+
+const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
+
+const toValue = (value: any, callback: (v: number) => number) => {
+  if (isNumberLike(value)) {
+    return math.round(callback(value), 9);
+  }
+  return null;
+};
 
 export const Percent = connect(
   (props) => {
     const { value, onChange } = props;
-
+    const v = useMemo(() => toValue(value, (v) => v * 100), [value]);
     return (
       <InputNumber
         {...props}
         addonAfter="%"
-        value={value ? math.round(value * 100, 9) : null}
+        value={v}
         onChange={(v: any) => {
           if (onChange) {
-            onChange(v ? math.round(v / 100, 9) : null);
+            onChange(toValue(v, (v) => v / 100));
           }
         }}
       />
     );
   },
   mapReadPretty((props) => {
-    return <ReadPretty {...props} value={props.value ? math.round(props.value * 100, 9) : null} />;
+    const value = useMemo(() => toValue(props.value, (v) => v * 100), [props.value]);
+    return <ReadPretty {...props} value={value} />;
   }),
 );

@@ -2,9 +2,13 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import React from 'react';
 import { SortableItem, useDesigner } from '../..';
+import { useFlag } from '../../../flag-provider/hooks/useFlag';
 
-export const designerCss = css`
+export const designerCss = ({ margin = '-18px -16px', padding = '18px 16px' } = {}) => css`
   position: relative;
+  margin: ${margin};
+  padding: ${padding};
+
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -20,10 +24,6 @@ export const designerCss = css`
     display: none;
     background: var(--colorBgSettingsHover) !important;
     border: 0 !important;
-    top: -16px !important;
-    bottom: -16px !important;
-    left: -16px !important;
-    right: -16px !important;
     pointer-events: none;
     > .general-schema-designer-icons {
       position: absolute;
@@ -46,8 +46,14 @@ export const designerCss = css`
 export const TableColumnActionBar = observer(
   (props) => {
     const Designer = useDesigner();
+    const { isInSubTable } = useFlag() || {};
     return (
-      <SortableItem className={designerCss}>
+      <SortableItem
+        className={designerCss({
+          margin: isInSubTable ? '-12px -8px' : '-18px -16px',
+          padding: isInSubTable ? '12px 8px' : '18px 16px',
+        })}
+      >
         <Designer />
         {props.children}
       </SortableItem>

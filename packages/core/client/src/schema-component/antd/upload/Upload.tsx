@@ -33,7 +33,6 @@ Upload.Attachment = connect((props: UploadProps) => {
   const { t } = useTranslation();
   const uploadProps = useUploadProps({ ...props });
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
-
   const internalFileList = useRef([]);
 
   function closeIFrameModal() {
@@ -125,6 +124,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                             setFileList((prevFileList) => {
                               if (!multiple) {
                                 onChange?.(null as any);
+                                setSync(true);
                                 return [];
                               }
                               const index = prevFileList.indexOf(file);
@@ -168,7 +168,9 @@ Upload.Attachment = connect((props: UploadProps) => {
                     if (info.file.status === 'done') {
                       onChange?.(toValue(list));
                     }
+                    onChange?.(toValue(list));
                     setFileList(list.map(toItem));
+                    setSync(true);
                   } else {
                     if (info.file.status === 'done') {
                       // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
@@ -176,6 +178,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                       onChange?.(info.file?.response?.data);
                     }
                     setFileList([toItem(info.file)]);
+                    setSync(true);
                   }
                 }}
                 showUploadList={false}
@@ -229,6 +232,7 @@ Upload.Attachment = connect((props: UploadProps) => {
           onCancel={closeIFrameModal}
           footer={[
             <Button
+              key="download"
               style={{
                 textTransform: 'capitalize',
               }}
@@ -241,7 +245,7 @@ Upload.Attachment = connect((props: UploadProps) => {
             >
               {t('download')}
             </Button>,
-            <Button onClick={closeIFrameModal} style={{ textTransform: 'capitalize' }}>
+            <Button key="close" onClick={closeIFrameModal} style={{ textTransform: 'capitalize' }}>
               {t('close')}
             </Button>,
           ]}

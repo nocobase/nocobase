@@ -1,34 +1,26 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { antd, compact, compactDark, dark } from './builtinThemes';
+import path, { resolve } from 'path';
+import { compact, compactDark, dark, defaultTheme } from './builtinThemes';
 
 export class ThemeEditorPlugin extends Plugin {
   theme: any;
 
   afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() {}
 
   async load() {
-    this.db.collection({
-      name: 'themeConfig',
-      fields: [
-        // 主题配置内容，一个 JSON 字符串
-        {
-          type: 'json',
-          name: 'config',
-        },
-        // 主题是否可选
-        {
-          type: 'boolean',
-          name: 'optional',
-        },
-        {
-          type: 'boolean',
-          name: 'isBuiltIn',
-        },
-      ],
+    await this.importCollections(path.resolve(__dirname, './collections'));
+    this.db.addMigrations({
+      namespace: 'theme-editor',
+      directory: resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
     });
-    this.app.acl.allow('themeConfig', 'list', 'loggedIn');
+
+    this.app.acl.allow('themeConfig', 'list', 'public');
+
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.themeConfig`,
       actions: ['themeConfig:*'],
@@ -44,7 +36,7 @@ export class ThemeEditorPlugin extends Plugin {
 
     if ((await themeRepo.count()) === 0) {
       await themeRepo.create({
-        values: [antd, dark, compact, compactDark],
+        values: [defaultTheme, dark, compact, compactDark],
       });
     }
   }

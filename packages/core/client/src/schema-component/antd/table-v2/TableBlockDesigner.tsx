@@ -1,31 +1,82 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React, { useCallback, useMemo } from 'react';
+import { Field } from '@formily/core';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableBlockContext } from '../../../block-provider';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
-import { FilterBlockType } from '../../../filter-provider/utils';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useAPIClient } from '../../../api-client';
+import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import { useSortFields } from '../../../collection-manager/action-hooks';
+import { FilterBlockType, mergeFilter } from '../../../filter-provider/utils';
+import { useRecord } from '../../../record-provider';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsConnectDataBlocks,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
-import { useCompile, useDesignable } from '../../hooks';
+import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FixedBlockDesignerItem } from '../page';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
+import { useCompile } from '../../';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { FixedBlockDesignerItem } from '../page/FixedBlockDesignerItem';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
+
+export const EditSortField = () => {
+  const { fields } = useCollection_deprecated();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
+  const compile = useCompile();
+  const { service } = useTableBlockContext();
+
+  const options = fields
+    .filter((field) => !field?.target && field.interface === 'sort')
+    .map((field) => ({
+      value: field?.name,
+      label: compile(field?.uiSchema?.title) || field?.name,
+    }));
+
+  return (
+    <SchemaSettingsSelectItem
+      key="sort-field"
+      title={t('Drag and drop sorting field')}
+      options={options}
+      value={field.decoratorProps.dragSortBy}
+      onChange={(dragSortBy) => {
+        fieldSchema['x-decorator-props'].dragSortBy = dragSortBy;
+        service.run({ ...service.params?.[0], sort: dragSortBy });
+        field.decoratorProps.dragSortBy = dragSortBy;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
 
 export const TableBlockDesigner = () => {
-  const { name, title, sortable } = useCollection();
-  const { getCollectionField, getCollection } = useCollectionManager();
+  const { name, title } = useCollection_deprecated();
+  const { getCollectionField, getCollection } = useCollectionManager_deprecated();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
+  const { form } = useFormBlockContext();
   const sortFields = useSortFields(name);
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const compile = useCompile();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
@@ -41,27 +92,10 @@ export const TableBlockDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { dragSort, resource } = field.decoratorProps;
   const collectionField = resource && getCollectionField(resource);
   const treeCollection = resource?.includes('.') ? getCollection(collectionField?.target)?.tree : !!collection?.tree;
-  const dataScopeSchema = useMemo(() => {
-    return {
-      type: 'object',
-      title: t('Set the data scope'),
-      properties: {
-        filter: {
-          default: defaultFilter,
-          // title: '数据范围',
-          enum: compile(dataSource),
-          'x-component': 'Filter',
-          'x-component-props': {
-            dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-          },
-        },
-      },
-    } as ISchema;
-  }, [dataSource, defaultFilter]);
   const onDataScopeSubmit = useCallback(
     ({ filter }) => {
       filter = removeNullCondition(filter);
@@ -81,13 +115,14 @@ export const TableBlockDesigner = () => {
         },
       });
     },
-    [field],
+    [dn, field.decoratorProps, fieldSchema, service],
   );
+  const api = useAPIClient();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaSettings.BlockTitleItem />
+      <SchemaSettingsBlockTitleItem />
       {collection?.tree && collectionField?.collectionName === collectionField?.target && (
-        <SchemaSettings.SwitchItem
+        <SchemaSettingsSwitchItem
           title={t('Tree table')}
           defaultChecked={true}
           checked={treeCollection ? field.decoratorProps.treeTable !== false : false}
@@ -106,27 +141,41 @@ export const TableBlockDesigner = () => {
           }}
         />
       )}
-      {sortable && (
-        <SchemaSettings.SwitchItem
-          title={t('Enable drag and drop sorting')}
-          checked={field.decoratorProps.dragSort}
-          onChange={(dragSort) => {
-            field.decoratorProps.dragSort = dragSort;
-            fieldSchema['x-decorator-props'].dragSort = dragSort;
-            service.run({ ...service.params?.[0], sort: 'sort' });
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
+      <SchemaSettingsSwitchItem
+        title={t('Enable drag and drop sorting')}
+        checked={field.decoratorProps.dragSort}
+        onChange={async (dragSort) => {
+          if (dragSort && collectionField) {
+            const { data } = await api.resource('collections.fields', collectionField.collectionName).update({
+              filterByTk: collectionField.name,
+              values: {
+                sortable: true,
               },
             });
-          }}
-        />
-      )}
+            // const sortBy = data?.data?.[0]?.sortBy;
+            // fieldSchema['x-decorator-props'].dragSortBy = sortBy;
+          }
+          field.decoratorProps.dragSort = dragSort;
+          fieldSchema['x-decorator-props'].dragSort = dragSort;
+          // service.run({ ...service.params?.[0], sort: fieldSchema['x-decorator-props'].dragSortBy });
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
+      {field.decoratorProps.dragSort && <EditSortField />}
       <FixedBlockDesignerItem />
-      <SchemaSettings.ModalItem title={t('Set the data scope')} schema={dataScopeSchema} onSubmit={onDataScopeSubmit} />
+      <SchemaSettingsDataScope
+        collectionName={name}
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
+        onSubmit={onDataScopeSubmit}
+      />
       {!dragSort && (
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set default sorting rules')}
           components={{ ArrayItems }}
           schema={
@@ -219,7 +268,8 @@ export const TableBlockDesigner = () => {
           }}
         />
       )}
-      <SchemaSettings.SelectItem
+      <SetDataLoadingMode />
+      <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
@@ -243,13 +293,13 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
-      {supportTemplate && <SchemaSettings.Divider />}
+      <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
+      {supportTemplate && <SchemaSettingsDivider />}
       {supportTemplate && (
-        <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
+        <SchemaSettingsTemplate componentName={'Table'} collectionName={name} resourceName={defaultResource} />
       )}
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

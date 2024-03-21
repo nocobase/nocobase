@@ -1,74 +1,5 @@
 import { css } from '@emotion/css';
-
-const moreOptions = {
-  autoGenId: {
-    type: 'boolean',
-    'x-content': '{{t("Generate ID field automatically")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-    'x-reactions': [
-      {
-        target: 'sortable',
-        when: '{{createOnly&&!$self.value}}',
-        fulfill: {
-          state: {
-            value: false,
-          },
-          schema: {
-            'x-disabled': true,
-          },
-        },
-        otherwise: {
-          schema: {
-            'x-disabled': '{{!createOnly}}',
-          },
-        },
-      },
-    ],
-  },
-  createdBy: {
-    type: 'boolean',
-    'x-content': '{{t("Store the creation user of each record")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-  updatedBy: {
-    type: 'boolean',
-    'x-content': '{{t("Store the last update user of each record")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-  createdAt: {
-    type: 'boolean',
-    'x-content': '{{t("Store the creation time of each record")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-  updatedAt: {
-    type: 'boolean',
-    'x-content': '{{t("Store the last update time of each record")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-  sortable: {
-    type: 'boolean',
-    'x-content': '{{t("Records can be sorted")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-};
+import { PresetFields } from '../components/PresetFields';
 
 export const defaultConfigurableProperties = {
   title: {
@@ -120,11 +51,11 @@ export const defaultConfigurableProperties = {
     'x-decorator': 'FormItem',
     'x-component': 'Input.TextArea',
   },
-  ...moreOptions,
-  moreOptions: {
-    title: '{{t("More options")}}',
+  presetFields: {
+    title: '{{t("Preset fields")}}',
     type: 'void',
     'x-decorator': 'FormItem',
+    'x-visible': '{{ createOnly }}',
     'x-decorator-props': {
       className: css`
         .ant-formily-item {
@@ -132,9 +63,7 @@ export const defaultConfigurableProperties = {
         }
       `,
     },
-    properties: {
-      ...moreOptions,
-    },
+    'x-component': PresetFields,
   },
 };
 
@@ -150,7 +79,7 @@ export type DefaultConfigurableKeys =
   | 'updatedAt'
   | 'sortable'
   | 'description'
-  | 'moreOptions';
+  | 'presetFields';
 
 export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {
   const props = {} as Record<DefaultConfigurableKeys, any>;

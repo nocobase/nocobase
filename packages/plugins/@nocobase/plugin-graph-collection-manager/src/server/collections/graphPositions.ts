@@ -1,9 +1,9 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'graph-collection-manager.graphCollectionPositions',
-  duplicator: 'required',
+  dumpRules: 'required',
   name: 'graphPositions',
+  shared: true,
   fields: [
     {
       type: 'string',

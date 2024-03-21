@@ -10,9 +10,9 @@ export const NAMESPACE = 'data-visualization';
 // i18n.addResources('tr-TR', NAMESPACE, trTR);
 
 export function lang(key: string) {
-  return i18n.t(key, { ns: NAMESPACE });
+  return i18n.t(key, { ns: [NAMESPACE, 'client'] });
 }
 
 export function useChartsTranslation() {
-  return useTranslation(NAMESPACE);
+  return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });
 }

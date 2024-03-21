@@ -15,7 +15,14 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useContext, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
-import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializer } from '../../../';
+import {
+  RecordIndexProvider,
+  RecordProvider,
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+  useRequest,
+  useSchemaInitializerRender,
+} from '../../../';
 import { useToken } from '../__builtins__';
 
 const isColumnComponent = (schema: Schema) => {
@@ -25,8 +32,10 @@ const isColumnComponent = (schema: Schema) => {
 const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
-  const { exists, render } = useSchemaInitializer(schema['x-initializer']);
+  const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const scope = useContext(SchemaExpressionScopeContext);
+  const parentRecordData = useCollectionParentRecordData();
+  const recordData = useCollectionRecordData();
 
   const columns = schema
     .reduceProperties((buf, s) => {
@@ -42,10 +51,11 @@ const useTableColumns = () => {
         key: s.name,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
-              <RecordProvider record={record}>
+              {/* fix https://nocobase.height.app/T-3232/description */}
+              {/* 如果作为关系表格区块，则 parentRecordData 应该有值；如果作为普通表格使用（如数据源管理页面的表格）则应该使用 recordData，且 parentRecordData 为空 */}
+              <RecordProvider record={record} parent={parentRecordData || recordData}>
                 <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>
@@ -130,14 +140,14 @@ const useDefDataSource = (options, props) => {
   }, options);
 };
 
-const SortHandle = () => {
-  return <MenuOutlined className={'drag-handle'} style={{ cursor: 'grab' }} />;
+const SortHandle = (props) => {
+  return <MenuOutlined className={'drag-handle'} style={{ cursor: 'grab' }} {...props} />;
 };
 
 const TableIndex = (props) => {
-  const { index } = props;
+  const { index, ...otherProps } = props;
   return (
-    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
+    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }} {...otherProps}>
       {index + 1}
     </div>
   );
@@ -177,6 +187,11 @@ export const TableArray: React.FC<any> = observer(
             selectedRowKeys,
             onChange(selectedRowKeys: any[]) {
               setSelectedRowKeys(selectedRowKeys);
+            },
+            getCheckboxProps: (record: any) => {
+              return {
+                'aria-label': `checkbox-${record.name}`,
+              };
             },
             renderCell: (checked, record, index, originNode) => {
               const current = props?.pagination?.current;
@@ -224,8 +239,10 @@ export const TableArray: React.FC<any> = observer(
                       `,
                     )}
                   >
-                    {dragSort && <SortHandle />}
-                    {showIndex && <TableIndex index={index} />}
+                    {dragSort && <SortHandle role="button" aria-label={`sort-handle-${record?.name || index}`} />}
+                    {showIndex && (
+                      <TableIndex role="button" aria-label={`table-index-${record?.name || index}`} index={index} />
+                    )}
                   </div>
                   <div
                     className={classNames(

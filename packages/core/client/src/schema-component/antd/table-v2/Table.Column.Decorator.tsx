@@ -1,14 +1,22 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
-import { SortableItem, useCollection, useCollectionManager, useCompile, useDesignable, useDesigner } from '../../../';
+import {
+  SortableItem,
+  useCollection_deprecated,
+  useCollectionManager_deprecated,
+  useCompile,
+  useDesigner,
+  CollectionFieldContext,
+  useFlag,
+} from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 import { isCollectionFieldComponent } from './utils';
 
 export const useColumnSchema = () => {
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const compile = useCompile();
   const columnSchema = useFieldSchema();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const fieldSchema = columnSchema.reduceProperties((buf, s) => {
     if (isCollectionFieldComponent(s)) {
       return s;
@@ -27,8 +35,8 @@ export const TableColumnDecorator = (props) => {
   const Designer = useDesigner();
   const field = useField();
   const { fieldSchema, uiSchema, collectionField } = useColumnSchema();
-  const { refresh } = useDesignable();
   const compile = useCompile();
+  const { isInSubTable } = useFlag() || {};
   useLayoutEffect(() => {
     if (field.title) {
       return;
@@ -41,11 +49,17 @@ export const TableColumnDecorator = (props) => {
     }
   }, [uiSchema?.title]);
   return (
-    <SortableItem className={designerCss}>
-      <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
-      {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
-      {field?.title || compile(uiSchema?.title)}
-      {/* <div
+    <SortableItem
+      className={designerCss({
+        margin: isInSubTable ? '-12px -8px' : '-18px -16px',
+        padding: isInSubTable ? '12px 8px' : '18px 16px',
+      })}
+    >
+      <CollectionFieldContext.Provider value={collectionField}>
+        <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
+        {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
+        <div role="button">{field?.title || compile(uiSchema?.title)}</div>
+        {/* <div
         onClick={() => {
           field.title = uid();
           // columnSchema.title = field.title = field.title;
@@ -57,6 +71,7 @@ export const TableColumnDecorator = (props) => {
       >
         Edit
       </div> */}
+      </CollectionFieldContext.Provider>
     </SortableItem>
   );
 };

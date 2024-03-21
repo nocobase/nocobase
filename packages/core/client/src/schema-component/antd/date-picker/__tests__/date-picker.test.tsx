@@ -1,5 +1,5 @@
+import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App11 from '../demos/demo11';
 import App2 from '../demos/demo2';

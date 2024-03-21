@@ -1,0 +1,18 @@
+{
+  "File manager": "ファイルストレージ",
+  "Attachment": "添付ファイル",
+  "MIME type": "ファイル形式",
+  "Allow uploading multiple files": "複数ファイルのアップロードを許可する",
+  "Storage display name": "ファイルストレージ名",
+  "Storage name": "ファイルストレージ識別子",
+  "Storage type": "ストレージタイプ",
+  "Default storage": "デフォルトストレージ",
+  "Storage base URL": "Storage base URL",
+  "Destination": "ファイルパス",
+  "Use the built-in static file server": "組み込みの静的ファイル サービスを使用する",
+  "Local storage": "ローカルストレージ",
+  "Aliyun OSS": "Aliyun OSS",
+  "Tencent COS": "Tencent COS",
+  "Amazon S3": "Amazon S3",
+  "Filename": "ファイル名"
+}

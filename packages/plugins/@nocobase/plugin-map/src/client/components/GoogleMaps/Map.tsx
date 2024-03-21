@@ -1,7 +1,7 @@
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Loader } from '@googlemaps/js-api-loader';
-import { css, useAPIClient, useCollection } from '@nocobase/client';
+import { css, useAPIClient, useApp, useCollection_deprecated } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -80,7 +80,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions } = props;
     const { accessKey } = useMapConfiguration(props.mapType) || {};
     const { t } = useMapTranslation();
-    const { getField } = useCollection();
+    const { getField } = useCollection_deprecated();
     const fieldSchema = useFieldSchema();
     const drawingManagerRef = useRef<google.maps.drawing.DrawingManager>();
     const map = useRef<google.maps.Map>();
@@ -268,6 +268,11 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
 
     // edit mode
     useEffect(() => {
+      if (!value && map.current) {
+        toRemoveOverlay();
+        drawingManagerRef?.current?.setDrawingMode?.(drawingMode.current);
+        onChange?.(null);
+      }
       if (!map.current) return;
       if (!value || (!readonly && overlayRef.current)) {
         return;
@@ -364,12 +369,16 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         },
       });
     });
+    const app = useApp();
 
     if (!accessKey || errMessage) {
       return (
         <Alert
           action={
-            <Button type="primary" onClick={() => navigate('/admin/settings/map/configuration?tab=google')}>
+            <Button
+              type="primary"
+              onClick={() => navigate(app.pluginSettingsManager.getRoutePath('map') + '?tab=google')}
+            >
               {t('Go to the configuration page')}
             </Button>
           }
@@ -469,3 +478,4 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     );
   },
 );
+GoogleMapsComponent.displayName = 'GoogleMapsComponent';

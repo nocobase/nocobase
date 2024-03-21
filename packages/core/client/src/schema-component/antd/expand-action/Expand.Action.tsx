@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Button } from 'antd';
 import React from 'react';
+import { useCompile } from '../../hooks';
 import { useTableBlockContext, useTableSelectorContext } from '../../../block-provider';
 import { Icon } from '../../../icon';
 
@@ -52,6 +53,7 @@ export const ExpandAction = (props) => {
   const isTableSelector = schema.parent?.parent?.['x-decorator'] === 'TableSelectorProvider';
   const ctx = isTableSelector ? ctxSelector : ctxBlock;
   const { titleExpand, titleCollapse, iconExpand, iconCollapse } = schema['x-component-props'] || {};
+  const compile = useCompile();
   return (
     <div className={actionDesignerCss}>
       {ctx?.params['tree'] && (
@@ -62,8 +64,8 @@ export const ExpandAction = (props) => {
           icon={<Icon type={ctx?.expandFlag ? iconCollapse : iconExpand} />}
           type={props.type}
         >
-          {props.children[1]}
-          <span style={{ marginLeft: 10 }}>{ctx?.expandFlag ? titleCollapse : titleExpand}</span>
+          {props.children?.[1]}
+          <span style={{ marginLeft: 10 }}>{ctx?.expandFlag ? compile(titleCollapse) : compile(titleExpand)}</span>
         </Button>
       )}
     </div>

@@ -2,8 +2,9 @@ import { ISchema, useForm } from '@formily/react';
 import {
   APIClientProvider,
   AntdSchemaComponentProvider,
+  Application,
   BlockSchemaComponentProvider,
-  CollectionManagerProvider,
+  ExtendCollectionsProvider,
   SchemaComponent,
   SchemaComponentProvider,
   useFormBlockContext,
@@ -12,7 +13,7 @@ import {
 import { notification } from 'antd';
 import { range } from 'lodash';
 import React from 'react';
-import { mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 import collections from './collections';
 
 const { apiClient, mockRequest } = mockAPIClient();
@@ -206,18 +207,24 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <SchemaComponentProvider>
-        <CollectionManagerProvider collections={collections.data}>
+        <ExtendCollectionsProvider collections={collections.data as any}>
           <AntdSchemaComponentProvider>
             <BlockSchemaComponentProvider>
               <SchemaComponent schema={schema} scope={{ useCreateAction }} />
             </BlockSchemaComponentProvider>
           </AntdSchemaComponentProvider>
-        </CollectionManagerProvider>
+        </ExtendCollectionsProvider>
       </SchemaComponentProvider>
     </APIClientProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

@@ -6,6 +6,7 @@ describe('afterCreateWithAssociations', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -25,7 +26,9 @@ describe('afterCreateWithAssociations', () => {
       await repo.create({
         values: {},
       });
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
     const count = await repo.count();
     expect(count).toBe(0);
   });

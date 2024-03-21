@@ -1,15 +1,22 @@
 import { useField } from '@formily/react';
+import { useCurrentUserVariable, useDatetimeVariable } from '@nocobase/client';
 import { useMemo } from 'react';
-import { useDateVariable } from './useDateVariable';
-import { useUserVariable } from './useUserVariable';
+import { useFilterVariable } from './filter';
 
 export const useVariableOptions = () => {
   const field = useField<any>();
   const { operator, schema } = field.data || {};
-  const userVariable = useUserVariable({ schema });
-  const dateVariable = useDateVariable({ operator, schema });
+  const { currentUserSettings } = useCurrentUserVariable({
+    collectionField: { uiSchema: schema },
+    uiSchema: schema,
+  });
+  const { datetimeSettings } = useDatetimeVariable({ operator, schema });
+  const filterVariable = useFilterVariable();
 
-  const result = useMemo(() => [userVariable, dateVariable].filter(Boolean), [dateVariable, userVariable]);
+  const result = useMemo(
+    () => [currentUserSettings, datetimeSettings, filterVariable].filter(Boolean),
+    [datetimeSettings, currentUserSettings, filterVariable],
+  );
 
   if (!operator || !schema) return [];
 

@@ -3,12 +3,12 @@ import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   FormDialog,
+  SchemaInitializerItem,
   SchemaComponent,
   SchemaComponentOptions,
-  SchemaInitializer,
-  SchemaInitializerButtonContext,
   useAPIClient,
   useGlobalTheme,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import React, { useCallback, useContext, useMemo } from 'react';
@@ -24,8 +24,8 @@ export interface ChartQueryMetadata {
 }
 
 export const ChartQueryBlockInitializer = (props) => {
-  const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
-  const { setVisible } = useContext(SchemaInitializerButtonContext);
+  const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
+  const { setVisible } = useSchemaInitializer();
   const apiClient = useAPIClient();
   const ctx = useChartQueryMetadataContext();
   const options = useContext(SchemaOptionsContext);
@@ -143,7 +143,7 @@ export const ChartQueryBlockInitializer = (props) => {
   }, [ctx.data, onAddQuery]);
 
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={<TableOutlined />}
       {...others}
       onClick={async ({ item }) => {

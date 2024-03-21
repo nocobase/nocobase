@@ -13,6 +13,16 @@ type InferredFieldResult = {
 };
 
 export class ViewFieldInference {
+  static extractTypeFromDefinition(typeDefinition) {
+    const leftParenIndex = typeDefinition.indexOf('(');
+
+    if (leftParenIndex === -1) {
+      return typeDefinition.toLowerCase();
+    }
+
+    return typeDefinition.substring(0, leftParenIndex).toLowerCase().trim();
+  }
+
   static async inferFields(options: {
     db: Database;
     viewName: string;
@@ -102,7 +112,14 @@ export class ViewFieldInference {
       }
 
       if (!inferResult.type) {
-        Object.assign(inferResult, this.inferToFieldType({ db, name, type: column.type }));
+        Object.assign(
+          inferResult,
+          this.inferToFieldType({
+            dialect: db.sequelize.getDialect(),
+            name,
+            type: column.type,
+          }),
+        );
       }
 
       rawFields.push([name, inferResult]);
@@ -111,9 +128,8 @@ export class ViewFieldInference {
     return Object.fromEntries(rawFields);
   }
 
-  static inferToFieldType(options: { db: Database; name: string; type: string }) {
-    const { db } = options;
-    const dialect = db.sequelize.getDialect();
+  static inferToFieldType(options: { name: string; type: string; dialect: string }) {
+    const { dialect } = options;
     const fieldTypeMap = FieldTypeMap[dialect];
 
     if (!options.type) {
@@ -122,7 +138,7 @@ export class ViewFieldInference {
       };
     }
 
-    const queryType = options.type.toLowerCase().replace(/\(\d+\)/, '');
+    const queryType = this.extractTypeFromDefinition(options.type);
     const mappedType = fieldTypeMap[queryType];
 
     if (isArray(mappedType)) {

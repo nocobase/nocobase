@@ -1,23 +1,27 @@
 import { ISchema } from '@formily/react';
-import { defaultProps } from './properties';
-import { IField } from './types';
+import { defaultProps, operators } from './properties';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const url: IField = {
-  name: 'url',
-  type: 'string',
-  group: 'basic',
-  order: 5,
-  title: '{{t("URL")}}',
-  default: {
-    type: 'string',
+export class UrlFieldInterface extends CollectionFieldInterface {
+  name = 'url';
+  type = 'string';
+  group = 'basic';
+  order = 5;
+  title = '{{t("URL")}}';
+  default = {
+    type: 'text',
     uiSchema: {
       type: 'string',
       'x-component': 'Input.URL',
     },
-  },
-  schemaInitialize(schema: ISchema, { block }) {},
-  properties: {
+  };
+  availableTypes = ['string', 'text'];
+  schemaInitialize(schema: ISchema, { block }) {}
+  properties = {
     ...defaultProps,
-  },
-  titleUsable: true,
-};
+  };
+  titleUsable = true;
+  filterable = {
+    operators: operators.string,
+  };
+}

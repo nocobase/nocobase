@@ -1,10 +1,10 @@
 import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
 import { ArrayField, ObjectField, observer, useField } from '@formily/react';
 import { Space } from 'antd';
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RemoveActionContext } from './context';
 import { FormButtonLinkageRuleAction, FormFieldLinkageRuleAction } from './LinkageRuleAction';
+import { RemoveActionContext } from './context';
 export const LinkageRuleActions = observer(
   (props: any): any => {
     const { type, linkageOptions } = props;
@@ -26,29 +26,38 @@ export const LinkageRuleActions = observer(
   { displayName: 'LinkageRuleActions' },
 );
 
-export const LinkageRuleActionGroup = (props) => {
+interface LinkageRuleActionGroupProps {
+  useProps: () => {
+    type: 'button' | 'field';
+    linkageOptions: any;
+    collectionName: string;
+  };
+}
+
+export const LinkageRuleActionGroup = (props: LinkageRuleActionGroupProps) => {
   const { t } = useTranslation();
   const field = useField<VoidField>();
   const logic = 'actions';
-  const { type, linkageOptions, collectionName } = props?.useProps();
+  const { type, linkageOptions, collectionName } = props.useProps();
+
+  const style = useMemo(() => ({ marginLeft: 10 }), []);
+  const components = useMemo(
+    () => [LinkageRuleActions, { type, linkageOptions, collectionName }],
+    [collectionName, linkageOptions, type],
+  );
+  const spaceStyle = useMemo(() => ({ marginTop: 8, marginBottom: 8 }), []);
+  const onClick = useCallback(() => {
+    const f = field.query('.actions').take() as ArrayFieldModel;
+    const items = f.value || [];
+    items.push({});
+    f.value = items;
+  }, [field]);
+
   return (
-    <div style={{ marginLeft: 10 }}>
-      <ArrayField
-        name={logic}
-        component={[LinkageRuleActions, { type, linkageOptions, collectionName }]}
-        disabled={false}
-      />
-      <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
-        <a
-          onClick={() => {
-            const f = field.query('.actions').take() as ArrayFieldModel;
-            const items = f.value || [];
-            items.push({});
-            f.value = items;
-          }}
-        >
-          {t('Add property')}
-        </a>
+    <div style={style}>
+      <ArrayField name={logic} component={components} disabled={false} />
+      <Space size={16} style={spaceStyle}>
+        <a onClick={onClick}>{t('Add property')}</a>
       </Space>
     </div>
   );

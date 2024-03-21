@@ -1,4 +1,4 @@
-import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
+import { DownloadOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { isString } from '@nocobase/utils/client';
@@ -39,7 +39,6 @@ ReadPretty.File = function File(props: UploadProps) {
   function closeIFrameModal() {
     setVisible(false);
   }
-
   return wrapSSR(
     <div>
       <div
@@ -95,7 +94,7 @@ ReadPretty.File = function File(props: UploadProps) {
                       >
                         {file.imageUrl && (
                           <img
-                            src={`${file.imageUrl}?x-oss-process=style/thumbnail`}
+                            src={`${file.imageUrl}${file.thumbnailRule || ''}`}
                             alt={file.title}
                             className={`${prefixCls}-list-item-image`}
                           />

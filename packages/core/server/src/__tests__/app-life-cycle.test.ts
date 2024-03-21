@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import Application, { ApplicationOptions } from '../application';
 import { createAppProxy } from '../helper';
 import Plugin from '../plugin';
@@ -25,7 +26,7 @@ describe('application life cycle', () => {
   describe('reInitEvents', () => {
     it('should be called', async () => {
       app = mockServer();
-      const loadFn = jest.fn();
+      const loadFn = vi.fn();
       app.on('event1', () => {
         loadFn();
       });
@@ -37,7 +38,7 @@ describe('application life cycle', () => {
 
     it('should not be called', async () => {
       app = createAppProxy(mockServer());
-      const loadFn = jest.fn();
+      const loadFn = vi.fn();
       app.on('event1', () => {
         loadFn();
       });
@@ -48,7 +49,7 @@ describe('application life cycle', () => {
 
     it('should not be called', async () => {
       app = createAppProxy(mockServer());
-      const loadFn = jest.fn();
+      const loadFn = vi.fn();
 
       app.on('event1', () => {
         loadFn();
@@ -67,7 +68,7 @@ describe('application life cycle', () => {
   describe('load', () => {
     it('should be called', async () => {
       app = mockServer();
-      const loadFn = jest.fn();
+      const loadFn = vi.fn();
       app.on('beforeLoad', () => {
         loadFn();
       });
@@ -85,7 +86,7 @@ describe('application life cycle', () => {
     });
     it('should be called', async () => {
       app = mockServer();
-      const loadFn = jest.fn();
+      const loadFn = vi.fn();
       class Plugin1 extends Plugin {
         afterAdd() {
           this.app.on('beforeLoad', () => {

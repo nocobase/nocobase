@@ -1,5 +1,5 @@
+import { render, screen, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import { render, screen, waitFor } from 'testUtils';
 import { CurrentAppInfoContext } from '../../../appInfo';
 import { Checkbox } from '../../../schema-component/antd/checkbox';
 import { Input } from '../../../schema-component/antd/input';

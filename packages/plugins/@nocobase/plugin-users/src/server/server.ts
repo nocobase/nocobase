@@ -1,41 +1,17 @@
 import { Collection, Op } from '@nocobase/database';
-import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
-import { Registry, parse } from '@nocobase/utils';
+import { parse } from '@nocobase/utils';
 import { resolve } from 'path';
 
-import { namespace } from './';
 import * as actions from './actions/users';
-import initAuthenticators from './authenticators';
-import { JwtOptions, JwtService } from './jwt-service';
-import { enUS, zhCN } from './locale';
-import { parseToken } from './middlewares';
+import { Cache } from '@nocobase/cache';
+import { UserModel } from './models/UserModel';
 
-export interface UserPluginConfig {
-  name?: string;
-  jwt: JwtOptions;
-}
-
-export default class UsersPlugin extends Plugin<UserPluginConfig> {
-  public jwtService: JwtService;
-
-  public authenticators: Registry<HandlerType> = new Registry();
-
-  constructor(app, options) {
-    super(app, options);
-    this.jwtService = new JwtService(options?.jwt || {});
-  }
-
+export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
-    this.app.i18n.addResources('zh-CN', namespace, zhCN);
-    this.app.i18n.addResources('en-US', namespace, enUS);
-    const cmd = this.app.findCommand('install');
-    if (cmd) {
-      cmd.requiredOption('-u, --root-username <rootUsername>', '', process.env.INIT_ROOT_USERNAME);
-      cmd.requiredOption('-e, --root-email <rootEmail>', '', process.env.INIT_ROOT_EMAIL);
-      cmd.requiredOption('-p, --root-password <rootPassword>', '', process.env.INIT_ROOT_PASSWORD);
-      cmd.option('-n, --root-nickname <rootNickname>');
-    }
+    this.db.registerModels({
+      UserModel,
+    });
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
         return {
@@ -53,6 +29,29 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           [Op.eq]: obj.val,
         };
       },
+    });
+
+    this.db.on('field.afterAdd', ({ collection, field }) => {
+      if (field.options.interface === 'createdBy') {
+        collection.setField('createdById', {
+          type: 'context',
+          dataType: 'bigInt',
+          dataIndex: 'state.currentUser.id',
+          createOnly: true,
+          visible: true,
+          index: true,
+        });
+      }
+
+      if (field.options.interface === 'updatedBy') {
+        collection.setField('updatedById', {
+          type: 'context',
+          dataType: 'bigInt',
+          dataIndex: 'state.currentUser.id',
+          visible: true,
+          index: true,
+        });
+      }
     });
 
     this.db.on('afterDefineCollection', (collection: Collection) => {
@@ -94,8 +93,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    // this.app.resourcer.use(parseToken, { tag: 'parseToken' });
-
     this.app.acl.addFixedParams('users', 'destroy', () => {
       return {
         filter: {
@@ -112,20 +109,17 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       };
     });
 
-    const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
-    const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
-
-    publicActions.forEach((action) => this.app.acl.allow('users', action));
+    const loggedInActions = ['updateProfile'];
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
-    this.app.on('beforeStart', () => this.initVerification());
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.*`,
+      actions: ['users:listExcludeRole', 'users:list'],
+    });
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
-
+    await this.importCollections(resolve(__dirname, 'collections'));
     this.db.addMigrations({
       namespace: 'users',
       directory: resolve(__dirname, 'migrations'),
@@ -134,14 +128,29 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       },
     });
 
-    initAuthenticators(this);
+    this.app.resourcer.use(async (ctx, next) => {
+      await next();
+      const { associatedName, resourceName, actionName, values } = ctx.action.params;
+      const cache = ctx.app.cache as Cache;
+      if (
+        associatedName === 'roles' &&
+        resourceName === 'users' &&
+        ['add', 'remove', 'set'].includes(actionName) &&
+        values?.length
+      ) {
+        // Delete cache when the members of a department changed
+        for (const userId of values) {
+          await cache.del(`roles:${userId}`);
+        }
+      }
+    });
   }
 
   getInstallingData(options: any = {}) {
     const { INIT_ROOT_NICKNAME, INIT_ROOT_PASSWORD, INIT_ROOT_EMAIL, INIT_ROOT_USERNAME } = process.env;
     const {
-      rootEmail = INIT_ROOT_EMAIL,
-      rootPassword = INIT_ROOT_PASSWORD,
+      rootEmail = INIT_ROOT_EMAIL || 'admin@nocobase.com',
+      rootPassword = INIT_ROOT_PASSWORD || 'admin123',
       rootNickname = INIT_ROOT_NICKNAME || 'Super Admin',
       rootUsername = INIT_ROOT_USERNAME || 'nocobase',
     } = options.users || options?.cliArgs?.[0] || {};
@@ -160,7 +169,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       return;
     }
 
-    const user = await User.repository.create({
+    await User.repository.create({
       values: {
         email: rootEmail,
         password: rootPassword,
@@ -173,85 +182,5 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (repo) {
       await repo.db2cm('users');
     }
-  }
-
-  // TODO(module): should move to preset or dynamic configuration panel
-  async initVerification() {
-    const verificationPlugin = this.app.getPlugin('verification') as any;
-    if (!verificationPlugin) {
-      return;
-    }
-    const systemSettingsRepo = this.db.getRepository('systemSettings');
-    const settings = await systemSettingsRepo.findOne();
-    if (!settings.smsAuthEnabled) {
-      return;
-    }
-
-    verificationPlugin.interceptors.register('users:signin', {
-      manual: true,
-      getReceiver(ctx) {
-        return ctx.action.params.values.phone;
-      },
-      expiresIn: 120,
-      validate: async (ctx, phone) => {
-        if (!phone) {
-          throw new Error(ctx.t('Not a valid cellphone number, please re-enter'));
-        }
-        const User = this.db.getCollection('users');
-        const exists = await User.model.count({
-          where: {
-            phone,
-          },
-        });
-        if (!exists) {
-          throw new Error(ctx.t('The phone number is not registered, please register first', { ns: namespace }));
-        }
-
-        return true;
-      },
-    });
-
-    verificationPlugin.interceptors.register('users:signup', {
-      getReceiver(ctx) {
-        return ctx.action.params.values.phone;
-      },
-      expiresIn: 120,
-      validate: async (ctx, phone) => {
-        if (!phone) {
-          throw new Error(ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }));
-        }
-        const User = this.db.getCollection('users');
-        const exists = await User.model.count({
-          where: {
-            phone,
-          },
-        });
-        if (exists) {
-          throw new Error(ctx.t('The phone number has been registered, please login directly', { ns: namespace }));
-        }
-
-        return true;
-      },
-    });
-
-    this.authenticators.register('sms', (ctx, next) =>
-      verificationPlugin.intercept(ctx, async () => {
-        const { values } = ctx.action.params;
-
-        const User = ctx.db.getCollection('users');
-        const user = await User.model.findOne({
-          where: {
-            phone: values.phone,
-          },
-        });
-        if (!user) {
-          return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
-        }
-
-        ctx.state.currentUser = user;
-
-        return next();
-      }),
-    );
   }
 }

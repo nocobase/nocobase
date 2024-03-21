@@ -1,9 +1,0 @@
-export default {
-  'Multi-app manager': 'Gestor de aplicaciones múltiples',
-  Applications: 'Aplicaciones',
-  'App display name': 'Mostrar nombre de aplicación',
-  'App ID': 'ID de aplicación',
-  'Pin to menu': ' Fijar al menú',
-  'Custom domain': 'Dominio personalizado',
-  'Manage applications': 'Gestionar aplicaciones',
-};

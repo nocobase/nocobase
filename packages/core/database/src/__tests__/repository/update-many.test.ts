@@ -8,6 +8,8 @@ describe('update many', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     db.collection({
       name: 't1',
       fields: [{ type: 'string', name: 'title' }],

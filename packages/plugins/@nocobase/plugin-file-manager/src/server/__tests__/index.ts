@@ -1,16 +1,15 @@
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import send from 'koa-send';
 import path from 'path';
 import supertest from 'supertest';
 
-import plugin from '../';
-
 export async function getApp(options = {}): Promise<MockServer> {
-  const app = mockServer({
+  const app = await createMockServer({
     ...options,
     cors: {
       origin: '*',
     },
+    plugins: ['file-manager'],
     acl: false,
   });
 
@@ -22,15 +21,11 @@ export async function getApp(options = {}): Promise<MockServer> {
     await next();
   });
 
-  await app.cleanDb();
-
-  app.plugin(plugin);
-
-  app.db.import({
+  await app.db.import({
     directory: path.resolve(__dirname, './tables'),
   });
 
-  await app.loadAndInstall();
+  await app.db.sync();
 
   return app;
 }

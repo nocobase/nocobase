@@ -8,7 +8,7 @@ export default class APIDoc extends Plugin {
     super(app, options);
     this.swagger = new SwaggerManager(this);
   }
-  beforeLoad() {}
+  async beforeLoad() {}
   async load() {
     this.app.resource({
       name: 'swagger',

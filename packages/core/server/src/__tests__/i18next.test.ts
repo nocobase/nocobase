@@ -9,7 +9,6 @@ describe('i18next', () => {
     app = new Application({
       database: {
         dialect: 'sqlite',
-        dialectModule: require('sqlite3'),
         storage: ':memory:',
       },
       resourcer: {

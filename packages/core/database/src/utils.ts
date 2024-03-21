@@ -39,7 +39,7 @@ function patchShowConstraintsQuery(queryGenerator, db) {
       `WHERE table_name='${lodash.isPlainObject(tableName) ? tableName.tableName : tableName}'`,
     ];
 
-    if (!constraintName) {
+    if (constraintName) {
       lines.push(`AND constraint_name='${constraintName}'`);
     }
 

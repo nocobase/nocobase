@@ -1,33 +1,62 @@
 import { css } from '@emotion/css';
-import { Field } from '@formily/core';
+import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
-import { useRequest } from 'ahooks';
 import { Col, Row } from 'antd';
 import merge from 'deepmerge';
 import template from 'lodash/template';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  DataBlockProvider,
   TableFieldResource,
   WithoutTableFieldResource,
-  useAPIClient,
-  useActionContext,
+  useCollectionManager,
+  useDataBlockProps,
+  useDataBlockRequest,
+  useDataBlockResource,
   useDesignable,
+  useCollectionParentRecord,
+  useCollectionParentRecordData,
+  useCollectionRecord,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
-import { FilterBlockRecord } from '../filter-provider/FilterProvider';
-import { useRecordIndex } from '../record-provider';
-import { SharedFilterProvider } from './SharedFilterProvider';
+import {
+  CollectionProvider_deprecated,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
+} from '../collection-manager';
+import { DataBlockCollector } from '../filter-provider/FilterProvider';
+import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
+import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
 
+/**
+ * @deprecated
+ */
 export const BlockResourceContext = createContext(null);
+BlockResourceContext.displayName = 'BlockResourceContext';
 export const BlockAssociationContext = createContext(null);
-export const BlockRequestContext = createContext<any>({});
+BlockAssociationContext.displayName = 'BlockAssociationContext';
+
+/**
+ * @deprecated
+ */
+export const BlockRequestContext_deprecated = createContext<{
+  block?: string;
+  props?: any;
+  field?: GeneralField;
+  service?: any;
+  resource?: any;
+  allowedActions?: any;
+  __parent?: any;
+  updateAssociationValues?: any[];
+}>({});
+BlockRequestContext_deprecated.displayName = 'BlockRequestContext_deprecated';
 
 export const useBlockResource = () => {
-  return useContext(BlockResourceContext);
+  const resource = useDataBlockResource();
+  return useContext(BlockResourceContext) || resource;
 };
 
 interface UseResourceProps {
@@ -35,59 +64,18 @@ interface UseResourceProps {
   association?: any;
   useSourceId?: any;
   collection?: any;
+  dataSource?: any;
   block?: any;
 }
 
-export const useAssociation = (props) => {
+const useAssociation = (props) => {
   const { association } = props;
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField } = useCollectionManager_deprecated();
   if (typeof association === 'string') {
     return getCollectionField(association);
   } else if (association?.collectionName && association?.name) {
     return getCollectionField(`${association?.collectionName}.${association?.name}`);
   }
-};
-
-const useResource = (props: UseResourceProps) => {
-  const { block, collection, resource, useSourceId } = props;
-  const record = useRecord();
-  const api = useAPIClient();
-  const { fieldSchema } = useActionContext();
-  const isCreateAction = fieldSchema?.['x-action'] === 'create';
-  const association = useAssociation(props);
-  const sourceId = useSourceId?.();
-  const field = useField<Field>();
-  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const __parent = useContext(BlockRequestContext);
-  if (block === 'TableField') {
-    const options = {
-      field,
-      api,
-      resource,
-      sourceId: !isCreateAction
-        ? sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id']
-        : undefined,
-    };
-    return new TableFieldResource(options);
-  }
-
-  if (
-    !withoutTableFieldResource &&
-    __parent?.block === 'TableField' &&
-    __parent?.resource instanceof TableFieldResource
-  ) {
-    return __parent.resource;
-  }
-  if (!association) {
-    return api.resource(resource);
-  }
-  if (sourceId) {
-    return api.resource(resource, sourceId);
-  }
-  if (record[association?.sourceKey || 'id']) {
-    return api.resource(resource, record[association?.sourceKey || 'id']);
-  }
-  return api.resource(collection);
 };
 
 const useActionParams = (props) => {
@@ -96,88 +84,29 @@ const useActionParams = (props) => {
   return { ...props.params, ...params };
 };
 
-export const useResourceAction = (props, opts = {}) => {
-  /**
-   * fieldName: 来自 TableFieldProvider
-   */
-  const { resource, action, fieldName: tableFieldName, runWhenParamsChanged = false } = props;
-  const { fields } = useCollection();
-  const params = useActionParams(props);
-  const api = useAPIClient();
-  const fieldSchema = useFieldSchema();
-  const { snapshot } = useActionContext();
-  const record = useRecord();
-
-  if (!Reflect.has(params, 'appends')) {
-    const appends = fields?.filter((field) => field.target).map((field) => field.name);
-    if (appends?.length) {
-      params['appends'] = appends;
-    }
-  }
-  const result = useRequest(
-    snapshot
-      ? async () => ({
-          data: record[tableFieldName] ?? [],
-        })
-      : (opts) => {
-          if (!action) {
-            return Promise.resolve({});
-          }
-          const actionParams = { ...params, ...opts };
-          if (params?.appends) {
-            actionParams.appends = params.appends;
-          }
-          return resource[action](actionParams).then((res) => res.data);
-        },
-    {
-      ...opts,
-      onSuccess(data, params) {
-        opts?.['onSuccess']?.(data, params);
-        if (fieldSchema['x-uid']) {
-          api.services[fieldSchema['x-uid']] = result;
-        }
-      },
-      defaultParams: [params],
-      refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends)],
-    },
-  );
-  // automatic run service when params has changed
-  const firstRun = useRef(false);
-  useEffect(() => {
-    if (!runWhenParamsChanged) {
-      return;
-    }
-    if (firstRun.current) {
-      result?.run({ ...result?.params?.[0], ...params });
-    }
-    firstRun.current = true;
-  }, [JSON.stringify(params), runWhenParamsChanged]);
-
-  return result;
-};
-
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
-    <CollectionProvider collection={collection}>
+    <CollectionProvider_deprecated collection={collection}>
       <ACLCollectionProvider>{props.children}</ACLCollectionProvider>
-    </CollectionProvider>
+    </CollectionProvider_deprecated>
   ) : (
     props.children
   );
 };
 
-export const BlockRequestProvider = (props) => {
-  const field = useField();
-  const resource = useBlockResource();
+/**
+ * @deprecated
+ * @param props
+ * @returns
+ */
+export const BlockRequestProvider_deprecated = (props) => {
+  const field = useField<Field>();
+  const resource = useDataBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
-
-  const service = useResourceAction(
-    { ...props, resource },
-    {
-      ...props.requestOptions,
-    },
-  );
+  const service = useDataBlockRequest();
+  const record = useCollectionRecord();
+  const parentRecord = useCollectionParentRecord();
 
   // Infinite scroll support
   const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
@@ -188,9 +117,9 @@ export const BlockRequestProvider = (props) => {
     });
   }, [serviceAllowedActions]);
 
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useBlockRequestContext();
   return (
-    <BlockRequestContext.Provider
+    <BlockRequestContext_deprecated.Provider
       value={{
         allowedActions,
         block: props.block,
@@ -202,13 +131,19 @@ export const BlockRequestProvider = (props) => {
         updateAssociationValues: props?.updateAssociationValues || [],
       }}
     >
-      {props.children}
-    </BlockRequestContext.Provider>
+      {/* 用于兼容旧版 record.__parent 的写法 */}
+      <RecordProvider isNew={record?.isNew} record={record?.data} parent={parentRecord?.data}>
+        {props.children}
+      </RecordProvider>
+    </BlockRequestContext_deprecated.Provider>
   );
 };
 
+/**
+ * @deprecated
+ */
 export const useBlockRequestContext = () => {
-  return useContext(BlockRequestContext);
+  return useContext(BlockRequestContext_deprecated);
 };
 
 export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
@@ -273,43 +208,79 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   return props.children;
 };
 
-export const BlockProvider = (props) => {
-  const { collection, association } = props;
-  const resource = useResource(props);
-  const params = { ...props.params };
-  const { appends, updateAssociationValues } = useAssociationNames();
-  if (!Object.keys(params).includes('appends')) {
-    params['appends'] = appends;
-  }
+const BlockContext = createContext<{
+  /** 用以区分区块的标识 */
+  name: string;
+}>(null);
+BlockContext.displayName = 'BlockContext';
+
+export const useBlockContext = () => {
+  return useContext(BlockContext);
+};
+
+/**
+ * @deprecated use `DataBlockProvider` instead
+ */
+export const BlockProvider = (props: {
+  name: string;
+  resource: any;
+  collection?: any;
+  association?: any;
+  dataSource?: string;
+  params?: any;
+  children?: any;
+  parentRecord?: any;
+  /** @deprecated */
+  useSourceId?: any;
+  /** @deprecated */
+  useParams?: any;
+}) => {
+  const { name, dataSource, association, useParams, parentRecord } = props;
+  const sourceId = useDataBlockSourceId({ association });
+  const paramsFromHook = useParams?.();
+  const { getAssociationAppends } = useAssociationNames(dataSource);
+  const { appends, updateAssociationValues } = getAssociationAppends();
+  const params = useMemo(() => {
+    if (!props.params?.['appends']) {
+      return { ...props.params, appends, ...paramsFromHook };
+    }
+    return { ...props.params, ...paramsFromHook };
+  }, [appends, paramsFromHook, props.params]);
+  const blockValue = useMemo(() => ({ name }), [name]);
 
   return (
-    <MaybeCollectionProvider collection={collection}>
-      <BlockAssociationContext.Provider value={association}>
-        <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
-            <SharedFilterProvider {...props} params={params}>
-              <FilterBlockRecord {...props} params={params}>
-                {props.children}
-              </FilterBlockRecord>
-            </SharedFilterProvider>
-          </BlockRequestProvider>
-        </BlockResourceContext.Provider>
-      </BlockAssociationContext.Provider>
-    </MaybeCollectionProvider>
+    <BlockContext.Provider value={blockValue}>
+      <DataBlockProvider
+        {...(props as any)}
+        params={params}
+        sourceId={sourceId}
+        // 此处是针对树表格的 Add child 按钮优化的，因为点击 Add child 打开的表单中需要用到父级的数据；
+        // 但是当是关系区块时，在 DataBlockProvider 中会自动请求父级数据，所以这里不需要再传 parentRecord。
+        // 具体问题记录在这里：https://nocobase.height.app/T-3235/description
+        parentRecord={association ? undefined : parentRecord}
+      >
+        <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
+          <DataBlockCollector {...props} params={params}>
+            {props.children}
+          </DataBlockCollector>
+        </BlockRequestProvider_deprecated>
+      </DataBlockProvider>
+    </BlockContext.Provider>
   );
 };
 
 export const useBlockAssociationContext = () => {
-  return useContext(BlockAssociationContext);
+  const { association } = useDataBlockProps();
+  return useContext(BlockAssociationContext) || association;
 };
 
 export const useFilterByTk = () => {
-  const { resource, __parent } = useContext(BlockRequestContext);
+  const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
   const record = useRecord();
-  const collection = useCollection();
-  const { getCollectionField } = useCollectionManager();
-  const assoc = useContext(BlockAssociationContext);
+  const collection = useCollection_deprecated();
+  const { getCollectionField } = useCollectionManager_deprecated();
+  const assoc = useBlockAssociationContext();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
@@ -324,32 +295,41 @@ export const useFilterByTk = () => {
   return record?.[collection.filterTargetKey || 'id'];
 };
 
+/**
+ * @deprecated
+ * 已弃用，应使用 useSourceIdFromParentRecord
+ * @returns
+ */
 export const useSourceIdFromRecord = () => {
   const record = useRecord();
-  const { getCollectionField } = useCollectionManager();
-  const assoc = useContext(BlockAssociationContext);
-  if (assoc) {
-    const association = getCollectionField(assoc);
-    return record?.[association.sourceKey || 'id'];
+  const { getCollectionField } = useCollectionManager_deprecated();
+  const association = useBlockAssociationContext();
+  if (association) {
+    const collectionField = getCollectionField(association);
+    return record?.[collectionField.sourceKey || 'id'];
   }
 };
 
 export const useSourceIdFromParentRecord = () => {
-  const record = useRecord();
-  const { getCollectionField } = useCollectionManager();
-  const assoc = useContext(BlockAssociationContext);
-  if (assoc) {
-    const association = getCollectionField(assoc);
-    return record?.__parent?.[association.sourceKey || 'id'];
+  const cm = useCollectionManager();
+  const parentRecordData = useCollectionParentRecordData();
+  const { getCollectionField } = useCollectionManager_deprecated();
+  const association = useBlockAssociationContext();
+  if (association) {
+    const collectionField = getCollectionField(association);
+    const collection = cm.getCollection(collectionField.collectionName);
+    return parentRecordData?.[
+      collectionField.sourceKey || collection.filterTargetKey || collection.getPrimaryKey() || 'id'
+    ];
   }
 };
 
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   const record = useRecord();
-  const { fields } = useCollection();
+  const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
   const filterFields = fields
     .filter((v) => {
@@ -366,10 +346,10 @@ export const useParamsFromRecord = () => {
   const obj = {
     filterByTk: filterByTk,
   };
-  if (record.__collection && !['oho', 'm2o', 'obo'].includes(collectionField?.interface)) {
+  if (record.__collection && collectionField && !['oho', 'm2o', 'obo'].includes(collectionField.interface)) {
     obj['targetCollection'] = record.__collection;
   }
-  if (!filterByTk) {
+  if (!filterByTk && Object.keys(filter).length > 0) {
     obj['filter'] = filter;
   }
   return obj;

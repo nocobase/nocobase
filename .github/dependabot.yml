@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "npm" # 你项目的包管理器类型，例如 "npm", "pip", "maven", "gradle", "docker"或者其他
+    directory: "/" # 包管理器文件在仓库的位置，"/"代表仓库的根目录
+    schedule:
+      interval: "weekly" # Dependabot检查更新的频率，可以是"daily", "weekly", 或者 "monthly"
+    open-pull-requests-limit: 10 # Dependabot同时打开的pull request的最大数量
+    ignore:
+      - dependency-name: "axios"
+      - dependency-name: "dotenv"

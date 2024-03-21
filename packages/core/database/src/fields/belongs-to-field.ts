@@ -1,4 +1,4 @@
-import { omit } from 'lodash';
+import lodash, { omit } from 'lodash';
 import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
@@ -32,6 +32,35 @@ export class BelongsToField extends RelationField {
     return BelongsToField.toReference(this.database, association, this.options.onDelete);
   }
 
+  checkAssociationKeys() {
+    let { foreignKey, targetKey } = this.options;
+
+    if (!targetKey) {
+      targetKey = this.TargetModel.primaryKeyAttribute;
+    }
+
+    if (!foreignKey) {
+      foreignKey = lodash.camelCase(`${this.name}_${targetKey}`);
+    }
+
+    const targetKeyAttribute = this.TargetModel.rawAttributes[targetKey];
+    const foreignKeyAttribute = this.collection.model.rawAttributes[foreignKey];
+
+    if (!foreignKeyAttribute || !targetKeyAttribute) {
+      // skip check if foreign key not exists
+      return;
+    }
+
+    const foreignKeyType = foreignKeyAttribute.type.constructor.toString();
+    const targetKeyType = targetKeyAttribute.type.constructor.toString();
+
+    if (!this.keyPairsTypeMatched(foreignKeyType, targetKeyType)) {
+      throw new Error(
+        `Foreign key "${foreignKey}" type "${foreignKeyType}" does not match target key "${targetKey}" type "${targetKeyType}" in belongs to relation "${this.name}" of collection "${this.collection.name}"`,
+      );
+    }
+  }
+
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;
@@ -42,6 +71,8 @@ export class BelongsToField extends RelationField {
       database.addPendingField(this);
       return false;
     }
+
+    this.checkAssociationKeys();
 
     if (collection.model.associations[this.name]) {
       delete collection.model.associations[this.name];
@@ -62,6 +93,11 @@ export class BelongsToField extends RelationField {
 
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
+    }
+
+    if (!this.options.targetKey) {
+      // @ts-ignore
+      this.options.targetKey = association.targetKey;
     }
 
     try {

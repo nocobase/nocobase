@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-hello",
-  "version": "0.14.0-alpha.6",
+  "version": "0.20.0-alpha.15",
   "main": "./dist/server/index.js",
   "displayName": "Hello",
   "displayName.zh-CN": "Hello",
@@ -18,5 +18,5 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "ee5825377d8bec05f968a8365a0cdcd49878ada6"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

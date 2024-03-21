@@ -7,28 +7,37 @@ import { Package } from '@lerna/package';
 import { toUnixPath } from './utils';
 
 /**
+ * 获取构建包的绝对路径，支持项目路径和 npm 两种形式
  * @example
- * yarn build app/client,plugins/acl,core/* => ['app/client', 'plugins/acl', ...all core dir's packages]
- * yarn build app/client plugins/acl core/* => ['app/client', 'plugins/acl', ...all core dir's packages]
+ * yarn build packages/core/client @nocobase/acl => ['/home/xx/packages/core/client', '/home/xx/packages/core/acl']
  * yarn build => all packages
  */
 function getPackagesPath(pkgs: string[]) {
-  if (pkgs.length === 0) {
-    return fg
-      .sync(['*/*/package.json', '*/*/*/package.json'], {
-        cwd: PACKAGES_PATH,
-        absolute: true,
-        onlyFiles: true,
-      })
-      .map(toUnixPath).map(item => path.dirname(item))
-  }
-  return fg
-    .sync(pkgs, {
+  const allPackageJson = fg
+    .sync(['*/*/package.json', '*/*/*/package.json'], {
       cwd: PACKAGES_PATH,
       absolute: true,
-      onlyDirectories: true,
-    })
-    .map(toUnixPath);
+      onlyFiles: true,
+    });
+
+  if (pkgs.length === 0) {
+    return allPackageJson
+      .map(toUnixPath).map(item => path.dirname(item));
+  }
+
+  const allPackageInfo = allPackageJson
+    .map(packageJsonPath => ({ name: require(packageJsonPath).name, path: path.dirname(toUnixPath(packageJsonPath)) }))
+    .reduce((acc, cur) => {
+      acc[cur.name] = cur.path;
+      return acc;
+    }, {});
+  const allPackagePaths: string[] = Object.values(allPackageInfo);
+
+  const pkgNames = pkgs.filter(item => allPackageInfo[item]);
+  const relativePaths = pkgNames.length ? pkgs.filter(item => !pkgNames.includes(item)) : pkgs;
+  const pkgPaths = pkgs.map(item => allPackageInfo[item])
+  const absPaths = allPackagePaths.filter(absPath => relativePaths.some((relativePath) => absPath.endsWith(relativePath)));
+  return [...pkgPaths, ...absPaths];
 }
 
 export function getPackages(pkgs: string[]) {

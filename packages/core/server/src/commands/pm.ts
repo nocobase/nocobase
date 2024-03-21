@@ -6,14 +6,15 @@ export default (app: Application) => {
   const pm = app.command('pm');
 
   pm.command('create')
-    .ipc()
     .arguments('plugin')
-    .action(async (plugin) => {
-      await app.pm.create(plugin);
+    .option('--force-recreate')
+    .action(async (plugin, options) => {
+      await app.pm.create(plugin, options);
     });
 
   pm.command('add')
     .ipc()
+    .preload()
     .argument('<pkg>')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
@@ -22,7 +23,7 @@ export default (app: Application) => {
       try {
         await app.pm.addViaCLI(name, _.cloneDeep(options));
       } catch (error) {
-        throw new PluginCommandError(`Failed to add plugin: ${error.message}`);
+        throw new PluginCommandError(`Failed to add plugin`, { cause: error });
       }
     });
 
@@ -41,36 +42,42 @@ export default (app: Application) => {
           packageName,
         });
       } catch (error) {
-        throw new PluginCommandError(`Failed to update plugin: ${error.message}`);
+        throw new PluginCommandError(`Failed to update plugin`, { cause: error });
       }
     });
 
   pm.command('enable')
     .ipc()
+    .preload()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       try {
         await app.pm.enable(plugins);
       } catch (error) {
-        throw new PluginCommandError(`Failed to enable plugin: ${error.message}`);
+        throw new PluginCommandError(`Failed to enable plugin`, { cause: error });
       }
     });
 
   pm.command('disable')
     .ipc()
+    .preload()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       try {
         await app.pm.disable(plugins);
       } catch (error) {
-        throw new PluginCommandError(`Failed to disable plugin: ${error.message}`);
+        throw new PluginCommandError(`Failed to disable plugin`, { cause: error });
       }
     });
 
   pm.command('remove')
-    .ipc()
+    .auth()
+    // .ipc()
+    // .preload()
     .arguments('<plugins...>')
-    .action(async (plugins) => {
-      await app.pm.remove(plugins);
+    .option('--force')
+    .option('--remove-dir')
+    .action(async (plugins, options) => {
+      await app.pm.remove(plugins, options);
     });
 };

@@ -1,5 +1,5 @@
 import { FormItem } from '@formily/antd-v5';
-import { Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Application, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {
@@ -29,10 +29,16 @@ const schema = {
   },
 };
 
-export default () => {
+const Root = () => {
   return (
     <SchemaComponentProvider components={{ Input, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

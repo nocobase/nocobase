@@ -1,6 +1,12 @@
-import { RecordPickerContext, useActionContext, useBlockRequestContext } from '@nocobase/client';
+import {
+  RecordPickerContext,
+  useActionContext,
+  useBlockRequestContext,
+  useCollection,
+  useSourceIdFromParentRecord,
+} from '@nocobase/client';
 import { notification } from 'antd';
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
 import { useFmTranslation } from '../locale';
 
 // 限制上传文件大小为 10M
@@ -10,12 +16,24 @@ export const useUploadFiles = () => {
   const { service } = useBlockRequestContext();
   const { t } = useFmTranslation();
   const { setVisible } = useActionContext();
+  const { props: blockProps } = useBlockRequestContext();
+  const collection = useCollection();
+  const sourceId = useSourceIdFromParentRecord();
+  const action = useMemo(() => {
+    let action = `${collection.name}:create`;
+    if (blockProps?.association) {
+      const [s, t] = blockProps.association.split('.');
+      action = `${s}/${sourceId}/${t}:create`;
+    }
+    return action;
+  }, [collection.name, blockProps?.association, sourceId]);
   const { setSelectedRows } = useContext(RecordPickerContext) || {};
   const uploadingFiles = {};
 
   let pendingNumber = 0;
 
   return {
+    action,
     /**
      * 返回 false 会阻止上传，返回 true 会继续上传
      */

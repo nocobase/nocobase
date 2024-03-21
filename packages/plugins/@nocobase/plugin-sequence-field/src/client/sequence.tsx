@@ -2,13 +2,14 @@ import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@fo
 import { onFieldValueChange } from '@formily/core';
 import { ISchema, SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
 import {
+  CollectionFieldInterface,
   Cron,
-  IField,
   SchemaComponent,
   SchemaComponentOptions,
   css,
   interfacesProperties,
   useCompile,
+  useToken,
 } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
@@ -40,9 +41,11 @@ function RuleTypeSelect(props) {
 }
 
 function RuleOptions() {
-  const { type, options } = ArrayTable.useRecord();
-  const ruleType = RuleTypes[type];
   const compile = useCompile();
+  const { values } = useForm();
+  const index = ArrayTable.useIndex();
+  const { type, options } = values.patterns[index];
+  const ruleType = RuleTypes[type];
   return (
     <div
       className={css`
@@ -100,25 +103,12 @@ const RuleTypes = {
     title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       digits: function Digits({ value }) {
-        const { t } = useTranslation();
-        return <span>{t('{{value}} Digits', { ns: NAMESPACE, value })}</span>;
+        return <code>{value}</code>;
       },
       start: function Start({ value }) {
-        const { t } = useTranslation();
-        return <span>{t('Starts from {{value}}', { ns: NAMESPACE, value })}</span>;
+        return <code>{value}</code>;
       },
-      cycle: function Cycle({ value }) {
-        return (
-          <SchemaComponent
-            schema={{
-              type: 'string',
-              name: 'cycle',
-              'x-component': 'Cron',
-              'x-read-pretty': true,
-            }}
-          />
-        );
-      },
+      cycle: Cron.ReadPretty,
     },
     fieldset: {
       digits: {
@@ -210,15 +200,17 @@ export function RuleConfigForm() {
   const { t } = useTranslation();
   const compile = useCompile();
   const schemaOptions = useContext(SchemaOptionsContext);
-  const form = useForm();
-  const { type, options } = ArrayTable.useRecord();
+  const { values, setValuesIn } = useForm();
   const index = ArrayTable.useIndex();
+  const { type, options } = values.patterns[index];
   const ruleType = RuleTypes[type];
+  const { token } = useToken();
   return ruleType?.fieldset ? (
     <Button
       type="link"
       onClick={() => {
-        FormDrawer(compile(ruleType.title), () => {
+        // fix https://nocobase.height.app/T-2868
+        FormDrawer({ title: compile(ruleType.title), zIndex: token.zIndexPopupBase + 1000 }, () => {
           return (
             <FormLayout layout="vertical">
               <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
@@ -252,7 +244,7 @@ export function RuleConfigForm() {
             initialValues: options,
           })
           .then((values) => {
-            form.setValuesIn(`patterns.${index}`, { type, options: { ...values } });
+            setValuesIn(`patterns.${index}`, { type, options: { ...values } });
           })
           .catch((err) => {
             error(err);
@@ -264,26 +256,28 @@ export function RuleConfigForm() {
   ) : null;
 }
 
-export const sequence: IField = {
-  name: 'sequence',
-  type: 'object',
-  group: 'advanced',
-  order: 3,
-  title: `{{t("Sequence", { ns: "${NAMESPACE}" })}}`,
-  sortable: true,
-  default: {
+export class SequenceFieldInterface extends CollectionFieldInterface {
+  name = 'sequence';
+  type = 'object';
+  group = 'advanced';
+  order = 3;
+  title = `{{t("Sequence", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.", { ns: "${NAMESPACE}" })}}`;
+  sortable = true;
+  default = {
     type: 'sequence',
     uiSchema: {
       type: 'string',
       'x-component': 'Input',
       'x-component-props': {},
     },
-  },
-  hasDefaultValue: false,
-  filterable: {
+  };
+  availableTypes = ['string'];
+  hasDefaultValue = false;
+  filterable = {
     operators: interfacesProperties.operators.string,
-  },
-  titleUsable: true,
+  };
+  titleUsable = true;
   schemaInitialize(schema: ISchema, { block, field }) {
     if (block === 'Form') {
       Object.assign(schema['x-component-props'], {
@@ -291,8 +285,8 @@ export const sequence: IField = {
       });
     }
     return schema;
-  },
-  properties: {
+  }
+  properties = {
     ...interfacesProperties.defaultProps,
     unique: interfacesProperties.unique,
     patterns: {
@@ -408,5 +402,5 @@ export const sequence: IField = {
         },
       },
     },
-  },
-};
+  };
+}

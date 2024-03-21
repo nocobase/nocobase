@@ -1,14 +1,16 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollectionManager } from '../collection-manager';
+import { useCollectionManager_deprecated } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
+import { mergeFilter } from '../filter-provider/utils';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { mergeFilter } from './SharedFilterProvider';
-import { findFilterTargets } from './hooks';
+import { findFilterTargets, useParsedFilter } from './hooks';
 
 export const TableBlockContext = createContext<any>({});
+TableBlockContext.displayName = 'TableBlockContext';
+
 export function getIdsWithChildren(nodes) {
   const ids = [];
   if (nodes) {
@@ -28,6 +30,10 @@ interface Props {
   rowKey?: string;
   childrenColumnName: any;
   fieldNames?: any;
+  /**
+   * Table 区块的 collection name
+   */
+  collection?: string;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
@@ -43,6 +49,7 @@ const InternalTableBlockProvider = (props: Props) => {
       return keys || [];
     }
   }, [service?.loading]);
+
   return (
     <FixedBlockWrapper>
       <TableBlockContext.Provider
@@ -69,13 +76,13 @@ const InternalTableBlockProvider = (props: Props) => {
 
 export const TableBlockProvider = (props) => {
   const resourceName = props.resource;
-  const params = { ...props.params };
+  const params = useMemo(() => ({ ...props.params }), [props.params]);
   const fieldSchema = useFieldSchema();
-  const { getCollection, getCollectionField } = useCollectionManager();
-  const collection = getCollection(props.collection);
-  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
-  if (props.dragSort) {
-    params['sort'] = ['sort'];
+  const { getCollection, getCollectionField } = useCollectionManager_deprecated(props.dataSource);
+  const collection = getCollection(props.collection, props.dataSource);
+  const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
+  if (props.dragSort && dragSortBy) {
+    params['sort'] = dragSortBy;
   }
   let childrenColumnName = 'children';
   if (collection?.tree && treeTable !== false) {
@@ -94,11 +101,21 @@ export const TableBlockProvider = (props) => {
     }
   }
   const form = useMemo(() => createForm(), [treeTable]);
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: params?.filter,
+  });
+  const paramsWithFilter = useMemo(() => {
+    return {
+      ...params,
+      filter: parsedFilter,
+    };
+  }, [parsedFilter, params]);
+
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
-        <BlockProvider {...props} params={params} runWhenParamsChanged>
-          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
+        <BlockProvider name={props.name || 'table'} {...props} params={paramsWithFilter} runWhenParamsChanged>
+          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={paramsWithFilter} />
         </BlockProvider>
       </FormContext.Provider>
     </SchemaComponentOptions>
@@ -120,6 +137,7 @@ export const useTableBlockProps = () => {
     if (!ctx?.service?.loading) {
       field.value = [];
       field.value = ctx?.service?.data?.data;
+      field?.setInitialValue(ctx?.service?.data?.data);
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
       field.componentProps.pagination = field.componentProps.pagination || {};
@@ -127,12 +145,12 @@ export const useTableBlockProps = () => {
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-  }, [ctx?.service?.loading]);
+  }, [ctx?.service?.data, ctx?.service?.loading]); // 这里如果依赖了 ctx?.field?.data?.selectedRowKeys 的话，会导致这个问题：
   return {
     childrenColumnName: ctx.childrenColumnName,
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
-    dragSort: ctx.dragSort,
+    dragSort: ctx.dragSort && ctx.dragSortBy,
     rowKey: ctx.rowKey || 'id',
     pagination:
       ctx?.params?.paginate !== false
@@ -142,7 +160,6 @@ export const useTableBlockProps = () => {
           }
         : false,
     onRowSelectionChange(selectedRowKeys) {
-      console.log(selectedRowKeys);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
       ctx?.field?.onRowSelect?.(selectedRowKeys);
@@ -151,15 +168,12 @@ export const useTableBlockProps = () => {
       await ctx.resource.move({
         sourceId: from[ctx.rowKey || 'id'],
         targetId: to[ctx.rowKey || 'id'],
+        sortField: ctx.dragSort && ctx.dragSortBy,
       });
       ctx.service.refresh();
     },
     onChange({ current, pageSize }, filters, sorter) {
-      const sort = sorter.order
-        ? sorter.order === `ascend`
-          ? [sorter.field]
-          : [`-${sorter.field}`]
-        : globalSort || ctx.service.params?.[0]?.sort;
+      const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
     onClickRow(record, setSelectedRow, selectedRow) {
@@ -185,6 +199,9 @@ export const useTableBlockProps = () => {
         const storedFilter = block.service.params?.[1]?.filters || {};
 
         if (selectedRow.includes(record[ctx.rowKey])) {
+          if (block.dataLoadingMode === 'manual') {
+            return block.clearData();
+          }
           delete storedFilter[uid];
         } else {
           storedFilter[uid] = {

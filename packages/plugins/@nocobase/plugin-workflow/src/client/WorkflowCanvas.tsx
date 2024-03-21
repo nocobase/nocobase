@@ -4,12 +4,13 @@ import {
   ResourceActionProvider,
   SchemaComponent,
   cx,
+  useApp,
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-import { App, Breadcrumb, Button, Dropdown, Switch, message } from 'antd';
+import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -21,6 +22,8 @@ import { lang } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
 import { linkNodes } from './utils';
+import { getWorkflowDetailPath } from './constant';
+import { ExecutionStatusColumn } from './components/ExecutionStatus';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -44,6 +47,7 @@ function ExecutionResourceProvider({ request, filter = {}, ...others }) {
 export function WorkflowCanvas() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const app = useApp();
   const { data, refresh, loading } = useResourceActionContext();
   const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
@@ -57,7 +61,10 @@ export function WorkflowCanvas() {
   }, [data?.data]);
 
   if (!data?.data) {
-    return <div>{loading ? lang('Loading') : lang('Load failed')}</div>;
+    if (loading) {
+      return <Spin />;
+    }
+    return <Result status="404" title="Not found" />;
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
@@ -67,7 +74,7 @@ export function WorkflowCanvas() {
 
   function onSwitchVersion({ key }) {
     if (key != workflow.id) {
-      navigate(`/admin/settings/workflow/workflows/${key}`);
+      navigate(getWorkflowDetailPath(key));
     }
   }
 
@@ -92,7 +99,7 @@ export function WorkflowCanvas() {
     });
     message.success(t('Operation succeeded'));
 
-    navigate(`/admin/settings/workflow/workflows/${revision.id}`);
+    navigate(`/admin/workflow/workflows/${revision.id}`);
   }
 
   async function onDelete() {
@@ -110,8 +117,8 @@ export function WorkflowCanvas() {
 
         navigate(
           workflow.current
-            ? '/admin/settings/workflow/workflows'
-            : `/admin/settings/workflow/workflows/${revisions.find((item) => item.current)?.id}`,
+            ? app.pluginSettingsManager.getRoutePath('workflow')
+            : getWorkflowDetailPath(revisions.find((item) => item.current)?.id),
         );
       },
     });
@@ -147,7 +154,7 @@ export function WorkflowCanvas() {
         <header>
           <Breadcrumb
             items={[
-              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
+              { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
               { title: <strong>{workflow.title}</strong> },
             ]}
           />
@@ -163,6 +170,8 @@ export function WorkflowCanvas() {
                 items: revisions
                   .sort((a, b) => b.id - a.id)
                   .map((item, index) => ({
+                    role: 'button',
+                    'aria-label': `version-${index}`,
                     key: `${item.id}`,
                     icon: item.current ? <RightOutlined /> : null,
                     className: cx({
@@ -179,7 +188,7 @@ export function WorkflowCanvas() {
                   })),
               }}
             >
-              <Button type="text">
+              <Button type="text" aria-label="version">
                 <label>{lang('Version')}</label>
                 <span>{workflow?.id ? `#${workflow.id}` : null}</span>
                 <DownOutlined />
@@ -195,14 +204,26 @@ export function WorkflowCanvas() {
           <Dropdown
             menu={{
               items: [
-                { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
-                { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
-                { key: 'delete', label: t('Delete') },
-              ],
+                {
+                  role: 'button',
+                  'aria-label': 'history',
+                  key: 'history',
+                  label: lang('Execution history'),
+                  disabled: !workflow.allExecuted,
+                },
+                {
+                  role: 'button',
+                  'aria-label': 'revision',
+                  key: 'revision',
+                  label: lang('Copy to new version'),
+                  disabled: !revisionable,
+                },
+                { role: 'button', 'aria-label': 'delete', key: 'delete', label: t('Delete') },
+              ] as any[],
               onClick: onMenuCommand,
             }}
           >
-            <Button type="text" icon={<EllipsisOutlined />} />
+            <Button aria-label="more" type="text" icon={<EllipsisOutlined />} />
           </Dropdown>
           <ActionContextProvider value={{ visible, setVisible }}>
             <SchemaComponent
@@ -210,6 +231,7 @@ export function WorkflowCanvas() {
               components={{
                 ExecutionResourceProvider,
                 ExecutionLink,
+                ExecutionStatusColumn,
               }}
             />
           </ActionContextProvider>

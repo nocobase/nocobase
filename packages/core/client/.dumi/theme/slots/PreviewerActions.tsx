@@ -202,15 +202,13 @@ const PreviewerActions: typeof DumiPreviewerActions = (props) => {
 
   useEffect(() => {
     if (div.current) {
-      const elements = div.current.querySelectorAll('.dumi-default-previewer-actions');
-      elements.forEach((element) => {
-        element.addEventListener('click', (e) => {
-          e.stopImmediatePropagation();
-          setLoading(true);
-          openCodeSandbox(props).finally(() => {
-            setLoading(false);
-          });
-        })
+      const element = div.current.querySelector('.dumi-default-previewer-action-btn');
+      element?.addEventListener('click', (e) => {
+        e.stopImmediatePropagation();
+        setLoading(true);
+        openCodeSandbox(props).finally(() => {
+          setLoading(false);
+        });
       })
     }
   }, [div])

@@ -1,0 +1,22 @@
+{
+  "HTTP request": "HTTP 요청",
+  "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": 
+    "URL에 HTTP 요청을 보냅니다. 상류 노드의 변수를 요청 헤더, 매개변수 및 요청 본문으로 사용할 수 있습니다.",
+  "HTTP method": "HTTP 메서드",
+  "URL": "주소",
+  "Headers": "헤더",
+  "Add request header": "요청 헤더 추가",
+  "Parameters": "매개변수",
+  "Add parameter": "매개변수 추가",
+  "Body": "본문",
+  "Use variable": "변수 사용",
+  "Format": "형식",
+  "Insert": "삽입",
+  "Timeout config": "시간 초과 설정",
+  "ms": "밀리초",
+  "Input request data": "요청 데이터 입력",
+  "Only support standard JSON data": "표준 JSON 데이터만 지원합니다",
+  "\"Content-Type\" only support \"application/json\", and no need to specify": 
+    "\"Content-Type\" 헤더는 \"application/json\"만 지원하며 지정할 필요가 없습니다",
+  "Ignore failed request and continue workflow": "실패한 요청을 무시하고 워크플로를 계속합니다"
+}

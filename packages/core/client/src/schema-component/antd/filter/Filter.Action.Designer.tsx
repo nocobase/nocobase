@@ -2,12 +2,19 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsItemGroup,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings';
 import { useCompile } from '../../hooks';
 
 export const useFilterableFields = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
   return fields?.filter?.((field) => {
     if (!field.interface) {
@@ -21,51 +28,62 @@ export const useFilterableFields = (collectionName: string) => {
   });
 };
 
-export const FilterActionDesigner = (props) => {
-  const field = useField();
+export const FilterableFieldsSchemaSettingsItem = () => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const fields = useFilterableFields(name);
   const compile = useCompile();
   const { t } = useTranslation();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
+
+  return (
+    <SchemaSettingsItemGroup title={t('Filterable fields')}>
+      {fields.map((field) => {
+        const checked = !nonfilterable.includes(field.name);
+        return (
+          <SchemaSettingsSwitchItem
+            key={field.name}
+            checked={checked}
+            title={compile(field?.uiSchema?.title)}
+            onChange={(value) => {
+              fieldSchema['x-component-props'] = fieldSchema?.['x-component-props'] || {};
+              const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
+              if (!value) {
+                nonfilterable.push(field.name);
+              } else {
+                const index = nonfilterable.indexOf(field.name);
+                nonfilterable.splice(index, 1);
+              }
+              fieldSchema['x-component-props'].nonfilterable = nonfilterable;
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  'x-component-props': {
+                    ...fieldSchema['x-component-props'],
+                  },
+                },
+              });
+              dn.refresh();
+            }}
+          />
+        );
+      })}
+    </SchemaSettingsItemGroup>
+  );
+};
+
+export const FilterActionDesigner = (props) => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+
   return (
     <GeneralSchemaDesigner {...props} disableInitializer>
-      <SchemaSettings.ItemGroup title={t('Filterable fields')}>
-        {fields.map((field) => {
-          const checked = !nonfilterable.includes(field.name);
-          return (
-            <SchemaSettings.SwitchItem
-              key={field.name}
-              checked={checked}
-              title={compile(field?.uiSchema?.title)}
-              onChange={(value) => {
-                fieldSchema['x-component-props'] = fieldSchema?.['x-component-props'] || {};
-                const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
-                if (!value) {
-                  nonfilterable.push(field.name);
-                } else {
-                  const index = nonfilterable.indexOf(field.name);
-                  nonfilterable.splice(index, 1);
-                }
-                fieldSchema['x-component-props'].nonfilterable = nonfilterable;
-                dn.emit('patch', {
-                  schema: {
-                    ['x-uid']: fieldSchema['x-uid'],
-                    'x-component-props': {
-                      ...fieldSchema['x-component-props'],
-                    },
-                  },
-                });
-                dn.refresh();
-              }}
-            />
-          );
-        })}
-      </SchemaSettings.ItemGroup>
-      <SchemaSettings.Divider />
-      <SchemaSettings.ModalItem
+      <FilterableFieldsSchemaSettingsItem />
+      <SchemaSettingsDivider />
+      <SchemaSettingsModalItem
         title={t('Edit button')}
         schema={
           {
@@ -107,8 +125,8 @@ export const FilterActionDesigner = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={(s) => {
           return s['x-component'] === 'Space' || s['x-component'] === 'ActionBar';

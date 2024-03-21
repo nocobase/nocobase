@@ -1,4 +1,4 @@
-FROM node:18-slim as builder
+FROM node:18-bullseye-slim as builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN cd /app \
   && rm -rf nocobase.tar.gz \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
-FROM node:18-slim
+FROM node:18-bullseye-slim
 
 # COPY ./sources.list /etc/apt/sources.list
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
@@ -30,7 +30,6 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && apt-get update && apt-get install -y nginx
 
 RUN rm -rf /etc/nginx/sites-enabled/default
-COPY ./nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
 WORKDIR /app/nocobase
@@ -38,5 +37,7 @@ WORKDIR /app/nocobase
 COPY docker-entrypoint.sh /app/
 # COPY docker-entrypoint.sh /usr/local/bin/
 # ENTRYPOINT ["docker-entrypoint.sh"]
+
+EXPOSE 80/tcp
 
 CMD ["/app/docker-entrypoint.sh"]

@@ -13,6 +13,31 @@ describe('collections', () => {
     await app.destroy();
   });
 
+  test('remove collection with cascade options', async () => {
+    await app
+      .agent()
+      .resource('collections')
+      .create({
+        values: {
+          name: 'test',
+        },
+      });
+    const collection = app.db.getCollection('test');
+    expect(await collection.existsInDb()).toBeTruthy();
+
+    // create a database view for test
+    await app.db.sequelize.query(`
+      CREATE VIEW test_view AS SELECT * FROM ${collection.getTableNameWithSchemaAsString()};
+    `);
+
+    await app.agent().resource('collections').destroy({
+      filterByTk: 'test',
+      cascade: true,
+    });
+
+    expect(await collection.existsInDb()).toBeFalsy();
+  });
+
   test('remove collection 1', async () => {
     await app
       .agent()

@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
-import OIDCPlugin from '../index';
+import { MockServer, createMockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 import { authType } from '../../constants';
 import { OIDCAuth } from '../oidc-auth';
 
@@ -8,18 +8,17 @@ describe('oidc', () => {
   let app: MockServer;
   let db: Database;
   let agent;
+  let authenticator;
 
   beforeAll(async () => {
-    app = mockServer({
-      plugins: ['users', 'auth'],
+    app = await createMockServer({
+      plugins: ['users', 'auth', 'oidc'],
     });
-    app.plugin(OIDCPlugin);
-    await app.loadAndInstall({ clean: true });
     db = app.db;
     agent = app.agent();
 
     const authenticatorRepo = db.getRepository('authenticators');
-    await authenticatorRepo.create({
+    authenticator = await authenticatorRepo.create({
       values: {
         name: 'oidc-auth',
         authType: authType,
@@ -39,18 +38,21 @@ describe('oidc', () => {
     await app.destroy();
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await db.getRepository('users').destroy({
+      truncate: true,
+    });
   });
 
   it('should get auth url', async () => {
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       authorizationUrl: ({ state }) => state,
     } as any);
     const res = await agent.set('X-Authenticator', 'oidc-auth').resource('oidc').getAuthUrl();
     expect(res.body.data).toBeDefined();
-    const search = new URLSearchParams(res.body.data);
+    const search = new URLSearchParams(decodeURIComponent(res.body.data));
     expect(search.get('token')).toBeDefined();
     expect(search.get('name')).toBe('oidc-auth');
     expect(res.headers['set-cookie']).toBeDefined();
@@ -58,9 +60,16 @@ describe('oidc', () => {
     expect(token).toBe(search.get('token'));
   });
 
-  it('should sign in', async () => {
+  it('should not sign in without auto signup', async () => {
+    await authenticator.update({
+      options: {
+        public: {
+          autoSignup: false,
+        },
+      },
+    });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),
@@ -72,15 +81,111 @@ describe('oidc', () => {
     const res = await agent
       .set('X-Authenticator', 'oidc-auth')
       .set('Cookie', ['nocobase_oidc=token'])
-      .resource('auth')
-      .signIn()
-      .send({
-        code: '',
-        state: 'token=token&name=oidc-auth',
-      });
+      .get('/auth:signIn?state=token%3Dtoken&name=oidc-auth');
 
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('should sign in with auto signup', async () => {
+    await authenticator.update({
+      options: {
+        public: {
+          autoSignup: true,
+        },
+      },
+    });
+    agent = app.agent();
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+      callback: (uri, { code }) => ({
+        access_token: 'access_token',
+      }),
+      userinfo: () => ({
+        sub: 'user1',
+      }),
+    } as any);
+
+    const res = await agent
+      .set('X-Authenticator', 'oidc-auth')
+      .set('Cookie', ['nocobase_oidc=token'])
+      .get('/auth:signIn?state=token%3Dtoken&name=oidc-auth');
+    expect(res.statusCode).toBe(200);
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.nickname).toBe('user1');
+  });
+
+  it('should sign in with existed email', async () => {
+    await authenticator.update({
+      options: {
+        oidc: {
+          userBindField: 'email',
+        },
+        public: {
+          autoSignup: false,
+        },
+      },
+    });
+    const user = await db.getRepository('users').create({
+      values: {
+        nickname: 'has-email',
+        email: 'test@nocobase.com',
+      },
+    });
+    agent = app.agent();
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+      callback: (uri, { code }) => ({
+        access_token: 'access_token',
+      }),
+      userinfo: () => ({
+        sub: 'user1',
+        email: 'test@nocobase.com',
+      }),
+    } as any);
+
+    const res = await agent
+      .set('X-Authenticator', 'oidc-auth')
+      .set('Cookie', ['nocobase_oidc=token'])
+      .get('/auth:signIn?state=token%3Dtoken&name=oidc-auth');
+
+    expect(res.body.data.user).toBeDefined();
+    expect(res.body.data.user.id).toBe(user.id);
+  });
+
+  it('should sign in with existed username', async () => {
+    await authenticator.update({
+      options: {
+        oidc: {
+          userBindField: 'username',
+        },
+        public: {
+          autoSignup: false,
+        },
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        nickname: 'has-username',
+        username: 'username',
+      },
+    });
+    agent = app.agent();
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+      callback: (uri, { code }) => ({
+        access_token: 'access_token',
+      }),
+      userinfo: () => ({
+        username: 'username',
+        sub: 'username',
+      }),
+    } as any);
+
+    const res = await agent
+      .set('X-Authenticator', 'oidc-auth')
+      .set('Cookie', ['nocobase_oidc=token'])
+      .get('/auth:signIn?state=token%3Dtoken&name=oidc-auth');
+
+    expect(res.body.data.user).toBeDefined();
+    expect(res.body.data.user.id).toBe(user.id);
   });
 });
 

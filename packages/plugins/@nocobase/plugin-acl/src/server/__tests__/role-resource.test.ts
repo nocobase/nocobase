@@ -136,9 +136,10 @@ describe('role resource api', () => {
     expect(response.statusCode).toEqual(200);
 
     // get collections list
-    response = await adminAgent.resource('roles.collections').list({
+    response = await adminAgent.resource('roles.dataSourcesCollections').list({
       associatedIndex: role.get('name') as string,
       filter: {
+        dataSourceKey: 'main',
         name: 'c1',
       },
     });

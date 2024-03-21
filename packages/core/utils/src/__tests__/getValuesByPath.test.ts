@@ -19,6 +19,14 @@ describe('getValuesByPath', () => {
     expect(result).toEqual([1, 2]);
   });
 
+  it('should return an array of values', () => {
+    const obj = {
+      a: [{ b: 1 }],
+    };
+    const result = getValuesByPath(obj, 'a.b');
+    expect(result).toEqual([1]);
+  });
+
   it('nested array', () => {
     const obj = {
       a: [{ b: [{ c: 1 }, { c: 2 }] }, { b: [{ c: 3 }, { c: 4 }] }],
@@ -85,5 +93,11 @@ describe('getValuesByPath', () => {
     const arr = [{ b: 1 }, { b: 2 }];
     const result = getValuesByPath(arr, 'b', []);
     expect(result).toEqual([1, 2]);
+  });
+
+  it('should return 0 when the initial value is 0', () => {
+    const obj = { a: 0 };
+    const result = getValuesByPath(obj, 'a');
+    expect(result).toBe(0);
   });
 });

@@ -1,7 +1,6 @@
 import { Repository } from '@nocobase/database';
 import lodash from 'lodash';
 import { PluginManager } from './plugin-manager';
-import { PluginData } from './types';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -48,13 +47,13 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
-  async upgrade(name: string, data: PluginData) {
-    return this.update({
-      filter: {
-        name,
-      },
-      values: data,
-    });
+  async updateVersions() {
+    const items = await this.find();
+    for (const item of items) {
+      const json = await PluginManager.getPackageJson(item.packageName);
+      item.set('version', json.version);
+      await item.save();
+    }
   }
 
   async disable(name: string | string[]) {
@@ -78,33 +77,17 @@ export class PluginManagerRepository extends Repository {
   }
 
   async getItems() {
-    try {
-      // sort plugins by id
-      return await this.find({
-        sort: 'id',
-      });
-    } catch (error) {
-      await this.database.migrator.up();
-      await this.collection.sync({
-        alter: {
-          drop: false,
-        },
-        force: false,
-      });
-      return await this.find({
-        sort: 'id',
-      });
+    const exists = await this.collection.existsInDb();
+    if (!exists) {
+      return [];
     }
+    return await this.find({
+      sort: 'id',
+    });
   }
 
   async init() {
-    const exists = await this.collection.existsInDb();
-    if (!exists) {
-      return;
-    }
-
     const items = await this.getItems();
-
     for (const item of items) {
       const { options, ...others } = item.toJSON();
       await this.pm.add(item.get('name'), {

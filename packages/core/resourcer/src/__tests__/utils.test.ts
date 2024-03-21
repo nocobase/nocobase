@@ -164,6 +164,19 @@ describe('utils', () => {
       });
     });
 
+    it('decode path', () => {
+      const params = parseRequest({
+        path: '/posts/%E7%9A%84%E6%B3%95%E5%9B%BD%E9%98%9F/comments',
+        method: 'POST',
+      });
+      expect(params).toMatchObject({
+        resourceName: 'comments',
+        associatedName: 'posts',
+        associatedIndex: '的法国队',
+        actionName: 'create',
+      });
+    });
+
     it('store action', () => {
       const params = parseRequest({
         path: '/posts/1/comments',

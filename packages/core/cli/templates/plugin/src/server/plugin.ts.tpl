@@ -1,13 +1,13 @@
-import { InstallOptions, Plugin } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 
 export class {{{pascalCaseName}}}Server extends Plugin {
-  afterAdd() {}
+  async afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() {}
 
   async load() {}
 
-  async install(options?: InstallOptions) {}
+  async install() {}
 
   async afterEnable() {}
 

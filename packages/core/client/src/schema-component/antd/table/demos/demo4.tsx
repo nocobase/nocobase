@@ -2,6 +2,7 @@ import { ISchema, observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   Action,
+  Application,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
@@ -12,6 +13,7 @@ import {
 import React, { createContext, useContext, useState } from 'react';
 
 const DataSourceContext = createContext(null);
+DataSourceContext.displayName = 'DataSourceContext';
 
 const useSelectedRowKeys = () => {
   const ctx = useContext(DataSourceContext);
@@ -218,10 +220,16 @@ const DataSourceProvider = observer(
   { displayName: 'DataSourceProvider' },
 );
 
-export default () => {
+const Root = () => {
   return (
     <SchemaComponentProvider scope={{ ds }} components={{ Action, DataSourceProvider, Table, Input }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

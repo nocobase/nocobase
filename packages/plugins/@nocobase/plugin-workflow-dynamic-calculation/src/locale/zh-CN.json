@@ -1,0 +1,12 @@
+{
+  "Expression": "表达式",
+  "Dynamic Calculation": "动态表达式计算",
+  "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "基于计算引擎计算表达式并获取值作为结果。可以在表达式中使用上游节点的变量。表达式是从表达式表中动态获取的。",
+  "Select dynamic expression": "选择动态表达式",
+  "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.": "从上游节点中选择查询出来的动态表达式。你需要从动态表达式类型的数据表中查询。",
+  "Variable datasource": "变量数据源",
+  "Dynamic expression": "动态表达式",
+  "Used to store expressions for use in workflows so that different expressions can be called for different data.": "用于存储表达式，在工作流中使用，以便针对不同的数据调用不同的表达式。",
+  "Unconfigured": "未配置",
+  "Calculation result": "运算结果"
+}

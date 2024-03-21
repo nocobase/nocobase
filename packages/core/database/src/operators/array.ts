@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { Op, Sequelize } from 'sequelize';
 import { isMySQL, isPg } from './utils';
 
@@ -87,6 +88,7 @@ export default {
 
   $anyOf(value, ctx) {
     const fieldName = getFieldName(ctx);
+    value = _.castArray(value);
 
     if (isPg(ctx)) {
       const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
@@ -111,6 +113,7 @@ export default {
 
   $noneOf(value, ctx) {
     let where;
+    value = _.castArray(value);
 
     if (isPg(ctx)) {
       const fieldName = getFieldName(ctx);

@@ -1,7 +1,2 @@
-node_modules
-*.log
-docs
-__tests__
-tsconfig.json
-src
-.fatherrc.ts
+/node_modules
+/src

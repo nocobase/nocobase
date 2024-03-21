@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Context } from '@nocobase/actions';
 import { Auth, AuthManager } from '@nocobase/auth';
 import Database, { Model } from '@nocobase/database';
@@ -58,7 +59,7 @@ describe('auth-manager', () => {
       app = mockServer({
         registerActions: true,
         acl: true,
-        plugins: ['users', 'auth', 'acl'],
+        plugins: ['users', 'auth', 'acl', 'data-source-manager'],
       });
 
       // app.plugin(ApiKeysPlugin);
@@ -72,8 +73,8 @@ describe('auth-manager', () => {
     });
 
     describe('blacklist', () => {
-      const hasFn = jest.fn();
-      const addFn = jest.fn();
+      const hasFn = vi.fn();
+      const addFn = vi.fn();
       beforeEach(async () => {
         await agent.login(1);
         app.authManager.setTokenBlacklistService({

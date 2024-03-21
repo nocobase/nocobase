@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { dateFormatFn } from '../actions/formatter';
 
 describe('formatter', () => {
@@ -6,12 +7,12 @@ describe('formatter', () => {
   describe('dateFormatFn', () => {
     it('should return correct format for sqlite', () => {
       const sequelize = {
-        fn: jest.fn().mockImplementation((fn: string, format: string, field: string) => ({
+        fn: vi.fn().mockImplementation((fn: string, format: string, field: string) => ({
           fn,
           format,
           field,
         })),
-        col: jest.fn().mockImplementation((field: string) => field),
+        col: vi.fn().mockImplementation((field: string) => field),
       };
       const dialect = 'sqlite';
       const result = dateFormatFn(sequelize, dialect, field, format);
@@ -20,12 +21,12 @@ describe('formatter', () => {
 
     it('should return correct format for mysql', () => {
       const sequelize = {
-        fn: jest.fn().mockImplementation((fn: string, field: string, format: string) => ({
+        fn: vi.fn().mockImplementation((fn: string, field: string, format: string) => ({
           fn,
           format,
           field,
         })),
-        col: jest.fn().mockImplementation((field: string) => field),
+        col: vi.fn().mockImplementation((field: string) => field),
       };
       const dialect = 'mysql';
       const result = dateFormatFn(sequelize, dialect, field, format);
@@ -34,12 +35,12 @@ describe('formatter', () => {
 
     it('should return correct format for postgres', () => {
       const sequelize = {
-        fn: jest.fn().mockImplementation((fn: string, field: string, format: string) => ({
+        fn: vi.fn().mockImplementation((fn: string, field: string, format: string) => ({
           fn,
           format,
           field,
         })),
-        col: jest.fn().mockImplementation((field: string) => field),
+        col: vi.fn().mockImplementation((field: string) => field),
       };
       const dialect = 'postgres';
       const result = dateFormatFn(sequelize, dialect, field, format);

@@ -22,6 +22,12 @@ describe('number value parser', () => {
     expect(parser.errors.length === 0).toBeTruthy();
     expectValue('22.5507%').toBe(0.225507);
     expect(parser.errors.length === 0).toBeTruthy();
+    expectValue('2,122,121,122').toBe(2122121122);
+    expect(parser.errors.length === 0).toBeTruthy();
+    expectValue('2,122,121,122.5507').toBe(2122121122.5507);
+    expect(parser.errors.length === 0).toBeTruthy();
+    expectValue('11,122.5507%').toBe(111.225507);
+    expect(parser.errors.length === 0).toBeTruthy();
   });
 
   it('should be null', () => {

@@ -6,6 +6,7 @@ describe('formula field', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.registerFieldTypes({
       formula: FormulaField,
     });

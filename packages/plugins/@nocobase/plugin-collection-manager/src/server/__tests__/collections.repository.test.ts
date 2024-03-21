@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
+import Database, { Collection as DBCollection, CollectionGroupManager, HasManyRepository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
 import CollectionManagerPlugin, { CollectionRepository } from '../index';
@@ -18,6 +18,329 @@ describe('collections repository', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should load through table with foreignKey', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'postsTags',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'integer',
+            name: 'postId',
+            primaryKey: true,
+          },
+          {
+            type: 'integer',
+            name: 'tagId',
+            primaryKey: true,
+          },
+          {
+            type: 'boolean',
+            name: 'default',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsToMany',
+            target: 'tags',
+            name: 'tags',
+            through: 'postsTags',
+            foreignKey: 'postId',
+            otherKey: 'tagId',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await Collection.repository.create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsToMany',
+            target: 'posts',
+            name: 'posts',
+            through: 'postsTags',
+            foreignKey: 'tagId',
+            otherKey: 'postId',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const postsCollection = db.getCollection('posts');
+
+    const p1 = await postsCollection.repository.create({
+      values: {
+        title: 'test',
+        tags: [
+          {
+            name: 't1',
+          },
+          {
+            name: 't2',
+          },
+        ],
+      },
+    });
+
+    const throughCollection = db.getCollection('postsTags');
+    console.log(throughCollection.model.primaryKeyAttributes);
+
+    await throughCollection.repository.update({
+      filter: {
+        postId: p1.get('id'),
+      },
+      values: {
+        default: true,
+      },
+    });
+  });
+
+  it('should create collection with optional duplicator option', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'tests',
+        dumpRules: {
+          group: 'business',
+        },
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const testsCollection = db.getCollection('tests');
+
+    const duplicator = CollectionGroupManager.unifyDumpRules(testsCollection.options.dumpRules);
+    expect(duplicator.group).toEqual('business');
+  });
+
+  it('should create collection with required duplicator option', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'tests',
+        dumpRules: {
+          group: 'required',
+        },
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const testsCollection = db.getCollection('tests');
+
+    const duplicator = CollectionGroupManager.unifyDumpRules(testsCollection.options.dumpRules);
+    expect(duplicator.group).toEqual('required');
+  });
+
+  it('should create collection with sortable option', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+        sortable: true,
+      },
+      context: {},
+    });
+
+    expect(db.getCollection('posts').getField('sort')).toBeTruthy();
+  });
+
+  it('should create through table when pending fields', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsToMany',
+            target: 'tags',
+            name: 'tags',
+            through: 'posts_tags',
+            foreignKey: 'post_id',
+            otherKey: 'tag_id',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const postsCollection = db.getCollection('posts');
+    expect(postsCollection).toBeTruthy();
+
+    await Collection.repository.create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const throughCollection = db.getCollection('posts_tags');
+    expect(throughCollection).toBeTruthy();
+
+    expect(await throughCollection.existsInDb()).toBeTruthy();
+    const rawAttribute = throughCollection.model.rawAttributes['tag_id'].field;
+    const columns = await db.sequelize.getQueryInterface().describeTable(throughCollection.getTableNameWithSchema());
+    expect(columns[rawAttribute]).toBeDefined();
+  });
+
+  it('should create collections with array', async () => {
+    await Collection.repository.create({
+      values: [
+        {
+          name: 'users',
+          fields: [
+            {
+              type: 'string',
+              name: 'username',
+            },
+            {
+              type: 'hasMany',
+              target: 'posts',
+              name: 'posts',
+            },
+            {
+              type: 'hasOne',
+              target: 'profiles',
+              name: 'profile',
+            },
+          ],
+        },
+        {
+          name: 'profiles',
+          fields: [
+            {
+              type: 'string',
+              name: 'nickname',
+            },
+            {
+              type: 'belongsTo',
+              target: 'users',
+              name: 'user',
+            },
+          ],
+        },
+        {
+          name: 'posts',
+          fields: [
+            {
+              type: 'string',
+              name: 'title',
+            },
+            {
+              type: 'belongsToMany',
+              target: 'tags',
+              name: 'tags',
+              through: 'posts_tags',
+              foreignKey: 'post_id',
+              otherKey: 'tag_id',
+              sourceKey: 'id',
+              targetKey: 'id',
+            },
+          ],
+        },
+        {
+          name: 'tags',
+          fields: [
+            {
+              type: 'string',
+              name: 'name',
+            },
+            {
+              type: 'belongsToMany',
+              target: 'posts',
+              name: 'posts',
+              through: 'posts_tags',
+              foreignKey: 'tag_id',
+              otherKey: 'post_id',
+              sourceKey: 'id',
+              targetKey: 'id',
+            },
+          ],
+        },
+      ],
+      context: {},
+    });
+
+    const postsCollection = db.getCollection('posts');
+    expect(postsCollection).toBeTruthy();
+
+    const tagsCollection = db.getCollection('tags');
+    expect(tagsCollection).toBeTruthy();
+
+    const usersCollection = db.getCollection('users');
+    expect(usersCollection).toBeTruthy();
+
+    const profilesCollection = db.getCollection('profiles');
+    expect(profilesCollection).toBeTruthy();
+
+    await usersCollection.repository.create({
+      values: {
+        username: 'admin',
+        profile: {
+          nickname: '管理员',
+        },
+        posts: [
+          {
+            title: 'test',
+            tags: [
+              {
+                name: 'test',
+              },
+            ],
+          },
+        ],
+      },
+    });
   });
 
   it('should create collection with description', async () => {
@@ -423,7 +746,7 @@ describe('collections repository', () => {
         name: 'c1Z',
         fields: [
           {
-            type: 'string',
+            type: 'integer',
             name: 'a',
           },
         ],
@@ -486,7 +809,7 @@ describe('collections repository', () => {
     await Field.repository.create({
       values: {
         name: 'a',
-        type: 'string',
+        type: 'integer',
         collectionName: 'c1Z',
       },
       context: {},

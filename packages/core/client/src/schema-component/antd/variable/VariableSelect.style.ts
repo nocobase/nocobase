@@ -9,7 +9,7 @@ const useStyles = genStyleHook('nb-variable-select', (token) => {
       '.ant-select.ant-cascader': {
         position: 'absolute',
         top: '-1px',
-        left: '-1px',
+        right: '-1px',
         minWidth: 'auto',
         width: 'calc(100% + 2px)',
         height: 'calc(100% + 2px)',

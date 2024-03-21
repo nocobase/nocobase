@@ -1,10 +1,10 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
-import { SortableItem, useCollection, useCompile, useDesignable, useDesigner } from '../../../';
+import { SortableItem, useCollection_deprecated, useCompile, useDesignable, useDesigner } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 
 export const useColumnSchema = () => {
-  const { getField } = useCollection();
+  const { getField } = useCollection_deprecated();
   const compile = useCompile();
   const columnSchema = useFieldSchema();
   const fieldSchema = columnSchema.reduceProperties((buf, s) => {

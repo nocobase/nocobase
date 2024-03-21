@@ -1,0 +1,11 @@
+{
+  "Parallel branch": "병렬 분기",
+  "Run multiple branch processes in parallel.": "여러 분기 프로세스를 병렬로 실행합니다.",
+  "Add branch": "분기 추가",
+  "All succeeded": "모두 성공",
+  "Any succeeded": "어떤 것이든 성공",
+  "Any succeeded or failed": "어떤 것이든 성공 또는 실패",
+  "Continue after all branches succeeded": "모든 분기가 성공한 후 계속",
+  "Continue after any branch succeeded": "어떤 분기가든 성공한 후 계속",
+  "Continue after any branch succeeded, or exit after any branch failed.": "어떤 분기든 성공하면 계속 진행하거나 어떤 분기든 실패하면 종료합니다."
+}

@@ -1,5 +1,5 @@
-import { Provider } from '.';
 import * as tencentcloud from 'tencentcloud-sdk-nodejs';
+import { Provider } from './Provider';
 
 // 导入对应产品模块的client models。
 const smsClient = tencentcloud.sms.v20210111.Client;
@@ -44,6 +44,7 @@ export default class extends Provider {
         return result.RequestId;
       case 'InvalidParameterValue.IncorrectPhoneNumber':
         error.name = 'InvalidReceiver';
+        break;
       case 'LimitExceeded.DeliveryFrequencyLimit':
       case 'LimitExceeded.PhoneNumberDailyLimit':
       case 'LimitExceeded.PhoneNumberThirtySecondLimit':

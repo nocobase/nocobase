@@ -1,4 +1,5 @@
-import { css, useAPIClient, useRequest } from '@nocobase/client';
+import { css, useAPIClient, useApp, useRequest } from '@nocobase/client';
+import { getSubAppName } from '@nocobase/sdk';
 import { Select, Space, Spin, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-bundle';
@@ -12,10 +13,14 @@ const Documentation = () => {
   const apiClient = useAPIClient();
   const { t } = useTranslation();
   const swaggerUIRef = useRef();
-
   const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
+  const app = useApp();
   const requestInterceptor = (req) => {
     if (!req.headers['Authorization']) {
+      const appName = getSubAppName(app.getPublicPath());
+      if (appName) {
+        req.headers['X-App'] = appName;
+      }
       req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
     }
     return req;

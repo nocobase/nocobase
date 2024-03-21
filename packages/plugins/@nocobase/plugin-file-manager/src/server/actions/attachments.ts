@@ -78,6 +78,7 @@ async function multipart(ctx: Context, next: Next) {
     if (err.name === 'MulterError') {
       return ctx.throw(400, err);
     }
+    ctx.logger.error(err);
     return ctx.throw(500);
   }
 

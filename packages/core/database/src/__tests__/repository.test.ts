@@ -1,7 +1,8 @@
+import { Repository } from '@nocobase/database';
+import { vi } from 'vitest';
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
-import { Repository } from '@nocobase/database';
 
 describe('repository', () => {
   test('value to filter', async () => {
@@ -30,6 +31,7 @@ describe('find by targetKey', function () {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -81,6 +83,7 @@ describe('repository.find', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
       fields: [
@@ -118,6 +121,7 @@ describe('repository.find', () => {
     const tags = await Tag.repository.create({
       values: [{ name: 't1' }, { name: 't2' }],
     });
+
     await User.repository.createMany({
       records: [
         {
@@ -187,6 +191,39 @@ describe('repository.find', () => {
     await db.close();
   });
 
+  it('should find with filter', async () => {
+    const users = await User.repository.find({
+      filter: {
+        name: 'user1',
+      },
+    });
+
+    expect(users.length).toBe(1);
+  });
+
+  it('should find with where', async () => {
+    const users = await User.repository.find({
+      where: {
+        name: 'user1',
+      },
+    });
+
+    expect(users.length).toBe(1);
+  });
+
+  it('should find with filter and where', async () => {
+    const users = await User.repository.find({
+      filter: {
+        name: 'user1',
+      },
+      where: {
+        name: 'user2',
+      },
+    });
+
+    expect(users.length).toBe(0);
+  });
+
   it('should appends with belongs to association', async () => {
     const posts = await Post.repository.find({
       appends: ['user'],
@@ -244,7 +281,9 @@ describe('repository create with belongs to many', () => {
     await db.clean({ drop: true });
   });
 
-  afterEach(async () => [await db.close()]);
+  afterEach(async () => {
+    await db.close();
+  });
 
   it('should save value at through table', async () => {
     const Product = db.collection({
@@ -316,6 +355,7 @@ describe('repository.create', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
       fields: [
@@ -386,6 +426,8 @@ describe('repository.update', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [
@@ -464,7 +506,7 @@ describe('repository.update', () => {
       name: 'user2',
     });
 
-    const hook = jest.fn();
+    const hook = vi.fn();
     db.on('users.afterUpdate', hook);
 
     await User.repository.update({
@@ -491,7 +533,7 @@ describe('repository.update', () => {
     const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
     const p3 = await Post.repository.create({ values: { name: 'p3' } });
 
-    const hook = jest.fn();
+    const hook = vi.fn();
     db.on('posts.afterUpdate', hook);
 
     await Post.repository.update({
@@ -518,7 +560,7 @@ describe('repository.update', () => {
     const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
     const p3 = await Post.repository.create({ values: { name: 'p3' } });
 
-    const hook = jest.fn();
+    const hook = vi.fn();
     db.on('posts.afterUpdate', hook);
 
     await Post.repository.update({
@@ -608,7 +650,7 @@ describe('repository.update', () => {
       filter: {
         user: {
           id: {
-            $eq: u1.id
+            $eq: u1.id,
           },
         },
       },
@@ -623,9 +665,9 @@ describe('repository.update', () => {
     const updated = await Post.repository.find({
       filter: {
         id: [p1.id, p2.id],
-      }
+      },
     });
-    expect(updated.map(item => item.name)).toEqual(['p1_1', 'p1_1']);
+    expect(updated.map((item) => item.name)).toEqual(['p1_1', 'p1_1']);
   });
 });
 
@@ -637,6 +679,7 @@ describe('repository.destroy', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
       fields: [
@@ -689,6 +732,7 @@ describe('repository.relatedQuery', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
       fields: [

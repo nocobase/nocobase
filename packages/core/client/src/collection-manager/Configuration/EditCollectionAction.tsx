@@ -10,7 +10,7 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
+import { useCollectionManager_deprecated } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 
@@ -79,7 +79,13 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
   const result = useRequest(
-    () => Promise.resolve({ data: { ...omit(record, ['__parent']), category: record?.category.map((v) => v.id) } }),
+    () =>
+      Promise.resolve({
+        data: {
+          ...omit(cloneDeep(record), ['__parent', '__collectionName']),
+          category: record?.category.map((v) => v.id),
+        },
+      }),
     {
       ...options,
       manual: true,
@@ -95,7 +101,7 @@ export const useValuesFromRecord = (options) => {
 };
 
 export const useUpdateCollectionActionAndRefreshCM = (options) => {
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager_deprecated();
   const form = useForm();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
@@ -124,8 +130,8 @@ export const EditCollection = (props) => {
 };
 
 export const EditCollectionAction = (props) => {
-  const { scope, getContainer, item: record, children } = props;
-  const { getTemplate } = useCollectionManager();
+  const { scope, getContainer, item: record, children, ...otherProps } = props;
+  const { getTemplate } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const { t } = useTranslation();
@@ -135,8 +141,9 @@ export const EditCollectionAction = (props) => {
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
+          {...otherProps}
           onClick={async () => {
-            const templateConf = getTemplate(record.template);
+            const templateConf: any = getTemplate(record.template);
             const schema = getSchema(
               {
                 ...templateConf,

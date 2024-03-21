@@ -1,3 +1,4 @@
+import Database from '@nocobase/database';
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -11,31 +12,13 @@ class SubAppPlugin extends Plugin {
     const mainApp = this.options.mainApp;
     const subApp = this.app;
 
-    const sharedCollectionGroups = [
-      'audit-logs',
-      'workflow',
-      'charts',
-      'collection-manager',
-      'file-manager',
-      'graph-collection-manager',
-      'map',
-      'sequence-field',
-      'snapshot-field',
-      'verification',
-      'localization-management',
-    ];
+    const sharedCollections = [];
 
-    const collectionGroups = mainApp.db.collectionGroupManager.getGroups();
-
-    const sharedCollectionGroupsCollections = [];
-
-    for (const group of collectionGroups) {
-      if (sharedCollectionGroups.includes(group.namespace)) {
-        sharedCollectionGroupsCollections.push(...group.collections);
+    for (const collection of (mainApp.db as Database).collections.values()) {
+      if (collection.options.shared) {
+        sharedCollections.push(collection.name);
       }
     }
-
-    const sharedCollections = [...sharedCollectionGroupsCollections.flat(), 'users', 'users_jobs'];
 
     subApp.on('beforeLoadPlugin', (plugin) => {
       if (plugin.name === 'collection-manager') {
@@ -237,7 +220,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     this.app.db.on(`afterRemoveCollection`, (collection) => {
       const subApps = [...AppSupervisor.getInstance().subApps()];
       for (const subApp of subApps) {
-        subApp.db.removeCollection(collection.name);
+        if (subApp.db.hasCollection(collection.name)) {
+          subApp.db.removeCollection(collection.name);
+        }
       }
     });
   }
@@ -250,9 +235,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       return;
     }
 
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
 
     // this.db.addMigrations({
     //   namespace: 'multi-app-share-collection',
@@ -291,7 +274,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         }),
         plugins: plugins.includes('nocobase') ? ['nocobase'] : plugins,
         resourcer: {
-          prefix: '/api',
+          prefix: process.env.API_BASE_PATH,
         },
         logger: {
           ...mainApp.options.logger,

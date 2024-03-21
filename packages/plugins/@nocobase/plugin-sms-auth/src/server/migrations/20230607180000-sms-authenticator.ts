@@ -2,6 +2,7 @@ import { Migration } from '@nocobase/server';
 import { authType } from '../../constants';
 
 export default class AddBasicAuthMigration extends Migration {
+  appVersion = '<0.10.0-alpha.2';
   async up() {
     const SystemSetting = this.context.db.getRepository('systemSettings');
     const setting = await SystemSetting.findOne();

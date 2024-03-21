@@ -4,10 +4,11 @@ import {
   ActionContextProvider,
   RecordProvider,
   css,
-  useCollection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCompile,
   useFilterAPI,
+  useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -15,9 +16,9 @@ import { Button, Space } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
+import { getSource } from '../../utils';
 import { GoogleMapForwardedRefProps, GoogleMapsComponent, OverlayOptions } from './Map';
 import { getIcon } from './utils';
-import { getSource } from '../../utils';
 
 const OVERLAY_KEY = 'google-maps-overlay-id';
 const OVERLAY_SELECtED = 'google-maps-overlay-selected';
@@ -29,9 +30,17 @@ const labelClass = css`
   border: 1px solid #0000f5;
 `;
 
+const pointClass = css`
+  margin-top: -64px;
+  padding: 2px 4px;
+  background: #fff;
+  border: 1px solid #0000f5;
+`;
+
 export const GoogleMapsBlock = (props) => {
-  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
-  const { getPrimaryKey } = useCollection();
+  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
+    useProps(props);
+  const { getPrimaryKey } = useCollection_deprecated();
   const primaryKey = getPrimaryKey();
   const { marker: markerName = 'id' } = fieldNames;
   const [isMapInitialization, setIsMapInitialization] = useState(false);
@@ -47,7 +56,7 @@ export const GoogleMapsBlock = (props) => {
   const overlaysRef = useRef<google.maps.MVCObject[]>([]);
   selectingModeRef.current = selectingMode;
 
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
 
   const setOverlayOptions = (overlay: google.maps.MVCObject, state?: boolean) => {
     const selected = typeof state !== 'undefined' ? !state : overlay.get(OVERLAY_SELECtED);
@@ -151,7 +160,7 @@ export const GoogleMapsBlock = (props) => {
         : fieldNames?.field;
     const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
 
-    const overlays: google.maps.Polygon[] = dataSource
+    const overlays: google.maps.MVCObject[] = dataSource
       .map((item) => {
         const data = getSource(item, fieldNames?.field, cf?.interface);
         if (!data?.length) return [];
@@ -177,7 +186,6 @@ export const GoogleMapsBlock = (props) => {
       .filter(Boolean);
 
     overlaysRef.current = overlays;
-    mapRef.current?.setFitView(overlays);
 
     const events = overlays.map((o: google.maps.MVCObject) => {
       const onClick = (event) => {
@@ -217,9 +225,53 @@ export const GoogleMapsBlock = (props) => {
       return () => o.unbindAll();
     });
 
+    if (collectionField.type === 'point' && lineSort?.length && overlays?.length > 1) {
+      const positions = overlays.map((o: google.maps.Marker) => o.getPosition());
+
+      (overlays[0] as google.maps.Marker).setZIndex(138);
+      (overlays[overlays.length - 1] as google.maps.Marker).setZIndex(138);
+
+      const createText = (start = true) => {
+        if (!mapRef.current?.map) return;
+        return new google.maps.Marker({
+          label: {
+            // direction: 'top',
+            // offset: [0, 0],
+            className: pointClass,
+            fontFamily: 'inherit',
+            fontSize: '13px',
+            color: '#333',
+            text: start ? t('Start point') : t('End point'),
+          },
+          icon: getIcon(defaultImage),
+          position: start ? positions[0] : positions[positions.length - 1],
+          map: mapRef.current.map,
+        });
+      };
+
+      overlays.push(
+        ...[
+          mapRef.current.setOverlay(
+            'lineString',
+            positions.map((p) => [p.lng(), p.lat()]),
+            {
+              strokeColor: '#4e9bff',
+              fillColor: '#4e9bff',
+              strokeWeight: 2,
+              cursor: 'pointer',
+            },
+          ),
+          createText(),
+          createText(false),
+        ].filter(Boolean),
+      );
+    }
+
+    mapRef.current?.setFitView(overlays);
+
     return () => {
       overlays.forEach((ov) => {
-        ov.setMap(null);
+        (ov as google.maps.Polygon).setMap(null);
         ov.unbindAll();
       });
       events.forEach((e) => e());
@@ -308,6 +360,7 @@ export const GoogleMapsBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
+  const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const schema: Schema = useMemo(
     () =>
@@ -323,7 +376,7 @@ const MapBlockDrawer = (props) => {
   return (
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
-        <RecordProvider record={record}>
+        <RecordProvider record={record} parent={parentRecordData}>
           <RecursionField schema={schema} name={schema.name} />
         </RecordProvider>
       </ActionContextProvider>

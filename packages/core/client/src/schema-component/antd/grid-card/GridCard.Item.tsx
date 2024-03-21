@@ -3,6 +3,7 @@ import { ObjectField } from '@formily/core';
 import { useField } from '@formily/react';
 import { Card } from 'antd';
 import React from 'react';
+import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../../../record-provider';
 
 const itemCss = css`
@@ -16,8 +17,11 @@ const itemCss = css`
 
 export const GridCardItem = (props) => {
   const field = useField<ObjectField>();
+  const parentRecordData = useCollectionParentRecordData();
   return (
     <Card
+      role="button"
+      aria-label="grid-card-item"
       className={css`
         height: 100%;
         > .ant-card-body {
@@ -30,7 +34,9 @@ export const GridCardItem = (props) => {
       `}
     >
       <div className={itemCss}>
-        <RecordProvider record={field.value}>{props.children}</RecordProvider>
+        <RecordProvider record={field.value} parent={parentRecordData}>
+          {props.children}
+        </RecordProvider>
       </div>
     </Card>
   );

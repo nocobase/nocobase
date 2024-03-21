@@ -1,13 +1,15 @@
-import fs from 'fs-extra';
-import chalk from 'chalk';
 import ncc from '@vercel/ncc';
-import path from 'path';
 import react from '@vitejs/plugin-react';
+import chalk from 'chalk';
+import fg from 'fast-glob';
+import fs from 'fs-extra';
+import path from 'path';
 import { build as tsupBuild } from 'tsup';
 import { build as viteBuild } from 'vite';
-import fg from 'fast-glob';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
+import { EsbuildSupportExts, globExcludeFiles } from './constant';
+import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
   buildCheck,
   checkFileSize,
@@ -18,8 +20,6 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
-import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, UserConfig, getPackageJson } from './utils';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
@@ -34,6 +34,7 @@ const external = [
   '@nocobase/cache',
   '@nocobase/client',
   '@nocobase/database',
+  '@nocobase/data-source-manager',
   '@nocobase/evaluators',
   '@nocobase/logger',
   '@nocobase/resourcer',
@@ -127,14 +128,22 @@ const pluginPrefix = (
 
 const target_dir = 'dist';
 
-export function deleteJsFiles(cwd: string, log: PkgLog) {
-  log('delete babel js files');
-  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts', '!node_modules'], {
+export function deleteServerFiles(cwd: string, log: PkgLog) {
+  log('delete server files');
+  const files = fg.globSync(['*'], {
     cwd: path.join(cwd, target_dir),
     absolute: true,
+    deep: 1,
+    onlyFiles: true,
   });
-  jsFiles.forEach((item) => {
-    fs.unlinkSync(item);
+  const dirs = fg.globSync(['*', '!client', '!node_modules'], {
+    cwd: path.join(cwd, target_dir),
+    absolute: true,
+    deep: 1,
+    onlyDirectories: true,
+  });
+  [...files, ...dirs].forEach((item) => {
+    fs.removeSync(item);
   });
 }
 
@@ -255,6 +264,8 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
     log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
   }
 
+  deleteServerFiles(cwd, log);
+
   await tsupBuild(userConfig.modifyTsupConfig({
     entry: serverFiles,
     splitting: false,
@@ -300,13 +311,15 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
   const outputFileName = 'index.js';
 
   await viteBuild(userConfig.modifyViteConfig({
-    mode: 'production',
+    mode: process.env.NODE_ENV || 'production',
     define: {
-      'process.env.NODE_ENV': JSON.stringify('production'),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+      'process.env.__TEST__': false,
+      'process.env.__E2E__': process.env.__E2E__ ? true : false,
     },
     logLevel: 'warn',
     build: {
-      minify: true,
+      minify: process.env.NODE_ENV === 'production',
       outDir,
       cssCodeSplit: false,
       emptyOutDir: true,

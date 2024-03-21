@@ -7,7 +7,7 @@ const deps: Record<string, string> = {
 
   '@formily/antd-v5': '1.x',
   jsonwebtoken: '8.x',
-  'cache-manager': '4.x',
+  'cache-manager': '5.x',
   sequelize: '6.x',
   umzug: '3.x',
   'async-mutex': '0.3.x',

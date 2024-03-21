@@ -78,10 +78,21 @@ async function createDevPluginSymLink(pluginName) {
     if (await fsExists(link)) {
       await unlink(link);
     }
-    await symlink(resolve(packagePluginsPath, pluginName), link);
+    await symlink(resolve(packagePluginsPath, pluginName), link, 'dir');
   } catch (error) {
     console.error(error);
   }
 }
 
 exports.createDevPluginSymLink = createDevPluginSymLink;
+
+async function createDevPluginsSymlink() {
+  const storagePluginsPath = resolve(process.cwd(), 'packages/plugins');
+  if (!(await fsExists(storagePluginsPath))) {
+    return;
+  }
+  const pluginNames = await getStoragePluginNames(storagePluginsPath);
+  await Promise.all(pluginNames.map((pluginName) => createDevPluginSymLink(pluginName)));
+}
+
+exports.createDevPluginsSymlink = createDevPluginsSymlink;

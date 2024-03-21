@@ -1,9 +1,9 @@
 import { ArrayField as ArrayFieldModel } from '@formily/core';
 import { ObjectField, observer, useField } from '@formily/react';
 import React from 'react';
-import { RemoveConditionContext } from './context';
 import { FilterGroup } from './FilterGroup';
 import { FilterItem } from './FilterItem';
+import { RemoveConditionContext } from './context';
 
 export const FilterItems = observer(
   (props) => {

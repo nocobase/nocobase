@@ -71,6 +71,7 @@ describe('create with belongsToMany', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     Post = db.collection({
       name: 'posts',
       fields: [

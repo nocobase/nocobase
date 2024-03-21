@@ -1,15 +1,15 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
-export const attachment: IField = {
-  name: 'attachment',
-  type: 'object',
-  group: 'media',
-  title: `{{t("Attachment", { ns: "${NAMESPACE}" })}}`,
-  isAssociation: true,
-  default: {
+export class AttachmentFieldInterface extends CollectionFieldInterface {
+  name = 'attachment';
+  type = 'object';
+  group = 'media';
+  title = `{{t("Attachment", { ns: "${NAMESPACE}" })}}`;
+  isAssociation = true;
+  default = {
     type: 'belongsToMany',
     target: 'attachments',
     // name,
@@ -19,8 +19,8 @@ export const attachment: IField = {
       'x-component': 'Upload.Attachment',
       'x-component-props': {},
     },
-  },
-  availableTypes: ['belongsToMany'],
+  };
+  availableTypes = ['belongsToMany'];
   schemaInitialize(schema: ISchema, { block, field }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
@@ -33,8 +33,8 @@ export const attachment: IField = {
     schema['x-component-props']['action'] = `${field.target}:create${
       field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
     }`;
-  },
-  initialize: (values: any) => {
+  }
+  initialize(values: any) {
     if (!values.through) {
       values.through = `t_${uid()}`;
     }
@@ -50,8 +50,8 @@ export const attachment: IField = {
     if (!values.targetKey) {
       values.targetKey = 'id';
     }
-  },
-  properties: {
+  }
+  properties = {
     ...interfacesProperties.defaultProps,
     'uiSchema.x-component-props.accept': {
       type: 'string',
@@ -88,8 +88,8 @@ export const attachment: IField = {
         },
       },
     },
-  },
-  filterable: {
+  };
+  filterable = {
     children: [
       {
         name: 'id',
@@ -115,5 +115,5 @@ export const attachment: IField = {
         },
       },
     ],
-  },
-};
+  };
+}

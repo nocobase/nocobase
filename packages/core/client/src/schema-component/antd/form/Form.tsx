@@ -6,8 +6,13 @@ import { ConfigProvider, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
-import { useCollection } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useCollection_deprecated } from '../../../collection-manager';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsRemove,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
 type Opts = Options<any, any> & { uid?: string };
@@ -82,6 +87,7 @@ const useDefaultValues = (opts: any = {}, props: FormProps = {}) => {
 };
 
 const FormBlockContext = createContext<any>(null);
+FormBlockContext.displayName = 'FormBlockContext';
 
 export const Form: React.FC<FormProps> & { Designer?: any } = observer(
   (props) => {
@@ -116,13 +122,13 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer(
 );
 
 Form.Designer = function Designer() {
-  const { name, title } = useCollection();
+  const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaSettings.Template componentName={'Form'} collectionName={name} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsTemplate componentName={'Form'} collectionName={name} />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

@@ -1,5 +1,8 @@
 import { Context, Next, DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/actions';
+import { Cache } from '@nocobase/cache';
 import { Database, Model, Op } from '@nocobase/database';
+import { PluginManager } from '@nocobase/server';
+import { EXTEND_MODULES } from '../constans';
 
 const appendTranslations = async (db: Database, rows: Model[], locale: string): Promise<any[]> => {
   const texts = rows || [];
@@ -27,24 +30,24 @@ const appendTranslations = async (db: Database, rows: Model[], locale: string): 
 };
 
 const listText = async (db: Database, params: any): Promise<[any[], number]> => {
-  const { keyword, hasTranslation, locale, options } = params;
+  const { module, keyword, hasTranslation, locale, options } = params;
+  if (module) {
+    options['filter'] = { module: `resources.${module}` };
+  }
   if (keyword || !hasTranslation) {
     options['include'] = [{ association: 'translations', where: { locale }, required: false }];
     if (!hasTranslation) {
       if (keyword) {
-        options['where'] = {
-          [Op.and]: [
-            { text: { [Op.like]: `%${keyword}%` } },
-            {
-              '$translations.id$': null,
-            },
-          ],
-        };
-      } else {
-        options['where'] = {
-          '$translations.id$': null,
+        options['filter'] = {
+          ...options['filter'],
+          text: {
+            $includes: keyword,
+          },
         };
       }
+      options['where'] = {
+        '$translations.id$': null,
+      };
     } else {
       options['where'] = {
         [Op.or]: [
@@ -67,19 +70,45 @@ const list = async (ctx: Context, next: Next) => {
   page = parseInt(String(page));
   pageSize = parseInt(String(pageSize));
   hasTranslation = hasTranslation === 'true' || hasTranslation === undefined;
-  const { keyword } = ctx.action.params;
+  const { keyword, module } = ctx.action.params;
   const options = {
     context: ctx,
     offset: (page - 1) * pageSize,
     limit: pageSize,
   };
-  const [rows, count] = await listText(ctx.db, { keyword, hasTranslation, locale, options });
+  const [rows, count] = await listText(ctx.db, { module, keyword, hasTranslation, locale, options });
+
+  // append plugin displayName
+  const cache = ctx.app.cache as Cache;
+  const pm = ctx.app.pm as PluginManager;
+  const plugins = await cache.wrap(`lm-plugins:${locale}`, () => pm.list({ locale }));
+  const modules = [
+    ...EXTEND_MODULES,
+    ...plugins.map((plugin) => ({
+      value: plugin.alias || plugin.name,
+      label: plugin.displayName,
+    })),
+  ];
+  for (const row of rows) {
+    const moduleName = (row.get('module') as string).replace('resources.', '');
+    const module = modules.find((module) => module.value === moduleName);
+    if (module) {
+      row.set('moduleTitle', module.label, { raw: true });
+    }
+  }
   ctx.body = {
     count,
     rows,
     page,
     pageSize,
     totalPage: Math.ceil(count / pageSize),
+    modules: [
+      ...EXTEND_MODULES,
+      ...plugins.map((plugin) => ({
+        value: plugin.alias || plugin.name,
+        label: plugin.displayName,
+      })),
+    ],
   };
   await next();
 };

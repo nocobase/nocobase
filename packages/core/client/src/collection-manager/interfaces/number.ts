@@ -1,30 +1,28 @@
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
 
-export const number: IField = {
-  name: 'number',
-  type: 'object',
-  group: 'basic',
-  order: 7,
-  title: '{{t("Number")}}',
-  sortable: true,
-  default: {
+export class NumberFieldInterface extends CollectionFieldInterface {
+  name = 'number';
+  type = 'object';
+  group = 'basic';
+  order = 7;
+  title = '{{t("Number")}}';
+  sortable = true;
+  default = {
     type: 'double',
-    // name,
     uiSchema: {
       type: 'number',
-      // title,
       'x-component': 'InputNumber',
       'x-component-props': {
         stringMode: true,
         step: '1',
       },
     },
-  },
-  availableTypes: ['double', 'float'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['double', 'float', 'decimal'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
     unique,
     'uiSchema.x-component-props.step': {
@@ -42,11 +40,11 @@ export const number: IField = {
         { value: '0.00001', label: '1.00000' },
       ],
     },
-  },
-  filterable: {
+  };
+  filterable = {
     operators: operators.number,
-  },
-  titleUsable: true,
+  };
+  titleUsable = true;
   validateSchema(fieldSchema) {
     return {
       maximum: {
@@ -112,5 +110,5 @@ export const number: IField = {
         },
       },
     };
-  },
-};
+  }
+}

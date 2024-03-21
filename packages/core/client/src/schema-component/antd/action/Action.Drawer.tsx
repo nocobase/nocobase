@@ -5,6 +5,7 @@ import React from 'react';
 import { OpenSize } from './';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
+import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ComposedActionDrawer } from './types';
 
 const openSizeWidthMap = new Map<OpenSize, string>([
@@ -25,6 +26,10 @@ export const ActionDrawer: ComposedActionDrawer = observer(
       }
       return buf;
     });
+
+    if (process.env.__E2E__) {
+      useSetAriaLabelForDrawer(visible);
+    }
 
     return (
       <Drawer

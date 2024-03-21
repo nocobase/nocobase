@@ -1,1 +1,1 @@
-export { default, AuthModel } from './server';
+export { AuthModel, BasicAuth, default } from './server';

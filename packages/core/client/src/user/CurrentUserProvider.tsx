@@ -6,6 +6,7 @@ import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useCompile } from '../schema-component';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
+CurrentUserContext.displayName = 'CurrentUserContext';
 
 export const useCurrentUserContext = () => {
   return useContext(CurrentUserContext);
@@ -33,9 +34,11 @@ export const CurrentUserProvider = (props) => {
   const result = useRequest<any>({
     url: 'auth:check',
   });
+
   if (result.loading) {
     return render();
   }
+
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };
 

@@ -43,6 +43,7 @@ function migrateConfig(config): object {
 }
 
 export default class extends Migration {
+  appVersion = '<0.11.0-alpha.2';
   async up() {
     const match = await this.app.version.satisfies('<0.11.0-alpha.2');
     if (!match) {

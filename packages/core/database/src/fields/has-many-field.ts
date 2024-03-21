@@ -98,6 +98,34 @@ export class HasManyField extends RelationField {
     };
   }
 
+  checkAssociationKeys() {
+    let { foreignKey, sourceKey } = this.options;
+
+    if (!sourceKey) {
+      sourceKey = this.collection.model.primaryKeyAttribute;
+    }
+
+    if (!foreignKey) {
+      foreignKey = Utils.camelize([Utils.singularize(this.name), this.collection.model.primaryKeyAttribute].join('_'));
+    }
+
+    const foreignKeyAttribute = this.TargetModel.rawAttributes[foreignKey];
+    const sourceKeyAttribute = this.collection.model.rawAttributes[sourceKey];
+
+    if (!foreignKeyAttribute || !sourceKeyAttribute) {
+      return;
+    }
+
+    const foreignKeyType = foreignKeyAttribute.type.constructor.toString();
+    const sourceKeyType = sourceKeyAttribute.type.constructor.toString();
+
+    if (!this.keyPairsTypeMatched(foreignKeyType, sourceKeyType)) {
+      throw new Error(
+        `Foreign key "${foreignKey}" type "${foreignKeyType}" does not match source key "${sourceKey}" type "${sourceKeyType}" in has many relation "${this.name}" of collection "${this.collection.name}"`,
+      );
+    }
+  }
+
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;
@@ -105,6 +133,8 @@ export class HasManyField extends RelationField {
       database.addPendingField(this);
       return false;
     }
+
+    this.checkAssociationKeys();
 
     if (collection.model.associations[this.name]) {
       delete collection.model.associations[this.name];
@@ -125,6 +155,11 @@ export class HasManyField extends RelationField {
 
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
+    }
+
+    if (!this.options.sourceKey) {
+      // @ts-ignore
+      this.options.sourceKey = association.sourceKey;
     }
 
     try {
@@ -149,6 +184,20 @@ export class HasManyField extends RelationField {
     }
 
     this.database.referenceMap.addReference(this.reference(association));
+
+    // add sort field if association is sortable
+    if (this.options.sortable) {
+      const targetCollection = database.modelCollection.get(this.TargetModel);
+      const sortFieldName = `${this.options.foreignKey}Sort`;
+
+      targetCollection.setField(sortFieldName, {
+        type: 'sort',
+        hidden: true,
+        scopeKey: this.options.foreignKey,
+      });
+
+      this.options.sortBy = sortFieldName;
+    }
 
     return true;
   }

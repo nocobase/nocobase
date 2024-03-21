@@ -1,14 +1,15 @@
-import { CollectionOptions } from '@nocobase/client';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'localization.localization',
-  duplicator: 'optional',
+export default defineCollection({
+  dumpRules: {
+    group: 'required',
+  },
   name: 'localizationTexts',
-  title: '{{t("Localization Texts")}}',
   model: 'LocalizationTextModel',
   createdBy: true,
   updatedBy: true,
   logging: true,
+  shared: true,
   fields: [
     {
       name: 'id',
@@ -61,4 +62,4 @@ export default {
       fields: ['batch'],
     },
   ],
-} as CollectionOptions;
+});

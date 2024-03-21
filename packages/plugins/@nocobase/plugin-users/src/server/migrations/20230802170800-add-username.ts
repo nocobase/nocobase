@@ -1,11 +1,8 @@
 import { Migration } from '@nocobase/server';
 
 export default class AddUserNameMigration extends Migration {
+  appVersion = '<0.13.0-alpha.1';
   async up() {
-    const match = await this.app.version.satisfies('<=0.12.0-alpha.4');
-    if (!match) {
-      return;
-    }
     const Field = this.context.db.getRepository('fields');
     const existed = await Field.count({
       filter: {
@@ -29,11 +26,7 @@ export default class AddUserNameMigration extends Migration {
             required: true,
           },
         },
-        // NOTE: to trigger hook
-        context: {},
       });
     }
   }
-
-  async down() {}
 }

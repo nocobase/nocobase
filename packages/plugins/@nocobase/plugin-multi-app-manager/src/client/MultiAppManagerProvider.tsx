@@ -1,18 +1,13 @@
-import {
-  Icon,
-  PinnedPluginListProvider,
-  SchemaComponentOptions,
-  SettingsCenterProvider,
-  useRequest,
-} from '@nocobase/client';
+import { Icon, PinnedPluginListProvider, SchemaComponentOptions, useApp, useRequest } from '@nocobase/client';
 import { Button, Dropdown } from 'antd';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AppManager } from './AppManager';
 import { AppNameInput } from './AppNameInput';
+import { useStyles } from './MultiAppManagerProvider.style';
 import { usePluginUtils } from './utils';
 
 const MultiAppManager = () => {
+  const { styles } = useStyles();
   const { data, run } = useRequest<{
     data: any[];
   }>(
@@ -25,9 +20,10 @@ const MultiAppManager = () => {
     },
   );
   const { t } = usePluginUtils();
+  const instance = useApp();
   const items = [
     ...(data?.data || []).map((app) => {
-      let link = `/apps/${app.name}/admin/`;
+      let link = instance.getRouteUrl(`/apps/${app.name}/admin/`);
       if (app.options?.standaloneDeployment && app.cname) {
         link = `//${app.cname}`;
       }
@@ -42,7 +38,9 @@ const MultiAppManager = () => {
     }),
     {
       key: '.manager',
-      label: <Link to="/admin/settings/multi-app-manager/applications">{t('Manage applications')}</Link>,
+      label: (
+        <Link to={instance.pluginSettingsManager.getRoutePath('multi-app-manager')}>{t('Manage applications')}</Link>
+      ),
     },
   ];
   return (
@@ -52,41 +50,19 @@ const MultiAppManager = () => {
       }}
       menu={{ items }}
     >
-      <Button title={'Apps'} icon={<Icon type={'AppstoreOutlined'} />} />
+      <Button className={styles.button} title={'Apps'} icon={<Icon type={'AppstoreOutlined'} />} />
     </Dropdown>
   );
 };
 
 export const MultiAppManagerProvider = (props) => {
-  const { t } = usePluginUtils();
   return (
     <PinnedPluginListProvider
       items={{
         am: { order: 201, component: 'MultiAppManager', pin: true },
       }}
     >
-      <SchemaComponentOptions components={{ MultiAppManager, AppNameInput }}>
-        <SettingsCenterProvider
-          settings={{
-            'multi-app-manager': {
-              title: t('Multi-app manager'),
-              icon: 'AppstoreOutlined',
-              tabs: {
-                applications: {
-                  title: t('Applications'),
-                  component: () => <AppManager />,
-                },
-                // settings: {
-                //   title: 'Settings',
-                //   component: () => <Settings />,
-                // },
-              },
-            },
-          }}
-        >
-          {props.children}
-        </SettingsCenterProvider>
-      </SchemaComponentOptions>
+      <SchemaComponentOptions components={{ MultiAppManager, AppNameInput }}>{props.children}</SchemaComponentOptions>
     </PinnedPluginListProvider>
   );
 };

@@ -1,16 +1,15 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'snapshot-field.snapshot-field',
-  duplicator: 'required',
+export default defineCollection({
+  dumpRules: 'required',
   name: 'collectionsHistory',
-  title: '数据表历史',
   sortable: 'sort',
   autoGenId: false,
   model: 'CollectionModel',
   repository: 'CollectionRepository',
   timestamps: false,
   filterTargetKey: 'name',
+  shared: true,
   fields: [
     {
       type: 'uid',
@@ -54,4 +53,4 @@ export default {
       sortBy: 'sort',
     },
   ],
-} as CollectionOptions;
+});

@@ -1,14 +1,14 @@
 import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
-import { defaultProps } from './properties';
-import { IField } from './types';
+import { defaultProps, operators } from './properties';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
-export const markdown: IField = {
-  name: 'markdown',
-  type: 'object',
-  title: '{{t("Markdown")}}',
-  group: 'media',
-  default: {
+export class MarkdownFieldInterface extends CollectionFieldInterface {
+  name = 'markdown';
+  type = 'object';
+  title = '{{t("Markdown")}}';
+  group = 'media';
+  default = {
     type: 'text',
     // name,
     uiSchema: {
@@ -16,18 +16,18 @@ export const markdown: IField = {
       // title,
       'x-component': 'Markdown',
     },
-  },
-  availableTypes: ['text'],
-  hasDefaultValue: true,
-  properties: {
+  };
+  availableTypes = ['text', 'json'];
+  hasDefaultValue = true;
+  properties = {
     ...defaultProps,
-  },
+  };
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
-  },
+  }
   validateSchema(fieldSchema) {
     return {
       max: {
@@ -68,5 +68,8 @@ export const markdown: IField = {
         },
       },
     };
-  },
-};
+  }
+  filterable = {
+    operators: operators.string,
+  };
+}

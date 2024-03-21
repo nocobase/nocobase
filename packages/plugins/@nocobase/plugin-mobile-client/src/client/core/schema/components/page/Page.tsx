@@ -1,5 +1,5 @@
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
-import { ActionBarProvider, SortableItem, TabsContextProvider, cx, useDesigner } from '@nocobase/client';
+import { ActionBarProvider, SortableItem, TabsContextProvider, css, cx, useDesigner } from '@nocobase/client';
 import { TabsProps } from 'antd';
 import React, { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -15,7 +15,7 @@ const InternalPage: React.FC = (props) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabsSchema = fieldSchema.properties?.['tabs'];
   const isHeaderEnabled = field.componentProps.headerEnabled !== false;
-  const isTabsEnabled = field.componentProps.tabsEnabled !== false;
+  const isTabsEnabled = field.componentProps.tabsEnabled !== false && tabsSchema;
 
   let pageSchema = findSchema(fieldSchema, 'MPage');
   if (!isTabsEnabled && !pageSchema && tabsSchema) {
@@ -23,7 +23,7 @@ const InternalPage: React.FC = (props) => {
       return k1['x-index'] - k2['x-index'];
     });
     if (schemaArr.length !== 0) {
-      pageSchema = Object.values(schemaArr[0].properties)?.[0];
+      pageSchema = schemaArr[0];
     }
   }
 
@@ -88,7 +88,13 @@ const InternalPage: React.FC = (props) => {
         style={{
           paddingBottom: tabsSchema ? null : 'var(--nb-spacing)',
         }}
-        className={cx('nb-mobile-page-header', styles.mobilePageHeader)}
+        className={cx('nb-mobile-page-header', styles.mobilePageHeader, {
+          [css`
+            & > .ant-nb-grid {
+              margin-top: 14px;
+            }
+          `]: (tabsSchema && !isTabsEnabled) || !tabsSchema,
+        })}
       >
         {isHeaderEnabled && (
           <RecursionField
@@ -106,7 +112,7 @@ const InternalPage: React.FC = (props) => {
           <RecursionField
             schema={isTabsEnabled ? fieldSchema : pageSchema}
             filterProperties={(s) => {
-              return 'Tabs' === s['x-component'] || 'Grid.Row' === s['x-component'];
+              return 'Tabs' === s['x-component'] || 'Grid' === s['x-component'] || 'Grid.Row' === s['x-component'];
             }}
           ></RecursionField>
         </TabsContextProvider>

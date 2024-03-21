@@ -1,5 +1,11 @@
-// 操作记录表格操作配置
-export const AuditLogsTableActionInitializers = {
+import { CompatibleSchemaInitializer } from '@nocobase/client';
+
+/**
+ * @deprecated
+ * 操作记录表格操作配置
+ */
+export const auditLogsTableActionInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'AuditLogsTableActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -9,41 +15,62 @@ export const AuditLogsTableActionInitializers = {
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'filter',
           title: "{{t('Filter')}}",
-          component: 'FilterActionInitializer',
+          Component: 'FilterActionInitializer',
           schema: {
             'x-align': 'left',
           },
         },
         {
-          type: 'item',
+          name: 'refresh',
           title: "{{t('Refresh')}}",
-          component: 'RefreshActionInitializer',
+          Component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
           },
         },
       ],
     },
-    // {
-    //   type: 'divider',
-    // },
-    // {
-    //   type: 'item',
-    //   title: "{{t('Association fields filter')}}",
-    //   component: 'ActionBarAssociationFilterAction',
-    //   schema: {
-    //     'x-align': 'left',
-    //   },
-    //   find: (schema: Schema) => {
-    //     const resultSchema = Object.entries(schema.parent.properties).find(
-    //       ([, value]) => value['x-component'] === 'AssociationFilter',
-    //     )?.[1];
-    //     return resultSchema;
-    //   },
-    // },
   ],
-};
+});
+
+export const auditLogsTableActionInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'auditLogsTable:configureActions',
+    title: "{{t('Configure actions')}}",
+    icon: 'SettingOutlined',
+    style: {
+      marginLeft: 8,
+    },
+    items: [
+      {
+        type: 'itemGroup',
+        title: "{{t('Enable actions')}}",
+        name: 'enableActions',
+        children: [
+          {
+            name: 'filter',
+            title: "{{t('Filter')}}",
+            Component: 'FilterActionInitializer',
+            schema: {
+              'x-align': 'left',
+            },
+          },
+          {
+            name: 'refresh',
+            title: "{{t('Refresh')}}",
+            Component: 'RefreshActionInitializer',
+            schema: {
+              'x-align': 'right',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  auditLogsTableActionInitializers_deprecated,
+);

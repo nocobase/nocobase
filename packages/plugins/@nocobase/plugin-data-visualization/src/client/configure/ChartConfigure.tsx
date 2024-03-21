@@ -13,7 +13,7 @@ import {
 } from '@nocobase/client';
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
-import React, { createContext, useContext, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   useChartFields,
   useCollectionOptions,
@@ -29,32 +29,15 @@ import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererContext } from '../renderer';
 import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
-import { useChartTypes, useCharts, useDefaultChartType } from '../chart/library';
+import { useChartTypes, useCharts, useDefaultChartType } from '../chart/group';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
+import { ChartConfigContext } from './ChartConfigProvider';
 const { Paragraph, Text } = Typography;
-
-export type ChartConfigCurrent = {
-  schema: ISchema;
-  field: any;
-  collection: string;
-  service: any;
-  initialValues?: any;
-  data: any[];
-};
 
 export type SelectedField = {
   field: string | string[];
   alias?: string;
 };
-
-export const ChartConfigContext = createContext<{
-  visible: boolean;
-  setVisible?: (visible: boolean) => void;
-  current?: ChartConfigCurrent;
-  setCurrent?: (current: ChartConfigCurrent) => void;
-}>({
-  visible: true,
-});
 
 export const ChartConfigure: React.FC<{
   insert: (
@@ -150,7 +133,7 @@ export const ChartConfigure: React.FC<{
         }
 
         try {
-          await service.runAsync(collection, form.values.query);
+          await service.runAsync(collection, form.values.query, true);
         } catch (e) {
           console.log(e);
         }
@@ -163,6 +146,15 @@ export const ChartConfigure: React.FC<{
 
   const queryRef = useRef(null);
   const configRef = useRef(null);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+    service.run(collection, field?.decoratorProps?.query, 'configure');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
   return (
     <Modal
       title={t('Configure chart')}
@@ -213,8 +205,10 @@ export const ChartConfigure: React.FC<{
         });
       }}
       width={'95%'}
-      bodyStyle={{
-        background: 'rgba(128, 128, 128, 0.08)',
+      styles={{
+        body: {
+          background: 'rgba(128, 128, 128, 0.08)',
+        },
       }}
     >
       <FormProvider form={form}>
@@ -326,6 +320,7 @@ ChartConfigure.Query = function Query() {
       schema,
       field,
       collection: value,
+      dataSource: current.dataSource,
       service: current.service,
       initialValues: {},
       data: undefined,
@@ -418,25 +413,20 @@ ChartConfigure.Data = function Data() {
   const data = useData(current?.data);
   const error = service?.error;
   return !error ? (
-    <div
-      style={{
-        overflowX: 'auto',
-        overflowY: 'hidden',
-      }}
-    >
-      <Table
-        dataSource={data}
-        columns={Object.keys(data[0] || {}).map((col) => {
-          const field = getField(fields, col.split('.'));
-          return {
-            title: field?.label || col,
-            dataIndex: col,
-            key: col,
-          };
-        })}
-        size="small"
-      />
-    </div>
+    <Table
+      dataSource={data.map((item, index) => ({ ...item, _key: index }))}
+      rowKey="_key"
+      scroll={{ x: 'max-content' }}
+      columns={Object.keys(data[0] || {}).map((col) => {
+        const field = getField(fields, col.split('.'));
+        return {
+          title: field?.label || col,
+          dataIndex: col,
+          key: col,
+        };
+      })}
+      size="small"
+    />
   ) : (
     <Alert
       message="Error"

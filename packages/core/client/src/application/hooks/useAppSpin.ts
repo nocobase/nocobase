@@ -5,6 +5,6 @@ import { useApp } from './useApp';
 export const useAppSpin = () => {
   const app = useApp();
   return {
-    render: () => (app ? app?.renderComponent?.('AppSpin') : React.createElement(Spin)),
+    render: () => (app?.renderComponent ? app?.renderComponent?.('AppSpin') : React.createElement(Spin)),
   };
 };

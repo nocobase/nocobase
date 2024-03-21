@@ -4,14 +4,12 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Cascader, Input, Select, Spin, Table, Tag } from 'antd';
 import { observer, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
-import { getOptions } from '../../../Configuration/interfaces';
+import { useFieldInterfaceOptions } from '../../../Configuration/interfaces';
 import { useCompile } from '../../../../schema-component';
-import { useCollectionManager } from '../../../hooks';
+import { useCollectionManager_deprecated } from '../../../hooks';
 import dayjs from 'dayjs';
 import { FieldOptions } from '@nocobase/database';
-import { ResourceActionContext, useResourceContext } from '../../../ResourceActionProvider';
-import { useRecord } from '../../../../record-provider';
-import { last } from 'lodash';
+import { ResourceActionContext } from '../../../ResourceActionProvider';
 
 const inferInterface = (field: string, value: any) => {
   if (field.toLowerCase().includes('id')) {
@@ -24,7 +22,7 @@ const inferInterface = (field: string, value: any) => {
     return 'number';
   }
   if (typeof value === 'boolean') {
-    return 'boolean';
+    return 'checkbox';
   }
   if (dayjs(value).isValid()) {
     return 'datetime';
@@ -36,7 +34,7 @@ const useSourceFieldsOptions = () => {
   const form = useForm();
   const { sources = [] } = form.values;
   const { t } = useTranslation();
-  const { getCollection, getInheritCollections, getParentCollectionFields } = useCollectionManager();
+  const { getCollection, getInheritCollections, getParentCollectionFields } = useCollectionManager_deprecated();
   const data = [];
   sources.forEach((item: string) => {
     const collection = getCollection(item);
@@ -57,6 +55,9 @@ const useSourceFieldsOptions = () => {
           }),
       };
     });
+    if (!collection) {
+      return;
+    }
     const children = (collection.fields as FieldOptions[])
       .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
       ?.map((v) => {
@@ -72,220 +73,225 @@ const useSourceFieldsOptions = () => {
   return data;
 };
 
-export const FieldsConfigure = observer(() => {
-  const { t } = useTranslation();
-  const [dataSource, setDataSource] = useState([]);
-  const { data: res, error, loading } = useAsyncData();
-  const { data, fields: sourceFields } = res || {};
-  const field: ArrayField = useField();
-  const { data: curFields } = useContext(ResourceActionContext);
-  const compile = useCompile();
-  const { getInterface, getCollectionField } = useCollectionManager();
-  const interfaceOptions = useMemo(
-    () =>
-      getOptions()
-        .filter((v) => !['relation'].includes(v.key))
-        .map((options, index) => ({
-          ...options,
-          key: index,
-          label: compile(options.label),
-          options: options.children.map((option) => ({
-            ...option,
-            label: compile(option.label),
+export const FieldsConfigure = observer(
+  () => {
+    const { t } = useTranslation();
+    const [dataSource, setDataSource] = useState([]);
+    const { data: res, error, loading } = useAsyncData();
+    const { data, fields: sourceFields } = res || {};
+    const field: ArrayField = useField();
+    const { data: curFields } = useContext(ResourceActionContext);
+    const compile = useCompile();
+    const { getInterface, getCollectionField } = useCollectionManager_deprecated();
+    const options = useFieldInterfaceOptions();
+
+    const interfaceOptions = useMemo(
+      () =>
+        options
+          .filter((v) => !['relation'].includes(v.key))
+          .map((options, index) => ({
+            ...options,
+            key: index,
+            label: compile(options.label),
+            options: options.children.map((option) => ({
+              ...option,
+              label: compile(option.label),
+            })),
           })),
-        })),
-    [compile],
-  );
-  const sourceFieldsOptions = useSourceFieldsOptions();
-
-  const refGetInterface = useRef(getInterface);
-  useEffect(() => {
-    const fieldsMp = new Map();
-    if (!loading) {
-      if (data && data.length) {
-        Object.entries(data?.[0] || {}).forEach(([col, val]) => {
-          const sourceField = sourceFields[col];
-          const fieldInterface = inferInterface(col, val);
-          const defaultConfig = refGetInterface.current(fieldInterface)?.default;
-          const uiSchema = sourceField?.uiSchema || defaultConfig?.uiSchema || {};
-          fieldsMp.set(col, {
-            name: col,
-            interface: sourceField?.interface || fieldInterface,
-            type: sourceField?.type || defaultConfig?.type,
-            source: sourceField?.source,
-            uiSchema: {
-              title: col,
-              ...uiSchema,
-            },
-          });
-        });
-      } else {
-        Object.entries(sourceFields || {}).forEach(([col, val]: [string, any]) =>
-          fieldsMp.set(col, {
-            name: col,
-            ...val,
-            uiSchema: {
-              title: col,
-              ...(val?.uiSchema || {}),
-            },
-          }),
-        );
-      }
-    }
-
-    if (field.value?.length) {
-      field.value.forEach((item) => {
-        if (fieldsMp.has(item.name)) {
-          fieldsMp.set(item.name, item);
-        }
-      });
-    }
-
-    // if (curFields?.data.length) {
-    //   curFields.data.forEach((field: any) => {
-    //     if (fieldsMp.has(field.name)) {
-    //       fieldsMp.set(field.name, field);
-    //     }
-    //   });
-    // }
-
-    const fields = Array.from(fieldsMp.values());
-    if (!fields.length) {
-      return;
-    }
-    setDataSource(fields);
-    field.setValue(fields);
-  }, [loading, data, field, sourceFields, curFields]);
-
-  if (loading) {
-    return <Spin />;
-  }
-  if (!data && !error) {
-    return <Alert showIcon message={t('Please use a valid SELECT or WITH AS statement')} />;
-  }
-  const err = error as any;
-  if (err) {
-    const errMsg =
-      err?.response?.data?.errors?.map?.((item: { message: string }) => item.message).join('\n') || err.message;
-    return <Alert showIcon message={`${t('SQL error: ')}${errMsg}`} type="error" />;
-  }
-
-  const handleFieldChange = (record: any, index: number) => {
-    const fields = [...dataSource];
-    fields.splice(index, 1, record);
-    setDataSource(fields);
-    field.setValue(
-      fields.map((f) => ({
-        ...f,
-        source: typeof f.source === 'string' ? f.source : f.source?.filter?.(Boolean)?.join('.') || null,
-      })),
+      [compile],
     );
-  };
+    const sourceFieldsOptions = useSourceFieldsOptions();
 
-  const columns = [
-    {
-      title: t('Field name'),
-      dataIndex: 'name',
-      key: 'name',
-      width: 130,
-    },
-    {
-      title: t('Field source'),
-      dataIndex: 'source',
-      key: 'source',
-      width: 200,
-      render: (text: string, record: any, index: number) => {
-        const field = dataSource[index];
-        return (
-          <Cascader
-            defaultValue={typeof text === 'string' ? text?.split('.') : text}
-            allowClear
-            options={compile(sourceFieldsOptions)}
-            placeholder={t('Select field source')}
-            onChange={(value: string[]) => {
-              let sourceField = sourceFields[value?.[1]];
-              if (!sourceField) {
-                sourceField = getCollectionField(value?.join('.') || '');
-              }
-              handleFieldChange(
-                {
-                  ...field,
-                  source: value,
-                  interface: sourceField?.interface,
-                  type: sourceField?.type,
-                  uiSchema: sourceField?.uiSchema,
-                },
-                index,
-              );
-            }}
-          />
-        );
+    const refGetInterface = useRef(getInterface);
+    useEffect(() => {
+      const fieldsMp = new Map();
+      if (!loading) {
+        if (data && data.length) {
+          Object.entries(data?.[0] || {}).forEach(([col, val]) => {
+            const sourceField = sourceFields[col];
+            const fieldInterface = inferInterface(col, val);
+            const defaultConfig = refGetInterface.current(fieldInterface)?.default;
+            const uiSchema = sourceField?.uiSchema || defaultConfig?.uiSchema || {};
+            fieldsMp.set(col, {
+              name: col,
+              interface: sourceField?.interface || fieldInterface,
+              type: sourceField?.type || defaultConfig?.type,
+              source: sourceField?.source,
+              uiSchema: {
+                title: col,
+                ...uiSchema,
+              },
+            });
+          });
+        } else {
+          Object.entries(sourceFields || {}).forEach(([col, val]: [string, any]) =>
+            fieldsMp.set(col, {
+              name: col,
+              ...val,
+              uiSchema: {
+                title: col,
+                ...(val?.uiSchema || {}),
+              },
+            }),
+          );
+        }
+      }
+
+      if (field.value?.length) {
+        field.value.forEach((item) => {
+          if (fieldsMp.has(item.name)) {
+            fieldsMp.set(item.name, item);
+          }
+        });
+      }
+
+      // if (curFields?.data.length) {
+      //   curFields.data.forEach((field: any) => {
+      //     if (fieldsMp.has(field.name)) {
+      //       fieldsMp.set(field.name, field);
+      //     }
+      //   });
+      // }
+
+      const fields = Array.from(fieldsMp.values());
+      if (!fields.length) {
+        return;
+      }
+      setDataSource(fields);
+      field.setValue(fields);
+    }, [loading, data, field, sourceFields, curFields]);
+
+    if (loading) {
+      return <Spin />;
+    }
+    if (!data && !error) {
+      return <Alert showIcon message={t('Please use a valid SELECT or WITH AS statement')} />;
+    }
+    const err = error as any;
+    if (err) {
+      const errMsg =
+        err?.response?.data?.errors?.map?.((item: { message: string }) => item.message).join('\n') || err.message;
+      return <Alert showIcon message={`${t('SQL error: ')}${errMsg}`} type="error" />;
+    }
+
+    const handleFieldChange = (record: any, index: number) => {
+      const fields = [...dataSource];
+      fields.splice(index, 1, record);
+      setDataSource(fields);
+      field.setValue(
+        fields.map((f) => ({
+          ...f,
+          source: typeof f.source === 'string' ? f.source : f.source?.filter?.(Boolean)?.join('.') || null,
+        })),
+      );
+    };
+
+    const columns = [
+      {
+        title: t('Field name'),
+        dataIndex: 'name',
+        key: 'name',
+        width: 130,
       },
-    },
-    {
-      title: t('Field interface'),
-      dataIndex: 'interface',
-      key: 'interface',
-      width: 150,
-      render: (text: string, record: any, index: number) => {
-        const field = dataSource[index];
-        return field.source ? (
-          <Tag>{compile(getInterface(text)?.title) || text}</Tag>
-        ) : (
-          <Select
-            defaultValue={field.interface || 'input'}
-            style={{ width: '100%' }}
-            popupMatchSelectWidth={false}
-            onChange={(value) => {
-              const interfaceConfig = getInterface(value);
-              handleFieldChange(
-                {
-                  ...field,
-                  interface: value || null,
-                  uiSchema: {
-                    ...interfaceConfig?.default?.uiSchema,
-                    title: interfaceConfig?.default?.uiSchema?.title || field.uiSchema?.title,
+      {
+        title: t('Field source'),
+        dataIndex: 'source',
+        key: 'source',
+        width: 200,
+        render: (text: string, record: any, index: number) => {
+          const field = dataSource[index];
+          return (
+            <Cascader
+              defaultValue={typeof text === 'string' ? text?.split('.') : text}
+              allowClear
+              options={compile(sourceFieldsOptions)}
+              placeholder={t('Select field source')}
+              onChange={(value: string[]) => {
+                let sourceField = sourceFields[value?.[1]];
+                if (!sourceField) {
+                  sourceField = getCollectionField(value?.join('.') || '');
+                }
+                handleFieldChange(
+                  {
+                    ...field,
+                    source: value,
+                    interface: sourceField?.interface,
+                    type: sourceField?.type,
+                    uiSchema: sourceField?.uiSchema,
                   },
-                  type: interfaceConfig?.default?.type,
-                },
-                index,
-              );
-            }}
-            allowClear={true}
-            options={interfaceOptions}
-          />
-        );
+                  index,
+                );
+              }}
+            />
+          );
+        },
       },
-    },
-    {
-      title: t('Field display name'),
-      dataIndex: 'title',
-      key: 'title',
-      width: 180,
-      render: (text: string, record: any, index: number) => {
-        const field = dataSource[index];
-        return (
-          <Input
-            value={field.uiSchema?.title || text}
-            defaultValue={field.uiSchema?.title !== undefined ? field.uiSchema.title : field?.name}
-            onChange={(e) =>
-              handleFieldChange({ ...field, uiSchema: { ...field?.uiSchema, title: e.target.value } }, index)
-            }
-          />
-        );
+      {
+        title: t('Field interface'),
+        dataIndex: 'interface',
+        key: 'interface',
+        width: 150,
+        render: (text: string, record: any, index: number) => {
+          const field = dataSource[index];
+          return field.source ? (
+            <Tag>{compile(getInterface(text)?.title) || text}</Tag>
+          ) : (
+            <Select
+              defaultValue={field.interface || 'input'}
+              style={{ width: '100%' }}
+              popupMatchSelectWidth={false}
+              onChange={(value) => {
+                const interfaceConfig = getInterface(value);
+                handleFieldChange(
+                  {
+                    ...field,
+                    interface: value || null,
+                    uiSchema: {
+                      ...interfaceConfig?.default?.uiSchema,
+                      title: interfaceConfig?.default?.uiSchema?.title || field.uiSchema?.title,
+                    },
+                    type: interfaceConfig?.default?.type,
+                  },
+                  index,
+                );
+              }}
+              allowClear={true}
+              options={interfaceOptions}
+            />
+          );
+        },
       },
-    },
-  ];
-  return (
-    <Table
-      bordered
-      size="small"
-      columns={columns}
-      dataSource={dataSource}
-      scroll={{ y: 300 }}
-      pagination={false}
-      rowClassName="editable-row"
-      rowKey="name"
-    />
-  );
-});
+      {
+        title: t('Field display name'),
+        dataIndex: 'title',
+        key: 'title',
+        width: 180,
+        render: (text: string, record: any, index: number) => {
+          const field = dataSource[index];
+          return (
+            <Input
+              value={field.uiSchema?.title || text}
+              defaultValue={field.uiSchema?.title !== undefined ? field.uiSchema.title : field?.name}
+              onChange={(e) =>
+                handleFieldChange({ ...field, uiSchema: { ...field?.uiSchema, title: e.target.value } }, index)
+              }
+            />
+          );
+        },
+      },
+    ];
+    return (
+      <Table
+        bordered
+        size="small"
+        columns={columns}
+        dataSource={dataSource}
+        scroll={{ y: 300 }}
+        pagination={false}
+        rowClassName="editable-row"
+        rowKey="name"
+      />
+    );
+  },
+  { displayName: 'FieldsConfigure' },
+);

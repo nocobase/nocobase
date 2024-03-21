@@ -38,6 +38,45 @@ export const unique = {
   'x-content': '{{t("Unique")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
+  'x-disabled': '{{ !createMainOnly }}',
+  'x-reactions': [
+    {
+      dependencies: ['primaryKey'],
+      when: '{{$deps[0]}}',
+      fulfill: {
+        state: {
+          value: false,
+        },
+      },
+    },
+  ],
+};
+export const primaryKey = {
+  type: 'boolean',
+  'x-content': '{{t("Primary")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+  'x-disabled': '{{ !createMainOnly }}',
+  'x-reactions': [
+    {
+      dependencies: ['unique'],
+      when: '{{$deps[0]}}',
+      fulfill: {
+        state: {
+          value: false,
+        },
+      },
+    },
+  ],
+};
+
+export const autoIncrement = {
+  type: 'boolean',
+  title: '{{t("Auto increment")}}',
+  'x-content': '{{t("Auto increment")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+  'x-disabled': '{{ !createMainOnly }}',
 };
 
 export const relationshipType: ISchema = {
@@ -359,7 +398,7 @@ export const recordPickerViewer = {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'RecordBlockInitializers',
+              'x-initializer': 'popup:common:addBlock',
               properties: {},
             },
           },

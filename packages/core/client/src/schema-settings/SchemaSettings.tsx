@@ -4,27 +4,31 @@ import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
+import type { DropdownProps } from 'antd';
 import {
   Alert,
   App,
   Button,
   Cascader,
   CascaderProps,
+  ConfigProvider,
   Dropdown,
   Empty,
   MenuItemProps,
   MenuProps,
   Modal,
-  Select,
+  ModalFuncProps,
   Space,
   Switch,
 } from 'antd';
-import _, { cloneDeep } from 'lodash';
+import _, { cloneDeep, get, set } from 'lodash';
 import React, {
+  FC,
   ReactNode,
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   // @ts-ignore
   useTransition as useReactTransition,
@@ -32,15 +36,17 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
-  CollectionFieldOptions,
-  CollectionManagerContext,
-  CollectionProvider,
+  AssociationOrCollectionProvider,
+  CollectionFieldOptions_deprecated,
+  DataSourceApplicationProvider,
   Designable,
   FormDialog,
   FormProvider,
+  CollectionRecordProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
@@ -48,19 +54,37 @@ import {
   createDesignable,
   findFormBlock,
   useAPIClient,
-  useActionContext,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
   useCompile,
+  useDataBlockProps,
   useDesignable,
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
+  useCollectionRecord,
+  useRecord,
+  useSchemaSettingsItem,
   useSortFields,
 } from '..';
-import { useTableBlockContext } from '../block-provider';
-import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
+import {
+  BlockRequestContext_deprecated,
+  FormBlockContext,
+  useFormBlockContext,
+  useFormBlockType,
+  useTableBlockContext,
+} from '../block-provider';
+import {
+  FormActiveFieldsProvider,
+  findFilterTargets,
+  updateFilterTargets,
+  useFormActiveFields,
+} from '../block-provider/hooks';
+import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
+import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
+import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -68,21 +92,20 @@ import {
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
+import { FlagProvider } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
+import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
-import { getFieldDefaultValue } from '../schema-component/antd/form-item';
-import { parseVariables, useVariablesCtx } from '../schema-component/common/utils/uitls';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { useLocalVariables, useVariables } from '../variables';
 import { FormDataTemplates } from './DataTemplates';
-import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
 import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { VariableInput } from './VariableInput/VariableInput';
 
-interface SchemaSettingsProps {
+export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
   field?: GeneralField;
@@ -90,7 +113,7 @@ interface SchemaSettingsProps {
   children?: ReactNode;
 }
 
-interface SchemaSettingsContextProps {
+interface SchemaSettingsContextProps<T = any> {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
@@ -98,29 +121,15 @@ interface SchemaSettingsContextProps {
   visible?: any;
   template?: any;
   collectionName?: any;
+  designer?: T;
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
+SchemaSettingsContext.displayName = 'SchemaSettingsContext';
 
-export const useSchemaSettings = () => {
-  return useContext(SchemaSettingsContext);
-};
-
-interface RemoveProps {
-  confirm?: any;
-  removeParentsIfNoChildren?: boolean;
-  breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
+export function useSchemaSettings<T = any>() {
+  return useContext(SchemaSettingsContext) as SchemaSettingsContextProps<T>;
 }
-
-type SchemaSettingsNested = {
-  Remove?: React.FC<RemoveProps>;
-  Item?: React.FC<MenuItemProps>;
-  Divider?: React.FC;
-  Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
-  SwitchItem?: React.FC<SwitchItemProps>;
-  CascaderItem?: React.FC<CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any }>;
-  [key: string]: any;
-};
 
 interface SchemaSettingsProviderProps {
   dn?: Designable;
@@ -130,12 +139,13 @@ interface SchemaSettingsProviderProps {
   visible?: any;
   template?: any;
   collectionName?: any;
+  designer?: any;
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
   const { children, fieldSchema, ...others } = props;
   const { getTemplateBySchema } = useSchemaTemplateManager();
-  const { name } = useCollection();
+  const { name } = useCollection_deprecated();
   const template = getTemplateBySchema(fieldSchema);
   return (
     <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
@@ -144,56 +154,48 @@ export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (pr
   );
 };
 
-export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNested = (props) => {
+export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => {
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
-  const [isPending, startTransition] = useReactTransition();
+  const [, startTransition] = useReactTransition();
+  const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
 
-  const changeMenu = (v: boolean) => {
-    // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
-    startTransition(() => {
-      setVisible(v);
-    });
-  };
+  const changeMenu: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
+    if (info.source === 'trigger' || nextOpen) {
+      // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
+      startTransition(() => {
+        setVisible(nextOpen);
+      });
+    }
+  }, []);
 
   const items = getMenuItems(() => props.children);
 
-  const dropdownMenu = () => (
-    <>
+  return (
+    <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
       <Component />
       <Dropdown
         open={visible}
-        onOpenChange={(open) => {
-          changeMenu(open);
-        }}
+        onOpenChange={changeMenu}
         overlayClassName={css`
           .ant-dropdown-menu-item-group-list {
             max-height: 300px;
             overflow-y: auto;
           }
         `}
-        menu={{ items }}
+        menu={{ items, style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' } }}
       >
-        {typeof title === 'string' ? <span>{title}</span> : title}
+        <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
-    </>
+    </SchemaSettingsProvider>
   );
-
-  if (dn) {
-    return (
-      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
-        {dropdownMenu()}
-      </SchemaSettingsProvider>
-    );
-  }
-  return dropdownMenu();
 };
 
-SchemaSettings.Template = function Template(props) {
+export const SchemaSettingsTemplate = function Template(props) {
   const { componentName, collectionName, resourceName, needRender } = props;
   const { t } = useTranslation();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const compile = useCompile();
   const api = useAPIClient();
@@ -206,7 +208,8 @@ SchemaSettings.Template = function Template(props) {
   }
   if (template) {
     return (
-      <SchemaSettings.Item
+      <SchemaSettingsItem
+        title="Convert reference to duplicate"
         onClick={async () => {
           const schema = await copyTemplateSchema(template);
           const removed = tdn.removeWithoutEmit();
@@ -220,14 +223,15 @@ SchemaSettings.Template = function Template(props) {
         }}
       >
         {t('Convert reference to duplicate')}
-      </SchemaSettings.Item>
+      </SchemaSettingsItem>
     );
   }
   return (
-    <SchemaSettings.Item
+    <SchemaSettingsItem
+      title="Save as template"
       onClick={async () => {
         setVisible(false);
-        const { title } = collectionName ? getCollection(collectionName) : { title: '' };
+        const collection = collectionName && getCollection(collectionName);
         const values = await FormDialog(
           t('Save as template'),
           () => {
@@ -241,7 +245,9 @@ SchemaSettings.Template = function Template(props) {
                       name: {
                         title: t('Template name'),
                         required: true,
-                        default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
+                        default: collection
+                          ? `${compile(collection?.title || collection?.name)}_${t(componentName)}`
+                          : t(componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                       },
@@ -264,6 +270,7 @@ SchemaSettings.Template = function Template(props) {
           collectionName,
           resourceName,
           componentName,
+          dataSourceKey: collection.dataSource,
           name: values.name,
           uid: fieldSchema['x-uid'],
         });
@@ -278,7 +285,7 @@ SchemaSettings.Template = function Template(props) {
       }}
     >
       {t('Save as template')}
-    </SchemaSettings.Item>
+    </SchemaSettingsItem>
   );
 };
 
@@ -316,11 +323,11 @@ const findBlockTemplateSchema = (fieldSchema) => {
   }, null);
 };
 
-SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
+export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
   const compile = useCompile();
-  const { getCollection } = useCollectionManager();
+  const { getCollection } = useCollectionManager_deprecated();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -331,7 +338,8 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   }
   if (template) {
     return (
-      <SchemaSettings.Item
+      <SchemaSettingsItem
+        title="Convert reference to duplicate"
         onClick={async () => {
           const schema = await copyTemplateSchema(template);
           const templateSchema = findBlockTemplateSchema(fieldSchema);
@@ -363,14 +371,15 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
         }}
       >
         {t('Convert reference to duplicate')}
-      </SchemaSettings.Item>
+      </SchemaSettingsItem>
     );
   }
   return (
-    <SchemaSettings.Item
+    <SchemaSettingsItem
+      title="Save as block template"
       onClick={async () => {
         setVisible(false);
-        const { title } = getCollection(collectionName);
+        const collection = collectionName && getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
           t('Save as template'),
@@ -389,7 +398,11 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
                       name: {
                         title: t('Template name'),
                         required: true,
-                        default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
+                        default: collection
+                          ? `${compile(collection?.title || collection?.name)}_${t(
+                              componentTitle[componentName] || componentName,
+                            )}`
+                          : t(componentTitle[componentName] || componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                       },
@@ -412,6 +425,7 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
           collectionName,
           resourceName,
           componentName,
+          dataSourceKey: collection.dataSource,
           name: values.name,
           uid: gridSchema['x-uid'],
         });
@@ -435,19 +449,27 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
       }}
     >
       {t('Save as block template')}
-    </SchemaSettings.Item>
+    </SchemaSettingsItem>
   );
 };
 
-SchemaSettings.Item = function Item(props) {
+export interface SchemaSettingsItemProps extends Omit<MenuItemProps, 'title'> {
+  title: string;
+}
+export const SchemaSettingsItem: FC<SchemaSettingsItemProps> = (props) => {
   const { pushMenuItem } = useCollectMenuItems();
   const { collectMenuItem } = useCollectMenuItem();
-  const { eventKey } = props;
-  const key = useMemo(() => uid(), []);
+  const { eventKey, title } = props;
+  const { name } = useSchemaSettingsItem();
+
+  if (process.env.NODE_ENV !== 'production' && !title) {
+    throw new Error('SchemaSettingsItem must have a title');
+  }
+
   const item = {
-    ..._.omit(props, ['children']),
-    key,
-    eventKey: (eventKey as any) || key,
+    key: title,
+    ..._.omit(props, ['children', 'name']),
+    eventKey: eventKey as any,
     onClick: (info) => {
       info.domEvent.preventDefault();
       info.domEvent.stopPropagation();
@@ -463,7 +485,11 @@ SchemaSettings.Item = function Item(props) {
   return null;
 };
 
-SchemaSettings.ItemGroup = function ItemGroup(props) {
+export interface SchemaSettingsItemGroupProps {
+  title: string;
+  children: any[];
+}
+export const SchemaSettingsItemGroup: FC<SchemaSettingsItemGroupProps> = (props) => {
   const { Component, getMenuItems } = useMenuItem();
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
@@ -479,7 +505,13 @@ SchemaSettings.ItemGroup = function ItemGroup(props) {
   return <Component />;
 };
 
-SchemaSettings.SubMenu = function SubMenu(props) {
+export interface SchemaSettingsSubMenuProps {
+  title: string;
+  eventKey?: string;
+  children: any;
+}
+
+export const SchemaSettingsSubMenu = function SubMenu(props: SchemaSettingsSubMenuProps) {
   const { Component, getMenuItems } = useMenuItem();
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
@@ -494,7 +526,7 @@ SchemaSettings.SubMenu = function SubMenu(props) {
   return <Component />;
 };
 
-SchemaSettings.Divider = function Divider() {
+export const SchemaSettingsDivider = function Divider() {
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
   const item = {
@@ -506,7 +538,12 @@ SchemaSettings.Divider = function Divider() {
   return null;
 };
 
-SchemaSettings.Remove = function Remove(props: any) {
+export interface SchemaSettingsRemoveProps {
+  confirm?: ModalFuncProps;
+  removeParentsIfNoChildren?: boolean;
+  breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
+}
+export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
   const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
@@ -515,54 +552,64 @@ SchemaSettings.Remove = function Remove(props: any) {
   const ctx = useBlockTemplateContext();
   const form = useForm();
   const { modal } = App.useApp();
+  const { removeActiveFieldName } = useFormActiveFields() || {};
 
   return (
-    <SchemaSettings.Item
+    <SchemaSettingsItem
+      title="Delete"
       eventKey="remove"
       onClick={() => {
         modal.confirm({
           title: t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,
-          onOk() {
+          async onOk() {
             const options = {
               removeParentsIfNoChildren,
               breakRemoveOn,
             };
-            if (field && field.required) {
+            if (field?.required) {
               field.required = false;
               fieldSchema['required'] = false;
             }
             if (template && ctx?.dn) {
-              ctx?.dn.remove(null, options);
+              await ctx?.dn.remove(null, options);
             } else {
-              dn.remove(null, options);
+              await dn.remove(null, options);
             }
+            await confirm?.onOk?.();
             delete form.values[fieldSchema.name];
+            removeActiveFieldName?.(fieldSchema.name as string);
+            if (field?.setInitialValue && field?.reset) {
+              field.setInitialValue(null);
+              field.reset();
+            }
           },
         });
       }}
     >
       {t('Delete')}
-    </SchemaSettings.Item>
+    </SchemaSettingsItem>
   );
 };
 
-SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
+interface SchemaSettingsConnectDataBlocksProps {
   type: FilterBlockType;
   emptyDescription?: string;
-}) {
+}
+
+export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocksProps> = (props) => {
   const { type, emptyDescription } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
   // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
 
   if (!inProvider) {
     return null;
@@ -592,7 +639,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
     };
     if (isSameCollection(block.collection, collection)) {
       return (
-        <SchemaSettings.SwitchItem
+        <SchemaSettingsSwitchItem
           key={block.uid}
           title={title}
           checked={targets.some((target) => target.uid === block.uid)}
@@ -622,7 +669,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
     const target = targets.find((target) => target.uid === block.uid);
     // 与筛选区块的数据表具有关系的表
     return (
-      <SchemaSettings.SelectItem
+      <SchemaSettingsSelectItem
         key={block.uid}
         title={title}
         value={target?.field || ''}
@@ -661,7 +708,6 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
           });
           dn.refresh();
         }}
-        onClick={(e) => e.stopPropagation()}
         onMouseEnter={onHover}
         onMouseLeave={onLeave}
       />
@@ -669,63 +715,42 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   });
 
   return (
-    <SchemaSettings.SubMenu title={t('Connect data blocks')}>
+    <SchemaSettingsSubMenu title={t('Connect data blocks')}>
       {Content.length ? (
         Content
       ) : (
-        <SchemaSettings.Item>
+        <SchemaSettingsItem title="empty">
           <Empty
             style={{ width: 160, padding: '0 1em' }}
             description={emptyDescription}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
-        </SchemaSettings.Item>
+        </SchemaSettingsItem>
       )}
-    </SchemaSettings.SubMenu>
+    </SchemaSettingsSubMenu>
   );
 };
 
-SchemaSettings.SelectItem = function SelectItem(props) {
-  const { title, options, value, onChange, openOnHover, onClick: _onClick, ...others } = props;
-  const [open, setOpen] = useState(false);
-
-  const onClick = (...args) => {
-    setOpen(false);
-    _onClick?.(...args);
-  };
-  const onMouseEnter = useCallback(() => setOpen(true), []);
-
-  // 鼠标 hover 时，打开下拉框
-  const moreProps = openOnHover
-    ? {
-        onMouseEnter,
-        open,
-      }
-    : {};
+export interface SchemaSettingsSelectItemProps
+  extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
+    Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
+  value?: SelectWithTitleProps['defaultValue'];
+}
+export const SchemaSettingsSelectItem: FC<SchemaSettingsSelectItemProps> = (props) => {
+  const { title, options, value, onChange, ...others } = props;
 
   return (
-    <SchemaSettings.Item {...others}>
-      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-        {title}
-        <Select
-          popupMatchSelectWidth={false}
-          bordered={false}
-          defaultValue={value}
-          onChange={(...arg) => (setOpen(false), onChange(...arg))}
-          options={options}
-          style={{ textAlign: 'right', minWidth: 100 }}
-          onClick={onClick}
-          {...moreProps}
-        />
-      </div>
-    </SchemaSettings.Item>
+    <SchemaSettingsItem title={title} {...others}>
+      <SelectWithTitle {...{ title, defaultValue: value, onChange, options }} />
+    </SchemaSettingsItem>
   );
 };
 
-SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
+export type SchemaSettingsCascaderItemProps = CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any };
+export const SchemaSettingsCascaderItem: FC<SchemaSettingsCascaderItemProps> = (props) => {
   const { title, options, value, onChange, ...others } = props;
   return (
-    <SchemaSettings.Item {...(others as any)}>
+    <SchemaSettingsItem title={title} {...(others as any)}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Cascader
@@ -737,21 +762,21 @@ SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
           {...props}
         />
       </div>
-    </SchemaSettings.Item>
+    </SchemaSettingsItem>
   );
 };
 
-interface SwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
+export interface SchemaSettingsSwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
   title: string;
   checked?: boolean;
   onChange?: (v: boolean) => void;
 }
-
-SchemaSettings.SwitchItem = function SwitchItem(props) {
+export const SchemaSettingsSwitchItem: FC<SchemaSettingsSwitchItemProps> = (props) => {
   const { title, onChange, ...others } = props;
   const [checked, setChecked] = useState(!!props.checked);
   return (
-    <SchemaSettings.Item
+    <SchemaSettingsItem
+      title={title}
       {...others}
       onClick={() => {
         onChange?.(!checked);
@@ -762,17 +787,21 @@ SchemaSettings.SwitchItem = function SwitchItem(props) {
         {title}
         <Switch size={'small'} checked={checked} style={{ marginLeft: 32 }} />
       </div>
-    </SchemaSettings.Item>
+    </SchemaSettingsItem>
   );
 };
 
-SchemaSettings.PopupItem = function PopupItem(props) {
+export interface SchemaSettingsPopupProps extends SchemaSettingsItemProps {
+  schema?: ISchema;
+}
+export const SchemaSettingsPopupItem: FC<SchemaSettingsPopupProps> = (props) => {
   const { schema, ...others } = props;
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <SchemaSettings.Item
+      <SchemaSettingsItem
+        title={props.title}
         {...others}
         onClick={() => {
           // actx.setVisible(false);
@@ -781,7 +810,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
         }}
       >
         {props.children || props.title}
-      </SchemaSettings.Item>
+      </SchemaSettingsItem>
       <SchemaComponent
         schema={{
           name: uid(),
@@ -792,8 +821,18 @@ SchemaSettings.PopupItem = function PopupItem(props) {
   );
 };
 
-SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, ...others } = props;
+export interface SchemaSettingsActionModalItemProps
+  extends SchemaSettingsModalItemProps,
+    Omit<SchemaSettingsItemProps, 'onSubmit' | 'onClick'> {
+  uid?: string;
+  initialSchema?: ISchema;
+  schema?: ISchema;
+  beforeOpen?: () => void;
+  maskClosable?: boolean;
+}
+export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProps> = React.memo((props) => {
+  const { title, onSubmit, initialValues, beforeOpen, initialSchema, schema, modalTip, components, scope, ...others } =
+    props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -802,6 +841,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const { dn } = useSchemaSettings();
   const compile = useCompile();
   const api = useAPIClient();
+  const upLevelActiveFields = useFormActiveFields();
 
   const form = useMemo(
     () =>
@@ -809,86 +849,109 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
         initialValues: cloneDeep(initialValues),
         values: cloneDeep(initialValues),
       }),
-    [],
+    [initialValues],
   );
 
-  const cancelHandler = () => {
-    setVisible(false);
-  };
+  useEffect(() => {
+    form.setInitialValues(cloneDeep(initialValues));
+  }, [JSON.stringify(initialValues || {})]);
 
-  const submitHandler = async () => {
+  const cancelHandler = useCallback(() => {
+    setVisible(false);
+    form.reset();
+  }, [form]);
+
+  const submitHandler = useCallback(async () => {
     await form.submit();
     onSubmit?.(cloneDeep(form.values));
     setVisible(false);
-  };
+  }, [form, onSubmit]);
 
-  const openAssignedFieldValueHandler = async () => {
+  const openAssignedFieldValueHandler = useCallback(async () => {
     if (!schemaUid && initialSchema?.['x-uid']) {
       fieldSchema['x-action-settings'].schemaUid = initialSchema['x-uid'];
       dn.emit('patch', { schema: fieldSchema });
       await api.resource('uiSchemas').insert({ values: initialSchema });
       setSchemaUid(initialSchema['x-uid']);
     }
-
+    if (typeof beforeOpen === 'function') {
+      beforeOpen?.();
+    }
     ctx.setVisible(false);
     setVisible(true);
-  };
+  }, [api, ctx, dn, fieldSchema, initialSchema, schemaUid]);
 
+  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLLIElement>): void => e.stopPropagation(), []);
   return (
     <>
-      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler} onKeyDown={(e) => e.stopPropagation()}>
+      <SchemaSettingsItem
+        title={compile(title)}
+        {...others}
+        onClick={openAssignedFieldValueHandler}
+        onKeyDown={onKeyDown}
+      >
         {props.children || props.title}
-      </SchemaSettings.Item>
+      </SchemaSettingsItem>
       {createPortal(
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-          onKeyDown={(e) => {
-            e.stopPropagation();
-          }}
+        <Modal
+          width={'50%'}
+          title={compile(title)}
+          {...others}
+          destroyOnClose
+          open={visible}
+          onCancel={cancelHandler}
+          footer={
+            <Space>
+              <Button onClick={cancelHandler}>{t('Cancel')}</Button>
+              <Button type="primary" onClick={submitHandler}>
+                {t('Submit')}
+              </Button>
+            </Space>
+          }
         >
-          <Modal
-            width={'50%'}
-            title={compile(title)}
-            {...others}
-            destroyOnClose
-            open={visible}
-            onCancel={cancelHandler}
-            footer={
-              <Space>
-                <Button onClick={cancelHandler}>{t('Cancel')}</Button>
-                <Button type="primary" onClick={submitHandler}>
-                  {t('Submit')}
-                </Button>
-              </Space>
-            }
-          >
+          <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
             <FormProvider form={form}>
               <FormLayout layout={'vertical'}>
                 {modalTip && <Alert message={modalTip} />}
                 {modalTip && <br />}
-                {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
-                {visible && schema && <SchemaComponent components={components} schema={schema} />}
+                {visible && schemaUid && (
+                  <RemoteSchemaComponent noForm components={components} scope={scope} uid={schemaUid} />
+                )}
+                {visible && schema && <SchemaComponent components={components} scope={scope} schema={schema} />}
               </FormLayout>
             </FormProvider>
-          </Modal>
-        </div>,
+          </FormActiveFieldsProvider>
+        </Modal>,
         document.body,
       )}
     </>
   );
 });
-SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
+SchemaSettingsActionModalItem.displayName = 'SchemaSettingsActionModalItem';
 
-SchemaSettings.ModalItem = function ModalItem(props) {
+export interface SchemaSettingsModalItemProps {
+  title: string;
+  onSubmit: (values: any) => void;
+  initialValues?: any;
+  schema?: ISchema | (() => ISchema);
+  modalTip?: string;
+  components?: any;
+  hidden?: boolean;
+  scope?: any;
+  effects?: any;
+  width?: string | number;
+  children?: ReactNode;
+  asyncGetInitialValues?: () => Promise<any>;
+  eventKey?: string;
+  hide?: boolean;
+}
+export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props) => {
   const {
     hidden,
     title,
     components,
     scope,
     effects,
-    schema,
     onSubmit,
     asyncGetInitialValues,
     initialValues,
@@ -896,47 +959,80 @@ SchemaSettings.ModalItem = function ModalItem(props) {
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
-  const cm = useContext(CollectionManagerContext);
-  const collection = useCollection();
+  const collection = useCollection_deprecated();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
+  const ctx = useBlockRequestContext();
+  const upLevelActiveFields = useFormActiveFields();
+  const { locale } = useContext(ConfigProvider.ConfigContext);
+  const dm = useDataSourceManager();
+  const dataSourceKey = useDataSourceKey();
+  const record = useCollectionRecord();
+  const { association } = useDataBlockProps() || {};
+  const formCtx = useFormBlockContext();
+
+  // 解决变量`当前对象`值在弹窗中丢失的问题
+  const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
 
   if (hidden) {
     return null;
   }
   return (
-    <SchemaSettings.Item
+    <SchemaSettingsItem
+      title={title}
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
+        const schema = _.isFunction(props.schema) ? props.schema() : props.schema;
         FormDialog(
           { title: schema.title || title, width },
           () => {
             return (
-              <CollectionManagerContext.Provider value={cm}>
-                <CollectionProvider collection={collection}>
-                  <SchemaComponentOptions scope={options.scope} components={options.components}>
-                    <FormLayout
-                      layout={'vertical'}
-                      className={css`
-                        // screen > 576px
-                        @media (min-width: 576px) {
-                          min-width: 520px;
-                        }
-
-                        // screen <= 576px
-                        @media (max-width: 576px) {
-                          min-width: 320px;
-                        }
-                      `}
+              <CollectionRecordProvider record={record}>
+                <FormBlockContext.Provider value={formCtx}>
+                  <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
+                    <FormActiveFieldsProvider
+                      name="form"
+                      getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
                     >
-                      <APIClientProvider apiClient={apiClient}>
-                        <SchemaComponent components={components} scope={scope} schema={schema} />
-                      </APIClientProvider>
-                    </FormLayout>
-                  </SchemaComponentOptions>
-                </CollectionProvider>
-              </CollectionManagerContext.Provider>
+                      <Router location={location} navigator={null}>
+                        <BlockRequestContext_deprecated.Provider value={ctx}>
+                          <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                            <AssociationOrCollectionProvider
+                              allowNull
+                              collection={collection.name}
+                              association={association}
+                            >
+                              <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                <FormLayout
+                                  layout={'vertical'}
+                                  className={css`
+                                    // screen > 576px
+                                    @media (min-width: 576px) {
+                                      min-width: 520px;
+                                    }
+
+                                    // screen <= 576px
+                                    @media (max-width: 576px) {
+                                      min-width: 320px;
+                                    }
+                                  `}
+                                >
+                                  <APIClientProvider apiClient={apiClient}>
+                                    <ConfigProvider locale={locale}>
+                                      <SchemaComponent components={components} scope={scope} schema={schema} />
+                                    </ConfigProvider>
+                                  </APIClientProvider>
+                                </FormLayout>
+                              </SchemaComponentOptions>
+                            </AssociationOrCollectionProvider>
+                          </DataSourceApplicationProvider>
+                        </BlockRequestContext_deprecated.Provider>
+                      </Router>
+                    </FormActiveFieldsProvider>
+                  </SubFormProvider>
+                </FormBlockContext.Provider>
+              </CollectionRecordProvider>
             );
           },
           theme,
@@ -955,18 +1051,18 @@ SchemaSettings.ModalItem = function ModalItem(props) {
       }}
     >
       {props.children || props.title}
-    </SchemaSettings.Item>
+    </SchemaSettingsItem>
   );
 };
 
-SchemaSettings.BlockTitleItem = function BlockTitleItem() {
+export const SchemaSettingsBlockTitleItem = function BlockTitleItem() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
 
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Edit block title')}
       schema={
         {
@@ -1000,18 +1096,57 @@ SchemaSettings.BlockTitleItem = function BlockTitleItem() {
   );
 };
 
-SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
-  const { sort, sortFields, onSubmit } = props;
+export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(props) {
+  const { path = 'x-component-props.params.sort' } = props;
   const { t } = useTranslation();
+  const { dn } = useDesignable();
+
+  const fieldSchema = useFieldSchema();
+  const field = useField();
+  const title = props.title || t('Set default sorting rules');
+  const { name } = useCollection_deprecated();
+  const defaultSort = get(fieldSchema, path) || [];
+  const sort = defaultSort?.map((item: string) => {
+    return item.startsWith('-')
+      ? {
+          field: item.substring(1),
+          direction: 'desc',
+        }
+      : {
+          field: item,
+          direction: 'asc',
+        };
+  });
+  const sortFields = useSortFields(props.name || name);
+
+  const onSubmit = async ({ sort }) => {
+    if (props?.onSubmit) {
+      return props.onSubmit({ sort });
+    }
+    const value = sort.map((item) => {
+      return item.direction === 'desc' ? `-${item.field}` : item.field;
+    });
+    set(
+      field,
+      path.replace('x-component-props', 'componentProps').replace('x-decorator-props', 'decoratorProps'),
+      value,
+    );
+
+    set(fieldSchema, path, value);
+    await dn.emit('patch', {
+      schema: fieldSchema,
+    });
+    return props.onSubmitAfter?.();
+  };
 
   return (
-    <SchemaSettings.ModalItem
-      title={t('Set default sorting rules')}
+    <SchemaSettingsModalItem
+      title={title}
       components={{ ArrayItems }}
       schema={
         {
           type: 'object',
-          title: t('Set default sorting rules'),
+          title,
           properties: {
             sort: {
               type: 'array',
@@ -1085,60 +1220,78 @@ SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
   );
 };
 
-SchemaSettings.LinkageRules = function LinkageRules(props) {
+export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getTemplateById } = useSchemaTemplateManager();
-  const type = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+  const record = useRecord();
+  const { type: formBlockType } = useFormBlockType();
+  const type = props?.type || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
-  return (
-    <SchemaSettings.ModalItem
-      title={t('Linkage rules')}
-      components={{ ArrayCollapse, FormLayout }}
-      width={770}
-      schema={
-        {
-          type: 'object',
-          title: t('Linkage rules'),
-          properties: {
-            fieldReaction: {
-              'x-component': FormLinkageRules,
-              'x-component-props': {
-                useProps: () => {
-                  const options = useLinkageCollectionFilterOptions(collectionName);
-                  return {
-                    options,
-                    defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
-                    type,
-                    linkageOptions: useLinkageCollectionFieldOptions(collectionName),
-                    collectionName,
-                  };
-                },
-              },
+  const schema = useMemo<ISchema>(
+    () => ({
+      type: 'object',
+      title: t('Linkage rules'),
+      properties: {
+        fieldReaction: {
+          'x-component': FormLinkageRules,
+          'x-component-props': {
+            useProps: () => {
+              const options = useLinkageCollectionFilterOptions(collectionName);
+              return {
+                options,
+                defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
+                type,
+                linkageOptions: useLinkageCollectionFieldOptions(collectionName),
+                collectionName,
+                form,
+                variables,
+                localVariables,
+                record,
+                formBlockType,
+              };
             },
           },
-        } as ISchema
+        },
+      },
+    }),
+    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, type, variables],
+  );
+  const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
+  const onSubmit = useCallback(
+    (v) => {
+      const rules = [];
+      for (const rule of v.fieldReaction.rules) {
+        rules.push(_.pickBy(rule, _.identity));
       }
-      onSubmit={(v) => {
-        const rules = [];
-        for (const rule of v.fieldReaction.rules) {
-          rules.push(_.pickBy(rule, _.identity));
-        }
-        const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
-        const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
-        const schema = {
-          ['x-uid']: uid,
-        };
+      const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
+      const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
+      const schema = {
+        ['x-uid']: uid,
+      };
 
-        gridSchema['x-linkage-rules'] = rules;
-        schema['x-linkage-rules'] = rules;
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      }}
+      gridSchema['x-linkage-rules'] = rules;
+      schema['x-linkage-rules'] = rules;
+      dn.emit('patch', {
+        schema,
+      });
+      dn.refresh();
+    },
+    [dn, getTemplateById, gridSchema],
+  );
+
+  return (
+    <SchemaSettingsModalItem
+      title={t('Linkage rules')}
+      components={components}
+      width={770}
+      schema={schema}
+      onSubmit={onSubmit}
     />
   );
 };
@@ -1158,7 +1311,7 @@ export const useDataTemplates = (schema?: Schema) => {
   };
 };
 
-SchemaSettings.DataTemplates = function DataTemplates(props) {
+export const SchemaSettingsDataTemplates = function DataTemplates(props) {
   const designerCtx = useContext(SchemaComponentContext);
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
@@ -1172,6 +1325,7 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
       title: t('Form data templates'),
       properties: {
         fieldReaction: {
+          'x-decorator': (props) => <FlagProvider {...props} isInFormDataTemplate />,
           'x-component': FormDataTemplates,
           'x-component-props': {
             designerCtx,
@@ -1209,24 +1363,23 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
   const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
 
   return (
-    <SchemaSettings.ModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
+    <SchemaSettingsModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
   );
 };
 
-SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(props) {
+export function SchemaSettingsEnableChildCollections(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
-  const form = useForm();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const ctx = useBlockRequestContext();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
   const isAssocationAdd = fieldSchema?.parent?.['x-component'] === 'CollectionField';
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Enable child collections')}
       components={{ ArrayItems, FormLayout }}
       scope={{ isAssocationAdd }}
@@ -1261,7 +1414,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
               'x-component': ChildDynamicComponent,
               'x-component-props': {
                 rootCollection: ctx.props.collection || ctx.props.resource,
-                form,
                 collectionField,
               },
               default: fieldSchema?.['x-component-props']?.['linkageFromForm'],
@@ -1300,154 +1452,9 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
       }}
     />
   );
-};
+}
 
-SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
-  const { fieldSchema } = props;
-  const field = useField();
-  const form = useForm();
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
-  const isShowTime = fieldSchema?.['x-component-props']?.showTime;
-  const dateFormatDefaultValue =
-    fieldSchema?.['x-component-props']?.dateFormat ||
-    collectionField?.uiSchema?.['x-component-props']?.dateFormat ||
-    'YYYY-MM-DD';
-  const timeFormatDefaultValue =
-    fieldSchema?.['x-component-props']?.timeFormat || collectionField?.uiSchema?.['x-component-props']?.timeFormat;
-  return (
-    <SchemaSettings.ModalItem
-      title={t('Date display format')}
-      schema={
-        {
-          type: 'object',
-          properties: {
-            dateFormat: {
-              type: 'string',
-              title: '{{t("Date format")}}',
-              'x-component': ExpiresRadio,
-              'x-decorator': 'FormItem',
-              'x-decorator-props': {},
-              'x-component-props': {
-                className: css`
-                  .ant-radio-wrapper {
-                    display: flex;
-                    margin: 5px 0px;
-                  }
-                `,
-                defaultValue: 'dddd',
-                formats: ['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'],
-              },
-              default: dateFormatDefaultValue,
-              enum: [
-                {
-                  label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
-                  value: 'MMMMM Do YYYY',
-                },
-                {
-                  label: DateFormatCom({ format: 'YYYY-MM-DD' }),
-                  value: 'YYYY-MM-DD',
-                },
-                {
-                  label: DateFormatCom({ format: 'MM/DD/YY' }),
-                  value: 'MM/DD/YY',
-                },
-                {
-                  label: DateFormatCom({ format: 'YYYY/MM/DD' }),
-                  value: 'YYYY/MM/DD',
-                },
-                {
-                  label: DateFormatCom({ format: 'DD/MM/YYYY' }),
-                  value: 'DD/MM/YYYY',
-                },
-                {
-                  label: 'custom',
-                  value: 'custom',
-                },
-              ],
-            },
-            showTime: {
-              default:
-                isShowTime === undefined ? collectionField?.uiSchema?.['x-component-props']?.showTime : isShowTime,
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-              'x-component': 'Checkbox',
-              'x-content': '{{t("Show time")}}',
-              'x-reactions': [
-                `{{(field) => {
-              field.query('.timeFormat').take(f => {
-                f.display = field.value ? 'visible' : 'none';
-              });
-            }}}`,
-              ],
-            },
-            timeFormat: {
-              type: 'string',
-              title: '{{t("Time format")}}',
-              'x-component': ExpiresRadio,
-              'x-decorator': 'FormItem',
-              'x-decorator-props': {
-                className: css`
-                  margin-bottom: 0px;
-                `,
-              },
-              'x-component-props': {
-                className: css`
-                  color: red;
-                  .ant-radio-wrapper {
-                    display: flex;
-                    margin: 5px 0px;
-                  }
-                `,
-                defaultValue: 'h:mm a',
-                formats: ['hh:mm:ss a', 'HH:mm:ss'],
-                timeFormat: true,
-              },
-              default: timeFormatDefaultValue,
-              enum: [
-                {
-                  label: DateFormatCom({ format: 'hh:mm:ss a' }),
-                  value: 'hh:mm:ss a',
-                },
-                {
-                  label: DateFormatCom({ format: 'HH:mm:ss' }),
-                  value: 'HH:mm:ss',
-                },
-                {
-                  label: 'custom',
-                  value: 'custom',
-                },
-              ],
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={(data) => {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        schema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props'] = {
-          ...(fieldSchema['x-component-props'] || {}),
-          ...data,
-        };
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps = fieldSchema['x-component-props'];
-        field.query(`.*.${fieldSchema.name}`).forEach((f) => {
-          f.componentProps = fieldSchema['x-component-props'];
-        });
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      }}
-    />
-  );
-};
-
-const defaultInputStyle = css`
+export const defaultInputStyle = css`
   & > .nb-form-item {
     flex: 1;
   }
@@ -1463,96 +1470,37 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
-SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
-  const variablesCtx = useVariablesCtx();
-  const currentSchema = useFieldSchema();
-  const fieldSchema = props?.fieldSchema ?? currentSchema;
+export const SchemaSettingsSortField = () => {
+  const { fields } = useCollection_deprecated();
   const field = useField<Field>();
-  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const actionCtx = useActionContext();
-  let targetField;
-  const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
-  if (collectionField?.target) {
-    targetField = getCollectionJoinField(
-      `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
-    );
-  }
-  const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
-  const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
-  const tableCtx = useTableBlockContext();
-  const isAllowContexVariable =
-    actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
-    (collectionField?.interface === 'm2m' ||
-      (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o'));
+  const { dn } = useDesignable();
+  const compile = useCompile();
+  const { service } = useTableBlockContext();
+
+  const options = fields
+    .filter((field) => !field?.target && field.interface === 'sort')
+    .map((field) => ({
+      value: field?.name,
+      label: compile(field?.uiSchema?.title) || field?.name,
+    }));
+
   return (
-    <SchemaSettings.ModalItem
-      title={t('Set default value')}
-      components={{ ArrayCollapse, FormLayout, VariableInput }}
-      width={800}
-      schema={
-        {
-          type: 'object',
-          title: t('Set default value'),
-          properties: {
-            default: {
-              'x-decorator': 'FormItem',
-              'x-component': 'VariableInput',
-              'x-component-props': {
-                ...(fieldSchema?.['x-component-props'] || {}),
-                collectionField,
-                contextCollectionName: isAllowContexVariable && tableCtx.collection,
-                schema: collectionField?.uiSchema,
-                className: defaultInputStyle,
-                renderSchemaComponent: function Com(props) {
-                  const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
-                  s.title = '';
-
-                  // 任何一个非空字符串都可以
-                  s.name = 'default';
-
-                  s['x-read-pretty'] = false;
-                  s['x-disabled'] = false;
-                  const schema = {
-                    ...(s || {}),
-                    'x-decorator': 'FormItem',
-                    'x-component-props': {
-                      ...s['x-component-props'],
-                      collectionName: collectionField?.collectionName,
-                      targetField,
-                      onChange: collectionField?.interface !== 'richText' ? props.onChange : null,
-                      defaultValue: getFieldDefaultValue(s, collectionField),
-                      style: {
-                        width: '100%',
-                        verticalAlign: 'top',
-                        minWidth: '200px',
-                      },
-                    },
-                  };
-                  return <SchemaComponent schema={schema} />;
-                },
-              },
-              title: t('Default value'),
-              default: getFieldDefaultValue(fieldSchema, collectionField),
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={(v) => {
-        const schema: ISchema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        if (field.value !== v.default) {
-          field.value = parseVariables(v.default, variablesCtx);
-        }
-        fieldSchema.default = v.default;
-        schema.default = v.default;
+    <SchemaSettingsSelectItem
+      key="sort-field"
+      title={t('Drag and drop sorting field')}
+      options={options}
+      value={field.decoratorProps.dragSortBy}
+      onChange={(dragSortBy) => {
+        fieldSchema['x-decorator-props'].dragSortBy = dragSortBy;
+        service.run({ ...service.params?.[0], sort: dragSortBy });
+        field.decoratorProps.dragSortBy = dragSortBy;
         dn.emit('patch', {
-          schema,
-          currentSchema,
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
         });
         dn.refresh();
       }}
@@ -1560,146 +1508,13 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   );
 };
 
-SchemaSettings.SortingRule = function SortRuleConfigure(props) {
-  const field = useField();
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const currentSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
-  const fieldSchema = props?.fieldSchema ?? currentSchema;
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const sortFields = useSortFields(collectionField?.target);
-  const defaultSort = fieldSchema['x-component-props']?.service?.params?.sort || [];
-  const sort = defaultSort?.map((item: string) => {
-    return item?.startsWith('-')
-      ? {
-          field: item.substring(1),
-          direction: 'desc',
-        }
-      : {
-          field: item,
-          direction: 'asc',
-        };
-  });
-  return (
-    <SchemaSettings.ModalItem
-      title={t('Set default sorting rules')}
-      components={{ ArrayItems }}
-      schema={
-        {
-          type: 'object',
-          title: t('Set default sorting rules'),
-          properties: {
-            sort: {
-              type: 'array',
-              default: sort,
-              'x-component': 'ArrayItems',
-              'x-decorator': 'FormItem',
-              items: {
-                type: 'object',
-                properties: {
-                  space: {
-                    type: 'void',
-                    'x-component': 'Space',
-                    properties: {
-                      sort: {
-                        type: 'void',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'ArrayItems.SortHandle',
-                      },
-                      field: {
-                        type: 'string',
-                        enum: sortFields,
-                        required: true,
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Select',
-                        'x-component-props': {
-                          style: {
-                            width: 260,
-                          },
-                        },
-                      },
-                      direction: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Radio.Group',
-                        'x-component-props': {
-                          optionType: 'button',
-                        },
-                        enum: [
-                          {
-                            label: t('ASC'),
-                            value: 'asc',
-                          },
-                          {
-                            label: t('DESC'),
-                            value: 'desc',
-                          },
-                        ],
-                      },
-                      remove: {
-                        type: 'void',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'ArrayItems.Remove',
-                      },
-                    },
-                  },
-                },
-              },
-              properties: {
-                add: {
-                  type: 'void',
-                  title: t('Add sort field'),
-                  'x-component': 'ArrayItems.Addition',
-                },
-              },
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={({ sort }) => {
-        const sortArr = sort.map((item) => {
-          return item.direction === 'desc' ? `-${item.field}` : item.field;
-        });
-        _.set(field.componentProps, 'service.params.sort', sortArr);
-        props?.onSubmitCallBack?.(sortArr);
-        fieldSchema['x-component-props'] = field.componentProps;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': field.componentProps,
-          },
-        });
-      }}
-    />
-  );
-};
-// 是否显示默认值配置项
-export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
-  return (
-    ![
-      'o2o',
-      'oho',
-      'obo',
-      'o2m',
-      'attachment',
-      'expression',
-      'point',
-      'lineString',
-      'circle',
-      'polygon',
-      'sequence',
-    ].includes(collectionField?.interface) && !isSystemField(collectionField, getInterface)
-  );
-};
-
 // 是否是系统字段
-export const isSystemField = (collectionField: CollectionFieldOptions, getInterface) => {
+export const isSystemField = (collectionField: CollectionFieldOptions_deprecated, getInterface) => {
   const i = getInterface?.(collectionField?.interface);
   return i?.group === 'systemInfo';
 };
 
-export const isPatternDisabled = (fieldSchema: Schema) => {
-  return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
-};
+export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions_deprecated) {
+  const result = fieldSchema?.default ?? collectionField?.defaultValue;
+  return result;
+}

@@ -18,9 +18,7 @@ export class CollectionRepository extends Repository {
 
   async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
-    console.log('start load collections');
     const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
-    console.log('end load collections');
 
     const graphlib = CollectionsGraph.graphlib();
 
@@ -35,7 +33,7 @@ export class CollectionRepository extends Repository {
     // set all graph nodes
     for (const instance of instances) {
       graph.setNode(instance.get('name'));
-      if (instance.get('view')) {
+      if (instance.get('view') || instance.get('sql')) {
         viewCollections.push(instance.get('name'));
       }
     }
@@ -64,14 +62,13 @@ export class CollectionRepository extends Repository {
     // sort graph nodes
     const sortedNames = graphlib.alg.topsort(graph);
 
-    const lazyCollectionFields: {
-      [key: string]: Array<string>;
-    } = {};
+    const lazyCollectionFields = new Map<string, Array<string>>();
 
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
 
       // skip load collection field
+      // can be a true value or an array of field names
       const skipField = (() => {
         // skip load collection field if collection is view
         if (viewCollections.includes(instanceName)) {
@@ -81,18 +78,19 @@ export class CollectionRepository extends Repository {
         const fields = nameMap[instanceName].get('fields');
 
         return fields
-          .filter(
-            (field) =>
-              (field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target'])) ||
-              field['type'] === 'belongsToMany',
-          )
+          .filter((field) => field['type'] === 'belongsTo' || field['type'] === 'belongsToMany')
           .map((field) => field.get('name'));
       })();
 
       if (lodash.isArray(skipField) && skipField.length) {
-        lazyCollectionFields[instanceName] = skipField;
+        lazyCollectionFields.set(instanceName, skipField);
       }
-      this.database.logger.debug(`load ${instanceName} collection`);
+
+      this.database.logger.debug(`load collection`, {
+        instanceName,
+        submodule: 'CollectionRepository',
+        method: 'load',
+      });
       this.app.setMaintainingMessage(`load ${instanceName} collection`);
 
       await nameMap[instanceName].load({ skipField });
@@ -100,19 +98,25 @@ export class CollectionRepository extends Repository {
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
-      this.database.logger.debug(`load ${viewCollectionName} collection fields`);
+      this.database.logger.debug(`load collection fields`, {
+        submodule: 'CollectionRepository',
+        method: 'load',
+        viewCollectionName,
+      });
       this.app.setMaintainingMessage(`load ${viewCollectionName} collection fields`);
       await nameMap[viewCollectionName].loadFields({});
     }
 
     // load lazy collection field
-    for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
-      this.database.logger.debug(`load ${collectionName} collection fields`);
+    for (const [collectionName, skipField] of lazyCollectionFields) {
+      this.database.logger.debug(`load collection fields`, {
+        submodule: 'CollectionRepository',
+        method: 'load',
+        collectionName,
+      });
       this.app.setMaintainingMessage(`load ${collectionName} collection fields`);
       await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
-
-    console.log('finished load collection');
   }
 
   async db2cm(collectionName: string) {

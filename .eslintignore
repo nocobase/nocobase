@@ -27,3 +27,6 @@ packages/core/cli/templates/plugin/src/client/*.tpl
 packages/app/client/src/.plugins
 docker
 storage
+benchmark
+packages/core/cli/src
+t.js

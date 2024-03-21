@@ -6,6 +6,12 @@ import { SchemaComponentOptions } from '../core';
 import { useFilterActionProps } from './filter/useFilterActionProps';
 import { requestChartData } from './g2plot/requestChartData';
 
+import { actionSettings } from './action';
+import { formV1Settings } from './form';
+import { filterFormItemSettings, formItemSettings } from './form-item';
+import { formDetailsSettings, formSettings, readPrettyFormSettings } from './form-v2';
+import { pageSettings, pageTabSettings } from './page';
+
 // TODO: delete this, replaced by `AntdSchemaComponentPlugin`
 export const AntdSchemaComponentProvider = (props) => {
   const { children } = props;
@@ -23,6 +29,7 @@ export class AntdSchemaComponentPlugin extends Plugin {
   async load() {
     this.addComponents();
     this.addScopes();
+    this.addSchemaSettings();
   }
 
   addComponents() {
@@ -37,5 +44,26 @@ export class AntdSchemaComponentPlugin extends Plugin {
       requestChartData,
       useFilterActionProps,
     });
+  }
+
+  addSchemaSettings() {
+    // page
+    this.app.schemaSettingsManager.add(pageSettings);
+    this.app.schemaSettingsManager.add(pageTabSettings);
+
+    // form-item
+    this.app.schemaSettingsManager.add(formItemSettings);
+    this.app.schemaSettingsManager.add(filterFormItemSettings);
+
+    // form-v1
+    this.app.schemaSettingsManager.add(formV1Settings);
+
+    // form-v2
+    this.app.schemaSettingsManager.add(formSettings);
+    this.app.schemaSettingsManager.add(readPrettyFormSettings);
+    this.app.schemaSettingsManager.add(formDetailsSettings);
+
+    // action
+    this.app.schemaSettingsManager.add(actionSettings);
   }
 }

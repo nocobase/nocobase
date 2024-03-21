@@ -1,0 +1,14 @@
+{
+  "Detail": "상세 정보",
+  "Snapshot": "스냅샷",
+  "Add block": "블록 추가",
+  "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": 
+  "새로운 레코드를 추가할 때 해당 레코드의 관련 데이터에 대한 스냅샷을 생성하고 현재 레코드에 저장합니다. 레코드가 이후에 업데이트되어도 스냅샷은 업데이트되지 않습니다.",
+  "View record": "레코드 보기",
+  "Allow linking to multiple records": "다중 레코드에 연결 허용",
+  "The association field to snapshot": "스냅샷을 찍을 관련 필드",
+  "Snapshot the snapshot's association fields": "스냅샷의 관련 필드를 스냅샷으로 만듭니다.",
+  "Please select": "선택하세요",
+  "When a record is created, association data is backed up in a snapshot": "레코드가 생성되면 관련 데이터가 스냅샷에 백업됩니다.",
+  "Snapshot data": "스냅샷 데이터"  
+}

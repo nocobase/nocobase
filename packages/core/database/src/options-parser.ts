@@ -125,7 +125,7 @@ export class OptionsParser {
       }
 
       sortField.push(direction);
-      if (this.database.inDialect('mysql')) {
+      if (this.database.isMySQLCompatibleDialect()) {
         orderParams.push([Sequelize.fn('ISNULL', Sequelize.col(`${this.model.name}.${sortField[0]}`))]);
       }
       orderParams.push(sortField);

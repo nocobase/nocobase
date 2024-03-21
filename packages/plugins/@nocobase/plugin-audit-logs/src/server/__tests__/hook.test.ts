@@ -1,15 +1,14 @@
 import Database from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
-import logPlugin from '../';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('hook', () => {
   let api: MockServer;
   let db: Database;
 
   beforeEach(async () => {
-    api = mockServer();
-    api.plugin(logPlugin, { name: 'audit-logs' });
-    await api.loadAndInstall({ clean: true });
+    api = await createMockServer({
+      plugins: ['audit-logs'],
+    });
     db = api.db;
     db.collection({
       name: 'posts',

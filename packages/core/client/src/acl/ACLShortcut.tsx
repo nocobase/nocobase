@@ -16,8 +16,8 @@ const schema2: ISchema = {
 
 export const ACLPane = () => {
   return (
-    <Card bordered={false}>
-      <SchemaComponent components={components} schema={schema2} />
+    <Card data-testid="acl-pane-card" bordered={false}>
+      <SchemaComponent components={components as any} schema={schema2} />
     </Card>
   );
 };

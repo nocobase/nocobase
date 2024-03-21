@@ -1,9 +1,9 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'charts.chartsQueries',
-  duplicator: 'optional',
+  dumpRules: 'required',
   name: 'chartsQueries',
+  shared: true,
   fields: [
     {
       name: 'title',
