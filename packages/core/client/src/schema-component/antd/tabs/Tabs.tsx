@@ -9,6 +9,7 @@ import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 import { useSchemaInitializerRender } from '../../../application';
+import { SchemaComponent, SchemaComponentProvider } from '../../core';
 
 export const Tabs: any = observer(
   (props: TabsProps) => {
@@ -24,7 +25,9 @@ export const Tabs: any = observer(
           label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
           children: (
             <PaneRoot {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
-              <RecursionField name={key} schema={schema} onlyRenderProperties />
+              <SchemaComponentProvider inherit>
+                <SchemaComponent schema={schema} />
+              </SchemaComponentProvider>
             </PaneRoot>
           ),
         };

@@ -18,7 +18,7 @@ import { Icon } from '../../../icon';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
-import { SchemaComponent, SchemaComponentOptions } from '../../core';
+import { SchemaComponent, SchemaComponentOptions, SchemaComponentProvider } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
@@ -212,15 +212,9 @@ function PageContent(
 
       return (
         <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
-          <SchemaComponent
-            schema={
-              new Schema({
-                properties: {
-                  [schema.name]: schema,
-                },
-              })
-            }
-          />
+          <SchemaComponentProvider inherit>
+            <SchemaComponent schema={schema} />
+          </SchemaComponentProvider>
         </FixedBlock>
       );
     })
