@@ -14,6 +14,7 @@ import {
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
+  SchemaComponentProvider,
   findByUid,
   findMenuItem,
   useACLRoleContext,
@@ -204,7 +205,9 @@ const MenuEditor = (props) => {
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <SchemaComponent memoized scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }} schema={schema} />
+      <SchemaComponentProvider inherit>
+        <SchemaComponent memoized scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }} schema={schema} />
+      </SchemaComponentProvider>
     </SchemaIdContext.Provider>
   );
 };

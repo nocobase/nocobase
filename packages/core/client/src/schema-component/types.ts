@@ -18,6 +18,7 @@ export interface ISchemaComponentProvider {
   form?: Form;
   scope?: any;
   components?: SchemaReactComponents;
+  inherit?: boolean;
 }
 
 export interface IRecursionComponentProps extends IRecursionFieldProps {
