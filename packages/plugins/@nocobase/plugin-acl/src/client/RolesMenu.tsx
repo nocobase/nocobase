@@ -5,55 +5,98 @@ import {
   useAPIClient,
   useResourceActionContext,
 } from '@nocobase/client';
-import { Menu, Empty, Dropdown, App, Tag, Row, Col } from 'antd';
+import { Menu, Empty, Dropdown, App, Tag, Row, Col, Spin } from 'antd';
 import { TagOutlined, MoreOutlined } from '@ant-design/icons';
-import React, { useContext, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useACLTranslation } from './locale';
 import { Schema } from '@formily/react';
 import { RolesManagerContext } from './RolesManagerProvider';
 import { roleEditSchema } from './schemas/roles';
+import { useLoadMoreObserver } from './hooks/load-more-observer';
 
 export const RolesMenu: React.FC & {
   Item: React.FC<{ item: any; onEdit: () => void }>;
 } = () => {
   const { t } = useACLTranslation();
-  const { data } = useResourceActionContext();
-  const [visible, setVisible] = React.useState(false);
-  const [record, setRecord] = React.useState(null);
+  const { data, run, loading } = useResourceActionContext();
+  const [visible, setVisible] = useState(false);
+  const [record, setRecord] = useState(null);
   const { role, setRole } = useContext(RolesManagerContext);
-  const items = (data?.data || []).map((item: any) => ({
-    key: item.name,
-    label: (
-      <RolesMenu.Item
-        item={item}
-        onEdit={() => {
-          setVisible(true);
-          setRecord(item);
-        }}
-      />
-    ),
-  }));
+  const [roles, setRoles] = useState([]);
+
+  const loadMore = useCallback(() => {
+    const meta = data?.meta;
+    if (!meta || meta.page >= meta.totalPage) {
+      return;
+    }
+    run({
+      page: meta.page + 1,
+    });
+  }, [data]);
+  const { lastItem, setLastItem } = useLoadMoreObserver({ loadMore });
 
   const handleSelect = ({ key }) => {
-    setRole((data?.data || []).find((item: any) => item.name === key));
+    setRole(roles.find((item: any) => item.name === key));
   };
 
   useEffect(() => {
-    if (!data?.data.length) {
+    if (!roles[0]) {
       return;
     }
-    setRole(data?.data[0]);
-  }, [data, setRole]);
+    setRole(roles[0]);
+  }, [roles, setRole]);
+
+  useEffect(() => {
+    if (!data?.data?.length) {
+      return;
+    }
+
+    const ref = React.createRef<any>();
+    setLastItem(ref);
+
+    setRoles((prev) => prev.concat(data.data));
+  }, [data, setLastItem]);
+
+  const items = useMemo(
+    () =>
+      roles.map((item: any, index: number) => ({
+        key: item.name,
+        label:
+          index === roles.length - 1 ? (
+            <div ref={lastItem}>
+              <RolesMenu.Item
+                item={item}
+                onEdit={() => {
+                  setVisible(true);
+                  setRecord(item);
+                }}
+              />
+            </div>
+          ) : (
+            <RolesMenu.Item
+              item={item}
+              onEdit={() => {
+                setVisible(true);
+                setRecord(item);
+              }}
+            />
+          ),
+      })),
+    [roles, lastItem],
+  );
 
   return (
     <>
-      {items.length ? (
-        <Menu
-          style={{ border: 'none', maxHeight: '65vh', overflowY: 'auto' }}
-          items={items}
-          selectedKeys={[role?.name]}
-          onSelect={handleSelect}
-        />
+      {roles.length ? (
+        <>
+          <Menu
+            style={{ border: 'none', maxHeight: '65vh', overflowY: 'auto' }}
+            items={items}
+            selectedKeys={[role?.name]}
+            onSelect={handleSelect}
+          />
+          {loading && <Spin />}
+        </>
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
       )}
@@ -92,12 +135,15 @@ RolesMenu.Item = function DepartmentTreeItem({ item, onEdit }) {
         deleteDepartment();
     }
   };
+  const title = Schema.compile(item.title, { t });
   return (
     <Row>
       <Col flex={3} style={{ display: 'inline-flex', alignItems: 'center' }}>
         <span style={{ whiteSpace: 'nowrap', width: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           <TagOutlined />
-          <span style={{ marginLeft: '10px' }}>{Schema.compile(item.title, { t })}</span>
+          <span style={{ marginLeft: '10px' }} title={title}>
+            {title}
+          </span>
         </span>
       </Col>
       <Col>
