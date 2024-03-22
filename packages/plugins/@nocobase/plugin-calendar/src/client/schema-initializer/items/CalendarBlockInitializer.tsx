@@ -14,7 +14,7 @@ import {
   useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { createCalendarBlockSchema } from '../utils';
+import { createCalendarBlockSchema } from '../createCalendarBlockSchema';
 import { useTranslation } from '../../../locale';
 
 export const CalendarBlockInitializer = ({
@@ -96,12 +96,11 @@ export const CalendarBlockInitializer = ({
         });
         insert(
           createCalendarBlockSchema({
-            collection: item.name,
+            collectionName: item.name,
             dataSource: item.dataSource,
             fieldNames: {
               ...values,
             },
-            settings: 'blockSettings:calendar',
           }),
         );
       }}

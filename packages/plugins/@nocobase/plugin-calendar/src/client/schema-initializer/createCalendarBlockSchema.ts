@@ -2,16 +2,22 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { generateNTemplate } from '../../locale';
 
-export const createCalendarBlockSchema = (options) => {
-  const { collection, dataSource, resource, fieldNames, settings, ...others } = options;
-  const schema: ISchema = {
+export const createCalendarBlockSchema = (options: {
+  collectionName: string;
+  dataSource: string;
+  fieldNames: object;
+  association?: string;
+}): ISchema => {
+  const { collectionName, dataSource, fieldNames, association } = options;
+
+  return {
     type: 'void',
-    'x-acl-action': `${resource || collection}:list`,
+    'x-acl-action': `${association || collectionName}:list`,
     'x-decorator': 'CalendarBlockProvider',
+    'x-use-decorator-props': 'useCalendarBlockDecoratorProps',
     'x-decorator-props': {
-      collection: collection,
+      collection: collectionName,
       dataSource,
-      resource: resource || collection,
       action: 'list',
       fieldNames: {
         id: 'id',
@@ -20,10 +26,9 @@ export const createCalendarBlockSchema = (options) => {
       params: {
         paginate: false,
       },
-      ...others,
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': settings,
+    'x-settings': 'blockSettings:calendar',
     'x-component': 'CardItem',
     properties: {
       [uid()]: {
@@ -42,7 +47,6 @@ export const createCalendarBlockSchema = (options) => {
               },
             },
             'x-initializer': 'calendar:configureActions',
-            properties: {},
           },
           event: {
             type: 'void',
@@ -79,7 +83,6 @@ export const createCalendarBlockSchema = (options) => {
                               actionInitializers: 'details:configureActions',
                             },
                             'x-initializer': 'popup:common:addBlock',
-                            properties: {},
                           },
                         },
                       },
@@ -93,6 +96,4 @@ export const createCalendarBlockSchema = (options) => {
       },
     },
   };
-
-  return schema;
 };

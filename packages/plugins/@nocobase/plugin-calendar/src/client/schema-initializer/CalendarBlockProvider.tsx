@@ -3,6 +3,7 @@ import { useField } from '@formily/react';
 import { BlockProvider, FixedBlockWrapper, useBlockRequestContext, useParsedFilter } from '@nocobase/client';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { useCalendarBlockParams } from '../hooks/useCalendarBlockParams';
 
 export const CalendarBlockContext = createContext<any>({});
 CalendarBlockContext.displayName = 'CalendarBlockContext';
@@ -39,26 +40,9 @@ const InternalCalendarBlockProvider = (props) => {
 };
 
 export const CalendarBlockProvider = (props) => {
-  const appends = useMemo(() => {
-    const arr: string[] = [];
-    const start = props.fieldNames?.start;
-    const end = props.fieldNames?.end;
-
-    if (Array.isArray(start) && start.length >= 2) {
-      arr.push(start[0]);
-    }
-    if (Array.isArray(end) && end.length >= 2) {
-      arr.push(end[0]);
-    }
-
-    return arr;
-  }, [props.fieldNames]);
+  const params = useCalendarBlockParams(props);
   return (
-    <BlockProvider
-      name="calendar"
-      {...props}
-      params={{ ...props.params, appends: [...appends, ...(props.params.appends || [])], paginate: false }}
-    >
+    <BlockProvider name="calendar" {...props} params={params}>
       <InternalCalendarBlockProvider {...props} />
     </BlockProvider>
   );
