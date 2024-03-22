@@ -227,7 +227,8 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       },
     });
     const { name, title, component, props } = values;
-    const defaultSchema = getInterface(component)?.default?.uiSchema || {};
+    const fim = dm.collectionFieldInterfaceManager;
+    const defaultSchema = fim.getFieldInterface(component)?.default?.uiSchema || {};
     insert(
       gridRowColWrap({
         'x-component': component,

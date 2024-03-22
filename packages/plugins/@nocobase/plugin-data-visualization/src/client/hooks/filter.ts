@@ -335,7 +335,8 @@ export const useChartFilter = () => {
     return (
       chart &&
       (filterValues[getFilterFieldPrefix(dataSource, collection)] ||
-        (filterValues['custom'] && parameters?.find((param: { key: string }) => filterValues['custom'][param.key])))
+        (filterValues['custom'] &&
+          parameters?.find(({ key }: { key: string }) => lodash.has(filterValues['custom'], key))))
     );
   };
 
