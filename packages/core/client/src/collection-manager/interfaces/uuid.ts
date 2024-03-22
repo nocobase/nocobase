@@ -30,9 +30,9 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
       type: 'string',
       title: '{{t("Field name")}}',
       required: true,
-      'x-disabled': true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
+      'x-disabled': '{{ !createOnly }}',
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },

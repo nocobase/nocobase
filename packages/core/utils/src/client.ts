@@ -18,3 +18,4 @@ export * from './isPortalInBody';
 export * from './uid';
 export * from './url';
 export { dayjs, lodash };
+export * from './parseHTML';

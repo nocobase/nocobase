@@ -10,10 +10,10 @@ import { checkAction } from './actions/role-check';
 import { roleCollectionsResource } from './actions/role-collections';
 import { setDefaultRole } from './actions/user-setDefaultRole';
 import { setCurrentRole } from './middlewares/setCurrentRole';
+import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
-import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -179,6 +179,7 @@ export class PluginACL extends Plugin {
         'roles.resources:*',
         'uiSchemas:getProperties',
         'roles.menuUiSchemas:*',
+        'roles.users:*',
       ],
     });
 
@@ -397,11 +398,12 @@ export class PluginACL extends Plugin {
     };
 
     // sync database role data to acl
-    this.app.on('afterLoad', async () => {
+    this.app.on('afterStart', async () => {
       await writeRolesToACL(this.app, {
         withOutResources: true,
       });
     });
+
     // this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {

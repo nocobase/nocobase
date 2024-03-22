@@ -9,11 +9,11 @@ import { Collection, CollectionFieldOptions } from '../../../../data-source';
 export const FilterCollapseBlockInitializer = ({
   filterCollections,
   onlyCurrentDataSource,
-  showChildren,
+  hideChildrenIfSingleCollection,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
-  showChildren?: boolean;
+  hideChildrenIfSingleCollection?: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
@@ -34,7 +34,7 @@ export const FilterCollapseBlockInitializer = ({
         insert(schema);
       }}
       filter={filterCollections}
-      showChildren={showChildren}
+      hideChildrenIfSingleCollection={hideChildrenIfSingleCollection}
     />
   );
 };

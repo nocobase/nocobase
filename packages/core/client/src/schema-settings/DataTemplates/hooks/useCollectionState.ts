@@ -26,7 +26,7 @@ export const useCollectionState = (currentCollectionName: string) => {
   const templateField: any = useField();
 
   function getCollectionList() {
-    const collections = getAllCollectionsInheritChain(currentCollectionName);
+    const collections = getAllCollectionsInheritChain(currentCollectionName) || [];
     return collections.map((name) => ({ label: getCollection(name)?.title, value: name }));
   }
 

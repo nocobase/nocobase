@@ -12,6 +12,7 @@ import {
 } from '../modules/actions/add-record/customizeCreateFormBlockInitializers';
 import { BulkDestroyActionInitializer } from '../modules/actions/bulk-destroy/BulkDestroyActionInitializer';
 import { DestroyActionInitializer } from '../modules/actions/delete/DestroyActionInitializer';
+import { DisassociateActionInitializer } from '../modules/actions/disassociate/DisassociateActionInitializer';
 import { ExpandableActionInitializer } from '../modules/actions/expand-collapse/ExpandableActionInitializer';
 import { FilterActionInitializer } from '../modules/actions/filter/FilterActionInitializer';
 import { RefreshActionInitializer } from '../modules/actions/refresh/RefreshActionInitializer';
@@ -121,10 +122,10 @@ import * as items from './items';
 export * from './buttons';
 export * from './items';
 export {
+  createDetailsBlockSchema,
   createFilterFormBlockSchema,
   createFormBlockSchema,
   createReadPrettyFormBlockSchema,
-  createDetailsBlockSchema,
   createTableBlockSchema,
   gridRowColWrap,
   itemsMerge,
@@ -144,6 +145,7 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.addComponents({
       ...initializerComponents,
       ...items,
+      DestroyActionInitializer,
       CreateFormBlockInitializer,
       FormBlockInitializer,
       RecordFormBlockInitializer,
@@ -171,7 +173,7 @@ export class SchemaInitializerPlugin extends Plugin {
       UpdateSubmitActionInitializer,
       BulkDestroyActionInitializer,
       ExpandableActionInitializer,
-      DestroyActionInitializer,
+      DisassociateActionInitializer,
       FilterActionInitializer,
       RefreshActionInitializer,
     } as any);

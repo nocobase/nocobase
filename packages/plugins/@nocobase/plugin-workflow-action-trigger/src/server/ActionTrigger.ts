@@ -58,8 +58,9 @@ export default class extends Trigger {
     const dataSourceHeader = context.get('x-data-source') || 'main';
 
     const { currentUser, currentRole } = context.state;
+    const { model: UserModel } = this.workflow.db.getCollection('users');
     const userInfo = {
-      user: toJSON(currentUser),
+      user: UserModel.build(currentUser).desensitize(),
       roleName: currentRole,
     };
 

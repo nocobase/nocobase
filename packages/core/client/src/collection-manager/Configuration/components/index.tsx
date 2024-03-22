@@ -284,7 +284,7 @@ export const ForeignKey = observer(
           }}
           onChange={(value, option) => {
             props?.onChange?.(value);
-            setInitialValue(option.label);
+            setInitialValue(option.label || value);
           }}
         />
       </div>
