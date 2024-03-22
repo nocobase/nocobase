@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AssociationFieldContext } from './context';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useCollection, useCollectionManager } from '../../../data-source/collection';
+import { useSchemaComponentContext } from '../../hooks';
 
 export const AssociationFieldProvider = observer(
   (props) => {
@@ -11,6 +12,10 @@ export const AssociationFieldProvider = observer(
     const collection = useCollection();
     const dm = useCollectionManager();
     const fieldSchema = useFieldSchema();
+
+    // 这里有点奇怪，在 Table 切换显示的组件时，这个组件并不会触发重新渲染，所以增加这个 Hooks 让其重新渲染
+    useSchemaComponentContext();
+
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
 
