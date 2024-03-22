@@ -30,7 +30,7 @@ export interface PluginOptions {
   [key: string]: any;
 }
 
-export abstract class Plugin implements PluginInterface {
+export abstract class Plugin<O = any> implements PluginInterface {
   options: any;
   app: Application;
 
