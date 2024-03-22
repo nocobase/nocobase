@@ -159,15 +159,14 @@ export class PluginDataSourceManagerServer extends Plugin {
       const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
       const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
 
-      // @ts-ignore
-      const isDBInstance = !!dataSource.collectionManager.db;
-
       const item: any = {
         key: dataSourceModel.get('key'),
         displayName: dataSourceModel.get('displayName'),
         status: dataSourceStatus,
         type: dataSourceModel.get('type'),
-        isDBInstance,
+
+        // @ts-ignore
+        isDBInstance: !!dataSource?.collectionManager.db,
       };
 
       if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {

@@ -14,6 +14,7 @@ export class DataSourceManager {
   }
 
   async add(dataSource: DataSource, options: any = {}) {
+    console.log('add', dataSource.name, options);
     await dataSource.load(options);
     this.dataSources.set(dataSource.name, dataSource);
   }
