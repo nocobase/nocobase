@@ -16,14 +16,14 @@ import { lang } from '../locale';
 
 const ChartInitializer = () => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
-  const { allowAll, parseAction } = useACLRoleContext();
+  const { parseAction } = useACLRoleContext();
   const itemConfig = useSchemaInitializerItem();
   const filter = useCallback(
     (item) => {
       const params = parseAction(`${item.name}:list`);
       return params;
     },
-    [allowAll, parseAction],
+    [parseAction],
   );
 
   return (

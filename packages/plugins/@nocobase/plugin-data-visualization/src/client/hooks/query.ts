@@ -143,13 +143,12 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
 export const useCollectionOptions = () => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
-  const { allowAll, parseAction } = useACLRoleContext();
-  const allCollections = dm.getAllCollections((collection) => {
-    if (allowAll) {
-      return true;
-    }
-    const params = parseAction(`${collection.name}:list`);
-    return params;
+  const { parseAction } = useACLRoleContext();
+  const allCollections = dm.getAllCollections({
+    filterCollection: (collection) => {
+      const params = parseAction(`${collection.name}:list`);
+      return params;
+    },
   });
   const options = allCollections
     .filter(({ key, isDBInstance }) => key === DEFAULT_DATA_SOURCE_KEY || isDBInstance)
