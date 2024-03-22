@@ -10,7 +10,7 @@ import {
   Trigger,
   CollectionBlockInitializer,
   getCollectionFieldOptions,
-  useWorkflowExecuted,
+  useWorkflowAnyExecuted,
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
@@ -23,7 +23,7 @@ export default class extends Trigger {
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'DataSourceCollectionCascader',
-      'x-disabled': '{{ useWorkflowExecuted() }}',
+      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
       title: `{{t("Collection", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("Which collection record belongs to.", { ns: "${NAMESPACE}" })}}`,
       'x-reactions': [
@@ -66,7 +66,7 @@ export default class extends Trigger {
   };
   scope = {
     useCollectionDataSource,
-    useWorkflowExecuted,
+    useWorkflowAnyExecuted,
   };
   isActionTriggerable = (config, context) => {
     return ['create', 'update', 'customize:update', 'customize:triggerWorkflows'].includes(context.action);

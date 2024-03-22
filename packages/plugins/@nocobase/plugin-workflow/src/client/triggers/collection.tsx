@@ -9,6 +9,7 @@ import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, lang } from '../locale';
 import { appends, collection, filter } from '../schemas/collection';
 import { getCollectionFieldOptions } from '../variable';
+import { useWorkflowAnyExecuted } from '../hooks';
 import { Trigger } from '.';
 
 const COLLECTION_TRIGGER_MODE = {
@@ -31,6 +32,7 @@ export default class extends Trigger {
   fieldset = {
     collection: {
       ...collection,
+      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
       'x-component-props': {
         dataSourceFilter(item) {
           return item.options.key === 'main' || item.options.isDBInstance;
@@ -152,6 +154,7 @@ export default class extends Trigger {
   };
   scope = {
     useCollectionDataSource,
+    useWorkflowAnyExecuted,
   };
   components = {
     FieldsSelect,
