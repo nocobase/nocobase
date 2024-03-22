@@ -1,4 +1,4 @@
-import { request } from '@nocobase/test/e2e';
+import { request, Page } from '@nocobase/test/e2e';
 
 const PORT = process.env.APP_PORT || 20000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
@@ -917,6 +917,16 @@ function getHeaders(storageState: any) {
   return headers;
 }
 
+// 用户登录新会话
+export const userLogin = async (page: Page, approvalUserEmail: string, approvalUser: string) => {
+  await page.goto(`${process.env.APP_BASE_URL}/signin`);
+  await page.getByPlaceholder('Email').fill(approvalUserEmail);
+  await page.getByPlaceholder('Password').fill(approvalUser);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.waitForLoadState('networkidle');
+  return page;
+};
+
 export default module.exports = {
   apiCreateWorkflow,
   apiUpdateWorkflow,
@@ -936,4 +946,5 @@ export default module.exports = {
   apiGetDataSourceCount,
   apiCreateRecordTriggerActionEvent,
   apiApplyApprovalEvent,
+  userLogin,
 };

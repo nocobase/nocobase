@@ -125,6 +125,11 @@ export class ApprovalPassthroughModeNode {
   nodeConfigure: Locator;
   addAssigneesButton: Locator;
   assigneesDropDown: Locator;
+  OrRadio: Locator;
+  AndRadio: Locator;
+  votingRadio: Locator;
+  parallellyRadio: Locator;
+  sequentiallyRadio: Locator;
   goToconfigureButton: Locator;
   addBlockButton: Locator;
   addDetailsMenu: Locator;
@@ -148,6 +153,11 @@ export class ApprovalPassthroughModeNode {
       .getByRole('button', { name: 'Configure' });
     this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
     this.assigneesDropDown = page.getByTestId('select-single');
+    this.OrRadio = page.getByLabel('Or', { exact: true });
+    this.AndRadio = page.getByLabel('And', { exact: true });
+    this.votingRadio = page.getByLabel('Voting', { exact: true });
+    this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
+    this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
     this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
     this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
