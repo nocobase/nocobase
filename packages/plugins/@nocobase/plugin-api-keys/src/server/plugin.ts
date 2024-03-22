@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/server';
 import { create, destroy } from './actions/api-keys';
 
-export default class ApiKeysPlugin extends Plugin {
+export class PluginAPIKeysServer extends Plugin {
   resourceName = 'apiKeys';
 
   async beforeLoad() {
@@ -34,3 +34,5 @@ export default class ApiKeysPlugin extends Plugin {
     });
   }
 }
+
+export default PluginAPIKeysServer;
