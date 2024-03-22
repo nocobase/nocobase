@@ -14,6 +14,7 @@ function addTestCommand(name, cli) {
     .option('--run')
     .option('--allowOnly')
     .option('--bail')
+    .option('--coverage')
     .option('-h, --help')
     .option('--single-thread [singleThread]')
     .arguments('[paths...]')
@@ -36,6 +37,7 @@ function addTestCommand(name, cli) {
       if (!opts.watch && !opts.run) {
         process.argv.push('--run');
       }
+
       const first = paths?.[0];
       if (!process.env.TEST_ENV && first) {
         const key = first.split(path.sep).join('/');
@@ -51,6 +53,7 @@ function addTestCommand(name, cli) {
       if (opts.singleThread === 'false') {
         process.argv.splice(process.argv.indexOf('--single-thread=false'), 1);
       }
+
       const cliArgs = ['--max_old_space_size=14096', './node_modules/.bin/vitest', ...process.argv.slice(3)];
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         await run('node', cliArgs);
