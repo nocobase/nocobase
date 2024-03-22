@@ -5,7 +5,7 @@ import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../utils';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
-import { createTableBlockUISchema } from '../../modules/blocks/data-blocks/table/createTableBLockSchema';
+import { createTableBlockUISchema } from '../../modules/blocks/data-blocks/table/createTableBlockUISchema';
 
 /**
  * @deprecated

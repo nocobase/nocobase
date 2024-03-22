@@ -5,5 +5,5 @@ export * from './TableColumnSchemaToolbar';
 export * from './tableBlockSettings';
 export * from './tableColumnSettings';
 export * from './TableColumnInitializers';
-export * from './createTableBLockSchema';
+export * from './createTableBlockUISchema';
 export * from './useTableBlockDecoratorProps';

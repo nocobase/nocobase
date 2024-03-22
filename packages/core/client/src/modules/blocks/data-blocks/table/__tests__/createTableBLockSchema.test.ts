@@ -1,4 +1,4 @@
-import { createTableBlockUISchema } from '../createTableBLockSchema';
+import { createTableBlockUISchema } from '../createTableBlockUISchema';
 
 describe('createTableBLockSchemaV2', () => {
   it('should create a default table block schema with minimum options', () => {

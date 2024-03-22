@@ -4,7 +4,7 @@ import { useCollectionManager_deprecated } from '../../../../collection-manager/
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import React from 'react';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
-import { createTableBlockUISchema } from './createTableBLockSchema';
+import { createTableBlockUISchema } from './createTableBlockUISchema';
 
 export const TableBlockInitializer = ({
   filterCollections,
