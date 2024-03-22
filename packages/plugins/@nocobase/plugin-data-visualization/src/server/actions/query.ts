@@ -196,7 +196,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     let fieldType = fields.get(name)?.type;
     if (target) {
       const targetField = fields.get(target) as Field;
-      const targetCollection = ctx.db.getCollection(targetField.target);
+      const targetCollection = db.getCollection(targetField.target);
       const targetFields = targetCollection.fields;
       fieldType = targetFields.get(name)?.type;
       field = `${target}.${field}`;
