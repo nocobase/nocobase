@@ -1,11 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export const createGanttBlockSchema = (options: {
-  collectionName: string;
-  fieldNames: string[];
-  dataSource: string;
-}) => {
+export const createGanttBlockSchema = (options: { collectionName: string; fieldNames: object; dataSource: string }) => {
   const { collectionName, fieldNames, dataSource } = options;
   const schema: ISchema = {
     type: 'void',

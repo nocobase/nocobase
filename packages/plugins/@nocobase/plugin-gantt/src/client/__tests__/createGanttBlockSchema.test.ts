@@ -10,7 +10,10 @@ describe('createGanttBlockSchema', () => {
   it('should generate schema correctly', () => {
     const options = {
       collectionName: 'TestCollection',
-      fieldNames: ['field1', 'field2'],
+      fieldNames: {
+        label: 'field1',
+        value: 'field2',
+      },
       dataSource: 'TestDataSource',
     };
     const schema = createGanttBlockSchema(options);
@@ -126,10 +129,10 @@ describe('createGanttBlockSchema', () => {
           "action": "list",
           "collection": "TestCollection",
           "dataSource": "TestDataSource",
-          "fieldNames": [
-            "field1",
-            "field2",
-          ],
+          "fieldNames": {
+            "label": "field1",
+            "value": "field2",
+          },
           "params": {
             "paginate": false,
           },

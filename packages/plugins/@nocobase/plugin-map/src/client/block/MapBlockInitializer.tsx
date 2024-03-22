@@ -13,7 +13,8 @@ import {
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
-import { createMapBlockSchema, findNestedOption } from './utils';
+import { findNestedOption } from './utils';
+import { createMapBlockSchema } from './createMapBlockSchema';
 
 export const MapBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -85,12 +86,11 @@ export const MapBlockInitializer = () => {
         });
         insert(
           createMapBlockSchema({
-            collection: item.name,
+            collectionName: item.name,
             dataSource: item.dataSource,
             fieldNames: {
               ...values,
             },
-            settings: 'blockSettings:map',
           }),
         );
       }}
