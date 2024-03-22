@@ -683,7 +683,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           const { name } = useCollection_deprecated();
           const { getChildrenCollections } = useCollectionManager_deprecated();
           const isChildCollectionAction =
-            getChildrenCollections(name)?.length > 0 && fieldSchema['x-action'] === 'create';
+            getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
           return isChildCollectionAction;
         },
         useComponentProps() {
