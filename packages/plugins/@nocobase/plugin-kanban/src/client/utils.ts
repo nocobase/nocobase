@@ -1,24 +1,33 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export const createKanbanBlockSchema = (options) => {
-  const { collection, resource, groupField, sortField, ...others } = options;
-  const schema: ISchema = {
+export const createKanbanBlockSchema = (options: {
+  collectionName: string;
+  groupField: string;
+  sortField: string;
+  dataSource: string;
+  params?: Record<string, any>;
+}): ISchema => {
+  const { collectionName, groupField, sortField, dataSource, params } = options;
+
+  return {
     type: 'void',
-    'x-acl-action': `${resource || collection}:list`,
+    'x-acl-action': `${collectionName}:list`,
     'x-decorator': 'KanbanBlockProvider',
     'x-decorator-props': {
-      collection: collection,
-      resource: resource || collection,
+      collection: collectionName,
       action: 'list',
       groupField,
       sortField,
       params: {
         paginate: false,
+        ...params,
       },
-      ...others,
+      dataSource,
     },
-    'x-designer': 'Kanban.Designer',
+    // 'x-designer': 'Kanban.Designer',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': 'blockSettings:kanban',
     'x-component': 'CardItem',
     properties: {
       actions: {
@@ -106,5 +115,4 @@ export const createKanbanBlockSchema = (options) => {
       },
     },
   };
-  return schema;
 };

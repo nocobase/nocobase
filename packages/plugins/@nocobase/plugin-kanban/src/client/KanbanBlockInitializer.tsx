@@ -160,11 +160,10 @@ export const KanbanBlockInitializer = () => {
           createKanbanBlockSchema({
             sortField: values.dragSortBy,
             groupField: values.groupField.value,
-            collection: item.name,
+            collectionName: item.name,
             dataSource: item.dataSource,
             params: {
               sort: [values.dragSortBy],
-              paginate: false,
             },
           }),
         );
