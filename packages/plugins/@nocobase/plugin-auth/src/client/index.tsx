@@ -1,13 +1,13 @@
 import { Plugin } from '@nocobase/client';
-import { AuthProvider } from './AuthProvider';
-import { NAMESPACE } from './locale';
-import { Authenticator } from './settings/Authenticator';
-import { AuthLayout, SignInPage, SignUpPage } from './pages';
-import { ComponentType } from 'react';
 import { Registry } from '@nocobase/utils/client';
+import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
-import { SignInForm, SignUpForm, Options } from './basic';
+import { AuthProvider } from './AuthProvider';
 import { Authenticator as AuthenticatorType } from './authenticator';
+import { Options, SignInForm, SignUpForm } from './basic';
+import { NAMESPACE } from './locale';
+import { AuthLayout, SignInPage, SignUpPage } from './pages';
+import { Authenticator } from './settings/Authenticator';
 
 export type AuthOptions = {
   components: Partial<{
@@ -18,7 +18,7 @@ export type AuthOptions = {
   }>;
 };
 
-export class AuthPlugin extends Plugin {
+export class PluginAuthClient extends Plugin {
   authTypes = new Registry<AuthOptions>();
 
   registerType(authType: string, options: AuthOptions) {
@@ -63,7 +63,8 @@ export class AuthPlugin extends Plugin {
   }
 }
 
-export default AuthPlugin;
-export { useSignIn } from './basic';
-export { useAuthenticator, AuthenticatorsContext } from './authenticator';
+export { AuthenticatorsContext, useAuthenticator } from './authenticator';
 export type { Authenticator } from './authenticator';
+export { useSignIn } from './basic';
+
+export default PluginAuthClient;

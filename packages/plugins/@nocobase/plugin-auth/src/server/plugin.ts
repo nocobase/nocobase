@@ -1,17 +1,17 @@
+import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { namespace, presetAuthenticator, presetAuthType } from '../preset';
+import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
 import { BasicAuth } from './basic-auth';
 import { enUS, zhCN } from './locale';
 import { AuthModel } from './model/authenticator';
-import { TokenBlacklistService } from './token-blacklist';
-import { Cache } from '@nocobase/cache';
 import { Storer } from './storer';
+import { TokenBlacklistService } from './token-blacklist';
 
-export class AuthPlugin extends Plugin {
+export class PluginAuthServer extends Plugin {
   cache: Cache;
 
   afterAdd() {}
@@ -105,4 +105,4 @@ export class AuthPlugin extends Plugin {
   async remove() {}
 }
 
-export default AuthPlugin;
+export default PluginAuthServer;
