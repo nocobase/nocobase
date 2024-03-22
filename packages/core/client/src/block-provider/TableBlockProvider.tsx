@@ -8,7 +8,6 @@ import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
 import { isEqual } from 'lodash';
-import { useDeepMemoized } from '../application';
 
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
@@ -44,14 +43,14 @@ const InternalTableBlockProvider = (props: Props) => {
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
   const [expandFlag, setExpandFlag] = useState(fieldNames ? true : false);
-  const data = useDeepMemoized(service?.data?.data);
   const allIncludesChildren = useMemo(() => {
     const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+    const data = service?.data?.data;
     if (treeTable !== false) {
       const keys = getIdsWithChildren(data);
       return keys;
     }
-  }, [data, fieldSchema]);
+  }, [service?.loading, fieldSchema]);
 
   const setExpandFlagValue = useCallback(() => {
     setExpandFlag(!expandFlag);
@@ -146,26 +145,30 @@ export const useTableBlockProps = () => {
   const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
   const { getDataBlocks } = useFilterBlock();
   const isLoading = ctx?.service?.loading;
-  const serviceResponse = useDeepMemoized(ctx?.service?.data);
-  const params = useDeepMemoized(ctx?.service?.params);
-  const selectedRowKeys = useDeepMemoized(ctx?.field?.data?.selectedRowKeys);
+  const params = useMemo(() => ctx?.service?.params, [JSON.stringify(ctx?.service?.params)]);
   useEffect(() => {
     if (!isLoading) {
+      const serviceResponse = ctx?.service?.data;
       const data = serviceResponse?.data || [];
       const meta = serviceResponse?.meta || {};
+      const selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
 
       if (!isEqual(field.value, data)) {
         field.value = data;
         field?.setInitialValue(data);
       }
       field.data = field.data || {};
-      field.data.selectedRowKeys = selectedRowKeys;
+
+      if (!isEqual(field.data.selectedRowKeys, selectedRowKeys)) {
+        field.data.selectedRowKeys = selectedRowKeys;
+      }
+
       field.componentProps.pagination = field.componentProps.pagination || {};
       field.componentProps.pagination.pageSize = meta?.pageSize;
       field.componentProps.pagination.total = meta?.count;
       field.componentProps.pagination.current = meta?.page;
     }
-  }, [field, serviceResponse, isLoading, selectedRowKeys]);
+  }, [field, isLoading]);
 
   return {
     childrenColumnName: ctx.childrenColumnName,

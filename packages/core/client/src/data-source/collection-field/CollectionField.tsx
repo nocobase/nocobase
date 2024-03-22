@@ -7,7 +7,6 @@ import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
-import { useDeepMemoized } from '../../application';
 
 type Props = {
   component: any;
@@ -22,8 +21,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const fieldSchema = useFieldSchema();
   const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
-  const memorizedUiSchema = useDeepMemoized(uiSchemaOrigin);
-  const uiSchema = useMemo(() => compile(uiSchemaOrigin), [memorizedUiSchema]);
+  const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const setFieldProps = useCallback(
     (key, value) => {

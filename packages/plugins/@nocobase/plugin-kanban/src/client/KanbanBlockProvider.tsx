@@ -11,7 +11,6 @@ import {
   BlockProvider,
   useBlockRequestContext,
   useCollection,
-  useDeepMemoized,
 } from '@nocobase/client';
 import { isEqual } from 'lodash';
 import { toColumns } from './Kanban';
@@ -142,13 +141,15 @@ export const useKanbanBlockProps = () => {
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
   const primaryKey = useCollection()?.getPrimaryKey();
-  const responseData = useDeepMemoized(ctx?.service?.data?.data);
 
   useEffect(() => {
-    const data = toColumns(ctx.groupField, responseData, primaryKey);
+    const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
+    if (isEqual(field.value, data)) {
+      return;
+    }
     field.value = data;
     setDataSource(data);
-  }, [responseData]);
+  }, [ctx?.service?.loading]);
 
   const disableCardDrag = useDisableCardDrag();
 

@@ -3,6 +3,7 @@ import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
+import { useCreation } from 'ahooks';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
@@ -20,7 +21,6 @@ import {
   RecordProvider,
   useCollection,
   useCollectionParentRecordData,
-  useDeepMemoized,
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
@@ -40,8 +40,19 @@ const useArrayField = (props) => {
 };
 
 function getSchemaArrJSON(schemaArr: Schema[]) {
-  return schemaArr.map((item) => omit(item.toJSON(), 'properties'));
+  return schemaArr.map((item) => (item.name === 'actions' ? omit(item.toJSON(), 'properties') : item.toJSON()));
 }
+
+export const useColumnsDeepMemoized = (columns: any[]) => {
+  const columnsJSON = getSchemaArrJSON(columns);
+  const oldObj = useCreation(() => ({ value: _.cloneDeep(columnsJSON) }), []);
+
+  if (!_.isEqual(columnsJSON, oldObj.value)) {
+    oldObj.value = _.cloneDeep(columnsJSON);
+  }
+
+  return oldObj.value;
+};
 
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
   const { token } = useToken();
@@ -58,7 +69,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     return buf;
   }, []);
 
-  const hasChangedColumns = useDeepMemoized(getSchemaArrJSON(columnsSchema));
+  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
@@ -226,7 +237,10 @@ const TableIndex = (props) => {
 
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
-  const pagination = useDeepMemoized({ ...pagination1, ...pagination2 }, true);
+  const pagination = useMemo(
+    () => ({ ...pagination1, ...pagination2 }),
+    [JSON.stringify({ ...pagination1, ...pagination2 })],
+  );
 
   const showTotal = useCallback((total) => t('Total {{count}} items', { count: total }), [t]);
 
@@ -348,7 +362,6 @@ export const Table: any = observer(
     const field = useArrayField(others);
     const columns = useTableColumns(others);
     const schema = useFieldSchema();
-    const { designable } = useDesignable();
     const collection = useCollection();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
@@ -501,13 +514,13 @@ export const Table: any = observer(
     );
 
     const dataSourceKeys = field?.value?.map(getRowKey);
-    const memoizedDataSourceKeys = useDeepMemoized(dataSourceKeys);
+    const memoizedDataSourceKeys = useMemo(() => dataSourceKeys, [JSON.stringify(dataSourceKeys)]);
     const dataSource = useMemo(
       () => [...(field?.value || [])].filter(Boolean),
       [field?.value, field?.value?.length, memoizedDataSourceKeys],
     );
 
-    const memoizedRowSelection = useDeepMemoized(rowSelection);
+    const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
 
     const restProps = useMemo(
       () => ({
