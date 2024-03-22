@@ -37,7 +37,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const ctx = useFormBlockContext();
 
   useEffect(() => {
-    if (ctx?.field) {
+    if (!field.readPretty && ctx?.field) {
       ctx.field.added = ctx.field.added || new Set();
       ctx.field.added.add(fieldSchema.name);
     }
@@ -50,6 +50,9 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     setFieldProps('content', uiSchema['x-content']);
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
+    if (field.readPretty) {
+      return;
+    }
     if (ctx?.form) {
       const defaultVal = isAllowToSetDefaultValue() ? fieldSchema.default || defaultValue : undefined;
       defaultVal !== null && defaultVal !== undefined && setFieldProps('initialValue', defaultVal);
