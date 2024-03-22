@@ -1,4 +1,4 @@
-import { createKanbanBlockSchema } from '../utils';
+import { createKanbanBlockSchema } from '../createKanbanBlockSchema';
 
 vi.mock('@formily/shared', () => {
   return {

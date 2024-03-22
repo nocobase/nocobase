@@ -16,7 +16,7 @@ import {
   useSchemaInitializerItem,
   useAPIClient,
 } from '@nocobase/client';
-import { createKanbanBlockSchema } from './utils';
+import { createKanbanBlockSchema } from './createKanbanBlockSchema';
 import { CreateAndSelectSort } from './CreateAndSelectSort';
 import { NAMESPACE } from './locale';
 
