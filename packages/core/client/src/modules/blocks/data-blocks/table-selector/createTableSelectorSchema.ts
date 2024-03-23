@@ -44,11 +44,11 @@ export const createTableSelectorSchema = (options: {
         type: 'array',
         'x-initializer': 'table:configureColumns',
         'x-component': 'TableV2.Selector',
+        'x-use-component-props': 'useTableSelectorProps',
         'x-component-props': {
           rowSelection: {
             type: 'checkbox',
           },
-          useProps: '{{ useTableSelectorProps }}',
         },
       },
     },
