@@ -24,7 +24,7 @@ jobs:
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: rm .git
-        run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
+        run: rm -rf packages/pro-plugins/.git
       - name: yarn install and build
         run: |
           yarn config set registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
