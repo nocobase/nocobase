@@ -5,7 +5,7 @@ import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { useCreation } from 'ahooks';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -17,6 +17,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
+  CollectionFieldOptions,
   RecordIndexProvider,
   RecordProvider,
   useCollection,
@@ -53,6 +54,12 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
 
   return oldObj.value;
 };
+
+interface SimpleTableColumnProps {
+  basePath: any;
+  schema: ISchema;
+  collectionField: CollectionFieldOptions;
+}
 
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
   const { token } = useToken();
@@ -99,6 +106,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           width: 200,
           ...s['x-component-props'],
           render: (v, record) => {
+            if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
+
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
             return (
