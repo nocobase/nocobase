@@ -212,8 +212,8 @@ const usePaginationProps = (pagination1, pagination2) => {
   return result.total <= result.pageSize ? false : result;
 };
 
-export const Table: any = observer(
-  withDynamicSchemaProps(
+export const Table: any = withDynamicSchemaProps(
+  observer(
     (props: {
       useProps?: () => any;
       onChange?: (pagination, filters, sorter, extra) => void;
