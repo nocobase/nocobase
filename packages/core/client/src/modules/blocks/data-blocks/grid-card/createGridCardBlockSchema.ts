@@ -32,9 +32,7 @@ export const createGridCardBlockSchema = (options: {
       rowKey,
     },
     'x-component': 'BlockItem',
-    'x-component-props': {
-      useProps: '{{ useGridCardBlockItemProps }}',
-    },
+    'x-use-component-props': 'useGridCardBlockItemProps',
     'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'blockSettings:gridCard',
     properties: {
@@ -47,42 +45,32 @@ export const createGridCardBlockSchema = (options: {
             marginBottom: 'var(--nb-spacing)',
           },
         },
-        properties: {},
       },
       list: {
         type: 'array',
         'x-component': 'GridCard',
-        'x-component-props': {
-          useProps: '{{ useGridCardBlockProps }}',
-        },
+        'x-use-component-props': 'useGridCardBlockProps',
         properties: {
           item: {
             type: 'object',
             'x-component': 'GridCard.Item',
             'x-read-pretty': true,
-            'x-component-props': {
-              useProps: '{{ useGridCardItemProps }}',
-            },
+            'x-use-component-props': 'useGridCardItemProps',
             properties: {
               grid: templateSchema || {
                 type: 'void',
                 'x-component': 'Grid',
                 'x-initializer': 'details:configureFields',
-                'x-initializer-props': {
-                  useProps: '{{ useGridCardItemInitializerProps }}',
-                },
-                properties: {},
               },
               actionBar: {
                 type: 'void',
                 'x-align': 'left',
                 'x-initializer': 'gridCard:configureItemActions',
                 'x-component': 'ActionBar',
+                'x-use-component-props': 'useGridCardActionBarProps',
                 'x-component-props': {
-                  useProps: '{{ useGridCardActionBarProps }}',
                   layout: 'one-column',
                 },
-                properties: {},
               },
             },
           },

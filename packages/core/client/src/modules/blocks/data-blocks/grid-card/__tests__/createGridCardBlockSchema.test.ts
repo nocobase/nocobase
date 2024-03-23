@@ -12,74 +12,70 @@ describe('createGridCardBlockSchema', () => {
 
     const schema = createGridCardBlockSchema(options);
 
-    expect(schema).toEqual({
-      type: 'void',
-      'x-acl-action': 'testAssociation:view',
-      'x-decorator': 'GridCard.Decorator',
-      'x-use-decorator-props': 'useGridCardBlockDecoratorProps',
-      'x-decorator-props': {
-        collection: 'testCollection',
-        association: 'testAssociation',
-        dataSource: 'testDataSource',
-        readPretty: true,
-        action: 'list',
-        params: {
-          pageSize: 12,
-        },
-        runWhenParamsChanged: true,
-        rowKey: 'testRowKey',
-      },
-      'x-component': 'BlockItem',
-      'x-component-props': {
-        useProps: '{{ useGridCardBlockItemProps }}',
-      },
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-settings': 'blockSettings:gridCard',
-      properties: {
-        actionBar: {
-          type: 'void',
-          'x-initializer': 'gridCard:configureActions',
-          'x-component': 'ActionBar',
-          'x-component-props': {
-            style: {
-              marginBottom: 'var(--nb-spacing)',
-            },
-          },
-          properties: {},
-        },
-        list: {
-          type: 'array',
-          'x-component': 'GridCard',
-          'x-component-props': {
-            useProps: '{{ useGridCardBlockProps }}',
-          },
-          properties: {
-            item: {
-              type: 'object',
-              'x-component': 'GridCard.Item',
-              'x-read-pretty': true,
-              'x-component-props': {
-                useProps: '{{ useGridCardItemProps }}',
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "properties": {
+          "actionBar": {
+            "type": "void",
+            "x-component": "ActionBar",
+            "x-component-props": {
+              "style": {
+                "marginBottom": "var(--nb-spacing)",
               },
-              properties: {
-                grid: { type: 'string' },
-                actionBar: {
-                  type: 'void',
-                  'x-align': 'left',
-                  'x-initializer': 'gridCard:configureItemActions',
-                  'x-component': 'ActionBar',
-                  'x-component-props': {
-                    useProps: '{{ useGridCardActionBarProps }}',
-                    layout: 'one-column',
+            },
+            "x-initializer": "gridCard:configureActions",
+          },
+          "list": {
+            "properties": {
+              "item": {
+                "properties": {
+                  "actionBar": {
+                    "type": "void",
+                    "x-align": "left",
+                    "x-component": "ActionBar",
+                    "x-component-props": {
+                      "layout": "one-column",
+                    },
+                    "x-initializer": "gridCard:configureItemActions",
+                    "x-use-component-props": "useGridCardActionBarProps",
                   },
-                  properties: {},
+                  "grid": {
+                    "type": "string",
+                  },
                 },
+                "type": "object",
+                "x-component": "GridCard.Item",
+                "x-read-pretty": true,
+                "x-use-component-props": "useGridCardItemProps",
               },
             },
+            "type": "array",
+            "x-component": "GridCard",
+            "x-use-component-props": "useGridCardBlockProps",
           },
         },
-      },
-    });
+        "type": "void",
+        "x-acl-action": "testAssociation:view",
+        "x-component": "BlockItem",
+        "x-decorator": "GridCard.Decorator",
+        "x-decorator-props": {
+          "action": "list",
+          "association": "testAssociation",
+          "collection": "testCollection",
+          "dataSource": "testDataSource",
+          "params": {
+            "pageSize": 12,
+          },
+          "readPretty": true,
+          "rowKey": "testRowKey",
+          "runWhenParamsChanged": true,
+        },
+        "x-settings": "blockSettings:gridCard",
+        "x-toolbar": "BlockSchemaToolbar",
+        "x-use-component-props": "useGridCardBlockItemProps",
+        "x-use-decorator-props": "useGridCardBlockDecoratorProps",
+      }
+    `);
   });
 
   test('should return the correct schema when templateSchema is empty', () => {
@@ -92,81 +88,71 @@ describe('createGridCardBlockSchema', () => {
 
     const schema = createGridCardBlockSchema(options);
 
-    expect(schema).toEqual({
-      type: 'void',
-      'x-acl-action': 'testAssociation:view',
-      'x-decorator': 'GridCard.Decorator',
-      'x-use-decorator-props': 'useGridCardBlockDecoratorProps',
-      'x-decorator-props': {
-        collection: 'testCollection',
-        association: 'testAssociation',
-        dataSource: 'testDataSource',
-        readPretty: true,
-        action: 'list',
-        params: {
-          pageSize: 12,
-        },
-        runWhenParamsChanged: true,
-        rowKey: 'testRowKey',
-      },
-      'x-component': 'BlockItem',
-      'x-component-props': {
-        useProps: '{{ useGridCardBlockItemProps }}',
-      },
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-settings': 'blockSettings:gridCard',
-      properties: {
-        actionBar: {
-          type: 'void',
-          'x-initializer': 'gridCard:configureActions',
-          'x-component': 'ActionBar',
-          'x-component-props': {
-            style: {
-              marginBottom: 'var(--nb-spacing)',
-            },
-          },
-          properties: {},
-        },
-        list: {
-          type: 'array',
-          'x-component': 'GridCard',
-          'x-component-props': {
-            useProps: '{{ useGridCardBlockProps }}',
-          },
-          properties: {
-            item: {
-              type: 'object',
-              'x-component': 'GridCard.Item',
-              'x-read-pretty': true,
-              'x-component-props': {
-                useProps: '{{ useGridCardItemProps }}',
-              },
-              properties: {
-                grid: {
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'details:configureFields',
-                  'x-initializer-props': {
-                    useProps: '{{ useGridCardItemInitializerProps }}',
-                  },
-                  properties: {},
-                },
-                actionBar: {
-                  type: 'void',
-                  'x-align': 'left',
-                  'x-initializer': 'gridCard:configureItemActions',
-                  'x-component': 'ActionBar',
-                  'x-component-props': {
-                    useProps: '{{ useGridCardActionBarProps }}',
-                    layout: 'one-column',
-                  },
-                  properties: {},
-                },
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "properties": {
+          "actionBar": {
+            "type": "void",
+            "x-component": "ActionBar",
+            "x-component-props": {
+              "style": {
+                "marginBottom": "var(--nb-spacing)",
               },
             },
+            "x-initializer": "gridCard:configureActions",
+          },
+          "list": {
+            "properties": {
+              "item": {
+                "properties": {
+                  "actionBar": {
+                    "type": "void",
+                    "x-align": "left",
+                    "x-component": "ActionBar",
+                    "x-component-props": {
+                      "layout": "one-column",
+                    },
+                    "x-initializer": "gridCard:configureItemActions",
+                    "x-use-component-props": "useGridCardActionBarProps",
+                  },
+                  "grid": {
+                    "type": "void",
+                    "x-component": "Grid",
+                    "x-initializer": "details:configureFields",
+                  },
+                },
+                "type": "object",
+                "x-component": "GridCard.Item",
+                "x-read-pretty": true,
+                "x-use-component-props": "useGridCardItemProps",
+              },
+            },
+            "type": "array",
+            "x-component": "GridCard",
+            "x-use-component-props": "useGridCardBlockProps",
           },
         },
-      },
-    });
+        "type": "void",
+        "x-acl-action": "testAssociation:view",
+        "x-component": "BlockItem",
+        "x-decorator": "GridCard.Decorator",
+        "x-decorator-props": {
+          "action": "list",
+          "association": "testAssociation",
+          "collection": "testCollection",
+          "dataSource": "testDataSource",
+          "params": {
+            "pageSize": 12,
+          },
+          "readPretty": true,
+          "rowKey": "testRowKey",
+          "runWhenParamsChanged": true,
+        },
+        "x-settings": "blockSettings:gridCard",
+        "x-toolbar": "BlockSchemaToolbar",
+        "x-use-component-props": "useGridCardBlockItemProps",
+        "x-use-decorator-props": "useGridCardBlockDecoratorProps",
+      }
+    `);
   });
 });

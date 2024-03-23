@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
 import { useSchemaInitializerRender } from '../../../application';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 interface ActionBarContextForceProps {
   layout?: 'one-column' | 'tow-columns';
@@ -46,88 +47,93 @@ const Portal: React.FC = (props) => {
   );
 };
 
-export const ActionBar = observer(
-  (props: any) => {
-    const { forceProps = {} } = useActionBarContext();
-    const { layout = 'tow-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
-    const fieldSchema = useFieldSchema();
-    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
-    const { designable } = useDesignable();
+export const ActionBar = withDynamicSchemaProps(
+  observer(
+    (props: any) => {
+      const { forceProps = {} } = useActionBarContext();
 
-    if (layout === 'one-column') {
+      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+      const { layout = 'tow-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
+
+      const fieldSchema = useFieldSchema();
+      const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
+      const { designable } = useDesignable();
+
+      if (layout === 'one-column') {
+        return (
+          <Portal>
+            <DndContext>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: 8, ...style }}
+                {...others}
+                className={cx(others.className, 'nb-action-bar')}
+              >
+                {props.children && (
+                  <div>
+                    <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
+                      {fieldSchema.mapProperties((schema, key) => {
+                        return <RecursionField key={key} name={key} schema={schema} />;
+                      })}
+                    </Space>
+                  </div>
+                )}
+                {render({ style: { margin: '0 !important' } })}
+              </div>
+            </DndContext>
+          </Portal>
+        );
+      }
+      const hasActions = Object.keys(fieldSchema.properties ?? {}).length > 0;
       return (
-        <Portal>
-          <DndContext>
-            <div
-              style={{ display: 'flex', alignItems: 'center', gap: 8, ...style }}
-              {...others}
-              className={cx(others.className, 'nb-action-bar')}
-            >
-              {props.children && (
-                <div>
-                  <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
-                    {fieldSchema.mapProperties((schema, key) => {
-                      return <RecursionField key={key} name={key} schema={schema} />;
-                    })}
-                  </Space>
-                </div>
-              )}
-              {render({ style: { margin: '0 !important' } })}
-            </div>
-          </DndContext>
-        </Portal>
-      );
-    }
-    const hasActions = Object.keys(fieldSchema.properties ?? {}).length > 0;
-    return (
-      <div
-        style={
-          !designable && !hasActions
-            ? undefined
-            : {
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                overflowX: 'auto',
-                flexShrink: 0,
-                ...style,
-              }
-        }
-        {...others}
-        className={cx(others.className, 'nb-action-bar')}
-      >
         <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            overflow: 'hidden',
-            flexWrap: 'wrap',
-          }}
+          style={
+            !designable && !hasActions
+              ? undefined
+              : {
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  overflowX: 'auto',
+                  flexShrink: 0,
+                  ...style,
+                }
+          }
+          {...others}
+          className={cx(others.className, 'nb-action-bar')}
         >
-          <DndContext>
-            <Space {...spaceProps}>
-              {fieldSchema.mapProperties((schema, key) => {
-                if (schema['x-align'] !== 'left') {
-                  return null;
-                }
-                return <RecursionField key={key} name={key} schema={schema} />;
-              })}
-            </Space>
-            <Space {...spaceProps}>
-              {fieldSchema.mapProperties((schema, key) => {
-                if (schema['x-align'] === 'left') {
-                  return null;
-                }
-                return <RecursionField key={key} name={key} schema={schema} />;
-              })}
-            </Space>
-          </DndContext>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '100%',
+              overflow: 'hidden',
+              flexWrap: 'wrap',
+            }}
+          >
+            <DndContext>
+              <Space {...spaceProps}>
+                {fieldSchema.mapProperties((schema, key) => {
+                  if (schema['x-align'] !== 'left') {
+                    return null;
+                  }
+                  return <RecursionField key={key} name={key} schema={schema} />;
+                })}
+              </Space>
+              <Space {...spaceProps}>
+                {fieldSchema.mapProperties((schema, key) => {
+                  if (schema['x-align'] === 'left') {
+                    return null;
+                  }
+                  return <RecursionField key={key} name={key} schema={schema} />;
+                })}
+              </Space>
+            </DndContext>
+          </div>
+          {render()}
         </div>
-        {render()}
-      </div>
-    );
-  },
-  { displayName: 'ActionBar' },
+      );
+    },
+    { displayName: 'ActionBar' },
+  ),
 );
