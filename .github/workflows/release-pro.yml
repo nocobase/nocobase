@@ -27,7 +27,6 @@ jobs:
         run: rm -rf packages/pro-plugins/.git
       - name: yarn install and build
         run: |
-          yarn config set registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
           yarn install
           yarn build
       - name: publish npmjs.org
@@ -40,9 +39,9 @@ jobs:
           git commit --no-verify -m "chore(versions): test publish packages xxx"
           npm config set access public
           npm config set registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
-          npm config set ${{ secrets.NOCOBASE_NPM_REGISTRY }}:_authToken=${{ secrets.NOCOBASE_NPM_TOKEN }}
+          npm config set '${{ secrets.NOCOBASE_NPM_REGISTRY }}:_authToken' ${{ secrets.NOCOBASE_NPM_TOKEN }}
           yarn config set access public
           yarn config set registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
-          yarn config set ${{ secrets.NOCOBASE_NPM_REGISTRY }}:_authToken=${{ secrets.NOCOBASE_NPM_TOKEN }}
+          yarn config set '${{ secrets.NOCOBASE_NPM_REGISTRY }}:_authToken' ${{ secrets.NOCOBASE_NPM_TOKEN }}
           npm whoami
           yarn release:force --no-verify-access --no-git-reset --registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
