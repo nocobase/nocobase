@@ -15,7 +15,7 @@ export const createFilterFormBlockSchema = (options: {
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'FilterFormBlockProvider',
-    'x-use-decorator': 'useFilterFormBlockDecoratorProps',
+    'x-use-decorator-props': 'useFilterFormBlockDecoratorProps',
     'x-decorator-props': {
       dataSource,
       collection: collectionName,
@@ -31,9 +31,7 @@ export const createFilterFormBlockSchema = (options: {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useFilterFormBlockProps }}',
-        },
+        'x-use-component-props': 'useFilterFormBlockProps',
         properties: {
           grid: templateSchema || {
             type: 'void',

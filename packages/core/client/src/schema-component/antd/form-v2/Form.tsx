@@ -18,6 +18,7 @@ import { isVariable, REGEX_OF_VARIABLE } from '../../../variables/utils/isVariab
 import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitls';
 import { useProps } from '../../hooks/useProps';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export interface FormProps {
   [key: string]: any;
@@ -197,32 +198,37 @@ export const Form: React.FC<FormProps> & {
   FilterDesigner?: any;
   ReadPrettyDesigner?: any;
   Templates?: any;
-} = observer(
-  (props) => {
-    const field = useField<Field>();
-    const { form, disabled, ...others } = useProps(props);
-    const formDisabled = disabled || field.disabled;
-    return (
-      <ConfigProvider componentDisabled={formDisabled}>
-        <form
-          className={css`
-            .ant-formily-item-feedback-layout-loose {
-              margin-bottom: 12px;
-            }
-          `}
-        >
-          <Spin spinning={field.loading || false}>
-            {form ? (
-              <WithForm form={form} {...others} disabled={formDisabled} />
-            ) : (
-              <WithoutForm {...others} disabled={formDisabled} />
-            )}
-          </Spin>
-        </form>
-      </ConfigProvider>
-    );
-  },
-  { displayName: 'Form' },
+} = withDynamicSchemaProps(
+  observer(
+    (props) => {
+      const field = useField<Field>();
+
+      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+      const { form, disabled, ...others } = useProps(props);
+
+      const formDisabled = disabled || field.disabled;
+      return (
+        <ConfigProvider componentDisabled={formDisabled}>
+          <form
+            className={css`
+              .ant-formily-item-feedback-layout-loose {
+                margin-bottom: 12px;
+              }
+            `}
+          >
+            <Spin spinning={field.loading || false}>
+              {form ? (
+                <WithForm form={form} {...others} disabled={formDisabled} />
+              ) : (
+                <WithoutForm {...others} disabled={formDisabled} />
+              )}
+            </Spin>
+          </form>
+        </ConfigProvider>
+      );
+    },
+    { displayName: 'Form' },
+  ),
 );
 
 function getSubscriber(
