@@ -100,17 +100,14 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           ...s['x-component-props'],
           render: (v, record) => {
             const index = field.value?.indexOf(record);
+            const basePath = field.address.concat(record.__index || index);
             return (
               <SubFormProvider value={{ value: record, collection }}>
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
-                    <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
+                    <ColumnFieldProvider schema={s} basePath={basePath}>
                       <span role="button" className={schemaToolbarBigger}>
-                        <RecursionField
-                          basePath={field.address.concat(record.__index || index)}
-                          schema={s}
-                          onlyRenderProperties
-                        />
+                        <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
                       </span>
                     </ColumnFieldProvider>
                   </RecordProvider>
@@ -328,6 +325,26 @@ const rowSelectCheckboxCheckedClassHover = css`
   }
 `;
 
+const HeaderWrapperComponent = (props) => {
+  return (
+    <DndContext>
+      <thead {...props} />
+    </DndContext>
+  );
+};
+
+const HeaderCellComponent = (props) => {
+  return <th {...props} className={cls(props.className, headerClass)} />;
+};
+
+const BodyRowComponent = (props) => {
+  return <SortableRow {...props} />;
+};
+
+const BodyCellComponent = (props) => {
+  return <td {...props} className={classNames(props.className, cellClass)} />;
+};
+
 export const Table: any = observer(
   (props: {
     useProps?: () => any;
@@ -413,22 +430,6 @@ export const Table: any = observer(
       }
     }, [expandFlag, allIncludesChildren]);
 
-    const headerWrapperComponent = useMemo(() => {
-      return (props) => {
-        return (
-          <DndContext>
-            <thead {...props} />
-          </DndContext>
-        );
-      };
-    }, []);
-
-    const headerCellComponent = useMemo(() => {
-      return (props) => {
-        return <th {...props} className={cls(props.className, headerClass)} />;
-      };
-    }, []);
-
     const bodyWrapperComponent = useMemo(() => {
       return (props) => {
         return (
@@ -452,30 +453,19 @@ export const Table: any = observer(
       };
     }, [onRowDragEnd, field]);
 
-    const bodyRowComponent = useMemo(() => {
-      return (props) => {
-        return <SortableRow {...props} />;
-      };
-    }, []);
-
-    const bodyCellComponent = useMemo(() => {
-      return (props) => {
-        return <td {...props} className={classNames(props.className, cellClass)} />;
-      };
-    }, []);
     const components = useMemo(() => {
       return {
         header: {
-          wrapper: headerWrapperComponent,
-          cell: headerCellComponent,
+          wrapper: HeaderWrapperComponent,
+          cell: HeaderCellComponent,
         },
         body: {
           wrapper: bodyWrapperComponent,
-          row: bodyRowComponent,
-          cell: bodyCellComponent,
+          row: BodyRowComponent,
+          cell: BodyCellComponent,
         },
       };
-    }, [headerWrapperComponent, headerCellComponent, bodyWrapperComponent, bodyRowComponent, bodyCellComponent]);
+    }, [bodyWrapperComponent]);
 
     /**
      * 为没有设置 key 属性的表格行生成一个唯一的 key
