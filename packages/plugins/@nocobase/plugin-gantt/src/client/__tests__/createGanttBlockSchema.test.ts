@@ -1,4 +1,4 @@
-import { createGanttBlockSchema } from '../createGanttBlockSchema';
+import { createGanttBlockUISchema } from '../createGanttBlockUISchema';
 
 vi.mock('@formily/shared', () => {
   return {
@@ -16,7 +16,7 @@ describe('createGanttBlockSchema', () => {
       },
       dataSource: 'TestDataSource',
     };
-    const schema = createGanttBlockSchema(options);
+    const schema = createGanttBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
       {
