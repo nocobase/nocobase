@@ -39,27 +39,6 @@ describe('createEditFormBlockUISchema', () => {
     expect(schema['x-acl-action']).toBe('userProfiles:update');
   });
 
-  it('throws an error if collectionName or dataSource is missing', () => {
-    expect(() => {
-      createEditFormBlockUISchema({
-        collectionName: '',
-        dataSource: '',
-      });
-    }).toThrowError('collectionName and dataSource are required');
-
-    expect(() => {
-      createEditFormBlockUISchema({
-        dataSource: 'UserDataSource',
-      } as any);
-    }).toThrowError('collectionName and dataSource are required');
-
-    expect(() => {
-      createEditFormBlockUISchema({
-        collectionName: 'users',
-      } as any);
-    }).toThrowError('collectionName and dataSource are required');
-  });
-
   it('adds templateSchema to the properties if provided', () => {
     const customTemplateSchema: ISchema = {
       type: 'void',

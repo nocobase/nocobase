@@ -19,7 +19,6 @@ export const RecordAssociationFormBlockInitializer = () => {
   const field = itemConfig.field;
   const collectionName = field.target;
   const collection = useMemo(() => getCollection(collectionName), [collectionName]);
-  const resource = `${field.collectionName}.${field.name}`;
   return (
     <SchemaInitializerItem
       icon={<FormOutlined />}
@@ -29,9 +28,8 @@ export const RecordAssociationFormBlockInitializer = () => {
           const template = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
             const blockSchema = createCreateFormBlockUISchema({
-              collectionName: collectionName,
               dataSource: collection.dataSource,
-              association: resource,
+              association: `${field.collectionName}.${field.name}`,
               templateSchema: template,
             });
             if (item.mode === 'reference') {
@@ -44,14 +42,18 @@ export const RecordAssociationFormBlockInitializer = () => {
         } else {
           insert(
             createCreateFormBlockUISchema({
-              collectionName: collectionName,
               dataSource: collection.dataSource,
-              association: resource,
+              association: `${field.collectionName}.${field.name}`,
             }),
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('FormItem', itemConfig, collection, resource)}
+      items={useRecordCollectionDataSourceItems(
+        'FormItem',
+        itemConfig,
+        collection,
+        `${field.collectionName}.${field.name}`,
+      )}
     />
   );
 };
@@ -67,7 +69,6 @@ export function useCreateAssociationFormBlock() {
 
       insert(
         createCreateFormBlockUISchema({
-          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
         }),
@@ -83,7 +84,6 @@ export function useCreateAssociationFormBlock() {
 
       if (item.template.componentName === 'FormItem') {
         const blockSchema = createCreateFormBlockUISchema({
-          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
           templateSchema: templateSchema,

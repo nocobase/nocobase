@@ -2,16 +2,17 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export function createEditFormBlockUISchema(options: {
-  collectionName: string;
   dataSource: string;
+  /** 如果传了 association 就不需要再传 collectionName 了 */
+  collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
 }): ISchema {
   const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
 
-  if (!collectionName || !dataSource) {
-    throw new Error('collectionName and dataSource are required');
+  if (!dataSource) {
+    throw new Error('dataSource are required');
   }
 
   return {

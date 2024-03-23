@@ -27,12 +27,19 @@ export const CreateFormBulkEditBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
-            const blockSchema = createCreateFormBlockUISchema({
-              association,
-              collectionName: collection.name,
-              dataSource: collection.dataSource,
-              templateSchema: s,
-            });
+            const blockSchema = createCreateFormBlockUISchema(
+              association
+                ? {
+                    association,
+                    dataSource: collection.dataSource,
+                    templateSchema: s,
+                  }
+                : {
+                    collectionName: collection.name,
+                    dataSource: collection.dataSource,
+                    templateSchema: s,
+                  },
+            );
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
             }

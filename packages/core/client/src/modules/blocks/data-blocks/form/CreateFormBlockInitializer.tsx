@@ -24,12 +24,19 @@ export const CreateFormBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
-            const blockSchema = createCreateFormBlockUISchema({
-              association,
-              dataSource: collection.dataSource,
-              collectionName: collection.name,
-              templateSchema: s,
-            });
+            const blockSchema = createCreateFormBlockUISchema(
+              association
+                ? {
+                    association,
+                    dataSource: collection.dataSource,
+                    templateSchema: s,
+                  }
+                : {
+                    collectionName: collection.name,
+                    dataSource: collection.dataSource,
+                    templateSchema: s,
+                  },
+            );
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
             }
@@ -39,11 +46,17 @@ export const CreateFormBlockInitializer = () => {
           }
         } else {
           insert(
-            createCreateFormBlockUISchema({
-              association,
-              dataSource: collection.dataSource,
-              collectionName: collection.name,
-            }),
+            createCreateFormBlockUISchema(
+              association
+                ? {
+                    association,
+                    dataSource: collection.dataSource,
+                  }
+                : {
+                    collectionName: collection.name,
+                    dataSource: collection.dataSource,
+                  },
+            ),
           );
         }
       }}

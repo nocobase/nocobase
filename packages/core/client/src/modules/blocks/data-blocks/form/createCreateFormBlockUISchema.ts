@@ -6,8 +6,9 @@ import { uid } from '@formily/shared';
  * @returns
  */
 export function createCreateFormBlockUISchema(options: {
-  collectionName: string;
   dataSource: string;
+  /** 如果传了 association 就不需要再传 collectionName 了 */
+  collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
   isCusomeizeCreate?: boolean;
@@ -15,8 +16,8 @@ export function createCreateFormBlockUISchema(options: {
   const { collectionName, association, dataSource, templateSchema, isCusomeizeCreate } = options;
   const resourceName = association || collectionName;
 
-  if (!collectionName || !dataSource) {
-    throw new Error('collectionName and dataSource are required');
+  if (!dataSource) {
+    throw new Error('dataSource are required');
   }
 
   const schema: ISchema = {

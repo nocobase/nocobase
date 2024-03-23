@@ -44,11 +44,17 @@ export function useCreateEditFormBlock() {
   const createEditFormBlock = useCallback(
     ({ item }) => {
       insert(
-        createEditFormBlockUISchema({
-          association,
-          collectionName: item.collectionName || item.name,
-          dataSource: item.dataSource,
-        }),
+        createEditFormBlockUISchema(
+          association
+            ? {
+                association,
+                dataSource: item.dataSource,
+              }
+            : {
+                collectionName: item.collectionName || item.name,
+                dataSource: item.dataSource,
+              },
+        ),
       );
     },
     [association, insert],
@@ -57,12 +63,19 @@ export function useCreateEditFormBlock() {
   const templateWrap = useCallback(
     (templateSchema, { item }) => {
       if (item.template.componentName === 'FormItem') {
-        const blockSchema = createEditFormBlockUISchema({
-          association,
-          collectionName: item.collectionName || item.name,
-          dataSource: item.dataSource,
-          templateSchema: templateSchema,
-        });
+        const blockSchema = createEditFormBlockUISchema(
+          association
+            ? {
+                association,
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+              }
+            : {
+                collectionName: item.collectionName || item.name,
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+              },
+        );
         if (item.mode === 'reference') {
           blockSchema['x-template-key'] = item.template.key;
         }
