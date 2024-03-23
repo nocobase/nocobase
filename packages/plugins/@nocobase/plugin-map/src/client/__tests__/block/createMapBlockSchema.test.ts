@@ -1,4 +1,4 @@
-import { createMapBlockSchema } from '../../block/createMapBlockSchema';
+import { createMapBlockUISchema } from '../../block/createMapBlockUISchema';
 
 vi.mock('@formily/shared', () => {
   return {
@@ -16,7 +16,7 @@ test('createMapBlockSchema should return an object with expected properties', ()
     },
   };
 
-  const result = createMapBlockSchema(options);
+  const result = createMapBlockUISchema(options);
 
   expect(result).toMatchInlineSnapshot(`
     {

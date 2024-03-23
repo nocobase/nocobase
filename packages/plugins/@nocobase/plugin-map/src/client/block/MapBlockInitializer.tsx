@@ -14,7 +14,7 @@ import {
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { findNestedOption } from './utils';
-import { createMapBlockSchema } from './createMapBlockSchema';
+import { createMapBlockUISchema } from './createMapBlockUISchema';
 
 export const MapBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -85,7 +85,7 @@ export const MapBlockInitializer = () => {
           initialValues: {},
         });
         insert(
-          createMapBlockSchema({
+          createMapBlockUISchema({
             collectionName: item.name,
             dataSource: item.dataSource,
             fieldNames: {

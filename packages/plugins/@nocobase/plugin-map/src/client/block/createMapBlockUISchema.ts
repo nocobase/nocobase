@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export const createMapBlockSchema = (options: {
+export const createMapBlockUISchema = (options: {
   collectionName: string;
   dataSource: string;
   fieldNames: object;
