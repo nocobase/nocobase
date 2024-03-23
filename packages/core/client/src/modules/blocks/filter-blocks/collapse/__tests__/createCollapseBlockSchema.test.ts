@@ -1,4 +1,4 @@
-import { createCollapseBlockSchema } from '../createCollapseBlockSchema';
+import { createCollapseBlockSchema } from '../createFilterCollapseBlockSchema';
 
 vi.mock('@formily/shared', () => ({
   uid: vi.fn().mockReturnValue('mocked-uid'),
