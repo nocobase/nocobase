@@ -37,7 +37,7 @@ jobs:
           git config --global --add safe.directory /__w/nocobase/nocobase
           echo "# test" >> Release.md
           git add .
-          git commit -m "chore(versions): test publish packages xxx"
+          git commit --no-verify -m "chore(versions): test publish packages xxx"
           npm config set access public
           npm config set registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
           npm config set //registry.npmjs.org/:_authToken=${{ secrets.NOCOBASE_NPM_TOKEN }}
