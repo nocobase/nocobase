@@ -98,7 +98,7 @@ test.describe('create collection', () => {
 });
 
 //预设字段
-test.describe.skip('create collection with preset fields', () => {
+test.describe('create collection with preset fields', () => {
   test('all preset fields by default', async ({ page }) => {
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).first().click();
