@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export const createKanbanBlockUISchema = (options: {
-  collectionName?: string;
+  collectionName: string;
   groupField: string;
   sortField: string;
   dataSource: string;
@@ -44,9 +44,7 @@ export const createKanbanBlockUISchema = (options: {
       [uid()]: {
         type: 'array',
         'x-component': 'Kanban',
-        'x-component-props': {
-          useProps: '{{ useKanbanBlockProps }}',
-        },
+        'x-use-component-props': 'useKanbanBlockProps',
         properties: {
           card: {
             type: 'void',
