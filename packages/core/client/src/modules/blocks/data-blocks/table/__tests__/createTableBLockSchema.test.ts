@@ -2,7 +2,7 @@ import { createTableBlockUISchema } from '../createTableBlockUISchema';
 
 describe('createTableBLockSchemaV2', () => {
   it('should create a default table block schema with minimum options', () => {
-    const options = { collectionName: 'users' };
+    const options = { dataSource: 'abc', collectionName: 'users', association: 'users.roles', rowKey: 'rowKey' };
     const schema = createTableBlockUISchema(options);
 
     expect(schema).toEqual({
@@ -12,13 +12,13 @@ describe('createTableBLockSchemaV2', () => {
       'x-use-decorator-props': 'useTableBlockDecoratorProps',
       'x-decorator-props': {
         collection: 'users',
-        dataSource: undefined,
-        association: undefined,
+        dataSource: 'abc',
+        association: 'users.roles',
         action: 'list',
         params: {
           pageSize: 20,
         },
-        rowKey: undefined,
+        rowKey: 'rowKey',
         showIndex: true,
         dragSort: false,
       },
@@ -47,19 +47,5 @@ describe('createTableBLockSchemaV2', () => {
         association: 'productAssociation.name',
       }),
     );
-  });
-
-  it('should ensure properties is an object regardless of options', () => {
-    const options = { collectionName: 'users' };
-    const schema = createTableBlockUISchema(options);
-
-    expect(typeof schema.properties).toBe('object');
-  });
-
-  it('should have default pageSize of 20 inside x-decorator-props.params', () => {
-    const options = { collectionName: 'users' };
-    const schema = createTableBlockUISchema(options);
-
-    expect(schema['x-decorator-props'].params.pageSize).toBe(20);
   });
 });

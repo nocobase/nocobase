@@ -2,12 +2,16 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export const createTableBlockUISchema = (options: {
-  collectionName: string;
-  dataSource?: string;
+  dataSource: string;
+  collectionName?: string;
   rowKey?: string;
   association?: string;
 }): ISchema => {
   const { collectionName, dataSource, rowKey, association } = options;
+
+  if (!dataSource) {
+    throw new Error('dataSource is required');
+  }
 
   return {
     type: 'void',
