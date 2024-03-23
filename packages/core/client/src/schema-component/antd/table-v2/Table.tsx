@@ -24,8 +24,8 @@ import {
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
-  withDynamicSchemaProps,
 } from '../../../';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
