@@ -3,9 +3,9 @@ import { uid } from '@formily/shared';
 import { generateNTemplate } from '../../locale';
 
 export const createCalendarBlockUISchema = (options: {
-  collectionName: string;
   dataSource: string;
   fieldNames: object;
+  collectionName?: string;
   association?: string;
 }): ISchema => {
   const { collectionName, dataSource, fieldNames, association } = options;

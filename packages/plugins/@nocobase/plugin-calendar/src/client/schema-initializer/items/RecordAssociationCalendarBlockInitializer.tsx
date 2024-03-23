@@ -99,7 +99,6 @@ export const RecordAssociationCalendarBlockInitializer = () => {
           });
           insert(
             createCalendarBlockUISchema({
-              collectionName: field.target,
               association: resource,
               dataSource: item.dataSource,
               fieldNames: {
@@ -184,7 +183,6 @@ export function useCreateAssociationCalendarBlock() {
     });
     insert(
       createCalendarBlockUISchema({
-        collectionName: field.target,
         association: `${field.collectionName}.${field.name}`,
         dataSource: item.dataSource,
         fieldNames: {
