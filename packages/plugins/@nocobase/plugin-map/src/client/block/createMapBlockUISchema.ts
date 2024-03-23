@@ -40,9 +40,7 @@ export const createMapBlockUISchema = (options: {
       [uid()]: {
         type: 'void',
         'x-component': 'MapBlock',
-        'x-component-props': {
-          useProps: '{{ useMapBlockProps }}',
-        },
+        'x-use-component-props': 'useMapBlockProps',
         properties: {
           drawer: {
             type: 'void',
