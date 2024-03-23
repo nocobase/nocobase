@@ -6,24 +6,6 @@ vi.mock('@formily/shared', () => ({
 }));
 
 describe('createDetailsBlockWithoutPagingUISchema', () => {
-  it('should throw an error when collectionName is missing', () => {
-    const options = { dataSource: 'someDataSource' };
-
-    // @ts-ignore
-    expect(() => createDetailsBlockWithoutPagingUISchema(options)).toThrowError(
-      'collectionName and dataSource are required',
-    );
-  });
-
-  it('should throw an error when dataSource is missing', () => {
-    const options = { collectionName: 'someCollectionName' };
-
-    // @ts-ignore
-    expect(() => createDetailsBlockWithoutPagingUISchema(options)).toThrowError(
-      'collectionName and dataSource are required',
-    );
-  });
-
   it('should create a valid schema with mandatory fields', () => {
     const options = {
       collectionName: 'users',

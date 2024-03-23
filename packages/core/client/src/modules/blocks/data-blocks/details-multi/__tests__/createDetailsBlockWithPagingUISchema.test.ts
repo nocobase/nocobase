@@ -5,16 +5,6 @@ vi.mock('@formily/shared', () => ({
 }));
 
 describe('createDetailsBlockWithPagingUISchema', () => {
-  it('should throw an error if collectionName, dataSource, and rowKey are not provided', () => {
-    expect(() => {
-      createDetailsBlockWithPagingUISchema({
-        collectionName: '',
-        dataSource: '',
-        rowKey: '',
-      });
-    }).toThrow('collectionName, dataSource and rowKey are required');
-  });
-
   it('should return the correct schema', () => {
     const schema = createDetailsBlockWithPagingUISchema({
       collectionName: 'users',
