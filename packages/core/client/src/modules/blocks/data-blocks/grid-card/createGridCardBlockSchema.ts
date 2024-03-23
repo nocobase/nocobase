@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 
 export const createGridCardBlockSchema = (options: {
-  collectionName: string;
   dataSource: string;
+  collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
   rowKey?: string;
@@ -10,8 +10,8 @@ export const createGridCardBlockSchema = (options: {
   const { collectionName, association, templateSchema, dataSource, rowKey } = options;
   const resourceName = association || collectionName;
 
-  if (!collectionName || !dataSource) {
-    throw new Error('collectionName and dataSource are required');
+  if (!dataSource) {
+    throw new Error('dataSource are required');
   }
 
   return {

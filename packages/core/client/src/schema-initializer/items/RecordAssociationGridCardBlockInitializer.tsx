@@ -32,7 +32,6 @@ export const RecordAssociationGridCardBlockInitializer = () => {
           insert(
             createGridCardBlockSchema({
               rowKey: collection.filterTargetKey,
-              collectionName: field.target,
               dataSource: collection.dataSource,
               association: resource,
             }),
@@ -56,7 +55,6 @@ export function useCreateAssociationGridCardBlock() {
       insert(
         createGridCardBlockSchema({
           rowKey: collection.filterTargetKey,
-          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
         }),
