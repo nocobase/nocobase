@@ -1,13 +1,15 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export function createEditFormBlockUISchema(options: {
+interface EditFormBlockOptions {
   dataSource: string;
   /** 如果传了 association 就不需要再传 collectionName 了 */
   collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
-}): ISchema {
+}
+
+export function createEditFormBlockUISchema(options: EditFormBlockOptions): ISchema {
   const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
 
@@ -36,9 +38,7 @@ export function createEditFormBlockUISchema(options: {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useEditFormBlockProps }}',
-        },
+        'x-use-component-props': 'useEditFormBlockProps',
         properties: {
           grid: templateSchema || {
             type: 'void',

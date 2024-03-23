@@ -1,18 +1,20 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-/**
- * 创建新增表单的 UI Schema
- * @returns
- */
-export function createCreateFormBlockUISchema(options: {
+export interface CreateFormBlockUISchemaOptions {
   dataSource: string;
   /** 如果传了 association 就不需要再传 collectionName 了 */
   collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
   isCusomeizeCreate?: boolean;
-}): ISchema {
+}
+
+/**
+ * 创建新增表单的 UI Schema
+ * @returns
+ */
+export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOptions): ISchema {
   const { collectionName, association, dataSource, templateSchema, isCusomeizeCreate } = options;
   const resourceName = association || collectionName;
 
@@ -41,9 +43,7 @@ export function createCreateFormBlockUISchema(options: {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useCreateFormBlockProps }}',
-        },
+        'x-use-component-props': 'useCreateFormBlockProps',
         properties: {
           grid: templateSchema || {
             type: 'void',
