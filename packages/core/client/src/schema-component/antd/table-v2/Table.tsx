@@ -10,7 +10,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useDeepCompareEffect, useMemoizedFn, useWhyDidYouUpdate } from 'ahooks';
-import { Table as AntdTable, TableColumnProps } from 'antd';
+import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -32,6 +32,7 @@ import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+import { useInView } from 'react-intersection-observer';
 
 const MemoizedAntdTable = React.memo(AntdTable);
 
@@ -54,12 +55,6 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
 
   return oldObj.value;
 };
-
-interface SimpleTableColumnProps {
-  basePath: any;
-  schema: ISchema;
-  collectionField: CollectionFieldOptions;
-}
 
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
   const { token } = useToken();
@@ -351,7 +346,16 @@ const BodyRowComponent = (props) => {
 };
 
 const BodyCellComponent = (props) => {
-  return <td {...props} className={classNames(props.className, cellClass)} />;
+  const { ref, inView } = useInView({
+    threshold: 0,
+    triggerOnce: true,
+  });
+
+  return (
+    <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
+      {inView ? props.children : <Skeleton.Input active />}
+    </td>
+  );
 };
 
 export const Table: any = observer(

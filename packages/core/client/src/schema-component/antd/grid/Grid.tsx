@@ -4,6 +4,7 @@ import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } f
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 import {
   OverrideSchemaComponentRefresher,
   SchemaComponent,
@@ -15,6 +16,7 @@ import { useFormBlockType } from '../../../block-provider';
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
+import { Skeleton } from 'antd';
 
 const GridRowContext = createContext<any>({});
 GridRowContext.displayName = 'GridRowContext';
@@ -310,6 +312,25 @@ export const useGridRowContext = () => {
   return useContext(GridRowContext);
 };
 
+const GridSchemaContent = ({ schema }) => {
+  const { ref, inView } = useInView({
+    threshold: 0,
+    initialInView: true,
+    triggerOnce: true,
+  });
+  return (
+    <OverrideSchemaComponentRefresher>
+      <div ref={ref}>
+        {inView ? (
+          <SchemaComponent name={schema.name || schema['x-uid']} schema={schema} />
+        ) : (
+          <Skeleton active paragraph={{ rows: 8 }} />
+        )}
+      </div>
+    </OverrideSchemaComponentRefresher>
+  );
+};
+
 export const Grid: any = observer(
   (props: any) => {
     const { showDivider = true } = props;
@@ -361,9 +382,7 @@ export const Grid: any = observer(
               return (
                 <React.Fragment key={schema.name || schema['x-uid']}>
                   {shouldKeepApart ? (
-                    <OverrideSchemaComponentRefresher>
-                      <SchemaComponent name={schema.name || schema['x-uid']} schema={schema} />
-                    </OverrideSchemaComponentRefresher>
+                    <GridSchemaContent schema={schema} />
                   ) : (
                     <MemorizedRecursionField name={schema.name || schema['x-uid']} schema={schema} />
                   )}
