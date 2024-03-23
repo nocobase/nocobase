@@ -1,0 +1,48 @@
+name: Release Pro
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-pro.yml'
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    container: node:18
+    steps:
+      - name: Checkout nocobase
+        uses: actions/checkout@v3
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          ref: main
+          path: packages/pro-plugins
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: rm .git
+        run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
+      - name: yarn install and build
+        run: |
+          yarn config set registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
+          yarn install
+          yarn build
+      - name: publish npmjs.org
+        run: |
+          git config --global user.email "test@mail.com"
+          git config --global user.name "test"
+          git config --global --add safe.directory /__w/nocobase/nocobase
+          echo "# test" >> Release.md
+          git add .
+          git commit -m "chore(versions): test publish packages xxx"
+          npm config set access public
+          npm config set registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
+          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NOCOBASE_NPM_TOKEN }}
+          yarn config set access public
+          yarn config set registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
+          yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NOCOBASE_NPM_TOKEN }}
+          npm whoami
+          yarn release:force --no-verify-access --no-git-reset --registry ${{ secrets.NOCOBASE_NPM_REGISTRY }}
