@@ -77,6 +77,11 @@ export const defineConfig = (config = {}) => {
             //     singleThread: process.env.SINGLE_THREAD == 'false' ? false : true,
             //   },
             // },
+
+            coverage: {
+              reporter: ['text', 'json', 'html'],
+              provider: 'istanbul'
+            },
           },
         }
       : {
