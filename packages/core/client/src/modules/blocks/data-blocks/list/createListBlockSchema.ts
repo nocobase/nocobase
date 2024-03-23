@@ -40,42 +40,32 @@ export const createListBlockSchema = (options: {
             marginBottom: 'var(--nb-spacing)',
           },
         },
-        properties: {},
       },
       list: {
         type: 'array',
         'x-component': 'List',
-        'x-component-props': {
-          props: '{{ useListBlockProps }}',
-        },
+        'x-use-component-props': 'useListBlockProps',
         properties: {
           item: {
             type: 'object',
             'x-component': 'List.Item',
             'x-read-pretty': true,
-            'x-component-props': {
-              useProps: '{{ useListItemProps }}',
-            },
+            'x-use-component-props': 'useListItemProps',
             properties: {
               grid: templateSchema || {
                 type: 'void',
                 'x-component': 'Grid',
                 'x-initializer': 'details:configureFields',
-                'x-initializer-props': {
-                  useProps: '{{ useListItemInitializerProps }}',
-                },
-                properties: {},
               },
               actionBar: {
                 type: 'void',
                 'x-align': 'left',
                 'x-initializer': 'list:configureItemActions',
                 'x-component': 'ActionBar',
+                'x-use-component-props': 'useListActionBarProps',
                 'x-component-props': {
-                  useProps: '{{ useListActionBarProps }}',
                   layout: 'one-column',
                 },
-                properties: {},
               },
             },
           },
