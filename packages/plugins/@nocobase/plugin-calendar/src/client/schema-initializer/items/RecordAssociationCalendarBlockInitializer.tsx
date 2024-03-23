@@ -15,7 +15,7 @@ import {
   useSchemaInitializer,
   SchemaInitializerItem,
 } from '@nocobase/client';
-import { createCalendarBlockSchema } from '../createCalendarBlockSchema';
+import { createCalendarBlockUISchema } from '../createCalendarBlockUISchema';
 import { useTranslation } from '../../../locale';
 
 export const RecordAssociationCalendarBlockInitializer = () => {
@@ -98,7 +98,7 @@ export const RecordAssociationCalendarBlockInitializer = () => {
             initialValues: {},
           });
           insert(
-            createCalendarBlockSchema({
+            createCalendarBlockUISchema({
               collectionName: field.target,
               association: resource,
               dataSource: item.dataSource,
@@ -183,7 +183,7 @@ export function useCreateAssociationCalendarBlock() {
       initialValues: {},
     });
     insert(
-      createCalendarBlockSchema({
+      createCalendarBlockUISchema({
         collectionName: field.target,
         association: `${field.collectionName}.${field.name}`,
         dataSource: item.dataSource,

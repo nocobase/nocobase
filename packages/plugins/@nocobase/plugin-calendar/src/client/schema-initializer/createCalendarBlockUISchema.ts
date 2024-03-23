@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { generateNTemplate } from '../../locale';
 
-export const createCalendarBlockSchema = (options: {
+export const createCalendarBlockUISchema = (options: {
   collectionName: string;
   dataSource: string;
   fieldNames: object;

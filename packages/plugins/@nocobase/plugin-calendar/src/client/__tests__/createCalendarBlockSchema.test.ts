@@ -1,4 +1,4 @@
-import { createCalendarBlockSchema } from '../schema-initializer/createCalendarBlockSchema';
+import { createCalendarBlockUISchema } from '../schema-initializer/createCalendarBlockUISchema';
 
 vi.mock('@formily/shared', async () => {
   const actual = await vi.importActual('@formily/shared');
@@ -21,7 +21,7 @@ describe('createCalendarBlockSchema', () => {
       association: 'users.roles',
     };
 
-    const schema = createCalendarBlockSchema(options);
+    const schema = createCalendarBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
       {
