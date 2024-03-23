@@ -2,16 +2,16 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export function createDetailsBlockWithoutPagingUISchema(options: {
-  collectionName: string;
   dataSource: string;
+  collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
 }): ISchema {
   const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
 
-  if (!collectionName || !dataSource) {
-    throw new Error('collectionName and dataSource are required');
+  if (!dataSource) {
+    throw new Error('dataSource are required');
   }
 
   return {

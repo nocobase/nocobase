@@ -33,12 +33,19 @@ export function useCreateSingleDetailsSchema() {
     (templateSchema, options) => {
       const { item } = options;
       if (item.template.componentName === 'ReadPrettyFormItem') {
-        const blockSchema = createDetailsBlockWithoutPagingUISchema({
-          association,
-          collectionName: item.collectionName || item.name,
-          dataSource: item.dataSource,
-          templateSchema: templateSchema,
-        });
+        const blockSchema = createDetailsBlockWithoutPagingUISchema(
+          association
+            ? {
+                association,
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+              }
+            : {
+                collectionName: item.collectionName || item.name,
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+              },
+        );
         if (item.mode === 'reference') {
           blockSchema['x-template-key'] = item.template.key;
         }
@@ -57,11 +64,17 @@ export function useCreateSingleDetailsSchema() {
         insert(templateWrap(template, { item }));
       } else {
         insert(
-          createDetailsBlockWithoutPagingUISchema({
-            association,
-            collectionName: item.collectionName || item.name,
-            dataSource: item.dataSource,
-          }),
+          createDetailsBlockWithoutPagingUISchema(
+            association
+              ? {
+                  association,
+                  dataSource: item.dataSource,
+                }
+              : {
+                  collectionName: item.collectionName || item.name,
+                  dataSource: item.dataSource,
+                },
+          ),
         );
       }
     },

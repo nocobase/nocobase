@@ -27,7 +27,6 @@ export const RecordAssociationDetailsBlockInitializer = () => {
         } else {
           insert(
             createDetailsBlockWithPagingUISchema({
-              collectionName: field.target,
               dataSource: collection.dataSource,
               association: resource,
               rowKey: collection.filterTargetKey || 'id',
@@ -51,7 +50,6 @@ export function useCreateAssociationDetailsBlock() {
 
       insert(
         createDetailsBlockWithPagingUISchema({
-          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
           rowKey: collection.filterTargetKey || 'id',

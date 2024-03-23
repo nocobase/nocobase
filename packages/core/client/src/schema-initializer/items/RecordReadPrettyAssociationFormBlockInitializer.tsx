@@ -32,7 +32,6 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'ReadPrettyFormItem') {
             const blockSchema = createDetailsBlockWithoutPagingUISchema({
-              collectionName: collectionName,
               dataSource: collection.dataSource,
               association: resource,
               templateSchema: s,
@@ -47,7 +46,6 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
         } else {
           insert(
             createDetailsBlockWithoutPagingUISchema({
-              collectionName: collectionName,
               association: resource,
               dataSource: collection.dataSource,
             }),
@@ -70,7 +68,6 @@ export function useCreateAssociationDetailsWithoutPagination() {
 
       insert(
         createDetailsBlockWithoutPagingUISchema({
-          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
         }),
@@ -86,7 +83,6 @@ export function useCreateAssociationDetailsWithoutPagination() {
 
       if (item.template.componentName === 'ReadPrettyFormItem') {
         const blockSchema = createDetailsBlockWithoutPagingUISchema({
-          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
           templateSchema: templateSchema,

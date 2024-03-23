@@ -2,9 +2,9 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export function createDetailsBlockWithPagingUISchema(options: {
-  collectionName: string;
   dataSource: string;
   rowKey: string;
+  collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
   hideActionInitializer?: boolean;
@@ -12,8 +12,8 @@ export function createDetailsBlockWithPagingUISchema(options: {
   const { collectionName, dataSource, association, templateSchema, hideActionInitializer, rowKey } = options;
   const resourceName = association || collectionName;
 
-  if (!collectionName || !dataSource || !rowKey) {
-    throw new Error('collectionName, dataSource and rowKey are required');
+  if (!dataSource || !rowKey) {
+    throw new Error('dataSource and rowKey are required');
   }
 
   return {
