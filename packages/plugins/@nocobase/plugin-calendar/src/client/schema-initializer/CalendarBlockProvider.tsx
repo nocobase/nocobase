@@ -1,6 +1,12 @@
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import { BlockProvider, FixedBlockWrapper, useBlockRequestContext, useParsedFilter } from '@nocobase/client';
+import {
+  BlockProvider,
+  FixedBlockWrapper,
+  useBlockRequestContext,
+  useParsedFilter,
+  withDynamicSchemaProps,
+} from '@nocobase/client';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useCalendarBlockParams } from '../hooks/useCalendarBlockParams';
@@ -51,14 +57,14 @@ const useCompatCalendarBlockParams = (props) => {
   }
 };
 
-export const CalendarBlockProvider = (props) => {
+export const CalendarBlockProvider = withDynamicSchemaProps((props) => {
   const params = useCompatCalendarBlockParams(props);
   return (
     <BlockProvider name="calendar" {...props} params={params}>
       <InternalCalendarBlockProvider {...props} />
     </BlockProvider>
   );
-};
+});
 
 export const useCalendarBlockContext = () => {
   return useContext(CalendarBlockContext);

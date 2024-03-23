@@ -85,9 +85,7 @@ describe('createCalendarBlockSchema', () => {
             },
             "type": "void",
             "x-component": "CalendarV2",
-            "x-component-props": {
-              "useProps": "{{ useCalendarBlockProps }}",
-            },
+            "x-use-component-props": "useCalendarBlockProps",
           },
         },
         "type": "void",
