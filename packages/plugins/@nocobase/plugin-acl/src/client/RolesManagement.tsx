@@ -79,7 +79,6 @@ export const RolesManagement: React.FC = () => {
                   resource: 'roles',
                   action: 'list',
                   params: {
-                    pagination: false,
                     filter: {
                       'name.$ne': 'root',
                     },

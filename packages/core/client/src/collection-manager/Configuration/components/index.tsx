@@ -325,6 +325,17 @@ export const ThroughCollection = observer(
         setInitialValue(option?.label || value);
       }
     }, []);
+    const handleSearch = (value: string) => {
+      if (value) {
+        const filteredOptions = options.filter((option) => {
+          return option.label.toLowerCase().includes(value.toLowerCase());
+        });
+        setOptions(filteredOptions);
+      } else {
+        const data = loadCollections();
+        setOptions(data);
+      }
+    };
     return (
       <div>
         <AutoComplete
@@ -333,9 +344,10 @@ export const ThroughCollection = observer(
           popupMatchSelectWidth={false}
           value={initialValue}
           options={options}
+          onSearch={handleSearch}
           onChange={(value, option) => {
             props?.onChange?.(value);
-            setInitialValue(option.label);
+            setInitialValue(option.label || value);
           }}
         />
       </div>

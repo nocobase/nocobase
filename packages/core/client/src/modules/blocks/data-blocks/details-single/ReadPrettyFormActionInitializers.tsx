@@ -1,5 +1,5 @@
-import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
 
 const useVisibleCollection = () => {
   const collection = useCollection_deprecated();
@@ -76,7 +76,7 @@ export const readPrettyFormActionInitializers_deprecated = new CompatibleSchemaI
               'x-component': 'Action',
             };
           },
-          visible: useVisibleCollection,
+          useVisible: useVisibleCollection,
         },
         {
           name: 'customRequest',
@@ -156,7 +156,7 @@ export const readPrettyFormActionInitializers = new CompatibleSchemaInitializer(
                 'x-component': 'Action',
               };
             },
-            visible: useVisibleCollection,
+            useVisible: useVisibleCollection,
           },
           {
             name: 'customRequest',
