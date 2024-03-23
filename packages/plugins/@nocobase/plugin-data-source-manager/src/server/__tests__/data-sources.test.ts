@@ -342,9 +342,10 @@ describe('data source', async () => {
     expect(app.dataSourceManager.dataSources.get('mockInstance1')).not.toBeDefined();
   });
 
+  class MockCollectionManager extends CollectionManager {}
+
   describe('data source collections', () => {
     beforeEach(async () => {
-      class MockCollectionManager extends CollectionManager {}
       class MockDataSource extends DataSource {
         async load(): Promise<void> {
           this.collectionManager.defineCollection({
@@ -397,6 +398,7 @@ describe('data source', async () => {
       const listResp = await app.agent().resource('dataSources').list({
         appends: 'collections',
       });
+
       expect(listResp.status).toBe(200);
 
       const listEnabledResp = await app.agent().resource('dataSources').listEnabled({});
@@ -404,6 +406,41 @@ describe('data source', async () => {
       const data = listEnabledResp.body.data;
       const item = data[0];
       expect(item.collections).toBeDefined();
+    });
+
+    it('should get data source with collections when data source load failed', async () => {
+      class MockDataSource2 extends DataSource {
+        async load(): Promise<void> {
+          throw new Error('load failed');
+        }
+
+        createCollectionManager(options?: any) {
+          return new MockCollectionManager();
+        }
+      }
+
+      app.dataSourceManager.factory.register('mock2', MockDataSource2);
+
+      await app.db.getRepository('dataSources').create({
+        values: {
+          key: 'mockInstance2',
+          type: 'mock2',
+          displayName: 'Mock 2',
+          options: {
+            password: '123456',
+          },
+        },
+      });
+
+      await waitSecond(1000);
+
+      const listResp = await app.agent().resource('dataSources').listEnabled({
+        appends: 'collections',
+      });
+
+      expect(listResp.status).toBe(200);
+
+      console.log(listResp.body.data);
     });
 
     it('should get collections from datasource', async () => {
