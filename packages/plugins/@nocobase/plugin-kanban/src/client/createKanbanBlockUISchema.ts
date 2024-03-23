@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export const createKanbanBlockSchema = (options: {
-  collectionName: string;
+export const createKanbanBlockUISchema = (options: {
+  collectionName?: string;
   groupField: string;
   sortField: string;
   dataSource: string;

@@ -1,4 +1,4 @@
-import { createKanbanBlockSchema } from '../createKanbanBlockSchema';
+import { createKanbanBlockUISchema } from '../createKanbanBlockUISchema';
 
 vi.mock('@formily/shared', () => {
   return {
@@ -15,7 +15,7 @@ test('createKanbanBlockSchema should return an object with expected properties',
     params: { testParam: 'testValue' },
   };
 
-  const result = createKanbanBlockSchema(options);
+  const result = createKanbanBlockUISchema(options);
 
   expect(result).toMatchInlineSnapshot(`
     {
