@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
-import { useParsedFilter } from '../../../../block-provider/hooks/useParsedFilter';
+import { useParsedFilter } from '../../../../../block-provider/hooks/useParsedFilter';
 import { useMemo } from 'react';
-import { useDataBlockSourceId } from '../../../../block-provider/hooks/useDataBlockSourceId';
+import { useDataBlockSourceId } from '../../../../../block-provider/hooks/useDataBlockSourceId';
 
 export const useTableBlockDecoratorProps = (props) => {
   const params = useTableBlockParams(props);

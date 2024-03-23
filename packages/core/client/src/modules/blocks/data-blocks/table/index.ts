@@ -6,4 +6,4 @@ export * from './tableBlockSettings';
 export * from './tableColumnSettings';
 export * from './TableColumnInitializers';
 export * from './createTableBlockUISchema';
-export * from './useTableBlockDecoratorProps';
+export * from './hooks/useTableBlockDecoratorProps';
