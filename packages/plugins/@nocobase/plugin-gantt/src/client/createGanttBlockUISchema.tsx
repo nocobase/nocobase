@@ -28,9 +28,7 @@ export const createGanttBlockUISchema = (options: {
       [uid()]: {
         type: 'void',
         'x-component': 'Gantt',
-        'x-component-props': {
-          useProps: '{{ useGanttBlockProps }}',
-        },
+        'x-use-component-props': 'useGanttBlockProps',
         properties: {
           toolBar: {
             type: 'void',
@@ -55,12 +53,12 @@ export const createGanttBlockUISchema = (options: {
 
             'x-initializer': 'table:configureColumns',
             'x-component': 'TableV2',
+            'x-use-component-props': 'useTableBlockProps',
             'x-component-props': {
               rowKey: 'id',
               rowSelection: {
                 type: 'checkbox',
               },
-              useProps: '{{ useTableBlockProps }}',
               pagination: false,
             },
             properties: {
