@@ -40,10 +40,6 @@ export interface SchemaSettingItemGroupType extends SchemaSettingsItemCommon<Sch
   type: 'itemGroup';
 }
 
-export interface SchemaSettingItemSubMenuType extends SchemaSettingsItemCommon<SchemaSettingsSubMenuProps> {
-  type: 'subMenu';
-}
-
 export interface SchemaSettingItemDividerProps extends SchemaSettingsItemCommon {
   type: 'divider';
 }
@@ -76,6 +72,10 @@ export type SchemaSettingItemActionModalType = SchemaSettingsItemCommon<SchemaSe
   type: 'actionModal';
 };
 
+export interface SchemaSettingItemSubMenuType extends SchemaSettingsItemCommon<SchemaSettingsSubMenuProps> {
+  type: 'subMenu';
+}
+
 export interface SchemaSettingItemComponentType<T = {}> extends SchemaSettingsItemCommon<T> {
   Component: string | ComponentType<T>;
 }
@@ -90,6 +90,7 @@ export type SchemaSettingItemAllBuiltType =
   | SchemaSettingItemModalType
   | SchemaSettingItemItemType
   | SchemaSettingItemSelectType
+  | SchemaSettingItemSubMenuType
   | SchemaSettingItemGroupType;
 
 export type SchemaSettingsItemType = SchemaSettingItemComponentType | SchemaSettingItemAllBuiltType;
