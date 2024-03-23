@@ -39,9 +39,7 @@ export function createDetailsBlockWithPagingUISchema(options: {
         type: 'void',
         'x-component': 'Details',
         'x-read-pretty': true,
-        'x-component-props': {
-          useProps: '{{ useDetailsBlockWithPagingProps }}',
-        },
+        'x-use-component-props': 'useDetailsBlockWithPagingProps',
         properties: {
           [uid()]: {
             type: 'void',
@@ -63,9 +61,7 @@ export function createDetailsBlockWithPagingUISchema(options: {
           pagination: {
             type: 'void',
             'x-component': 'Pagination',
-            'x-component-props': {
-              useProps: '{{ useDetailsPaginationProps }}',
-            },
+            'x-use-component-props': 'useDetailsPaginationProps',
           },
         },
       },

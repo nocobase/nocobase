@@ -12,60 +12,58 @@ describe('createDetailsBlockWithPagingUISchema', () => {
       rowKey: 'id',
     });
 
-    expect(schema).toEqual({
-      type: 'void',
-      'x-acl-action': 'users:view',
-      'x-decorator': 'DetailsBlockProvider',
-      'x-use-decorator-props': 'useDetailsBlockWithPagingDecoratorProps',
-      'x-decorator-props': {
-        dataSource: 'users',
-        collection: 'users',
-        association: undefined,
-        readPretty: true,
-        action: 'list',
-        params: {
-          pageSize: 1,
-        },
-      },
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-settings': 'blockSettings:multiDataDetails',
-      'x-component': 'CardItem',
-      properties: {
-        'mocked-uid': {
-          type: 'void',
-          'x-component': 'Details',
-          'x-read-pretty': true,
-          'x-component-props': {
-            useProps: '{{ useDetailsBlockWithPagingProps }}',
-          },
-          properties: {
-            'mocked-uid': {
-              type: 'void',
-              'x-initializer': 'detailsWithPaging:configureActions',
-              'x-component': 'ActionBar',
-              'x-component-props': {
-                style: {
-                  marginBottom: 24,
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "properties": {
+          "mocked-uid": {
+            "properties": {
+              "grid": {
+                "properties": {},
+                "type": "void",
+                "x-component": "Grid",
+                "x-initializer": "details:configureFields",
+              },
+              "mocked-uid": {
+                "properties": {},
+                "type": "void",
+                "x-component": "ActionBar",
+                "x-component-props": {
+                  "style": {
+                    "marginBottom": 24,
+                  },
                 },
+                "x-initializer": "detailsWithPaging:configureActions",
               },
-              properties: {},
-            },
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'details:configureFields',
-              properties: {},
-            },
-            pagination: {
-              type: 'void',
-              'x-component': 'Pagination',
-              'x-component-props': {
-                useProps: '{{ useDetailsPaginationProps }}',
+              "pagination": {
+                "type": "void",
+                "x-component": "Pagination",
+                "x-use-component-props": "useDetailsPaginationProps",
               },
             },
+            "type": "void",
+            "x-component": "Details",
+            "x-read-pretty": true,
+            "x-use-component-props": "useDetailsBlockWithPagingProps",
           },
         },
-      },
-    });
+        "type": "void",
+        "x-acl-action": "users:view",
+        "x-component": "CardItem",
+        "x-decorator": "DetailsBlockProvider",
+        "x-decorator-props": {
+          "action": "list",
+          "association": undefined,
+          "collection": "users",
+          "dataSource": "users",
+          "params": {
+            "pageSize": 1,
+          },
+          "readPretty": true,
+        },
+        "x-settings": "blockSettings:multiDataDetails",
+        "x-toolbar": "BlockSchemaToolbar",
+        "x-use-decorator-props": "useDetailsBlockWithPagingDecoratorProps",
+      }
+    `);
   });
 });
