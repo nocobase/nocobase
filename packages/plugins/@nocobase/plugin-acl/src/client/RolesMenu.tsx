@@ -18,20 +18,32 @@ export const RolesMenu: React.FC & {
   Item: React.FC<{ item: any; onEdit: () => void }>;
 } = () => {
   const { t } = useACLTranslation();
-  const { data, run, loading } = useResourceActionContext();
+  const { data, mutate } = useResourceActionContext();
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState(null);
   const { role, setRole } = useContext(RolesManagerContext);
   const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const api = useAPIClient();
 
-  const loadMore = useCallback(() => {
+  const loadMore = useCallback(async () => {
     const meta = data?.meta;
     if (!meta || meta.page >= meta.totalPage) {
       return;
     }
-    run({
+    setLoading(true);
+    const res = await api.resource('roles').list({
       page: meta.page + 1,
+      pageSize: meta.pageSize,
+      filter: {
+        'name.$ne': 'root',
+      },
+      showAnonymous: true,
+      sort: ['createdAt'],
+      appends: [],
     });
+    mutate(res?.data || {});
+    setLoading(false);
   }, [data]);
   const { lastItem, setLastItem } = useLoadMoreObserver({ loadMore });
 
@@ -54,7 +66,11 @@ export const RolesMenu: React.FC & {
     const ref = React.createRef<any>();
     setLastItem(ref);
 
-    setRoles((prev) => prev.concat(data.data));
+    if (data.meta?.page > 1) {
+      setRoles((prev) => prev.concat(data.data));
+    } else {
+      setRoles(data.data);
+    }
   }, [data, setLastItem]);
 
   const items = useMemo(
@@ -88,15 +104,12 @@ export const RolesMenu: React.FC & {
   return (
     <>
       {roles.length ? (
-        <>
-          <Menu
-            style={{ border: 'none', maxHeight: '65vh', overflowY: 'auto' }}
-            items={items}
-            selectedKeys={[role?.name]}
-            onSelect={handleSelect}
-          />
-          {loading && <Spin />}
-        </>
+        <Menu
+          style={{ border: 'none', maxHeight: '65vh', overflowY: 'auto' }}
+          items={[...items, ...(loading ? [{ key: 'loading', label: <Spin /> }] : [])]}
+          selectedKeys={[role?.name]}
+          onSelect={handleSelect}
+        />
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
       )}
