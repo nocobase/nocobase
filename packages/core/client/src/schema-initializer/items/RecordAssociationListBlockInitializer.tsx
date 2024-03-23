@@ -29,7 +29,6 @@ export const RecordAssociationListBlockInitializer = () => {
           insert(
             createListBlockSchema({
               rowKey: collection.filterTargetKey,
-              collectionName: field.target,
               dataSource: collection.dataSource,
               association: resource,
             }),
@@ -53,7 +52,6 @@ export function useCreateAssociationListBlock() {
       insert(
         createListBlockSchema({
           rowKey: collection.filterTargetKey,
-          collectionName: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
         }),

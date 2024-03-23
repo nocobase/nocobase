@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 
 export const createListBlockSchema = (options: {
-  collectionName: string;
   dataSource: string;
+  collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
   rowKey?: string;
