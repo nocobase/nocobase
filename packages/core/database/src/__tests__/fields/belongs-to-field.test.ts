@@ -14,6 +14,36 @@ describe('belongs to field', () => {
     await db.close();
   });
 
+  it('should load with no action', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'name', unique: true }],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'belongsTo', name: 'user', onDelete: 'NO ACTION' },
+      ],
+    });
+
+    await db.sync();
+
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+    const p1 = await Post.repository.create({ values: { title: 'p1', user: u1.id } });
+
+    // delete u1
+    await User.repository.destroy({ filterByTk: u1.id });
+
+    // list posts with user
+    const post = await Post.repository.findOne({
+      appends: ['user'],
+    });
+
+    expect(post.user).toBeNull();
+  });
+
   it('should throw error when associated with item that null with target key', async () => {
     const User = db.collection({
       name: 'users',
