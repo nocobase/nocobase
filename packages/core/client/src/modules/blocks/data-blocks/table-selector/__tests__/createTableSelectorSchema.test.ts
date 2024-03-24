@@ -14,46 +14,48 @@ describe('createTableSelectorSchema', () => {
       rowKey: 'id',
     });
 
-    expect(schema).toEqual({
-      type: 'void',
-      'x-acl-action': 'example:list',
-      'x-decorator': 'TableSelectorProvider',
-      'x-use-decorator-props': 'useTableSelectorDecoratorProps',
-      'x-decorator-props': {
-        collection: 'example',
-        dataSource: 'example',
-        action: 'list',
-        params: {
-          pageSize: 20,
-        },
-        rowKey: 'id',
-      },
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-settings': 'blockSettings:tableSelector',
-      'x-component': 'CardItem',
-      properties: {
-        'mocked-uid': {
-          type: 'void',
-          'x-initializer': 'table:configureActions',
-          'x-component': 'ActionBar',
-          'x-component-props': {
-            style: {
-              marginBottom: 'var(--nb-spacing)',
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "properties": {
+          "mocked-uid": {
+            "type": "void",
+            "x-component": "ActionBar",
+            "x-component-props": {
+              "style": {
+                "marginBottom": "var(--nb-spacing)",
+              },
             },
+            "x-initializer": "table:configureActions",
+          },
+          "value": {
+            "type": "array",
+            "x-component": "TableV2.Selector",
+            "x-component-props": {
+              "rowSelection": {
+                "type": "checkbox",
+              },
+            },
+            "x-initializer": "table:configureColumns",
+            "x-use-component-props": "useTableSelectorProps",
           },
         },
-        value: {
-          type: 'array',
-          'x-initializer': 'table:configureColumns',
-          'x-component': 'TableV2.Selector',
-          'x-component-props': {
-            rowSelection: {
-              type: 'checkbox',
-            },
-            useProps: '{{ useTableSelectorProps }}',
+        "type": "void",
+        "x-acl-action": "example:list",
+        "x-component": "CardItem",
+        "x-decorator": "TableSelectorProvider",
+        "x-decorator-props": {
+          "action": "list",
+          "collection": "example",
+          "dataSource": "example",
+          "params": {
+            "pageSize": 20,
           },
+          "rowKey": "id",
         },
-      },
-    });
+        "x-settings": "blockSettings:tableSelector",
+        "x-toolbar": "BlockSchemaToolbar",
+        "x-use-decorator-props": "useTableSelectorDecoratorProps",
+      }
+    `);
   });
 });
