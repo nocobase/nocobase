@@ -68,9 +68,7 @@ test('createMapBlockSchema should return an object with expected properties', ()
           },
           "type": "void",
           "x-component": "MapBlock",
-          "x-component-props": {
-            "useProps": "{{ useMapBlockProps }}",
-          },
+          "x-use-component-props": "useMapBlockProps",
         },
       },
       "type": "void",

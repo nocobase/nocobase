@@ -5,9 +5,10 @@ export const createGanttBlockUISchema = (options: {
   collectionName: string;
   fieldNames: object;
   dataSource: string;
-}) => {
+}): ISchema => {
   const { collectionName, fieldNames, dataSource } = options;
-  const schema: ISchema = {
+
+  return {
     type: 'void',
     'x-acl-action': `${collectionName}:list`,
     'x-decorator': 'GanttBlockProvider',
@@ -125,6 +126,4 @@ export const createGanttBlockUISchema = (options: {
       },
     },
   };
-
-  return schema;
 };

@@ -91,7 +91,6 @@ describe('createGanttBlockSchema', () => {
                   "rowSelection": {
                     "type": "checkbox",
                   },
-                  "useProps": "{{ useTableBlockProps }}",
                 },
                 "x-decorator": "div",
                 "x-decorator-props": {
@@ -101,6 +100,7 @@ describe('createGanttBlockSchema', () => {
                   },
                 },
                 "x-initializer": "table:configureColumns",
+                "x-use-component-props": "useTableBlockProps",
               },
               "toolBar": {
                 "properties": {},
@@ -116,9 +116,7 @@ describe('createGanttBlockSchema', () => {
             },
             "type": "void",
             "x-component": "Gantt",
-            "x-component-props": {
-              "useProps": "{{ useGanttBlockProps }}",
-            },
+            "x-use-component-props": "useGanttBlockProps",
           },
         },
         "type": "void",
