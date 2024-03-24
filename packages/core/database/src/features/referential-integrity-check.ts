@@ -21,6 +21,11 @@ export async function referentialIntegrityCheck(options: ReferentialIntegrityChe
 
   for (const reference of references) {
     const { sourceCollectionName, sourceField, targetField, onDelete } = reference;
+
+    if (onDelete === 'NO ACTION') {
+      continue;
+    }
+
     const sourceCollection = db.collections.get(sourceCollectionName);
     const sourceRepository = sourceCollection.repository;
 
