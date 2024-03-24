@@ -1,5 +1,11 @@
 import { CreateFormBlockUISchemaOptions, createCreateFormBlockUISchema } from '../createCreateFormBlockUISchema';
 
+vi.mock('@formily/shared', () => {
+  return {
+    uid: () => 'mocked-uid',
+  };
+});
+
 describe('createCreateFormBlockUISchema', () => {
   it('should create a schema with all options', () => {
     const options: CreateFormBlockUISchemaOptions = {
@@ -14,12 +20,12 @@ describe('createCreateFormBlockUISchema', () => {
     expect(result).toMatchInlineSnapshot(`
       {
         "properties": {
-          "rruxlvjwuzn": {
+          "mocked-uid": {
             "properties": {
               "grid": {
                 "type": "string",
               },
-              "jiv1dzgijfy": {
+              "mocked-uid": {
                 "type": "void",
                 "x-component": "ActionBar",
                 "x-component-props": {
