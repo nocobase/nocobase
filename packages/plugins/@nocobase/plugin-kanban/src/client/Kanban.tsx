@@ -7,8 +7,9 @@ import {
   useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
-import { Spin, Tag } from 'antd';
+import { Spin, Tag, Card, Skeleton } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { Board } from './board';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 import { useStyles } from './style';
@@ -120,6 +121,10 @@ export const Kanban: any = observer(
           renderCard={(card, { column, dragging }) => {
             const columnIndex = dataSource?.indexOf(column);
             const cardIndex = column?.cards?.indexOf(card);
+            const { ref, inView } = useInView({
+              threshold: 0.8,
+              triggerOnce: true,
+            });
             return (
               schemas.card && (
                 <RecordProvider record={card} parent={parentRecordData}>
@@ -135,7 +140,15 @@ export const Kanban: any = observer(
                       cardIndex,
                     }}
                   >
-                    <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
+                    <div ref={ref}>
+                      {inView ? (
+                        <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
+                      ) : (
+                        <Card>
+                          <Skeleton active paragraph={{ rows: 4 }} />
+                        </Card>
+                      )}
+                    </div>
                   </KanbanCardContext.Provider>
                 </RecordProvider>
               )

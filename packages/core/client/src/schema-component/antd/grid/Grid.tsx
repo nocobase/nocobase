@@ -16,7 +16,7 @@ import { useFormBlockType } from '../../../block-provider';
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
-import { Skeleton } from 'antd';
+import { Card, Skeleton } from 'antd';
 
 const GridRowContext = createContext<any>({});
 GridRowContext.displayName = 'GridRowContext';
@@ -314,7 +314,7 @@ export const useGridRowContext = () => {
 
 const GridSchemaContent = ({ schema }) => {
   const { ref, inView } = useInView({
-    threshold: 0,
+    threshold: 1,
     initialInView: true,
     triggerOnce: true,
   });
@@ -324,7 +324,9 @@ const GridSchemaContent = ({ schema }) => {
         {inView ? (
           <SchemaComponent name={schema.name || schema['x-uid']} schema={schema} />
         ) : (
-          <Skeleton active paragraph={{ rows: 8 }} />
+          <Card>
+            <Skeleton active paragraph={{ rows: 4 }} />
+          </Card>
         )}
       </div>
     </OverrideSchemaComponentRefresher>
