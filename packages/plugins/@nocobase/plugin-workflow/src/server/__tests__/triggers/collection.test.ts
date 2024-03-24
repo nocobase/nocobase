@@ -1,10 +1,11 @@
 import { MockDatabase } from '@nocobase/database';
+import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-import { Application } from '@nocobase/server';
+
 import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > triggers > collection', () => {
-  let app: Application;
+  let app: MockServer;
   let db: MockDatabase;
   let CategoryRepo;
   let PostRepo;
@@ -14,7 +15,7 @@ describe('workflow > triggers > collection', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['error-handler', 'collection-manager'],
+      plugins: ['error-handler', 'collection-manager', 'users', 'auth'],
     });
 
     db = app.db;
@@ -557,6 +558,57 @@ describe('workflow > triggers > collection', () => {
 
       const p2s = await AnotherPostRepo.find();
       expect(p2s.length).toBe(1);
+    });
+
+    it('revisiond workflow should only trigger on enabled version', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'another:posts',
+        },
+      });
+
+      const AnotherPostRepo = anotherDB.getRepository('posts');
+      const p1 = await AnotherPostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
+
+      const user = await app.db.getRepository('users').findOne();
+      const agent = app.agent().login(user);
+
+      const { body } = await agent.resource('workflows').revision({
+        filterByTk: w1.id,
+        filter: {
+          key: w1.key,
+        },
+      });
+      const w2 = await WorkflowModel.findByPk(body.data.id);
+      await w2.update({ enabled: true });
+      expect(w2.enabled).toBe(true);
+      console.log('w2', w2.toJSON());
+
+      await w1.reload();
+      expect(w1.enabled).toBe(false);
+
+      const p2 = await AnotherPostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const e2s = await w1.getExecutions({ order: [['createdAt', 'ASC']] });
+      expect(e2s.length).toBe(1);
+
+      const ExecutionRepo = app.db.getRepository('executions');
+      const e3s = await ExecutionRepo.find({
+        filter: {
+          workflowId: w2.id,
+        },
+      });
+      expect(e3s.length).toBe(1);
     });
   });
 });
