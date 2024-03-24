@@ -14,43 +14,45 @@ describe('createFilterFormBlockSchema', () => {
       templateSchema: { type: 'string' },
     });
 
-    expect(schema).toEqual({
-      type: 'void',
-      'x-decorator': 'FilterFormBlockProvider',
-      'x-use-decorator': 'useFilterFormBlockDecoratorProps',
-      'x-decorator-props': {
-        dataSource: 'myDataSource',
-        collection: 'myCollection',
-      },
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-settings': 'blockSettings:filterForm',
-      'x-component': 'CardItem',
-      'x-filter-targets': [],
-      'x-filter-operators': {},
-      properties: {
-        'mocked-uid': {
-          type: 'void',
-          'x-component': 'FormV2',
-          'x-component-props': {
-            useProps: '{{ useFilterFormBlockProps }}',
-          },
-          properties: {
-            grid: { type: 'string' },
-            'mocked-uid': {
-              type: 'void',
-              'x-initializer': 'filterForm:configureActions',
-              'x-component': 'ActionBar',
-              'x-component-props': {
-                layout: 'one-column',
-                style: {
-                  float: 'right',
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "properties": {
+          "mocked-uid": {
+            "properties": {
+              "grid": {
+                "type": "string",
+              },
+              "mocked-uid": {
+                "type": "void",
+                "x-component": "ActionBar",
+                "x-component-props": {
+                  "layout": "one-column",
+                  "style": {
+                    "float": "right",
+                  },
                 },
+                "x-initializer": "filterForm:configureActions",
               },
             },
+            "type": "void",
+            "x-component": "FormV2",
+            "x-use-component-props": "useFilterFormBlockProps",
           },
         },
-      },
-    });
+        "type": "void",
+        "x-component": "CardItem",
+        "x-decorator": "FilterFormBlockProvider",
+        "x-decorator-props": {
+          "collection": "myCollection",
+          "dataSource": "myDataSource",
+        },
+        "x-filter-operators": {},
+        "x-filter-targets": [],
+        "x-settings": "blockSettings:filterForm",
+        "x-toolbar": "BlockSchemaToolbar",
+        "x-use-decorator-props": "useFilterFormBlockDecoratorProps",
+      }
+    `);
   });
 
   test('should return the correct schema without templateSchema', () => {
@@ -59,46 +61,46 @@ describe('createFilterFormBlockSchema', () => {
       dataSource: 'myDataSource',
     });
 
-    expect(schema).toEqual({
-      type: 'void',
-      'x-decorator': 'FilterFormBlockProvider',
-      'x-use-decorator': 'useFilterFormBlockDecoratorProps',
-      'x-decorator-props': {
-        dataSource: 'myDataSource',
-        collection: 'myCollection',
-      },
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-settings': 'blockSettings:filterForm',
-      'x-component': 'CardItem',
-      'x-filter-targets': [],
-      'x-filter-operators': {},
-      properties: {
-        'mocked-uid': {
-          type: 'void',
-          'x-component': 'FormV2',
-          'x-component-props': {
-            useProps: '{{ useFilterFormBlockProps }}',
-          },
-          properties: {
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'filterForm:configureFields',
-            },
-            'mocked-uid': {
-              type: 'void',
-              'x-initializer': 'filterForm:configureActions',
-              'x-component': 'ActionBar',
-              'x-component-props': {
-                layout: 'one-column',
-                style: {
-                  float: 'right',
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "properties": {
+          "mocked-uid": {
+            "properties": {
+              "grid": {
+                "type": "void",
+                "x-component": "Grid",
+                "x-initializer": "filterForm:configureFields",
+              },
+              "mocked-uid": {
+                "type": "void",
+                "x-component": "ActionBar",
+                "x-component-props": {
+                  "layout": "one-column",
+                  "style": {
+                    "float": "right",
+                  },
                 },
+                "x-initializer": "filterForm:configureActions",
               },
             },
+            "type": "void",
+            "x-component": "FormV2",
+            "x-use-component-props": "useFilterFormBlockProps",
           },
         },
-      },
-    });
+        "type": "void",
+        "x-component": "CardItem",
+        "x-decorator": "FilterFormBlockProvider",
+        "x-decorator-props": {
+          "collection": "myCollection",
+          "dataSource": "myDataSource",
+        },
+        "x-filter-operators": {},
+        "x-filter-targets": [],
+        "x-settings": "blockSettings:filterForm",
+        "x-toolbar": "BlockSchemaToolbar",
+        "x-use-decorator-props": "useFilterFormBlockDecoratorProps",
+      }
+    `);
   });
 });
