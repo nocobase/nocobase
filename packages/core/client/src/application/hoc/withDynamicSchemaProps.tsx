@@ -1,6 +1,7 @@
+import { useExpressionScope } from '@formily/react';
 import { merge, omit } from 'lodash';
 import React, { ComponentType, useMemo } from 'react';
-import { useDesignable, useSchemaComponentContext } from '../../schema-component';
+import { useDesignable } from '../../schema-component';
 
 const useDefaultSchemaProps = () => undefined;
 
@@ -12,7 +13,7 @@ export function withDynamicSchemaProps<T = any>(Component: ComponentType<T>, opt
   const displayName = options.displayName || Component.displayName || Component.name;
   const ComponentWithProps: ComponentType<T> = (props) => {
     const { dn, findComponent } = useDesignable();
-    const { scope } = useSchemaComponentContext();
+    const scope = useExpressionScope();
     const useComponentPropsStr = useMemo(() => {
       const xComponent = dn.getSchemaAttribute('x-component');
       const xDecorator = dn.getSchemaAttribute('x-decorator');
