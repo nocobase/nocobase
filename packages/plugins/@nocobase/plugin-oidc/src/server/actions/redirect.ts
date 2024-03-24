@@ -10,14 +10,17 @@ export const redirect = async (ctx: Context, next: Next) => {
   const authenticator = search.get('name');
   const appName = search.get('app');
   const redirect = search.get('redirect') || '/admin';
-  let prefix = '';
+  let prefix = process.env.APP_PUBLIC_PATH || '';
   if (appName && appName !== 'main') {
     const appSupervisor = AppSupervisor.getInstance();
     if (appSupervisor?.runningMode !== 'single') {
-      prefix = process.env.APP_PUBLIC_PATH + `apps/${appName}`;
+      prefix += `apps/${appName}`;
     }
   }
   const auth = (await ctx.app.authManager.get(authenticator, ctx)) as OIDCAuth;
+  if (prefix.endsWith('/')) {
+    prefix = prefix.slice(0, -1);
+  }
   try {
     const { token } = await auth.signIn();
     ctx.redirect(`${prefix}${redirect}?authenticator=${authenticator}&token=${token}`);

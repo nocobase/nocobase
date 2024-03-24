@@ -72,7 +72,8 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
 export const SchemaInitializerSubMenu: FC<SchemaInitializerSubMenuProps> = (props) => {
   const { children, title, name = uid(), onOpenChange, icon, ...others } = props;
   const compile = useCompile();
-  const childrenItems = useSchemaInitializerMenuItems(children, name);
+  const validChildren = children?.filter((item) => (item.useVisible ? item.useVisible() : true));
+  const childrenItems = useSchemaInitializerMenuItems(validChildren, name);
 
   const items = useMemo(() => {
     return [

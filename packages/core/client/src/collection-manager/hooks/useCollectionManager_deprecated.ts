@@ -108,7 +108,7 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
       if (!name) return [];
       const collection = getCm(customDataSource)?.getCollection<InheritanceCollectionMixin>(name);
       const res = collection?.getChildrenCollections(isSupportView);
-      return res;
+      return res || [];
     },
     [dm, getCm],
   );
