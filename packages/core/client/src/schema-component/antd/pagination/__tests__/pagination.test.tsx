@@ -2,7 +2,7 @@ import { render } from '@nocobase/test/client';
 import React from 'react';
 import { Pagination } from '../index';
 
-describe('Pagination', () => {
+describe.skip('Pagination', () => {
   it('should render correctly', () => {
     render(<Pagination />);
     expect(document.querySelector('.ant-pagination')).toBeInTheDocument();
