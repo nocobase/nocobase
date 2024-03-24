@@ -78,7 +78,8 @@ export const TableBlockDesigner = () => {
   const { dn } = useDesignable();
 
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const defaultResource =
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
   const sort = defaultSort?.map((item: string) => {
     return item?.startsWith('-')

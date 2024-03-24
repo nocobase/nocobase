@@ -18,7 +18,8 @@ export const AssociationFilterBlockDesigner = () => {
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const defaultResource =
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
