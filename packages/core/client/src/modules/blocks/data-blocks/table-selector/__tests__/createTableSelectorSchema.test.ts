@@ -1,4 +1,4 @@
-import { createTableSelectorSchema } from '../createTableSelectorSchema';
+import { createTableSelectorUISchema } from '../createTableSelectorUISchema';
 
 vi.mock('@formily/shared', () => {
   return {
@@ -8,7 +8,7 @@ vi.mock('@formily/shared', () => {
 
 describe('createTableSelectorSchema', () => {
   test('should return the correct schema', () => {
-    const schema = createTableSelectorSchema({
+    const schema = createTableSelectorUISchema({
       collectionName: 'example',
       dataSource: 'example',
       rowKey: 'id',

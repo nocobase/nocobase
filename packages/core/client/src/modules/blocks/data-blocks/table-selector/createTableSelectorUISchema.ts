@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export const createTableSelectorSchema = (options: {
+export const createTableSelectorUISchema = (options: {
   collectionName: string;
   dataSource: string;
   rowKey: string;
