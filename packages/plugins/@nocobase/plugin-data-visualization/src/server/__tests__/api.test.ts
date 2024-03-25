@@ -51,6 +51,7 @@ describe('api', () => {
 
   test('query', async () => {
     const ctx = {
+      app,
       db,
       action: {
         params: {
@@ -82,6 +83,7 @@ describe('api', () => {
 
   test('query with sort', async () => {
     const ctx = {
+      app,
       db,
       action: {
         params: {

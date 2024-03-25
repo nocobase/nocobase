@@ -2,9 +2,9 @@ import { TableOutlined } from '@ant-design/icons';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application/schema-initializer/context';
 import { useCollectionManager_deprecated } from '../../../../collection-manager/hooks/useCollectionManager_deprecated';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { createTableBlockSchema } from '../../../../schema-initializer/utils';
 import React from 'react';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
+import { createTableBlockUISchema } from './createTableBlockUISchema';
 
 export const TableBlockInitializer = ({
   filterCollections,
@@ -42,8 +42,8 @@ export const TableBlockInitializer = ({
         }
 
         const collection = getCollection(item.name, item.dataSource);
-        const schema = createTableBlockSchema({
-          collection: item.name,
+        const schema = createTableBlockUISchema({
+          collectionName: item.name,
           dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
         });

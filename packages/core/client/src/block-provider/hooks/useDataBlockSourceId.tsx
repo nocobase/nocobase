@@ -1,4 +1,3 @@
-import { useFieldSchema } from '@formily/react';
 import { useCollection, useCollectionManager, useCollectionParentRecordData, useCollectionRecordData } from '../..';
 
 /**

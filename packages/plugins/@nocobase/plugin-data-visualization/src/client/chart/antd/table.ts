@@ -34,14 +34,14 @@ export class Table extends AntdChart {
     });
     const pageSize = advanced?.pagination?.pageSize || 10;
     return {
-      bordered: true,
+      // bordered: true,
       size: 'middle',
-      // pagination:
-      //   dataSource.length < pageSize
-      //     ? false
-      //     : {
-      //         pageSize,
-      //       },
+      pagination:
+        dataSource.length < pageSize
+          ? false
+          : {
+              pageSize,
+            },
       dataSource,
       columns,
       scroll: {
