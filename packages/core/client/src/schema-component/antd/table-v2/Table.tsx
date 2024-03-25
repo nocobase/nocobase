@@ -345,15 +345,18 @@ const BodyRowComponent = (props) => {
 };
 
 const BodyCellComponent = (props) => {
+  const isIndex = props.className?.includes('selection-column');
+
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
     initialInView: !!process.env.__E2E__,
+    skip: isIndex,
   });
 
   return (
     <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-      {inView ? props.children : <Skeleton.Input active />}
+      {inView || isIndex ? props.children : <Skeleton.Input active />}
     </td>
   );
 };
