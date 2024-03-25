@@ -25,7 +25,10 @@ export const getResource = (packageName: string, lang: string, isPlugin = true) 
   for (const prefix of prefixes) {
     try {
       const file = `${packageName}/${prefix}/locale/${lang}`;
-      require.resolve(file);
+      const f = require.resolve(file);
+      if (process.env.APP_ENV !== 'production') {
+        delete require.cache[f];
+      }
       const resource = requireModule(file);
       resources.push(resource);
     } catch (error) {
