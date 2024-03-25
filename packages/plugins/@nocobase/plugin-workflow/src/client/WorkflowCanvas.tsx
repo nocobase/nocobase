@@ -21,8 +21,7 @@ import { FlowContext, useFlowContext } from './FlowContext';
 import { lang } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
-import { linkNodes } from './utils';
-import { getWorkflowDetailPath } from './constant';
+import { linkNodes, getWorkflowDetailPath } from './utils';
 import { ExecutionStatusColumn } from './components/ExecutionStatus';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
