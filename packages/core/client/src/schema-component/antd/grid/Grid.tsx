@@ -317,6 +317,7 @@ const GridSchemaContent = ({ schema }) => {
     threshold: 1,
     initialInView: true,
     triggerOnce: true,
+    skip: !!process.env.__E2E__,
   });
   return (
     <OverrideSchemaComponentRefresher>

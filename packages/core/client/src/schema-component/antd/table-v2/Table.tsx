@@ -350,8 +350,7 @@ const BodyCellComponent = (props) => {
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
-    initialInView: !!process.env.__E2E__,
-    skip: isIndex,
+    skip: isIndex || !!process.env.__E2E__,
   });
 
   return (
