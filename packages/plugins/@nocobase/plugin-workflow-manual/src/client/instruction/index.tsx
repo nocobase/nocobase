@@ -138,7 +138,7 @@ export default class extends Instruction {
               title: form.title ?? formKey,
               Component: CollectionBlockInitializer,
               collection: form.collection,
-              dataSource: `{{$jobsMapByNodeKey.${node.key}.${formKey}}}`,
+              dataPath: `$jobsMapByNodeKey.${node.key}.${formKey}`,
             } as SchemaInitializerItemType)
           : null;
       })

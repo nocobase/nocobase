@@ -3,6 +3,7 @@ import parser from 'cron-parser';
 import type Plugin from '../../Plugin';
 import type { WorkflowModel } from '../../types';
 import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
+import { parseCollectionName } from '@nocobase/data-source-manager';
 
 export type ScheduleOnField = {
   field: string;
@@ -334,7 +335,9 @@ export default class ScheduleTrigger {
     this.inspect([workflow]);
 
     const { collection } = workflow.config;
-    const event = `${collection}.afterSaveWithAssociations`;
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+    const event = `${collectionName}.afterSaveWithAssociations`;
+    const eventKey = `${collection}.afterSaveWithAssociations`;
     const name = getHookId(workflow, event);
     if (this.events.has(name)) {
       return;
@@ -346,7 +349,8 @@ export default class ScheduleTrigger {
     };
 
     this.events.set(name, listener);
-    this.workflow.app.db.on(event, listener);
+    // @ts-ignore
+    this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager.db.on(event, listener);
   }
 
   off(workflow: WorkflowModel) {
@@ -358,12 +362,16 @@ export default class ScheduleTrigger {
     }
 
     const { collection } = workflow.config;
-    const event = `${collection}.afterSaveWithAssociations`;
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+    const event = `${collectionName}.afterSaveWithAssociations`;
+    const eventKey = `${collection}.afterSaveWithAssociations`;
     const name = getHookId(workflow, event);
-    if (this.events.has(name)) {
+    if (this.events.has(eventKey)) {
       const listener = this.events.get(name);
-      this.events.delete(name);
-      this.workflow.app.db.off(event, listener);
+      // @ts-ignore
+      const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+      db.off(event, listener);
+      this.events.delete(eventKey);
     }
   }
 }
