@@ -10,6 +10,7 @@ export interface ISchemaComponentContext {
   designable?: boolean;
   setDesignable?: (value: boolean) => void;
   SchemaField?: React.FC<ISchemaFieldProps>;
+  shouldRefreshParent?: boolean;
 }
 
 export interface ISchemaComponentProvider {

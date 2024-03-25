@@ -95,19 +95,3 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   );
 };
 SchemaComponentProvider.displayName = 'SchemaComponentProvider';
-
-const DoNotOverrideSchemaComponentContext = React.createContext<boolean>(false);
-
-export const OverrideSchemaComponentRefresher = ({ children }) => {
-  const ctx = useContext(SchemaComponentContext);
-  const doNotOverride = useContext(DoNotOverrideSchemaComponentContext);
-  const refresh = useUpdate();
-  if (doNotOverride) return <>{children}</>;
-  return <SchemaComponentContext.Provider value={{ ...ctx, refresh }}>{children}</SchemaComponentContext.Provider>;
-};
-
-export const DoNotOverrideSchemaComponentRefresher = ({ children }) => {
-  return (
-    <DoNotOverrideSchemaComponentContext.Provider value={true}>{children}</DoNotOverrideSchemaComponentContext.Provider>
-  );
-};

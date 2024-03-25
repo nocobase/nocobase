@@ -9,7 +9,6 @@ import {
   CurrentAppInfoProvider,
   CurrentUser,
   NavigateIfNotSignIn,
-  OverrideSchemaComponentRefresher,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerPlugin,
@@ -205,9 +204,12 @@ const MenuEditor = (props) => {
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <OverrideSchemaComponentRefresher>
-        <SchemaComponent memoized scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }} schema={schema} />
-      </OverrideSchemaComponentRefresher>
+      <SchemaComponent
+        shouldRefreshParent={false}
+        memoized
+        scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }}
+        schema={schema}
+      />
     </SchemaIdContext.Provider>
   );
 };
