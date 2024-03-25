@@ -36,7 +36,7 @@ export const useChartDataSource = (dataSource?: string) => {
   const dm = useDataSourceManager();
   const ds = dm.getDataSource(_dataSource);
   const fim = dm.collectionFieldInterfaceManager;
-  const cm = ds.collectionManager;
+  const cm = ds?.collectionManager;
   return { cm, fim, collection };
 };
 

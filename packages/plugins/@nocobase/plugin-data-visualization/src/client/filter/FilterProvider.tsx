@@ -34,7 +34,7 @@ export const ChartFilterProvider: React.FC = (props) => {
   const [fields, setFields] = useState({});
   const [collapse, _setCollapse] = useState({ collapsed: false, row: 1 });
   const [form, _setForm] = useState<any>();
-  const setField = useMemoizedFn((name: string, props: { title?: string; operator?: string }) => {
+  const setField = useMemoizedFn((name: string, props: FilterField) => {
     setFields((fields) => ({
       ...fields,
       [name]: {
