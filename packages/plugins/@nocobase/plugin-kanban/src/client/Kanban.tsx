@@ -4,11 +4,12 @@ import {
   RecordProvider,
   SchemaComponentOptions,
   useCreateActionProps as useCAP,
+  useCollection,
   useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { Spin, Tag, Card, Skeleton } from 'antd';
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { Board } from './board';
 import { KanbanCardContext, KanbanColumnContext } from './context';
@@ -64,6 +65,8 @@ export const Kanban: any = observer(
   (props: any) => {
     const { styles } = useStyles();
     const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
+    const collection = useCollection();
+    const primaryKey = collection.getPrimaryKey();
     const parentRecordData = useCollectionParentRecordData();
     const field = useField<ArrayField>();
     const fieldSchema = useFieldSchema();
@@ -93,8 +96,10 @@ export const Kanban: any = observer(
       },
       [field],
     );
+    const lastDraggedCard = useRef(null);
     const handleCardDragEnd = useCallback(
       (card, fromColumn, toColumn) => {
+        lastDraggedCard.current = card[primaryKey];
         onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
         const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
         field.value = updatedBoard.columns;
@@ -124,6 +129,7 @@ export const Kanban: any = observer(
             const { ref, inView } = useInView({
               threshold: 0.8,
               triggerOnce: true,
+              initialInView: lastDraggedCard.current && lastDraggedCard.current === card[primaryKey],
             });
             return (
               schemas.card && (
