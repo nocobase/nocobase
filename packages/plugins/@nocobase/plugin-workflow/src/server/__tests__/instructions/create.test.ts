@@ -126,4 +126,35 @@ describe('workflow > instructions > create', () => {
       expect(job.result.posts[0].id).toBe(post.id);
     });
   });
+
+  describe('multiple data source', () => {
+    it('create one', async () => {
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'another:posts',
+          params: {
+            values: {
+              title: '{{$context.data.title}}',
+              published: true,
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.title).toBe(post.title);
+
+      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(1);
+      expect(p2s[0].title).toBe(post.title);
+      expect(p2s[0].published).toBe(true);
+    });
+  });
 });

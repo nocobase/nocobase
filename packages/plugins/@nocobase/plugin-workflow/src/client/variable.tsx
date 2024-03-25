@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Variable, useCompile, usePlugin } from '@nocobase/client';
+import { Variable, parseCollectionName, useCompile, usePlugin } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
@@ -250,22 +250,23 @@ export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
 }
 
 function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
-  const fields = getCollectionFields(collectionName);
+  const [dataSourceName, collection] = parseCollectionName(collectionName);
+  const fields = getCollectionFields(collection, dataSourceName);
   const foreignKeyFields: any[] = [];
-  const otherFields: any[] = [];
+  const result: any[] = [];
   fields.forEach((field) => {
     if (field.isForeignKey) {
       foreignKeyFields.push(field);
     } else {
-      otherFields.push(field);
+      result.push(field);
     }
   });
-  for (let i = otherFields.length - 1; i >= 0; i--) {
-    const field = otherFields[i];
+  for (let i = result.length - 1; i >= 0; i--) {
+    const field = result[i];
     if (field.type === 'belongsTo') {
       const foreignKeyField = foreignKeyFields.find((f) => f.name === field.foreignKey);
       if (foreignKeyField) {
-        otherFields.splice(i, 0, {
+        result.splice(i, 0, {
           ...field,
           ...foreignKeyField,
           uiSchema: {
@@ -274,7 +275,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
           },
         });
       } else {
-        otherFields.splice(i, 0, {
+        result.splice(i, 0, {
           ...field,
           name: field.foreignKey,
           type: 'bigInt',
@@ -288,8 +289,8 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
       }
     } else if (field.type === 'context' && field.collectionName === 'users') {
       const belongsToField =
-        otherFields.find((f) => f.type === 'belongsTo' && f.target === 'users' && f.foreignKey === field.name) ?? {};
-      otherFields.splice(i, 0, {
+        result.find((f) => f.type === 'belongsTo' && f.target === 'users' && f.foreignKey === field.name) ?? {};
+      result.splice(i, 0, {
         ...field,
         type: field.dataType,
         interface: belongsToField.interface,
@@ -301,13 +302,15 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
     }
   }
 
-  return otherFields.filter((field) => field.interface && !field.hidden);
+  return result.filter((field) => field.interface && !field.hidden);
 }
 
 function loadChildren(option) {
   const appends = getNextAppends(option.field, option.appends);
   const result = getCollectionFieldOptions({
-    collection: option.field.target,
+    collection: `${
+      option.field.dataSourceKey && option.field.dataSourceKey !== 'main' ? `${option.field.dataSourceKey}:` : ''
+    }${option.field.target}`,
     types: option.types,
     appends,
     depth: option.depth - 1,
@@ -336,8 +339,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     getCollectionFields,
     fieldNames = defaultFieldNames,
   } = options;
-  const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
-  const computedFields = fields ?? normalizedFields;
+  const computedFields = fields ?? getNormalizedFields(collection, { compile, getCollectionFields });
   const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields, fieldNames });
 
   const result: VariableOption[] = filterTypedFields({

@@ -80,7 +80,8 @@ test.describe('no filter', () => {
     const aggregateRecordNodeId = await aggregateRecordNode.node.locator('.workflow-node-id').innerText();
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
@@ -179,7 +180,8 @@ test.describe('no filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.sumRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
@@ -281,7 +283,8 @@ test.describe('no filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.avgRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
@@ -385,7 +388,8 @@ test.describe('no filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.minRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
@@ -488,7 +492,8 @@ test.describe('no filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.maxRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
@@ -590,7 +595,8 @@ test.describe('no filter', () => {
     const aggregateRecordNodeId = await aggregateRecordNode.node.locator('.workflow-node-id').innerText();
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -690,7 +696,8 @@ test.describe('no filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.sumRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -795,7 +802,8 @@ test.describe('no filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.avgRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -902,7 +910,8 @@ test.describe('no filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.minRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -1006,7 +1015,8 @@ test.describe('no filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.maxRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -1111,7 +1121,8 @@ test.describe('filter', () => {
     const aggregateRecordNodeId = await aggregateRecordNode.node.locator('.workflow-node-id').innerText();
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     // 过滤条件
@@ -1217,7 +1228,8 @@ test.describe('filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.sumRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     // 过滤条件
@@ -1327,7 +1339,8 @@ test.describe('filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.avgRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     // 过滤条件
@@ -1442,7 +1455,8 @@ test.describe('filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.minRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     // 过滤条件
@@ -1553,7 +1567,8 @@ test.describe('filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.maxRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     // 过滤条件
@@ -1663,7 +1678,8 @@ test.describe('filter', () => {
     const aggregateRecordNodeId = await aggregateRecordNode.node.locator('.workflow-node-id').innerText();
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -1770,7 +1786,8 @@ test.describe('filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.sumRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -1885,7 +1902,8 @@ test.describe('filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.avgRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -2009,7 +2027,8 @@ test.describe('filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.minRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
@@ -2121,7 +2140,8 @@ test.describe('filter', () => {
     await aggregateRecordNode.nodeConfigure.click();
     await aggregateRecordNode.maxRadio.click();
     await aggregateRecordNode.collectionDropDown.click();
-    await page.getByText(aggregateNodeCollectionDisplayName).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();

@@ -1,5 +1,5 @@
 import { useForm } from '@formily/react';
-import { css, useCollectionFilterOptions } from '@nocobase/client';
+import { css, parseCollectionName, useCollectionFilterOptions } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
 export const collection = {
@@ -8,15 +8,13 @@ export const collection = {
   required: true,
   'x-reactions': [],
   'x-decorator': 'FormItem',
-  'x-component': 'CollectionSelect',
-  'x-component-props': {
-    className: 'auto-width',
-  },
+  'x-component': 'DataSourceCollectionCascader',
 };
 
 export const values = {
   type: 'object',
   title: '{{t("Fields values")}}',
+  description: `{{t("Unassigned fields will be set to default values, and those without default values will be set to null.", { ns: "${NAMESPACE}" })}}`,
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -25,7 +23,6 @@ export const values = {
     `,
   },
   'x-component': 'CollectionFieldset',
-  description: `{{t("Unassigned fields will be set to default values, and those without default values will be set to null.", { ns: "${NAMESPACE}" })}}`,
 };
 
 export const filter = {
@@ -36,7 +33,8 @@ export const filter = {
   'x-component-props': {
     useProps() {
       const { values } = useForm();
-      const options = useCollectionFilterOptions(values?.collection);
+      const [dataSourceName, collectionName] = parseCollectionName(values?.collection);
+      const options = useCollectionFilterOptions(collectionName, dataSourceName);
       return {
         options,
         className: css`

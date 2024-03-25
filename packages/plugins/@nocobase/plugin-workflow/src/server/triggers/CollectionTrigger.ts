@@ -1,7 +1,8 @@
-import { Collection, Model, Transactionable } from '@nocobase/database';
+import { Model, Transactionable } from '@nocobase/database';
 import Trigger from '.';
 import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
+import { parseCollectionName, ICollection } from '@nocobase/data-source-manager';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;
@@ -25,18 +26,21 @@ function getHookId(workflow, type) {
   return `${type}#${workflow.id}`;
 }
 
-function getFieldRawName(collection: Collection, name: string) {
+function getFieldRawName(collection: ICollection, name: string) {
   const field = collection.getField(name);
-  if (field && field.type === 'belongsTo') {
-    return field.foreignKey;
+  if (field && field.options.type === 'belongsTo') {
+    return field.options.foreignKey;
   }
   return name;
 }
 
 // async function, should return promise
 async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
-  const { collection: collectionName, condition, changed, mode, appends } = workflow.config;
-  const collection = (<typeof Model>data.constructor).database.getCollection(collectionName);
+  const { condition, changed, mode, appends } = workflow.config;
+  const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+  const collection = this.workflow.app.dataSourceManager?.dataSources
+    .get(dataSourceName)
+    .collectionManager.getCollection(collectionName);
   const { transaction, context } = options;
   const { repository, model } = collection;
 
@@ -45,7 +49,9 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     changed &&
     changed.length &&
     changed
-      .filter((name) => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).type))
+      .filter(
+        (name) => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).options.type),
+      )
       .every((name) => !data.changedWithAssociations(getFieldRawName(collection, name)))
   ) {
     return;
@@ -102,16 +108,20 @@ export default class CollectionTrigger extends Trigger {
   events = new Map();
 
   on(workflow: WorkflowModel) {
-    const { db } = this.workflow.app;
     const { collection, mode } = workflow.config;
-    const Collection = db.getCollection(collection);
-    if (!Collection) {
+    if (!collection) {
+      return;
+    }
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+    // @ts-ignore
+    const { db } = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName)?.collectionManager ?? {};
+    if (!db || !db.getCollection(collectionName)) {
       return;
     }
 
     for (const [key, type] of MODE_BITMAP_EVENTS.entries()) {
-      const event = `${collection}.${type}`;
-      const name = getHookId(workflow, event);
+      const event = `${collectionName}.${type}`;
+      const name = getHookId(workflow, `${collection}.${type}`);
       if (mode & key) {
         if (!this.events.has(name)) {
           const listener = handler.bind(this, workflow);
@@ -129,19 +139,23 @@ export default class CollectionTrigger extends Trigger {
   }
 
   off(workflow: WorkflowModel) {
-    const { db } = this.workflow.app;
     const { collection, mode } = workflow.config;
-    const Collection = db.getCollection(collection);
-    if (!Collection) {
+    if (!collection) {
       return;
     }
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+    // @ts-ignore
+    const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName)?.collectionManager ?? {};
+    if (!db || !db.getCollection(collectionName)) {
+      return;
+    }
+
     for (const [key, type] of MODE_BITMAP_EVENTS.entries()) {
-      const event = `${collection}.${type}`;
-      const name = getHookId(workflow, event);
+      const name = getHookId(workflow, `${collection}.${type}`);
       if (mode & key) {
         const listener = this.events.get(name);
         if (listener) {
-          db.off(event, listener);
+          db.off(`${collectionName}.${type}`, listener);
           this.events.delete(name);
         }
       }

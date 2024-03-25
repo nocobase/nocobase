@@ -35,6 +35,8 @@ import {
 } from '@nocobase/client';
 import WorkflowPlugin, {
   JOB_STATUS,
+  DetailsBlockProvider,
+  SimpleDesigner,
   useAvailableUpstreams,
   useFlowContext,
   useNodeContext,
@@ -44,7 +46,6 @@ import WorkflowPlugin, {
 import { Registry, lodash } from '@nocobase/utils/client';
 
 import { NAMESPACE, useLang } from '../../locale';
-import { DetailsBlockProvider } from './DetailsBlockProvider';
 import { FormBlockProvider } from './FormBlockProvider';
 import createRecordForm from './forms/create';
 import customRecordForm from './forms/custom';
@@ -104,24 +105,6 @@ const blockTypeNames = {
   record: `{{t("Data record", { ns: "${NAMESPACE}" })}}`,
 };
 
-function SimpleDesigner() {
-  const schema = useFieldSchema();
-  const title = blockTypeNames[schema['x-designer-props']?.type] ?? '{{t("Block")}}';
-  const compile = useCompile();
-  return (
-    <GeneralSchemaDesigner title={compile(title)}>
-      <SchemaSettingsBlockTitleItem />
-      <SchemaSettingsDivider />
-      <SchemaSettingsRemove
-        removeParentsIfNoChildren
-        breakRemoveOn={{
-          'x-component': 'Grid',
-        }}
-      />
-    </GeneralSchemaDesigner>
-  );
-}
-
 /**
  * @deprecated
  */
@@ -153,7 +136,7 @@ export const addBlockButton_deprecated = new CompatibleSchemaInitializer({
                 {
                   name: 'nodes',
                   type: 'subMenu',
-                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                  title: `{{t("Node result", { ns: "workflow" })}}`,
                   children: nodeBlockInitializers,
                 },
               ]
