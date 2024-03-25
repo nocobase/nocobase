@@ -518,11 +518,14 @@ export const useFieldComponents = () => {
 export const useCollectionJoinFieldTitle = (dataSource: string, name: string) => {
   const { t } = useChartsTranslation();
   const dm = useDataSourceManager();
-  const ds = dm.getDataSource(dataSource);
-  const cm = ds.collectionManager;
   const { showDataSource } = useChartData();
 
   return useMemo(() => {
+    const ds = dm.getDataSource(dataSource);
+    if (!ds) {
+      return;
+    }
+    const cm = ds.collectionManager;
     if (!name) {
       return;
     }
@@ -549,5 +552,5 @@ export const useCollectionJoinFieldTitle = (dataSource: string, name: string) =>
       }
     }
     return showDataSource ? `${Schema.compile(ds.displayName, { t })} > ${title}` : title;
-  }, [name, ds.displayName, showDataSource]);
+  }, [name, dataSource, showDataSource]);
 };

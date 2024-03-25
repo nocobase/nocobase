@@ -80,6 +80,9 @@ const EditOperator = () => {
   const fieldName = fieldSchema['x-collection-field'];
   const dataSource = fieldSchema['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
   const { cm, fim } = useChartDataSource(dataSource);
+  if (!cm) {
+    return null;
+  }
 
   const getOperators = (props: CollectionFieldOptions_deprecated) => {
     let fieldInterface = props?.interface;
