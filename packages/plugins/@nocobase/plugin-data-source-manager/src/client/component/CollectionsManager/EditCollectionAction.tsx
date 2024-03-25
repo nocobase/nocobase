@@ -9,13 +9,14 @@ import {
   tval,
   useAPIClient,
   useActionContext,
-  useCancelAction,
   useCollectionManager_deprecated,
   useCompile,
   useRecord,
   useRequest,
   useResourceActionContext,
   useResourceContext,
+  useCancelAction,
+  useDataSourceManager,
 } from '@nocobase/client';
 import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
@@ -130,6 +131,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const { resource, targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
   const api = useAPIClient();
+  const dm = useDataSourceManager();
   return {
     async run() {
       await form.submit();
@@ -140,6 +142,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
           ...omit(form.values, ['fields', 'autoGenId', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy', 'sortable']),
         },
       });
+      await dm.getDataSource(name).reload();
       ctx.setVisible(false);
       await form.reset();
       refresh();
