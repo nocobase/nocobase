@@ -1,20 +1,22 @@
 import React, { createContext, useEffect, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 
+type FilterField = {
+  title?: string;
+  operator?: {
+    value: string;
+    noValue?: boolean;
+  };
+};
+
 export const ChartFilterContext = createContext<{
   ready: boolean;
   enabled: boolean;
   setEnabled: (enabled: boolean) => void;
   fields: {
-    [name: string]: {
-      title: string;
-      operator?: {
-        value: string;
-        noValue?: boolean;
-      };
-    };
+    [name: string]: FilterField;
   };
-  setField: (name: string, field: { title?: string; operator?: string }) => void;
+  setField: (name: string, field: FilterField) => void;
   removeField: (name: string) => void;
   collapse: {
     collapsed: boolean;
@@ -32,7 +34,7 @@ export const ChartFilterProvider: React.FC = (props) => {
   const [fields, setFields] = useState({});
   const [collapse, _setCollapse] = useState({ collapsed: false, row: 1 });
   const [form, _setForm] = useState<any>();
-  const setField = useMemoizedFn((name: string, props: { title?: string; operator?: string }) => {
+  const setField = useMemoizedFn((name: string, props: FilterField) => {
     setFields((fields) => ({
       ...fields,
       [name]: {
