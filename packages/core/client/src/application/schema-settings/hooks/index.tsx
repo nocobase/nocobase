@@ -35,9 +35,9 @@ export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchem
   }
   return {
     exists: true,
-    render: (options2?: UseSchemaSettingsRenderOptions) => {
-      const key = JSON.stringify(options) || '{}';
-      if (renderCache.current[key]) {
+    render: (options2: UseSchemaSettingsRenderOptions = {}) => {
+      const key = JSON.stringify(options2);
+      if (key && renderCache.current[key]) {
         return renderCache.current[key];
       }
       return (renderCache.current[key] = React.createElement(SchemaSettingsWrapper, {
