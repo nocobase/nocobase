@@ -312,28 +312,6 @@ export const useGridRowContext = () => {
   return useContext(GridRowContext);
 };
 
-const GridSchemaContent = ({ schema }) => {
-  const { ref, inView } = useInView({
-    threshold: 1,
-    initialInView: true,
-    triggerOnce: true,
-    skip: !!process.env.__E2E__,
-  });
-  return (
-    <OverrideSchemaComponentRefresher>
-      <div ref={ref}>
-        {inView ? (
-          <SchemaComponent name={schema.name || schema['x-uid']} schema={schema} />
-        ) : (
-          <Card>
-            <Skeleton active paragraph={{ rows: 4 }} />
-          </Card>
-        )}
-      </div>
-    </OverrideSchemaComponentRefresher>
-  );
-};
-
 export const Grid: any = observer(
   (props: any) => {
     const { showDivider = true } = props;
@@ -385,7 +363,9 @@ export const Grid: any = observer(
               return (
                 <React.Fragment key={schema.name || schema['x-uid']}>
                   {shouldKeepApart ? (
-                    <GridSchemaContent schema={schema} />
+                    <OverrideSchemaComponentRefresher>
+                      <SchemaComponent schema={schema} />
+                    </OverrideSchemaComponentRefresher>
                   ) : (
                     <MemorizedRecursionField name={schema.name || schema['x-uid']} schema={schema} />
                   )}

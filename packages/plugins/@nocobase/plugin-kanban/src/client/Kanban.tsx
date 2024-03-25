@@ -150,7 +150,7 @@ export const Kanban: any = observer(
                       {inView ? (
                         <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
                       ) : (
-                        <Card>
+                        <Card bordered={false}>
                           <Skeleton active paragraph={{ rows: 4 }} />
                         </Card>
                       )}
