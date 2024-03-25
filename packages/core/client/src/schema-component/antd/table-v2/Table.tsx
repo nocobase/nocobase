@@ -5,11 +5,11 @@ import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { useCreation } from 'ahooks';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { useDeepCompareEffect, useMemoizedFn, useWhyDidYouUpdate } from 'ahooks';
+import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
@@ -17,7 +17,6 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
-  CollectionFieldOptions,
   RecordIndexProvider,
   RecordProvider,
   useCollection,
@@ -654,24 +653,6 @@ export const Table: any = observer(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
-
-    useWhyDidYouUpdate('Table', {
-      tableSizeRefCallback,
-      rowKey: rowKey ?? defaultRowKey,
-      dataSource,
-      tableLayout: 'auto',
-      ...others,
-      ...restProps,
-      loading,
-      pagination: paginationProps,
-      components,
-      onChange: onTableChange,
-      onRow,
-      rowClassName,
-      scroll,
-      columns,
-      expandable,
-    });
 
     return (
       <div
