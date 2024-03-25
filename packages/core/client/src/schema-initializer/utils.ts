@@ -1181,8 +1181,6 @@ export const createFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // action: 'get',
-      // useParams: '{{ useParamsFromRecord }}',
     },
     'x-toolbar': 'BlockSchemaToolbar',
     ...(settings ? { 'x-settings': settings } : { 'x-designer': designer }),
@@ -1358,6 +1356,12 @@ export const createReadPrettyFormBlockSchema = (options) => {
   return schema;
 };
 
+/**
+ * @deprecated
+ * 已弃用，可以使用 createTableBlockUISchema 替换
+ * @param options
+ * @returns
+ */
 export const createTableBlockSchema = (options) => {
   const {
     collection,
