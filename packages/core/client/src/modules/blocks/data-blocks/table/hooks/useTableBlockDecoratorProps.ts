@@ -39,6 +39,13 @@ export function useTableBlockParams(props) {
 }
 
 function useTableBlockSourceId(props) {
-  const sourceId = useDataBlockSourceId({ association: props.association });
+  let sourceId: string | undefined;
+
+  // 因为 association 是固定不变的，所以在条件中使用 hooks 是安全的
+  if (props.association) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    sourceId = useDataBlockSourceId({ association: props.association });
+  }
+
   return sourceId;
 }

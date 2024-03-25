@@ -196,7 +196,7 @@ export const useBlockContext = () => {
 /**
  * 用于兼容旧版本 Schema
  */
-const useDataBlockSourceIdCompat = (props) => {
+const useCompatDataBlockSourceId = (props) => {
   const fieldSchema = useFieldSchema();
 
   // 如果存在 x-use-decorator-props，说明是新版 Schema
@@ -227,9 +227,11 @@ export const BlockProvider = (props: {
   useParams?: any;
 }) => {
   const { name, dataSource, association, useParams, parentRecord } = props;
-  const sourceId = useDataBlockSourceIdCompat(props);
+  const sourceId = useCompatDataBlockSourceId(props);
 
+  // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
+
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
