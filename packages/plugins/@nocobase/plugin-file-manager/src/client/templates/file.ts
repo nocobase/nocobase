@@ -150,7 +150,6 @@ export class FileCollectionTemplate extends CollectionTemplate {
       title: `{{t("File storage", { ns: "${NAMESPACE}" })}}`,
       type: 'hasOne',
       name: 'storage',
-      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadStorages)}}'],
