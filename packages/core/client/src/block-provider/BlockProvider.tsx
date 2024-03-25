@@ -330,7 +330,9 @@ export const useParamsFromRecord = () => {
   const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
+  const collectionField = getCollectionJoinField(
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association,
+  );
   const filterFields = fields
     .filter((v) => {
       return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
