@@ -4,6 +4,7 @@ import type { InputProps } from 'antd/es/input';
 import type { InputNumberProps } from 'antd/es/input-number';
 import * as math from 'mathjs';
 import React from 'react';
+import { format } from 'd3-format';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -66,8 +67,14 @@ function formatUnitConversion(value, operator = '*', multiplier) {
   return math.round(result, 9);
 }
 
+//科学技数法显示
+function scientificNotation(number, decimalPlaces) {
+  const formatter = format(`.${decimalPlaces}e`);
+  const formattedNumber = formatter(number);
+  return formattedNumber.replace(/e([+-]?\d+)/, ` × 10<sup>$1</sup>`);
+}
 export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) => {
-  const { step, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
+  const { step, style, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
   if (!isValid(props.value)) {
     return null;
   }
@@ -75,15 +82,21 @@ export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) 
   const unitData = formatUnitConversion(value, unitConversionType, unitConversion);
   //精度换算
   const preciationData = toFixedByStep(unitData, step);
+  let result;
   //分隔符换算
-  const result = formatNumberWithSeparator(Number(preciationData), separator, countDecimalPlaces(step));
+  result = formatNumberWithSeparator(Number(preciationData), separator, countDecimalPlaces(step));
+  if (style === 'scientifix') {
+    //科学计数显示
+    result = scientificNotation(Number(preciationData), countDecimalPlaces(step));
+  }
+
   if (!result) {
     return null;
   }
   return (
     <div className={'nb-read-pretty-input-number'}>
       {addonBefore}
-      {result}
+      <span dangerouslySetInnerHTML={{ __html: result }} />
       {addonAfter}
     </div>
   );
