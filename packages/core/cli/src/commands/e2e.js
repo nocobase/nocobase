@@ -243,6 +243,12 @@ module.exports = (cli) => {
     .option('--stop-on-error')
     .option('--build')
     .option('--concurrency [concurrency]', '', os.cpus().length)
+    .option(
+      '--match [match]',
+      'Only the files matching one of these patterns are executed as test files. Matching is performed against the absolute file path. Strings are treated as glob patterns.',
+      'packages/**/__e2e__/**/*.test.ts',
+    )
+    .option('--ignore [ignore]', 'Skip tests that match the pattern. Strings are treated as glob patterns.', undefined)
     .action(async (options) => {
       process.env.__E2E__ = true;
       if (options.build) {
