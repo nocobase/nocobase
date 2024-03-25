@@ -1,26 +1,27 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  ActionContextProvider,
+  IField,
+  RecordProvider,
+  SchemaComponent,
+  tval,
+  useAPIClient,
+  useActionContext,
+  useCancelAction,
+  useCollectionManager_deprecated,
+  useCompile,
+  useRecord,
+  useRequest,
+  useResourceActionContext,
+  useResourceContext,
+} from '@nocobase/client';
 import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import {
-  useAPIClient,
-  useRequest,
-  IField,
-  RecordProvider,
-  useCollectionManager_deprecated,
-  useRecord,
-  ActionContextProvider,
-  SchemaComponent,
-  useActionContext,
-  useCompile,
-  useResourceActionContext,
-  useResourceContext,
-  useCancelAction,
-} from '@nocobase/client';
 import { NAMESPACE } from '../../locale';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
@@ -60,6 +61,10 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
           filterTargetKey: {
             title: `{{ t("Filter target key",{ ns: "${NAMESPACE}" }) }}`,
             type: 'single',
+            description: tval(
+              'Filter data based on the specific field, with the requirement that the field value must be unique.',
+              { ns: NAMESPACE },
+            ),
             'x-decorator': 'FormItem',
             'x-component': 'Select',
             enum: '{{filterTargetKeyOptions}}',

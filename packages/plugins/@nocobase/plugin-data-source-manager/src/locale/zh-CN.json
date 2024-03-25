@@ -30,5 +30,6 @@
   "Reloading": "加载中",
   "Data source synchronization in progress": "数据源同步中",
   "Data source synchronization successful": "数据源同步成功",
-  "Filter target key":"筛选目标键"
+  "Filter target key":"筛选目标键",
+  "Filter data based on the specific field, with the requirement that the field value must be unique.": "根据特定的字段筛选数据，字段值必须具备唯一性。"
 }
