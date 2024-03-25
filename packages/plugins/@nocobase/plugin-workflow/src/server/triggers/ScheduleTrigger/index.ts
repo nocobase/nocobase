@@ -44,7 +44,7 @@ export default class ScheduleTrigger extends Trigger {
     }
     const existed = await workflow.countExecutions({
       where: {
-        'context.date': context.date,
+        'context.date': context.date instanceof Date ? context.date.toISOString() : context.date,
       },
       transaction: options.transaction,
     });
