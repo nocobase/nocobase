@@ -1,4 +1,5 @@
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE, utils } from '@nocobase/actions';
+import { parseCollectionName } from '@nocobase/data-source-manager';
 
 import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
@@ -10,7 +11,11 @@ export class QueryInstruction extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { collection, multiple, params = {}, failOnEmpty = false } = node.config;
 
-    const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+
+    const { repository } = this.workflow.app.dataSourceManager.dataSources
+      .get(dataSourceName)
+      .collectionManager.getCollection(collectionName);
     const {
       page = DEFAULT_PAGE,
       pageSize = DEFAULT_PER_PAGE,
@@ -26,7 +31,7 @@ export class QueryInstruction extends Instruction {
           }, new Set()),
         )
       : options.appends;
-    const result = await (multiple ? repo.find : repo.findOne).call(repo, {
+    const result = await (multiple ? repository.find : repository.findOne).call(repository, {
       ...options,
       ...utils.pageArgsToLimitArgs(page, pageSize),
       sort: sort

@@ -1,3 +1,5 @@
+import { parseCollectionName } from '@nocobase/data-source-manager';
+
 import { JOB_STATUS } from '../constants';
 import { toJSON } from '../utils';
 import type Processor from '../Processor';
@@ -7,8 +9,11 @@ import { Instruction } from '.';
 export class CreateInstruction extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { collection, params: { appends = [], ...params } = {} } = node.config;
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
 
-    const { repository, model } = (<typeof FlowNodeModel>node.constructor).database.getCollection(collection);
+    const { repository, model } = this.workflow.app.dataSourceManager.dataSources
+      .get(dataSourceName)
+      .collectionManager.getCollection(collectionName);
     const options = processor.getParsedValue(params, node.id);
 
     const created = await repository.create({

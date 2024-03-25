@@ -15,66 +15,72 @@ import {
 
 describe('hooks', () => {
   beforeEach(() => {
-    vi.spyOn(client, 'useCollectionManager_deprecated').mockReturnValue({
-      getCollectionFields: (name: string) =>
-        ({
-          orders: [
-            {
-              interface: 'string',
-              name: 'name',
-              uiSchema: {
-                title: '{{t("Name")}}',
-              },
-              type: 'string',
-            },
-            {
-              interface: 'number',
-              name: 'price',
-              uiSchema: {
-                title: '{{t("Price")}}',
-              },
-              type: 'double',
-            },
-            {
-              interface: 'createdAt',
-              name: 'createdAt',
-              uiSchema: {
-                title: '{{t("Created At")}}',
-              },
-              type: 'date',
-            },
-            {
-              interface: 'm2o',
-              name: 'user',
-              uiSchema: {
-                title: '{{t("User")}}',
-              },
-              target: 'users',
-              type: 'belongsTo',
-            },
-          ],
-          users: [
-            {
-              interface: 'string',
-              name: 'name',
-              uiSchema: {
-                title: '{{t("Name")}}',
-              },
-              type: 'string',
-            },
-          ],
-        })[name],
-      getInterface: (i: string) => {
-        switch (i) {
-          case 'm2o':
-            return {
-              filterable: {
-                nested: true,
-              },
-            };
-          default:
-            return {};
-        }
+    vi.spyOn(client, 'useDataSourceManager').mockReturnValue({
+      getDataSource: () => ({
+        collectionManager: {
+          getCollectionFields: (name: string) =>
+            ({
+              orders: [
+                {
+                  interface: 'string',
+                  name: 'name',
+                  uiSchema: {
+                    title: '{{t("Name")}}',
+                  },
+                  type: 'string',
+                },
+                {
+                  interface: 'number',
+                  name: 'price',
+                  uiSchema: {
+                    title: '{{t("Price")}}',
+                  },
+                  type: 'double',
+                },
+                {
+                  interface: 'createdAt',
+                  name: 'createdAt',
+                  uiSchema: {
+                    title: '{{t("Created At")}}',
+                  },
+                  type: 'date',
+                },
+                {
+                  interface: 'm2o',
+                  name: 'user',
+                  uiSchema: {
+                    title: '{{t("User")}}',
+                  },
+                  target: 'users',
+                  type: 'belongsTo',
+                },
+              ],
+              users: [
+                {
+                  interface: 'string',
+                  name: 'name',
+                  uiSchema: {
+                    title: '{{t("Name")}}',
+                  },
+                  type: 'string',
+                },
+              ],
+            })[name],
+        },
+      }),
+      collectionFieldInterfaceManager: {
+        getFieldInterface: (i: string) => {
+          switch (i) {
+            case 'm2o':
+              return {
+                filterable: {
+                  nested: true,
+                },
+              };
+            default:
+              return {};
+          }
+        },
       },
     } as any);
   });
@@ -84,7 +90,7 @@ describe('hooks', () => {
   });
 
   test('useFieldsWithAssociation', () => {
-    const { result } = renderHook(() => useFieldsWithAssociation('orders'));
+    const { result } = renderHook(() => useFieldsWithAssociation('main', 'orders'));
     expect(result.current).toMatchObject([
       {
         key: 'name',
@@ -118,7 +124,7 @@ describe('hooks', () => {
   });
 
   test('useChartFields', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
+    const fields = renderHook(() => useFieldsWithAssociation('main', 'orders')).result.current;
     const { result } = renderHook(() => useChartFields(fields));
     const func = result.current;
     const field = {
@@ -155,7 +161,7 @@ describe('hooks', () => {
   });
 
   test('useFormatters', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
+    const fields = renderHook(() => useFieldsWithAssociation('main', 'orders')).result.current;
     const { result } = renderHook(() => useFormatters(fields));
     const func = result.current;
     const field = {
@@ -169,7 +175,7 @@ describe('hooks', () => {
   });
 
   test('useFieldTypes', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
+    const fields = renderHook(() => useFieldsWithAssociation('main', 'orders')).result.current;
     const { result } = renderHook(() => useFieldTypes(fields));
     const func = result.current;
     let state1 = {};
@@ -234,7 +240,7 @@ describe('hooks', () => {
   });
 
   test('useOrderFieldsOptions', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
+    const fields = renderHook(() => useFieldsWithAssociation('main', 'orders')).result.current;
     const { result } = renderHook(() => useOrderFieldsOptions([], fields));
     const func = result.current;
     const field1 = {

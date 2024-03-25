@@ -1,8 +1,9 @@
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { vi } from 'vitest';
 import { cacheMiddleware, parseBuilder, parseFieldAndAssociations } from '../actions/query';
 const formatter = await import('../actions/formatter');
+
 describe('query', () => {
   describe('parseBuilder', () => {
     const sequelize = {
@@ -11,8 +12,10 @@ describe('query', () => {
     };
     let ctx: any;
     let app: MockServer;
-    beforeAll(() => {
-      app = mockServer();
+    beforeAll(async () => {
+      app = await createMockServer({
+        plugins: ['data-source-manager'],
+      });
       app.db.options.underscored = true;
       app.db.collection({
         name: 'orders',

@@ -21,10 +21,9 @@ import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import useStyles from './style';
-import { linkNodes } from './utils';
+import { linkNodes, getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
 import { StatusButton } from './components/StatusButton';
-import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 import { useTranslation } from 'react-i18next';
 
 function attachJobs(nodes, jobs: any[] = []): void {
