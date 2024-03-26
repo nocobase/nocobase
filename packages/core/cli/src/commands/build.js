@@ -25,6 +25,7 @@ module.exports = (cli) => {
         });
         if (options.watch) return;
       }
+      process.env['VITE_CJS_IGNORE_WARNING'] = 'true';
 
       await run('nocobase-build', [
         ...pkgs,
