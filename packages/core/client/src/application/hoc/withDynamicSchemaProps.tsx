@@ -9,7 +9,7 @@ interface WithSchemaHookOptions {
   displayName?: string;
 }
 
-export function withDynamicSchemaProps<T = any>(Component: ComponentType<T>, options: WithSchemaHookOptions = {}) {
+export function withDynamicSchemaProps<T = any>(Component: any, options: WithSchemaHookOptions = {}) {
   const displayName = options.displayName || Component.displayName || Component.name;
   const ComponentWithProps: ComponentType<T> = (props) => {
     const { dn, findComponent } = useDesignable();
@@ -41,7 +41,7 @@ export function withDynamicSchemaProps<T = any>(Component: ComponentType<T>, opt
     const schemaProps = useSchemaProps(props);
 
     const memoProps = useMemo(() => {
-      return merge(omit(schemaProps, 'children'), omit(props, 'children'));
+      return merge(omit(props, 'children'), omit(schemaProps, 'children'));
     }, [schemaProps, props]);
 
     return <Component {...memoProps}>{props.children}</Component>;
