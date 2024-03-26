@@ -916,5 +916,7 @@
   "Prefix": "前缀",
   "Suffix": "后缀",
   "Multiply by":"乘以",
-  "Divder by":"除以"
+  "Divder by":"除以",
+  "Scientifix notation":"科学计数",
+  "Normal":"普通"
 }
