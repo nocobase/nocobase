@@ -14,16 +14,22 @@ import { buildClient } from './buildClient';
 import { buildCjs } from './buildCjs';
 import { buildPlugin } from './buildPlugin';
 import { buildDeclaration } from './buildDeclaration';
-import { PkgLog, getPkgLog, toUnixPath, getPackageJson, getUserConfig, UserConfig } from './utils';
+import { PkgLog, getPkgLog, toUnixPath, getPackageJson, getUserConfig, UserConfig, writeToCache, readFromCache } from './utils';
 import { getPackages } from './utils/getPackages';
 import { Package } from '@lerna/package';
 import { tarPlugin } from './tarPlugin'
+
+const BUILD_ERROR = 'build-error';
 
 export async function build(pkgs: string[]) {
   const isDev = process.argv.includes('--development');
   process.env.NODE_ENV = isDev ? 'development' : 'production';
 
-  const packages = getPackages(pkgs);
+  let packages = getPackages(pkgs);
+  const cachePkg = readFromCache(BUILD_ERROR);
+  if (process.argv.includes('--retry') && cachePkg?.pkg) {
+    packages = packages.slice(packages.findIndex((item) => item.name === cachePkg.pkg));
+  }
   if (packages.length === 0) {
     let msg = '';
     if (pkgs.length) {
@@ -59,6 +65,7 @@ export async function build(pkgs: string[]) {
       APP_ROOT: path.join(CORE_APP, 'client'),
     });
   }
+  writeToCache(BUILD_ERROR, {});
 }
 
 export async function buildPackages(
@@ -67,6 +74,7 @@ export async function buildPackages(
   doBuildPackage: (cwd: string, userConfig: UserConfig, sourcemap: boolean, log?: PkgLog) => Promise<any>,
 ) {
   for await (const pkg of packages) {
+    writeToCache(BUILD_ERROR, { pkg: pkg.name })
     await buildPackage(pkg, targetDir, doBuildPackage);
   }
 }
