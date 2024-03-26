@@ -5,7 +5,7 @@ import { sleep } from '@nocobase/test/client';
 
 const { apiClient, mockRequest } = mockAPIClient();
 mockRequest.onGet('/posts:list').reply(async () => {
-  await sleep(500);
+  await sleep(100);
   return [
     200,
     {
