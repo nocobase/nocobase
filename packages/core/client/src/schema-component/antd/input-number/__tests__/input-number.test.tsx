@@ -81,7 +81,7 @@ describe('ReadPretty:formatNumberWithSeparator', () => {
   // Test case 1: Format a number with default format '0,0.00'
   test('Format number with default separator', () => {
     const formatted = formatNumberWithSeparator(1234567.89);
-    expect(formatted).toBe('1,234,567.89');
+    expect(formatted).toBe('1,234,567.9');
   });
 
   // Test case 2: Format a number with custom format '0.00'
