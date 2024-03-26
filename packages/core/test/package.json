@@ -43,6 +43,7 @@
     "@nocobase/server": "0.20.0-alpha.16",
     "@playwright/test": "^1.42.1",
     "@testing-library/react": "^14.0.0",
+    "@testing-library/react-hooks": "^8.0.1",
     "@testing-library/user-event": "^14.4.3",
     "@types/supertest": "^2.0.11",
     "@vitejs/plugin-react": "^4.0.0",
