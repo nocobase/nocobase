@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
@@ -50,7 +51,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         },
         otherwise: {
           state: {
-            value: null,
+            initialValue: null,
           },
         },
       },
@@ -112,7 +113,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
     fields: {
       type: 'array',
       'x-component': PreviewFields,
-      'x-visible': '{{ createOnly }}',
+      'x-hidden': '{{ !createOnly }}',
       'x-reactions': {
         dependencies: ['name'],
         fulfill: {
@@ -133,6 +134,22 @@ export class ViewCollectionTemplate extends CollectionTemplate {
             'x-component-props': '{{$form.values}}', //任意层次属性都支持表达式
           },
         },
+      },
+    },
+    filterTargetKey: {
+      title: `{{ t("Filter target key") }}`,
+      type: 'single',
+      description: `{{t('Filter data based on the specific field, with the requirement that the field value must be unique.')}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-reactions': (field) => {
+        const { fields } = field.form.values;
+        field.dataSource = fields?.map((item: any) => {
+          return {
+            label: item.uiSchema?.title ? item.uiSchema.title : item.name,
+            value: item.name,
+          };
+        });
       },
     },
 
