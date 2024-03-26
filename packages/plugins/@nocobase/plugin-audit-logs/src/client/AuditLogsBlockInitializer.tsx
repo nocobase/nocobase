@@ -1,28 +1,16 @@
 import { TableOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
-import {
-  createTableBlockSchema,
-  SchemaInitializerItem,
-  useSchemaInitializer,
-  useSchemaInitializerItem,
-} from '@nocobase/client';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { createAuditLogsBlockSchema } from './createAuditLogsBlockSchema';
 
 export const AuditLogsBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const itemConfig = useSchemaInitializerItem();
 
-  const schema = createTableBlockSchema({
-    collection: 'auditLogs',
-    rowKey: 'id',
-    tableActionInitializers: 'auditLogsTable:configureActions',
-    tableColumnInitializers: 'auditLogsTable:configureColumns',
-    tableActionColumnInitializers: 'auditLogsTable:configureItemActions',
-    tableBlockProvider: 'AuditLogsBlockProvider',
-    disableTemplate: true,
-  });
+  const schema = createAuditLogsBlockSchema();
 
   return (
     <SchemaInitializerItem

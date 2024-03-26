@@ -7,3 +7,10 @@ export function parseCollectionName(collection: string) {
   const dataSourceName = dataSourceCollection[0] ?? 'main';
   return [dataSourceName, collectionName];
 }
+
+export function joinCollectionName(dataSourceName: string, collectionName: string) {
+  if (!dataSourceName || dataSourceName === 'main') {
+    return collectionName;
+  }
+  return `${dataSourceName}:${collectionName}`;
+}
