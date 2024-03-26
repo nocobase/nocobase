@@ -52,7 +52,14 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
       },
       {
         name: 'chromium',
-        use: { ...devices['Desktop Chrome'], storageState: process.env.PLAYWRIGHT_AUTH_FILE },
+        use: {
+          ...devices['Desktop Chrome'],
+          storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+          contextOptions: {
+            // chromium-specific permissions
+            permissions: ['clipboard-read', 'clipboard-write'],
+          },
+        },
         dependencies: ['authSetup'],
       },
     ],
