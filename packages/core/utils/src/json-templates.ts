@@ -101,18 +101,13 @@ const parseString = (() => {
             value = value();
           }
 
-          if (typeof value === 'object' && value !== null) {
+          // Accommodate numbers as values.
+          if (str.startsWith('{{') && str.endsWith('}}')) {
             return value;
           }
 
-          // Accommodate numbers as values.
-          if (matches.length === 1 && str.startsWith('{{') && str.endsWith('}}')) {
-            return value;
-          }
-
-          // Accommodate numbers as values.
-          if (matches.length === 1 && str.startsWith('{{') && str.endsWith('}}')) {
-            return value;
+          if (value instanceof Date) {
+            value = value.toISOString();
           }
 
           return result.replace(match, value == null ? '' : value);

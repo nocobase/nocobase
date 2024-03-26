@@ -2,21 +2,15 @@ import { RightSquareOutlined } from '@ant-design/icons';
 import { ArrayItems, Editable, FormCollapse, FormItem, FormLayout, Switch } from '@formily/antd-v5';
 import { Form as FormType, ObjectField, createForm, onFieldChange, onFormInit } from '@formily/core';
 import { FormConsumer, ISchema, Schema } from '@formily/react';
-import {
-  AutoComplete,
-  FormProvider,
-  SchemaComponent,
-  gridRowColWrap,
-  useCollectionFieldsOptions,
-  useCollectionFilterOptions,
-  useDesignable,
-} from '@nocobase/client';
+import { AutoComplete, FormProvider, SchemaComponent, gridRowColWrap, useDesignable } from '@nocobase/client';
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   useChartFields,
   useCollectionOptions,
+  useCollectionFieldsOptions,
+  useCollectionFilterOptions,
   useData,
   useFieldTypes,
   useFieldsWithAssociation,
@@ -57,13 +51,13 @@ export const ChartConfigure: React.FC<{
   const { t } = useChartsTranslation();
   const { service } = useContext(ChartRendererContext);
   const { visible, setVisible, current } = useContext(ChartConfigContext);
-  const { schema, field, collection, initialValues } = current || {};
+  const { schema, field, dataSource, collection, initialValues } = current || {};
   const { dn } = useDesignable();
   const { modal } = App.useApp();
   const { insert } = props;
 
   const charts = useCharts();
-  const fields = useFieldsWithAssociation(collection);
+  const fields = useFieldsWithAssociation(dataSource, collection);
   const initChart = (overwrite = false) => {
     if (!form.modified) {
       return;
@@ -108,15 +102,19 @@ export const ChartConfigure: React.FC<{
   const form = useMemo(
     () =>
       createForm({
-        values: { config: { chartType }, ...(initialValues || field?.decoratorProps), collection },
+        values: {
+          config: { chartType },
+          ...(initialValues || field?.decoratorProps),
+          collection: [dataSource, collection],
+        },
         effects: (form) => {
           onFieldChange('config.chartType', () => initChart(true));
           onFormInit(() => queryReact(form));
         },
       }),
-    // visible, collection added here to re-initialize form when visible, collection change
+    // visible, dataSource, collection added here to re-initialize form when visible, dataSource, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [field, visible, collection],
+    [field, visible, dataSource, collection],
   );
 
   const RunButton: React.FC = () => (
@@ -133,7 +131,7 @@ export const ChartConfigure: React.FC<{
         }
 
         try {
-          await service.runAsync(collection, form.values.query, true);
+          await service.runAsync(dataSource, collection, form.values.query, true);
         } catch (e) {
           console.log(e);
         }
@@ -163,7 +161,7 @@ export const ChartConfigure: React.FC<{
         const { query, config, transform, mode } = form.values;
         const afterSave = () => {
           setVisible(false);
-          current.service?.run(collection, query);
+          current.service?.run(dataSource, collection, query);
           queryRef.current.scrollTop = 0;
           configRef.current.scrollTop = 0;
           service.mutate(undefined);
@@ -171,6 +169,7 @@ export const ChartConfigure: React.FC<{
         const rendererProps = {
           query,
           config,
+          dataSource,
           collection,
           transform,
           mode: mode || 'builder',
@@ -308,19 +307,20 @@ ChartConfigure.Query = function Query() {
   const useFormatterOptions = useFormatters(fields);
   const collectionOptions = useCollectionOptions();
   const { current, setCurrent } = useContext(ChartConfigContext);
-  const { collection } = current || {};
-  const fieldOptions = useCollectionFieldsOptions(collection, 1);
+  const { dataSource, collection } = current || {};
+  const fieldOptions = useCollectionFieldsOptions(dataSource, collection, 1);
   const compiledFieldOptions = Schema.compile(fieldOptions, { t });
-  const filterOptions = useCollectionFilterOptions(collection);
+  const filterOptions = useCollectionFilterOptions(dataSource, collection);
 
   const { service } = useContext(ChartRendererContext);
-  const onCollectionChange = (value: string) => {
+  const onCollectionChange = (value: string[]) => {
     const { schema, field } = current;
+    const [dataSource, collection] = value;
     setCurrent({
       schema,
       field,
-      collection: value,
-      dataSource: current.dataSource,
+      collection,
+      dataSource,
       service: current.service,
       initialValues: {},
       data: undefined,

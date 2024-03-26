@@ -1,4 +1,4 @@
-import { request } from '@nocobase/test/e2e';
+import { request, Page } from '@nocobase/test/e2e';
 
 const PORT = process.env.APP_PORT || 20000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
@@ -722,6 +722,156 @@ export const apiSubmitRecordTriggerFormEvent = async (triggerWorkflows: string, 
   return await result.json();
 };
 
+// 获取数据源个数
+export const apiGetDataSourceCount = async () => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.get(`/api/dataSources:list?pageSize=50`, {
+    headers,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
+    {
+        "data": 1
+    }
+    */
+  return (await result.json()).meta.count;
+};
+
+// 添加业务表单条数据触发工作流表单事件,triggerWorkflows=key1!field,key2,key3!field.subfield
+export const apiCreateRecordTriggerActionEvent = async (
+  collectionName: string,
+  triggerWorkflows: string,
+  data: any,
+) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
+    {
+        "title": "a11",
+        "enabled": true,
+        "description": null
+    }
+    */
+  const result = await api.post(`/api/${collectionName}:create?triggerWorkflows=${triggerWorkflows}`, {
+    headers,
+    data,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
+        {
+            "data": {
+                "id": 1,
+                "createdAt": "2023-12-12T02:43:53.793Z",
+                "updatedAt": "2023-12-12T05:41:33.300Z",
+                "key": "fzk3j2oj4el",
+                "title": "a11",
+                "enabled": true,
+                "description": null
+            },
+            "meta": {
+                "allowedActions": {
+                    "view": [
+                        1
+                    ],
+                    "update": [
+                        1
+                    ],
+                    "destroy": [
+                        1
+                    ]
+                }
+            }
+        }
+    */
+  return (await result.json()).data;
+};
+
+// 审批中心发起审批
+export const apiApplyApprovalEvent = async (data: any) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
+    {
+        "title": "a11",
+        "enabled": true,
+        "description": null
+    }
+    */
+  const result = await api.post('/api/approvals:create', {
+    headers,
+    data,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
+  {
+      "data": {
+          "id": 35,
+          "collectionName": "tt_amt_orgREmwr",
+          "data": {
+              "id": 6,
+              "url": null,
+              "sort": 3,
+              "email": null,
+              "phone": null,
+              "address": null,
+              "orgcode": "区域编码000000006",
+              "orgname": "阿三大苏打实打实的",
+              "isenable": null,
+              "staffnum": null,
+              "createdAt": "2024-03-09T11:37:47.620Z",
+              "sharesnum": null,
+              "updatedAt": "2024-03-09T11:37:47.620Z",
+              "insurednum": null,
+              "range_json": null,
+              "regcapital": null,
+              "testdataid": null,
+              "createdById": 1,
+              "paidcapital": null,
+              "range_check": [],
+              "updatedById": 1,
+              "status_radio": null,
+              "establishdate": null,
+              "insuranceratio": null,
+              "range_markdown": null,
+              "range_richtext": null,
+              "status_singleselect": null,
+              "range_multipleselect": [],
+              "insuranceratio_formula": null
+          },
+          "status": 2,
+          "workflowId": 39,
+          "dataKey": "6",
+          "updatedAt": "2024-03-09T11:37:47.640Z",
+          "createdAt": "2024-03-09T11:37:47.640Z",
+          "createdById": 1,
+          "updatedById": 1,
+          "workflowKey": null,
+          "latestExecutionId": null
+      }
+  }
+    */
+  return (await result.json()).data;
+};
+
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
     .find((item) => item.origin === APP_BASE_URL)
@@ -767,6 +917,16 @@ function getHeaders(storageState: any) {
   return headers;
 }
 
+// 用户登录新会话
+export const userLogin = async (page: Page, approvalUserEmail: string, approvalUser: string) => {
+  await page.goto(`${process.env.APP_BASE_URL}/signin`);
+  await page.getByPlaceholder('Email').fill(approvalUserEmail);
+  await page.getByPlaceholder('Password').fill(approvalUser);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.waitForLoadState('networkidle');
+  return page;
+};
+
 export default module.exports = {
   apiCreateWorkflow,
   apiUpdateWorkflow,
@@ -783,4 +943,8 @@ export default module.exports = {
   apiCreateRecordTriggerFormEvent,
   apiSubmitRecordTriggerFormEvent,
   apiFilterList,
+  apiGetDataSourceCount,
+  apiCreateRecordTriggerActionEvent,
+  apiApplyApprovalEvent,
+  userLogin,
 };

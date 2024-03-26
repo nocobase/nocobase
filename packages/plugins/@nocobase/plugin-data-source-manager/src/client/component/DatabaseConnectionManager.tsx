@@ -60,6 +60,13 @@ export const DatabaseConnectionManagerPane = () => {
     const service = useResourceActionContext();
     return {
       async onClick() {
+        const needReloadDataSources = service?.data?.data.filter((item) => item.status !== 'loaded');
+        if (needReloadDataSources?.length) {
+          const dataSources = dm.getDataSources();
+          const needLoadDataSourceKeys = needReloadDataSources.map((item) => item.key);
+          const needLoadDataSourcesInstance = dataSources.filter((item) => needLoadDataSourceKeys.includes(item.key));
+          await Promise.all(needLoadDataSourcesInstance.map((item) => item.reload()));
+        }
         service?.refresh?.();
       },
     };
