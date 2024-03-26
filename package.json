@@ -25,7 +25,7 @@
     "tar": "nocobase tar",
     "test": "nocobase test",
     "test:server": "nocobase test:server",
-    "test:server-coverage": "nocobase test:server --coverage",
+    "test:server-coverage": "nocobase test-coverage:server",
     "test:client": "nocobase test:client",
     "e2e": "nocobase e2e",
     "ts": "nocobase test:server",

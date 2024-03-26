@@ -54,6 +54,8 @@ export const defineConfig = (config = {}) => {
 
 export const defineServerConfig = (config = {}) => {
   const folderFilter = process.argv.slice(2).find(arg => !arg.startsWith('-'));
+  const runAsCoverage = process.argv.slice(2).find(arg => arg.startsWith('--coverage'));
+  const reportDir = process.argv.slice(2).find(arg => arg.startsWith('--coverage.reportsDirectory='));
 
   const userConfig = {
     root: process.cwd(),
@@ -90,6 +92,19 @@ export const defineServerConfig = (config = {}) => {
     userConfig.test.coverage = {
       ...userConfig.test.coverage,
       include: [folderFilter],
+    }
+
+    if (runAsCoverage && !reportDir) {
+      if (folderFilter) {
+        const packageJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), folderFilter, 'package.json'), { encoding: 'utf8' }));
+        if (!packageJson.name) {
+          userConfig.test.coverage.reportsDirectory = 'storage/coverage/server';
+        } else {
+          userConfig.test.coverage.reportsDirectory = `storage/coverage/server/${packageJson.name.replace('/', '-')}`;
+        }
+      } else  {
+        userConfig.test.coverage.reportsDirectory = 'storage/coverage/server';
+      }
     }
   }
 
