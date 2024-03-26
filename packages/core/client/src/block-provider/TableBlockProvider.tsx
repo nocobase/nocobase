@@ -5,7 +5,7 @@ import { useCollectionManager_deprecated } from '../collection-manager';
 import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table';
-import { withDynamicSchemaProps } from '../application';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
