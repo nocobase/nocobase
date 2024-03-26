@@ -83,7 +83,7 @@ export const defineServerConfig = (config = {}) => {
       coverage: {
         reporter: ['text', 'html', 'json-summary'],
         provider: 'istanbul',
-        exclude: ['**/src/client/**', '**/swagger/**', '**/__tests__/**','**/client.js', '**/server.js', '**/*.d.ts']
+        exclude: ['**/src/client/**', '**/swagger/**', '**/lib/**', '**/__tests__/**','**/client.js', '**/server.js', '**/*.d.ts']
       },
     }
   };
