@@ -27,21 +27,16 @@ const useMemoizedSchema = (schema) => {
   return useMemo(() => toSchema(schema), []);
 };
 
-interface RefreshProps {
+interface DistributedProps {
   /**
-   * 是否刷新父级
-   * @default true
+   * 是否和父级隔离刷新
+   * @default false
    */
-  shouldRefreshParent?: boolean;
-  /**
-   * 子级是否应该刷新父级
-   * @default true
-   */
-  childShouldRefreshParent?: boolean;
+  distributed?: boolean;
 }
 
-const RecursionSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnChange & RefreshProps) => {
-  const { components, scope, schema, shouldRefreshParent = true, childShouldRefreshParent, ...others } = props;
+const RecursionSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps) => {
+  const { components, scope, schema, distributed, ...others } = props;
   const ctx = useContext(SchemaComponentContext);
   const s = useMemo(() => toSchema(schema), [schema]);
   const refresh = useUpdate();
@@ -50,10 +45,10 @@ const RecursionSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnCh
     <SchemaComponentContext.Provider
       value={{
         ...ctx,
-        shouldRefreshParent: childShouldRefreshParent || ctx.shouldRefreshParent,
+        distributed: ctx.distributed == false ? false : distributed,
         refresh: () => {
           refresh();
-          if (ctx.shouldRefreshParent || shouldRefreshParent) {
+          if (ctx.distributed === false || distributed === false) {
             ctx.refresh?.();
           }
           props.onChange?.(s);
@@ -67,14 +62,15 @@ const RecursionSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnCh
   );
 };
 
-const MemoizedSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnChange & RefreshProps) => {
+const MemoizedSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps) => {
   const { schema, ...others } = props;
   const s = useMemoizedSchema(schema);
   return <RecursionSchemaComponent {...others} schema={s} />;
 };
 
 export const SchemaComponent = (
-  props: (ISchemaFieldProps | IRecursionFieldProps) & { memoized?: boolean } & SchemaComponentOnChange & RefreshProps,
+  props: (ISchemaFieldProps | IRecursionFieldProps) & { memoized?: boolean } & SchemaComponentOnChange &
+    DistributedProps,
 ) => {
   const { memoized, ...others } = props;
   if (memoized) {

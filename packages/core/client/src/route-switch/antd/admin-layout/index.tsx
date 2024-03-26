@@ -205,7 +205,7 @@ const MenuEditor = (props) => {
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
       <SchemaComponent
-        shouldRefreshParent={false}
+        distributed
         memoized
         scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }}
         schema={schema}

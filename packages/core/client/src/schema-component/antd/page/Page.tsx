@@ -213,7 +213,7 @@ function PageContent(
       return (
         <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
           <SchemaComponent
-            shouldRefreshParent={false}
+            distributed
             schema={
               new Schema({
                 properties: {
@@ -228,7 +228,7 @@ function PageContent(
   ) : (
     <FixedBlock height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
       <div className={`pageWithFixedBlockCss nb-page-content`}>
-        <SchemaComponent schema={fieldSchema} shouldRefreshParent={false} />
+        <SchemaComponent schema={fieldSchema} distributed />
       </div>
     </FixedBlock>
   );

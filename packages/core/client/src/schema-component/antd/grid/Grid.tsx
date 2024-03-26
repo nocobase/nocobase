@@ -306,7 +306,7 @@ export const useGridRowContext = () => {
 
 export const Grid: any = observer(
   (props: any) => {
-    const { showDivider = true } = props;
+    const { distributed, showDivider = true } = props;
     const gridRef = useRef(null);
     const field = useField();
     const fieldSchema = useFieldSchema();
@@ -317,8 +317,10 @@ export const Grid: any = observer(
     const { setPrintContent } = useFormBlockContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
 
-    const shouldKeepApart =
-      fieldSchema.parent['x-component'] === 'Page' || fieldSchema.parent['x-component'] === 'Tabs.TabPane';
+    const distributedValue =
+      distributed === undefined
+        ? fieldSchema?.parent['x-component'] === 'Page' || fieldSchema?.parent['x-component'] === 'Tabs.TabPane'
+        : distributed;
 
     useEffect(() => {
       gridRef.current && setPrintContent?.(gridRef.current);
@@ -354,8 +356,8 @@ export const Grid: any = observer(
             {rows.map((schema, index) => {
               return (
                 <React.Fragment key={schema.name || schema['x-uid']}>
-                  {shouldKeepApart ? (
-                    <SchemaComponent schema={schema} shouldRefreshParent={false} />
+                  {distributedValue ? (
+                    <SchemaComponent schema={schema} distributed />
                   ) : (
                     <MemorizedRecursionField name={schema.name || schema['x-uid']} schema={schema} />
                   )}

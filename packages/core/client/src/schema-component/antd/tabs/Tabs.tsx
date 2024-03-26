@@ -25,7 +25,7 @@ export const Tabs: any = observer(
           label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
           children: (
             <PaneRoot key={key} {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
-              <SchemaComponent schema={schema} shouldRefreshParent={false} />
+              <SchemaComponent schema={schema} distributed />
             </PaneRoot>
           ),
         };

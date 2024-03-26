@@ -359,7 +359,7 @@ export function NodeDefaultView(props) {
         >
           <FormProvider form={form}>
             <SchemaComponent
-              childShouldRefreshParent={true}
+              distributed={false}
               scope={{
                 ...instruction.scope,
                 useFormProviderProps,
