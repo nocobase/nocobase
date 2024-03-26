@@ -36,7 +36,7 @@ export function getPackageFilePathWithExistCheck(packageName: string, filePath: 
 }
 
 export function getExposeUrl(packageName: string, filePath: string) {
-  return `${PLUGIN_STATICS_PATH}${packageName}/${filePath}`;
+  return `${process.env.PLUGIN_STATICS_PATH}${packageName}/${filePath}`;
 }
 
 export function getExposeReadmeUrl(packageName: string, lang: string) {
@@ -63,7 +63,7 @@ export function getExposeChangelogUrl(packageName: string) {
  * getPluginNameByClientStaticUrl('/static/plugins/@nocobase/foo/README.md') => '@nocobase/foo'
  */
 export function getPackageNameByExposeUrl(pathname: string) {
-  pathname = pathname.replace(PLUGIN_STATICS_PATH, '');
+  pathname = pathname.replace(process.env.PLUGIN_STATICS_PATH, '');
   const pathArr = pathname.split('/');
   if (pathname.startsWith('@')) {
     return pathArr.slice(0, 2).join('/');

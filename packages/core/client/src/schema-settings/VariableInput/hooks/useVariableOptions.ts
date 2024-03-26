@@ -35,10 +35,6 @@ interface Props {
   noDisabled?: boolean;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
-  /**指定当前表单数据表 */
-  currentFormCollectionName?: string;
-  /**指定当前对象数据表 */
-  currentIterationCollectionName?: string;
 }
 
 export const useVariableOptions = ({
@@ -49,11 +45,8 @@ export const useVariableOptions = ({
   noDisabled,
   targetFieldSchema,
   record,
-  currentFormCollectionName,
-  currentIterationCollectionName,
 }: Props) => {
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
-  const { name } = useCollection_deprecated();
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,
@@ -71,14 +64,12 @@ export const useVariableOptions = ({
   const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled });
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
-    collectionName: currentFormCollectionName || blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
     form,
   });
   const { currentObjectSettings, shouldDisplayCurrentObject } = useCurrentObjectVariable({
-    currentCollection: currentIterationCollectionName || name,
     collectionField,
     schema: uiSchema,
     noDisabled,
@@ -86,7 +77,6 @@ export const useVariableOptions = ({
   });
   const { currentRecordSettings, shouldDisplayCurrentRecord } = useCurrentRecordVariable({
     schema: uiSchema,
-    collectionName: blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,

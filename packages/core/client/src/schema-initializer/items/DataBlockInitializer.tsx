@@ -12,6 +12,7 @@ import { Collection, CollectionFieldOptions } from '../../data-source/collection
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
+import { DataSource } from '../../data-source';
 
 const MENU_ITEM_HEIGHT = 40;
 const STEP = 15;
@@ -269,12 +270,13 @@ export interface DataBlockInitializerProps {
   name: string;
   title: string;
   filter?: (options: { collection: Collection; associationField: CollectionFieldOptions }) => boolean;
+  filterDataSource?: (dataSource: DataSource) => boolean;
   componentType: string;
   onlyCurrentDataSource?: boolean;
   hideSearch?: boolean;
   showAssociationFields?: boolean;
-  /** 即使 children 只有一个时，也显示出来 */
-  showChildren?: boolean;
+  /** 如果只有一项数据表时，不显示 children 列表 */
+  hideChildrenIfSingleCollection?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -289,7 +291,8 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     onlyCurrentDataSource,
     hideSearch,
     showAssociationFields,
-    showChildren,
+    hideChildrenIfSingleCollection,
+    filterDataSource,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -311,6 +314,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   const items = useCollectionDataSourceItems({
     componentName: componentType,
     filter,
+    filterDataSource,
     onlyCurrentDataSource,
     showAssociationFields,
   });
@@ -323,7 +327,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   const compiledMenuItems = useMemo(() => {
     let children = searchedChildren.filter((item) => item.key !== 'search' && item.key !== 'empty');
     const hasAssociationField = children.some((item) => item.associationField);
-    if (!showChildren && !hasAssociationField && children.length === 1) {
+    if (hideChildrenIfSingleCollection && !hasAssociationField && children.length === 1) {
       // 只有一项可选时，直接展开
       children = children[0].children;
     } else {

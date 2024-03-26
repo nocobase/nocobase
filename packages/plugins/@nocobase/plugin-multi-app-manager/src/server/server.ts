@@ -1,6 +1,5 @@
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
 import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
-import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
@@ -115,7 +114,7 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
     },
     plugins: ['nocobase'],
     resourcer: {
-      prefix: '/api',
+      prefix: process.env.API_BASE_PATH,
     },
   };
 };
@@ -124,8 +123,6 @@ export class PluginMultiAppManager extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
-
-  private beforeGetApplicationMutex = new Mutex();
 
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     let oldConfig =
@@ -136,6 +133,7 @@ export class PluginMultiAppManager extends Plugin {
     if (!oldConfig && app.db) {
       oldConfig = app.db.options;
     }
+
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 

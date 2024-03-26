@@ -2,7 +2,7 @@ import type { Application } from './Application';
 import type { Plugin } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
-export type PluginOptions<T = any> = { name?: string; config?: T };
+export type PluginOptions<T = any> = { name?: string; packageName?: string; config?: T };
 export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
 export type PluginData = {
   name: string;
@@ -63,6 +63,11 @@ export class PluginManager {
     if (opts.name) {
       this.pluginsAliases[opts.name] = instance;
     }
+
+    if (opts.packageName) {
+      this.pluginsAliases[opts.packageName] = instance;
+    }
+
     await instance.afterAdd();
   }
 

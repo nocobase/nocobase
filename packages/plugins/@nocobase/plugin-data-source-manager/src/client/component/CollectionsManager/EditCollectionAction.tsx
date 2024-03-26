@@ -1,26 +1,29 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  ActionContextProvider,
+  IField,
+  RecordProvider,
+  SchemaComponent,
+  tval,
+  useAPIClient,
+  useActionContext,
+  useCollectionManager_deprecated,
+  useCompile,
+  useRecord,
+  useRequest,
+  useResourceActionContext,
+  useResourceContext,
+  useCancelAction,
+  useDataSourceManager,
+} from '@nocobase/client';
 import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import {
-  useAPIClient,
-  useRequest,
-  IField,
-  RecordProvider,
-  useCollectionManager_deprecated,
-  useRecord,
-  ActionContextProvider,
-  SchemaComponent,
-  useActionContext,
-  useCompile,
-  useResourceActionContext,
-  useResourceContext,
-  useCancelAction,
-} from '@nocobase/client';
+import { NAMESPACE } from '../../locale';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
   if (!schema) {
@@ -56,6 +59,18 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         title: '{{ t("Edit collection") }}',
         properties: {
           ...omit(properties, 'category', 'inherits', 'moreOptions'),
+          filterTargetKey: {
+            title: `{{ t("Filter target key",{ ns: "${NAMESPACE}" }) }}`,
+            type: 'single',
+            description: tval(
+              'Filter data based on the specific field, with the requirement that the field value must be unique.',
+              { ns: NAMESPACE },
+            ),
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            enum: '{{filterTargetKeyOptions}}',
+            'x-visible': '{{isView}}',
+          },
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
@@ -116,6 +131,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const { resource, targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
   const api = useAPIClient();
+  const dm = useDataSourceManager();
   return {
     async run() {
       await form.submit();
@@ -126,6 +142,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
           ...omit(form.values, ['fields', 'autoGenId', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy', 'sortable']),
         },
       });
+      await dm.getDataSource(name).reload();
       ctx.setVisible(false);
       await form.reset();
       refresh();
@@ -147,6 +164,12 @@ const EditCollectionAction = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
 
+  const filterTargetKeyOptions = record.fields?.map((item: any) => {
+    return {
+      label: item.uiSchema?.title ? compile(item.uiSchema.title) : item.name,
+      value: item.name,
+    };
+  });
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -177,6 +200,8 @@ const EditCollectionAction = (props) => {
             useUpdateCollectionActionAndRefreshCM,
             useCancelAction,
             createOnly: false,
+            filterTargetKeyOptions,
+            isView: record.view,
             ...scope,
           }}
         />

@@ -1,5 +1,5 @@
 import { observer, useField } from '@formily/react';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, useApp } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,13 +22,16 @@ export const Iframe: any = observer(
     const { t } = useTranslation();
     const api = useAPIClient();
     const field = useField();
+    const app = useApp();
 
     const src = React.useMemo(() => {
       if (mode === 'html') {
-        return `/api/iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`;
+        const options = app.getOptions();
+        const apiBaseURL: string = options?.apiClient?.['baseURL'];
+        return `${apiBaseURL}iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`;
       }
       return url;
-    }, [url, mode, htmlId, field.data?.v]);
+    }, [app, url, mode, htmlId, field.data?.v]);
 
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
       return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;

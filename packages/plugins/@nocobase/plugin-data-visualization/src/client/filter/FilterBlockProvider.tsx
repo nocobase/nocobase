@@ -16,6 +16,7 @@ import { ChartFilterCheckbox } from './FilterCheckbox';
 import { ArrayItems } from '@formily/antd-v5';
 import { ChartFilterFormItem } from './FilterItemInitializers';
 import { ChartFilterForm } from './FilterForm';
+import { CollectionFieldInitializer } from './CollectionFieldInitializer';
 
 export const ChartFilterBlockProvider: React.FC = (props) => {
   const { t } = useChartsTranslation();
@@ -43,6 +44,7 @@ export const ChartFilterBlockProvider: React.FC = (props) => {
           ArrayItems,
           ChartFilterCollapseDesigner,
           ChartFilterActionDesigner,
+          CollectionFieldInitializer,
         }}
         scope={{ t, useChartFilterActionProps, useChartFilterResetProps, useChartFilterCollapseProps }}
       >

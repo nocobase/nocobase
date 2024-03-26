@@ -4,6 +4,7 @@ import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  DataSource,
   SchemaInitializerItemType,
   useCollection,
   useCollectionManager,
@@ -733,7 +734,7 @@ const recursiveParent = (schema: Schema) => {
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
   const { removeActiveFieldName } = useFormActiveFields() || {};
-  const { form }: { form: Form } = useFormBlockContext();
+  const { form }: { form?: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
   if (!fieldSchema?.['x-initializer'] && fieldSchema?.['x-decorator'] === 'FormItem') {
     const recursiveInitializerSchema = recursiveParent(fieldSchema);
@@ -838,11 +839,13 @@ export const useCollectionDataSourceItems = ({
   filter = () => true,
   onlyCurrentDataSource = false,
   showAssociationFields,
+  filterDataSource,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource?: boolean;
   showAssociationFields?: boolean;
+  filterDataSource?: (dataSource?: DataSource) => boolean;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -850,11 +853,14 @@ export const useCollectionDataSourceItems = ({
   const collection = useCollection();
   const associationFields = useAssociationFields({ componentName, filterCollections: filter, showAssociationFields });
 
-  let allCollections = dm.getAllCollections((collection) => {
-    if (onlyCurrentDataSource && collection.dataSource !== dataSourceKey) {
-      return false;
-    }
-    return filter({ collection });
+  let allCollections = dm.getAllCollections({
+    filterCollection: (collection) => {
+      if (onlyCurrentDataSource && collection.dataSource !== dataSourceKey) {
+        return false;
+      }
+      return filter({ collection });
+    },
+    filterDataSource,
   });
   if (onlyCurrentDataSource) {
     allCollections = allCollections.filter((collection) => collection.key === dataSourceKey);
@@ -1175,8 +1181,6 @@ export const createFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // action: 'get',
-      // useParams: '{{ useParamsFromRecord }}',
     },
     'x-toolbar': 'BlockSchemaToolbar',
     ...(settings ? { 'x-settings': settings } : { 'x-designer': designer }),
@@ -1352,6 +1356,12 @@ export const createReadPrettyFormBlockSchema = (options) => {
   return schema;
 };
 
+/**
+ * @deprecated
+ * 已弃用，可以使用 createTableBlockUISchema 替换
+ * @param options
+ * @returns
+ */
 export const createTableBlockSchema = (options) => {
   const {
     collection,
@@ -1679,6 +1689,15 @@ function useAssociationFields({
         const targetCollection = cm.getCollection(field.target);
         const title = `${compile(field.uiSchema.title || field.name)} -> ${compile(targetCollection.title)}`;
         const templates = getTemplatesByCollection(dataSource, field.target).filter((template) => {
+          // 针对弹窗中的详情区块
+          if (componentName === 'ReadPrettyFormItem') {
+            if (['hasOne', 'belongsTo'].includes(field.type)) {
+              return template.componentName === 'ReadPrettyFormItem';
+            } else {
+              return template.componentName === 'Details';
+            }
+          }
+
           return (
             componentName &&
             template.componentName === componentName &&

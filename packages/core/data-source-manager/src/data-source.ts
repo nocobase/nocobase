@@ -1,10 +1,10 @@
 import { ACL } from '@nocobase/acl';
 import { getNameByParams, parseRequest } from '@nocobase/resourcer';
-import compose from 'koa-compose';
-import { ResourceManager } from './resource-manager';
-import { loadDefaultActions } from './load-default-actions';
-import { ICollectionManager } from './types';
 import EventEmitter from 'events';
+import compose from 'koa-compose';
+import { loadDefaultActions } from './load-default-actions';
+import { ResourceManager } from './resource-manager';
+import { ICollectionManager } from './types';
 
 export type DataSourceOptions = any;
 
@@ -30,7 +30,7 @@ export abstract class DataSource extends EventEmitter {
     this.acl = this.createACL();
 
     this.resourceManager = this.createResourceManager({
-      prefix: '/api',
+      prefix: process.env.API_BASE_PATH,
       ...options.resourceManager,
     });
 

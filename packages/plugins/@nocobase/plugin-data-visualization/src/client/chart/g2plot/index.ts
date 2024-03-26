@@ -1,5 +1,4 @@
-import { Area, Column, Line, Scatter } from '@ant-design/plots';
-import { Bar } from './bar';
+import { Area, Column, Line, Scatter, Bar } from '@ant-design/plots';
 import { Pie } from './pie';
 import { DualAxes } from './dualAxes';
 import { G2PlotChart } from './g2plot';
@@ -30,7 +29,12 @@ export default [
     component: Column,
     config: ['isGroup', 'isStack', 'isPercent'],
   }),
-  new Bar(),
+  new G2PlotChart({
+    name: 'bar',
+    title: 'Bar Chart',
+    component: Bar,
+    config: ['isGroup', 'isStack', 'isPercent'],
+  }),
   new Pie(),
   new DualAxes(),
   new G2PlotChart({ name: 'scatter', title: 'Scatter Chart', component: Scatter }),
