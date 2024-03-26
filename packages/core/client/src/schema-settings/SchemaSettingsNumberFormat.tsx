@@ -41,7 +41,7 @@ export const SchemaSettingsNumberFormat = function NumberFormatConfig(props: { f
         {
           type: 'object',
           properties: {
-            style: {
+            formatStyle: {
               type: 'string',
               default: style || 'normal',
               enum: [

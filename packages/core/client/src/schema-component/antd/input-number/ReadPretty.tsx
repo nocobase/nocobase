@@ -5,7 +5,6 @@ import type { InputNumberProps } from 'antd/es/input-number';
 import * as math from 'mathjs';
 import React from 'react';
 import { format } from 'd3-format';
-import { useField } from '@formily/react';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -86,7 +85,7 @@ function scientificNotation(number, decimalPlaces, separator = '.') {
   return result;
 }
 export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) => {
-  const { step, style, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
+  const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
   if (!isValid(props.value)) {
     return null;
   }
@@ -97,7 +96,7 @@ export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) 
   let result;
   //分隔符换算
   result = formatNumberWithSeparator(Number(preciationData), separator, countDecimalPlaces(step));
-  if (style === 'scientifix') {
+  if (formatStyle === 'scientifix') {
     //科学计数显示
     result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
   }
