@@ -76,7 +76,6 @@ export const GeneralPermissions: React.FC<{
           record.snippets?.forEach((key: string) => {
             record[key] = true;
           });
-          setRole(record);
           return record;
         }),
     {

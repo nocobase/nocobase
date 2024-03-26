@@ -52,7 +52,6 @@ export const PluginPermissions: React.FC<{
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
     [snippets],
   );
-
   const { t } = useTranslation();
   const { loading, refresh } = useRequest(
     {
@@ -75,6 +74,9 @@ export const PluginPermissions: React.FC<{
       },
     },
   );
+  if (!role) {
+    return;
+  }
   const resource = api.resource('roles.snippets', role?.name);
   const handleChange = async (checked, record) => {
     const childrenKeys = getChildrenKeys(record?.children, []);
