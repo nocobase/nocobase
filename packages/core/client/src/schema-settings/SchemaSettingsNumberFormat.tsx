@@ -101,12 +101,12 @@ export const SchemaSettingsNumberFormat = function NumberFormatConfig(props: { f
               'x-decorator': 'FormItem',
               default: step || prescition || '1',
               enum: [
-                { value: '1', label: '1%' },
-                { value: '0.1', label: '1.0%' },
-                { value: '0.01', label: '1.00%' },
-                { value: '0.001', label: '1.000%' },
-                { value: '0.0001', label: '1.0000%' },
-                { value: '0.00001', label: '1.00000%' },
+                { value: '1', label: '1' },
+                { value: '0.1', label: '1.0' },
+                { value: '0.01', label: '1.00' },
+                { value: '0.001', label: '1.000' },
+                { value: '0.0001', label: '1.0000' },
+                { value: '0.00001', label: '1.00000' },
               ],
             },
             addonBefore: {
