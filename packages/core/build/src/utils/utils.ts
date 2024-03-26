@@ -1,10 +1,11 @@
 import chalk from 'chalk';
 import path from 'path';
-import fs from 'fs-extra';
 import fg from 'fast-glob';
+import fs from 'fs-extra';
 import { Options as TsupConfig } from 'tsup'
 import { InlineConfig as ViteConfig } from 'vite'
 import { register } from 'esbuild-register/dist/node';
+import { NODE_MODULES } from '../constant';
 
 let previousColor = '';
 function randomColor() {
@@ -78,4 +79,19 @@ export function getUserConfig(cwd: string) {
     Object.assign(config, userConfig.default || userConfig);
   }
   return config;
+}
+
+const CACHE_DIR = path.join(NODE_MODULES, '.cache', 'nocobase');
+export function writeToCache(key: string, data: Record<string, any>) {
+  const cachePath = path.join(CACHE_DIR, `${key}.json`);
+  fs.ensureDirSync(path.dirname(cachePath));
+  fs.writeJsonSync(cachePath, data, { spaces: 2 });
+}
+
+export function readFromCache(key: string) {
+  const cachePath = path.join(CACHE_DIR, `${key}.json`);
+  if (fs.existsSync(cachePath)) {
+    return fs.readJsonSync(cachePath);
+  }
+  return {};
 }
