@@ -59,7 +59,7 @@ export const SchemaSettingsNumberFormat = function NumberFormatConfig(props: { f
               title: "{{t('Style')}}",
             },
             unitConversion: {
-              type: 'object',
+              type: 'number',
               'x-decorator': 'FormItem',
               'x-component': 'InputNumber',
               title: "{{t('Unit conversion')}}",

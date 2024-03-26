@@ -5,6 +5,7 @@ import type { InputNumberProps } from 'antd/es/input-number';
 import * as math from 'mathjs';
 import React from 'react';
 import { format } from 'd3-format';
+import { useField } from '@formily/react';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -66,11 +67,23 @@ function formatUnitConversion(value, operator = '*', multiplier) {
   return math.round(result, 9);
 }
 
-//科学技数法显示
+//科学计数法显示
 function scientificNotation(number, decimalPlaces, separator = '.') {
   const formatter = format(`.${decimalPlaces}e`);
   const formattedNumber = formatter(number).replace('.', separator);
-  return formattedNumber.replace(/e([+-]?\d+)/, ` × 10<sup>$1</sup>`);
+
+  // 匹配科学计数法中的指数部分，判断正负情况
+  const result = formattedNumber.replace(/e([+-]?\d+)/, (match, exponent) => {
+    if (exponent.startsWith('+')) {
+      // 正数指数，不显示符号
+      return ` × 10<sup>${exponent.slice(1)}</sup>`;
+    } else {
+      // 负数指数，显示 "-" 符号
+      return ` × 10<sup>-${exponent.slice(1)}</sup>`;
+    }
+  });
+
+  return result;
 }
 export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) => {
   const { step, style, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
