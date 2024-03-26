@@ -1,6 +1,6 @@
 import React from 'react';
 import { SchemaComponent, SchemaComponentProvider } from '../../../schema-component';
-import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
+import { render } from '@nocobase/test/client';
 import { withDynamicSchemaProps } from '../../hoc';
 
 const HelloComponent = withDynamicSchemaProps((props: any) => (
@@ -141,5 +141,24 @@ describe('withDynamicSchemaProps', () => {
     const Demo = withTestDemo(schema);
     const { getByTestId } = render(<Demo />);
     expect(getByTestId('component')).toHaveTextContent(JSON.stringify({}));
+  });
+
+  test('x-use-component-props should override x-component-props', () => {
+    function useComponentProps() {
+      return {
+        a: 'a',
+      };
+    }
+    const schema = {
+      'x-use-component-props': 'useComponentProps',
+      'x-component-props': {
+        a: 'b',
+      },
+    };
+    const scopes = { useComponentProps };
+
+    const Demo = withTestDemo(schema, scopes);
+    const { getByTestId } = render(<Demo />);
+    expect(getByTestId('component')).toHaveTextContent(JSON.stringify({ a: 'a' }));
   });
 });
