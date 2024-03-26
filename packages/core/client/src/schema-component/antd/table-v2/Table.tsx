@@ -33,8 +33,6 @@ import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 
-console.log('aaaa');
-
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
   return (props.field || field) as ArrayField;
