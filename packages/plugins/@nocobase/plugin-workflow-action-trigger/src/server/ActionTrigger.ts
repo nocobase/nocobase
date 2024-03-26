@@ -1,11 +1,11 @@
 import { get } from 'lodash';
 import { BelongsTo, HasOne } from 'sequelize';
 import { Model, modelAssociationByKey } from '@nocobase/database';
-import { DefaultContext } from '@nocobase/server';
-import { ActionContext } from '@nocobase/resourcer';
-import { Next } from '@nocobase/actions';
+import Application, { DefaultContext } from '@nocobase/server';
+import { Context as ActionContext, Next } from '@nocobase/actions';
 
 import WorkflowPlugin, { Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
+import { parseCollectionName } from '@nocobase/data-source-manager';
 
 interface Context extends ActionContext, DefaultContext {}
 
@@ -13,7 +13,7 @@ export default class extends Trigger {
   constructor(workflow: WorkflowPlugin) {
     super(workflow);
 
-    workflow.app.resourcer.use(this.middleware);
+    workflow.app.use(this.middleware, { after: 'dataSource' });
   }
 
   async triggerAction(context: Context, next: Next) {
@@ -55,6 +55,7 @@ export default class extends Trigger {
 
   private async trigger(context: Context) {
     const { triggerWorkflows = '', values } = context.action.params;
+    const dataSourceHeader = context.get('x-data-source') || 'main';
 
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
@@ -79,10 +80,14 @@ export default class extends Trigger {
     const asyncGroup = [];
     for (const workflow of workflows) {
       const { collection, appends = [] } = workflow.config;
+      const [dataSourceName, collectionName] = parseCollectionName(collection);
       const trigger = triggers.find((trigger) => trigger[0] == workflow.key);
       const event = [workflow];
       if (context.action.resourceName !== 'workflows') {
         if (!context.body) {
+          continue;
+        }
+        if (dataSourceName !== dataSourceHeader) {
           continue;
         }
         const { body: data } = context;
@@ -101,7 +106,7 @@ export default class extends Trigger {
           }
           const model = payload.constructor;
           if (payload instanceof Model) {
-            if (collection !== model.collection.name) {
+            if (collectionName !== model.collection.name) {
               continue;
             }
             if (appends.length) {
@@ -115,7 +120,9 @@ export default class extends Trigger {
           event.push({ data: toJSON(payload), ...userInfo });
         }
       } else {
-        const { model, repository } = context.db.getCollection(collection);
+        const { model, repository } = (<Application>context.app).dataSourceManager.dataSources
+          .get(dataSourceName)
+          .collectionManager.getCollection(collectionName);
         let data = trigger[1] ? get(values, trigger[1]) : values;
         const pk = get(data, model.primaryKeyAttribute);
         if (appends.length && pk != null) {

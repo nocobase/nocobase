@@ -59,31 +59,6 @@ export const useBlockResource = () => {
   return useContext(BlockResourceContext) || resource;
 };
 
-interface UseResourceProps {
-  resource: any;
-  association?: any;
-  useSourceId?: any;
-  collection?: any;
-  dataSource?: any;
-  block?: any;
-}
-
-const useAssociation = (props) => {
-  const { association } = props;
-  const { getCollectionField } = useCollectionManager_deprecated();
-  if (typeof association === 'string') {
-    return getCollectionField(association);
-  } else if (association?.collectionName && association?.name) {
-    return getCollectionField(`${association?.collectionName}.${association?.name}`);
-  }
-};
-
-const useActionParams = (props) => {
-  const { useParams } = props;
-  const params = useParams?.() || {};
-  return { ...props.params, ...params };
-};
-
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
@@ -219,6 +194,22 @@ export const useBlockContext = () => {
 };
 
 /**
+ * 用于兼容旧版本 Schema
+ */
+const useCompatDataBlockSourceId = (props) => {
+  const fieldSchema = useFieldSchema();
+
+  // 如果存在 x-use-decorator-props，说明是新版 Schema
+  if (fieldSchema['x-use-decorator-props']) {
+    return props.sourceId;
+  } else {
+    // 是否存在 x-use-decorator-props 是固定不变的，所以这里可以使用 hooks
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useDataBlockSourceId(props);
+  }
+};
+
+/**
  * @deprecated use `DataBlockProvider` instead
  */
 export const BlockProvider = (props: {
@@ -236,8 +227,11 @@ export const BlockProvider = (props: {
   useParams?: any;
 }) => {
   const { name, dataSource, association, useParams, parentRecord } = props;
-  const sourceId = useDataBlockSourceId({ association });
+  const sourceId = useCompatDataBlockSourceId(props);
+
+  // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
+
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
@@ -330,7 +324,9 @@ export const useParamsFromRecord = () => {
   const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
+  const collectionField = getCollectionJoinField(
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association,
+  );
   const filterFields = fields
     .filter((v) => {
       return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);

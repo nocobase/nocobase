@@ -61,7 +61,8 @@ test('Collection event add data trigger, no filter no sort query common table 1 
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
   await queryRecordNode.submitButton.click();
 
   // 2、测试步骤：添加数据触发工作流
@@ -138,7 +139,8 @@ test('Collection event add data trigger, no filtering and no sorting, query comm
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
   await queryRecordNode.allowMultipleDataBoxesForResults.check();
   await expect(queryRecordNode.pageNumberEditBox).toHaveValue('1');
   await expect(queryRecordNode.pageSizeEditBox).toHaveValue('20');
@@ -216,7 +218,8 @@ test('Collection event add data trigger, no filter ID ascending, query common ta
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
   await queryRecordNode.allowMultipleDataBoxesForResults.check();
   // 设置排序条件
   await queryRecordNode.addSortFieldsButton.click();
@@ -324,7 +327,8 @@ test('Collection event add data trigger, no filter ID descending, query common t
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
   await queryRecordNode.allowMultipleDataBoxesForResults.check();
   // 设置排序条件
   await queryRecordNode.addSortFieldsButton.click();
@@ -433,7 +437,8 @@ test('Collection event add data trigger, no filtering and no sorting, query mult
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
   await queryRecordNode.allowMultipleDataBoxesForResults.check();
   await expect(queryRecordNode.pageNumberEditBox).toHaveValue('1');
   await expect(queryRecordNode.pageSizeEditBox).toHaveValue('20');
@@ -536,7 +541,8 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
   // await queryRecordNode.allowMultipleDataBoxesForResults.check();
   await expect(queryRecordNode.pageNumberEditBox).toHaveValue('1');
   await expect(queryRecordNode.pageSizeEditBox).toHaveValue('20');
@@ -641,7 +647,8 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
   await queryRecordNode.allowMultipleDataBoxesForResults.check();
   await expect(queryRecordNode.pageNumberEditBox).toHaveValue('1');
   await expect(queryRecordNode.pageSizeEditBox).toHaveValue('20');
@@ -769,7 +776,8 @@ test('Collection event add data trigger, filter to meet all conditions (status_s
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByText(queryNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: queryNodeCollectionDisplayName }).click();
   // await queryRecordNode.allowMultipleDataBoxesForResults.check();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -884,7 +892,8 @@ test('Collection event add data trigger, filter to satisfy any condition (status
   const queryRecordNodeId = await queryRecordNode.node.locator('.workflow-node-id').innerText();
   await queryRecordNode.nodeConfigure.click();
   await queryRecordNode.collectionDropDown.click();
-  await page.getByText(queryNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: queryNodeCollectionDisplayName }).click();
   await queryRecordNode.allowMultipleDataBoxesForResults.check();
   // 设置过滤条件
   await page.getByTestId('filter-select-all-or-any').click();

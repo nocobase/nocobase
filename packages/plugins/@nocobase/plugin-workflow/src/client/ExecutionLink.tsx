@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { useActionContext, useRecord } from '@nocobase/client';
-import { getWorkflowExecutionsPath } from './constant';
+
+import { getWorkflowExecutionsPath } from './utils';
 
 export const ExecutionLink = () => {
   const { t } = useTranslation();

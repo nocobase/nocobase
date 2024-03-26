@@ -1,12 +1,14 @@
 import React from 'react';
 import { ISchema } from '@formily/react';
 import { Link } from 'react-router-dom';
-import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
-import { ExecutionStatusOptions } from '../constants';
-import { NAMESPACE } from '../locale';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
-import { getWorkflowDetailPath } from '../constant';
+
+import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+
+import { ExecutionStatusOptions } from '../constants';
+import { NAMESPACE } from '../locale';
+import { getWorkflowDetailPath } from '../utils';
 
 export const executionCollection = {
   name: 'execution-executions',

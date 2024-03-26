@@ -8,6 +8,7 @@ import {
   apiUpdateWorkflowTrigger,
   appendJsonCollectionName,
   generalWithNoRelationalFields,
+  apiGetDataSourceCount,
 } from '@nocobase/plugin-workflow-test/e2e';
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
@@ -69,6 +70,10 @@ test('filter task node', async ({ page, mockPage, mockCollections, mockRecords }
   await manualNode.configureUserInterfaceButton.click();
   await manualNode.addBlockButton.hover();
   await manualNode.createRecordFormMenu.hover();
+  const dataSourcesCount = await apiGetDataSourceCount();
+  if (dataSourcesCount > 1) {
+    await page.getByRole('menuitem', { name: 'Main right' }).hover();
+  }
   await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
   await page.mouse.move(300, 0, { steps: 100 });
   await page
@@ -179,6 +184,10 @@ test('filter workflow name', async ({ page, mockPage, mockCollections, mockRecor
   await manualNode.configureUserInterfaceButton.click();
   await manualNode.addBlockButton.hover();
   await manualNode.createRecordFormMenu.hover();
+  const dataSourcesCount = await apiGetDataSourceCount();
+  if (dataSourcesCount > 1) {
+    await page.getByRole('menuitem', { name: 'Main right' }).hover();
+  }
   await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
   await page.mouse.move(300, 0, { steps: 100 });
   await page

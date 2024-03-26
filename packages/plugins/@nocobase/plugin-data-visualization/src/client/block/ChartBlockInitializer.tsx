@@ -2,6 +2,7 @@ import { BarChartOutlined, LineChartOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import {
   CompatibleSchemaInitializer,
+  DEFAULT_DATA_SOURCE_KEY,
   DataBlockInitializer,
   SchemaInitializerItem,
   useACLRoleContext,
@@ -15,20 +16,23 @@ import { lang } from '../locale';
 
 const ChartInitializer = () => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
-  const { allowAll, parseAction } = useACLRoleContext();
+  const { parseAction } = useACLRoleContext();
   const itemConfig = useSchemaInitializerItem();
   const filter = useCallback(
     (item) => {
       const params = parseAction(`${item.name}:list`);
       return params;
     },
-    [allowAll, parseAction],
+    [parseAction],
   );
 
   return (
     <DataBlockInitializer
       {...itemConfig}
       filter={filter}
+      filterDataSource={(ds) => {
+        return ds.key === DEFAULT_DATA_SOURCE_KEY || ds.getOptions().isDBInstance;
+      }}
       icon={<BarChartOutlined />}
       componentType={'Chart'}
       onCreateBlockSchema={async ({ item }) => {

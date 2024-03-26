@@ -6,6 +6,8 @@ import {
   SchemaComponentContext,
   SchemaInitializerItemType,
   css,
+  joinCollectionName,
+  parseCollectionName,
   useCollectionDataSource,
   useCollectionFilterOptions,
   useCollectionManager_deprecated,
@@ -116,25 +118,34 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
       // need to get:
       // * source collection (from node.config)
       // * target collection (from field name)
-      const { collectionName, target, name } = field;
+      const { collectionName, target, name, dataSourceKey } = field;
 
-      const collection = getCollection(collectionName);
+      const collection = getCollection(collectionName, dataSourceKey);
       const primaryKeyField = collection.fields.find((f) => f.primaryKey);
 
-      setValuesIn('collection', target);
+      setValuesIn('collection', `${dataSourceKey}:${target}`);
 
       onChange({
         name,
         // primary key data path
         associatedKey: `{{${path.slice(0, -1).join('.')}.${primaryKeyField.name}}}`,
         // data associated collection name
-        associatedCollection: collectionName,
+        associatedCollection: joinCollectionName(dataSourceKey, collectionName),
       });
     },
     [onChange],
   );
 
-  return <Cascader {...props} value={p} options={options} onChange={onSelectChange} loadData={loadData as any} />;
+  return (
+    <Cascader
+      {...props}
+      value={p}
+      options={options}
+      changeOnSelect
+      onChange={onSelectChange}
+      loadData={loadData as any}
+    />
+  );
 }
 
 // based on collection:
@@ -217,7 +228,7 @@ export default class extends Instruction {
                   type: 'string',
                   required: true,
                   'x-decorator': 'FormItem',
-                  'x-component': 'CollectionSelect',
+                  'x-component': 'DataSourceCollectionCascader',
                   title: `{{t("Data of collection", { ns: "${NAMESPACE}" })}}`,
                   'x-reactions': [
                     {
@@ -333,7 +344,8 @@ export default class extends Instruction {
           'x-component-props': {
             useProps() {
               const { values } = useForm();
-              const options = useCollectionFilterOptions(values?.collection);
+              const [dataSourceName, collectionName] = parseCollectionName(values?.collection);
+              const options = useCollectionFilterOptions(collectionName, dataSourceName);
               return {
                 options,
                 className: css`
