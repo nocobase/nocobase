@@ -2,7 +2,9 @@ import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path, { resolve } from 'path';
 import { URL } from 'url';
-import { defineConfig as vitestConfig } from 'vitest/config';
+
+/// <reference types="vitest" />
+import { defineConfig as vitestConfig} from 'vitest/config';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
@@ -45,79 +47,87 @@ function tsConfigPathsToAlias() {
 }
 
 export const defineConfig = (config = {}) => {
-  return vitestConfig(
-    process.env.TEST_ENV === 'server-side'
-      ? {
-          root: process.cwd(),
-          resolve: {
-            mainFields: ['module'],
-          },
-          test: {
-            globals: true,
-            setupFiles: resolve(__dirname, './setup/server.ts'),
-            alias: tsConfigPathsToAlias(),
-            include: ['packages/**/__tests__/**/*.test.ts'],
-            exclude: [
-              '**/node_modules/**',
-              '**/dist/**',
-              '**/lib/**',
-              '**/es/**',
-              '**/e2e/**',
-              '**/__e2e__/**',
-              '**/{vitest,commitlint}.config.*',
-              'packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}',
-            ],
-            testTimeout: 300000,
-            hookTimeout: 300000,
-            // bail: 1,
-            // 在 GitHub Actions 中不输出日志
-            silent: !!process.env.GITHUB_ACTIONS,
-            // poolOptions: {
-            //   threads: {
-            //     singleThread: process.env.SINGLE_THREAD == 'false' ? false : true,
-            //   },
-            // },
+  return process.env.TEST_ENV === 'server-side'
+    ? defineServerConfig(config)
+    : defineClientConfig(config);
+};
 
-            coverage: {
-              reporter: ['text', 'json', 'html'],
-              provider: 'istanbul'
-            },
-          },
-        }
-      : {
-          plugins: [react()],
-          resolve: {
-            mainFields: ['module'],
-          },
-          define: {
-            'process.env.__TEST__': true,
-            'process.env.__E2E__': false,
-          },
-          test: {
-            globals: true,
-            setupFiles: resolve(__dirname, './setup/client.ts'),
-            environment: 'jsdom',
-            css: false,
-            alias: tsConfigPathsToAlias(),
-            include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
-            exclude: [
-              '**/node_modules/**',
-              '**/dist/**',
-              '**/lib/**',
-              '**/es/**',
-              '**/e2e/**',
-              '**/__e2e__/**',
-              '**/{vitest,commitlint}.config.*',
-            ],
-            testTimeout: 300000,
-            // 在 GitHub Actions 中不输出日志
-            silent: !!process.env.GITHUB_ACTIONS,
-            server: {
-              deps: {
-                inline: ['@juggle/resize-observer', 'clsx'],
-              },
-            },
-          },
+export const defineServerConfig = (config = {}) => {
+  const folderFilter = process.argv.slice(2).find(arg => !arg.startsWith('-'));
+
+  const userConfig = {
+    root: process.cwd(),
+    resolve: {
+      mainFields: ['module'],
+    },
+    test: {
+      globals: true,
+      setupFiles: resolve(__dirname, './setup/server.ts'),
+      alias: tsConfigPathsToAlias(),
+      include: ['packages/**/__tests__/**/*.test.ts'],
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/lib/**',
+        '**/es/**',
+        '**/e2e/**',
+        '**/__e2e__/**',
+        '**/{vitest,commitlint}.config.*',
+        'packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}',
+      ],
+      testTimeout: 300000,
+      hookTimeout: 300000,
+      silent: !!process.env.GITHUB_ACTIONS,
+      coverage: {
+        reporter: ['text', 'json', 'html'],
+        provider: 'v8',
+      },
+    }
+  };
+
+  if (folderFilter) {
+    userConfig.test.coverage = {
+      ...userConfig.test.coverage,
+      include: [folderFilter],
+    }
+  }
+
+  return vitestConfig(userConfig);
+};
+
+export const defineClientConfig = (config = {}) => {
+  return vitestConfig({
+    plugins: [react()],
+    resolve: {
+      mainFields: ['module'],
+    },
+    define: {
+      'process.env.__TEST__': true,
+      'process.env.__E2E__': false,
+    },
+    test: {
+      globals: true,
+      setupFiles: resolve(__dirname, './setup/client.ts'),
+      environment: 'jsdom',
+      css: false,
+      alias: tsConfigPathsToAlias(),
+      include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/lib/**',
+        '**/es/**',
+        '**/e2e/**',
+        '**/__e2e__/**',
+        '**/{vitest,commitlint}.config.*',
+      ],
+      testTimeout: 300000,
+      silent: !!process.env.GITHUB_ACTIONS,
+      server: {
+        deps: {
+          inline: ['@juggle/resize-observer', 'clsx'],
         },
-  );
+      },
+    },
+  });
 };
