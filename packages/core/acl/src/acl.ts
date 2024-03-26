@@ -45,14 +45,40 @@ interface CanArgs {
 }
 
 export class ACL extends EventEmitter {
+  /**
+   * @internal
+   */
   public availableStrategy = new Map<string, ACLAvailableStrategy>();
+
+  /**
+   * @internal
+   */
   public allowManager = new AllowManager(this);
+
+  /**
+   * @internal
+   */
   public snippetManager = new SnippetManager();
+
+  /**
+   * @internal
+   */
   roles = new Map<string, ACLRole>();
+
+  /**
+   * @internal
+   */
   actionAlias = new Map<string, string>();
+
+  /**
+   * @internal
+   */
   configResources: string[] = [];
+
   protected availableActions = new Map<string, ACLAvailableAction>();
+
   protected fixedParamsManager = new FixedParamsManager();
+
   protected middlewares: Toposort<any>;
 
   constructor() {
@@ -114,14 +140,23 @@ export class ACL extends EventEmitter {
     return this.roles.delete(name);
   }
 
+  /**
+   * @internal
+   */
   registerConfigResources(names: string[]) {
     names.forEach((name) => this.registerConfigResource(name));
   }
 
+  /**
+   * @internal
+   */
   registerConfigResource(name: string) {
     this.configResources.push(name);
   }
 
+  /**
+   * @internal
+   */
   isConfigResource(name: string) {
     return this.configResources.includes(name);
   }
@@ -227,6 +262,9 @@ export class ACL extends EventEmitter {
     return null;
   }
 
+  /**
+   * @internal
+   */
   public resolveActionAlias(action: string) {
     return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
   }
@@ -242,6 +280,9 @@ export class ACL extends EventEmitter {
     return this.skip(resourceName, actionNames, condition);
   }
 
+  /**
+   * @deprecated
+   */
   skip(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
     if (!Array.isArray(actionNames)) {
       actionNames = [actionNames];
@@ -252,6 +293,9 @@ export class ACL extends EventEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   async parseJsonTemplate(json: any, ctx: any) {
     if (json.filter) {
       ctx.logger?.info?.('parseJsonTemplate.raw', JSON.parse(JSON.stringify(json.filter)));
@@ -295,6 +339,9 @@ export class ACL extends EventEmitter {
     };
   }
 
+  /**
+   * @internal
+   */
   async getActionParams(ctx) {
     const roleName = ctx.state.currentRole || 'anonymous';
     const { resourceName, actionName } = ctx.action;
@@ -322,6 +369,9 @@ export class ACL extends EventEmitter {
     this.snippetManager.register(snippet);
   }
 
+  /**
+   * @internal
+   */
   filterParams(ctx, resourceName, params) {
     if (params?.filter?.createdById) {
       const collection = ctx.db.getCollection(resourceName);
