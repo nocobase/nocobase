@@ -79,8 +79,9 @@ export const defineServerConfig = (config = {}) => {
       hookTimeout: 300000,
       silent: !!process.env.GITHUB_ACTIONS,
       coverage: {
-        reporter: ['text', 'json', 'html'],
-        provider: 'v8',
+        reporter: ['text', 'html', 'json-summary'],
+        provider: 'istanbul',
+        exclude: ['**/src/client/**', '**/swagger/**', '**/__tests__/**','**/client.js', '**/server.js', '**/*.d.ts']
       },
     }
   };
