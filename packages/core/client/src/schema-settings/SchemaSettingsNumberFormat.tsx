@@ -30,7 +30,7 @@ export const SchemaSettingsNumberFormat = function NumberFormatConfig(props: { f
   const { t } = useTranslation();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
-  const { style, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
+  const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
     fieldSchema['x-component-props'] || {};
   const { step: prescition } = collectionField?.uiSchema['x-component-props'] || {};
 
@@ -43,7 +43,7 @@ export const SchemaSettingsNumberFormat = function NumberFormatConfig(props: { f
           properties: {
             formatStyle: {
               type: 'string',
-              default: style || 'normal',
+              default: formatStyle || 'normal',
               enum: [
                 {
                   value: 'normal',

@@ -3,6 +3,7 @@ import React from 'react';
 import App2 from '../demos/addonBefore&addonAfter';
 import App3 from '../demos/highPrecisionDecimals';
 import App1 from '../demos/inputNumber';
+import { formatNumberWithSeparator, formatUnitConversion, scientificNotation } from '../ReadPretty';
 
 describe('InputNumber', () => {
   it('should display the title', () => {
@@ -73,5 +74,45 @@ describe('InputNumber: High precision decimals', () => {
     fireEvent.change(input, { target: { value: '' } });
     expect(input.value).toBe('');
     expect(screen.queryByText('NaN')).toBeNull();
+  });
+});
+
+describe('ReadPretty:formatNumberWithSeparator', () => {
+  // Test case 1: Format a number with default format '0,0.00'
+  test('Format number with default separator', () => {
+    const formatted = formatNumberWithSeparator(1234567.89);
+    expect(formatted).toBe('1,234,567.89');
+  });
+
+  // Test case 2: Format a number with custom format '0.00'
+  test('Format number with custom separator', () => {
+    const formatted = formatNumberWithSeparator(1234567.89, '0.00', 1);
+    expect(formatted).toBe('1234567.9');
+  });
+});
+describe('ReadPretty:formatUnitConversion', () => {
+  // Test case 1: Multiply a value by 2
+  test('Multiply value by 2', () => {
+    const result = formatUnitConversion(10, '*', 2);
+    expect(result).toBe(20);
+  });
+  // Test case 2: Divide a value by 0 (error case)
+  test('Divide value by zero', () => {
+    const result = formatUnitConversion(10, '/', 0);
+    expect(result).toBe(10);
+  });
+});
+
+describe('ReadPretty:scientificNotation', () => {
+  // Test case 1: Format a number into scientific notation with 2 decimal places
+  test('Format number into scientific notation', () => {
+    const formatted = scientificNotation(1234567.89, 2);
+    expect(formatted).toBe('1.23 × 10<sup>6</sup>');
+  });
+
+  // Test case 2: Format a number into scientific notation with custom separator '.'
+  test('Format number into scientific notation with custom separator', () => {
+    const formatted = scientificNotation(1234567.89, 2, '.');
+    expect(formatted).toBe('1.23 × 10<sup>6</sup>');
   });
 });

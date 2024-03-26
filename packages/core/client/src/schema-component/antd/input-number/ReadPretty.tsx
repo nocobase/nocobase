@@ -3,7 +3,7 @@ import { toFixedByStep } from '@nocobase/utils/client';
 import type { InputProps } from 'antd/es/input';
 import type { InputNumberProps } from 'antd/es/input-number';
 import * as math from 'mathjs';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { format } from 'd3-format';
 
 function countDecimalPlaces(value) {
@@ -20,7 +20,7 @@ const separators = {
   '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
 };
 //分隔符换算
-function formatNumberWithSeparator(number, format = '0,0.00', step) {
+export function formatNumberWithSeparator(number, format = '0,0.00', step = 1) {
   let formattedNumber = '';
 
   if (separators[format]) {
@@ -43,7 +43,7 @@ function formatNumberWithSeparator(number, format = '0,0.00', step) {
 }
 
 //单位换算
-function formatUnitConversion(value, operator = '*', multiplier) {
+export function formatUnitConversion(value, operator = '*', multiplier) {
   if (!multiplier) {
     return value;
   }
@@ -67,7 +67,7 @@ function formatUnitConversion(value, operator = '*', multiplier) {
 }
 
 //科学计数法显示
-function scientificNotation(number, decimalPlaces, separator = '.') {
+export function scientificNotation(number, decimalPlaces, separator = '.') {
   const formatter = format(`.${decimalPlaces}e`);
   const formattedNumber = formatter(number).replace('.', separator);
 
