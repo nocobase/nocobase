@@ -13,16 +13,15 @@ function countDecimalPlaces(value) {
   const decimalPart = String(number).split('.')[1];
   return decimalPart ? decimalPart.length : 0;
 }
-
+const separators = {
+  '0,0.00': { thousands: ',', decimal: '.' },
+  '0.0,00': { thousands: '.', decimal: ',' },
+  '0 0,00': { thousands: ' ', decimal: '.' },
+  '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
+};
 //分隔符换算
 function formatNumberWithSeparator(number, format = '0,0.00', step) {
   let formattedNumber = '';
-  const separators = {
-    '0,0.00': { thousands: ',', decimal: '.' },
-    '0.0,00': { thousands: '.', decimal: ',' },
-    '0 0,00': { thousands: ' ', decimal: '.' },
-    '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
-  };
 
   if (separators[format]) {
     const { thousands, decimal } = separators[format];
@@ -68,9 +67,9 @@ function formatUnitConversion(value, operator = '*', multiplier) {
 }
 
 //科学技数法显示
-function scientificNotation(number, decimalPlaces) {
+function scientificNotation(number, decimalPlaces, separator = '.') {
   const formatter = format(`.${decimalPlaces}e`);
-  const formattedNumber = formatter(number);
+  const formattedNumber = formatter(number).replace('.', separator);
   return formattedNumber.replace(/e([+-]?\d+)/, ` × 10<sup>$1</sup>`);
 }
 export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) => {
@@ -87,7 +86,7 @@ export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) 
   result = formatNumberWithSeparator(Number(preciationData), separator, countDecimalPlaces(step));
   if (style === 'scientifix') {
     //科学计数显示
-    result = scientificNotation(Number(preciationData), countDecimalPlaces(step));
+    result = scientificNotation(Number(preciationData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
   }
 
   if (!result) {
