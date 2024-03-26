@@ -86,7 +86,8 @@ test('Collection event add data trigger, filter single line text field not empty
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -241,7 +242,8 @@ test('Collection event add data trigger, filter single line text field not empty
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -403,7 +405,8 @@ test('Collection event add data trigger, filter multi-line text field not empty,
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -558,7 +561,8 @@ test('Collection event add data trigger, filter multiline text field not empty, 
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -714,7 +718,8 @@ test('Collection event add data trigger, filter integer field not null, common t
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -865,7 +870,8 @@ test('Collection event add data trigger, filter integer field not empty, common 
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -1020,7 +1026,8 @@ test('Collection event add data trigger, filter numeric field not null, common t
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -1170,7 +1177,8 @@ test('Collection event add data trigger, filter numeric field not empty, common 
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -1323,7 +1331,8 @@ test('Collection event add data trigger, filter dropdown radio field not null, c
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -1473,7 +1482,8 @@ test('Collection event add data trigger, filter dropdown radio field not empty, 
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -1629,7 +1639,8 @@ test('Collection event add data trigger, filter dropdown radio fields not null, 
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -1783,7 +1794,8 @@ test('Collection event add data trigger, filter dropdown radio fields not empty,
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -1943,7 +1955,8 @@ test('Collection event add data trigger, filter date field not null, common tabl
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
@@ -2099,7 +2112,8 @@ test('Collection event add data trigger, filter date field not empty, common tab
   const updateRecordNodeId = await updateRecordNode.node.locator('.workflow-node-id').innerText();
   await updateRecordNode.nodeConfigure.click();
   await updateRecordNode.collectionDropDown.click();
-  await page.getByText(updateNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: updateNodeCollectionDisplayName }).click();
   await updateRecordNode.articleByArticleUpdateModeRadio.click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();

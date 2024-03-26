@@ -1,7 +1,8 @@
 import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Button } from 'antd';
-import React from 'react';
+import React, { forwardRef, createRef } from 'react';
+import { composeRef } from 'rc-util/lib/ref';
 import { useCompile } from '../../hooks';
 import { useTableBlockContext, useTableSelectorContext } from '../../../block-provider';
 import { Icon } from '../../../icon';
@@ -46,7 +47,7 @@ const actionDesignerCss = css`
   }
 `;
 
-export const ExpandAction = (props) => {
+const InternalExpandAction = (props, ref) => {
   const schema = useFieldSchema();
   const ctxSelector = useTableSelectorContext();
   const ctxBlock = useTableBlockContext();
@@ -54,8 +55,11 @@ export const ExpandAction = (props) => {
   const ctx = isTableSelector ? ctxSelector : ctxBlock;
   const { titleExpand, titleCollapse, iconExpand, iconCollapse } = schema['x-component-props'] || {};
   const compile = useCompile();
+  const internalRef = createRef<HTMLButtonElement | HTMLAnchorElement>();
+  const buttonRef = composeRef(ref, internalRef);
   return (
-    <div className={actionDesignerCss}>
+    //@ts-ignore
+    <div className={actionDesignerCss} ref={buttonRef as React.Ref<HTMLButtonElement>}>
       {ctx?.params['tree'] && (
         <Button
           onClick={() => {
@@ -63,6 +67,7 @@ export const ExpandAction = (props) => {
           }}
           icon={<Icon type={ctx?.expandFlag ? iconCollapse : iconExpand} />}
           type={props.type}
+          style={props?.style}
         >
           {props.children?.[1]}
           <span style={{ marginLeft: 10 }}>{ctx?.expandFlag ? compile(titleCollapse) : compile(titleExpand)}</span>
@@ -71,3 +76,5 @@ export const ExpandAction = (props) => {
     </div>
   );
 };
+
+export const ExpandAction = forwardRef<HTMLButtonElement | HTMLAnchorElement, any>(InternalExpandAction);

@@ -3,7 +3,7 @@ import React, { useContext, useMemo, useState } from 'react';
 import { ArrayTable } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import lodash from 'lodash';
+import { cloneDeep, pick, set } from 'lodash';
 
 import {
   ActionContextProvider,
@@ -161,7 +161,7 @@ function getOptions(interfaces) {
     const schema = interfaces[type];
     const { group = 'others' } = schema;
     fields[group] = fields[group] || {};
-    lodash.set(fields, [group, type], schema);
+    set(fields, [group, type], schema);
   });
 
   return Object.keys(GroupLabels)
@@ -208,33 +208,51 @@ const CustomItemsComponent = (props) => {
   const items = useCommonInterfaceInitializers();
   const collection = useCollection_deprecated();
   const { setCollectionFields } = useContext(FormBlockContext);
+  const form = useMemo(() => createForm(), [interfaceOptions]);
 
   return (
     <AddCustomFormFieldButtonContext.Provider
       value={{
         onAddField(item) {
+          const fieldInterface: Record<string, any> = pick(item, [
+            'name',
+            'group',
+            'title',
+            'default',
+            'validateSchema',
+          ]);
           const {
-            properties: { unique, type, ...properties },
-            ...options
-          } = lodash.cloneDeep(item);
-          delete properties.name['x-disabled'];
-          setInterface({
-            ...options,
-            properties,
-          });
+            properties: { unique, type, layout, autoIncrement, ...properties },
+          } = item;
+          fieldInterface.properties = properties;
+          const result = cloneDeep(fieldInterface);
+          delete result.properties.name['x-disabled'];
+          setInterface(result);
         },
         setCallback,
       }}
     >
       <SchemaInitializerItems {...props} items={items} />
-      <ActionContextProvider value={{ visible: Boolean(interfaceOptions) }}>
+      <ActionContextProvider
+        value={{
+          visible: Boolean(interfaceOptions),
+          setVisible(v) {
+            if (!v) {
+              setInterface(null);
+            }
+          },
+        }}
+      >
         {interfaceOptions ? (
           <SchemaComponent
             schema={{
               type: 'void',
               name: 'drawer',
               title: '{{t("Configure field")}}',
-              'x-decorator': 'Form',
+              'x-decorator': 'FormV2',
+              'x-decorator-props': {
+                form,
+              },
               'x-component': 'Action.Drawer',
               properties: {
                 ...interfaceOptions.properties,
@@ -266,7 +284,7 @@ const CustomItemsComponent = (props) => {
                       'x-component-props': {
                         type: 'primary',
                         useAction() {
-                          const { values, query } = useForm();
+                          const { values, query, reset } = useForm();
                           const messages = [useLang('Field name existed in form')];
                           return {
                             async run() {
@@ -301,6 +319,7 @@ const CustomItemsComponent = (props) => {
                                 'x-toolbar': 'FormItemSchemaToolbar',
                                 'x-settings': 'fieldSettings:FormItem',
                               });
+                              reset();
                               setCallback(null);
                               setInterface(null);
                             },

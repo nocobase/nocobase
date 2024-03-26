@@ -230,7 +230,7 @@ export const Table: any = withDynamicSchemaProps(
       isSubTable?: boolean;
     }) => {
       const { token } = useToken();
-      const { pagination: pagination1, useProps, onChange, ...others1 } = props;
+      const { pagination: pagination1, useProps, ...others1 } = props;
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { pagination: pagination2, ...others2 } = useProps?.() || {};
@@ -597,6 +597,6 @@ export const Table: any = withDynamicSchemaProps(
         </div>
       );
     },
-    { displayName: 'Table' },
   ),
+  { displayName: 'Table' },
 );

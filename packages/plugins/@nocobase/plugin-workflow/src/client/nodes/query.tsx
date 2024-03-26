@@ -22,7 +22,22 @@ export default class extends Instruction {
   group = 'collection';
   description = `{{t("Query records from a collection. You can use variables from upstream nodes as query conditions.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
-    collection,
+    collection: {
+      ...collection,
+      'x-reactions': [
+        ...collection['x-reactions'],
+        {
+          target: 'params',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              visible: '{{!!$self.value}}',
+              value: '{{Object.create({})}}',
+            },
+          },
+        },
+      ],
+    },
     multiple: {
       type: 'boolean',
       'x-decorator': 'FormItem',
@@ -130,7 +145,7 @@ export default class extends Instruction {
       title: node.title ?? `#${node.id}`,
       Component: CollectionBlockInitializer,
       collection: node.config.collection,
-      dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
+      dataPath: `$jobsMapByNodeKey.${node.key}`,
     };
   }
 }

@@ -67,6 +67,9 @@ export class Locale {
 
   async getCacheResources(lang: string) {
     this.resourceCached.set(lang, true);
+    if (process.env.APP_ENV !== 'production') {
+      await this.cache.reset();
+    }
     return await this.wrapCache(`resources:${lang}`, () => this.getResources(lang));
   }
 
