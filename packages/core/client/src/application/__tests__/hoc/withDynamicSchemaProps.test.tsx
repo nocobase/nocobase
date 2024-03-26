@@ -66,7 +66,7 @@ describe('withDynamicSchemaProps', () => {
 
     const Demo = withTestDemo(schema, scopes);
     const { getByTestId } = render(<Demo />);
-    expect(getByTestId('component')).toHaveTextContent(JSON.stringify({ a: 'a', b: 'b' }));
+    expect(getByTestId('component')).toHaveTextContent(JSON.stringify({ b: 'b', a: 'a' }));
   });
 
   test('x-use-decorator-props', () => {
@@ -101,7 +101,7 @@ describe('withDynamicSchemaProps', () => {
 
     const Demo = withTestDemo(schema, scopes);
     const { getByTestId } = render(<Demo />);
-    expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ a: 'a', b: 'b' }));
+    expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ b: 'b', a: 'a' }));
   });
 
   test('x-use-component-props and x-use-decorator-props exist simultaneously', () => {
@@ -130,8 +130,8 @@ describe('withDynamicSchemaProps', () => {
 
     const Demo = withTestDemo(schema, scopes);
     const { getByTestId } = render(<Demo />);
-    expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ a: 'a', b: 'b' }));
-    expect(getByTestId('component')).toHaveTextContent(JSON.stringify({ c: 'c', d: 'd' }));
+    expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ b: 'b', a: 'a' }));
+    expect(getByTestId('component')).toHaveTextContent(JSON.stringify({ d: 'd', c: 'c' }));
   });
 
   test('no register scope', () => {
