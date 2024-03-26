@@ -57,7 +57,7 @@ export const PluginPermissions: React.FC<{
   const { loading, refresh } = useRequest(
     {
       resource: 'roles.snippets',
-      resourceOf: role.name,
+      resourceOf: role?.name,
       action: 'list',
       params: {
         paginate: false,
@@ -75,7 +75,7 @@ export const PluginPermissions: React.FC<{
       },
     },
   );
-  const resource = api.resource('roles.snippets', role.name);
+  const resource = api.resource('roles.snippets', role?.name);
   const handleChange = async (checked, record) => {
     const childrenKeys = getChildrenKeys(record?.children, []);
     const totalKeys = childrenKeys.concat(record.aclSnippet);
@@ -129,7 +129,7 @@ export const PluginPermissions: React.FC<{
                   refresh();
                   message.success(t('Saved successfully'));
                 }}
-              />{' '}
+              />
               {t('Accessible')}
             </>
           ),

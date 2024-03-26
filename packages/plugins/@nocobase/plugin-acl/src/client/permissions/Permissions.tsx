@@ -7,7 +7,6 @@ import { AvailableActionsProvider } from './AvailableActions';
 import { GeneralPermissions } from './GeneralPermissions';
 import { MenuItemsProvider } from './MenuItemsProvider';
 import { MenuPermissions } from './MenuPermissions';
-import { PluginPermissions } from './PluginPermissions';
 
 const TabLayout: React.FC = (props) => {
   return <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>{props.children}</div>;
@@ -25,7 +24,7 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
     () => [
       {
         key: 'general',
-        label: t('General'),
+        label: t('System'),
         children: (
           <TabLayout>
             <GeneralPermissions active={activeKey === 'general' && active} />
@@ -43,19 +42,19 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
           </TabLayout>
         ),
       },
-      ...(pm
-        ? [
-            {
-              key: 'plugin',
-              label: t('Plugin settings'),
-              children: (
-                <TabLayout>
-                  <PluginPermissions active={activeKey === 'plugin' && active} />
-                </TabLayout>
-              ),
-            },
-          ]
-        : []),
+      // ...(pm
+      //   ? [
+      //       {
+      //         key: 'plugin',
+      //         label: t('Plugin settings'),
+      //         children: (
+      //           <TabLayout>
+      //             <PluginPermissions active={activeKey === 'plugin' && active} />
+      //           </TabLayout>
+      //         ),
+      //       },
+      //     ]
+      //   : []),
       ...(DataSourcePermissionManager
         ? [
             {
