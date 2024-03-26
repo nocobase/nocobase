@@ -99,7 +99,7 @@ export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) 
   result = formatNumberWithSeparator(Number(preciationData), separator, countDecimalPlaces(step));
   if (style === 'scientifix') {
     //科学计数显示
-    result = scientificNotation(Number(preciationData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
+    result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
   }
 
   if (!result) {
