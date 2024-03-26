@@ -24,10 +24,10 @@ import WorkflowPlugin, {
   linkNodes,
   useAvailableUpstreams,
   useFlowContext,
+  DetailsBlockProvider,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
-import { DetailsBlockProvider } from './instruction/DetailsBlockProvider';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 

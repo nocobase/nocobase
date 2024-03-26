@@ -10,7 +10,8 @@ function dateFieldFilter(field) {
   return !field.hidden && (field.uiSchema ? field.type === 'date' : false);
 }
 
-export function OnField({ value, onChange }) {
+export function OnField({ value: propsValue, onChange }) {
+  const value = propsValue ?? {};
   const { t } = useTranslation();
   const [dir, setDir] = useState(value.offset ? value.offset / Math.abs(value.offset) : 0);
 

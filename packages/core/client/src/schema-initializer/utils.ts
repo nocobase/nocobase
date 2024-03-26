@@ -1093,8 +1093,6 @@ export const createFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // action: 'get',
-      // useParams: '{{ useParamsFromRecord }}',
     },
     'x-toolbar': 'BlockSchemaToolbar',
     ...(settings ? { 'x-settings': settings } : { 'x-designer': designer }),
@@ -1270,6 +1268,12 @@ export const createReadPrettyFormBlockSchema = (options) => {
   return schema;
 };
 
+/**
+ * @deprecated
+ * 已弃用，可以使用 createTableBlockUISchema 替换
+ * @param options
+ * @returns
+ */
 export const createTableBlockSchema = (options) => {
   const {
     collection,
@@ -1597,6 +1601,15 @@ function useAssociationFields({
         const targetCollection = cm.getCollection(field.target);
         const title = `${compile(field.uiSchema.title || field.name)} -> ${compile(targetCollection.title)}`;
         const templates = getTemplatesByCollection(dataSource, field.target).filter((template) => {
+          // 针对弹窗中的详情区块
+          if (componentName === 'ReadPrettyFormItem') {
+            if (['hasOne', 'belongsTo'].includes(field.type)) {
+              return template.componentName === 'ReadPrettyFormItem';
+            } else {
+              return template.componentName === 'Details';
+            }
+          }
+
           return (
             componentName &&
             template.componentName === componentName &&

@@ -291,7 +291,7 @@ export const SchemaSettingsTemplate = function Template(props) {
 
 const findGridSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'FormV2') {
+    if (s['x-component'] === 'FormV2' || s['x-component'] === 'Details') {
       const f = s.reduceProperties((buf, s) => {
         if (s['x-component'] === 'Grid' || s['x-component'] === 'BlockTemplate') {
           return s;
@@ -308,7 +308,7 @@ const findGridSchema = (fieldSchema) => {
 
 const findBlockTemplateSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'FormV2') {
+    if (s['x-component'] === 'FormV2' || s['x-component'] === 'Details') {
       const f = s.reduceProperties((buf, s) => {
         if (s['x-component'] === 'BlockTemplate') {
           return s;

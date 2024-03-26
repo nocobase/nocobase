@@ -58,6 +58,12 @@ interface Resource {
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 
+interface ExtendedAgent extends SuperAgentTest {
+  login: (user: any) => ExtendedAgent;
+  loginUsingId: (userId: number) => ExtendedAgent;
+  resource: (name: string, resourceOf?: any) => Resource;
+}
+
 export class MockServer extends Application {
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
@@ -96,11 +102,7 @@ export class MockServer extends Application {
     await AppSupervisor.getInstance().destroy();
   }
 
-  agent(): SuperAgentTest & {
-    login: (user: any) => SuperAgentTest;
-    loginUsingId: (userId: number) => SuperAgentTest;
-    resource: (name: string, resourceOf?: any) => Resource;
-  } {
+  agent(): ExtendedAgent {
     const agent = supertest.agent(this.callback());
     const prefix = this.resourcer.options.prefix;
     const proxy = new Proxy(agent, {

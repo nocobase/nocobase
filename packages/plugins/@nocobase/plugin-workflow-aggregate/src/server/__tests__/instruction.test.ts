@@ -3,6 +3,7 @@ import { Application } from '@nocobase/server';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
+import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 
 describe('workflow > instructions > aggregate', () => {
   let app: Application;
@@ -293,6 +294,35 @@ describe('workflow > instructions > aggregate', () => {
       const [j1, j2, j3] = await e1.getJobs({ order: [['id', 'ASC']] });
       expect(j2.result).toBe(3);
       expect(j3.result).toBe(1);
+    });
+  });
+
+  describe('multiple data source', () => {
+    it('query on another data source', async () => {
+      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const post = await AnotherPostRepo.create({ values: { title: 't1' } });
+      const p1s = await AnotherPostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          collection: 'another:posts',
+          aggregator: 'count',
+          params: {
+            field: 'id',
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
     });
   });
 });
