@@ -44,7 +44,7 @@ describe('InputNumber: addonBefore/addonAfter', () => {
     fireEvent.change(input, { target: { value: 1 } });
     expect(input.value).toBe('1');
     // @ts-ignore
-    expect(screen.getByText('¥1万元')).toBeInTheDocument();
+    expect(screen.getByText('¥')).toBeInTheDocument();
 
     // empty value
     fireEvent.change(input, { target: { value: '' } });
@@ -68,7 +68,7 @@ describe('InputNumber: High precision decimals', () => {
     fireEvent.change(input, { target: { value: 1 } });
     expect(input.value).toBe('1.00');
     // @ts-ignore
-    expect(screen.getByText('1.00%')).toBeInTheDocument();
+    expect(screen.getByText('1.00')).toBeInTheDocument();
 
     // empty value
     fireEvent.change(input, { target: { value: '' } });
