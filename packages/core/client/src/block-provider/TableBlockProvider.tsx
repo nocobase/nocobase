@@ -174,7 +174,11 @@ export const useTableBlockProps = () => {
       ctx.service.refresh();
     },
     onChange({ current, pageSize }, filters, sorter) {
-      const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
+      const sort = sorter.order
+        ? sorter.order === `ascend`
+          ? [sorter.field]
+          : [`-${sorter.field}`]
+        : globalSort || ctx.service.params?.[0]?.sort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
     onClickRow(record, setSelectedRow, selectedRow) {
