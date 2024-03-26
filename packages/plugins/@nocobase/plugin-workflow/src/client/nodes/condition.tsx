@@ -355,7 +355,7 @@ export default class extends Instruction {
       'x-component-props': {
         options: [
           ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
-          ...Array.from(evaluators.getEntities()),
+          ...Array.from(evaluators.getEntities()).filter(([key]) => ['math.js', 'formula.js'].includes(key)),
         ].reduce((result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }), []),
       },
       required: true,

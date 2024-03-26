@@ -10,11 +10,13 @@ import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvid
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
-import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
+import { TableBlockProvider } from './TableBlockProvider';
+import { useTableBlockProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockProps';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
 import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
+import { useTableBlockDecoratorProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
 import { useFilterFormBlockProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockProps';
 import { useFilterFormBlockDecoratorProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockDecoratorProps';
 
@@ -43,6 +45,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableFieldProps,
         useTableBlockProps,
         useTableSelectorProps,
+        useTableBlockDecoratorProps,
         useFilterFormBlockProps,
         useFilterFormBlockDecoratorProps,
       }}
@@ -88,6 +91,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableFieldProps,
       useTableBlockProps,
       useTableSelectorProps,
+      useTableBlockDecoratorProps,
       useFilterFormBlockProps,
       useFilterFormBlockDecoratorProps,
     });

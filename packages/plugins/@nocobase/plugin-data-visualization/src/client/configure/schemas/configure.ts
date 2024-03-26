@@ -150,9 +150,9 @@ export const querySchema: ISchema = {
           title: '{{t("Collection")}}',
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Select',
+          'x-component': 'Cascader',
+          enum: '{{ collectionOptions }}',
           'x-component-props': {
-            options: '{{ collectionOptions }}',
             onChange: '{{ onCollectionChange }}',
             placeholder: '{{t("Collection")}}',
           },

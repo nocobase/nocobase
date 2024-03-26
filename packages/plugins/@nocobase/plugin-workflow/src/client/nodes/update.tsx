@@ -46,7 +46,38 @@ export default class extends Instruction {
   group = 'collection';
   description = `{{t("Update records of a collection. You can use variables from upstream nodes as query conditions and field values.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
-    collection,
+    collection: {
+      ...collection,
+      'x-reactions': [
+        ...collection['x-reactions'],
+        {
+          target: 'params',
+          fulfill: {
+            state: {
+              visible: '{{!!$self.value}}',
+            },
+          },
+        },
+        {
+          target: 'params.filter',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: '{{Object.create({})}}',
+            },
+          },
+        },
+        {
+          target: 'params.values',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: '{{Object.create({})}}',
+            },
+          },
+        },
+      ],
+    },
     params: {
       type: 'object',
       properties: {

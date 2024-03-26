@@ -3,8 +3,9 @@ import { TableOutlined } from '@ant-design/icons';
 
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { createTableBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { useRecordCollectionDataSourceItems } from '../utils';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { createTableBlockUISchema } from '../../modules/blocks/data-blocks/table/createTableBlockUISchema';
 
 /**
  * @deprecated
@@ -17,7 +18,7 @@ export const RecordAssociationBlockInitializer = () => {
   const { getCollection } = useCollectionManager_deprecated();
   const field = itemConfig.field;
   const collection = getCollection(field.target);
-  const resource = `${field.collectionName}.${field.name}`;
+  const association = `${field.collectionName}.${field.name}`;
   return (
     <SchemaInitializerItem
       icon={<TableOutlined />}
@@ -28,17 +29,15 @@ export const RecordAssociationBlockInitializer = () => {
           insert(s);
         } else {
           insert(
-            createTableBlockSchema({
+            createTableBlockUISchema({
               rowKey: collection.filterTargetKey,
-              collection: field.target,
               dataSource: collection.dataSource,
-              resource,
-              association: resource,
+              association: association,
             }),
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('Table', itemConfig, field.target, resource)}
+      items={useRecordCollectionDataSourceItems('Table', itemConfig, field.target, association)}
     />
   );
 };
@@ -53,9 +52,8 @@ export function useCreateAssociationTableBlock() {
       const collection = getCollection(field.target);
 
       insert(
-        createTableBlockSchema({
+        createTableBlockUISchema({
           rowKey: collection.filterTargetKey,
-          collection: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
         }),
