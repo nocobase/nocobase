@@ -52,11 +52,15 @@ class ReferencesMap {
         existReference.onDelete = reference.onDelete;
         existReference.priority = reference.priority;
       } else if (newPriority === existPriority && newPriority === PRIORITY_MAP['user']) {
-        throw new Error(
-          `On Delete Conflict, exist reference ${JSON.stringify(existReference)}, new reference ${JSON.stringify(
-            reference,
-          )}`,
-        );
+        if (existReference.onDelete === 'SET NULL' && reference.onDelete === 'CASCADE') {
+          existReference.onDelete = reference.onDelete;
+        } else {
+          throw new Error(
+            `On Delete Conflict, exist reference ${JSON.stringify(existReference)}, new reference ${JSON.stringify(
+              reference,
+            )}`,
+          );
+        }
       }
     }
 

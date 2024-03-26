@@ -12,10 +12,10 @@ import { useDesignable, removeNullCondition } from '../../../../schema-component
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsSortField,
-  SchemaSettingsDataScope,
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsTemplate,
-} from '../../../../schema-settings';
+} from '../../../../schema-settings/SchemaSettings';
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope'
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';
@@ -359,7 +359,8 @@ export const tableBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           componentName: 'Table',
           collectionName: name,

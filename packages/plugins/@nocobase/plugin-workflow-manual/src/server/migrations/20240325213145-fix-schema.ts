@@ -20,10 +20,17 @@ function findSchema(root, filter, onlyLeaf = false) {
   return result;
 }
 
+function changeToDataPath(item) {
+  if (item && item['x-decorator-props']?.dataSource) {
+    item['x-decorator-props'].dataPath = item['x-decorator-props'].dataSource.replace(/^{{|}}$/g, '');
+    delete item['x-decorator-props'].dataSource;
+  }
+}
+
 function migrateSchema(schema) {
   const root = { properties: schema };
 
-  const [node] = findSchema(root, (item) => {
+  const detailNodes = findSchema(root, (item) => {
     return (
       item['x-decorator'] === 'DetailsBlockProvider' &&
       item['x-component'] === 'CardItem' &&
@@ -31,10 +38,7 @@ function migrateSchema(schema) {
     );
   });
 
-  if (node && node['x-decorator-props']?.dataSource) {
-    node['x-decorator-props'].dataPath = node['x-decorator-props'].dataSource.replace(/^{{|}}$/g, '');
-    delete node['x-decorator-props'].dataSource;
-  }
+  detailNodes.forEach(changeToDataPath);
 
   return schema;
 }
@@ -55,12 +59,13 @@ export default class extends Migration {
       await nodes.reduce(
         (promise, node) =>
           promise.then(() => {
-            const { schema, ...config } = node.config;
+            const { assignees, forms, schema = {}, ...tabs } = node.config;
             return node.update(
               {
                 config: {
-                  ...config,
-                  ...migrateSchema(schema),
+                  assignees,
+                  forms,
+                  schema: migrateSchema({ ...tabs, ...schema }),
                 },
               },
               {
