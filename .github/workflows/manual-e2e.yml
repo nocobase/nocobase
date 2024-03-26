@@ -1,6 +1,6 @@
 name: manual-e2e
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       branch:
@@ -71,7 +71,7 @@ jobs:
           __E2E__: true
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e p-test
+        run: yarn e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts'
         env:
           __E2E__: true
           APP_ENV: production
