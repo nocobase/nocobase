@@ -1,9 +1,12 @@
 import { Checkbox, message, Table } from 'antd';
+import { onFormValuesChange, createForm, Form } from '@formily/core';
 import { uniq } from 'lodash';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { uid } from '@formily/shared';
+import { useAPIClient, SchemaComponent, useRequest } from '@nocobase/client';
 import { useStyles } from './style';
-import { useAPIClient, useCollectionRecord, useRequest } from '@nocobase/client';
+import { useMemoizedFn } from 'ahooks';
 import { RolesManagerContext } from '../RolesManagerProvider';
 import { useMenuItems } from './MenuItemsProvider';
 
@@ -43,7 +46,7 @@ export const MenuPermissions: React.FC<{
   active: boolean;
 }> = ({ active }) => {
   const { styles } = useStyles();
-  const { role } = useContext(RolesManagerContext);
+  const { role, setRole } = useContext(RolesManagerContext);
   const api = useAPIClient();
   const { items } = useMenuItems();
   const { t } = useTranslation();
@@ -107,51 +110,89 @@ export const MenuPermissions: React.FC<{
       };
     });
   };
-
+  const update = useMemoizedFn(async (form: Form) => {
+    await api.resource('roles').update({
+      filterByTk: role.name,
+      values: form.values,
+    });
+    setRole({ ...role, ...form.values });
+    message.success(t('Saved successfully'));
+  });
+  const form = useMemo(() => {
+    return createForm({
+      values: role,
+      effects() {
+        onFormValuesChange(async (form) => {
+          await update(form);
+        });
+      },
+    });
+  }, [role, update]);
   return (
-    <Table
-      className={styles}
-      loading={loading}
-      rowKey={'uid'}
-      pagination={false}
-      expandable={{
-        defaultExpandAllRows: true,
-      }}
-      columns={[
-        {
-          dataIndex: 'title',
-          title: t('Menu item title'),
-        },
-        {
-          dataIndex: 'accessible',
-          title: (
-            <>
-              <Checkbox
-                checked={allChecked}
-                onChange={async (value) => {
-                  if (allChecked) {
-                    await resource.set({
-                      values: [],
-                    });
-                  } else {
-                    await resource.set({
-                      values: allUids,
-                    });
-                  }
-                  refresh();
-                  message.success(t('Saved successfully'));
-                }}
-              />{' '}
-              {t('Accessible')}
-            </>
-          ),
-          render: (_, schema) => {
-            const checked = uids.includes(schema.uid);
-            return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
+    <>
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          name: uid(),
+          'x-component': 'FormV2',
+          'x-component-props': {
+            form,
           },
-        },
-      ]}
-      dataSource={translateTitle(items)}
-    />
+          properties: {
+            allowNewMenu: {
+              title: t('Menu permissions'),
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              'x-content': t('New menu items are allowed to be accessed by default.'),
+            },
+          },
+        }}
+      />
+
+      <Table
+        className={styles}
+        loading={loading}
+        rowKey={'uid'}
+        pagination={false}
+        expandable={{
+          defaultExpandAllRows: true,
+        }}
+        columns={[
+          {
+            dataIndex: 'title',
+            title: t('Menu item title'),
+          },
+          {
+            dataIndex: 'accessible',
+            title: (
+              <>
+                <Checkbox
+                  checked={allChecked}
+                  onChange={async (value) => {
+                    if (allChecked) {
+                      await resource.set({
+                        values: [],
+                      });
+                    } else {
+                      await resource.set({
+                        values: allUids,
+                      });
+                    }
+                    refresh();
+                    message.success(t('Saved successfully'));
+                  }}
+                />{' '}
+                {t('Accessible')}
+              </>
+            ),
+            render: (_, schema) => {
+              const checked = uids.includes(schema.uid);
+              return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
+            },
+          },
+        ]}
+        dataSource={translateTitle(items)}
+      />
+    </>
   );
 };

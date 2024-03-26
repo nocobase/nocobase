@@ -73,6 +73,7 @@ export const GeneralPermissions: React.FC<{
           record.snippets?.forEach((key: string) => {
             record[key] = true;
           });
+          setRole(record);
           return record;
         }),
     {
@@ -116,12 +117,12 @@ export const GeneralPermissions: React.FC<{
             'x-decorator': 'FormItem',
             'x-component': 'SnippetCheckboxGroup',
           },
-          allowNewMenu: {
-            title: t('Menu permissions'),
-            'x-decorator': 'FormItem',
-            'x-component': 'Checkbox',
-            'x-content': t('New menu items are allowed to be accessed by default.'),
-          },
+          // allowNewMenu: {
+          //   title: t('Menu permissions'),
+          //   'x-decorator': 'FormItem',
+          //   'x-component': 'Checkbox',
+          //   'x-content': t('New menu items are allowed to be accessed by default.'),
+          // },
         },
       }}
     />
