@@ -100,7 +100,7 @@ export const defineServerConfig = (config = {}) => {
         if (!packageJson.name) {
           userConfig.test.coverage.reportsDirectory = 'storage/coverage/server';
         } else {
-          userConfig.test.coverage.reportsDirectory = `storage/coverage/server/${packageJson.name.replace('/', '-')}`;
+          userConfig.test.coverage.reportsDirectory = `storage/coverage/server/${packageJson.name}`;
         }
       } else  {
         userConfig.test.coverage.reportsDirectory = 'storage/coverage/server';

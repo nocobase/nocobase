@@ -14,13 +14,14 @@ module.exports = (cli) => {
 
         const packageJson = await fs.promises.readFile(entry, 'utf-8');
         const package = JSON.parse(packageJson);
+
         console.log(`run coverage for ${package.name}@${package.version}`);
 
         try {
           await run('yarn', [
             'test:server',
             '--coverage',
-            `--coverage.reportsDirectory=storage/coverage/server/${package.name.replace('/', '-')}`,
+            `--coverage.reportsDirectory=storage/coverage/server/${package.name}`,
             `${entry.replace('/package.json', '')}`,
           ]);
         } catch (e) {
