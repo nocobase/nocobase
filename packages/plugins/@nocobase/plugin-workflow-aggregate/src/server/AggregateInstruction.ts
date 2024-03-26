@@ -1,4 +1,5 @@
-import { BelongsToManyRepository, DataTypes, HasManyRepository } from '@nocobase/database';
+import { parseCollectionName } from '@nocobase/data-source-manager';
+import { DataTypes } from '@nocobase/database';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
 const aggregators = {
@@ -13,13 +14,14 @@ export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { aggregator, associated, collection, association = {}, params = {} } = node.config;
     const options = processor.getParsedValue(params, node.id);
-    const { database } = <typeof FlowNodeModel>node.constructor;
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+    const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
     const repo = associated
-      ? database.getRepository<HasManyRepository | BelongsToManyRepository>(
+      ? collectionManager.getRepository(
           `${association?.associatedCollection}.${association.name}`,
           processor.getParsedValue(association?.associatedKey, node.id),
         )
-      : database.getRepository(collection);
+      : collectionManager.getRepository(collectionName);
 
     if (!options.dataType && aggregator === 'avg') {
       options.dataType = DataTypes.DOUBLE;

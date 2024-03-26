@@ -13,6 +13,7 @@ import {
   useDesignable,
   SchemaSettingsSelectItem,
   CollectionFieldOptions_deprecated,
+  DEFAULT_DATA_SOURCE_KEY,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
@@ -21,7 +22,7 @@ import _ from 'lodash';
 import { ChartFilterContext } from './FilterProvider';
 import { getPropsSchemaByComponent, setDefaultValue } from './utils';
 import { ChartFilterVariableInput } from './FilterVariableInput';
-import { useChartFilter, useCollectionJoinFieldTitle } from '../hooks';
+import { useChartDataSource, useChartFilter, useCollectionJoinFieldTitle } from '../hooks';
 import { Typography } from 'antd';
 import { getFormulaInterface } from '../utils';
 const { Text } = Typography;
@@ -72,29 +73,33 @@ const EditTitle = () => {
 const EditOperator = () => {
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const fieldName = fieldSchema.name as string;
   const field = useField<Field>();
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
   const { setField } = useContext(ChartFilterContext);
-  const { getInterface, getCollectionJoinField } = useCollectionManager_deprecated();
+  const fieldName = fieldSchema['x-collection-field'];
+  const dataSource = fieldSchema['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
+  const { cm, fim } = useChartDataSource(dataSource);
+  if (!cm) {
+    return null;
+  }
 
   const getOperators = (props: CollectionFieldOptions_deprecated) => {
     let fieldInterface = props?.interface;
     if (fieldInterface === 'formula') {
       fieldInterface = getFormulaInterface(props.dataType) || props.dataType;
     }
-    const interfaceConfig = getInterface(fieldInterface);
+    const interfaceConfig = fim.getFieldInterface(fieldInterface);
     const operatorList = interfaceConfig?.filterable?.operators || [];
     return { operatorList, interfaceConfig };
   };
 
-  let props = getCollectionJoinField(fieldName);
+  let props = cm.getCollectionField(fieldName);
   let { operatorList, interfaceConfig } = getOperators(props);
   if (!operatorList.length) {
     const names = fieldName.split('.');
     const name = names.pop();
-    props = getCollectionJoinField(names.join('.'));
+    props = cm.getCollectionField(names.join('.'));
     if (!props) {
       return null;
     }
@@ -159,7 +164,7 @@ const EditOperator = () => {
           setOperatorComponent(operator, defaultComponent);
         }
 
-        setField(fieldName, { operator });
+        setField(fieldSchema.name as string, { operator });
         dn.refresh();
       }}
     />
@@ -300,10 +305,11 @@ export const ChartFilterItemDesigner: React.FC = () => {
   const { t } = useChartsTranslation();
   const fieldSchema = useFieldSchema();
   const fieldName = fieldSchema.name as string;
+  const dataSource = fieldSchema['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
   const collectionField = getField(fieldName) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const isCustom = fieldName.startsWith('custom.');
   const hasProps = getPropsSchemaByComponent(fieldSchema['x-component']);
-  const originalTitle = useCollectionJoinFieldTitle(fieldName);
+  const originalTitle = useCollectionJoinFieldTitle(dataSource, fieldName);
   return (
     <GeneralSchemaDesigner disableInitializer>
       {!isCustom && (

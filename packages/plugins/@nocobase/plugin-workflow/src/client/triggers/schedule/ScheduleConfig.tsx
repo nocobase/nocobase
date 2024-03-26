@@ -68,14 +68,21 @@ const ModeFieldsets = {
   [SCHEDULE_MODE.DATE_FIELD]: {
     collection: {
       ...collection,
+      'x-component-props': {
+        dataSourceFilter(item) {
+          return item.options.key === 'main' || item.options.isDBInstance;
+        },
+      },
       'x-reactions': [
         ...collection['x-reactions'],
         {
           // only full path works
           target: 'startsOn',
+          effects: ['onFieldValueChange'],
           fulfill: {
             state: {
               visible: '{{!!$self.value}}',
+              value: '{{Object.create({})}}',
             },
           },
         },
