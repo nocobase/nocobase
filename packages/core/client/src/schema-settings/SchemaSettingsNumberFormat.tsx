@@ -18,7 +18,7 @@ const UnitConversion = ({ unitConversionType }) => {
       }}
     >
       <Select.Option value="*">{t('Multiply by')}</Select.Option>
-      <Select.Option value="/">{t('Divder by')}</Select.Option>
+      <Select.Option value="/">{t('Divide by')}</Select.Option>
     </Select>
   );
 };
