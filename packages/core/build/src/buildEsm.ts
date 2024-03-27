@@ -12,10 +12,17 @@ export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: b
 
   await build(cwd, indexEntry, outDir, userConfig, sourcemap, log);
 
-  const clientEntry = fg.sync(['src/client/index.ts', 'src/client.ts'], { cwd, absolute: true, onlyFiles: true })?.[0];
+  const clientEntry = fg.sync(['src/client/index.ts', 'src/client.ts'], { cwd, absolute: true, onlyFiles: true })?.[0]?.replaceAll(/\\/g, '/');
   const clientOutDir = path.resolve(cwd, 'es/client');
   if (clientEntry) {
     await build(cwd, clientEntry, clientOutDir, userConfig, sourcemap, log);
+  }
+
+  const pkg = require(path.join(cwd, 'package.json'));
+  if (pkg.name === '@nocobase/test') {
+    const e2eEntry = path.join(cwd, 'src/e2e/index.ts').replaceAll(/\\/g, '/');
+    const e2eOutDir = path.resolve(cwd, 'es/e2e');
+    await build(cwd, e2eEntry, e2eOutDir, userConfig, sourcemap, log);
   }
 }
 

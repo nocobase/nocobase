@@ -32,8 +32,8 @@
         "default": "./lib/e2e/index.js"
       },
       "import": {
-        "types": "./lib/e2e/index.d.ts",
-        "default": "./lib/e2e/index.js"
+        "types": "./es/e2e/index.d.ts",
+        "default": "./es/e2e/index.mjs"
       }
     },
     "./package.json": "./package.json",
