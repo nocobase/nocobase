@@ -8,7 +8,7 @@ import { isSubMode } from '../../../../schema-component/antd/association-field/u
 import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useCollectionField } from '../utils';
+import { useCollectionField } from '../../../../data-source';
 
 const enableLink = {
   name: 'enableLink',
