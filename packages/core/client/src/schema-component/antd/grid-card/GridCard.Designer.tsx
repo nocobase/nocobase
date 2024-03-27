@@ -39,7 +39,8 @@ export const GridCardDesigner = () => {
   const sortFields = useSortFields(name);
   const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const defaultResource =
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
   const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
 
   const columnCountSchema = useMemo(() => {

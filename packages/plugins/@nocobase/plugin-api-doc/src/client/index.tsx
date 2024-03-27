@@ -37,7 +37,7 @@ const SCDocumentation = () => {
   );
 };
 
-export class APIDocumentationPlugin extends Plugin {
+export class PluginAPIDocClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("API documentation", { ns: "${NAMESPACE}" })}}`,
@@ -53,4 +53,4 @@ export class APIDocumentationPlugin extends Plugin {
   }
 }
 
-export default APIDocumentationPlugin;
+export default PluginAPIDocClient;

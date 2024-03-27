@@ -46,12 +46,39 @@ export interface InstallOptions {
 export class AddPresetError extends Error {}
 
 export class PluginManager {
+  /**
+   * @internal
+   */
   app: Application;
+
+  /**
+   * @internal
+   */
   collection: Collection;
+
+  /**
+   * @internal
+   */
   pluginInstances = new Map<typeof Plugin, Plugin>();
+
+  /**
+   * @internal
+   */
   pluginAliases = new Map<string, Plugin>();
+
+  /**
+   * @internal
+   */
   server: net.Server;
 
+  /**
+   * @internal
+   */
+  _repository: PluginManagerRepository;
+
+  /**
+   * @internal
+   */
   constructor(public options: PluginManagerOptions) {
     this.app = options.app;
     this.app.db.registerRepositories({
@@ -77,18 +104,22 @@ export class PluginManager {
     this.app.resourcer.use(uploadMiddleware);
   }
 
-  _repository: PluginManagerRepository;
-
   get repository() {
     return this.app.db.getRepository('applicationPlugins') as PluginManagerRepository;
   }
 
+  /**
+   * @internal
+   */
   static async getPackageJson(packageName: string) {
     const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
     const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
     return JSON.parse(data);
   }
 
+  /**
+   * @internal
+   */
   static async getPackageName(name: string) {
     const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
@@ -101,12 +132,18 @@ export class PluginManager {
     throw new Error(`${name} plugin does not exist`);
   }
 
+  /**
+   * @internal
+   */
   static getPluginPkgPrefix() {
     return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
       ',',
     );
   }
 
+  /**
+   * @internal
+   */
   static async findPackage(name: string) {
     try {
       const packageName = this.getPackageName(name);
@@ -131,6 +168,9 @@ export class PluginManager {
     throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
+  /**
+   * @internal
+   */
   static clearCache(packageName: string) {
     return;
     const packageNamePath = packageName.replace('/', sep);
@@ -141,6 +181,9 @@ export class PluginManager {
     });
   }
 
+  /**
+   * @internal
+   */
   static async resolvePlugin(pluginName: string | typeof Plugin, isUpgrade = false, isPkg = false) {
     if (typeof pluginName === 'string') {
       const packageName = isPkg ? pluginName : await this.getPackageName(pluginName);
@@ -300,11 +343,17 @@ export class PluginManager {
     await instance.afterAdd();
   }
 
+  /**
+   * @internal
+   */
   async initPlugins() {
     await this.initPresetPlugins();
     await this.initOtherPlugins();
   }
 
+  /**
+   * @internal
+   */
   async loadCommands() {
     this.app.log.debug('load commands');
     const items = await this.repository.find({
@@ -644,6 +693,9 @@ export class PluginManager {
     await execa('yarn', ['nocobase', 'refresh']);
   }
 
+  /**
+   * @deprecated
+   */
   async loadOne(plugin: Plugin) {
     this.app.setMaintainingMessage(`loading plugin ${plugin.name}...`);
     if (plugin.state.loaded || !plugin.enabled) {
@@ -662,6 +714,9 @@ export class PluginManager {
     this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
   }
 
+  /**
+   * @internal
+   */
   async addViaCLI(urlOrName: string, options?: PluginData) {
     if (isURL(urlOrName)) {
       await this.addByCompressedFileUrl({
@@ -704,6 +759,9 @@ export class PluginManager {
     await execa('yarn', ['nocobase', 'postinstall']);
   }
 
+  /**
+   * @internal
+   */
   async addByNpm(options: { packageName: string; name?: string; registry: string; authToken?: string }) {
     let { name = '', registry, packageName, authToken } = options;
     name = name.trim();
@@ -718,6 +776,9 @@ export class PluginManager {
     return this.addByCompressedFileUrl({ name, compressedFileUrl, registry, authToken, type: 'npm' });
   }
 
+  /**
+   * @internal
+   */
   async addByFile(options: { file: string; registry?: string; authToken?: string; type?: string; name?: string }) {
     const { file, authToken } = options;
 
@@ -733,6 +794,9 @@ export class PluginManager {
     return this.add(name, { packageName }, true);
   }
 
+  /**
+   * @internal
+   */
   async addByCompressedFileUrl(options: {
     compressedFileUrl: string;
     registry?: string;
@@ -773,6 +837,9 @@ export class PluginManager {
     await this.app.upgrade();
   }
 
+  /**
+   * @internal
+   */
   async upgradeByNpm(values: PluginData) {
     const name = values.name;
     const plugin = this.get(name);
@@ -794,6 +861,9 @@ export class PluginManager {
     return this.upgradeByCompressedFileUrl({ compressedFileUrl, name, version, registry, authToken });
   }
 
+  /**
+   * @internal
+   */
   async upgradeByCompressedFileUrl(options: PluginData) {
     const { name, compressedFileUrl, authToken } = options;
     const data = await this.repository.findOne({ filter: { name } });
@@ -805,6 +875,9 @@ export class PluginManager {
     await this.add(name, { version, packageName: data.packageName }, true, true);
   }
 
+  /**
+   * @internal
+   */
   getNameByPackageName(packageName: string) {
     const prefixes = PluginManager.getPluginPkgPrefix();
     const prefix = prefixes.find((prefix) => packageName.startsWith(prefix));
@@ -833,12 +906,18 @@ export class PluginManager {
     );
   }
 
+  /**
+   * @internal
+   */
   async getNpmVersionList(name: string) {
     const plugin = this.get(name);
     const npmInfo = await getNpmInfo(plugin.options.packageName, plugin.options.registry, plugin.options.authToken);
     return Object.keys(npmInfo.versions);
   }
 
+  /**
+   * @internal
+   */
   async loadPresetMigrations() {
     const migrations = {
       beforeLoad: [],
@@ -879,6 +958,9 @@ export class PluginManager {
     };
   }
 
+  /**
+   * @internal
+   */
   async loadOtherMigrations() {
     const migrations = {
       beforeLoad: [],
@@ -922,6 +1004,9 @@ export class PluginManager {
     };
   }
 
+  /**
+   * @internal
+   */
   async loadPresetPlugins() {
     await this.initPresetPlugins();
     await this.load();
@@ -956,6 +1041,9 @@ export class PluginManager {
     });
   }
 
+  /**
+   * @internal
+   */
   async initOtherPlugins() {
     if (this['_initOtherPlugins']) {
       return;
@@ -964,6 +1052,9 @@ export class PluginManager {
     this['_initOtherPlugins'] = true;
   }
 
+  /**
+   * @internal
+   */
   async initPresetPlugins() {
     if (this['_initPresetPlugins']) {
       return;

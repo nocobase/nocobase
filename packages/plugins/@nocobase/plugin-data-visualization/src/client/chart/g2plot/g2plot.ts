@@ -35,11 +35,11 @@ export class G2PlotChart extends Chart {
         },
       },
       tooltip: (d, index: number, data, column: any) => {
-        const field = column.y.field;
+        const field = column.y?.field;
         const props = fieldProps[field];
         const name = props?.label || field;
         const transformer = props?.transformer;
-        const value = column.y.value[index];
+        const value = column.y?.value[index];
         return { name, value: transformer ? transformer(value) : value };
       },
       axis: {

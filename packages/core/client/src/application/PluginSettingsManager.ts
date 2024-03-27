@@ -11,7 +11,7 @@ export const ADMIN_SETTINGS_PATH = '/admin/settings/';
 export const SNIPPET_PREFIX = 'pm.';
 
 export interface PluginSettingOptions {
-  title: string | React.ReactElement;
+  title: any;
   /**
    * @default Outlet
    */

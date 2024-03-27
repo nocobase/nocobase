@@ -44,6 +44,7 @@ import { selectComponentFieldSettings } from '../modules/fields/component/Select
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
+import { inputNumberComponentFieldSettings } from '../modules/fields/component/InputNumber/inputNumberComponentFieldSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -94,6 +95,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(subTablePopoverComponentFieldSettings);
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
     this.schemaSettingsManager.add(unixTimestampComponentFieldSettings);
+    this.schemaSettingsManager.add(inputNumberComponentFieldSettings);
 
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
