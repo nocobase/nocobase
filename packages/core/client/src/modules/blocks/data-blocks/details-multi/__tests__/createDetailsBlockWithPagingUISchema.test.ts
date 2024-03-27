@@ -32,7 +32,7 @@ describe('createDetailsBlockWithPaginationUISchema', () => {
                     "marginBottom": 24,
                   },
                 },
-                "x-initializer": "detailsWithPaging:configureActions",
+                "x-initializer": "details:configureActions",
               },
               "pagination": {
                 "type": "void",
