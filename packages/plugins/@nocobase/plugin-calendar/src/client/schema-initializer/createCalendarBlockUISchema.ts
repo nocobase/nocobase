@@ -18,6 +18,7 @@ export const createCalendarBlockUISchema = (options: {
     'x-decorator-props': {
       collection: collectionName,
       dataSource,
+      association,
       action: 'list',
       fieldNames: {
         id: 'id',

@@ -94,6 +94,7 @@ describe('createCalendarBlockSchema', () => {
         "x-decorator": "CalendarBlockProvider",
         "x-decorator-props": {
           "action": "list",
+          "association": "users.roles",
           "collection": "users",
           "dataSource": "events",
           "fieldNames": {
