@@ -91,7 +91,6 @@ export const configurationSchema: ISchema = {
               title: generateNTemplate('Add API key'),
               'x-component': 'Action',
               'x-component-props': {
-                icon: 'PlusOutlined',
                 openMode: 'drawer',
                 type: 'primary',
               },

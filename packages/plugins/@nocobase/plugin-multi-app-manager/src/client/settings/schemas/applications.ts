@@ -235,7 +235,6 @@ export const schema: ISchema = {
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
               'x-component-props': {
-                icon: 'DeleteOutlined',
                 useAction: useDestroyAll,
                 confirm: {
                   title: "{{t('Delete')}}",
@@ -251,7 +250,6 @@ export const schema: ISchema = {
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
-                icon: 'PlusOutlined',
               },
               properties: {
                 drawer: {
