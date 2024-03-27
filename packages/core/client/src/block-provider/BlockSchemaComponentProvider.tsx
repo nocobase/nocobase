@@ -26,6 +26,7 @@ import { useTableSelectorDecoratorProps } from '../modules/blocks/data-blocks/ta
 import { useCollapseBlockDecoratorProps } from '../modules/blocks/filter-blocks/collapse/hooks/useCollapseBlockDecoratorProps';
 import { useFilterFormBlockProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockProps';
 import { useFilterFormBlockDecoratorProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockDecoratorProps';
+import { useGridCardBlockDecoratorProps } from '../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockDecoratorProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -62,6 +63,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useCollapseBlockDecoratorProps,
         useFilterFormBlockProps,
         useFilterFormBlockDecoratorProps,
+        useGridCardBlockDecoratorProps,
       }}
     >
       {props.children}
@@ -115,6 +117,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useCollapseBlockDecoratorProps,
       useFilterFormBlockProps,
       useFilterFormBlockDecoratorProps,
+      useGridCardBlockDecoratorProps,
     });
   }
 }
