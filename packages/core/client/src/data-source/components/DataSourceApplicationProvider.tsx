@@ -10,6 +10,9 @@ interface DataSourceApplicationProviderProps extends CollectionManagerProviderPr
   dataSourceManager: DataSourceManager;
 }
 
+/**
+ * @internal
+ */
 export const DataSourceApplicationProvider: FC<DataSourceApplicationProviderProps> = ({
   children,
   dataSourceManager,
