@@ -11,6 +11,7 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 type Params = {
   filter?: any;
@@ -141,7 +142,7 @@ const useAssociationNames = (collection) => {
   );
 };
 
-export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
+export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelectorProviderProps) => {
   const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
@@ -263,7 +264,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
       </BlockProvider>
     </SchemaComponentOptions>
   );
-};
+});
 
 export const useTableSelectorContext = () => {
   return useContext(TableSelectorContext);

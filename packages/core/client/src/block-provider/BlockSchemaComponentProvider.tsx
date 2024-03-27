@@ -22,6 +22,7 @@ import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorPro
 import * as bp from './hooks';
 import { useTableBlockDecoratorProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
 import { useListBlockDecoratorProps } from '../modules/blocks/data-blocks/list/hooks/useListBlockDecoratorProps';
+import { useTableSelectorDecoratorProps } from '../modules/blocks/data-blocks/table-selector/hooks/useTableSelectorDecoratorProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -54,6 +55,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableSelectorProps,
         useTableBlockDecoratorProps,
         useListBlockDecoratorProps,
+        useTableSelectorDecoratorProps,
       }}
     >
       {props.children}
@@ -103,6 +105,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableSelectorProps,
       useTableBlockDecoratorProps,
       useListBlockDecoratorProps,
+      useTableSelectorDecoratorProps,
     });
   }
 }
