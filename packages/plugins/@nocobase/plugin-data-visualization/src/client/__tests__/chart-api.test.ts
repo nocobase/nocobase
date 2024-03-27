@@ -11,38 +11,38 @@ describe('api', () => {
     });
 
     test('setGroup', () => {
-      const charts1 = [new Chart({ name: 'test1', title: 'Test1', component: null })];
+      const charts1 = [new Chart({ name: 'test1', title: 'Test1', Component: null })];
       plugin.charts.setGroup('group', charts1);
       expect(plugin.charts.charts.get('group')).toEqual(charts1);
 
-      const charts2 = [new Chart({ name: 'test2', title: 'Test2', component: null })];
+      const charts2 = [new Chart({ name: 'test2', title: 'Test2', Component: null })];
       plugin.charts.setGroup('group', charts2);
       expect(plugin.charts.charts.get('group')).toEqual(charts2);
     });
 
     test('addGroup', () => {
-      const charts1 = [new Chart({ name: 'test1', title: 'Test1', component: null })];
+      const charts1 = [new Chart({ name: 'test1', title: 'Test1', Component: null })];
       plugin.charts.setGroup('group1', charts1);
-      const charts2 = [new Chart({ name: 'test2', title: 'Test2', component: null })];
+      const charts2 = [new Chart({ name: 'test2', title: 'Test2', Component: null })];
       plugin.charts.addGroup('group2', charts2);
       expect(plugin.charts.charts.get('group1')).toEqual(charts1);
       expect(plugin.charts.charts.get('group2')).toEqual(charts2);
     });
 
     test('add', () => {
-      const charts1 = [new Chart({ name: 'test1', title: 'Test1', component: null })];
+      const charts1 = [new Chart({ name: 'test1', title: 'Test1', Component: null })];
       plugin.charts.setGroup('group', charts1);
 
-      const chart = new Chart({ name: 'test2', title: 'Test2', component: null });
+      const chart = new Chart({ name: 'test2', title: 'Test2', Component: null });
       plugin.charts.add('group', chart);
       expect(plugin.charts.charts.get('group').length).toEqual(2);
       expect(plugin.charts.charts.get('group')[1].name).toEqual('test2');
     });
 
     test('getChartTypes', () => {
-      const charts1 = [new Chart({ name: 'test1', title: 'Test1', component: null })];
+      const charts1 = [new Chart({ name: 'test1', title: 'Test1', Component: null })];
       plugin.charts.setGroup('group1', charts1);
-      const charts2 = [new Chart({ name: 'test2', title: 'Test2', component: null })];
+      const charts2 = [new Chart({ name: 'test2', title: 'Test2', Component: null })];
       plugin.charts.setGroup('group2', charts2);
       expect(plugin.charts.getChartTypes()).toEqual([
         {
@@ -69,9 +69,9 @@ describe('api', () => {
     });
 
     test('getCharts', () => {
-      const charts1 = [new Chart({ name: 'test1', title: 'Test1', component: null })];
+      const charts1 = [new Chart({ name: 'test1', title: 'Test1', Component: null })];
       plugin.charts.setGroup('group1', charts1);
-      const charts2 = [new Chart({ name: 'test2', title: 'Test2', component: null })];
+      const charts2 = [new Chart({ name: 'test2', title: 'Test2', Component: null })];
       plugin.charts.setGroup('group2', charts2);
       expect(plugin.charts.getCharts()).toEqual({
         'group1.test1': charts1[0],
@@ -80,9 +80,9 @@ describe('api', () => {
     });
 
     test('getChart', () => {
-      const charts1 = [new Chart({ name: 'test1', title: 'Test1', component: null })];
+      const charts1 = [new Chart({ name: 'test1', title: 'Test1', Component: null })];
       plugin.charts.setGroup('group1', charts1);
-      const charts2 = [new Chart({ name: 'test2', title: 'Test2', component: null })];
+      const charts2 = [new Chart({ name: 'test2', title: 'Test2', Component: null })];
       plugin.charts.setGroup('group2', charts2);
       expect(plugin.charts.getChart('group1.test1')).toEqual(charts1[0]);
       expect(plugin.charts.getChart('group2.test2')).toEqual(charts2[0]);
@@ -90,7 +90,7 @@ describe('api', () => {
   });
 
   describe('auto infer', () => {
-    const chart = new Chart({ name: 'test', title: 'Test', component: null });
+    const chart = new Chart({ name: 'test', title: 'Test', Component: null });
     const fields = [
       {
         name: 'price',
