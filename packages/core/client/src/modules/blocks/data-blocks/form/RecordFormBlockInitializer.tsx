@@ -3,8 +3,9 @@ import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useBlockAssociationContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
-import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
+import { createEditFormBlockUISchema } from './createEditFormBlockUISchema';
 
 /**
  * @deprecated
@@ -43,16 +44,17 @@ export function useCreateEditFormBlock() {
   const createEditFormBlock = useCallback(
     ({ item }) => {
       insert(
-        createFormBlockSchema({
-          association,
-          collection: item.collectionName || item.name,
-          dataSource: item.dataSource,
-          action: 'get',
-          useSourceId: '{{ useSourceIdFromParentRecord }}',
-          useParams: '{{ useParamsFromRecord }}',
-          actionInitializers: 'editForm:configureActions',
-          settings: 'blockSettings:editForm',
-        }),
+        createEditFormBlockUISchema(
+          association
+            ? {
+                association,
+                dataSource: item.dataSource,
+              }
+            : {
+                collectionName: item.collectionName || item.name,
+                dataSource: item.dataSource,
+              },
+        ),
       );
     },
     [association, insert],
@@ -61,17 +63,19 @@ export function useCreateEditFormBlock() {
   const templateWrap = useCallback(
     (templateSchema, { item }) => {
       if (item.template.componentName === 'FormItem') {
-        const blockSchema = createFormBlockSchema({
-          association,
-          collection: item.collectionName || item.name,
-          dataSource: item.dataSource,
-          action: 'get',
-          useSourceId: '{{ useSourceIdFromParentRecord }}',
-          useParams: '{{ useParamsFromRecord }}',
-          actionInitializers: 'editForm:configureActions',
-          template: templateSchema,
-          settings: 'blockSettings:editForm',
-        });
+        const blockSchema = createEditFormBlockUISchema(
+          association
+            ? {
+                association,
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+              }
+            : {
+                collectionName: item.collectionName || item.name,
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+              },
+        );
         if (item.mode === 'reference') {
           blockSchema['x-template-key'] = item.template.key;
         }

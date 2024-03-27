@@ -1,15 +1,16 @@
 import { FormOutlined } from '@ant-design/icons';
-import React from 'react';
 import {
+  SchemaInitializerItem,
+  createCreateFormBlockUISchema,
   useBlockAssociationContext,
   useCollection_deprecated,
-  useSchemaTemplateManager,
-  createFormBlockSchema,
   useRecordCollectionDataSourceItems,
-  SchemaInitializerItem,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  useSchemaTemplateManager,
 } from '@nocobase/client';
+import React from 'react';
+import { createBulkEditBlockUISchema } from './createBulkEditBlockUISchema';
 
 export const CreateFormBulkEditBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -26,13 +27,19 @@ export const CreateFormBulkEditBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
-            const blockSchema = createFormBlockSchema({
-              actionInitializers: 'createForm:configureActions',
-              association,
-              collection: collection.name,
-              dataSource: collection.dataSource,
-              template: s,
-            });
+            const blockSchema = createCreateFormBlockUISchema(
+              association
+                ? {
+                    association,
+                    dataSource: collection.dataSource,
+                    templateSchema: s,
+                  }
+                : {
+                    collectionName: collection.name,
+                    dataSource: collection.dataSource,
+                    templateSchema: s,
+                  },
+            );
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
             }
@@ -42,11 +49,9 @@ export const CreateFormBulkEditBlockInitializer = () => {
           }
         } else {
           insert(
-            createFormBlockSchema({
-              formItemInitializers: 'bulkEditForm:configureFields',
-              actionInitializers: 'bulkEditForm:configureActions',
+            createBulkEditBlockUISchema({
               association,
-              collection: collection.name,
+              collectionName: collection.name,
               dataSource: collection.dataSource,
             }),
           );
