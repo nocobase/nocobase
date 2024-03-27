@@ -1,4 +1,4 @@
-import { useApp } from '@nocobase/client';
+import { useApp, useRequest, useAPIClient } from '@nocobase/client';
 import { Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo } from 'react';
 import { RolesManagerContext } from '../RolesManagerProvider';
@@ -7,7 +7,6 @@ import { AvailableActionsProvider } from './AvailableActions';
 import { GeneralPermissions } from './GeneralPermissions';
 import { MenuItemsProvider } from './MenuItemsProvider';
 import { MenuPermissions } from './MenuPermissions';
-import { PluginPermissions } from './PluginPermissions';
 
 const TabLayout: React.FC = (props) => {
   return <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>{props.children}</div>;
@@ -16,7 +15,7 @@ const TabLayout: React.FC = (props) => {
 export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
   const { t } = useACLTranslation();
   const [activeKey, setActiveKey] = React.useState('general');
-  const { role } = useContext(RolesManagerContext);
+  const { role, setRole } = useContext(RolesManagerContext);
   const pm = role?.snippets?.includes('pm.*');
   const app = useApp();
   const DataSourcePermissionManager = app.getComponent('DataSourcePermissionManager');
@@ -25,7 +24,7 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
     () => [
       {
         key: 'general',
-        label: t('General'),
+        label: t('System'),
         children: (
           <TabLayout>
             <GeneralPermissions active={activeKey === 'general' && active} />
@@ -43,19 +42,6 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
           </TabLayout>
         ),
       },
-      ...(pm
-        ? [
-            {
-              key: 'plugin',
-              label: t('Plugin settings'),
-              children: (
-                <TabLayout>
-                  <PluginPermissions active={activeKey === 'plugin' && active} />
-                </TabLayout>
-              ),
-            },
-          ]
-        : []),
       ...(DataSourcePermissionManager
         ? [
             {
@@ -74,10 +60,33 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
     ],
     [pm, activeKey, active, t],
   );
-
+  const api = useAPIClient();
+  const { data } = useRequest(
+    () =>
+      api
+        .resource('roles')
+        .get({
+          filterByTk: role?.name,
+        })
+        .then((res) => {
+          const record = res?.data?.data;
+          record.snippets?.forEach((key: string) => {
+            record[key] = true;
+          });
+          return record;
+        }),
+    {
+      ready: active && !!role,
+      refreshDeps: [role?.name],
+    },
+  );
   useEffect(() => {
     setActiveKey('general');
   }, [role?.name]);
+
+  useEffect(() => {
+    setRole(data);
+  }, [data]);
   return (
     <AvailableActionsProvider>
       <Tabs type="card" activeKey={activeKey} onChange={(key) => setActiveKey(key)} items={items} />
