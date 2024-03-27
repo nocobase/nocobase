@@ -29,7 +29,6 @@ on:
 
 jobs:
   frontend-test:
-    if: "!contains(github.event.head_commit.message, 'skip client ci')"
     strategy:
       matrix:
         node_version: [ '18' ]

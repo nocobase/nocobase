@@ -21,7 +21,6 @@ on:
 
 jobs:
   e2e-test-postgres:
-    if: "!contains(github.event.head_commit.message, 'skip e2e ci')"
     strategy:
       matrix:
         node_version: ['18']
