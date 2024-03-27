@@ -2,5 +2,10 @@
   "The current user has no roles. Please try another account.": "当前用户没有角色，请使用其他账号。",
   "The user role does not exist. Please try signing in again": "用户角色不存在，请尝试重新登录。",
   "New role": "新建角色",
-  "Permissions": "权限"
+  "Permissions": "权限",
+  "Roles & Permissions": "角色和权限",
+  "General": "通用",
+  "Menu": "菜单",
+  "Plugin settings": "插件设置",
+  "Data sources": "数据源"
 }
