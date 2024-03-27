@@ -2,6 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   SchemaComponentOptions,
+  tval,
   useActionContext,
   useRecord,
   useRequest,
@@ -112,23 +113,28 @@ export const formSchema: ISchema = {
       'x-decorator': 'FormItem',
       'x-disabled': '{{ !createOnly }}',
     },
-    pinned: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-    },
-    'options.standaloneDeployment': {
-      'x-component': 'Checkbox',
-      'x-decorator': 'FormItem',
-      'x-content': i18nText('Standalone deployment'),
-    },
+    // 'options.standaloneDeployment': {
+    //   'x-component': 'Checkbox',
+    //   'x-decorator': 'FormItem',
+    //   'x-content': i18nText('Standalone deployment'),
+    // },
     'options.autoStart': {
-      'x-component': 'Checkbox',
+      title: tval('Start mode', { ns: '@nocobase/plugin-multi-app-manager' }),
+      'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      'x-content': i18nText('Auto start'),
+      default: false,
+      enum: [
+        { label: tval('Start on first visit', { ns: '@nocobase/plugin-multi-app-manager' }), value: false },
+        { label: tval('Start with main application', { ns: '@nocobase/plugin-multi-app-manager' }), value: true },
+      ],
     },
     cname: {
       title: i18nText('Custom domain'),
       'x-component': 'Input',
+      'x-decorator': 'FormItem',
+    },
+    pinned: {
+      'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
     },
   },

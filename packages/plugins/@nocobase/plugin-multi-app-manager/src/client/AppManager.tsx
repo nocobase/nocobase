@@ -7,7 +7,7 @@ import { usePluginUtils } from './utils';
 const useLink = () => {
   const record = useRecord();
   const app = useApp();
-  if (record.options?.standaloneDeployment && record.cname) {
+  if (record.cname) {
     return `//${record.cname}`;
   }
   return app.getRouteUrl(`/apps/${record.name}/admin/`);
