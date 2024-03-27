@@ -9,6 +9,8 @@ import {
   useCollectionParentRecordData,
   useTableBlockContext,
   useToken,
+  withDynamicSchemaProps,
+  useProps,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { debounce } from 'lodash';
@@ -81,7 +83,8 @@ const debounceHandleProcessChange = debounce(async (task: Task, resource, fieldN
   message.success(t('Saved successfully'));
   await service?.refresh();
 }, 300);
-export const Gantt: any = (props: any) => {
+
+export const Gantt: any = withDynamicSchemaProps((props: any) => {
   const { styles } = useStyles();
   const { token } = useToken();
   const api = useAPIClient();
@@ -116,12 +119,13 @@ export const Gantt: any = (props: any) => {
     viewDate,
     TooltipContent = StandardTooltipContent,
     onDoubleClick,
-    onClick,
     onDelete,
     onSelect,
-    useProps,
-  } = props;
-  const { onExpanderClick, tasks, expandAndCollapseAll } = useProps();
+    onExpanderClick,
+    tasks,
+    expandAndCollapseAll,
+    fieldNames,
+  } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const ctx = useGanttBlockContext();
   const appInfo = useCurrentAppInfo();
   const { t } = useTranslation();
@@ -129,7 +133,6 @@ export const Gantt: any = (props: any) => {
   const tableCtx = useTableBlockContext();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
-  const { fieldNames } = useProps(props);
   const viewMode = fieldNames.range || 'day';
   const wrapperRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
@@ -559,4 +562,4 @@ export const Gantt: any = (props: any) => {
       </div>
     </div>
   );
-};
+});

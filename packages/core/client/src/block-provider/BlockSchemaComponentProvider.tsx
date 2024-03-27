@@ -23,6 +23,7 @@ import * as bp from './hooks';
 import { useTableBlockDecoratorProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
 import { useListBlockDecoratorProps } from '../modules/blocks/data-blocks/list/hooks/useListBlockDecoratorProps';
 import { useTableSelectorDecoratorProps } from '../modules/blocks/data-blocks/table-selector/hooks/useTableSelectorDecoratorProps';
+import { useCollapseBlockDecoratorProps } from '../modules/blocks/filter-blocks/collapse/hooks/useCollapseBlockDecoratorProps';
 import { useFilterFormBlockProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockProps';
 import { useFilterFormBlockDecoratorProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockDecoratorProps';
 
@@ -58,6 +59,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableBlockDecoratorProps,
         useListBlockDecoratorProps,
         useTableSelectorDecoratorProps,
+        useCollapseBlockDecoratorProps,
         useFilterFormBlockProps,
         useFilterFormBlockDecoratorProps,
       }}
@@ -110,6 +112,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableBlockDecoratorProps,
       useListBlockDecoratorProps,
       useTableSelectorDecoratorProps,
+      useCollapseBlockDecoratorProps,
       useFilterFormBlockProps,
       useFilterFormBlockDecoratorProps,
     });
