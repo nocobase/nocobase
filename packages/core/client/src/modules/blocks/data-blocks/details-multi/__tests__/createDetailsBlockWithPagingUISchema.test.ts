@@ -43,7 +43,7 @@ describe('createDetailsBlockWithPagingUISchema', () => {
             "type": "void",
             "x-component": "Details",
             "x-read-pretty": true,
-            "x-use-component-props": "useDetailsBlockWithPagingProps",
+            "x-use-component-props": "useDetailsWithPaginationProps",
           },
         },
         "type": "void",
