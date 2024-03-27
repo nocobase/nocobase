@@ -497,18 +497,19 @@ test.describe('configure fields', () => {
 //创建非Id为主键/唯一索引
 test.describe('create primary key  or unique index other than ID.', () => {
   test('integer field as primary key', async ({ page, mockCollection }) => {
+    const name = uid();
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).first().click();
     await mockCollection({
-      name: 'general',
+      name: name,
       autoGenId: false,
       fields: [],
     });
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
-    await page.getByRole('textbox').nth(1).fill('general');
+    await page.getByRole('textbox').nth(1).fill(name);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.getByLabel('action-Action.Link-Configure fields-collections-general').click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${name}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'Integer' }).click();
     await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
@@ -529,18 +530,19 @@ test.describe('create primary key  or unique index other than ID.', () => {
     });
   });
   test('integer field set unique index', async ({ page, mockCollection }) => {
+    const name = uid();
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).first().click();
     await mockCollection({
-      name: 'general',
+      name: name,
       autoGenId: false,
       fields: [],
     });
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
-    await page.getByRole('textbox').nth(1).fill('general');
+    await page.getByRole('textbox').nth(1).fill(name);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.getByLabel('action-Action.Link-Configure fields-collections-general').click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${name}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'Integer' }).click();
     await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
@@ -563,18 +565,19 @@ test.describe('create primary key  or unique index other than ID.', () => {
     });
   });
   test('input(string) field set unique index', async ({ page, mockCollection }) => {
+    const name = uid();
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).first().click();
     await mockCollection({
-      name: 'general',
+      name: name,
       autoGenId: false,
       fields: [],
     });
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
-    await page.getByRole('textbox').nth(1).fill('general');
+    await page.getByRole('textbox').nth(1).fill(name);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.getByLabel('action-Action.Link-Configure fields-collections-general').click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${name}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'Single line text' }).click();
     await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
@@ -597,18 +600,19 @@ test.describe('create primary key  or unique index other than ID.', () => {
     });
   });
   test('input(string) field set as primary key', async ({ page, mockCollection }) => {
+    const name = uid();
     await page.goto('/admin/settings/data-source-manager/list');
     await page.getByRole('button', { name: 'Configure' }).first().click();
     await mockCollection({
-      name: 'general',
+      name: name,
       autoGenId: false,
       fields: [],
     });
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByRole('textbox').nth(1).click();
-    await page.getByRole('textbox').nth(1).fill('general');
+    await page.getByRole('textbox').nth(1).fill(name);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.getByLabel('action-Action.Link-Configure fields-collections-general').click();
+    await page.getByLabel(`action-Action.Link-Configure fields-collections-${name}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
     await page.getByRole('menuitem', { name: 'Single line text' }).click();
     await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').click();
