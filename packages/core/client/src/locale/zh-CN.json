@@ -918,5 +918,7 @@
   "Multiply by":"乘以",
   "Divide by":"除以",
   "Scientifix notation":"科学计数法",
-  "Normal":"常规"
+  "Normal":"常规",
+  "Filter target key":"筛选目标键",
+  "Filter data based on the specific field, with the requirement that the field value must be unique.": "根据特定的字段筛选数据，字段值必须具备唯一性。"
 }
