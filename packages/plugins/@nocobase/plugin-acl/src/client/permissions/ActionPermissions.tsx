@@ -1,6 +1,6 @@
+import { ISchema, useForm } from '@formily/react';
 import {
   CollectionContext,
-  CollectionProvider,
   CollectionProvider_deprecated,
   ResourceActionContext,
   SchemaComponent,
@@ -8,17 +8,14 @@ import {
   useActionContext,
   useFilterFieldOptions,
   useFilterFieldProps,
-  useCollectionRecord,
   useRecord,
   useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
 import React, { useContext, useEffect } from 'react';
-import { roleCollectionsSchema } from '../schemas/roles';
 import { RolesManagerContext } from '../RolesManagerProvider';
-import { ISchema } from '@formily/react';
+import { roleCollectionsSchema } from '../schemas/roles';
 import { RolesResourcesActions } from './RolesResourcesActions';
-import { useForm } from '@formily/react';
 
 const collection = {
   name: 'collections',

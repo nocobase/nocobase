@@ -3,12 +3,21 @@ import lodash from 'lodash';
 import { PluginManager } from './plugin-manager';
 
 export class PluginManagerRepository extends Repository {
+  /**
+   * @internal
+   */
   pm: PluginManager;
 
+  /**
+   * @internal
+   */
   setPluginManager(pm: PluginManager) {
     this.pm = pm;
   }
 
+  /**
+   * @deprecated
+   */
   async remove(name: string | string[]) {
     await this.destroy({
       filter: {
@@ -17,6 +26,9 @@ export class PluginManagerRepository extends Repository {
     });
   }
 
+  /**
+   * @deprecated
+   */
   async enable(name: string | string[]) {
     const pluginNames = lodash.castArray(name);
     const plugins = pluginNames.map((name) => this.pm.get(name));
@@ -56,6 +68,9 @@ export class PluginManagerRepository extends Repository {
     }
   }
 
+  /**
+   * @deprecated
+   */
   async disable(name: string | string[]) {
     name = lodash.cloneDeep(name);
 
