@@ -33,8 +33,15 @@ on:
       - '.github/workflows/nocobase-test-backend.yml'
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check commit message
+        id: check_commit
+        run: echo "${{ github.event.head_commit.message }}" >> commit_message.txt
+
   sqlite-test:
-    if: "!contains(github.event.head_commit.message, 'skip server ci')"
+    if: ${{ !contains(steps.check_commit.outputs.message, 'skip server ci') }}
     strategy:
       matrix:
         node_version: ['18']
@@ -72,7 +79,7 @@ jobs:
     timeout-minutes: 40
 
   postgres-test:
-    if: "!contains(github.event.head_commit.message, 'skip server ci')"
+    if: ${{ !contains(steps.check_commit.outputs.message, 'skip server ci') }}
     strategy:
       matrix:
         node_version: ['18']
@@ -137,7 +144,7 @@ jobs:
     timeout-minutes: 40
 
   mysql-test:
-    if: "!contains(github.event.head_commit.message, 'skip server ci')"
+    if: ${{ !contains(steps.check_commit.outputs.message, 'skip server ci') }}
     strategy:
       matrix:
         node_version: ['18']
@@ -188,7 +195,7 @@ jobs:
           DB_TEST_PREFIX: test_
     timeout-minutes: 40
   mariadb-test:
-    if: "!contains(github.event.head_commit.message, 'skip server ci')"
+    if: ${{ !contains(steps.check_commit.outputs.message, 'skip server ci') }}
     strategy:
       matrix:
         node_version: ['18']
