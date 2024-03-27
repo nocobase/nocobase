@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
@@ -51,7 +50,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         },
         otherwise: {
           state: {
-            initialValue: null,
+            value: null,
           },
         },
       },
@@ -113,7 +112,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
     fields: {
       type: 'array',
       'x-component': PreviewFields,
-      'x-hidden': '{{ !createOnly }}',
+      'x-visible': '{{ createOnly }}',
       'x-reactions': {
         dependencies: ['name'],
         fulfill: {
@@ -124,7 +123,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
     },
     preview: {
-      type: 'object',
+      type: 'void',
       'x-visible': '{{ createOnly }}',
       'x-component': PreviewTable,
       'x-reactions': {
@@ -137,22 +136,12 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
     },
     filterTargetKey: {
-      title: `{{ t("Filter target key") }}`,
-      type: 'single',
-      description: `{{t('Filter data based on the specific field, with the requirement that the field value must be unique.')}}`,
+      type: 'string',
+      title: '{{ t("Collection display name") }}',
+      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
-      'x-reactions': (field) => {
-        const { fields } = field.form.values;
-        field.dataSource = fields?.map((item: any) => {
-          return {
-            label: item.uiSchema?.title ? item.uiSchema.title : item.name,
-            value: item.name,
-          };
-        });
-      },
     },
-
     ...getConfigurableProperties('category', 'description'),
   };
 }
