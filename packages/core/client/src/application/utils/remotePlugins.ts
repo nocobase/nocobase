@@ -3,12 +3,18 @@ import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
 import type { DevDynamicImport } from '../Application';
 
+/**
+ * @internal
+ */
 export function defineDevPlugins(plugins: Record<string, typeof Plugin>) {
   Object.entries(plugins).forEach(([packageName, plugin]) => {
     window.define(`${packageName}/client`, () => plugin);
   });
 }
 
+/**
+ * @internal
+ */
 export function definePluginClient(packageName: string) {
   window.define(`${packageName}/client`, ['exports', packageName], function (_exports: any, _pluginExports: any) {
     Object.defineProperty(_exports, '__esModule', {
@@ -27,6 +33,9 @@ export function definePluginClient(packageName: string) {
   });
 }
 
+/**
+ * @internal
+ */
 export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
   requirejs.requirejs.config({
     waitSeconds: 120,
@@ -37,6 +46,9 @@ export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
   });
 }
 
+/**
+ * @internal
+ */
 export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins: [string, typeof Plugin][]) => void) {
   return (...pluginModules: (typeof Plugin & { default?: typeof Plugin })[]) => {
     const res: [string, typeof Plugin][] = pluginModules
@@ -58,10 +70,10 @@ export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins
   };
 }
 
-export function getRemotePlugins(
-  requirejs: any,
-  pluginData: PluginData[] = [],
-): Promise<Array<[string, typeof Plugin]>> {
+/**
+ * @internal
+ */
+function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []): Promise<Array<[string, typeof Plugin]>> {
   configRequirejs(requirejs, pluginData);
 
   const packageNames = pluginData.map((item) => item.packageName);
@@ -80,6 +92,9 @@ interface GetPluginsOption {
   devDynamicImport?: DevDynamicImport;
 }
 
+/**
+ * @internal
+ */
 export async function getPlugins(options: GetPluginsOption): Promise<Array<[string, typeof Plugin]>> {
   const { requirejs, pluginData, devDynamicImport } = options;
   if (pluginData.length === 0) return [];

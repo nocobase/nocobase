@@ -15,6 +15,9 @@ export interface CollectionDeletedPlaceholderProps {
 
 const { Text } = Typography;
 
+/**
+ * @internal
+ */
 export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps> = ({ type, name, message }) => {
   const { designable, dn } = useDesignable();
   const { modal } = App.useApp();
