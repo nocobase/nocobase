@@ -7,6 +7,7 @@ import {
   useCollection,
   useCollectionParentRecordData,
   useProps,
+  withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Spin, Tag, Card, Skeleton } from 'antd';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
@@ -61,10 +62,13 @@ export const toColumns = (groupField: any, dataSource: Array<any> = [], primaryK
 const MemorizedRecursionField = React.memo(RecursionField);
 MemorizedRecursionField.displayName = 'MemorizedRecursionField';
 
-export const Kanban: any = observer(
-  (props: any) => {
+export const Kanban: any = withDynamicSchemaProps(
+  observer((props: any) => {
     const { styles } = useStyles();
+
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
+
     const collection = useCollection();
     const primaryKey = collection.getPrimaryKey();
     const parentRecordData = useCollectionParentRecordData();
@@ -179,6 +183,6 @@ export const Kanban: any = observer(
         </Board>
       </Spin>
     );
-  },
+  }),
   { displayName: 'Kanban' },
 );
