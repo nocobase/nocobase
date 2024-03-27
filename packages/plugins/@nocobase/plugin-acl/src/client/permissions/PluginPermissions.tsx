@@ -38,7 +38,7 @@ export const PluginPermissions: React.FC<{
   const compile = useCompile();
   const settings = app.pluginSettingsManager.getList(false);
   const allAclSnippets = app.pluginSettingsManager.getAclSnippets();
-  const [snippets, setSnippets] = useState<string[]>([]);
+  const [snippets, setSnippets] = useState<string[]>(role?.snippets || []);
   const flatPlugins = useMemo(() => {
     return flatMap(settings, (item) => {
       if (item.children) {
@@ -65,6 +65,7 @@ export const PluginPermissions: React.FC<{
     {
       ready: !!role && active,
       refreshDeps: [role?.name],
+      manual: true,
       onSuccess(data) {
         setSnippets(
           data?.data.filter((v) => {

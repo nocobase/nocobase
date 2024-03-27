@@ -64,25 +64,6 @@ export const GeneralPermissions: React.FC<{
   const api = useAPIClient();
   const pm = role?.snippets?.includes('pm.*');
 
-  const { data } = useRequest(
-    () =>
-      api
-        .resource('roles')
-        .get({
-          filterByTk: role?.name,
-        })
-        .then((res) => {
-          const record = res?.data?.data;
-          record.snippets?.forEach((key: string) => {
-            record[key] = true;
-          });
-          return record;
-        }),
-    {
-      ready: active,
-      refreshDeps: [role?.name],
-    },
-  );
   const update = useMemoizedFn(async (form: Form) => {
     await api.resource('roles').update({
       filterByTk: role.name,
@@ -93,14 +74,14 @@ export const GeneralPermissions: React.FC<{
   });
   const form = useMemo(() => {
     return createForm({
-      values: data,
+      values: role,
       effects() {
         onFormValuesChange(async (form) => {
           await update(form);
         });
       },
     });
-  }, [data, update]);
+  }, [role, update]);
 
   return (
     <SchemaComponent
