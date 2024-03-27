@@ -205,6 +205,7 @@ export const Form: React.FC<FormProps> & {
     return (
       <ConfigProvider componentDisabled={formDisabled}>
         <form
+          onSubmit={(e) => e.preventDefault()}
           className={css`
             .ant-formily-item-feedback-layout-loose {
               margin-bottom: 12px;
