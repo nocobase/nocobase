@@ -175,6 +175,9 @@ export class Application {
     return this.dataSourceManager.getDataSource(dataSource)?.collectionManager;
   }
 
+  /**
+   * @internal
+   */
   getComposeProviders() {
     const Providers = compose(...this.providers)(BlankComponent);
     Providers.displayName = 'Providers';
@@ -280,6 +283,9 @@ export class Application {
     return React.createElement(this.getComponent(Component), props);
   }
 
+  /**
+   * @internal use addComponents({ SomeComponent }) instead
+   */
   protected addComponent(component: ComponentType, name?: string) {
     const componentName = name || component.displayName || component.name;
     if (!componentName) {

@@ -9,11 +9,17 @@ import { SchemaInitializerOptions } from '../types';
 
 export * from './useAriaAttributeOfMenuItem';
 
+/**
+ * @internal
+ */
 export function useSchemaInitializerMenuItems(items: any[], name?: string, onClick?: (args: any) => void) {
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   return useMemo(() => getMenuItems(items, name), [getMenuItems, items, name]);
 }
 
+/**
+ * @internal
+ */
 export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) {
   const compile = useCompile();
 
