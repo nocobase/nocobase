@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "0.20.0-alpha.16",
+  "version": "0.20.0-alpha.17",
   "main": "lib/index.js",
   "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
@@ -40,9 +40,10 @@
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
-    "@nocobase/server": "0.20.0-alpha.16",
+    "@nocobase/server": "0.20.0-alpha.17",
     "@playwright/test": "^1.42.1",
     "@testing-library/react": "^14.0.0",
+    "@testing-library/react-hooks": "^8.0.1",
     "@testing-library/user-event": "^14.4.3",
     "@types/supertest": "^2.0.11",
     "@vitejs/plugin-react": "^4.0.0",
@@ -56,7 +57,7 @@
     "sqlite3": "^5.0.8",
     "supertest": "^6.1.6",
     "vite": "^5.0.0",
-    "vitest": "^1.0.0",
+    "vitest": "^1.4.0",
     "vitest-dom": "^0.1.1",
     "ws": "^8.13.0"
   },

@@ -1,8 +1,15 @@
 import { Processor } from '@nocobase/plugin-workflow';
 import ManualInstruction from '../ManualInstruction';
 
-export default async function (this: ManualInstruction, instance, { collection }, processor: Processor) {
-  const repo = this.workflow.db.getRepository(collection);
+export default async function (
+  this: ManualInstruction,
+  instance,
+  { dataSource = 'main', collection },
+  processor: Processor,
+) {
+  const repo = this.workflow.app.dataSourceManager.dataSources
+    .get(dataSource)
+    .collectionManager.getRepository(collection);
   if (!repo) {
     throw new Error(`collection ${collection} for create data on manual node not found`);
   }
@@ -18,6 +25,6 @@ export default async function (this: ManualInstruction, instance, { collection }
     context: {
       executionId: processor.execution.id,
     },
-    // transaction: processor.transaction,
+    transaction: processor.transaction,
   });
 }

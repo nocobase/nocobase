@@ -33,8 +33,21 @@ export interface PluginOptions {
 export abstract class Plugin<O = any> implements PluginInterface {
   options: any;
   app: Application;
+
+  /**
+   * @deprecated
+   */
   model: Model;
+
+  /**
+   * @internal
+   */
   state: any = {};
+
+  /**
+   * @internal
+   */
+  private _sourceDir: string;
 
   constructor(app: Application, options?: any) {
     this.app = app;
@@ -80,74 +93,12 @@ export abstract class Plugin<O = any> implements PluginInterface {
     return this.options.isPreset;
   }
 
-  setOptions(options: any) {
-    this.options = options || {};
-  }
-
   getName() {
     return (this.options as any).name;
   }
 
   createLogger(options: LoggerOptions) {
     return this.app.createLogger(options);
-  }
-
-  protected _sourceDir: string;
-
-  protected async getSourceDir() {
-    if (this._sourceDir) {
-      return this._sourceDir;
-    }
-    if (await this.isDev()) {
-      return (this._sourceDir = 'src');
-    }
-    if (basename(__dirname) === 'src') {
-      return (this._sourceDir = 'src');
-    }
-    return (this._sourceDir = this.isPreset ? 'lib' : 'dist');
-  }
-
-  async loadCommands() {
-    const extensions = ['js', 'ts'];
-    const directory = resolve(
-      process.env.NODE_MODULES_PATH,
-      this.options.packageName,
-      await this.getSourceDir(),
-      'server/commands',
-    );
-    const patten = `${directory}/*.{${extensions.join(',')}}`;
-    const files = glob.sync(patten, {
-      ignore: ['**/*.d.ts'],
-    });
-    for (const file of files) {
-      let filename = basename(file);
-      filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
-      const callback = await importModule(file);
-      callback(this.app);
-    }
-    if (files.length) {
-      this.app.log.debug(`load commands [${this.name}]`);
-    }
-  }
-
-  async loadMigrations() {
-    this.app.log.debug(`load plugin migrations [${this.name}]`);
-    if (!this.options.packageName) {
-      return { beforeLoad: [], afterSync: [], afterLoad: [] };
-    }
-    const directory = resolve(
-      process.env.NODE_MODULES_PATH,
-      this.options.packageName,
-      await this.getSourceDir(),
-      'server/migrations',
-    );
-    return await this.app.loadMigrations({
-      directory,
-      namespace: this.options.packageName,
-      context: {
-        plugin: this,
-      },
-    });
   }
 
   afterAdd() {}
@@ -172,13 +123,86 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async afterRemove() {}
 
-  async importCollections(collectionsPath: string) {
-    // await this.db.import({
-    //   directory: collectionsPath,
-    //   from: `plugin:${this.getName()}`,
-    // });
+  /**
+   * @deprecated
+   */
+  async importCollections(collectionsPath: string) {}
+
+  /**
+   * @internal
+   */
+  setOptions(options: any) {
+    this.options = options || {};
   }
 
+  /**
+   * @internal
+   */
+  protected async getSourceDir() {
+    if (this._sourceDir) {
+      return this._sourceDir;
+    }
+    if (await this.isDev()) {
+      return (this._sourceDir = 'src');
+    }
+    if (basename(__dirname) === 'src') {
+      return (this._sourceDir = 'src');
+    }
+    return (this._sourceDir = this.isPreset ? 'lib' : 'dist');
+  }
+
+  /**
+   * @internal
+   */
+  async loadCommands() {
+    const extensions = ['js', 'ts'];
+    const directory = resolve(
+      process.env.NODE_MODULES_PATH,
+      this.options.packageName,
+      await this.getSourceDir(),
+      'server/commands',
+    );
+    const patten = `${directory}/*.{${extensions.join(',')}}`;
+    const files = glob.sync(patten, {
+      ignore: ['**/*.d.ts'],
+    });
+    for (const file of files) {
+      let filename = basename(file);
+      filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
+      const callback = await importModule(file);
+      callback(this.app);
+    }
+    if (files.length) {
+      this.app.log.debug(`load commands [${this.name}]`);
+    }
+  }
+
+  /**
+   * @internal
+   */
+  async loadMigrations() {
+    this.app.log.debug(`load plugin migrations [${this.name}]`);
+    if (!this.options.packageName) {
+      return { beforeLoad: [], afterSync: [], afterLoad: [] };
+    }
+    const directory = resolve(
+      process.env.NODE_MODULES_PATH,
+      this.options.packageName,
+      await this.getSourceDir(),
+      'server/migrations',
+    );
+    return await this.app.loadMigrations({
+      directory,
+      namespace: this.options.packageName,
+      context: {
+        plugin: this,
+      },
+    });
+  }
+
+  /**
+   * @internal
+   */
   async loadCollections() {
     if (!this.options.packageName) {
       return;
@@ -197,6 +221,9 @@ export abstract class Plugin<O = any> implements PluginInterface {
     }
   }
 
+  /**
+   * @deprecated
+   */
   requiredPlugins() {
     return [];
   }
@@ -205,6 +232,9 @@ export abstract class Plugin<O = any> implements PluginInterface {
     return this.app.i18n.t(text, { ns: this.options['packageName'], ...(options as any) });
   }
 
+  /**
+   * @internal
+   */
   protected async isDev() {
     if (!this.options.packageName) {
       return false;
@@ -218,6 +248,9 @@ export abstract class Plugin<O = any> implements PluginInterface {
     return false;
   }
 
+  /**
+   * @experimental
+   */
   async toJSON(options: any = {}) {
     const { locale = 'en-US' } = options;
     const { name, packageName, packageJson } = this.options;

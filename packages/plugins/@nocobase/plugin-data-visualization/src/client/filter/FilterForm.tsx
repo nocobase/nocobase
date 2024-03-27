@@ -1,7 +1,7 @@
 import React, { memo, useContext, useEffect, useMemo, useRef } from 'react';
 import { createForm, onFieldInit, onFieldMount, onFieldUnmount } from '@formily/core';
 import { ChartFilterContext } from './FilterProvider';
-import { FormV2, VariablesContext } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_KEY, FormV2, VariablesContext } from '@nocobase/client';
 import { setDefaultValue } from './utils';
 import { useChartFilter } from '../hooks';
 
@@ -33,7 +33,10 @@ export const ChartFilterForm: React.FC = memo((props) => {
             if (!name) {
               return;
             }
-            setField(name, { title: field.title, operator: field.componentProps['filter-operator'] });
+            setField(name, {
+              title: field.title,
+              operator: field.componentProps['filter-operator'],
+            });
 
             // parse field title
             if (field.title.includes('/')) {

@@ -6,7 +6,12 @@ import {
   useCollectionManager_deprecated,
   useCompile,
 } from '@nocobase/client';
-import { Trigger, CollectionBlockInitializer, getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
+import {
+  Trigger,
+  CollectionBlockInitializer,
+  getCollectionFieldOptions,
+  useWorkflowAnyExecuted,
+} from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
 export default class extends Trigger {
@@ -17,10 +22,8 @@ export default class extends Trigger {
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
-      'x-component': 'CollectionSelect',
-      'x-component-props': {
-        className: 'auto-width',
-      },
+      'x-component': 'DataSourceCollectionCascader',
+      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
       title: `{{t("Collection", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("Which collection record belongs to.", { ns: "${NAMESPACE}" })}}`,
       'x-reactions': [
@@ -63,6 +66,7 @@ export default class extends Trigger {
   };
   scope = {
     useCollectionDataSource,
+    useWorkflowAnyExecuted,
   };
   isActionTriggerable = (config, context) => {
     return ['create', 'update', 'customize:update', 'customize:triggerWorkflows'].includes(context.action);
@@ -126,7 +130,7 @@ export default class extends Trigger {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       Component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}',
+      dataPath: '$context.data',
     };
   }
 }

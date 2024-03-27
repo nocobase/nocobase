@@ -1,5 +1,10 @@
-import { useFieldSchema } from '@formily/react';
-import { useCollection, useCollectionManager, useCollectionParentRecordData, useCollectionRecordData } from '../..';
+import {
+  InheritanceCollectionMixin,
+  useCollection,
+  useCollectionManager,
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+} from '../..';
 
 /**
  * @internal
@@ -13,14 +18,17 @@ export const useDataBlockSourceId = ({ association }: { association: string }) =
   const recordData = useCollectionRecordData();
   const parentRecordData = useCollectionParentRecordData();
   const cm = useCollectionManager();
-  const collectionOutsideBlock = useCollection();
+  const collectionOutsideBlock = useCollection<InheritanceCollectionMixin>();
 
   if (!association) return;
 
   const associationField = cm.getCollectionField(association);
-  const associationCollection = cm.getCollection(associationField.collectionName);
+  const associationCollection = cm.getCollection<InheritanceCollectionMixin>(associationField.collectionName);
 
-  if (collectionOutsideBlock.name === associationCollection.name) {
+  if (
+    collectionOutsideBlock.name === associationCollection.name ||
+    collectionOutsideBlock.getParentCollectionsName?.().includes(associationCollection.name)
+  ) {
     return recordData?.[
       associationField.sourceKey ||
         associationCollection.filterTargetKey ||
