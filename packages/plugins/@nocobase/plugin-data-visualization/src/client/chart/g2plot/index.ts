@@ -7,13 +7,13 @@ export default [
   new G2PlotChart({
     name: 'line',
     title: 'Line Chart',
-    component: Line,
+    Component: Line,
     config: ['smooth', 'isStack'],
   }),
   new G2PlotChart({
     name: 'area',
     title: 'Area Chart',
-    component: Area,
+    Component: Area,
     config: [
       'smooth',
       {
@@ -26,16 +26,16 @@ export default [
   new G2PlotChart({
     name: 'column',
     title: 'Column Chart',
-    component: Column,
+    Component: Column,
     config: ['isGroup', 'isStack', 'isPercent'],
   }),
   new G2PlotChart({
     name: 'bar',
     title: 'Bar Chart',
-    component: Bar,
+    Component: Bar,
     config: ['isGroup', 'isStack', 'isPercent'],
   }),
   new Pie(),
   new DualAxes(),
-  new G2PlotChart({ name: 'scatter', title: 'Scatter Chart', component: Scatter }),
+  new G2PlotChart({ name: 'scatter', title: 'Scatter Chart', Component: Scatter }),
 ];

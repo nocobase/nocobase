@@ -1,6 +1,5 @@
 import React from 'react';
 import { FormV2 } from '../form-v2';
-import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import _ from 'lodash';
 import { Empty } from 'antd';
 import { useDataBlockRequest } from '../../../data-source';

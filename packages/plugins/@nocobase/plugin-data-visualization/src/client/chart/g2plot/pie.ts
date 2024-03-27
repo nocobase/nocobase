@@ -4,7 +4,7 @@ import { ChartType, RenderProps } from '../chart';
 
 export class Pie extends G2PlotChart {
   constructor() {
-    super({ name: 'pie', title: 'Pie Chart', component: G2Pie });
+    super({ name: 'pie', title: 'Pie Chart', Component: G2Pie });
     this.config = [
       {
         property: 'field',
