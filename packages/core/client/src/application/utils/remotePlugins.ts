@@ -73,7 +73,10 @@ export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins
 /**
  * @internal
  */
-function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []): Promise<Array<[string, typeof Plugin]>> {
+export function getRemotePlugins(
+  requirejs: any,
+  pluginData: PluginData[] = [],
+): Promise<Array<[string, typeof Plugin]>> {
   configRequirejs(requirejs, pluginData);
 
   const packageNames = pluginData.map((item) => item.packageName);
