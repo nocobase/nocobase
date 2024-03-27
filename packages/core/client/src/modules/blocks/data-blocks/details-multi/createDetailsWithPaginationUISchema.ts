@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export function createDetailsBlockWithPaginationUISchema(options: {
+export function createDetailsWithPaginationUISchema(options: {
   dataSource: string;
   rowKey: string;
   collectionName?: string;

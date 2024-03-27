@@ -1,4 +1,4 @@
-import { createDetailsBlockWithPaginationUISchema } from '../createDetailsBlockWithPaginationUISchema';
+import { createDetailsWithPaginationUISchema } from '../createDetailsWithPaginationUISchema';
 
 vi.mock('@formily/shared', () => ({
   uid: vi.fn().mockReturnValue('mocked-uid'),
@@ -6,7 +6,7 @@ vi.mock('@formily/shared', () => ({
 
 describe('createDetailsBlockWithPaginationUISchema', () => {
   it('should return the correct schema', () => {
-    const schema = createDetailsBlockWithPaginationUISchema({
+    const schema = createDetailsWithPaginationUISchema({
       collectionName: 'users',
       dataSource: 'users',
       rowKey: 'id',

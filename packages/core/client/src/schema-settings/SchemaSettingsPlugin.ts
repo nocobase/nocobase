@@ -18,7 +18,7 @@ import { viewActionSettings } from '../modules/actions/view-edit-popup/viewActio
 import {
   detailsWithPaginationSettings,
   multiDataDetailsBlockSettings,
-} from '../modules/blocks/data-blocks/details-multi/multiDataDetailsBlockSettings';
+} from '../modules/blocks/data-blocks/details-multi/detailsWithPaginationSettings';
 import { singleDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-single/singleDataDetailsBlockSettings';
 import {
   createFormBlockSettings,

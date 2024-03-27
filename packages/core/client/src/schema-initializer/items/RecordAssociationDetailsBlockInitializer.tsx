@@ -5,7 +5,7 @@ import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem }
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../utils';
-import { createDetailsBlockWithPaginationUISchema } from '../../modules/blocks/data-blocks/details-multi/createDetailsBlockWithPaginationUISchema';
+import { createDetailsWithPaginationUISchema } from '../../modules/blocks/data-blocks/details-multi/createDetailsWithPaginationUISchema';
 
 export const RecordAssociationDetailsBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -26,7 +26,7 @@ export const RecordAssociationDetailsBlockInitializer = () => {
           insert(s);
         } else {
           insert(
-            createDetailsBlockWithPaginationUISchema({
+            createDetailsWithPaginationUISchema({
               dataSource: collection.dataSource,
               association: resource,
               rowKey: collection.filterTargetKey || 'id',
@@ -49,7 +49,7 @@ export function useCreateAssociationDetailsBlock() {
       const collection = getCollection(field.target);
 
       insert(
-        createDetailsBlockWithPaginationUISchema({
+        createDetailsWithPaginationUISchema({
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
           rowKey: collection.filterTargetKey || 'id',
