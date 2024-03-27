@@ -7,6 +7,9 @@ import React from 'react';
 import { useDesignable } from '../../../schema-component';
 import { useField, useFieldSchema } from '@formily/react';
 
+/**
+ * @internal
+ */
 export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
   const { items, Component = SchemaSettingsIcon, name, componentProps, style, ...others } = props;
   const { dn } = useDesignable();

@@ -103,6 +103,9 @@ export interface DataBlockContextValue<T extends {} = {}> {
 export const DataBlockContext = createContext<DataBlockContextValue<any>>({} as any);
 DataBlockContext.displayName = 'DataBlockContext';
 
+/**
+ * @internal
+ */
 export const AssociationOrCollectionProvider = (props: {
   collection: string | CollectionOptions;
   association: string;

@@ -131,6 +131,9 @@ export class CollectionManager {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
+  /**
+   * @internal
+   */
   clone(collections: CollectionOptions[] = []) {
     const collectionManager = new CollectionManager([], this.dataSource);
 
