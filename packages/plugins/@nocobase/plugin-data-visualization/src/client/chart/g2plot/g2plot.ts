@@ -2,11 +2,11 @@ import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 import configs from './configs';
 
 export class G2PlotChart extends Chart {
-  constructor({ name, title, component, config }: ChartProps) {
+  constructor({ name, title, Component, config }: ChartProps) {
     super({
       name,
       title,
-      component,
+      Component,
       config: ['xField', 'yField', 'seriesField', ...(config || [])],
     });
     this.addConfigs(configs);
