@@ -1,4 +1,4 @@
-import { createDetailsBlockWithoutPagingUISchema } from '../createDetailsBlockWithoutPagingUISchema';
+import { createDetailsUISchema } from '../createDetailsUISchema';
 
 // Mock uid to always return a fixed value
 vi.mock('@formily/shared', () => ({
@@ -12,7 +12,7 @@ describe('createDetailsBlockWithoutPagingUISchema', () => {
       dataSource: 'usersDataSource',
     };
 
-    const result = createDetailsBlockWithoutPagingUISchema(options);
+    const result = createDetailsUISchema(options);
     expect(result).toMatchInlineSnapshot(`
       {
         "properties": {

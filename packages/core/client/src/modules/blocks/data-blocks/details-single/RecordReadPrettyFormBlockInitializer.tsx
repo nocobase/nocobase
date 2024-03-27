@@ -5,7 +5,7 @@ import { useBlockAssociationContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
-import { createDetailsBlockWithoutPagingUISchema } from './createDetailsBlockWithoutPagingUISchema';
+import { createDetailsUISchema } from './createDetailsUISchema';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -33,7 +33,7 @@ export function useCreateSingleDetailsSchema() {
     (templateSchema, options) => {
       const { item } = options;
       if (item.template.componentName === 'ReadPrettyFormItem') {
-        const blockSchema = createDetailsBlockWithoutPagingUISchema(
+        const blockSchema = createDetailsUISchema(
           association
             ? {
                 association,
@@ -64,7 +64,7 @@ export function useCreateSingleDetailsSchema() {
         insert(templateWrap(template, { item }));
       } else {
         insert(
-          createDetailsBlockWithoutPagingUISchema(
+          createDetailsUISchema(
             association
               ? {
                   association,

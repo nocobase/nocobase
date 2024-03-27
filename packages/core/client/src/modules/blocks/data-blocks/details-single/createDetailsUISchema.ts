@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export function createDetailsBlockWithoutPagingUISchema(options: {
+export function createDetailsUISchema(options: {
   dataSource: string;
   collectionName?: string;
   association?: string;

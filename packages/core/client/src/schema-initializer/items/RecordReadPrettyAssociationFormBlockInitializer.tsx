@@ -5,7 +5,7 @@ import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem }
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../utils';
 import { useCollectionManager_deprecated } from '../../collection-manager';
-import { createDetailsBlockWithoutPagingUISchema } from '../../modules/blocks/data-blocks/details-single/createDetailsBlockWithoutPagingUISchema';
+import { createDetailsUISchema } from '../../modules/blocks/data-blocks/details-single/createDetailsUISchema';
 
 /**
  * @deprecated
@@ -31,7 +31,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'ReadPrettyFormItem') {
-            const blockSchema = createDetailsBlockWithoutPagingUISchema({
+            const blockSchema = createDetailsUISchema({
               dataSource: collection.dataSource,
               association: resource,
               templateSchema: s,
@@ -45,7 +45,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
           }
         } else {
           insert(
-            createDetailsBlockWithoutPagingUISchema({
+            createDetailsUISchema({
               association: resource,
               dataSource: collection.dataSource,
             }),
@@ -67,7 +67,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
       const collection = getCollection(field.target);
 
       insert(
-        createDetailsBlockWithoutPagingUISchema({
+        createDetailsUISchema({
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
         }),
@@ -82,7 +82,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
       const collection = getCollection(field.target);
 
       if (item.template.componentName === 'ReadPrettyFormItem') {
-        const blockSchema = createDetailsBlockWithoutPagingUISchema({
+        const blockSchema = createDetailsUISchema({
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
           templateSchema: templateSchema,
