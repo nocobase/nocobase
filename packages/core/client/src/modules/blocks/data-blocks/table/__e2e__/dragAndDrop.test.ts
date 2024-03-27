@@ -3,7 +3,7 @@ import { expect, oneEmptyTableBlockBasedOnUsers, test } from '@nocobase/test/e2e
 test('actions', async ({ page, mockPage }) => {
   await mockPage(oneEmptyTableBlockBasedOnUsers).goto();
   await page.getByLabel('schema-initializer-ActionBar-table:configureActions-users').hover();
-  //添加按钮
+  // 添加按钮
   await page.getByRole('menuitem', { name: 'Add new' }).click();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('menuitem', { name: 'Refresh' }).click();
@@ -24,9 +24,9 @@ test('actions', async ({ page, mockPage }) => {
   const addNew = await addNewBtn.boundingBox();
   const del = await delBtn.boundingBox();
   const refresh = await refreshBtn.boundingBox();
-  const max = Math.max(addNew.x, refresh.x, del.x);
-  //拖拽调整排序符合预期
-  expect(addNew.x).toBe(max);
+
+  expect(addNew.x).toBeGreaterThan(refresh.x);
+  expect(refresh.x).toBeGreaterThan(del.x);
 });
 
 test('fields', async () => {});
