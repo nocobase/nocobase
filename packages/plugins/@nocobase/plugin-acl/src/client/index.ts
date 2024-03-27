@@ -2,12 +2,12 @@ import { Plugin } from '@nocobase/client';
 import { RolesManagement } from './RolesManagement';
 import { RolesManager } from './roles-manager';
 
-class ACLPlugin extends Plugin {
+export class PluginACLClient extends Plugin {
   rolesManager = new RolesManager();
 
   async load() {
-    this.app.pluginSettingsManager.add('users-permissions.roles', {
-      title: '{{t("Roles & Permissions")}}',
+    this.pluginSettingsManager.add('users-permissions.roles', {
+      title: this.t('Roles & Permissions'),
       icon: 'LockOutlined',
       Component: RolesManagement,
       aclSnippet: 'pm.acl.roles',
@@ -16,5 +16,5 @@ class ACLPlugin extends Plugin {
   }
 }
 
-export default ACLPlugin;
 export { RolesManagerContext } from './RolesManagerProvider';
+export default PluginACLClient;

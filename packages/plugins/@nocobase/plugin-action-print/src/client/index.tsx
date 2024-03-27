@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/client';
 import { deprecatedPrintActionSettings, printActionSettings } from './PrintAction.Settings';
 import { PrintActionPluginProvider } from './PrintActionPluginProvider';
-export class PrintPlugin extends Plugin {
+export class PluginActionPrintClient extends Plugin {
   async load() {
     this.app.use(PrintActionPluginProvider);
     this.app.schemaSettingsManager.add(deprecatedPrintActionSettings);
@@ -23,4 +23,4 @@ export class PrintPlugin extends Plugin {
   }
 }
 
-export default PrintPlugin;
+export default PluginActionPrintClient;

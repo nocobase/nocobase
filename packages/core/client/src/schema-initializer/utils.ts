@@ -1,6 +1,7 @@
 import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import _ from 'lodash';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,13 +13,12 @@ import {
   useFormActiveFields,
   useFormBlockContext,
 } from '../';
-import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
+import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
+import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
+import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
-import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
-import _ from 'lodash';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -972,94 +972,6 @@ export const createDetailsBlockSchema = (options) => {
   return schema;
 };
 
-export const createListBlockSchema = (options) => {
-  const {
-    formItemInitializers = 'details:configureFields',
-    actionInitializers = 'list:configureActions',
-    itemActionInitializers = 'list:configureItemActions',
-    collection,
-    dataSource,
-    association,
-    template,
-    settings,
-    ...others
-  } = options;
-  const resourceName = association || collection;
-  const schema: ISchema = {
-    type: 'void',
-    'x-acl-action': `${resourceName}:view`,
-    'x-decorator': 'List.Decorator',
-    'x-decorator-props': {
-      collection,
-      dataSource,
-      association,
-      readPretty: true,
-      action: 'list',
-      params: {
-        pageSize: 10,
-      },
-      runWhenParamsChanged: true,
-      ...others,
-    },
-    'x-component': 'CardItem',
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': settings,
-    properties: {
-      actionBar: {
-        type: 'void',
-        'x-initializer': actionInitializers,
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
-        properties: {},
-      },
-      list: {
-        type: 'array',
-        'x-component': 'List',
-        'x-component-props': {
-          props: '{{ useListBlockProps }}',
-        },
-        properties: {
-          item: {
-            type: 'object',
-            'x-component': 'List.Item',
-            'x-read-pretty': true,
-            'x-component-props': {
-              useProps: '{{ useListItemProps }}',
-            },
-            properties: {
-              grid: template || {
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': formItemInitializers,
-                'x-initializer-props': {
-                  useProps: '{{ useListItemInitializerProps }}',
-                },
-                properties: {},
-              },
-              actionBar: {
-                type: 'void',
-                'x-align': 'left',
-                'x-initializer': itemActionInitializers,
-                'x-component': 'ActionBar',
-                'x-component-props': {
-                  useProps: '{{ useListActionBarProps }}',
-                  layout: 'one-column',
-                },
-                properties: {},
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-  return schema;
-};
-
 export const createGridCardBlockSchema = (options) => {
   const {
     formItemInitializers = 'details:configureFields',
@@ -1150,7 +1062,28 @@ export const createGridCardBlockSchema = (options) => {
   };
   return schema;
 };
-export const createFormBlockSchema = (options) => {
+
+/**
+ * @deprecated
+ * 已弃用，请使用 createCreateFormBlockUISchema 或者 createEditFormBlockUISchema 替代
+ * @param options
+ * @returns
+ */
+export const createFormBlockSchema = (options: {
+  formItemInitializers?: string;
+  actionInitializers?: string;
+  collection: string;
+  resource?: string;
+  dataSource?: string;
+  association?: string;
+  action?: string;
+  actions?: Record<string, any>;
+  template?: any;
+  title?: string;
+  settings?: any;
+  'x-designer'?: string;
+  [key: string]: any;
+}) => {
   const {
     formItemInitializers = 'form:configureFields',
     actionInitializers = 'createForm:configureActions',

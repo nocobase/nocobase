@@ -6,7 +6,7 @@ import lodash from 'lodash';
 
 export class DualAxes extends G2PlotChart {
   constructor() {
-    super({ name: 'dualAxes', title: 'Dual Axes Chart', component: G2DualAxes });
+    super({ name: 'dualAxes', title: 'Dual Axes Chart', Component: G2DualAxes });
     this.config = [
       'xField',
       {
