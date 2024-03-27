@@ -1,6 +1,6 @@
 import { useDataBlockSourceId } from '../../../../../block-provider/hooks/useDataBlockSourceId';
 
-export function useDetailsBlockWithPagingDecoratorProps(props) {
+export function useDetailsWithPaginationDecoratorProps(props) {
   let sourceId;
 
   // association 的值是固定不变的，所以可以在条件中使用 hooks

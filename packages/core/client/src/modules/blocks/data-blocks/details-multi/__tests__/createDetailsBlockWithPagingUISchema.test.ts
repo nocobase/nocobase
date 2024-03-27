@@ -4,7 +4,7 @@ vi.mock('@formily/shared', () => ({
   uid: vi.fn().mockReturnValue('mocked-uid'),
 }));
 
-describe('createDetailsBlockWithPagingUISchema', () => {
+describe('createDetailsBlockWithPaginationUISchema', () => {
   it('should return the correct schema', () => {
     const schema = createDetailsBlockWithPaginationUISchema({
       collectionName: 'users',
@@ -62,7 +62,7 @@ describe('createDetailsBlockWithPagingUISchema', () => {
         },
         "x-settings": "blockSettings:detailsWithPagination",
         "x-toolbar": "BlockSchemaToolbar",
-        "x-use-decorator-props": "useDetailsBlockWithPagingDecoratorProps",
+        "x-use-decorator-props": "useDetailsWithPaginationDecoratorProps",
       }
     `);
   });
