@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Check commit message
         id: check_commit
-        run: echo "${{ github.event.head_commit.message }}" >> commit_message.txt
+        run: echo ::set-output name=message::$(git log --format=%B -n 1 ${{ github.sha }})
 
   sqlite-test:
     if: ${{ !contains(steps.check_commit.outputs.message, 'skip server ci') }}
