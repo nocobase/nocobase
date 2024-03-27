@@ -1383,38 +1383,6 @@ export const createTableBlockSchema = (options) => {
   return schema;
 };
 
-export const createCollapseBlockSchema = (options) => {
-  const { collection, dataSource, blockType } = options;
-  const schema: ISchema = {
-    type: 'void',
-    'x-decorator': 'AssociationFilter.Provider',
-    'x-decorator-props': {
-      collection,
-      dataSource,
-      blockType,
-      associationFilterStyle: {
-        width: '100%',
-      },
-      name: 'filter-collapse',
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:filterCollapse',
-    'x-component': 'CardItem',
-    'x-filter-targets': [],
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-action': 'associateFilter',
-        'x-initializer': 'filterCollapse:configureFields',
-        'x-component': 'AssociationFilter',
-        properties: {},
-      },
-    },
-  };
-
-  return schema;
-};
-
 const getChildren = ({
   collections,
   dataSource,
