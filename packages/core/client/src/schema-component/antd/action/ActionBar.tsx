@@ -7,7 +7,6 @@ import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
 import { useSchemaInitializerRender } from '../../../application';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 interface ActionBarContextForceProps {
   layout?: 'one-column' | 'tow-columns';
