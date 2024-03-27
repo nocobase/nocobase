@@ -1,9 +1,9 @@
 import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { createFormBlockSchema } from '../../../../schema-initializer/utils';
-import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
+import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
+import { createCreateFormBlockUISchema } from './createCreateFormBlockUISchema';
 
 export const FormBlockInitializer = ({
   filterCollections,
@@ -44,11 +44,10 @@ export const FormBlockInitializer = ({
       }
 
       insert(
-        createFormBlockSchema({
-          collection: item.collectionName || item.name,
+        createCreateFormBlockUISchema({
+          collectionName: item.collectionName || item.name,
           dataSource: item.dataSource,
           isCusomeizeCreate,
-          settings: 'blockSettings:createForm',
         }),
       );
     },
@@ -65,12 +64,11 @@ export const FormBlockInitializer = ({
           return templateWrap(templateSchema, { item });
         }
 
-        const schema = createFormBlockSchema({
+        const schema = createCreateFormBlockUISchema({
           isCusomeizeCreate,
           dataSource: item.dataSource,
-          template: templateSchema,
-          collection: item.name,
-          settings: 'blockSettings:createForm',
+          templateSchema: templateSchema,
+          collectionName: item.name,
         });
         if (item.template && item.mode === 'reference') {
           schema['x-template-key'] = item.template.key;
