@@ -11,6 +11,7 @@ import { GridCardDesigner } from './GridCard.Designer';
 import { GridCardItem } from './GridCard.Item';
 import { useGridCardActionBarProps } from './hooks';
 import { defaultColumnCount, pageSizeOptions } from './options';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const rowGutter = {
   md: 12,
@@ -56,7 +57,9 @@ const designerCss = css`
 `;
 
 const InternalGridCard = (props) => {
+  // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { columnCount: columnCountProp, pagination } = useProps(props);
+
   const { service, columnCount: _columnCount = defaultColumnCount } = useGridCardBlockContext();
   const columnCount = columnCountProp || _columnCount;
   const { run, params } = service;
@@ -145,7 +148,7 @@ const InternalGridCard = (props) => {
   );
 };
 
-export const GridCard = InternalGridCard as typeof InternalGridCard & {
+export const GridCard = withDynamicSchemaProps(InternalGridCard) as typeof InternalGridCard & {
   Item: typeof GridCardItem;
   Designer: typeof GridCardDesigner;
   Decorator: typeof GridCardBlockProvider;
