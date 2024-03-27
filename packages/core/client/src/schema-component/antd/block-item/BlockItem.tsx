@@ -5,6 +5,7 @@ import { SortableItem } from '../../common';
 import { useDesigner, useProps } from '../../hooks';
 import { useGetAriaLabelOfBlockItem } from './hooks/useGetAriaLabelOfBlockItem';
 import { useFieldSchema } from '@formily/react';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const blockItemCss = css`
   position: relative;
@@ -51,18 +52,23 @@ const blockItemCss = css`
   }
 `;
 
-export const BlockItem: React.FC<any> = (props) => {
-  const { className, children } = useProps(props);
-  const Designer = useDesigner();
-  const fieldSchema = useFieldSchema();
-  const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
+export const BlockItem: React.FC<any> = withDynamicSchemaProps(
+  (props) => {
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { className, children } = useProps(props);
 
-  const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
+    const Designer = useDesigner();
+    const fieldSchema = useFieldSchema();
+    const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
 
-  return (
-    <SortableItem role="button" aria-label={label} className={cls('nb-block-item', className, blockItemCss)}>
-      <Designer {...fieldSchema['x-toolbar-props']} />
-      {children}
-    </SortableItem>
-  );
-};
+    const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
+
+    return (
+      <SortableItem role="button" aria-label={label} className={cls('nb-block-item', className, blockItemCss)}>
+        <Designer {...fieldSchema['x-toolbar-props']} />
+        {children}
+      </SortableItem>
+    );
+  },
+  { displayName: 'BlockItem' },
+);

@@ -5,6 +5,7 @@ import { Card } from 'antd';
 import React from 'react';
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../../../record-provider';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const itemCss = css`
   display: flex;
@@ -26,16 +27,19 @@ const gridCardCss = css`
   }
 `;
 
-export const GridCardItem = (props) => {
-  const field = useField<ObjectField>();
-  const parentRecordData = useCollectionParentRecordData();
-  return (
-    <Card role="button" aria-label="grid-card-item" className={gridCardCss}>
-      <div className={itemCss}>
-        <RecordProvider record={field.value} parent={parentRecordData}>
-          {props.children}
-        </RecordProvider>
-      </div>
-    </Card>
-  );
-};
+export const GridCardItem = withDynamicSchemaProps(
+  (props) => {
+    const field = useField<ObjectField>();
+    const parentRecordData = useCollectionParentRecordData();
+    return (
+      <Card role="button" aria-label="grid-card-item" className={gridCardCss}>
+        <div className={itemCss}>
+          <RecordProvider record={field.value} parent={parentRecordData}>
+            {props.children}
+          </RecordProvider>
+        </div>
+      </Card>
+    );
+  },
+  { displayName: 'GridCardItem' },
+);

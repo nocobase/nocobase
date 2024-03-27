@@ -4,7 +4,8 @@ import React, { useCallback } from 'react';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { createGridCardBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { useRecordCollectionDataSourceItems } from '../utils';
+import { createGridCardBlockSchema } from '../../modules/blocks/data-blocks/grid-card/createGridCardBlockSchema';
 
 /**
  * @deprecated
@@ -31,11 +32,8 @@ export const RecordAssociationGridCardBlockInitializer = () => {
           insert(
             createGridCardBlockSchema({
               rowKey: collection.filterTargetKey,
-              collection: field.target,
-              resource,
               dataSource: collection.dataSource,
               association: resource,
-              settings: 'blockSettings:gridCard',
             }),
           );
         }
@@ -57,10 +55,8 @@ export function useCreateAssociationGridCardBlock() {
       insert(
         createGridCardBlockSchema({
           rowKey: collection.filterTargetKey,
-          collection: field.target,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
-          settings: 'blockSettings:gridCard',
         }),
       );
     },
