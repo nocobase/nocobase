@@ -34,7 +34,7 @@ export function createDetailsUISchema(options: {
         type: 'void',
         'x-component': 'Details',
         'x-read-pretty': true,
-        'x-use-component-props': 'useDetailsBlockWithoutPagingProps',
+        'x-use-component-props': 'useDetailsProps',
         properties: {
           [uid()]: {
             type: 'void',

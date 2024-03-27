@@ -75,7 +75,7 @@ export const useDetailsBlockContext = () => {
 
 /**
  * @deprecated
- * 即将废弃，请用 useDetailsWithPaginationProps 或者 useDetailsBlockWithoutPagingProps
+ * 即将废弃，请用 useDetailsWithPaginationProps 或者 useDetailsProps
  * @returns
  */
 export const useDetailsBlockProps = () => {

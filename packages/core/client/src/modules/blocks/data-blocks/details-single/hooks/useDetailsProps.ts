@@ -1,5 +1,5 @@
 import { useDetailsBlockProps } from '../../../../../block-provider/DetailsBlockProvider';
 
-export function useDetailsBlockWithoutPagingProps() {
+export function useDetailsProps() {
   return useDetailsBlockProps();
 }
