@@ -16,6 +16,7 @@ import {
   useCreateAssociationCalendarBlock,
 } from './schema-initializer/items';
 import { useMemo } from 'react';
+import { useCalendarBlockDecoratorProps } from './hooks/useCalendarBlockDecoratorProps';
 
 export class PluginCalendarClient extends Plugin {
   async load() {
@@ -60,7 +61,7 @@ export class PluginCalendarClient extends Plugin {
       RecordAssociationCalendarBlockInitializer,
       CalendarV2,
     });
-    this.app.addScopes({ useCalendarBlockProps });
+    this.app.addScopes({ useCalendarBlockProps, useCalendarBlockDecoratorProps });
     this.schemaSettingsManager.add(calendarBlockSettings);
     this.app.schemaInitializerManager.add(CalendarActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(calendarActionInitializers);

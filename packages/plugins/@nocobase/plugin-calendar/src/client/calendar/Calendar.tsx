@@ -1,6 +1,12 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
-import { ActionContextProvider, RecordProvider, useCollectionParentRecordData, useProps } from '@nocobase/client';
+import {
+  ActionContextProvider,
+  RecordProvider,
+  useCollectionParentRecordData,
+  useProps,
+  withDynamicSchemaProps,
+} from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -171,100 +177,104 @@ const CalendarRecordViewer = (props) => {
   );
 };
 
-export const Calendar: any = observer(
-  (props: any) => {
-    const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
-    const [date, setDate] = useState<Date>(new Date());
-    const [view, setView] = useState<View>('month');
-    const events = useEvents(dataSource, fieldNames, date, view);
-    const [visible, setVisible] = useState(false);
-    const [record, setRecord] = useState<any>({});
-    const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
+export const Calendar: any = withDynamicSchemaProps(
+  observer(
+    (props: any) => {
+      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+      const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
 
-    const components = useMemo(() => {
-      return {
-        toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
-        // week: {
-        //   header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
-        // },
-        month: {
-          dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
-        },
+      const [date, setDate] = useState<Date>(new Date());
+      const [view, setView] = useState<View>('month');
+      const events = useEvents(dataSource, fieldNames, date, view);
+      const [visible, setVisible] = useState(false);
+      const [record, setRecord] = useState<any>({});
+      const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
+
+      const components = useMemo(() => {
+        return {
+          toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
+          // week: {
+          //   header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
+          // },
+          month: {
+            dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
+          },
+        };
+      }, [showLunar]);
+
+      const messages: any = {
+        allDay: '',
+        previous: (
+          <div>
+            <LeftOutlined />
+          </div>
+        ),
+        next: (
+          <div>
+            <RightOutlined />
+          </div>
+        ),
+        today: i18nt('Today'),
+        month: i18nt('Month'),
+        week: i18nt('Week'),
+        work_week: i18nt('Work week'),
+        day: i18nt('Day'),
+        agenda: i18nt('Agenda'),
+        date: i18nt('Date'),
+        time: i18nt('Time'),
+        event: i18nt('Event'),
+        noEventsInRange: i18nt('None'),
+        showMore: (count) => i18nt('{{count}} more items', { count }),
       };
-    }, [showLunar]);
-
-    const messages: any = {
-      allDay: '',
-      previous: (
-        <div>
-          <LeftOutlined />
-        </div>
-      ),
-      next: (
-        <div>
-          <RightOutlined />
-        </div>
-      ),
-      today: i18nt('Today'),
-      month: i18nt('Month'),
-      week: i18nt('Week'),
-      work_week: i18nt('Work week'),
-      day: i18nt('Day'),
-      agenda: i18nt('Agenda'),
-      date: i18nt('Date'),
-      time: i18nt('Time'),
-      event: i18nt('Event'),
-      noEventsInRange: i18nt('None'),
-      showMore: (count) => i18nt('{{count}} more items', { count }),
-    };
-    return wrapSSR(
-      <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>
-        <GlobalStyle />
-        <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
-        <BigCalendar
-          popup
-          selectable
-          events={events}
-          view={view}
-          views={Weeks}
-          date={date}
-          step={60}
-          showMultiDayTimes
-          messages={messages}
-          onNavigate={setDate}
-          onView={setView}
-          onSelectSlot={(slotInfo) => {
-            console.log('onSelectSlot', slotInfo);
-          }}
-          onDoubleClickEvent={() => {
-            console.log('onDoubleClickEvent');
-          }}
-          onSelectEvent={(event) => {
-            const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
-            if (!record) {
-              return;
-            }
-            record.__event = { ...event, start: formatDate(dayjs(event.start)), end: formatDate(dayjs(event.end)) };
-
-            setRecord(record);
-            setVisible(true);
-          }}
-          formats={{
-            monthHeaderFormat: 'YYYY-M',
-            agendaDateFormat: 'M-DD',
-            dayHeaderFormat: 'YYYY-M-DD',
-            dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-              if (dates.eq(start, end, 'month')) {
-                return local.format(start, 'YYYY-M', culture);
+      return wrapSSR(
+        <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>
+          <GlobalStyle />
+          <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
+          <BigCalendar
+            popup
+            selectable
+            events={events}
+            view={view}
+            views={Weeks}
+            date={date}
+            step={60}
+            showMultiDayTimes
+            messages={messages}
+            onNavigate={setDate}
+            onView={setView}
+            onSelectSlot={(slotInfo) => {
+              console.log('onSelectSlot', slotInfo);
+            }}
+            onDoubleClickEvent={() => {
+              console.log('onDoubleClickEvent');
+            }}
+            onSelectEvent={(event) => {
+              const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
+              if (!record) {
+                return;
               }
-              return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
-            },
-          }}
-          components={components}
-          localizer={localizer}
-        />
-      </div>,
-    );
-  },
-  { displayName: 'Calendar' },
+              record.__event = { ...event, start: formatDate(dayjs(event.start)), end: formatDate(dayjs(event.end)) };
+
+              setRecord(record);
+              setVisible(true);
+            }}
+            formats={{
+              monthHeaderFormat: 'YYYY-M',
+              agendaDateFormat: 'M-DD',
+              dayHeaderFormat: 'YYYY-M-DD',
+              dayRangeHeaderFormat: ({ start, end }, culture, local) => {
+                if (dates.eq(start, end, 'month')) {
+                  return local.format(start, 'YYYY-M', culture);
+                }
+                return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
+              },
+            }}
+            components={components}
+            localizer={localizer}
+          />
+        </div>,
+      );
+    },
+    { displayName: 'Calendar' },
+  ),
 );
