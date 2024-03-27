@@ -96,11 +96,14 @@ export const defineServerConfig = (config = {}) => {
 
     if (runAsCoverage && !reportDir) {
       if (folderFilter) {
-        const packageJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), folderFilter, 'package.json'), { encoding: 'utf8' }));
+        const packageJSONPath = path.resolve(process.cwd(), folderFilter, 'package.json');
+        const packageJson = JSON.parse(fs.readFileSync(packageJSONPath));
+
+
         if (!packageJson.name) {
           userConfig.test.coverage.reportsDirectory = 'storage/coverage/server';
         } else {
-          userConfig.test.coverage.reportsDirectory = `storage/coverage/server/${packageJson.name}`;
+          userConfig.test.coverage.reportsDirectory = `${folderFilter.replace('packages', 'storage/coverage/server')}`;
         }
       } else  {
         userConfig.test.coverage.reportsDirectory = 'storage/coverage/server';

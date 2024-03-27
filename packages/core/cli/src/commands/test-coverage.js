@@ -18,12 +18,7 @@ module.exports = (cli) => {
         console.log(`run coverage for ${package.name}@${package.version}`);
 
         try {
-          await run('yarn', [
-            'test:server',
-            '--coverage',
-            `--coverage.reportsDirectory=storage/coverage/server/${package.name}`,
-            `${entry.replace('/package.json', '')}`,
-          ]);
+          await run('yarn', ['test:server', '--coverage', `${entry.replace('/package.json', '')}`]);
         } catch (e) {
           continue;
         }
