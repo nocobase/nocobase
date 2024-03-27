@@ -22,8 +22,8 @@
         "default": "./lib/client/index.js"
       },
       "import": {
-        "types": "./lib/client/index.d.ts",
-        "default": "./lib/client/index.js"
+        "types": "./es/client/index.d.ts",
+        "default": "./es/client/index.mjs"
       }
     },
     "./e2e": {

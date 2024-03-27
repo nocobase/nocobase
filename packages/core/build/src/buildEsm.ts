@@ -1,11 +1,25 @@
 
-import { build } from 'tsup';
 import path from 'path';
 import { PkgLog, UserConfig } from './utils';
 import { build as viteBuild } from 'vite';
+import fg from 'fast-glob';
 
-export function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
+export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
   log('build esm');
+
+  const indexEntry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
+  const outDir = path.resolve(cwd, 'es');
+
+  await build(cwd, indexEntry, outDir, userConfig, sourcemap, log);
+
+  const clientEntry = fg.sync(['src/client/index.ts', 'src/client.ts'], { cwd, absolute: true, onlyFiles: true })?.[0];
+  const clientOutDir = path.resolve(cwd, 'es/client');
+  if (clientEntry) {
+    await build(cwd, clientEntry, clientOutDir, userConfig, sourcemap, log);
+  }
+}
+
+function build(cwd: string, entry: string, outDir: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
   const cwdWin = cwd.replaceAll(/\\/g, '/');
   const cwdUnix = cwd.replaceAll(/\//g, '\\');
   const external = function (id: string) {
@@ -14,8 +28,6 @@ export function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean
     }
     return true;
   };
-  const entry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
-  const outDir = path.resolve(cwd, 'es');
   return viteBuild(
     userConfig.modifyViteConfig({
       mode: process.env.NODE_ENV || 'production',
