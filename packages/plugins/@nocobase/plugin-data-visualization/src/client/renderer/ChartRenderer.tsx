@@ -12,7 +12,7 @@ import {
   useDesignable,
 } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
-import React, { useContext } from 'react';
+import React, { memo, useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../configure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
@@ -22,6 +22,8 @@ import { ChartRendererContext } from './ChartRendererProvider';
 import { useChart } from '../chart/group';
 import { ChartDataContext } from '../block/ChartDataProvider';
 const { Paragraph, Text } = Typography;
+import lodash from 'lodash';
+import { Line } from '@ant-design/plots';
 
 export const ChartRenderer: React.FC & {
   Designer: React.FC;
@@ -38,7 +40,7 @@ export const ChartRenderer: React.FC & {
   const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
-  const Component = chart?.render({
+  const chartProps = chart?.getProps({
     data,
     general,
     advanced,
@@ -51,30 +53,27 @@ export const ChartRenderer: React.FC & {
       return props;
     }, {}),
   });
+  const C = chart?.Component;
 
-  const C = () =>
-    chart ? (
+  if (!chart) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
+  }
+  if (!(data && data.length) && !service.loading) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
+  }
+
+  return (
+    <Spin spinning={service.loading}>
       <ErrorBoundary
         onError={(error) => {
           console.error(error);
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component />
+        <C {...chartProps} />
       </ErrorBoundary>
-    ) : (
-      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />
-    );
-
-  if (service.loading) {
-    return <Spin />;
-  }
-
-  if (!(data && data.length)) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
-  }
-
-  return <C />;
+    </Spin>
+  );
 };
 
 ChartRenderer.Designer = function Designer() {
