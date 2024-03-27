@@ -1,9 +1,14 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { ActionSchemaToolbar } from '../modules/actions/ActionSchemaToolbar';
-import { CollapseItemSchemaToolbar } from '../modules/blocks/filter-blocks/collapse/CollapseItemSchemaToolbar';
+import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
 import { FormItemSchemaToolbar } from '../modules/blocks/data-blocks/form/FormItemSchemaToolbar';
+import { useCreateFormBlockDecoratorProps } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockDecoratorProps';
+import { useCreateFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockProps';
+import { useEditFormBlockDecoratorProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockDecoratorProps';
+import { useEditFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockProps';
 import { TableColumnSchemaToolbar } from '../modules/blocks/data-blocks/table/TableColumnSchemaToolbar';
+import { CollapseItemSchemaToolbar } from '../modules/blocks/filter-blocks/collapse/CollapseItemSchemaToolbar';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
@@ -15,8 +20,9 @@ import { useTableBlockProps } from '../modules/blocks/data-blocks/table/hooks/us
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
-import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
 import { useTableBlockDecoratorProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
+import { useListBlockDecoratorProps } from '../modules/blocks/data-blocks/list/hooks/useListBlockDecoratorProps';
+import { useTableSelectorDecoratorProps } from '../modules/blocks/data-blocks/table-selector/hooks/useTableSelectorDecoratorProps';
 import { useFilterFormBlockProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockProps';
 import { useFilterFormBlockDecoratorProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockDecoratorProps';
 
@@ -40,12 +46,18 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useSourceIdFromParentRecord,
         useParamsFromRecord,
         useFormBlockProps,
+        useCreateFormBlockProps,
+        useCreateFormBlockDecoratorProps,
+        useEditFormBlockDecoratorProps,
+        useEditFormBlockProps,
         useFormFieldProps,
         useDetailsBlockProps,
         useTableFieldProps,
         useTableBlockProps,
         useTableSelectorProps,
         useTableBlockDecoratorProps,
+        useListBlockDecoratorProps,
+        useTableSelectorDecoratorProps,
         useFilterFormBlockProps,
         useFilterFormBlockDecoratorProps,
       }}
@@ -86,12 +98,18 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useSourceIdFromParentRecord,
       useParamsFromRecord,
       useFormBlockProps,
+      useCreateFormBlockProps,
+      useCreateFormBlockDecoratorProps,
+      useEditFormBlockDecoratorProps,
+      useEditFormBlockProps,
       useFormFieldProps,
       useDetailsBlockProps,
       useTableFieldProps,
       useTableBlockProps,
       useTableSelectorProps,
       useTableBlockDecoratorProps,
+      useListBlockDecoratorProps,
+      useTableSelectorDecoratorProps,
       useFilterFormBlockProps,
       useFilterFormBlockDecoratorProps,
     });

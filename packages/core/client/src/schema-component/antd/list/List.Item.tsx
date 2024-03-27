@@ -7,8 +7,9 @@ import { useDesignable } from '../../hooks';
 
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../../../record-provider';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
-export const ListItem = (props) => {
+export const ListItem = withDynamicSchemaProps((props) => {
   const field = useField<ObjectField>();
   const { designable } = useDesignable();
   const parentRecordData = useCollectionParentRecordData();
@@ -29,4 +30,4 @@ export const ListItem = (props) => {
       </RecordProvider>
     </div>
   );
-};
+});

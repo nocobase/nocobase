@@ -91,6 +91,7 @@ export default {
           title: '{{t("Delete")}}',
           'x-component': 'Action',
           'x-component-props': {
+            icon: 'DeleteOutlined',
             useAction: '{{ cm.useBulkDestroyAction }}',
             confirm: {
               title: "{{t('Delete')}}",
@@ -104,6 +105,7 @@ export default {
           'x-component': 'Action',
           'x-component-props': {
             type: 'primary',
+            icon: 'PlusOutlined',
           },
           properties: {
             drawer: {
