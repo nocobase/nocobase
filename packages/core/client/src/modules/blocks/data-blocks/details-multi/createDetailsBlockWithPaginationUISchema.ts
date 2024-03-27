@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
-export function createDetailsBlockWithPagingUISchema(options: {
+export function createDetailsBlockWithPaginationUISchema(options: {
   dataSource: string;
   rowKey: string;
   collectionName?: string;
@@ -32,7 +32,7 @@ export function createDetailsBlockWithPagingUISchema(options: {
       },
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:multiDataDetails',
+    'x-settings': 'blockSettings:detailsWithPagination',
     'x-component': 'CardItem',
     properties: {
       [uid()]: {
@@ -43,7 +43,7 @@ export function createDetailsBlockWithPagingUISchema(options: {
         properties: {
           [uid()]: {
             type: 'void',
-            'x-initializer': hideActionInitializer ? undefined : 'detailsWithPaging:configureActions',
+            'x-initializer': hideActionInitializer ? undefined : 'details:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {
               style: {

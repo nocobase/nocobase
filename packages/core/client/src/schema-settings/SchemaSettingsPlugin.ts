@@ -15,7 +15,10 @@ import { customizeUpdateRecordActionSettings } from '../modules/actions/update-r
 import { customizePopupActionSettings } from '../modules/actions/view-edit-popup/customizePopupActionSettings';
 import { editActionSettings } from '../modules/actions/view-edit-popup/editActionSettings';
 import { viewActionSettings } from '../modules/actions/view-edit-popup/viewActionSettings';
-import { multiDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-multi/multiDataDetailsBlockSettings';
+import {
+  detailsWithPaginationSettings,
+  multiDataDetailsBlockSettings,
+} from '../modules/blocks/data-blocks/details-multi/multiDataDetailsBlockSettings';
 import { singleDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-single/singleDataDetailsBlockSettings';
 import {
   createFormBlockSettings,
@@ -55,6 +58,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(filterFormBlockSettings);
     this.schemaSettingsManager.add(filterFormItemFieldSettings);
     this.schemaSettingsManager.add(multiDataDetailsBlockSettings);
+    this.schemaSettingsManager.add(detailsWithPaginationSettings);
     this.schemaSettingsManager.add(singleDataDetailsBlockSettings);
     this.schemaSettingsManager.add(tableSelectorBlockSettings);
     this.schemaSettingsManager.add(listBlockSettings);

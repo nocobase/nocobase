@@ -1,4 +1,4 @@
-import { createDetailsBlockWithPagingUISchema } from '../createDetailsBlockWithPagingUISchema';
+import { createDetailsBlockWithPaginationUISchema } from '../createDetailsBlockWithPaginationUISchema';
 
 vi.mock('@formily/shared', () => ({
   uid: vi.fn().mockReturnValue('mocked-uid'),
@@ -6,7 +6,7 @@ vi.mock('@formily/shared', () => ({
 
 describe('createDetailsBlockWithPagingUISchema', () => {
   it('should return the correct schema', () => {
-    const schema = createDetailsBlockWithPagingUISchema({
+    const schema = createDetailsBlockWithPaginationUISchema({
       collectionName: 'users',
       dataSource: 'users',
       rowKey: 'id',
@@ -60,7 +60,7 @@ describe('createDetailsBlockWithPagingUISchema', () => {
           },
           "readPretty": true,
         },
-        "x-settings": "blockSettings:multiDataDetails",
+        "x-settings": "blockSettings:detailsWithPagination",
         "x-toolbar": "BlockSchemaToolbar",
         "x-use-decorator-props": "useDetailsBlockWithPagingDecoratorProps",
       }

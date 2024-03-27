@@ -4,7 +4,7 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../appl
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
-import { createDetailsBlockWithPagingUISchema } from './createDetailsBlockWithPagingUISchema';
+import { createDetailsBlockWithPaginationUISchema } from './createDetailsBlockWithPaginationUISchema';
 
 export const DetailsBlockInitializer = ({
   filterCollections,
@@ -51,7 +51,7 @@ export const DetailsBlockInitializer = ({
 
         const { item } = options;
         const collection = getCollection(item.name, item.dataSource);
-        const schema = createDetailsBlockWithPagingUISchema({
+        const schema = createDetailsBlockWithPaginationUISchema({
           collectionName: item.name,
           dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
