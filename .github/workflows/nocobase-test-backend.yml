@@ -21,7 +21,7 @@ on:
       - '.github/workflows/nocobase-test-backend.yml'
   pull_request:
     paths:
-      - 'package.json'
+      # - 'package.json'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
