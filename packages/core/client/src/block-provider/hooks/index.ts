@@ -36,6 +36,7 @@ import { TableFieldResource } from '../TableFieldProvider';
 
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
+export * from './useDataBlockSourceId';
 
 export const usePickActionProps = () => {
   const form = useForm();

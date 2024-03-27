@@ -14,7 +14,7 @@ import {
   DataBlockInitializer,
   SchemaComponentOptions,
 } from '@nocobase/client';
-import { createGanttBlockSchema } from './utils';
+import { createGanttBlockUISchema } from './createGanttBlockUISchema';
 
 export const GanttBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
@@ -120,8 +120,8 @@ export const GanttBlockInitializer = () => {
           initialValues: {},
         });
         insert(
-          createGanttBlockSchema({
-            collection: item.name,
+          createGanttBlockUISchema({
+            collectionName: item.name,
             dataSource: item.dataSource,
             fieldNames: {
               ...values,
