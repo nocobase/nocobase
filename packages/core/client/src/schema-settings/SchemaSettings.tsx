@@ -29,6 +29,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   // @ts-ignore
   useTransition as useReactTransition,
@@ -104,6 +105,7 @@ import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { MenuItemGroupType } from 'antd/es/menu/hooks/useItems';
 
 export interface SchemaSettingsProps {
   title?: any;
@@ -161,6 +163,8 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
   const [, startTransition] = useReactTransition();
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
 
+  const items = getMenuItems(() => props.children);
+  const [menuItems, setMenuItems] = useState(undefined);
   const changeMenu: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -170,7 +174,13 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
     }
   }, []);
 
-  const items = getMenuItems(() => props.children);
+  useEffect(() => {
+    if (!visible) {
+      setMenuItems(undefined);
+    } else {
+      setMenuItems(items.filter((item: any) => (item.type === 'group' ? item.children.length : true)));
+    }
+  }, [visible]);
 
   return (
     <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
@@ -184,7 +194,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
             overflow-y: auto;
           }
         `}
-        menu={{ items, style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' } }}
+        menu={{ items: menuItems || items, style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' } }}
       >
         <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
@@ -491,23 +501,19 @@ export interface SchemaSettingsItemGroupProps {
 }
 export const SchemaSettingsItemGroup: FC<SchemaSettingsItemGroupProps> = (props) => {
   const { Component, getMenuItems } = useMenuItem();
-  const { pushMenuItem, removeMenuItem } = useCollectMenuItems();
+  const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
 
-  const item: any = {
-    key,
-    type: 'group',
-    title: props.title,
-    label: props.title,
-    children: getMenuItems(() => props.children),
-  } as MenuProps['items'][0];
+  const item: MenuItemGroupType = useMemo(() => {
+    return {
+      key,
+      type: 'group',
+      title: props.title,
+      label: props.title,
+      children: getMenuItems(() => props.children),
+    };
+  }, [props.title, props.children]);
   pushMenuItem(item);
-
-  nextTick(() => {
-    if (item.children?.length === 0) {
-      removeMenuItem(item);
-    }
-  });
 
   return <Component />;
 };
