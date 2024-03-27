@@ -12,8 +12,8 @@
         "default": "./lib/index.js"
       },
       "import": {
-        "types": "./vitest.d.ts",
-        "default": "./vitest.mjs"
+        "types": "./es/index.d.ts",
+        "default": "./es/index.mjs"
       }
     },
     "./client": {
@@ -36,7 +36,8 @@
         "default": "./lib/e2e/index.js"
       }
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./vitest.mjs": "./vitest.mjs"
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
