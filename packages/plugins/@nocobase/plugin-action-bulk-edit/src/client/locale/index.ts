@@ -1,10 +1,7 @@
 import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = 'bulk-edit';
-
-// i18n.addResources('zh-CN', NAMESPACE, zhCN);
-// i18n.addResources('en-US', NAMESPACE, enUS);
+export const NAMESPACE = '@nocobase/plugin-bulk-edit';
 
 export function lang(key: string) {
   return i18n.t(key, { ns: NAMESPACE });
