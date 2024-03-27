@@ -19,7 +19,7 @@ import { BlockSchemaToolbar } from '../modules/blocks/BlockSchemaToolbar';
 import { useTableBlockDecoratorProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
 import { useDetailsBlockWithoutPagingProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsBlockWithoutPagingProps';
 import { useDetailsWithPaginationProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationProps';
-import { useDetailsBlockWithoutPagingDecoratorProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsBlockWithoutPagingDecoratorProps';
+import { useDetailsDecoratorProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsDecoratorProps';
 import { useDetailsWithPaginationDecoratorProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationDecoratorProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
@@ -46,7 +46,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useDetailsBlockProps,
         useDetailsBlockWithoutPagingProps,
         useDetailsWithPaginationProps,
-        useDetailsBlockWithoutPagingDecoratorProps,
+        useDetailsDecoratorProps,
         useDetailsWithPaginationDecoratorProps,
         useTableFieldProps,
         useTableBlockProps,
@@ -94,7 +94,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useDetailsBlockProps,
       useDetailsBlockWithoutPagingProps,
       useDetailsWithPaginationProps,
-      useDetailsBlockWithoutPagingDecoratorProps,
+      useDetailsDecoratorProps,
       useDetailsWithPaginationDecoratorProps,
       useTableFieldProps,
       useTableBlockProps,

@@ -55,7 +55,7 @@ describe('createDetailsBlockWithoutPagingUISchema', () => {
         },
         "x-settings": "blockSettings:singleDataDetails",
         "x-toolbar": "BlockSchemaToolbar",
-        "x-use-decorator-props": "useDetailsBlockWithoutPagingDecoratorProps",
+        "x-use-decorator-props": "useDetailsDecoratorProps",
       }
     `);
   });

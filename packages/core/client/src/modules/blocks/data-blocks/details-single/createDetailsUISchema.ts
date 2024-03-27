@@ -18,7 +18,7 @@ export function createDetailsUISchema(options: {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
     'x-decorator': 'DetailsBlockProvider',
-    'x-use-decorator-props': 'useDetailsBlockWithoutPagingDecoratorProps',
+    'x-use-decorator-props': 'useDetailsDecoratorProps',
     'x-decorator-props': {
       dataSource,
       collection: collectionName,

@@ -1,7 +1,7 @@
 import { useParamsFromRecord } from '../../../../../block-provider/BlockProvider';
 import { useDataBlockSourceId } from '../../../../../block-provider/hooks/useDataBlockSourceId';
 
-export function useDetailsBlockWithoutPagingDecoratorProps(props) {
+export function useDetailsDecoratorProps(props) {
   const params = useParamsFromRecord();
   let sourceId;
 
