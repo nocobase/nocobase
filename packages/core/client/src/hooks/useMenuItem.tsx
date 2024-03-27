@@ -11,7 +11,10 @@ type Item = MenuProps['items'][0] & {
 
 export const GetMenuItemContext = createContext<{ collectMenuItem?(item: Item): void; onChange?: () => void }>(null);
 GetMenuItemContext.displayName = 'GetMenuItemContext';
-export const GetMenuItemsContext = createContext<{ pushMenuItem?(item: Item): void }>(null);
+export const GetMenuItemsContext = createContext<{
+  pushMenuItem?(item: Item): void;
+  removeMenuItem?(item: Item): void;
+}>(null);
 GetMenuItemsContext.displayName = 'GetMenuItemsContext';
 
 /**
@@ -72,6 +75,13 @@ export const useMenuItem = () => {
       items.sort((a, b) => (a.order || 0) - (b.order || 0));
     };
 
+    const removeMenuItem = (item: Item) => {
+      const index = items.findIndex((i) => i === item);
+      if (index > -1) {
+        items.splice(index, 1);
+      }
+    };
+
     shouldRerender.current = true;
     renderItems.current = () => {
       const notDeleteItems = items.filter((item) => item.notdelete).map((item) => _.omit(item, 'notdelete') as Item);
@@ -81,6 +91,7 @@ export const useMenuItem = () => {
         <GetMenuItemsContext.Provider
           value={{
             pushMenuItem,
+            removeMenuItem,
           }}
         >
           {Com()}

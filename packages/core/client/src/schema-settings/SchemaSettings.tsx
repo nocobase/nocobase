@@ -3,7 +3,7 @@ import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { error } from '@nocobase/utils/client';
+import { error, nextTick } from '@nocobase/utils/client';
 import type { DropdownProps } from 'antd';
 import {
   Alert,
@@ -491,17 +491,24 @@ export interface SchemaSettingsItemGroupProps {
 }
 export const SchemaSettingsItemGroup: FC<SchemaSettingsItemGroupProps> = (props) => {
   const { Component, getMenuItems } = useMenuItem();
-  const { pushMenuItem } = useCollectMenuItems();
+  const { pushMenuItem, removeMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
-  const item = {
+
+  const item: any = {
     key,
     type: 'group',
     title: props.title,
     label: props.title,
     children: getMenuItems(() => props.children),
   } as MenuProps['items'][0];
-
   pushMenuItem(item);
+
+  nextTick(() => {
+    if (item.children?.length === 0) {
+      removeMenuItem(item);
+    }
+  });
+
   return <Component />;
 };
 
