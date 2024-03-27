@@ -19,7 +19,10 @@ import {
   detailsWithPaginationSettings,
   multiDataDetailsBlockSettings,
 } from '../modules/blocks/data-blocks/details-multi/detailsWithPaginationSettings';
-import { singleDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-single/singleDataDetailsBlockSettings';
+import {
+  detailsBlockSettings,
+  singleDataDetailsBlockSettings,
+} from '../modules/blocks/data-blocks/details-single/detailsBlockSettings';
 import {
   createFormBlockSettings,
   creationFormBlockSettings,
@@ -60,6 +63,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(multiDataDetailsBlockSettings);
     this.schemaSettingsManager.add(detailsWithPaginationSettings);
     this.schemaSettingsManager.add(singleDataDetailsBlockSettings);
+    this.schemaSettingsManager.add(detailsBlockSettings);
     this.schemaSettingsManager.add(tableSelectorBlockSettings);
     this.schemaSettingsManager.add(listBlockSettings);
     this.schemaSettingsManager.add(gridCardBlockSettings);

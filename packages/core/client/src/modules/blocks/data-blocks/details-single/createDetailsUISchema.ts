@@ -27,7 +27,7 @@ export function createDetailsUISchema(options: {
       action: 'get',
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:singleDataDetails',
+    'x-settings': 'blockSettings:details',
     'x-component': 'CardItem',
     properties: {
       [uid()]: {

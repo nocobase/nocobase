@@ -53,7 +53,7 @@ describe('createDetailsBlockWithoutPagingUISchema', () => {
           "dataSource": "usersDataSource",
           "readPretty": true,
         },
-        "x-settings": "blockSettings:singleDataDetails",
+        "x-settings": "blockSettings:details",
         "x-toolbar": "BlockSchemaToolbar",
         "x-use-decorator-props": "useDetailsDecoratorProps",
       }
