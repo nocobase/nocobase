@@ -1,5 +1,5 @@
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { operators } from './properties';
+import { operators, autoFill } from './properties';
 
 export class UUIDFieldInterface extends CollectionFieldInterface {
   name = 'uuid';
@@ -36,6 +36,7 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
+    autoFill,
   };
   filterable = {
     operators: operators.string,
