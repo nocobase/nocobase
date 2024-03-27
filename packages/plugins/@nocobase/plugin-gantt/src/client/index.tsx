@@ -41,6 +41,10 @@ export class GanttPlugin extends Plugin {
       title: "{{t('Gantt')}}",
       Component: 'GanttBlockInitializer',
     });
+
+    this.app.addScopes({
+      useGanttBlockProps,
+    });
   }
 }
 
