@@ -19,7 +19,6 @@ import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitl
 import { useProps } from '../../hooks/useProps';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export interface FormProps {
   [key: string]: any;
