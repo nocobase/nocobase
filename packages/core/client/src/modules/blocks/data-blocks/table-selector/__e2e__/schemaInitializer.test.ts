@@ -2,7 +2,7 @@ import { Page, expect, test } from '@nocobase/test/e2e';
 import { createTable } from './utils';
 
 test.describe('where table data selector can be added', () => {
-  test('popup', async ({ page, mockPage, mockRecord }) => {
+  test('popup', async ({ page, mockPage }) => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
     // 选中一行数据之后，弹窗自动关闭，且数据被填充到关联字段中
