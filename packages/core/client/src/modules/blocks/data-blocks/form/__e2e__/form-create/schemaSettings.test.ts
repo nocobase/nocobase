@@ -9,7 +9,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2165, T2174, T3251 } from './templatesOfBug';
+import { T2165, T2174, T3251, T3806 } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
@@ -253,6 +253,36 @@ test.describe('creation form block schema settings', () => {
       await expect(
         page.getByLabel('block-item-CollectionField-users-form-users.email-Email').getByRole('textbox'),
       ).toBeEditable();
+    });
+
+    // https://nocobase.height.app/T-3806
+    test('after save as block template', async ({ page, mockPage }) => {
+      await mockPage(T3806).goto();
+
+      // 1. 一开始联动规则应该正常
+      await page
+        .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+        .getByRole('textbox')
+        .fill('123');
+      await expect(
+        page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+      ).toHaveValue('123');
+
+      // 2. 将表单区块保存为模板后
+      await page.getByLabel('block-item-CardItem-users-form').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
+      await page.getByRole('menuitem', { name: 'Save as block template' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await page.waitForTimeout(1000);
+
+      // 3. 联动规则应该依然是正常的
+      await page
+        .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+        .getByRole('textbox')
+        .fill('456');
+      await expect(
+        page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+      ).toHaveValue('456');
     });
   });
 
