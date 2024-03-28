@@ -106,6 +106,7 @@ import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { MenuItemGroupType } from 'antd/es/menu/hooks/useItems';
+import { useDeepCompareEffect } from 'ahooks';
 
 export interface SchemaSettingsProps {
   title?: any;
@@ -180,7 +181,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
     } else {
       setMenuItems(items.filter((item: any) => (item.type === 'group' ? item.children.length : true)));
     }
-  }, [visible]);
+  }, [visible, items]);
 
   return (
     <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
