@@ -41,6 +41,9 @@ export class RouterManager {
     this.app = app;
   }
 
+  /**
+   * @internal
+   */
   getRoutesTree(): RouteObject[] {
     type RouteTypeWithChildren = RouteType & { children?: RouteTypeWithChildren };
     const routes: Record<string, RouteTypeWithChildren> = {};
@@ -106,6 +109,9 @@ export class RouterManager {
     this.options.basename = basename;
   }
 
+  /**
+   * @internal
+   */
   getRouterComponent() {
     const { type = 'browser', ...opts } = this.options;
     const Routers = {

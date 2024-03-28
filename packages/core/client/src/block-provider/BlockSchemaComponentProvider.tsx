@@ -24,6 +24,13 @@ import { useTableBlockDecoratorProps } from '../modules/blocks/data-blocks/table
 import { useListBlockDecoratorProps } from '../modules/blocks/data-blocks/list/hooks/useListBlockDecoratorProps';
 import { useTableSelectorDecoratorProps } from '../modules/blocks/data-blocks/table-selector/hooks/useTableSelectorDecoratorProps';
 import { useCollapseBlockDecoratorProps } from '../modules/blocks/filter-blocks/collapse/hooks/useCollapseBlockDecoratorProps';
+import { useFilterFormBlockProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockProps';
+import { useFilterFormBlockDecoratorProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockDecoratorProps';
+import { useGridCardBlockDecoratorProps } from '../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockDecoratorProps';
+import { useDetailsProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsProps';
+import { useDetailsWithPaginationProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationProps';
+import { useDetailsDecoratorProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsDecoratorProps';
+import { useDetailsWithPaginationDecoratorProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationDecoratorProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -51,6 +58,10 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useEditFormBlockProps,
         useFormFieldProps,
         useDetailsBlockProps,
+        useDetailsProps,
+        useDetailsWithPaginationProps,
+        useDetailsDecoratorProps,
+        useDetailsWithPaginationDecoratorProps,
         useTableFieldProps,
         useTableBlockProps,
         useTableSelectorProps,
@@ -58,6 +69,9 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useListBlockDecoratorProps,
         useTableSelectorDecoratorProps,
         useCollapseBlockDecoratorProps,
+        useFilterFormBlockProps,
+        useFilterFormBlockDecoratorProps,
+        useGridCardBlockDecoratorProps,
       }}
     >
       {props.children}
@@ -102,6 +116,10 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useEditFormBlockProps,
       useFormFieldProps,
       useDetailsBlockProps,
+      useDetailsProps,
+      useDetailsWithPaginationProps,
+      useDetailsDecoratorProps,
+      useDetailsWithPaginationDecoratorProps,
       useTableFieldProps,
       useTableBlockProps,
       useTableSelectorProps,
@@ -109,6 +127,9 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useListBlockDecoratorProps,
       useTableSelectorDecoratorProps,
       useCollapseBlockDecoratorProps,
+      useFilterFormBlockProps,
+      useFilterFormBlockDecoratorProps,
+      useGridCardBlockDecoratorProps,
     });
   }
 }

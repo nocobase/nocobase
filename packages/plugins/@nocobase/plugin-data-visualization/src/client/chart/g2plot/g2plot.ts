@@ -85,7 +85,7 @@ export class G2PlotChart extends Chart {
   getReference() {
     return {
       title: this.title,
-      link: `https://g2plot.antv.antgroup.com/api/plots/${this.name}`,
+      link: `https://ant-design-charts-next.antgroup.com/examples#statistics-${this.name}`,
     };
   }
 }
