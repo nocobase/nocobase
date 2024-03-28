@@ -60,7 +60,7 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
 
     this.app.db.on(
-      'collections.afterCreateWithAssociations',
+      'collections.afterSaveWithAssociations',
       async (model: CollectionModel, { context, transaction }) => {
         if (context) {
           await model.migrate({

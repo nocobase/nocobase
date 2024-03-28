@@ -123,7 +123,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
     },
     preview: {
-      type: 'object',
+      type: 'void',
       'x-visible': '{{ createOnly }}',
       'x-component': PreviewTable,
       'x-reactions': {
@@ -135,7 +135,13 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         },
       },
     },
-
+    filterTargetKey: {
+      type: 'string',
+      title: '{{ t("Collection display name") }}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+    },
     ...getConfigurableProperties('category', 'description'),
   };
 }
