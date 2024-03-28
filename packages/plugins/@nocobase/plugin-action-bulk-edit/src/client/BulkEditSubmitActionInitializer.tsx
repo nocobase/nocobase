@@ -6,13 +6,13 @@ export const BulkEditSubmitActionInitializer = (props) => {
     title: '{{ t("Submit") }}',
     'x-action': 'submit',
     'x-component': 'Action',
+    'x-use-component-props': 'useCustomizeBulkEditActionProps',
     // 'x-designer': 'Action.Designer',
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:updateSubmit',
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',
-      useProps: '{{ useCustomizeBulkEditActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

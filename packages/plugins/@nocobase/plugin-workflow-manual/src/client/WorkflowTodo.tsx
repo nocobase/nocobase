@@ -256,12 +256,12 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 title: '{{ t("Refresh") }}',
                 'x-action': 'refresh',
                 'x-component': 'Action',
+                'x-use-component-props': 'useRefreshActionProps',
                 // 'x-designer': 'Action.Designer',
                 'x-toolbar': 'ActionSchemaToolbar',
                 'x-settings': 'actionSettings:refresh',
                 'x-component-props': {
                   icon: 'ReloadOutlined',
-                  useProps: '{{ useRefreshActionProps }}',
                 },
                 'x-align': 'right',
               },

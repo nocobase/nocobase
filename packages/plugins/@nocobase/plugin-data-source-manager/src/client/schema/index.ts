@@ -102,9 +102,9 @@ export const databaseConnectionSchema: ISchema = {
               type: 'void',
               title: '{{ t("Refresh") }}',
               'x-component': 'Action',
+              'x-use-component-props': 'useRefreshActionProps',
               'x-component-props': {
                 icon: 'ReloadOutlined',
-                useProps: '{{ useRefreshActionProps }}',
               },
             },
             delete: {
