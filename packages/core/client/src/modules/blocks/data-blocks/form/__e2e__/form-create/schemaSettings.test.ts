@@ -268,21 +268,32 @@ test.describe('creation form block schema settings', () => {
         page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
       ).toHaveValue('123');
 
-      // 2. 将表单区块保存为模板后
-      await page.getByLabel('block-item-CardItem-users-form').hover();
-      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
-      await page.getByRole('menuitem', { name: 'Save as block template' }).click();
-      await page.getByRole('button', { name: 'OK', exact: true }).click();
-      await page.waitForTimeout(1000);
+      try {
+        // 2. 将表单区块保存为模板后
+        await page.getByLabel('block-item-CardItem-users-form').hover();
+        await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
+        await page.getByRole('menuitem', { name: 'Save as block template' }).click();
+        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await page.waitForTimeout(1000);
 
-      // 3. 联动规则应该依然是正常的
-      await page
-        .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
-        .getByRole('textbox')
-        .fill('456');
-      await expect(
-        page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
-      ).toHaveValue('456');
+        // 3. 联动规则应该依然是正常的
+        await page
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox')
+          .fill('456');
+        await expect(
+          page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+        ).toHaveValue('456');
+      } catch (err) {
+        throw err;
+      } finally {
+        // 4. 把创建的模板删除
+        await page.goto('/admin/settings/ui-schema-storage');
+        await page.getByLabel('Select all').check();
+        await page.getByLabel('action-Action-Delete-destroy-').click();
+        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await expect(page.getByRole('row', { name: 'Users_Form' }).first()).toBeHidden();
+      }
     });
   });
 
