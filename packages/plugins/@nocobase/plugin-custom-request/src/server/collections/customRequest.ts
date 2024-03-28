@@ -3,6 +3,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'customRequests',
+  autoGenId: false,
   fields: [
     {
       type: 'uid',

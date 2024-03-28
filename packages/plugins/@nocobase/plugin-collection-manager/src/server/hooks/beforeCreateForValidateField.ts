@@ -25,3 +25,25 @@ export function beforeCreateForValidateField(db: Database) {
     }
   };
 }
+
+export function beforeUpdateForValidateField(db: Database) {
+  return async (model, { transaction }) => {
+    const isPrimaryKey = model.get('primaryKey');
+    if (isPrimaryKey) {
+      const collection = db.getCollection(model.get('collectionName'));
+      if (!collection) {
+        return;
+      }
+
+      const primaryKey = collection.model.primaryKeyAttribute;
+
+      if (primaryKey !== model.get('name') && collection.model.rawAttributes[primaryKey]) {
+        throw new Error(
+          `update field ${model.get('name')} failed, collection ${
+            collection.name
+          } already has primary key ${primaryKey}`,
+        );
+      }
+    }
+  };
+}

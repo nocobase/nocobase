@@ -63,6 +63,15 @@ export class SyncRunner {
       throw e;
     }
 
+    try {
+      const beforeColumns = await this.queryInterface.describeTable(this.tableName, options);
+      await this.handlePrimaryKeyBeforeSync(beforeColumns, options);
+    } catch (e) {
+      if (!e.message.includes('No description found')) {
+        throw e;
+      }
+    }
+
     const syncResult = await this.performSync(options);
     const columns = await this.queryInterface.describeTable(this.tableName, options);
 
@@ -73,11 +82,31 @@ export class SyncRunner {
     return syncResult;
   }
 
-  async handlePrimaryKey(columns, options) {
-    if (!this.database.inDialect('postgres')) {
-      return;
-    }
+  async handlePrimaryKeyBeforeSync(columns, options) {
+    const columnsBePrimaryKey = Object.keys(columns)
+      .filter((key) => {
+        return columns[key].primaryKey == true;
+      })
+      .sort();
 
+    const columnsWillBePrimaryKey = Object.keys(this.rawAttributes)
+      .filter((key) => {
+        return this.rawAttributes[key].primaryKey == true;
+      })
+      .map((key) => {
+        return this.rawAttributes[key].field;
+      })
+      .sort();
+
+    if (columnsBePrimaryKey.length == 1 && !columnsWillBePrimaryKey.includes(columnsBePrimaryKey[0])) {
+      // remove primary key
+      if (this.database.inDialect('mariadb', 'mysql')) {
+        await this.sequelize.query(`ALTER TABLE ${this.collection.quotedTableName()} DROP PRIMARY KEY;`, options);
+      }
+    }
+  }
+
+  async handlePrimaryKey(columns, options) {
     try {
       const columnsBePrimaryKey = Object.keys(columns)
         .filter((key) => {
@@ -95,22 +124,32 @@ export class SyncRunner {
         .sort();
 
       if (columnsWillBePrimaryKey.length == 0) {
-        // skip if no primary key
         return;
       }
 
-      if (JSON.stringify(columnsBePrimaryKey) != JSON.stringify(columnsWillBePrimaryKey)) {
-        await this.queryInterface.addConstraint(this.tableName, {
-          type: 'primary key',
-          fields: columnsWillBePrimaryKey,
-          name: `${this.collection.tableName()}_${columnsWillBePrimaryKey.join('_')}_pk`,
-          transaction: options?.transaction,
-        });
+      if (
+        columnsWillBePrimaryKey.length == 1 &&
+        JSON.stringify(columnsBePrimaryKey) != JSON.stringify(columnsWillBePrimaryKey)
+      ) {
+        if (this.database.inDialect('mariadb', 'mysql')) {
+          await this.sequelize.query(
+            `ALTER TABLE ${this.collection.quotedTableName()} ADD PRIMARY KEY (${columnsWillBePrimaryKey[0]});`,
+            options,
+          );
+        } else {
+          await this.queryInterface.addConstraint(this.tableName, {
+            type: 'primary key',
+            fields: columnsWillBePrimaryKey,
+            name: `${this.collection.tableName()}_${columnsWillBePrimaryKey.join('_')}_pk`,
+            transaction: options?.transaction,
+          });
+        }
       }
     } catch (e) {
       if (e.message.includes('No description found')) {
         return;
       }
+      throw e;
     }
   }
 
