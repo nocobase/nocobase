@@ -505,7 +505,8 @@ export interface DepCompatible {
 }
 export async function getCompatible(packageName: string) {
   let externalVersion: Record<string, string>;
-  if (!process.env.IS_DEV_CMD) {
+  const hasSrc = fs.existsSync(path.join(getPackageDir(packageName), 'src'));
+  if (!hasSrc) {
     const res = await getExternalVersionFromDistFile(packageName);
     if (!res) {
       return false;
@@ -521,8 +522,8 @@ export async function getCompatible(packageName: string) {
     const globalPackageName = deps[packageName]
       ? packageName
       : deps[packageName.split('/')[0]] // @nocobase and @formily
-      ? packageName.split('/')[0]
-      : undefined;
+        ? packageName.split('/')[0]
+        : undefined;
 
     if (globalPackageName) {
       const versionRange = deps[globalPackageName];
