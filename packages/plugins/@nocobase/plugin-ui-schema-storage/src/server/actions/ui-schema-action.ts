@@ -50,6 +50,10 @@ export const uiSchemaActions = {
         readFromCache: true,
       }) as GetPropertiesOptions,
   ),
+
+  getParentJsonSchema: callRepositoryMethod('getParentJsonSchema', 'resourceIndex'),
+  getParentProperty: callRepositoryMethod('getParentProperty', 'resourceIndex'),
+
   insert: callRepositoryMethod('insert', 'values'),
   insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),
   remove: callRepositoryMethod('remove', 'resourceIndex'),
