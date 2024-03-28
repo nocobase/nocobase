@@ -1,5 +1,5 @@
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { operators } from './properties';
+import { operators, autoFill } from './properties';
 export class NanoidFieldInterface extends CollectionFieldInterface {
   name = 'nanoid';
   type = 'object';
@@ -48,6 +48,7 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
     },
+    autoFill,
   };
   filterable = {
     operators: operators.string,

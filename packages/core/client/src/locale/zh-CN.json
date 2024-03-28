@@ -918,5 +918,6 @@
   "Multiply by":"乘以",
   "Divide by":"除以",
   "Scientifix notation":"科学计数法",
-  "Normal":"常规"
+  "Normal":"常规",
+  "Automatically generate default values":"随机生成默认值"
 }
