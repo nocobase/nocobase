@@ -46,6 +46,44 @@ describe('dumper', () => {
     });
   });
 
+  it('should dump and restore date field with default value now', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'date',
+            name: 'date',
+            defaultValue: '{{$date.now}}',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('tests').create({
+      values: {},
+    });
+
+    const dumper = new Dumper(app);
+
+    const result = await dumper.dump({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const testCollection = app.db.getCollection('tests');
+    const items = await testCollection.repository.find();
+    expect(items.length).toBe(1);
+  });
+
   it('should dump and restore date field', async () => {
     await db.getRepository('collections').create({
       values: {
