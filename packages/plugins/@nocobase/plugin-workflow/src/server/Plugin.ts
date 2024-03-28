@@ -35,6 +35,7 @@ export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
+  enabledCache: Map<number, WorkflowModel> = new Map();
 
   private ready = false;
   private executing: Promise<void> | null = null;
@@ -72,7 +73,7 @@ export default class PluginWorkflowServer extends Plugin {
     return trigger.sync ?? workflow.sync;
   }
 
-  onBeforeSave = async (instance: WorkflowModel, options) => {
+  private onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
 
     if (instance.enabled) {
@@ -273,8 +274,10 @@ export default class PluginWorkflowServer extends Plugin {
         trigger.off({ ...workflow.get(), ...prev });
       }
       trigger.on(workflow);
+      this.enabledCache.set(workflow.id, workflow);
     } else {
       trigger.off(workflow);
+      this.enabledCache.delete(workflow.id);
     }
   }
 
@@ -304,9 +307,7 @@ export default class PluginWorkflowServer extends Plugin {
     this.eventsCount = this.events.length;
 
     logger.info(`new event triggered, now events: ${this.events.length}`);
-    logger.debug(`event data:`, {
-      data: context,
-    });
+    logger.debug(`event data:`, { context });
 
     if (this.events.length > 1) {
       return;
@@ -488,23 +489,39 @@ export default class PluginWorkflowServer extends Plugin {
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
       await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction: options.transaction });
     }
-
+    const logger = this.getLogger(execution.workflowId);
     const processor = this.createProcessor(execution, options);
 
-    this.getLogger(execution.workflowId).info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);
+    logger.info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);
+
+    // this.emit('beforeProcess', processor);
 
     try {
       await (job ? processor.resume(job) : processor.start());
-      this.getLogger(execution.workflowId).info(
-        `execution (${execution.id}) finished with status: ${execution.status}`,
-      );
+      logger.info(`execution (${execution.id}) finished with status: ${execution.status}`, { execution });
       if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
         await execution.destroy();
       }
     } catch (err) {
-      this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
+      logger.error(`execution (${execution.id}) error: ${err.message}`, err);
     }
 
+    // this.emit('afterProcess', processor);
+
     return processor;
+  }
+
+  useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
+    // @ts-ignore
+    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+    if (!db) {
+      return;
+    }
+    if (db.sequelize === transaction?.sequelize) {
+      return transaction;
+    }
+    if (create) {
+      return db.sequelize.transaction();
+    }
   }
 }
