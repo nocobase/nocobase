@@ -154,7 +154,8 @@ test.describe('create collection with preset fields', () => {
     await page.getByRole('button', { name: 'plus Create collection down' }).click();
     await page.getByRole('menuitem', { name: 'General collection' }).locator('span').click();
     await page.getByLabel('block-item-Input-collections-Collection display name').getByRole('textbox').fill(uid());
-    await page.getByLabel('block-item-collections-Preset').getByLabel('Select all').uncheck();
+    await page.getByLabel('block-item-collections-Preset').getByLabel('Select all').hover();
+    await page.getByLabel('block-item-collections-Preset').getByLabel('Select all').click();
     await page.getByRole('row', { name: 'ID Integer Primary key' }).locator('.ant-checkbox-input').check();
     //断言提交的data是否符合预期
     const [request] = await Promise.all([
