@@ -361,7 +361,7 @@ export class PluginManager {
     const source = [];
     for (const packageName of packageNames) {
       const file = require.resolve(packageName);
-      const sourceDir = basename(dirname(file));
+      const sourceDir = basename(dirname(file)) === 'src' ? 'src' : 'dist';
       const directory = join(
         packageName,
         sourceDir,
@@ -373,7 +373,7 @@ export class PluginManager {
       if (typeof plugin === 'string') {
         const packageName = await PluginManager.getPackageName(plugin);
         const file = require.resolve(packageName);
-        const sourceDir = basename(dirname(file));
+        const sourceDir = basename(dirname(file)) === 'src' ? 'src' : 'lib';
         const directory = join(packageName, sourceDir, 'server/commands/*.' + (sourceDir === 'src' ? 'ts' : 'js'));
         source.push(directory.replaceAll(sep, '/'));
       }
