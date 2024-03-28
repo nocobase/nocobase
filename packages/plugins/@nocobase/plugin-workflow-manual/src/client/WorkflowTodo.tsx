@@ -270,9 +270,9 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
           table: {
             type: 'array',
             'x-component': 'TableV2',
+            'x-use-component-props': 'useTableBlockProps',
             'x-component-props': {
               rowKey: 'id',
-              useProps: '{{ useTableBlockProps }}',
             },
             properties: {
               actions: {

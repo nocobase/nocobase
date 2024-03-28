@@ -86,11 +86,11 @@ export const uiSchemaTemplatesSchema: ISchema = {
         [uid()]: {
           type: 'array',
           'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowSelection: {
               type: 'checkbox',
             },
-            useProps: '{{ useTableBlockProps }}',
           },
           properties: {
             actions: {

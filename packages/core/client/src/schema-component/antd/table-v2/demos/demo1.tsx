@@ -157,12 +157,12 @@ const schema: ISchema = {
           type: 'array',
           title: `编辑模式`,
           'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowKey: 'id',
             rowSelection: {
               type: 'checkbox',
             },
-            useProps: '{{ useTableBlockProps }}',
           },
           properties: {
             column1: {

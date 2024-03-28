@@ -156,12 +156,12 @@ export const AuditLogs: any = () => {
           y84dlntcaup: {
             type: 'array',
             'x-component': 'TableV2',
+            'x-use-component-props': 'useTableBlockProps',
             'x-component-props': {
               rowKey: 'id',
               rowSelection: {
                 type: 'checkbox',
               },
-              useProps: '{{ useTableBlockProps }}',
             },
             properties: {
               actions: {

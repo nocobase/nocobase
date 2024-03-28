@@ -259,9 +259,9 @@ export const AuditLogsViewActionInitializer = () => {
                                                           changes: {
                                                             type: 'array',
                                                             'x-component': 'TableV2',
+                                                            'x-use-component-props': 'useTableFieldProps',
                                                             'x-component-props': {
                                                               rowSelection: false,
-                                                              useProps: '{{ useTableFieldProps }}',
                                                             },
                                                             properties: {
                                                               '5uvv96u9ict': {
