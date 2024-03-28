@@ -245,9 +245,9 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 'x-action': 'filter',
                 'x-designer': 'Filter.Action.Designer',
                 'x-component': 'Filter.Action',
+                'x-use-component-props': 'useFilterActionProps',
                 'x-component-props': {
                   icon: 'FilterOutlined',
-                  useProps: '{{ useFilterActionProps }}',
                 },
                 'x-align': 'left',
               },
