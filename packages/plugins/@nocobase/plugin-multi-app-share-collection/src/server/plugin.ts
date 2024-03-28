@@ -262,9 +262,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         schema: appName,
       };
 
-      const plugins = [...mainApp.pm.getAliases()].filter(
-        (name) => name !== 'multi-app-manager' && name !== 'multi-app-share-collection',
-      );
+      const plugins = [...mainApp.pm.getPlugins().values()]
+        .filter((plugin) => plugin.name !== 'multi-app-manager' && plugin.name !== 'multi-app-share-collection')
+        .map((plugin) => plugin.name);
 
       return {
         database: lodash.merge(databaseOptions, {

@@ -125,6 +125,33 @@ describe('data source with acl', () => {
     expect(postRes.status).toBe(200);
   });
 
+  it('should update roles resources', async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    const adminAgent: any = app.agent().login(adminUser);
+
+    await adminAgent.resource('dataSources.roles', 'mockInstance1').update({
+      filterByTk: 'member',
+      values: {
+        resources: [
+          {
+            posts: {
+              actions: {
+                view: {
+                  fields: ['title'],
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+  });
+
   it('should set main data source strategy', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {

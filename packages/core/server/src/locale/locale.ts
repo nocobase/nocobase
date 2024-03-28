@@ -75,7 +75,7 @@ export class Locale {
 
   getResources(lang: string) {
     const resources = {};
-    const names = this.app.pm.getAliases();
+    const names = this.app.pm.getPlugins().keys();
     for (const name of names) {
       try {
         const p = this.app.pm.get(name);

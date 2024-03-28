@@ -13,5 +13,8 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
+  "devDependencies": {
+    "pg": "^8.11.3"
+  },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

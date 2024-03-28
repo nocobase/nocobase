@@ -9,9 +9,14 @@ export const FieldType = observer(
     const record = useRecord();
     const item = record;
     return !item?.possibleTypes ? (
-      <Tag>{value}</Tag>
+      <Tag aria-label={`field-type-${value}`} role="button">
+        {value}
+      </Tag>
     ) : (
       <Select
+        aria-label={`field-type-${value}`}
+        //@ts-ignore
+        role="button"
         defaultValue={value}
         popupMatchSelectWidth={false}
         style={{ width: '100%' }}

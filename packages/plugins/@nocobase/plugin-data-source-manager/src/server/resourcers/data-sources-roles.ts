@@ -26,6 +26,25 @@ export default {
         });
       }
 
+      if (params.values.resources) {
+        await ctx.db.getRepository('dataSourcesRolesResources').destroy({
+          filter: {
+            roleName: name,
+            dataSourceKey,
+          },
+        });
+
+        for (const resource of params.values.resources) {
+          await ctx.db.getRepository('dataSourcesRolesResources').create({
+            values: {
+              ...resource,
+              roleName: name,
+              dataSourceKey,
+            },
+          });
+        }
+      }
+
       ctx.body = connectionRoleRecord.toJSON();
 
       await next();
