@@ -13,7 +13,7 @@ import {
   beforeDestroyForeignKey,
   beforeInitOptions,
 } from './hooks';
-import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
+import { beforeCreateForValidateField, beforeUpdateForValidateField } from './hooks/beforeCreateForValidateField';
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
@@ -121,20 +121,14 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
-    this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
-      if (context) {
-        await model.migrate({
-          isNew: true,
-          transaction,
-        });
-      }
-    });
-
     // after migrate
     this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
 
+    this.app.db.on('fields.beforeUpdate', beforeUpdateForValidateField(this.app.db));
+
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
       const newValue = options.values;
+
       if (
         model.get('reverseKey') &&
         lodash.get(newValue, 'reverseField') &&
@@ -147,6 +141,7 @@ export class CollectionManagerPlugin extends Plugin {
           throw new Error('cant update field without a reverseField key');
         }
       }
+
       // todo: 目前只支持一对多
       if (model.get('sortable') && model.get('type') === 'hasMany') {
         model.set('sortBy', model.get('foreignKey') + 'Sort');
@@ -188,6 +183,15 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, { context, transaction }) => {
       if (context) {
         await model.load({ transaction });
+
+        const collection = this.app.db.getCollection(model.get('collectionName'));
+        await collection.sync({
+          transaction,
+          force: false,
+          alter: {
+            drop: false,
+          },
+        });
       }
     });
 
