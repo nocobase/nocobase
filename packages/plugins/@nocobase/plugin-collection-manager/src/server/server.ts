@@ -119,8 +119,6 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
-    this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
-
     this.app.db.on('fields.beforeUpdate', beforeUpdateForValidateField(this.app.db));
 
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
@@ -178,6 +176,7 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
+    const afterCreateForReverseFieldHook = afterCreateForReverseField(this.app.db);
 
     this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, options) => {
       const { context, transaction } = options;
@@ -196,6 +195,7 @@ export class CollectionManagerPlugin extends Plugin {
         await collection.sync(syncOptions);
 
         await afterCreateForForeignKeyFieldHook(model, options);
+        await afterCreateForReverseFieldHook(model, options);
       }
     });
 
