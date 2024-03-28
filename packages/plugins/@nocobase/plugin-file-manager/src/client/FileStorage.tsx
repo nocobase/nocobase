@@ -96,6 +96,15 @@ export const EditStorage = () => {
           onClick={() => {
             setVisible(true);
             const storageType = plugin.storageTypes.get(record.type);
+            if (storageType.properties['default']) {
+              storageType.properties['default']['x-reactions'] = (field) => {
+                if (field.initialValue) {
+                  field.disabled = true;
+                } else {
+                  field.disabled = false;
+                }
+              };
+            }
             setSchema({
               type: 'object',
               properties: {
