@@ -12,7 +12,7 @@ import {
   useDesignable,
 } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
-import React, { memo, useContext } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../configure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
@@ -22,8 +22,6 @@ import { ChartRendererContext } from './ChartRendererProvider';
 import { useChart } from '../chart/group';
 import { ChartDataContext } from '../block/ChartDataProvider';
 const { Paragraph, Text } = Typography;
-import lodash from 'lodash';
-import { Line } from '@ant-design/plots';
 
 export const ChartRenderer: React.FC & {
   Designer: React.FC;
@@ -36,7 +34,8 @@ export const ChartRenderer: React.FC & {
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const api = useAPIClient();
-
+  const chartRef = useRef(null);
+  const [height, setHeight] = React.useState<number>(0);
   const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
@@ -55,6 +54,20 @@ export const ChartRenderer: React.FC & {
   });
   const C = chart?.Component;
 
+  useEffect(() => {
+    const el = chartRef.current;
+    if (!el || service.loading === true) {
+      return;
+    }
+    const observer = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        setHeight(entry.contentRect.height);
+      });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [service.loading]);
+
   if (!chart) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
   }
@@ -70,7 +83,9 @@ export const ChartRenderer: React.FC & {
         }}
         FallbackComponent={ErrorFallback}
       >
-        <C {...chartProps} />
+        <div ref={chartRef} style={height ? { height: `${height}px` } : {}}>
+          <C {...chartProps} />
+        </div>
       </ErrorBoundary>
     </Spin>
   );
