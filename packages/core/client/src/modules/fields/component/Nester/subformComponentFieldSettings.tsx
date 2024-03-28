@@ -9,7 +9,7 @@ import {
   useIsFieldReadPretty,
   useIsFormReadPretty,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useCollectionField } from '../utils';
+import { useCollectionField } from '../../../../data-source';
 import { useFormBlockType } from '../../../../block-provider';
 
 const allowMultiple: any = {

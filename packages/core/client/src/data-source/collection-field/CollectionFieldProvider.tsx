@@ -22,7 +22,7 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
   const collectionManager = useCollectionManager();
 
   const value = useMemo(() => {
-    if (!collection || allowNull) return null;
+    if (!collection) return null;
     const field = fieldSchema?.['x-component-props']?.['field'];
     return (
       collectionManager.getCollectionField(fieldSchema?.['x-collection-field']) ||
@@ -31,7 +31,7 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
     );
   }, [collection, fieldSchema, name, collectionManager]);
 
-  if (!collection || allowNull) {
+  if (!value && allowNull) {
     return <>{children}</>;
   }
 

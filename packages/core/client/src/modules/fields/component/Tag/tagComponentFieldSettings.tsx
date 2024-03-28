@@ -8,7 +8,7 @@ import { isSubMode } from '../../../../schema-component/antd/association-field/u
 import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useCollectionField } from '../utils';
+import { useCollectionField } from '../../../../data-source';
 
 const enableLink = {
   name: 'enableLink',
@@ -140,9 +140,12 @@ export const tagComponentFieldSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
+        const schema = useFieldSchema();
+        const targetCollectionField = useCollectionField();
+        const { fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const collectionField = tableColumnField || targetCollectionField;
         const { dn } = useDesignable();
-        const collectionField = useCollectionField();
         const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
         return {
           title: t('Tag color field'),
