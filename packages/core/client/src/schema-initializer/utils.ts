@@ -893,6 +893,12 @@ export const useCollectionDataSourceItems = ({
   return res;
 };
 
+/**
+ * @deprecated
+ * 已弃用，请使用 createDetailsUISchema 和 createDetailsWithPaginationUISchema 替代
+ * @param options
+ * @returns
+ */
 export const createDetailsBlockSchema = (options: {
   collection: string;
   dataSource: string;
@@ -943,10 +949,8 @@ export const createDetailsBlockSchema = (options: {
       [uid()]: {
         type: 'void',
         'x-component': 'Details',
+        'x-use-component-props': 'useDetailsBlockProps',
         'x-read-pretty': true,
-        'x-component-props': {
-          useProps: '{{ useDetailsBlockProps }}',
-        },
         properties: {
           [uid()]: {
             type: 'void',
