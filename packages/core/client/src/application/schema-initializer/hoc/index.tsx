@@ -58,6 +58,17 @@ export function withInitializer<T>(C: ComponentType<T>) {
         [componentProps, props, style],
       );
 
+      const overlayClassName = useMemo(() => {
+        return css`
+          .ant-popover-inner {
+            padding: ${`${token.paddingXXS}px 0`};
+            .ant-menu-submenu-title {
+              margin-block: 0;
+            }
+          }
+        `;
+      }, [token.paddingXXS]);
+
       // designable 为 false 时，不渲染
       if (!designable && propsDesignable !== true) {
         return null;
@@ -79,14 +90,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
               placement={'bottomLeft'}
               {...popoverProps}
               arrow={false}
-              overlayClassName={css`
-                .ant-popover-inner {
-                  padding: ${`${token.paddingXXS}px 0`};
-                  .ant-menu-submenu-title {
-                    margin-block: 0;
-                  }
-                }
-              `}
+              overlayClassName={overlayClassName}
               open={visible}
               onOpenChange={setVisible}
               content={wrapSSR(

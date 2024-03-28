@@ -7,6 +7,11 @@ import { cx, css } from '@emotion/css';
 
 export type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number };
 
+const jsonCss = css`
+  font-size: 80%;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+`;
+
 export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
   ({ value, onChange, space = 2, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
     const field = useField<Field>();
@@ -25,13 +30,7 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
     return (
       <Input.TextArea
         {...props}
-        className={cx(
-          css`
-            font-size: 80%;
-            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-          `,
-          props.className,
-        )}
+        className={cx(jsonCss, props.className)}
         ref={ref}
         value={text}
         onChange={(ev) => {

@@ -1,4 +1,4 @@
-import { Action, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import { Action, Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { Kanban } from './Kanban';
 import { KanbanCard } from './Kanban.Card';
@@ -20,14 +20,12 @@ const KanbanV2 = Kanban;
 
 const KanbanPluginProvider = React.memo((props) => {
   return (
-    <CurrentAppInfoProvider>
-      <SchemaComponentOptions
-        components={{ Kanban, KanbanBlockProvider, KanbanV2, KanbanBlockInitializer }}
-        scope={{ useKanbanBlockProps }}
-      >
-        {props.children}
-      </SchemaComponentOptions>
-    </CurrentAppInfoProvider>
+    <SchemaComponentOptions
+      components={{ Kanban, KanbanBlockProvider, KanbanV2, KanbanBlockInitializer }}
+      scope={{ useKanbanBlockProps }}
+    >
+      {props.children}
+    </SchemaComponentOptions>
   );
 });
 KanbanPluginProvider.displayName = 'KanbanPluginProvider';

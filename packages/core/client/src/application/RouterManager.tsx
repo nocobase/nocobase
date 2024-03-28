@@ -121,9 +121,9 @@ export class RouterManager {
     };
 
     const ReactRouter = Routers[type];
+    const routes = this.getRoutesTree();
 
     const RenderRoutes = () => {
-      const routes = this.getRoutesTree();
       const element = useRoutes(routes);
       return element;
     };

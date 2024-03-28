@@ -46,4 +46,6 @@ export const Input: ComposedInput = Object.assign(
   },
 );
 
+Input.displayName = 'Input';
+
 export default Input;

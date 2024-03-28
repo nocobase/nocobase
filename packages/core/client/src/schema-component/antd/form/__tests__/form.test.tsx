@@ -60,9 +60,10 @@ describe('Form', () => {
   it('Form & Drawer', async () => {
     render(<App1 />);
 
-    const openBtn = screen.getByText('Open');
-    await userEvent.click(openBtn);
-    expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText('Open'));
+      expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+    });
   });
 
   it('initialValue', async () => {
@@ -83,12 +84,13 @@ describe('Form', () => {
   it('initialValue of decorator', async () => {
     render(<App4 />);
 
-    const openBtn = screen.getByText('Open');
-    await userEvent.click(openBtn);
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText('Open'));
+      expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+    });
 
     const input = document.querySelector('.ant-input') as HTMLInputElement;
 
-    expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue('aaa');
     expect(screen.getByText(/\{ "field1": "aaa" \}/i)).toBeInTheDocument();

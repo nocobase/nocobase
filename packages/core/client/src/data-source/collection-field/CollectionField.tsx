@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
@@ -26,14 +26,17 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
-  const setFieldProps = (key, value) => {
-    field[key] = typeof field[key] === 'undefined' ? value : field[key];
-  };
-  const setRequired = () => {
+  const setFieldProps = useCallback(
+    (key, value) => {
+      field[key] = typeof field[key] === 'undefined' ? value : field[key];
+    },
+    [field],
+  );
+  const setRequired = useCallback(() => {
     if (typeof fieldSchema['required'] === 'undefined') {
       field.required = !!uiSchema['required'];
     }
-  };
+  }, [fieldSchema, uiSchema]);
   const ctx = useFormBlockContext();
 
   useEffect(() => {
@@ -71,7 +74,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
     field.component = [Component, componentProps];
-  }, [JSON.stringify(uiSchema)]);
+  }, [uiSchema]);
   if (!uiSchema) {
     return null;
   }

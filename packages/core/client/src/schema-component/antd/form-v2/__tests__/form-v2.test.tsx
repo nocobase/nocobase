@@ -17,9 +17,9 @@ describe('FormV2', () => {
     });
 
     await userEvent.type(input, '李四');
-    await userEvent.click(submit);
 
-    await waitFor(() => {
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText('Submit'));
       // notification 的内容
       expect(screen.getByText(/\{"nickname":"李四"\}/i)).toBeInTheDocument();
     });

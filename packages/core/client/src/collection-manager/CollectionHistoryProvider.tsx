@@ -34,21 +34,16 @@ export const CollectionHistoryProvider: React.FC = (props) => {
 
   // console.log('location', location);
 
-  const service = useRequest<{
-    data: any;
-  }>(options, {
-    manual: true,
-  });
-
   const isAdminPage = location.pathname.startsWith('/admin');
   const token = api.auth.getToken() || '';
   const { render } = useAppSpin();
 
-  useEffect(() => {
-    if (isAdminPage && token) {
-      service.run();
-    }
-  }, [isAdminPage, token]);
+  const service = useRequest<{
+    data: any;
+  }>(options, {
+    refreshDeps: [isAdminPage, token],
+    ready: !!(isAdminPage && token),
+  });
 
   // 刷新 collecionHistory
   const refreshCH = async () => {

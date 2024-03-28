@@ -1,25 +1,31 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
+import { useCollection, useCollectionManager } from '../../../data-source/collection';
+import { useSchemaComponentContext } from '../../hooks';
 
 export const AssociationFieldProvider = observer(
   (props) => {
     const field = useField<Field>();
-    const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
+    const collection = useCollection();
+    const dm = useCollectionManager();
     const fieldSchema = useFieldSchema();
+
+    // 这里有点奇怪，在 Table 切换显示的组件时，这个组件并不会触发重新渲染，所以增加这个 Hooks 让其重新渲染
+    useSchemaComponentContext();
+
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
 
     const collectionField = useMemo(
-      () => getCollectionJoinField(fieldSchema['x-collection-field']),
+      () => collection.getField(fieldSchema['x-collection-field']),
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field'], fieldSchema.name],
     );
     const isFileCollection = useMemo(
-      () => getCollection(collectionField?.target)?.template === 'file',
+      () => dm.getCollection(collectionField?.target)?.template === 'file',
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field']],
     );
@@ -31,9 +37,13 @@ export const AssociationFieldProvider = observer(
 
     const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
 
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!field.readPretty);
 
     useEffect(() => {
+      if (field.readPretty) {
+        return;
+      }
+
       setLoading(true);
       if (!collectionField) {
         setLoading(false);

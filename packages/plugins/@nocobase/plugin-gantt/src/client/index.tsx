@@ -1,4 +1,4 @@
-import { ActionBar, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import { ActionBar, Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { GanttDesigner } from './Gantt.Designer';
 import { ganttSettings, oldGanttSettings } from './Gantt.Settings';
@@ -17,14 +17,12 @@ export { Gantt };
 
 const GanttProvider = React.memo((props) => {
   return (
-    <CurrentAppInfoProvider>
-      <SchemaComponentOptions
-        components={{ Gantt, GanttBlockInitializer, GanttBlockProvider }}
-        scope={{ useGanttBlockProps }}
-      >
-        {props.children}
-      </SchemaComponentOptions>
-    </CurrentAppInfoProvider>
+    <SchemaComponentOptions
+      components={{ Gantt, GanttBlockInitializer, GanttBlockProvider }}
+      scope={{ useGanttBlockProps }}
+    >
+      {props.children}
+    </SchemaComponentOptions>
   );
 });
 

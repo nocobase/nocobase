@@ -4,7 +4,7 @@ import { isValid } from '@formily/shared';
 import { Checkbox as AntdCheckbox, Tag } from 'antd';
 import type { CheckboxGroupProps, CheckboxProps } from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
@@ -36,8 +36,10 @@ export const Checkbox: ComposedCheckbox = connect(
   }),
   mapReadPretty(ReadPretty),
 );
+Checkbox.displayName = 'Checkbox';
 
 Checkbox.ReadPretty = ReadPretty;
+Checkbox.ReadPretty.displayName = 'Checkbox.ReadPretty';
 
 Checkbox.__ANT_CHECKBOX = true;
 
@@ -52,20 +54,23 @@ Checkbox.Group = connect(
     }
     const field = useField<any>();
     const collectionField = useCollectionField();
-    const dataSource = field.dataSource || collectionField?.uiSchema.enum || [];
-    const value = uniq(field.value ? field.value : []);
+    const tags = useMemo(() => {
+      const dataSource = field.dataSource || collectionField?.uiSchema.enum || [];
+      const value = uniq(field.value ? field.value : []);
+      return dataSource.filter((option) => value.includes(option.value));
+    }, [field.value]);
+
     return (
       <EllipsisWithTooltip ellipsis={props.ellipsis}>
-        {dataSource
-          .filter((option) => value.includes(option.value))
-          .map((option, key) => (
-            <Tag key={key} color={option.color} icon={option.icon}>
-              {option.label}
-            </Tag>
-          ))}
+        {tags.map((option, key) => (
+          <Tag key={key} color={option.color} icon={option.icon}>
+            {option.label}
+          </Tag>
+        ))}
       </EllipsisWithTooltip>
     );
   }),
 );
+Checkbox.Group.displayName = 'Checkbox.Group';
 
 export default Checkbox;
