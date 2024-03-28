@@ -355,11 +355,11 @@ export const Grid: any = observer(
             ) : null}
             {rows.map((schema, index) => {
               return (
-                <React.Fragment key={schema.name || schema['x-uid']}>
+                <React.Fragment key={index}>
                   {distributedValue ? (
-                    <SchemaComponent schema={schema} distributed />
+                    <SchemaComponent name={schema.name} schema={schema} distributed />
                   ) : (
-                    <MemorizedRecursionField name={schema.name || schema['x-uid']} schema={schema} />
+                    <MemorizedRecursionField name={schema.name} schema={schema} />
                   )}
                   {showDivider ? (
                     <RowDivider
@@ -434,11 +434,16 @@ Grid.Row = observer(
           )}
           {cols.map((schema, index) => {
             return (
-              <React.Fragment key={schema.name || schema['x-uid']}>
+              <React.Fragment key={index}>
                 <MemorizedRecursionField
-                  name={schema.name || schema['x-uid']}
+                  name={schema.name}
                   schema={schema}
-                  mapProperties={mapProperties}
+                  mapProperties={(schema) => {
+                    if (type === 'update') {
+                      schema.default = null;
+                    }
+                    return schema;
+                  }}
                 />
                 {showDivider && (
                   <ColDivider
