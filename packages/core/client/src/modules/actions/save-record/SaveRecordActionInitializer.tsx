@@ -7,6 +7,7 @@ export const SaveRecordActionInitializer = () => {
     title: '{{ t("Save record") }}',
     'x-action': 'customize:save',
     'x-component': 'Action',
+    'x-use-component-props': 'useCreateActionProps',
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:saveRecord',
     'x-designer-props': {
@@ -22,9 +23,6 @@ export const SaveRecordActionInitializer = () => {
         successMessage: '{{t("Submitted successfully")}}',
       },
       triggerWorkflows: [],
-    },
-    'x-component-props': {
-      useProps: '{{ useCreateActionProps }}',
     },
   };
 

@@ -50,11 +50,11 @@ export class SubTableFieldInterface extends CollectionFieldInterface {
             type: 'array',
             'x-initializer': 'table:configureColumns',
             'x-component': 'TableV2',
+            'x-use-component-props': 'useTableFieldProps',
             'x-component-props': {
               rowSelection: {
                 type: 'checkbox',
               },
-              useProps: '{{ useTableFieldProps }}',
             },
           },
         },

@@ -88,11 +88,11 @@ const ChartFilterActionInitializer = (props) => {
     title: '{{ t("Filter") }}',
     'x-action': 'submit',
     'x-component': 'Action',
+    'x-use-component-props': 'useChartFilterActionProps',
     'x-designer': 'ChartFilterActionDesigner',
     'x-component-props': {
       htmlType: 'submit',
       type: 'primary',
-      useProps: '{{ useChartFilterActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

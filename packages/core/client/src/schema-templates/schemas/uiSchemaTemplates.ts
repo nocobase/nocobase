@@ -86,11 +86,11 @@ export const uiSchemaTemplatesSchema: ISchema = {
         [uid()]: {
           type: 'array',
           'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowSelection: {
               type: 'checkbox',
             },
-            useProps: '{{ useTableBlockProps }}',
           },
           properties: {
             actions: {
@@ -146,9 +146,7 @@ export const uiSchemaTemplatesSchema: ISchema = {
                                 [uid()]: {
                                   type: 'void',
                                   'x-component': 'FormV2',
-                                  'x-component-props': {
-                                    useProps: '{{ useFormBlockProps }}',
-                                  },
+                                  'x-use-component-props': 'useFormBlockProps',
                                   properties: {
                                     name: {
                                       type: 'string',

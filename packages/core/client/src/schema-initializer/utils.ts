@@ -893,6 +893,12 @@ export const useCollectionDataSourceItems = ({
   return res;
 };
 
+/**
+ * @deprecated
+ * 已弃用，请使用 createDetailsUISchema 和 createDetailsWithPaginationUISchema 替代
+ * @param options
+ * @returns
+ */
 export const createDetailsBlockSchema = (options: {
   collection: string;
   dataSource: string;
@@ -943,10 +949,8 @@ export const createDetailsBlockSchema = (options: {
       [uid()]: {
         type: 'void',
         'x-component': 'Details',
+        'x-use-component-props': 'useDetailsBlockProps',
         'x-read-pretty': true,
-        'x-component-props': {
-          useProps: '{{ useDetailsBlockProps }}',
-        },
         properties: {
           [uid()]: {
             type: 'void',
@@ -1045,9 +1049,7 @@ export const createFormBlockSchema = (options: {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
-        },
+        'x-use-component-props': 'useFormBlockProps',
         properties: {
           grid: template || {
             type: 'void',
@@ -1114,10 +1116,8 @@ export const createReadPrettyFormBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
+        'x-use-component-props': 'useFormBlockProps',
         'x-read-pretty': true,
-        'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
-        },
         properties: {
           [uid()]: {
             type: 'void',
@@ -1202,12 +1202,12 @@ export const createTableBlockSchema = (options) => {
         type: 'array',
         'x-initializer': tableColumnInitializers ?? 'table:configureColumns',
         'x-component': 'TableV2',
+        'x-use-component-props': 'useTableBlockProps',
         'x-component-props': {
           rowKey: 'id',
           rowSelection: {
             type: 'checkbox',
           },
-          useProps: '{{ useTableBlockProps }}',
         },
         properties: {
           actions: {

@@ -7,9 +7,9 @@ export const PrintActionInitializer = (props) => {
     title: '{{ t("Print") }}',
     'x-action': 'print',
     'x-component': 'Action',
+    'x-use-component-props': 'useDetailPrintActionProps',
     'x-component-props': {
       icon: 'PrinterOutlined',
-      useProps: '{{ useDetailPrintActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

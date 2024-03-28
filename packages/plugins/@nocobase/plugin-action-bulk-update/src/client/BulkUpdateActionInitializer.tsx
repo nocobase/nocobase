@@ -7,6 +7,7 @@ export const BulkUpdateActionInitializer = () => {
     type: 'void',
     title: '{{ t("Bulk update") }}',
     'x-component': 'Action',
+    'x-use-component-props': 'useCustomizeBulkUpdateActionProps',
     'x-align': 'right',
     'x-acl-action': 'update',
     'x-decorator': 'ACLActionProvider',
@@ -27,7 +28,6 @@ export const BulkUpdateActionInitializer = () => {
     },
     'x-component-props': {
       icon: 'EditOutlined',
-      useProps: '{{ useCustomizeBulkUpdateActionProps }}',
     },
   };
   return <BlockInitializer {...itemConfig} schema={schema} item={itemConfig} />;

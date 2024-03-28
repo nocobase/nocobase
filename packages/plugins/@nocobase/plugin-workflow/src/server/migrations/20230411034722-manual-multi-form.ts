@@ -108,9 +108,7 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
     [formId]: {
       type: 'void',
       'x-component': 'FormV2',
-      'x-component-props': {
-        useProps: '{{ useFormBlockProps }}',
-      },
+      'x-use-component-props': 'useFormBlockProps',
       properties: {
         grid: Object.assign(formBlock.properties.grid, {
           'x-initializer': 'workflowManual:customForm:configureFields',
