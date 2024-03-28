@@ -13,7 +13,10 @@ type Props = {
   children?: React.ReactNode;
 };
 
-// TODO: 初步适配
+/**
+ * TODO: 初步适配
+ * @internal
+ */
 export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const { component } = props;
   const compile = useCompile();
