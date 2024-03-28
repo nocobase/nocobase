@@ -186,12 +186,12 @@ export const getScopesSchema = (dataSourceKey) => {
                   value: {
                     type: 'array',
                     'x-component': 'TableV2.Selector',
+                    'x-use-component-props': 'useTableSelectorProps',
                     'x-component-props': {
                       rowKey: 'id',
                       rowSelection: {
                         type: 'checkbox',
                       },
-                      useProps: '{{ useTableSelectorProps }}',
                     },
                     properties: {
                       column1: {
