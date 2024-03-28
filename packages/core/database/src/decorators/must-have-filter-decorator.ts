@@ -1,3 +1,5 @@
+import { isValidFilter } from '@nocobase/utils';
+
 const mustHaveFilter = () => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
   const oldValue = descriptor.value;
 
@@ -8,7 +10,7 @@ const mustHaveFilter = () => (target: any, propertyKey: string, descriptor: Prop
       return oldValue.apply(this, args);
     }
 
-    if (!options?.filter && !options?.filterByTk && !options?.forceUpdate) {
+    if (!isValidFilter(options?.filter) && !options?.filterByTk && !options?.forceUpdate) {
       throw new Error(`must provide filter or filterByTk for ${propertyKey} call, or set forceUpdate to true`);
     }
 

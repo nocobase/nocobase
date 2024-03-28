@@ -7,6 +7,8 @@ export function useLang(key: string, options = {}) {
   return t(key);
 }
 
-export function usePluginTranslation(options) {
+export const lang = useLang;
+
+export function usePluginTranslation(options?) {
   return useTranslation(NAMESPACE, options);
 }

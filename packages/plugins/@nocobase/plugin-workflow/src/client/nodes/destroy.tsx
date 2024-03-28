@@ -1,8 +1,8 @@
 import { useCollectionDataSource } from '@nocobase/client';
+import { isValidFilter } from '@nocobase/utils/client';
 
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { collection, filter } from '../schemas/collection';
-import { isValidFilter } from '../utils';
 import { Instruction } from '.';
 import { NAMESPACE, lang } from '../locale';
 

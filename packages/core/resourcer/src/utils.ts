@@ -200,6 +200,7 @@ export function parseQuery(input: string): any {
     // 逗号分隔转换为数组
     // comma: true,
   });
+
   // filter 支持 json string
   if (typeof query.filter === 'string') {
     query.filter = JSON.parse(query.filter);

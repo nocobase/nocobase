@@ -15,6 +15,7 @@ import {
   useDesignable,
   useMenuSearch,
 } from '@nocobase/client';
+import { isValidFilter } from '@nocobase/utils/client';
 import { FilterDynamicComponent } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../../../locale';
@@ -155,5 +156,12 @@ export default {
       // useFormBlockProps
     },
     components: {},
+  },
+  validate({ filter }) {
+    if (!filter || !isValidFilter(filter)) {
+      return 'Please check one of your update record form, and add at least one filter condition in form settings.';
+    }
+
+    return null;
   },
 } as ManualFormType;

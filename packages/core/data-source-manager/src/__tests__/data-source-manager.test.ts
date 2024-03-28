@@ -61,4 +61,96 @@ describe('example', () => {
     expect(m.name).toBe('n1');
     await app.destroy();
   });
+
+  it('should validate filter params in update actions', async () => {
+    const app = await createMockServer({
+      acl: false,
+      resourcer: {
+        prefix: '/api/',
+      },
+      name: 'update-filter',
+    });
+
+    const database = mockDatabase({
+      tablePrefix: 'ds1_',
+    });
+
+    await database.clean({ drop: true });
+
+    const ds1 = new SequelizeDataSource({
+      name: 'ds1',
+      resourceManager: {},
+      collectionManager: {
+        database,
+      },
+    });
+
+    ds1.collectionManager.defineCollection({
+      name: 'test1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await ds1.collectionManager.sync();
+
+    ds1.acl.allow('test1', 'update', 'public');
+
+    await app.dataSourceManager.add(ds1);
+
+    const res = await app
+      .agent()
+      .post(`/api/test1:update?filter=${JSON.stringify({})}`)
+      .set('x-data-source', 'ds1')
+      .auth('abc', { type: 'bearer' })
+      .set('X-Authenticator', 'basic');
+
+    expect(res.status).toBe(500);
+
+    await app.destroy();
+  });
+
+  it('should validate filter params in destroy actions', async () => {
+    const app = await createMockServer({
+      acl: false,
+      resourcer: {
+        prefix: '/api/',
+      },
+      name: 'update-filter',
+    });
+
+    const database = mockDatabase({
+      tablePrefix: 'ds1_',
+    });
+
+    await database.clean({ drop: true });
+
+    const ds1 = new SequelizeDataSource({
+      name: 'ds1',
+      resourceManager: {},
+      collectionManager: {
+        database,
+      },
+    });
+
+    ds1.collectionManager.defineCollection({
+      name: 'test1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await ds1.collectionManager.sync();
+
+    ds1.acl.allow('test1', 'destroy', 'public');
+
+    await app.dataSourceManager.add(ds1);
+
+    const res = await app
+      .agent()
+      .post(`/api/test1:destroy?filter=${JSON.stringify({})}`)
+      .set('x-data-source', 'ds1')
+      .auth('abc', { type: 'bearer' })
+      .set('X-Authenticator', 'basic');
+
+    expect(res.status).toBe(500);
+
+    await app.destroy();
+  });
 });
