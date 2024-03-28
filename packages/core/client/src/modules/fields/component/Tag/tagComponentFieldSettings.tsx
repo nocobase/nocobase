@@ -140,9 +140,12 @@ export const tagComponentFieldSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
+        const schema = useFieldSchema();
+        const targetCollectionField = useCollectionField();
+        const { fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const collectionField = tableColumnField || targetCollectionField;
         const { dn } = useDesignable();
-        const collectionField = useCollectionField();
         const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
         return {
           title: t('Tag color field'),
