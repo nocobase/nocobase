@@ -185,13 +185,15 @@ export class CollectionManagerPlugin extends Plugin {
         await model.load({ transaction });
 
         const collection = this.app.db.getCollection(model.get('collectionName'));
-        await collection.sync({
+        const syncOptions = {
           transaction,
           force: false,
           alter: {
             drop: false,
           },
-        });
+        };
+
+        await collection.sync(syncOptions);
 
         await afterCreateForForeignKeyFieldHook(model, options);
       }
