@@ -19,14 +19,14 @@ export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap
     }
     return true;
   };
-  await buildEsm(cwd, userConfig, sourcemap, external, log);
-  await buildLib(cwd, userConfig, sourcemap, external, log);
+  await buildClientEsm(cwd, userConfig, sourcemap, external, log);
+  await buildClientLib(cwd, userConfig, sourcemap, external, log);
   await buildLocale(cwd, userConfig, log);
 }
 
 type External = (id: string) => boolean;
 
-export function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean, external: External, log: PkgLog) {
+function buildClientEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean, external: External, log: PkgLog) {
   log('build client esm');
   const entry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
   const outDir = path.resolve(cwd, 'es');
@@ -61,7 +61,7 @@ export function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean
   );
 }
 
-export async function buildLib(
+async function buildClientLib(
   cwd: string,
   userConfig: UserConfig,
   sourcemap: boolean,

@@ -2,11 +2,11 @@ import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 import configs from './configs';
 
 export class G2PlotChart extends Chart {
-  constructor({ name, title, component, config }: ChartProps) {
+  constructor({ name, title, Component, config }: ChartProps) {
     super({
       name,
       title,
-      component,
+      Component,
       config: ['xField', 'yField', 'seriesField', ...(config || [])],
     });
     this.addConfigs(configs);
@@ -85,7 +85,7 @@ export class G2PlotChart extends Chart {
   getReference() {
     return {
       title: this.title,
-      link: `https://g2plot.antv.antgroup.com/api/plots/${this.name}`,
+      link: `https://ant-design-charts-next.antgroup.com/examples#statistics-${this.name}`,
     };
   }
 }

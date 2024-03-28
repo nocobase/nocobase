@@ -166,11 +166,11 @@ export default {
           options: {
             type: 'object',
             properties: {
-              standaloneDeployment: {
-                type: 'boolean',
-                example: true,
-                description: '是否为独立部署的子应用',
-              },
+              // standaloneDeployment: {
+              //   type: 'boolean',
+              //   example: true,
+              //   description: '是否为独立部署的子应用',
+              // },
               autoStart: {
                 type: 'boolean',
                 example: true,

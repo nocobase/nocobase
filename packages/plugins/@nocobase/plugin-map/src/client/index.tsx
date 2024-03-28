@@ -6,6 +6,7 @@ import { mapBlockSettings } from './block/MapBlock.Settings';
 import { Configuration, Map } from './components';
 import { fields } from './fields';
 import { NAMESPACE, generateNTemplate } from './locale';
+import { useMapBlockProps } from './block/MapBlockProvider';
 const MapProvider = React.memo((props) => {
   return (
     <CurrentAppInfoProvider>
@@ -43,6 +44,10 @@ export class MapPlugin extends Plugin {
       icon: 'EnvironmentOutlined',
       Component: Configuration,
       aclSnippet: 'pm.map.configuration',
+    });
+
+    this.app.addScopes({
+      useMapBlockProps,
     });
   }
 }

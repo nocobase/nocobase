@@ -4,7 +4,8 @@ import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { useRecordCollectionDataSourceItems } from '../utils';
+import { createDetailsWithPaginationUISchema } from '../../modules/blocks/data-blocks/details-multi/createDetailsWithPaginationUISchema';
 
 export const RecordAssociationDetailsBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -25,13 +26,10 @@ export const RecordAssociationDetailsBlockInitializer = () => {
           insert(s);
         } else {
           insert(
-            createDetailsBlockSchema({
-              collection: field.target,
-              resource,
+            createDetailsWithPaginationUISchema({
               dataSource: collection.dataSource,
               association: resource,
               rowKey: collection.filterTargetKey || 'id',
-              settings: 'blockSettings:multiDataDetails',
             }),
           );
         }
@@ -51,12 +49,10 @@ export function useCreateAssociationDetailsBlock() {
       const collection = getCollection(field.target);
 
       insert(
-        createDetailsBlockSchema({
-          collection: field.target,
+        createDetailsWithPaginationUISchema({
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
           rowKey: collection.filterTargetKey || 'id',
-          settings: 'blockSettings:multiDataDetails',
         }),
       );
     },

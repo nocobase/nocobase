@@ -24,7 +24,7 @@ const MultiAppManager = () => {
   const items = [
     ...(data?.data || []).map((app) => {
       let link = instance.getRouteUrl(`/apps/${app.name}/admin/`);
-      if (app.options?.standaloneDeployment && app.cname) {
+      if (app.cname) {
         link = `//${app.cname}`;
       }
       return {

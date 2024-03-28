@@ -12,7 +12,7 @@ import {
   useDesignable,
 } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../configure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
@@ -34,11 +34,12 @@ export const ChartRenderer: React.FC & {
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const api = useAPIClient();
-
+  const chartRef = useRef(null);
+  const [height, setHeight] = React.useState<number>(0);
   const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
-  const Component = chart?.render({
+  const chartProps = chart?.getProps({
     data,
     general,
     advanced,
@@ -51,30 +52,43 @@ export const ChartRenderer: React.FC & {
       return props;
     }, {}),
   });
+  const C = chart?.Component;
 
-  const C = () =>
-    chart ? (
+  useEffect(() => {
+    const el = chartRef.current;
+    if (!el || service.loading === true) {
+      return;
+    }
+    const observer = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        setHeight(entry.contentRect.height);
+      });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [service.loading]);
+
+  if (!chart) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
+  }
+  if (!(data && data.length) && !service.loading) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
+  }
+
+  return (
+    <Spin spinning={service.loading}>
       <ErrorBoundary
         onError={(error) => {
           console.error(error);
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component />
+        <div ref={chartRef} style={height ? { height: `${height}px` } : {}}>
+          <C {...chartProps} />
+        </div>
       </ErrorBoundary>
-    ) : (
-      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />
-    );
-
-  if (service.loading) {
-    return <Spin />;
-  }
-
-  if (!(data && data.length)) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
-  }
-
-  return <C />;
+    </Spin>
+  );
 };
 
 ChartRenderer.Designer = function Designer() {
