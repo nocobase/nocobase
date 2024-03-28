@@ -19,6 +19,7 @@ import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitl
 import { useProps } from '../../hooks/useProps';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 
 export interface FormProps {
   [key: string]: any;
@@ -85,11 +86,13 @@ const WithForm = (props: WithFormProps) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
+  const { templateFinshed } = useTemplateBlockContext();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
-  const linkageRules: any[] =
-    (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
-
+  const linkageRules: any[] = useMemo(
+    () => (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [],
+    [templateFinshed],
+  );
   useEffect(() => {
     const id = uid();
 
