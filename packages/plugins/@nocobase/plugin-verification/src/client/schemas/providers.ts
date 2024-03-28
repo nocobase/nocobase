@@ -286,6 +286,13 @@ export default {
                         default: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
+                          'x-reactions': (field) => {
+                            if (field.initialValue) {
+                              field.disabled = true;
+                            } else {
+                              field.disabled = false;
+                            }
+                          },
                         },
                         footer: {
                           type: 'void',
