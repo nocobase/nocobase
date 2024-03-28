@@ -3,13 +3,13 @@ import React, { useRef, useState } from 'react';
 
 export interface SelectWithTitleProps {
   title?: any;
-  defaultValue?: any;
+  value?: any;
   options?: any;
   fieldNames?: any;
   onChange?: (...args: any[]) => void;
 }
 
-export function SelectWithTitle({ title, defaultValue, onChange, options, fieldNames }: SelectWithTitleProps) {
+export function SelectWithTitle({ title, value, onChange, options, fieldNames }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
   return (
@@ -30,7 +30,7 @@ export function SelectWithTitle({ title, defaultValue, onChange, options, fieldN
         open={open}
         popupMatchSelectWidth={false}
         bordered={false}
-        defaultValue={defaultValue}
+        value={value}
         onChange={onChange}
         fieldNames={fieldNames}
         options={options}

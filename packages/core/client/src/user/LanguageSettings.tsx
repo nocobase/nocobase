@@ -24,7 +24,7 @@ export const useLanguageSettings = () => {
                 value: lang,
               };
             })}
-          defaultValue={i18n.language}
+          value={i18n.language}
           onChange={async (lang) => {
             await api.resource('users').updateProfile({
               values: {
