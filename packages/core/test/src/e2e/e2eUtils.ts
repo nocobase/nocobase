@@ -53,7 +53,6 @@ export interface CollectionSetting {
    * @default false
    */
   inherit?: boolean;
-  inherits?: string[];
   category?: any[];
   hidden?: boolean;
   description?: string;
@@ -120,6 +119,23 @@ interface AclRoleSetting {
   key?: string;
   //菜单权限配置
   menuUiSchemas?: string[];
+  dataSourceKey?: string;
+}
+
+interface DatabaseSetting {
+  database: string;
+  host: string;
+  port: string;
+  schema?: string;
+  username?: string;
+  password?: string;
+}
+interface DataSourceSetting {
+  key: string;
+  displayName: string;
+  type: string;
+  options: DatabaseSetting;
+  enabled?: boolean;
 }
 
 export interface PageConfig {
@@ -229,6 +245,15 @@ interface ExtendUtils {
    * 更新角色权限配置
    */
   updateRole: <T = any>(roleSetting: AclRoleSetting) => Promise<T>;
+  /**
+   * 创建一个外部数据源（pg）
+   */
+  mockExternalDataSource: <T = any>(DataSourceSetting: DataSourceSetting) => Promise<T>;
+  /**
+   * 删除外部数据源
+   * @param key 外部数据源key
+   */
+  destoryExternalDataSource: <T = any>(key: string) => Promise<T>;
 }
 
 const PORT = process.env.APP_PORT || 20000;
@@ -437,6 +462,20 @@ const _test = base.extend<ExtendUtils>({
 
     await use(updateRole);
   },
+  mockExternalDataSource: async ({ browser }, use) => {
+    const mockExternalDataSource = async (DataSourceSetting: DataSourceSetting) => {
+      return createExternalDataSource(DataSourceSetting);
+    };
+
+    await use(mockExternalDataSource);
+  },
+  destoryExternalDataSource: async ({ browser }, use) => {
+    const destoryDataSource = async (key: string) => {
+      return destoryExternalDataSource(key);
+    };
+
+    await use(destoryDataSource);
+  },
 });
 
 export const test = Object.assign(_test, {
@@ -581,10 +620,6 @@ const deleteCollections = async (collectionNames: string[]) => {
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
     headers,
-    params: {
-      // 自动删除依赖于集合的对象（如视图），进而删除依赖于这些对象的所有对象
-      cascade: true,
-    },
   });
 
   if (!result.ok()) {
@@ -696,8 +731,12 @@ const updateRole = async (roleSetting: AclRoleSetting) => {
   const state = await api.storageState();
   const headers = getHeaders(state);
   const name = roleSetting.name;
+  const dataSourceKey = roleSetting.dataSourceKey;
 
-  const result = await api.post(`/api/roles:update?filterByTk=${name}`, {
+  const url = !dataSourceKey
+    ? `/api/roles:update?filterByTk=${name}`
+    : `/api/dataSources/${dataSourceKey}/roles:update?filterByTk=${name}`;
+  const result = await api.post(url, {
     headers,
     data: { ...roleSetting },
   });
@@ -724,7 +763,48 @@ const setDefaultRole = async (name) => {
     data: { roleName: name },
   });
 };
+/**
+ * 创建外部数据源
+ * @paramn
+ */
+const createExternalDataSource = async (dataSourceSetting: DataSourceSetting) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.post(`/api/dataSources:create`, {
+    headers,
+    data: { ...dataSourceSetting },
+  });
 
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const dataSourceData = (await result.json()).data;
+  return dataSourceData;
+};
+
+/**
+ * 删除外部数据源
+ * @paramn
+ */
+const destoryExternalDataSource = async (key) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.post(`/api/dataSources:destroy?filterByTk=${key}`, {
+    headers,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const dataSourceData = (await result.json()).data;
+  return dataSourceData;
+};
 /**
  * 根据 collection 的配置生成 Faker 数据
  * @param collectionSetting
