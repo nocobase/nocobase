@@ -151,7 +151,7 @@ const WithForm = (props: WithFormProps) => {
                     return result;
                   },
                   getSubscriber(action, field, rule, variables, localVariables),
-                  { fireImmediately: true },
+                  { fireImmediately: false },
                 ),
               );
             });
