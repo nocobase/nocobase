@@ -121,9 +121,6 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
-    // after migrate
-    this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
-
     this.app.db.on('fields.beforeUpdate', beforeUpdateForValidateField(this.app.db));
 
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
@@ -180,7 +177,10 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, { context, transaction }) => {
+    const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
+
+    this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, options) => {
+      const { context, transaction } = options;
       if (context) {
         await model.load({ transaction });
 
@@ -192,6 +192,8 @@ export class CollectionManagerPlugin extends Plugin {
             drop: false,
           },
         });
+
+        await afterCreateForForeignKeyFieldHook(model, options);
       }
     });
 
