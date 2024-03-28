@@ -19,6 +19,7 @@ import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitl
 import { useProps } from '../../hooks/useProps';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 
 export interface FormProps {
   [key: string]: any;
@@ -87,6 +88,7 @@ const WithForm = (props: WithFormProps) => {
   const { setFormValueChanged } = useActionContext();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
+  const { templateFinshed } = useTemplateBlockContext();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
@@ -166,7 +168,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [linkageRules]);
+  }, [linkageRules, templateFinshed]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
