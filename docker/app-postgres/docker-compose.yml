@@ -28,5 +28,7 @@ services:
       POSTGRES_USER: nocobase
       POSTGRES_DB: nocobase
       POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
     networks:
       - nocobase
