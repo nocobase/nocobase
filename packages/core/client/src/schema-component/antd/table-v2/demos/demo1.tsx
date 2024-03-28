@@ -99,9 +99,7 @@ const formSchema: ISchema = {
     form: {
       type: 'void',
       'x-component': 'FormV2',
-      'x-component-props': {
-        useProps: '{{ useFormBlockProps }}',
-      },
+      'x-use-component-props': 'useFormBlockProps',
       properties: {
         id: {
           type: 'string',

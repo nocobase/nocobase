@@ -66,10 +66,8 @@ export const AuditLogsViewActionInitializer = () => {
                                   bv710pbf9w6: {
                                     type: 'void',
                                     'x-component': 'FormV2',
+                                    'x-use-component-props': 'useFormBlockProps',
                                     'x-read-pretty': true,
-                                    'x-component-props': {
-                                      useProps: '{{ useFormBlockProps }}',
-                                    },
                                     properties: {
                                       grid: {
                                         type: 'void',

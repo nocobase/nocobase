@@ -1045,9 +1045,7 @@ export const createFormBlockSchema = (options: {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
-        },
+        'x-use-component-props': 'useFormBlockProps',
         properties: {
           grid: template || {
             type: 'void',
@@ -1114,10 +1112,8 @@ export const createReadPrettyFormBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
+        'x-use-component-props': 'useFormBlockProps',
         'x-read-pretty': true,
-        'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
-        },
         properties: {
           [uid()]: {
             type: 'void',
