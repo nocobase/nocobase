@@ -312,13 +312,13 @@ export const getScopesSchema = (dataSourceKey) => {
                                 'x-action': 'destroy',
                                 'x-decorator': 'ACLActionProvider',
                                 'x-component': 'Action.Link',
+                                'x-use-component-props': 'useDestroyActionProps',
                                 'x-component-props': {
                                   icon: 'DeleteOutlined',
                                   confirm: {
                                     title: "{{t('Delete record')}}",
                                     content: "{{t('Are you sure you want to delete it?')}}",
                                   },
-                                  useProps: '{{ useDestroyActionProps }}',
                                 },
                               },
                             },
