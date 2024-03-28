@@ -2,9 +2,9 @@ import { TableOutlined } from '@ant-design/icons';
 import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
-import { createDetailsBlockSchema } from '../../../../schema-initializer/utils';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
+import { createDetailsWithPaginationUISchema } from './createDetailsWithPaginationUISchema';
 
 export const DetailsBlockInitializer = ({
   filterCollections,
@@ -51,15 +51,14 @@ export const DetailsBlockInitializer = ({
 
         const { item } = options;
         const collection = getCollection(item.name, item.dataSource);
-        const schema = createDetailsBlockSchema({
-          collection: item.name,
+        const schema = createDetailsWithPaginationUISchema({
+          collectionName: item.name,
           dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
-          actionInitializers:
+          hideActionInitializer: !(
             (collection.template !== 'view' || collection?.writableView) &&
-            collection.template !== 'sql' &&
-            'detailsWithPaging:configureActions',
-          settings: 'blockSettings:multiDataDetails',
+            collection.template !== 'sql'
+          ),
         });
         insert(schema);
       }}

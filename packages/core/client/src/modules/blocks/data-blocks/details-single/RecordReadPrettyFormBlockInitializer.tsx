@@ -1,10 +1,11 @@
 import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { useBlockAssociationContext, useBlockRequestContext } from '../../../../block-provider';
+import { useBlockAssociationContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
-import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
+import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
+import { createDetailsUISchema } from './createDetailsUISchema';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -24,29 +25,27 @@ export const RecordReadPrettyFormBlockInitializer = () => {
 };
 
 export function useCreateSingleDetailsSchema() {
-  const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const association = useBlockAssociationContext();
-  const { block } = useBlockRequestContext();
-  const actionInitializers =
-    block !== 'TableField' ? itemConfig.actionInitializers || 'details:configureActions' : null;
 
   const templateWrap = useCallback(
     (templateSchema, options) => {
       const { item } = options;
       if (item.template.componentName === 'ReadPrettyFormItem') {
-        const blockSchema = createDetailsBlockSchema({
-          actionInitializers,
-          association,
-          collection: item.collectionName || item.name,
-          dataSource: item.dataSource,
-          action: 'get',
-          useSourceId: '{{ useSourceIdFromParentRecord }}',
-          useParams: '{{ useParamsFromRecord }}',
-          template: templateSchema,
-          settings: 'blockSettings:singleDataDetails',
-        });
+        const blockSchema = createDetailsUISchema(
+          association
+            ? {
+                association,
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+              }
+            : {
+                collectionName: item.collectionName || item.name,
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+              },
+        );
         if (item.mode === 'reference') {
           blockSchema['x-template-key'] = item.template.key;
         }
@@ -55,7 +54,7 @@ export function useCreateSingleDetailsSchema() {
         return templateSchema;
       }
     },
-    [actionInitializers, association],
+    [association],
   );
 
   const createSingleDetailsSchema = useCallback(
@@ -65,20 +64,21 @@ export function useCreateSingleDetailsSchema() {
         insert(templateWrap(template, { item }));
       } else {
         insert(
-          createDetailsBlockSchema({
-            actionInitializers,
-            association,
-            collection: item.collectionName || item.name,
-            dataSource: item.dataSource,
-            action: 'get',
-            useSourceId: '{{ useSourceIdFromParentRecord }}',
-            useParams: '{{ useParamsFromRecord }}',
-            settings: 'blockSettings:singleDataDetails',
-          }),
+          createDetailsUISchema(
+            association
+              ? {
+                  association,
+                  dataSource: item.dataSource,
+                }
+              : {
+                  collectionName: item.collectionName || item.name,
+                  dataSource: item.dataSource,
+                },
+          ),
         );
       }
     },
-    [actionInitializers, association, getTemplateSchemaByMode, insert, templateWrap],
+    [association, getTemplateSchemaByMode, insert, templateWrap],
   );
 
   return { createSingleDetailsSchema, templateWrap };

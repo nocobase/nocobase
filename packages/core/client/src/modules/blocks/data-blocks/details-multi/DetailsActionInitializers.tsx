@@ -53,6 +53,10 @@ export const detailsActionInitializers_deprecated = new CompatibleSchemaInitiali
   ],
 });
 
+/**
+ * @deprecated
+ * 已弃用，请使用 readPrettyFormActionInitializers 代替
+ */
 export const detailsActionInitializers = new CompatibleSchemaInitializer(
   {
     name: 'detailsWithPaging:configureActions',

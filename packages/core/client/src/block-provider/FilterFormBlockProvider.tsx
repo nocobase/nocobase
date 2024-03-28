@@ -2,8 +2,9 @@ import React from 'react';
 import { DatePickerProvider } from '../schema-component';
 import { DefaultValueProvider } from '../schema-settings';
 import { FormBlockProvider } from './FormBlockProvider';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
-export const FilterFormBlockProvider = (props) => {
+export const FilterFormBlockProvider = withDynamicSchemaProps((props) => {
   return (
     <DatePickerProvider value={{ utc: false }}>
       <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
@@ -11,4 +12,4 @@ export const FilterFormBlockProvider = (props) => {
       </DefaultValueProvider>
     </DatePickerProvider>
   );
-};
+});

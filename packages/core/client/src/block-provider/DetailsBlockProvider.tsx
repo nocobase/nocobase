@@ -7,6 +7,7 @@ import { useCollectionParentRecord } from '../data-source/collection-record/Coll
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 export const DetailsBlockContext = createContext<any>({});
 DetailsBlockContext.displayName = 'DetailsBlockContext';
@@ -57,13 +58,13 @@ const InternalDetailsBlockProvider = (props) => {
   );
 };
 
-export const DetailsBlockProvider = (props) => {
+export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
   return (
     <BlockProvider name="details" {...props}>
       <InternalDetailsBlockProvider {...props} />
     </BlockProvider>
   );
-};
+});
 
 /**
  * @deprecated
@@ -72,6 +73,11 @@ export const useDetailsBlockContext = () => {
   return useContext(DetailsBlockContext);
 };
 
+/**
+ * @deprecated
+ * 即将废弃，请用 useDetailsWithPaginationProps 或者 useDetailsProps
+ * @returns
+ */
 export const useDetailsBlockProps = () => {
   const ctx = useDetailsBlockContext();
   useEffect(() => {
