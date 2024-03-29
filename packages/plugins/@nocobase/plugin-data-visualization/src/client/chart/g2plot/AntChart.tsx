@@ -12,7 +12,6 @@ export const getAntChart = (Component: React.FC<any>) => (props: any) => {
     }
     const observer = new ResizeObserver((entries) => {
       entries.forEach((entry) => {
-        console.log(entry.contentRect.height);
         setHeight(entry.contentRect.height);
       });
     });
