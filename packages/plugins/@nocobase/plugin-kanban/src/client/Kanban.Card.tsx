@@ -24,7 +24,14 @@ export const KanbanCard: any = observer(
       <SchemaComponentOptions components={{}} scope={{}}>
         <Card
           onClick={(e) => {
-            setVisible(true);
+            const targetElement = e.target as Element; // 将事件目标转换为Element类型
+            const currentTargetElement = e.currentTarget as Element;
+            if (currentTargetElement.contains(targetElement)) {
+              setVisible(true);
+              e.stopPropagation();
+            } else {
+              e.stopPropagation();
+            }
           }}
           bordered={false}
           hoverable
