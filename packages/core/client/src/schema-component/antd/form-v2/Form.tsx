@@ -24,7 +24,9 @@ import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockPr
 export interface FormProps {
   [key: string]: any;
 }
-
+function hasInitialValues(obj) {
+  return Object.values(obj).some((value) => value !== null);
+}
 const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
@@ -153,7 +155,7 @@ const WithForm = (props: WithFormProps) => {
                     return result;
                   },
                   getSubscriber(action, field, rule, variables, localVariables),
-                  { fireImmediately: false },
+                  { fireImmediately: hasInitialValues(form.initialValues) },
                 ),
               );
             });
