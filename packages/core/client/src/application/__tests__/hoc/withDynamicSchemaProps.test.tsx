@@ -161,4 +161,22 @@ describe('withDynamicSchemaProps', () => {
     const { getByTestId } = render(<Demo />);
     expect(getByTestId('component')).toHaveTextContent(JSON.stringify({ a: 'a' }));
   });
+
+  test('x-use-component-props is function', () => {
+    const schema = {
+      'x-use-component-props': () => ({ a: 'a' }),
+    };
+    const Demo = withTestDemo(schema);
+    const { getByTestId } = render(<Demo />);
+    expect(getByTestId('component')).toHaveTextContent(JSON.stringify({ a: 'a' }));
+  });
+
+  test('x-use-decorator-props is function', () => {
+    const schema = {
+      'x-use-decorator-props': () => ({ a: 'a' }),
+    };
+    const Demo = withTestDemo(schema);
+    const { getByTestId } = render(<Demo />);
+    expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ a: 'a' }));
+  });
 });

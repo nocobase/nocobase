@@ -2,6 +2,7 @@ import { useExpressionScope } from '@formily/react';
 import { merge, omit } from 'lodash';
 import React, { ComponentType, useMemo } from 'react';
 import { useDesignable } from '../../schema-component';
+import _ from 'lodash';
 
 const useDefaultSchemaProps = () => undefined;
 
@@ -30,7 +31,9 @@ export function withDynamicSchemaProps<T = any>(Component: any, options: WithSch
     }, [dn]);
     const useSchemaProps = useMemo(() => {
       let res = undefined;
-      if (useComponentPropsStr) {
+      if (_.isFunction(useComponentPropsStr)) {
+        res = useComponentPropsStr;
+      } else {
         res = scope[useComponentPropsStr];
         if (!res) {
           console.error(`${useComponentPropsStr} is not registered`);
