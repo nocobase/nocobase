@@ -40,10 +40,11 @@ describe('nanoid field', () => {
   it('should set autofill attribute', async () => {
     const Test = db.collection({
       name: 'tests',
+      autoGenId: false,
       fields: [
         {
           type: 'nanoid',
-          name: 'id',
+          name: 'nanoid',
           autoFill: false,
         },
       ],
@@ -51,6 +52,6 @@ describe('nanoid field', () => {
 
     await Test.sync();
     const item = await Test.model.create();
-    expect(item['id']).toBeFalsy();
+    expect(item.get('nanoid')).toBeFalsy();
   });
 });
