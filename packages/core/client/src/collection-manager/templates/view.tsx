@@ -136,11 +136,20 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
     },
     filterTargetKey: {
-      type: 'string',
-      title: '{{ t("Collection display name") }}',
-      required: true,
+      title: `{{ t("Filter target key")}}`,
+      type: 'single',
+      description: `{{t( "Filter data based on the specific field, with the requirement that the field value must be unique.")}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+      'x-reactions': (field) => {
+        const { fields } = field.form.values;
+        field.dataSource = fields?.map((item: any) => {
+          return {
+            label: item.uiSchema?.title || item.name,
+            value: item.name,
+          };
+        });
+      },
     },
     ...getConfigurableProperties('category', 'description'),
   };
