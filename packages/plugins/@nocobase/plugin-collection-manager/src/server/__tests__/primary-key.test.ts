@@ -196,7 +196,10 @@ describe('primary key test', function () {
 
     expect(model.rawAttributes['title'].primaryKey).toBe(true);
 
-    const tableInfo = await db.sequelize.getQueryInterface().describeTable(db.getCollection('posts').quotedTableName());
+    const tableInfo = await db.sequelize
+      .getQueryInterface()
+      .describeTable(db.getCollection('posts').getTableNameWithSchema());
+    
     expect(tableInfo.title.primaryKey).toBe(true);
   });
 });
