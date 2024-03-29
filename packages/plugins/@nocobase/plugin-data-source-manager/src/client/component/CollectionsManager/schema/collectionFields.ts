@@ -194,10 +194,8 @@ export const fieldsTableSchema: ISchema = {
           properties: {
             titleField: {
               'x-component': 'TitleField',
+              'x-use-component-props': 'useTitleFieldProps',
               'x-read-pretty': false,
-              'x-component-props': {
-                useProps: '{{useTitleFieldProps}}',
-              },
             },
           },
         },
