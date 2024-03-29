@@ -36,10 +36,17 @@ export class BaseAuth extends Auth {
     return this.ctx.state.currentUser;
   }
 
+  /**
+   * @internal
+   */
+
   getCacheKey(userId: number) {
     return `auth:${userId}`;
   }
 
+  /**
+   * @internal
+   */
   validateUsername(username: string) {
     return /^[^@.<>"'/]{2,16}$/.test(username);
   }

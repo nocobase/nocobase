@@ -122,6 +122,9 @@ export class CacheManager {
     await Promise.all(promises);
   }
 
+  /**
+   * @experimental
+   */
   async createBloomFilter(options?: { store?: string }): Promise<BloomFilter> {
     const name = 'bloom-filter';
     const { store = this.defaultStore } = options || {};

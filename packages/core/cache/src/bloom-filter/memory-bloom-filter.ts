@@ -2,6 +2,9 @@ import { BloomFilter as IBloomFilter } from '.';
 import { Cache } from '../cache';
 import { BloomFilter } from 'bloom-filters';
 
+/**
+ * @experimental
+ */
 export class MemoryBloomFilter implements IBloomFilter {
   cache: Cache;
   constructor(cache: Cache) {

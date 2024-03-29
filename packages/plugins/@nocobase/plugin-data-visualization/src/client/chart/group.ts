@@ -24,6 +24,9 @@ export class ChartGroup {
     this.charts.get(group)?.push(chart);
   }
 
+  /**
+   * @internal
+   */
   getChartTypes(): {
     label: string;
     children: {
@@ -53,6 +56,9 @@ export class ChartGroup {
     return result;
   }
 
+  /**
+   * @internal
+   */
   getCharts(): {
     [key: string]: ChartType;
   } {
@@ -65,27 +71,42 @@ export class ChartGroup {
     return result;
   }
 
+  /**
+   * @internal
+   */
   getChart(type: string): ChartType {
     const charts = this.getCharts();
     return charts[type];
   }
 }
 
+/**
+ * @internal
+ */
 export const useChartTypes = () => {
   const plugin = usePlugin(DataVisualizationPlugin);
   return plugin.charts.getChartTypes();
 };
 
+/**
+ * @internal
+ */
 export const useDefaultChartType = () => {
   const chartTypes = useChartTypes();
   return chartTypes[0]?.children?.[0]?.value;
 };
 
+/**
+ * @internal
+ */
 export const useCharts = () => {
   const plugin = usePlugin(DataVisualizationPlugin);
   return plugin.charts.getCharts();
 };
 
+/**
+ * @internal
+ */
 export const useChart = (type: string) => {
   const plugin = usePlugin(DataVisualizationPlugin);
   return plugin.charts.getChart(type);
