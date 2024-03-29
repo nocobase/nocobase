@@ -10,7 +10,7 @@ import { EllipsisWithTooltip } from '../input';
 import { getLabelFormatValue, useLabelUiSchema } from '../record-picker';
 import { AssociationFilter } from './AssociationFilter';
 import useStyles from './AssociationFilter.Item.style';
-import { withDynamicSchemaProps } from '../../../application';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const { Panel } = Collapse;
 
