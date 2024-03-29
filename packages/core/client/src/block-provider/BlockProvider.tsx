@@ -30,6 +30,7 @@ import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
+import { useTemplateBlockContext } from './TemplateBlockProvider';
 
 /**
  * @deprecated
@@ -228,6 +229,7 @@ export const BlockProvider = (props: {
 }) => {
   const { name, dataSource, association, useParams, parentRecord } = props;
   const sourceId = useCompatDataBlockSourceId(props);
+  const { templateFinshed } = useTemplateBlockContext();
 
   // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
@@ -239,7 +241,7 @@ export const BlockProvider = (props: {
       return { ...props.params, appends, ...paramsFromHook };
     }
     return { ...props.params, ...paramsFromHook };
-  }, [appends, paramsFromHook, props.params]);
+  }, [appends, paramsFromHook, props.params, templateFinshed]);
   const blockValue = useMemo(() => ({ name }), [name]);
 
   return (
