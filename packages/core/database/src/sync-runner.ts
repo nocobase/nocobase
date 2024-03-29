@@ -12,6 +12,8 @@ export class SyncRunner {
   private readonly database: Database;
   private tableDescMap = {};
 
+  private uniqueAttributes: string[] = [];
+
   constructor(private model: typeof Model) {
     this.collection = model.collection;
     this.database = model.database;
@@ -66,6 +68,7 @@ export class SyncRunner {
     try {
       const beforeColumns = await this.queryInterface.describeTable(this.tableName, options);
       await this.handlePrimaryKeyBeforeSync(beforeColumns, options);
+      await this.handleUniqueFieldBeforeSync(beforeColumns, options);
     } catch (e) {
       if (!e.message.includes('No description found')) {
         throw e;
@@ -80,6 +83,20 @@ export class SyncRunner {
     await this.handleUniqueIndex(options);
 
     return syncResult;
+  }
+
+  async handleUniqueFieldBeforeSync(beforeColumns, options) {
+    // find new attributes with unique true
+    const newAttributes = Object.keys(this.rawAttributes).filter((key) => {
+      return !Object.keys(beforeColumns).includes(this.rawAttributes[key].field) && this.rawAttributes[key].unique;
+    });
+
+    this.uniqueAttributes = newAttributes;
+
+    // set unique false for new attributes to skip sequelize sync error
+    for (const newAttribute of newAttributes) {
+      this.rawAttributes[newAttribute].unique = false;
+    }
   }
 
   async handlePrimaryKeyBeforeSync(columns, options) {
@@ -215,6 +232,10 @@ export class SyncRunner {
   }
 
   async handleUniqueIndex(options) {
+    for (const uniqueAttribute of this.uniqueAttributes) {
+      this.rawAttributes[uniqueAttribute].unique = true;
+    }
+
     const existsIndexes: any = await this.queryInterface.showIndex(this.collection.getTableNameWithSchema(), options);
     const existsUniqueIndexes = existsIndexes.filter((index) => index.unique);
 
