@@ -121,9 +121,9 @@ export const BulkEditField = (props: any) => {
         <Select.Option value={BulkEditFormItemValueType.RemainsTheSame}>{t('Remains the same')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{t('Changed to')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.Clear}>{t('Clear')}</Select.Option>
-        {['subTable', 'linkTo', 'm2m', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField?.interface) && (
-          <Select.Option value={BulkEditFormItemValueType.AddAttach}>{t('Add attach')}</Select.Option>
-        )}
+        {/* {['subTable', 'linkTo', 'm2m', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField?.interface) && ( */}
+        {/*   <Select.Option value={BulkEditFormItemValueType.AddAttach}>{t('Add attach')}</Select.Option> */}
+        {/* )} */}
       </Select>
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
         collectionField?.interface !== 'checkbox' && (

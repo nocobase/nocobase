@@ -9,6 +9,7 @@ import {
   getCjsPackages,
   getPresetsPackages,
   ROOT_PATH,
+  ESM_PACKAGES,
 } from './constant';
 import { buildClient } from './buildClient';
 import { buildCjs } from './buildCjs';
@@ -18,6 +19,7 @@ import { PkgLog, getPkgLog, toUnixPath, getPackageJson, getUserConfig, UserConfi
 import { getPackages } from './utils/getPackages';
 import { Package } from '@lerna/package';
 import { tarPlugin } from './tarPlugin'
+import { buildEsm } from './buildEsm';
 
 const BUILD_ERROR = 'build-error';
 
@@ -51,6 +53,8 @@ export async function build(pkgs: string[]) {
   if (clientCore) {
     await buildPackage(clientCore, 'es', buildClient);
   }
+  const esmPackages = cjsPackages.filter(pkg => ESM_PACKAGES.includes(pkg.name));
+  await buildPackages(esmPackages, 'es', buildEsm);
 
   // plugins/*、samples/*
   await buildPackages(pluginPackages, 'dist', buildPlugin);

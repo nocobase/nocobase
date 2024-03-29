@@ -43,6 +43,13 @@ export const roleEditSchema = {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-content': '{{t("Default role")}}',
+          'x-reactions': (field) => {
+            if (field.initialValue) {
+              field.disabled = true;
+            } else {
+              field.disabled = false;
+            }
+          },
         },
         footer: {
           type: 'void',

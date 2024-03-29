@@ -1,5 +1,5 @@
 import { mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -240,7 +240,7 @@ export async function createMockServer(
   } = {},
 ) {
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
-  const app = mockServer(others);
+  const app: any = mockServer(others);
   if (!skipInstall) {
     if (beforeInstall) {
       await beforeInstall(app);
