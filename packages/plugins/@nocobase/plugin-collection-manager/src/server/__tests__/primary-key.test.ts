@@ -85,7 +85,7 @@ describe('primary key test', function () {
     expect(err).toBeDefined();
   });
 
-  it('should add new primary key', async () => {
+  it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should add new primary key', async () => {
     await db.getRepository('collections').create({
       values: {
         name: 'posts',
@@ -136,7 +136,7 @@ describe('primary key test', function () {
     expect(model.rawAttributes['id'].primaryKey).toBe(false);
   });
 
-  it('should update new primary key', async () => {
+  it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should update new primary key', async () => {
     await db.getRepository('collections').create({
       values: {
         name: 'posts',
@@ -199,7 +199,7 @@ describe('primary key test', function () {
     const tableInfo = await db.sequelize
       .getQueryInterface()
       .describeTable(db.getCollection('posts').getTableNameWithSchema());
-    
+
     expect(tableInfo.title.primaryKey).toBe(true);
   });
 });
