@@ -176,18 +176,18 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
   }, []);
 
   useEffect(() => {
-    if (!visible) {
-      setMenuItems(undefined);
-    } else {
+    if (visible) {
       setMenuItems(items.filter((item: any) => (item.type === 'group' ? item.children.length : true)));
     }
-  }, [visible, items]);
+    // 这里不需要监听 items，因为 items 每次都是新的，不会有缓存
+  }, [visible]);
 
   return (
     <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
       <Component />
       <Dropdown
         open={visible}
+        trigger={['hover']}
         onOpenChange={changeMenu}
         overlayClassName={css`
           .ant-dropdown-menu-item-group-list {
