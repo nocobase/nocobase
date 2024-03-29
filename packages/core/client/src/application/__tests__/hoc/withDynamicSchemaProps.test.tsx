@@ -179,4 +179,38 @@ describe('withDynamicSchemaProps', () => {
     const { getByTestId } = render(<Demo />);
     expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ a: 'a' }));
   });
+
+  test('x-use-component-props with dot', () => {
+    function useComponentProps() {
+      return {
+        a: 'a',
+      };
+    }
+    const schema = {
+      'x-use-component-props': 'cm.useComponentProps',
+    };
+
+    const scopes = { cm: { useComponentProps } };
+
+    const Demo = withTestDemo(schema, scopes);
+    const { getByTestId } = render(<Demo />);
+    expect(getByTestId('component')).toHaveTextContent(JSON.stringify({ a: 'a' }));
+  });
+
+  test('x-use-decorator-props with dot', () => {
+    function useDecoratorProps() {
+      return {
+        b: 'b',
+      };
+    }
+    const schema = {
+      'x-use-decorator-props': 'cm.useDecoratorProps',
+    };
+
+    const scopes = { cm: { useDecoratorProps } };
+
+    const Demo = withTestDemo(schema, scopes);
+    const { getByTestId } = render(<Demo />);
+    expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ b: 'b' }));
+  });
 });

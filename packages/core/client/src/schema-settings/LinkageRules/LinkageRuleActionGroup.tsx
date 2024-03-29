@@ -5,7 +5,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormButtonLinkageRuleAction, FormFieldLinkageRuleAction } from './LinkageRuleAction';
 import { RemoveActionContext } from './context';
-import { withDynamicSchemaProps } from '../../application';
+import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 import { useProps } from '../../schema-component/hooks/useProps';
 export const LinkageRuleActions = observer(
   (props: any): any => {
