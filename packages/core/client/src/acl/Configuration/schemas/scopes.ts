@@ -124,9 +124,7 @@ export const scopesSchema: ISchema = {
                                 form: {
                                   type: 'void',
                                   'x-component': 'FormV2',
-                                  'x-component-props': {
-                                    useProps: useFormBlockProps,
-                                  },
+                                  'x-use-component-props': useFormBlockProps,
                                   properties: {
                                     name: {
                                       type: 'string',

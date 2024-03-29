@@ -60,14 +60,14 @@ const schema: any = {
       name: 'filter',
       type: 'object',
       'x-component': 'Filter',
-      'x-component-props': {
-        useProps: () => {
-          const { name } = useCollection_deprecated();
-          const options = useFilterOptions(name);
-          return {
-            options,
-          };
-        },
+      'x-use-component-props': () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const { name } = useCollection_deprecated();
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const options = useFilterOptions(name);
+        return {
+          options,
+        };
       },
     },
   },

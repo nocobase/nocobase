@@ -6,7 +6,7 @@ import { FormBlockContext } from '../../block-provider';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../../record-provider';
-import { SchemaComponent } from '../../schema-component';
+import { SchemaComponent, useProps } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
 import { VariableOption, VariablesContextType } from '../../variables/types';
@@ -14,6 +14,7 @@ import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
+import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 
 interface usePropsReturn {
   options: any;
@@ -34,12 +35,20 @@ interface Props {
   dynamicComponent: any;
 }
 
-export const FormLinkageRules = observer(
-  (props: Props) => {
+export const FormLinkageRules = withDynamicSchemaProps(
+  observer((props: Props) => {
     const fieldSchema = useFieldSchema();
-    const { useProps, dynamicComponent } = props;
-    const { options, defaultValues, collectionName, form, formBlockType, variables, localVariables, record } =
-      useProps();
+    const {
+      options,
+      defaultValues,
+      collectionName,
+      form,
+      formBlockType,
+      variables,
+      localVariables,
+      record,
+      dynamicComponent,
+    } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
 
@@ -175,6 +184,6 @@ export const FormLinkageRules = observer(
         </RecordProvider>
       </FormBlockContext.Provider>
     );
-  },
+  }),
   { displayName: 'FormLinkageRules' },
 );
