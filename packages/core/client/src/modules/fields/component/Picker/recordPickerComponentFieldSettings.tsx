@@ -10,7 +10,7 @@ import {
   useTitleFieldOptions,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useCollectionField } from '../utils';
+import { useCollectionField } from '../../../../data-source';
 
 export const titleField: any = {
   name: 'titleField',
