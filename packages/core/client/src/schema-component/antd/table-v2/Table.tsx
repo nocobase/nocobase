@@ -215,6 +215,7 @@ const usePaginationProps = (pagination1, pagination2) => {
 export const Table: any = withDynamicSchemaProps(
   observer(
     (props: {
+      /** @deprecated */
       useProps?: () => any;
       onChange?: (pagination, filters, sorter, extra) => void;
       onRowSelectionChange?: (selectedRowKeys: any[], selectedRows: any[]) => void;

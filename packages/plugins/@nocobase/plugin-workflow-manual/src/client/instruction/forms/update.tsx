@@ -37,15 +37,15 @@ function UpdateFormDesigner() {
           name: 'filter',
           type: 'object',
           title: `{{t("Filter")}}`,
-          // 'x-decorator': 'FormItem',
           'x-component': 'Filter',
+          'x-use-component-props': () => {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const options = useCollectionFilterOptions(fieldSchema?.['x-decorator-props']?.collection);
+            return {
+              options,
+            };
+          },
           'x-component-props': {
-            useProps() {
-              const options = useCollectionFilterOptions(fieldSchema?.['x-decorator-props']?.collection);
-              return {
-                options,
-              };
-            },
             dynamicComponent: 'FilterDynamicComponent',
           },
         }}

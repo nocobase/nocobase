@@ -88,18 +88,18 @@ export const FormLinkageRules = withDynamicSchemaProps(
                     },
                     condition: {
                       'x-component': 'Filter',
+                      'x-use-component-props': () => {
+                        return {
+                          options,
+                          className: css`
+                            position: relative;
+                            width: 100%;
+                            margin-left: 10px;
+                          `,
+                        };
+                      },
                       'x-component-props': {
                         collectionName,
-                        useProps() {
-                          return {
-                            options,
-                            className: css`
-                              position: relative;
-                              width: 100%;
-                              margin-left: 10px;
-                            `,
-                          };
-                        },
                         dynamicComponent: (props: DynamicComponentProps) => {
                           const { collectionField } = props;
                           return (

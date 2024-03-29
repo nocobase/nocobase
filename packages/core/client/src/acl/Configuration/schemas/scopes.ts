@@ -137,15 +137,17 @@ export const scopesSchema: ISchema = {
                                       name: 'filter',
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Filter',
+                                      'x-use-component-props': () => {
+                                        // eslint-disable-next-line react-hooks/rules-of-hooks
+                                        const ctx = useContext(RoleResourceCollectionContext);
+                                        // eslint-disable-next-line react-hooks/rules-of-hooks
+                                        const options = useFilterOptions(ctx.name);
+                                        return {
+                                          options,
+                                        };
+                                      },
                                       'x-component-props': {
                                         dynamicComponent: VariableInput,
-                                        useProps() {
-                                          const ctx = useContext(RoleResourceCollectionContext);
-                                          const options = useFilterOptions(ctx.name);
-                                          return {
-                                            options,
-                                          };
-                                        },
                                       },
                                     },
                                     actions: {
@@ -263,15 +265,17 @@ export const scopesSchema: ISchema = {
                                               name: 'filter',
                                               'x-decorator': 'FormItem',
                                               'x-component': 'Filter',
+                                              'x-use-component-props': () => {
+                                                // eslint-disable-next-line react-hooks/rules-of-hooks
+                                                const ctx = useContext(RoleResourceCollectionContext);
+                                                // eslint-disable-next-line react-hooks/rules-of-hooks
+                                                const options = useFilterOptions(ctx.name);
+                                                return {
+                                                  options,
+                                                };
+                                              },
                                               'x-component-props': {
                                                 dynamicComponent: VariableInput,
-                                                useProps() {
-                                                  const ctx = useContext(RoleResourceCollectionContext);
-                                                  const options = useFilterOptions(ctx.name);
-                                                  return {
-                                                    options,
-                                                  };
-                                                },
                                               },
                                             },
                                             actions: {
