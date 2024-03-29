@@ -33,7 +33,7 @@ export const PoweredBy = () => {
       dangerouslySetInnerHTML={{
         __html: parseHTML(
           customBrandPlugin?.options?.options?.brand ||
-            `Powered by <a href="${urls[i18n.language] || urls['en-US']}">NocoBase</a>`,
+            `Powered by <a href="${urls[i18n.language] || urls['en-US']}" target="__blank">NocoBase</a>`,
           { appVersion },
         ),
       }}
