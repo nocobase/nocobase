@@ -112,7 +112,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
     fields: {
       type: 'array',
       'x-component': PreviewFields,
-      'x-visible': '{{ createOnly }}',
+      'x-hidden': '{{ !createOnly }}',
       'x-reactions': {
         dependencies: ['name'],
         fulfill: {
