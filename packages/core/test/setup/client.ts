@@ -1,7 +1,7 @@
+import '@testing-library/jest-dom/vitest';
 import { configure } from '@testing-library/react';
 import dotenv from 'dotenv';
 import { vi } from 'vitest';
-import 'vitest-dom/extend-expect';
 
 /**
  * 解决 TypeError: URL.createObjectURL is not a function

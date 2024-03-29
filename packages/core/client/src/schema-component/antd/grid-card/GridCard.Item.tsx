@@ -5,6 +5,7 @@ import { Card } from 'antd';
 import React from 'react';
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../../../record-provider';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const itemCss = css`
   display: flex;
@@ -15,7 +16,7 @@ const itemCss = css`
   gap: 8px;
 `;
 
-export const GridCardItem = (props) => {
+export const GridCardItem = withDynamicSchemaProps((props) => {
   const field = useField<ObjectField>();
   const parentRecordData = useCollectionParentRecordData();
   return (
@@ -40,4 +41,4 @@ export const GridCardItem = (props) => {
       </div>
     </Card>
   );
-};
+});

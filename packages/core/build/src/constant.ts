@@ -39,6 +39,7 @@ export const getPresetsPackages = (packages: Package[]) =>
   packages.filter((item) => item.location.startsWith(PRESETS_DIR));
 export const CORE_APP = path.join(PACKAGES_PATH, 'core/app');
 export const CORE_CLIENT = path.join(PACKAGES_PATH, 'core/client');
+export const ESM_PACKAGES = ['@nocobase/test'];
 export const CJS_EXCLUDE_PACKAGES = [
   path.join(PACKAGES_PATH, 'core/build'),
   path.join(PACKAGES_PATH, 'core/cli'),

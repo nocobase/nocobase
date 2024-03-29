@@ -893,7 +893,18 @@ export const useCollectionDataSourceItems = ({
   return res;
 };
 
-export const createDetailsBlockSchema = (options) => {
+export const createDetailsBlockSchema = (options: {
+  collection: string;
+  dataSource: string;
+  rowKey?: string;
+  formItemInitializers?: string;
+  actionInitializers?: string;
+  association?: string;
+  template?: any;
+  settings?: string;
+  action?: string;
+  [key: string]: any;
+}) => {
   const {
     formItemInitializers = 'details:configureFields',
     actionInitializers = 'detailsWithPaging:configureActions',
@@ -965,185 +976,6 @@ export const createDetailsBlockSchema = (options) => {
                 },
               }
             : {}),
-        },
-      },
-    },
-  };
-  return schema;
-};
-
-export const createListBlockSchema = (options) => {
-  const {
-    formItemInitializers = 'details:configureFields',
-    actionInitializers = 'list:configureActions',
-    itemActionInitializers = 'list:configureItemActions',
-    collection,
-    dataSource,
-    association,
-    template,
-    settings,
-    ...others
-  } = options;
-  const resourceName = association || collection;
-  const schema: ISchema = {
-    type: 'void',
-    'x-acl-action': `${resourceName}:view`,
-    'x-decorator': 'List.Decorator',
-    'x-decorator-props': {
-      collection,
-      dataSource,
-      association,
-      readPretty: true,
-      action: 'list',
-      params: {
-        pageSize: 10,
-      },
-      runWhenParamsChanged: true,
-      ...others,
-    },
-    'x-component': 'CardItem',
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': settings,
-    properties: {
-      actionBar: {
-        type: 'void',
-        'x-initializer': actionInitializers,
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
-        properties: {},
-      },
-      list: {
-        type: 'array',
-        'x-component': 'List',
-        'x-component-props': {
-          props: '{{ useListBlockProps }}',
-        },
-        properties: {
-          item: {
-            type: 'object',
-            'x-component': 'List.Item',
-            'x-read-pretty': true,
-            'x-component-props': {
-              useProps: '{{ useListItemProps }}',
-            },
-            properties: {
-              grid: template || {
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': formItemInitializers,
-                'x-initializer-props': {
-                  useProps: '{{ useListItemInitializerProps }}',
-                },
-                properties: {},
-              },
-              actionBar: {
-                type: 'void',
-                'x-align': 'left',
-                'x-initializer': itemActionInitializers,
-                'x-component': 'ActionBar',
-                'x-component-props': {
-                  useProps: '{{ useListActionBarProps }}',
-                  layout: 'one-column',
-                },
-                properties: {},
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-  return schema;
-};
-
-export const createGridCardBlockSchema = (options) => {
-  const {
-    formItemInitializers = 'details:configureFields',
-    actionInitializers = 'gridCard:configureActions',
-    itemActionInitializers = 'gridCard:configureItemActions',
-    collection,
-    association,
-    template,
-    dataSource,
-    settings,
-    ...others
-  } = options;
-  const resourceName = association || collection;
-  const schema: ISchema = {
-    type: 'void',
-    'x-acl-action': `${resourceName}:view`,
-    'x-decorator': 'GridCard.Decorator',
-    'x-decorator-props': {
-      collection,
-      association,
-      dataSource,
-      readPretty: true,
-      action: 'list',
-      params: {
-        pageSize: 12,
-      },
-      runWhenParamsChanged: true,
-      ...others,
-    },
-    'x-component': 'BlockItem',
-    'x-component-props': {
-      useProps: '{{ useGridCardBlockItemProps }}',
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': settings,
-    properties: {
-      actionBar: {
-        type: 'void',
-        'x-initializer': actionInitializers,
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
-        properties: {},
-      },
-      list: {
-        type: 'array',
-        'x-component': 'GridCard',
-        'x-component-props': {
-          useProps: '{{ useGridCardBlockProps }}',
-        },
-        properties: {
-          item: {
-            type: 'object',
-            'x-component': 'GridCard.Item',
-            'x-read-pretty': true,
-            'x-component-props': {
-              useProps: '{{ useGridCardItemProps }}',
-            },
-            properties: {
-              grid: template || {
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': formItemInitializers,
-                'x-initializer-props': {
-                  useProps: '{{ useGridCardItemInitializerProps }}',
-                },
-                properties: {},
-              },
-              actionBar: {
-                type: 'void',
-                'x-align': 'left',
-                'x-initializer': itemActionInitializers,
-                'x-component': 'ActionBar',
-                'x-component-props': {
-                  useProps: '{{ useGridCardActionBarProps }}',
-                  layout: 'one-column',
-                },
-                properties: {},
-              },
-            },
-          },
         },
       },
     },
@@ -1234,71 +1066,6 @@ export const createFormBlockSchema = (options: {
               },
             },
             properties: actions,
-          },
-        },
-      },
-    },
-  };
-  return schema;
-};
-
-export const createFilterFormBlockSchema = (options) => {
-  const {
-    formItemInitializers = 'filterForm:configureFields',
-    actionInitializers = 'filterForm:configureActions',
-    collection,
-    resource,
-    association,
-    dataSource,
-    action,
-    template,
-    settings,
-    ...others
-  } = options;
-  const resourceName = resource || association || collection;
-  const schema: ISchema = {
-    type: 'void',
-    'x-decorator': 'FilterFormBlockProvider',
-    'x-decorator-props': {
-      ...others,
-      action,
-      resource: resourceName,
-      dataSource,
-      collection,
-      association,
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    ...(settings ? { 'x-settings': settings } : { 'x-designer': 'FormV2.FilterDesigner' }),
-    'x-component': 'CardItem',
-    // 保存当前筛选区块所能过滤的数据区块
-    'x-filter-targets': [],
-    // 用于存储用户设置的每个字段的运算符，目前仅筛选表单区块支持自定义
-    'x-filter-operators': {},
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
-        },
-        properties: {
-          grid: template || {
-            type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': formItemInitializers,
-            properties: {},
-          },
-          [uid()]: {
-            type: 'void',
-            'x-initializer': actionInitializers,
-            'x-component': 'ActionBar',
-            'x-component-props': {
-              layout: 'one-column',
-              style: {
-                float: 'right',
-              },
-            },
-            properties: {},
           },
         },
       },
@@ -1468,87 +1235,6 @@ export const createTableBlockSchema = (options) => {
     },
   };
   // console.log(JSON.stringify(schema, null, 2));
-  return schema;
-};
-
-export const createCollapseBlockSchema = (options) => {
-  const { collection, dataSource, blockType } = options;
-  const schema: ISchema = {
-    type: 'void',
-    'x-decorator': 'AssociationFilter.Provider',
-    'x-decorator-props': {
-      collection,
-      dataSource,
-      blockType,
-      associationFilterStyle: {
-        width: '100%',
-      },
-      name: 'filter-collapse',
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:filterCollapse',
-    'x-component': 'CardItem',
-    'x-filter-targets': [],
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-action': 'associateFilter',
-        'x-initializer': 'filterCollapse:configureFields',
-        'x-component': 'AssociationFilter',
-        properties: {},
-      },
-    },
-  };
-
-  return schema;
-};
-
-export const createTableSelectorSchema = (options) => {
-  const { collection, dataSource, resource, rowKey, ...others } = options;
-  const schema: ISchema = {
-    type: 'void',
-    'x-acl-action': `${resource || collection}:list`,
-    'x-decorator': 'TableSelectorProvider',
-    'x-decorator-props': {
-      collection,
-      resource: resource || collection,
-      dataSource,
-      action: 'list',
-      params: {
-        pageSize: 20,
-      },
-      rowKey,
-      ...others,
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:tableSelector',
-    'x-component': 'CardItem',
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-initializer': 'table:configureActions',
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
-        properties: {},
-      },
-      value: {
-        type: 'array',
-        'x-initializer': 'table:configureColumns',
-        'x-component': 'TableV2.Selector',
-        'x-component-props': {
-          rowSelection: {
-            type: 'checkbox',
-          },
-          useProps: '{{ useTableSelectorProps }}',
-        },
-        properties: {},
-      },
-    },
-  };
   return schema;
 };
 

@@ -12,8 +12,8 @@
         "default": "./lib/index.js"
       },
       "import": {
-        "types": "./vitest.d.ts",
-        "default": "./vitest.mjs"
+        "types": "./es/index.d.ts",
+        "default": "./es/index.mjs"
       }
     },
     "./client": {
@@ -22,8 +22,8 @@
         "default": "./lib/client/index.js"
       },
       "import": {
-        "types": "./lib/client/index.d.ts",
-        "default": "./lib/client/index.js"
+        "types": "./es/client/index.d.ts",
+        "default": "./es/client/index.mjs"
       }
     },
     "./e2e": {
@@ -32,11 +32,12 @@
         "default": "./lib/e2e/index.js"
       },
       "import": {
-        "types": "./lib/e2e/index.d.ts",
-        "default": "./lib/e2e/index.js"
+        "types": "./es/e2e/index.d.ts",
+        "default": "./es/e2e/index.mjs"
       }
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./vitest.mjs": "./vitest.mjs"
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
@@ -45,6 +46,7 @@
     "@testing-library/react": "^14.0.0",
     "@testing-library/react-hooks": "^8.0.1",
     "@testing-library/user-event": "^14.4.3",
+    "@testing-library/jest-dom": "^6.4.2",
     "@types/supertest": "^2.0.11",
     "@vitejs/plugin-react": "^4.0.0",
     "jsdom": "^16.0.0",
@@ -58,7 +60,6 @@
     "supertest": "^6.1.6",
     "vite": "^5.0.0",
     "vitest": "^1.4.0",
-    "vitest-dom": "^0.1.1",
     "ws": "^8.13.0"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"

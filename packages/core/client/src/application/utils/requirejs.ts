@@ -10,6 +10,9 @@ export interface RequireJS {
   define: RequireDefine
 }
 
+/**
+ * @internal
+ */
 export function getRequireJs(): RequireJS {
   var requirejs, require, define;
   var req, s, head, baseElement, dataMain, src,

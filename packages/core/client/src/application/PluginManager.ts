@@ -26,6 +26,9 @@ export class PluginManager {
     this.initPlugins = this.init(_plugins);
   }
 
+  /**
+   * @internal
+   */
   async init(_plugins: PluginType[]) {
     await this.initStaticPlugins(_plugins);
     if (this.loadRemotePlugins) {
@@ -84,6 +87,9 @@ export class PluginManager {
     return new plugin(opts, this.app);
   }
 
+  /**
+   * @internal
+   */
   async load() {
     await this.initPlugins;
 

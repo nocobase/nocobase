@@ -5,6 +5,7 @@ import { FormContext, useField } from '@formily/react';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export const ListBlockContext = createContext<any>({});
 ListBlockContext.displayName = 'ListBlockContext';
@@ -52,7 +53,7 @@ const InternalListBlockProvider = (props) => {
   );
 };
 
-export const ListBlockProvider = (props) => {
+export const ListBlockProvider = withDynamicSchemaProps((props) => {
   const { params } = props;
   const { filter: parsedFilter } = useParsedFilter({
     filterOption: params?.filter,
@@ -75,7 +76,7 @@ export const ListBlockProvider = (props) => {
       <InternalListBlockProvider {...props} />
     </BlockProvider>
   );
-};
+});
 
 export const useListBlockContext = () => {
   return useContext(ListBlockContext);

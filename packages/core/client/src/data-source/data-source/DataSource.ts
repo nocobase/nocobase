@@ -83,6 +83,9 @@ export abstract class DataSource {
   }
 }
 
+/**
+ * @internal
+ */
 export class LocalDataSource extends DataSource {
   getDataSource() {
     return {

@@ -330,13 +330,15 @@ export const useChartFilter = () => {
   };
 
   const hasFilter = (chart: { dataSource: string; collection: string; query: any }, filterValues: any) => {
+    if (!chart) {
+      return false;
+    }
     const { dataSource, collection, query } = chart;
     const { parameters } = parse(query.filter || '');
     return (
-      chart &&
-      (filterValues[getFilterFieldPrefix(dataSource, collection)] ||
-        (filterValues['custom'] &&
-          parameters?.find(({ key }: { key: string }) => lodash.has(filterValues['custom'], key))))
+      filterValues[getFilterFieldPrefix(dataSource, collection)] ||
+      (filterValues['custom'] &&
+        parameters?.find(({ key }: { key: string }) => lodash.has(filterValues['custom'], key)))
     );
   };
 
