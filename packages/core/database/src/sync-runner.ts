@@ -288,6 +288,7 @@ export class SyncRunner {
         await this.queryInterface.addIndex(this.tableName, [this.rawAttributes[uniqueAttribute].field], {
           unique: true,
           transaction: options?.transaction,
+          name: `${this.rawAttributes[uniqueAttribute].field}_uk`,
         });
       }
     }
