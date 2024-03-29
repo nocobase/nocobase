@@ -11,6 +11,8 @@ import { ReadPretty } from './ReadPretty';
 import { isImage, isPdf, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useProps } from '../../hooks/useProps';
 
 export const Upload: ComposedUpload = connect(
   (props: UploadProps) => {
@@ -299,42 +301,48 @@ Upload.Dragger = connect(
   }),
 );
 
-Upload.DraggerV2 = connect(
-  (props: DraggerV2Props) => {
-    const { t } = useTranslation();
-    const defaultTitle = t('Click or drag file to this area to upload');
-    const defaultSubTitle = t('Support for a single or bulk upload, file size should not exceed') + ` 10MB`;
-    const { title = defaultTitle, subTitle = defaultSubTitle, useProps } = props;
-    const extraProps: Record<string, any> = useProps?.() || {};
-    const [loading, setLoading] = useState(false);
-    const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+Upload.DraggerV2 = withDynamicSchemaProps(
+  connect(
+    (props: DraggerV2Props) => {
+      const { t } = useTranslation();
+      const defaultTitle = t('Click or drag file to this area to upload');
+      const defaultSubTitle = t('Support for a single or bulk upload, file size should not exceed') + ` 10MB`;
 
-    const handleChange = (fileList: any[] = []) => {
-      const { onChange } = extraProps;
-      onChange?.(fileList);
+      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+      const { title = defaultTitle, subTitle = defaultSubTitle, ...extraProps } = useProps(props);
 
-      if (fileList.some((file) => file.status === 'uploading')) {
-        setLoading(true);
-      } else {
-        setLoading(false);
-      }
-    };
+      const [loading, setLoading] = useState(false);
+      const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
-    return wrapSSR(
-      <div className={cls(`${prefixCls}-dragger`, hashId)}>
-        <AntdUpload.Dragger {...useUploadProps({ ...props, ...extraProps, onChange: handleChange })}>
-          <p className={`${prefixCls}-drag-icon`}>
-            {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
-          </p>
-          <p className={`${prefixCls}-text`}>{title}</p>
-          <p className={`${prefixCls}-hint`}>{subTitle}</p>
-        </AntdUpload.Dragger>
-      </div>,
-    );
-  },
-  mapProps({
-    value: 'fileList',
-  }),
+      const handleChange = (fileList: any[] = []) => {
+        const { onChange } = extraProps;
+        onChange?.(fileList);
+
+        if (fileList.some((file) => file.status === 'uploading')) {
+          setLoading(true);
+        } else {
+          setLoading(false);
+        }
+      };
+
+      return wrapSSR(
+        <div className={cls(`${prefixCls}-dragger`, hashId)}>
+          {/* @ts-ignore */}
+          <AntdUpload.Dragger {...useUploadProps({ ...props, ...extraProps, onChange: handleChange })}>
+            <p className={`${prefixCls}-drag-icon`}>
+              {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
+            </p>
+            <p className={`${prefixCls}-text`}>{title}</p>
+            <p className={`${prefixCls}-hint`}>{subTitle}</p>
+          </AntdUpload.Dragger>
+        </div>,
+      );
+    },
+    mapProps({
+      value: 'fileList',
+    }),
+  ),
+  { displayName: 'Upload.DraggerV2' },
 );
 
 export default Upload;
