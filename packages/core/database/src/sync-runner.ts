@@ -86,6 +86,9 @@ export class SyncRunner {
   }
 
   async handleUniqueFieldBeforeSync(beforeColumns, options) {
+    if (!this.database.inDialect('sqlite')) {
+      return;
+    }
     // find new attributes with unique true
     const newAttributes = Object.keys(this.rawAttributes).filter((key) => {
       return !Object.keys(beforeColumns).includes(this.rawAttributes[key].field) && this.rawAttributes[key].unique;
