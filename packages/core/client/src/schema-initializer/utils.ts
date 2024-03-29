@@ -974,9 +974,7 @@ export const createDetailsBlockSchema = (options: {
                 pagination: {
                   type: 'void',
                   'x-component': 'Pagination',
-                  'x-component-props': {
-                    useProps: '{{ useDetailsPaginationProps }}',
-                  },
+                  'x-use-component-props': 'useDetailsPaginationProps',
                 },
               }
             : {}),
