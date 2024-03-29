@@ -7,7 +7,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { mergeFilter } from '../../filter-provider/utils';
-import { SchemaComponent, SchemaComponentContext, removeNullCondition } from '../../schema-component';
+import { SchemaComponent, SchemaComponentContext, removeNullCondition, useProps } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { VariableInput } from '../VariableInput';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
@@ -15,6 +15,7 @@ import { ArrayCollapse } from './components/DataTemplateTitle';
 import { getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 import { useSyncFromForm } from './utils';
+import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 
 const Tree = connect(
   AntdTree,
@@ -38,10 +39,11 @@ export const compatibleDataId = (data, config?) => {
   });
 };
 
-export const FormDataTemplates = observer(
-  (props: any) => {
-    const { useProps, formSchema, designerCtx } = props;
-    const { defaultValues, collectionName } = useProps();
+export const FormDataTemplates = withDynamicSchemaProps(
+  observer((props: any) => {
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { formSchema, designerCtx, defaultValues, collectionName } = useProps(props);
+
     const {
       collectionList,
       getEnableFieldTree,
@@ -263,7 +265,7 @@ export const FormDataTemplates = observer(
         <SchemaComponent components={components} scope={scope} schema={schema} />
       </SchemaComponentContext.Provider>
     );
-  },
+  }),
   { displayName: 'FormDataTemplates' },
 );
 

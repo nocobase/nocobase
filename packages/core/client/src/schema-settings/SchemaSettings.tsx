@@ -1327,15 +1327,15 @@ export const SchemaSettingsDataTemplates = function DataTemplates(props) {
         fieldReaction: {
           'x-decorator': (props) => <FlagProvider {...props} isInFormDataTemplate />,
           'x-component': FormDataTemplates,
+          'x-use-component-props': () => {
+            return {
+              defaultValues: templateData,
+              collectionName,
+            };
+          },
           'x-component-props': {
             designerCtx,
             formSchema,
-            useProps: () => {
-              return {
-                defaultValues: templateData,
-                collectionName,
-              };
-            },
           },
         },
       },
