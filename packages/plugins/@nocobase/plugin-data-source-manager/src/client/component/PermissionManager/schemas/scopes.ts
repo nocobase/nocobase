@@ -125,9 +125,7 @@ export const getScopesSchema = (dataSourceKey) => {
                                   form: {
                                     type: 'void',
                                     'x-component': 'FormV2',
-                                    'x-component-props': {
-                                      useProps: useFormBlockProps,
-                                    },
+                                    'x-use-component-props': useFormBlockProps,
                                     properties: {
                                       name: {
                                         type: 'string',

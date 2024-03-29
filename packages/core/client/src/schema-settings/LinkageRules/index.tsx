@@ -31,7 +31,6 @@ interface usePropsReturn {
 }
 
 interface Props {
-  useProps: () => usePropsReturn;
   dynamicComponent: any;
 }
 

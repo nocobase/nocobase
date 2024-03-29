@@ -29,11 +29,9 @@ export const LinkageRuleActions = observer(
 );
 
 interface LinkageRuleActionGroupProps {
-  useProps: () => {
-    type: 'button' | 'field';
-    linkageOptions: any;
-    collectionName: string;
-  };
+  type: 'button' | 'field';
+  linkageOptions: any;
+  collectionName: string;
 }
 
 export const LinkageRuleActionGroup = withDynamicSchemaProps(
