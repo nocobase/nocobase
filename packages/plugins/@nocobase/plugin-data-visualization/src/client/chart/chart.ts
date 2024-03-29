@@ -22,7 +22,7 @@ export type RenderProps = {
 export interface ChartType {
   name: string;
   title: string;
-  component: React.FC<any>;
+  Component: React.FC<any>;
   schema: ISchema;
   init?: (
     fields: FieldOption[],
@@ -34,7 +34,7 @@ export interface ChartType {
     general?: any;
     advanced?: any;
   };
-  render: (props: RenderProps) => React.FC<any>;
+  getProps(props: RenderProps): any;
   getReference?: () => {
     title: string;
     link: string;
@@ -44,21 +44,21 @@ export interface ChartType {
 export type ChartProps = {
   name: string;
   title: string;
-  component: React.FC<any>;
+  Component: React.FC<any>;
   config?: Config[];
 };
 
 export class Chart implements ChartType {
   name: string;
   title: string;
-  component: React.FC<any>;
+  Component: React.FC<any>;
   config: Config[];
   configs = new Map<string, Function>();
 
-  constructor({ name, title, component, config }: ChartProps) {
+  constructor({ name, title, Component, config }: ChartProps) {
     this.name = name;
     this.title = title;
-    this.component = component;
+    this.Component = Component;
     this.config = config;
     this.addConfigs(configs);
   }
@@ -169,12 +169,5 @@ export class Chart implements ChartType {
    */
   getProps(props: RenderProps): any {
     return props;
-  }
-
-  render({ data, general, advanced, fieldProps }: RenderProps) {
-    return () =>
-      React.createElement(this.component, {
-        ...this.getProps({ data, general, advanced, fieldProps }),
-      });
   }
 }

@@ -96,7 +96,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       workflow,
       { data: json, stack: context?.stack },
       {
-        transaction,
+        transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
       },
     );
   } else {

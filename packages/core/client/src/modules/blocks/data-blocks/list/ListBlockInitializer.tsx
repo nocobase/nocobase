@@ -2,7 +2,7 @@ import { OrderedListOutlined } from '@ant-design/icons';
 import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
-import { createListBlockSchema } from '../../../../schema-initializer/utils';
+import { createListBlockSchema } from './createListBlockSchema';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 
@@ -48,10 +48,9 @@ export const ListBlockInitializer = ({
 
         const collection = getCollection(item.name, item.dataSource);
         const schema = createListBlockSchema({
-          collection: item.name,
+          collectionName: item.name,
           dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
-          settings: 'blockSettings:list',
         });
         insert(schema);
       }}

@@ -11,6 +11,7 @@ import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
 import { useListActionBarProps } from './hooks';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
@@ -93,7 +94,7 @@ const InternalList = (props) => {
   );
 };
 
-export const List = InternalList as typeof InternalList & {
+export const List = withDynamicSchemaProps(InternalList) as typeof InternalList & {
   Item: typeof ListItem;
   Designer: typeof ListDesigner;
   Decorator: typeof ListBlockProvider;

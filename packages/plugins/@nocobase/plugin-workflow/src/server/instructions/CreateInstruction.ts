@@ -15,13 +15,14 @@ export class CreateInstruction extends Instruction {
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
     const options = processor.getParsedValue(params, node.id);
+    const transaction = this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
 
     const created = await repository.create({
       ...options,
       context: {
         stack: Array.from(new Set((processor.execution.context.stack ?? []).concat(processor.execution.id))),
       },
-      transaction: processor.transaction,
+      transaction,
     });
 
     let result = created;
@@ -34,7 +35,7 @@ export class CreateInstruction extends Instruction {
       result = await repository.findOne({
         filterByTk: created[model.primaryKeyAttribute],
         appends: Array.from(includeFields),
-        transaction: processor.transaction,
+        transaction,
       });
     }
 

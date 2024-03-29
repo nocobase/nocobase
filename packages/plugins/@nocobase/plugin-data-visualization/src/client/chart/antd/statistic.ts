@@ -8,7 +8,7 @@ export class Statistic extends AntdChart {
     super({
       name: 'statistic',
       title: 'Statistic',
-      component: AntdStatistic,
+      Component: AntdStatistic,
       config: [
         {
           property: 'field',

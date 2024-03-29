@@ -1,9 +1,12 @@
 import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
-import { FormContext, useField } from '@formily/react';
+import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
 import useStyles from './GridCard.Decorator.style';
+import { useGridCardBlockParams } from '../../../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockParams';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+
 export const GridCardBlockContext = createContext<any>({});
 GridCardBlockContext.displayName = 'GridCardBlockContext';
 
@@ -41,24 +44,31 @@ const InternalGridCardBlockProvider = (props) => {
   );
 };
 
-export const GridCardBlockProvider = (props) => {
-  const { params } = props;
-  const { filter: parsedFilter } = useParsedFilter({
-    filterOption: params?.filter,
-  });
-  const paramsWithFilter = useMemo(() => {
-    return {
-      ...params,
-      filter: parsedFilter,
-    };
-  }, [parsedFilter, params]);
+/**
+ * 用于兼容旧版 UISchema（旧版本没有 x-use-decorator-props）
+ * @param props
+ */
+const useCompatGridCardBlockParams = (props) => {
+  const schema = useFieldSchema();
+
+  // 因为 x-use-decorator-props 的值是固定的，所以可以在条件中使用 hooks
+  if (schema['x-use-decorator-props']) {
+    return props.params;
+  } else {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useGridCardBlockParams(props);
+  }
+};
+
+export const GridCardBlockProvider = withDynamicSchemaProps((props) => {
+  const params = useCompatGridCardBlockParams(props);
 
   return (
-    <BlockProvider name="grid-card" {...props} params={paramsWithFilter}>
+    <BlockProvider name="grid-card" {...props} params={params}>
       <InternalGridCardBlockProvider {...props} />
     </BlockProvider>
   );
-};
+});
 
 export const useGridCardBlockContext = () => {
   return useContext(GridCardBlockContext);

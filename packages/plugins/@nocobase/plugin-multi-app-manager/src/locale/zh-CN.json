@@ -7,5 +7,8 @@
   "Custom domain": "自定义域名",
   "Manage applications": "管理应用",
   "Standalone deployment": "独立部署",
-  "Auto start": "自动启动"
+  "Auto start": "自动启动",
+  "Start mode": "启动方式",
+  "Start on first visit": "首次访问时启动",
+  "Start with main application": "随主应用一同启动"
 }

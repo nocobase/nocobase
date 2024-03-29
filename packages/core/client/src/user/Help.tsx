@@ -111,6 +111,8 @@ export const Help = observer(
           <Popover
             // nb-about 的样式定义在 plugin-custom-brand 插件中
             rootClassName="nb-about"
+            placement="bottomRight"
+            arrow={false}
             content={<div dangerouslySetInnerHTML={{ __html: content }}></div>}
           >
             {icon}

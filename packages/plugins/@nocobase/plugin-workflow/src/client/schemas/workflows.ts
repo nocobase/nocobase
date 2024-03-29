@@ -189,6 +189,7 @@ export const workflowSchema: ISchema = {
               title: '{{t("Delete")}}',
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'DeleteOutlined',
                 useAction: '{{ cm.useBulkDestroyAction }}',
                 confirm: {
                   title: "{{t('Delete record')}}",
@@ -202,6 +203,7 @@ export const workflowSchema: ISchema = {
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
+                icon: 'PlusOutlined',
               },
               properties: {
                 drawer: {
