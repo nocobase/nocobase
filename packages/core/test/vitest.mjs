@@ -6,6 +6,8 @@ import path, { resolve } from 'path';
 import { URL } from 'url';
 import { mergeConfig, defineConfig as vitestConfig } from 'vitest/config';
 
+const CORE_CLIENT_PACKAGES = ['sdk', 'client'];
+
 const __dirname = new URL('.', import.meta.url).pathname;
 
 const relativePathToAbsolute = (relativePath) => {
@@ -94,7 +96,7 @@ const defineCommonConfig = () => {
 
 function getExclude(isServer) {
   return [
-    `packages/core/${isServer ? '' : '!'}(client|sdk)/**/*`,
+    `packages/core/${isServer ? '' : '!'}(${CORE_CLIENT_PACKAGES.join('|')})/**/*`,
     `packages/**/src/${isServer ? 'client' : 'server'}/**/*`,
   ]
 }
@@ -168,7 +170,7 @@ export const getReportsDirectory = (isServer) => {
   if (!filterFileOrDir) return;
   const isPackage = fs.existsSync(path.join(process.cwd(), filterFileOrDir, 'package.json'));
   if (isPackage) {
-    let reportsDirectory = `./coverage/${filterFileOrDir.replace('packages/', '')}`;
+    let reportsDirectory = `./storage/${filterFileOrDir.replace('packages/', '')}`;
     const isCore = filterFileOrDir.includes('packages/core');
     if (!isCore) {
       reportsDirectory = `${reportsDirectory}/${isServer ? 'server' : 'client'}`;
@@ -181,8 +183,10 @@ export const defineConfig = () => {
   const isServer = process.env.TEST_ENV === 'server-side';
   const config = vitestConfig(mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()));
 
-  config.test.include = getFilterInclude(isServer);
-
+  const filterInclude = getFilterInclude(isServer);
+  if (filterInclude) {
+    config.test.include = getFilterInclude(isServer);
+  }
   const isCoverage = process.argv.includes('--coverage');
   if (!isCoverage) {
     return config;
