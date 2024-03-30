@@ -305,12 +305,15 @@ export const useChartFilter = () => {
       .filter(([_, props]) => props)
       .forEach(([name, props]) => {
         const { operator } = props || {};
-        const { dataSource, fieldName } = parseFilterFieldName(name);
+        const { dataSource, fieldName: _fieldName } = parseFilterFieldName(name);
+        let fieldName = _fieldName;
         const ds = dm.getDataSource(dataSource);
         const cm = ds.collectionManager;
         const field = cm.getCollectionField(fieldName);
         if (field?.target) {
-          name = `${fieldName}.${field.targetKey || 'id'}`;
+          const tk = field.targetKey || 'id';
+          fieldName = `${fieldName}.${tk}`;
+          name = `${name}.${tk}`;
         }
         const [collection, ...fields] = fieldName.split('.');
         const value = getValuesByPath(values, name);
@@ -330,13 +333,15 @@ export const useChartFilter = () => {
   };
 
   const hasFilter = (chart: { dataSource: string; collection: string; query: any }, filterValues: any) => {
+    if (!chart) {
+      return false;
+    }
     const { dataSource, collection, query } = chart;
     const { parameters } = parse(query.filter || '');
     return (
-      chart &&
-      (filterValues[getFilterFieldPrefix(dataSource, collection)] ||
-        (filterValues['custom'] &&
-          parameters?.find(({ key }: { key: string }) => lodash.has(filterValues['custom'], key))))
+      filterValues[getFilterFieldPrefix(dataSource, collection)] ||
+      (filterValues['custom'] &&
+        parameters?.find(({ key }: { key: string }) => lodash.has(filterValues['custom'], key)))
     );
   };
 

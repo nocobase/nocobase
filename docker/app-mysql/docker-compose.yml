@@ -29,5 +29,7 @@ services:
       MYSQL_PASSWORD: nocobase
       MYSQL_ROOT_PASSWORD: nocobase
     restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
     networks:
       - nocobase

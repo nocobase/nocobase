@@ -12,7 +12,7 @@ export default {
       name: 'workflow',
     },
     {
-      type: 'uid',
+      type: 'string',
       name: 'key',
     },
     {

@@ -1,11 +1,14 @@
 import Database, { Collection, Repository } from '@nocobase/database';
 import { CollectionRepository } from '@nocobase/plugin-collection-manager';
-import { Plugin } from '@nocobase/server';
+import { InstallOptions, Plugin } from '@nocobase/server';
 import { merge, uid } from '@nocobase/utils';
 import _ from 'lodash';
 import collectionTemplates from './collection-templates';
 import * as fieldInterfaces from './field-interfaces';
 import { mockAttachment } from './field-interfaces';
+import { Client } from 'pg';
+import path from 'path';
+import { promises as fs } from 'fs';
 
 export class PluginMockCollectionsServer extends Plugin {
   async load() {
@@ -303,6 +306,41 @@ export class PluginMockCollectionsServer extends Plugin {
         await next();
       },
     });
+  }
+
+  async install(options?: InstallOptions) {
+    const dbName = this.app.db.options.database;
+    const externalDB = `${dbName}_external_test`;
+
+    // create external database
+    let client = new Client({
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      host: process.env.DB_HOST,
+      database: process.env.DB_DATABASE,
+      port: parseInt(process.env.DB_PORT),
+    });
+
+    await client.connect();
+    await client.query(`DROP DATABASE IF EXISTS ${externalDB}`);
+    await client.query(`CREATE DATABASE ${externalDB}`);
+    await client.end();
+
+    // import sql import external database
+    client = new Client({
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      host: process.env.DB_HOST,
+      database: externalDB,
+      port: parseInt(process.env.DB_PORT),
+    });
+
+    await client.connect();
+
+    const sqlFile = path.resolve(__dirname, './external.sql');
+    const sql: string = await fs.readFile(sqlFile, 'utf8');
+    await client.query(sql);
+    await client.end();
   }
 }
 

@@ -20,7 +20,7 @@ export class DestroyInstruction extends Instruction {
       context: {
         stack: Array.from(new Set((processor.execution.context.stack ?? []).concat(processor.execution.id))),
       },
-      transaction: processor.transaction,
+      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
     });
 
     return {

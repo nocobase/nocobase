@@ -6,7 +6,7 @@ import { useFieldComponentName } from '../../../../common/useFieldComponentName'
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useCollectionField } from '../utils';
+import { useCollectionField } from '../../../../data-source';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { titleField } from '../Picker/recordPickerComponentFieldSettings';
 

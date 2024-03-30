@@ -31,6 +31,8 @@ export const ViewDatabaseConnectionAction = () => {
         onClick={() => {
           navigate(getConnectionCollectionPath(record.key));
         }}
+        role="button"
+        aria-label={`${record?.key}-Configure`}
       >
         {t('Configure')}
       </Button>
