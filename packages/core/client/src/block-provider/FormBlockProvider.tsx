@@ -106,8 +106,9 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
     }
   }
   const createFlag =
-    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) || !currentCollection.name;
-
+    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) ||
+    !currentCollection.name ||
+    !collection;
   if (!detailFlag && !createFlag && !isCusomeizeCreate) {
     return null;
   }
