@@ -83,6 +83,7 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
         const label = element || compiledTitle || item.label;
         const key = item.key || `${parentKey}-${compiledTitle}-${indexA}`;
         const handleClick = (info) => {
+          info.domEvent.stopPropagation();
           if (info.key !== key) return;
           if (item.onClick) {
             item.onClick({ ...info, item });
