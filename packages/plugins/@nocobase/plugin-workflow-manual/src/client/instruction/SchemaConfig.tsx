@@ -1,7 +1,7 @@
 import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormProvider, ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
-import { Alert, Button, Modal, Space } from 'antd';
+import { Alert, Button, Modal, Space, message } from 'antd';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -45,7 +45,7 @@ import WorkflowPlugin, {
 } from '@nocobase/plugin-workflow/client';
 import { Registry, lodash } from '@nocobase/utils/client';
 
-import { NAMESPACE, useLang } from '../../locale';
+import { NAMESPACE, usePluginTranslation } from '../../locale';
 import { FormBlockProvider } from './FormBlockProvider';
 import createRecordForm from './forms/create';
 import customRecordForm from './forms/custom';
@@ -86,13 +86,14 @@ export type ManualFormType = {
       [key: string]: React.FC;
     };
   };
+  validate?: (config: any) => string | null;
 };
 
 export const manualFormTypes = new Registry<ManualFormType>();
 
-manualFormTypes.register('customForm', customRecordForm);
-manualFormTypes.register('createForm', createRecordForm);
-manualFormTypes.register('updateForm', updateRecordForm);
+manualFormTypes.register('custom', customRecordForm);
+manualFormTypes.register('create', createRecordForm);
+manualFormTypes.register('update', updateRecordForm);
 
 function useTriggerInitializers(): SchemaInitializerItemType | null {
   const { workflow } = useFlowContext();
@@ -243,7 +244,8 @@ export const addBlockButton = new CompatibleSchemaInitializer(
 
 function AssignedFieldValues() {
   const ctx = useContext(SchemaComponentContext);
-  const { t } = useTranslation();
+  const { t: coreT } = useTranslation();
+  const { t } = usePluginTranslation();
   const fieldSchema = useFieldSchema();
   const scope = useWorkflowVariableOptions();
   const [open, setOpen] = useState(false);
@@ -275,7 +277,7 @@ function AssignedFieldValues() {
   }, [fieldSchema]);
   const upLevelActiveFields = useFormActiveFields();
 
-  const title = t('Assign field values');
+  const title = coreT('Assign field values');
 
   function onCancel() {
     setOpen(false);
@@ -321,9 +323,7 @@ function AssignedFieldValues() {
               <FormProvider form={form}>
                 <FormLayout layout={'vertical'}>
                   <Alert
-                    message={useLang(
-                      'Values preset in this form will override user submitted ones when continue or reject.',
-                    )}
+                    message={t('Values preset in this form will override user submitted ones when continue or reject.')}
                   />
                   <br />
                   {open && schema && (
@@ -612,15 +612,46 @@ export function SchemaConfig({ value, onChange }) {
   );
 }
 
+function validateForms(forms: Record<string, any> = {}) {
+  for (const form of Object.values(forms)) {
+    const formType = manualFormTypes.get(form.type);
+    if (typeof formType.validate === 'function') {
+      const msg = formType.validate(form);
+      if (msg) {
+        return msg;
+      }
+    }
+  }
+}
+
 export function SchemaConfigButton(props) {
   const { workflow } = useFlowContext();
   const [visible, setVisible] = useState(false);
+  const { values } = useForm();
+  const { t } = usePluginTranslation();
+  const onSetVisible = useCallback(
+    (v) => {
+      if (!v) {
+        const msg = validateForms(values.forms);
+        if (msg) {
+          message.error({
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            title: t('Validation failed'),
+            content: t(msg),
+          });
+          return;
+        }
+      }
+      setVisible(v);
+    },
+    [values.forms],
+  );
   return (
     <>
       <Button type="primary" onClick={() => setVisible(true)} disabled={false}>
-        {useLang(workflow.executed ? 'View user interface' : 'Configure user interface')}
+        {t(workflow.executed ? 'View user interface' : 'Configure user interface')}
       </Button>
-      <ActionContextProvider value={{ visible, setVisible, formValueChanged: false }}>
+      <ActionContextProvider value={{ visible, setVisible: onSetVisible, formValueChanged: false }}>
         {props.children}
       </ActionContextProvider>
     </>
