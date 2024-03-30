@@ -27,6 +27,7 @@
     "test:server": "nocobase test:server",
     "test:server-coverage": "nocobase test-coverage:server",
     "test:client": "nocobase test:client",
+    "test:client-coverage": "nocobase test-coverage:client",
     "e2e": "nocobase e2e",
     "ts": "nocobase test:server",
     "tc": "nocobase test:client",
