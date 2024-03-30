@@ -23,20 +23,15 @@ export const ChartQueryMetadataProvider: React.FC = (props) => {
 
   const location = useLocation();
 
-  const service = useRequest<{
-    data: any;
-  }>(options, {
-    manual: true,
-  });
-
   const isAdminPage = location.pathname.startsWith('/admin');
   const token = api.auth.getToken() || '';
 
-  useEffect(() => {
-    if (isAdminPage && token) {
-      service.run();
-    }
-  }, [isAdminPage, token]);
+  const service = useRequest<{
+    data: any;
+  }>(options, {
+    refreshDeps: [isAdminPage, token],
+    ready: !!(isAdminPage && token),
+  });
 
   const refresh = async () => {
     const { data } = await api.request(options);

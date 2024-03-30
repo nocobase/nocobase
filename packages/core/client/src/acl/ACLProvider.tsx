@@ -1,6 +1,6 @@
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { omit } from 'lodash';
 import { useAPIClient, useRequest } from '../api-client';
@@ -253,28 +253,33 @@ export const ACLActionProvider = (props) => {
 
 export const useACLFieldWhitelist = () => {
   const params = useContext(ACLActionParamsContext);
-  const whitelist = []
-    .concat(params?.whitelist || [])
-    .concat(params?.fields || [])
-    .concat(params?.appends || []);
+  const whitelist = useMemo(() => {
+    return []
+      .concat(params?.whitelist || [])
+      .concat(params?.fields || [])
+      .concat(params?.appends || []);
+  }, [params?.whitelist, params?.fields, params?.appends]);
   return {
     whitelist,
-    schemaInWhitelist(fieldSchema: Schema, isSkip?) {
-      if (isSkip) {
-        return true;
-      }
-      if (whitelist.length === 0) {
-        return true;
-      }
-      if (!fieldSchema) {
-        return true;
-      }
-      if (!fieldSchema['x-collection-field']) {
-        return true;
-      }
-      const [key1, key2] = fieldSchema['x-collection-field'].split('.');
-      return whitelist?.includes(key2 || key1);
-    },
+    schemaInWhitelist: useCallback(
+      (fieldSchema: Schema, isSkip?) => {
+        if (isSkip) {
+          return true;
+        }
+        if (whitelist.length === 0) {
+          return true;
+        }
+        if (!fieldSchema) {
+          return true;
+        }
+        if (!fieldSchema['x-collection-field']) {
+          return true;
+        }
+        const [key1, key2] = fieldSchema['x-collection-field'].split('.');
+        return whitelist?.includes(key2 || key1);
+      },
+      [whitelist],
+    ),
   };
 };
 
@@ -290,7 +295,7 @@ export const ACLCollectionFieldProvider = (props) => {
       field.required = false;
       field.display = 'hidden';
     }
-  }, [allowed]);
+  }, [allowed, field]);
 
   if (allowAll) {
     return <>{props.children}</>;

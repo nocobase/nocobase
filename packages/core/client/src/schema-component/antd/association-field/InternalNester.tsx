@@ -7,6 +7,27 @@ import { useAssociationFieldContext, useInsertSchema } from './hooks';
 import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
 import schema from './schema';
 
+const InternalNesterCss = css`
+  & .ant-formily-item-layout-vertical {
+    margin-bottom: 10px;
+  }
+  .ant-card-body {
+    padding: 15px 20px 5px;
+  }
+  .ant-divider-horizontal {
+    margin: 10px 0;
+  }
+`;
+
+const InternalNesterCardCss = css`
+  .ant-card-bordered {
+    border: none;
+  }
+  .ant-card-body {
+    padding: 0px 20px 20px 0px;
+  }
+`;
+
 export const InternalNester = observer(
   () => {
     const field = useField();
@@ -23,29 +44,9 @@ export const InternalNester = observer(
         <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName}`}>
           <FormLayout layout={'vertical'}>
             <div
-              className={cx(
-                css`
-                  & .ant-formily-item-layout-vertical {
-                    margin-bottom: 10px;
-                  }
-                  .ant-card-body {
-                    padding: 15px 20px 5px;
-                  }
-                  .ant-divider-horizontal {
-                    margin: 10px 0;
-                  }
-                `,
-                {
-                  [css`
-                    .ant-card-body {
-                      padding: 0px 20px 20px 0px;
-                    }
-                    > .ant-card-bordered {
-                      border: none;
-                    }
-                  `]: showTitle === false,
-                },
-              )}
+              className={cx(InternalNesterCss, {
+                [InternalNesterCardCss]: showTitle === false,
+              })}
             >
               <RecursionField
                 onlyRenderProperties
