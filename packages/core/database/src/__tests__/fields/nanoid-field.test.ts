@@ -36,4 +36,22 @@ describe('nanoid field', () => {
     expect(test.id).toHaveLength(21);
     expect(test.id2).toHaveLength(12);
   });
+
+  it('should set autofill attribute', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'nanoid',
+          name: 'nanoid',
+          autoFill: false,
+        },
+      ],
+    });
+
+    await Test.sync();
+    const item = await Test.model.create();
+    expect(item.get('nanoid')).toBeFalsy();
+  });
 });
