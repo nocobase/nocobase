@@ -1,1 +1,1 @@
-export const NAMESPACE = 'api-keys';
+export const NAMESPACE = '@nocobase/plugin-api-keys';

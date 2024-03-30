@@ -88,7 +88,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 删除已创建的 blocks，腾出页面空间
     // delete details block
     await page.getByText('GeneralConfigure actionsConfigure fields').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:singleDataDetails-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:details-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete form block

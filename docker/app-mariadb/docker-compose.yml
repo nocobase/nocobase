@@ -17,6 +17,7 @@ services:
       - DB_USER=nocobase
       - DB_PASSWORD=nocobase
       - DB_TIMEZONE=+08:00
+      - DB_UNDERSCORED=true
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
@@ -29,5 +30,7 @@ services:
       MYSQL_PASSWORD: nocobase
       MYSQL_ROOT_PASSWORD: nocobase
     restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
     networks:
       - nocobase

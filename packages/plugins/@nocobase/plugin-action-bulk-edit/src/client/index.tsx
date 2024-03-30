@@ -1,20 +1,20 @@
 import { Plugin, useCollection_deprecated } from '@nocobase/client';
 import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './BulkEditAction.Settings';
-import { BulkEditFormItemInitializers_deprecated, bulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
+import { BulkEditActionInitializer } from './BulkEditActionInitializer';
 import {
-  CreateFormBulkEditBlockInitializers,
   BulkEditBlockInitializers_deprecated,
+  CreateFormBulkEditBlockInitializers,
   bulkEditBlockInitializers,
 } from './BulkEditBlockInitializers';
 import {
   BulkEditFormActionInitializers_deprecated,
   bulkEditFormActionInitializers,
 } from './BulkEditFormActionInitializers';
-import { BulkEditActionInitializer } from './BulkEditActionInitializer';
+import { BulkEditFormItemInitializers_deprecated, bulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
 import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
 import { BulkEditField } from './component/BulkEditField';
 import { useCustomizeBulkEditActionProps } from './utils';
-export class BulkEditPlugin extends Plugin {
+export class PluginActionBulkEditClient extends Plugin {
   async load() {
     this.app.addComponents({ BulkEditField });
     this.app.addScopes({ useCustomizeBulkEditActionProps });
@@ -61,4 +61,4 @@ export class BulkEditPlugin extends Plugin {
   }
 }
 
-export default BulkEditPlugin;
+export default PluginActionBulkEditClient;

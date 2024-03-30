@@ -29,12 +29,12 @@ const availableActions: {
   update: {
     displayName: '{{t("Edit")}}',
     type: 'old-data',
-    aliases: ['update', 'move'],
+    aliases: ['update', 'move', 'add', 'set', 'remove', 'toggle'],
     allowConfigureFields: true,
   },
   destroy: {
     displayName: '{{t("Delete")}}',
-    aliases: ['destroy', 'remove'],
+    aliases: ['destroy'],
     type: 'old-data',
   },
 };

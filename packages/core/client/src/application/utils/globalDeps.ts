@@ -35,6 +35,9 @@ import * as nocobaseClient from '../../index';
 
 import type { RequireJS } from './requirejs';
 
+/**
+ * @internal
+ */
 export function defineGlobalDeps(requirejs: RequireJS) {
   // react
   requirejs.define('react', () => React);

@@ -204,7 +204,12 @@ const MenuEditor = (props) => {
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <SchemaComponent memoized scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }} schema={schema} />
+      <SchemaComponent
+        distributed
+        memoized
+        scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }}
+        schema={schema}
+      />
     </SchemaIdContext.Provider>
   );
 };
@@ -275,66 +280,100 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
   );
 };
 
-export const InternalAdminLayout = (props: any) => {
-  const sideMenuRef = useRef<HTMLDivElement>();
-  const result = useSystemSettings();
-  // const { service } = useCollectionManager_deprecated();
+const AdminSideBar = ({ sideMenuRef }) => {
   const params = useParams<any>();
+  if (!params.name) return null;
+  return (
+    <Layout.Sider
+      className={css`
+        height: 100%;
+        /* position: fixed; */
+        position: relative;
+        left: 0;
+        top: 0;
+        background: rgba(0, 0, 0, 0);
+        z-index: 100;
+        .ant-layout-sider-children {
+          top: var(--nb-header-height);
+          position: fixed;
+          width: 200px;
+          height: calc(100vh - var(--nb-header-height));
+        }
+      `}
+      theme={'light'}
+      ref={sideMenuRef}
+    ></Layout.Sider>
+  );
+};
+
+export const InternalAdminLayout = () => {
+  const result = useSystemSettings();
   const { token } = useToken();
+  const sideMenuRef = useRef<HTMLDivElement>();
+
+  const layoutHeaderCss = useMemo(() => {
+    return css`
+      .ant-menu.ant-menu-dark .ant-menu-item-selected,
+      .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected,
+      .ant-menu-submenu-horizontal.ant-menu-submenu-selected {
+        background-color: ${token.colorBgHeaderMenuActive} !important;
+        color: ${token.colorTextHeaderMenuActive} !important;
+      }
+      .ant-menu-submenu-horizontal.ant-menu-submenu-selected > .ant-menu-submenu-title {
+        color: ${token.colorTextHeaderMenuActive} !important;
+      }
+      .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
+        background-color: ${token.colorBgHeaderMenuHover} !important;
+        color: ${token.colorTextHeaderMenuHover} !important;
+      }
+
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: var(--nb-header-height);
+      line-height: var(--nb-header-height);
+      padding: 0;
+      z-index: 100;
+      background-color: ${token.colorBgHeader} !important;
+
+      .ant-menu {
+        background-color: transparent;
+      }
+
+      .ant-menu-item,
+      .ant-menu-submenu-horizontal {
+        color: ${token.colorTextHeaderMenu} !important;
+      }
+    `;
+  }, [
+    token.colorBgHeaderMenuActive,
+    token.colorTextHeaderMenuActive,
+    token.colorBgHeaderMenuHover,
+    token.colorTextHeaderMenuHover,
+    token.colorBgHeader,
+    token.colorTextHeaderMenu,
+  ]);
+
   return (
     <Layout>
       <GlobalStyleForAdminLayout />
-      <Layout.Header
-        className={css`
-          .ant-menu.ant-menu-dark .ant-menu-item-selected,
-          .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected,
-          .ant-menu-submenu-horizontal.ant-menu-submenu-selected {
-            background-color: ${token.colorBgHeaderMenuActive} !important;
-            color: ${token.colorTextHeaderMenuActive} !important;
-          }
-          .ant-menu-submenu-horizontal.ant-menu-submenu-selected > .ant-menu-submenu-title {
-            color: ${token.colorTextHeaderMenuActive} !important;
-          }
-          .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
-            background-color: ${token.colorBgHeaderMenuHover} !important;
-            color: ${token.colorTextHeaderMenuHover} !important;
-          }
-
-          position: fixed;
-          left: 0;
-          right: 0;
-          height: var(--nb-header-height);
-          line-height: var(--nb-header-height);
-          padding: 0;
-          z-index: 100;
-          background-color: ${token.colorBgHeader} !important;
-
-          .ant-menu {
-            background-color: transparent;
-          }
-
-          .ant-menu-item,
-          .ant-menu-submenu-horizontal {
-            color: ${token.colorTextHeaderMenu} !important;
-          }
-        `}
-      >
+      <Layout.Header className={layoutHeaderCss}>
         <div
-          className={css`
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-          `}
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+          }}
         >
           <div
-            className={css`
-              position: relative;
-              z-index: 1;
-              flex: 1 1 auto;
-              display: flex;
-              height: 100%;
-            `}
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flex: '1 1 auto',
+              display: 'flex',
+              height: '100%',
+            }}
           >
             <div
               className={css`
@@ -390,27 +429,7 @@ export const InternalAdminLayout = (props: any) => {
           </div>
         </div>
       </Layout.Header>
-      {params.name && (
-        <Layout.Sider
-          className={css`
-            height: 100%;
-            /* position: fixed; */
-            position: relative;
-            left: 0;
-            top: 0;
-            background: rgba(0, 0, 0, 0);
-            z-index: 100;
-            .ant-layout-sider-children {
-              top: var(--nb-header-height);
-              position: fixed;
-              width: 200px;
-              height: calc(100vh - var(--nb-header-height));
-            }
-          `}
-          theme={'light'}
-          ref={sideMenuRef}
-        ></Layout.Sider>
-      )}
+      <AdminSideBar sideMenuRef={sideMenuRef} />
       <Layout.Content
         className={css`
           display: flex;

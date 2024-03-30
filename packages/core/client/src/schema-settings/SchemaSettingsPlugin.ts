@@ -15,8 +15,14 @@ import { customizeUpdateRecordActionSettings } from '../modules/actions/update-r
 import { customizePopupActionSettings } from '../modules/actions/view-edit-popup/customizePopupActionSettings';
 import { editActionSettings } from '../modules/actions/view-edit-popup/editActionSettings';
 import { viewActionSettings } from '../modules/actions/view-edit-popup/viewActionSettings';
-import { multiDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-multi/multiDataDetailsBlockSettings';
-import { singleDataDetailsBlockSettings } from '../modules/blocks/data-blocks/details-single/singleDataDetailsBlockSettings';
+import {
+  detailsWithPaginationSettings,
+  multiDataDetailsBlockSettings,
+} from '../modules/blocks/data-blocks/details-multi/detailsWithPaginationSettings';
+import {
+  detailsBlockSettings,
+  singleDataDetailsBlockSettings,
+} from '../modules/blocks/data-blocks/details-single/detailsBlockSettings';
 import {
   createFormBlockSettings,
   creationFormBlockSettings,
@@ -44,6 +50,7 @@ import { selectComponentFieldSettings } from '../modules/fields/component/Select
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
+import { inputNumberComponentFieldSettings } from '../modules/fields/component/InputNumber/inputNumberComponentFieldSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -55,7 +62,9 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(filterFormBlockSettings);
     this.schemaSettingsManager.add(filterFormItemFieldSettings);
     this.schemaSettingsManager.add(multiDataDetailsBlockSettings);
+    this.schemaSettingsManager.add(detailsWithPaginationSettings);
     this.schemaSettingsManager.add(singleDataDetailsBlockSettings);
+    this.schemaSettingsManager.add(detailsBlockSettings);
     this.schemaSettingsManager.add(tableSelectorBlockSettings);
     this.schemaSettingsManager.add(listBlockSettings);
     this.schemaSettingsManager.add(gridCardBlockSettings);
@@ -94,6 +103,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(subTablePopoverComponentFieldSettings);
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
     this.schemaSettingsManager.add(unixTimestampComponentFieldSettings);
+    this.schemaSettingsManager.add(inputNumberComponentFieldSettings);
 
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);

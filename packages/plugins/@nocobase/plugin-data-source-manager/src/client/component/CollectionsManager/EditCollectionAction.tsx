@@ -69,7 +69,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
             'x-decorator': 'FormItem',
             'x-component': 'Select',
             enum: '{{filterTargetKeyOptions}}',
-            'x-visible': '{{isView}}',
+            'x-visible': '{{!!isView}}',
           },
           footer: {
             type: 'void',

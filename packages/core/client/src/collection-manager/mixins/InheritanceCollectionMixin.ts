@@ -110,7 +110,7 @@ export class InheritanceCollectionMixin extends Collection {
   }
 
   // override Collection
-  getFieldsMap() {
+  protected getFieldsMap() {
     if (this.fieldsMap) {
       return this.fieldsMap;
     }

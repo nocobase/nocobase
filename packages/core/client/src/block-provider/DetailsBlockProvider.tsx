@@ -2,11 +2,12 @@ import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import _ from 'lodash';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 export const DetailsBlockContext = createContext<any>({});
 DetailsBlockContext.displayName = 'DetailsBlockContext';
@@ -24,6 +25,7 @@ const InternalDetailsBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();
   const parentRecord = useCollectionParentRecord();
   const currentRecord = (action === 'list' ? service?.data?.data?.[0] : service?.data?.data) || {};
+  const formBlockRef = useRef();
   const detailsBLockValue = useMemo(() => {
     return {
       action,
@@ -31,6 +33,7 @@ const InternalDetailsBlockProvider = (props) => {
       field,
       service,
       resource,
+      formBlockRef,
     };
   }, [action, field, form, resource, service]);
 
@@ -50,20 +53,22 @@ const InternalDetailsBlockProvider = (props) => {
 
   return (
     <DetailsBlockContext.Provider value={detailsBLockValue}>
-      <RecordProvider isNew={false} record={currentRecord} parent={parentRecord?.data}>
-        {props.children}
-      </RecordProvider>
+      <div ref={formBlockRef}>
+        <RecordProvider isNew={false} record={currentRecord} parent={parentRecord?.data}>
+          {props.children}
+        </RecordProvider>
+      </div>
     </DetailsBlockContext.Provider>
   );
 };
 
-export const DetailsBlockProvider = (props) => {
+export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
   return (
     <BlockProvider name="details" {...props}>
       <InternalDetailsBlockProvider {...props} />
     </BlockProvider>
   );
-};
+});
 
 /**
  * @deprecated
@@ -72,6 +77,11 @@ export const useDetailsBlockContext = () => {
   return useContext(DetailsBlockContext);
 };
 
+/**
+ * @deprecated
+ * 即将废弃，请用 useDetailsWithPaginationProps 或者 useDetailsProps
+ * @returns
+ */
 export const useDetailsBlockProps = () => {
   const ctx = useDetailsBlockContext();
   useEffect(() => {

@@ -23,7 +23,7 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
-import { useCollectionField } from '../utils';
+import { useCollectionField } from '../../../../data-source';
 
 const enableLink = {
   name: 'enableLink',

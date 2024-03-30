@@ -26,6 +26,7 @@ export const EsbuildSupportExts = [
   '.data',
 ];
 export const ROOT_PATH = path.join(__dirname, '../../../../');
+export const NODE_MODULES = path.join(ROOT_PATH, 'node_modules');
 export const PACKAGES_PATH = path.join(ROOT_PATH, 'packages');
 export const PLUGINS_DIR = ['plugins', 'samples', 'pro-plugins']
   .concat((process.env.PLUGINS_DIRS || '').split(','))
@@ -38,6 +39,7 @@ export const getPresetsPackages = (packages: Package[]) =>
   packages.filter((item) => item.location.startsWith(PRESETS_DIR));
 export const CORE_APP = path.join(PACKAGES_PATH, 'core/app');
 export const CORE_CLIENT = path.join(PACKAGES_PATH, 'core/client');
+export const ESM_PACKAGES = ['@nocobase/test'];
 export const CJS_EXCLUDE_PACKAGES = [
   path.join(PACKAGES_PATH, 'core/build'),
   path.join(PACKAGES_PATH, 'core/cli'),

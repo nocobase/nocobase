@@ -6,7 +6,9 @@ import { CollectionRecordProvider, CollectionRecord } from '../collection-record
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
 import { useDataSourceHeaders } from '../utils';
+import _ from 'lodash';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
+import { useCollection, useCollectionManager } from '../collection';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
@@ -15,11 +17,8 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
-  if (params.filterByTk === undefined) {
-    delete params.filterByTk;
-  }
-  const request = useRequest<T>(
-    requestService
+  const service = useMemo(() => {
+    return requestService
       ? requestService
       : (customParams) => {
           if (record) return Promise.resolve({ data: record });
@@ -28,13 +27,16 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
               `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
             );
           }
-          return resource[action]({ ...params, ...customParams }).then((res) => res.data);
-        },
-    {
-      ...requestOptions,
-      manual: true,
-    },
-  );
+          const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
+
+          return resource[action]({ ...paramsValue, ...customParams }).then((res) => res.data);
+        };
+  }, [resource, action, params, record, requestService]);
+
+  const request = useRequest<T>(service, {
+    ...requestOptions,
+    manual: true,
+  });
 
   // 因为修改 Schema 会导致 params 对象发生变化，所以这里使用 `DeepCompare`
   useDeepCompareEffect(() => {
@@ -55,6 +57,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const { sourceId, association, parentRecord } = options;
   const api = useAPIClient();
+  const cm = useCollectionManager();
   const dataBlockProps = useDataBlockProps();
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   return useRequest<T>(
@@ -63,8 +66,12 @@ function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
       if (!association) return Promise.resolve({ data: undefined });
       // "association": "Collection.Field"
       const arr = association.split('.');
-      // <collection>:get/<filterByTk>
-      const url = `${arr[0]}:get/${sourceId}`;
+      const field = cm.getCollectionField(association);
+      const isM2O = field.interface === 'm2o';
+      const filterTargetKey = cm.getCollection(arr[0]).getOption('filterTargetKey');
+      const filterKey = isM2O ? filterTargetKey : field.sourceKey;
+      // <collection>:get?filter[filterKey]=sourceId
+      const url = `${arr[0]}:get?filter[${filterKey}]=${sourceId}`;
       const res = await api.request({ url, headers });
       return res.data;
     },
@@ -88,6 +95,7 @@ export const BlockRequestProvider: FC = ({ children }) => {
     requestOptions,
     requestService,
   } = props;
+
   const currentRequest = useCurrentRequest<{ data: any }>({
     action,
     sourceId,

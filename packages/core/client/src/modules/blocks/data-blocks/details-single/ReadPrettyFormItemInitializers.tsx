@@ -47,6 +47,7 @@ const AssociatedFields = () => {
 
 /**
  * @deprecated
+ * 已弃用，请使用 readPrettyFormItemInitializers 代替
  */
 export const readPrettyFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ReadPrettyFormItemInitializers',

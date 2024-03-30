@@ -234,7 +234,8 @@ export class Collection {
   getFields(predicate?: GetCollectionFieldPredicate) {
     return predicate ? filter(this.fields, predicate) : this.fields;
   }
-  getFieldsMap() {
+
+  protected getFieldsMap() {
     if (!this.fieldsMap) {
       this.fieldsMap = this.getFields().reduce((memo, field) => {
         memo[field.name] = field;
