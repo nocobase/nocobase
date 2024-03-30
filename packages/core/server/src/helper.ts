@@ -81,8 +81,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     app.use(dataWrapping(), { tag: 'dataWrapping', after: 'i18n' });
   }
 
-  app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
-  app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'restApi' });
+  app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'dataWrapping' });
 }
 
 export const createAppProxy = (app: Application) => {

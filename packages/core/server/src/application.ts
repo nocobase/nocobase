@@ -1096,6 +1096,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       database: this.createDatabase(options),
       acl: createACL(),
       resourceManager: createResourcer(options),
+      useACL: options.acl,
     });
 
     this._dataSourceManager = new DataSourceManager();

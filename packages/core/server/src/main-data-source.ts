@@ -1,5 +1,5 @@
 import { DataSourceOptions, SequelizeDataSource } from '@nocobase/data-source-manager';
-import { parseVariables } from './middlewares';
+import { db2resource, parseVariables } from './middlewares';
 import { dateTemplate } from './middlewares/data-template';
 
 export class MainDataSource extends SequelizeDataSource {
@@ -18,7 +18,7 @@ export class MainDataSource extends SequelizeDataSource {
       },
     });
 
-    if (options.acl !== false) {
+    if (options.useACL !== false) {
       this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
 

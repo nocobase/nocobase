@@ -32,6 +32,7 @@ export class DataSourceManager {
 
       const ds = this.dataSources.get(name);
       ctx.dataSource = ds;
+
       return ds.middleware(this.middlewares)(ctx, next);
     };
   }
