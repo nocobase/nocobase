@@ -75,6 +75,7 @@ describe('primary key', () => {
     await assertPrimaryKey('someField', true);
   });
 });
+
 describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('primary key not in sqlite', () => {
   let db: Database;
 

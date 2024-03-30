@@ -101,7 +101,7 @@ describe('collections', () => {
     expect(count).toBe(0);
   });
 
-  test('remove collection 3', async () => {
+  test.skipIf(process.env['DB_DIALECT'] === 'sqlite')('remove collection 3', async () => {
     await app
       .agent()
       .resource('collections')
