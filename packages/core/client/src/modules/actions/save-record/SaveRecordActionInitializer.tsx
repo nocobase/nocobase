@@ -25,6 +25,7 @@ export const SaveRecordActionInitializer = () => {
     },
     'x-component-props': {
       useProps: '{{ useCreateActionProps }}',
+      refreshDataBlockRequest: true,
     },
   };
 

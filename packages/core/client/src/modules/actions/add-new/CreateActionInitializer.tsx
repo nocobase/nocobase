@@ -17,6 +17,7 @@ export const CreateActionInitializer = () => {
       type: 'primary',
       component: 'CreateRecordAction',
       icon: 'PlusOutlined',
+      refreshDataBlockRequest: true,
     },
     properties: {
       drawer: {

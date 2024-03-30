@@ -1,7 +1,11 @@
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
-import { ButtonEditor, SecondConFirm } from '../../../schema-component/antd/action/Action.Designer';
+import {
+  ButtonEditor,
+  SecondConFirm,
+  RefreshDataBlockRequest,
+} from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 
 export const deleteActionSettings = new SchemaSettings({
@@ -30,6 +34,15 @@ export const deleteActionSettings = new SchemaSettings({
     {
       name: 'secondConFirm',
       Component: SecondConFirm,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
+      },
     },
     {
       name: 'delete',

@@ -2,7 +2,11 @@ import { useMemo } from 'react';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
-import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
+import {
+  ButtonEditor,
+  RemoveButton,
+  RefreshDataBlockRequest,
+} from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsEnableChildCollections } from '../../../schema-settings/SchemaSettings';
 
@@ -42,6 +46,15 @@ export const addNewActionSettings = new SchemaSettings({
           [getChildrenCollections, name],
         );
         return isChildCollectionAction;
+      },
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: true,
+        };
       },
     },
     {

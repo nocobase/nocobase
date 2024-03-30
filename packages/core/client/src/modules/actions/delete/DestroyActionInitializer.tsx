@@ -16,6 +16,7 @@ export const DestroyActionInitializer = (props) => {
         content: "{{t('Are you sure you want to delete it?')}}",
       },
       useProps: '{{ useDestroyActionProps }}',
+      refreshDataBlockRequest: true,
     },
     'x-action-settings': {
       triggerWorkflows: [],

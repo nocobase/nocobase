@@ -9,6 +9,7 @@ import {
   AssignedFieldValues,
   useDesignable,
   useSchemaToolbar,
+  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -137,6 +138,15 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
     useVisible() {
       const fieldSchema = useFieldSchema();
       return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+    },
+  },
+  {
+    name: 'refreshDataBlockRequest',
+    Component: RefreshDataBlockRequest,
+    useComponentProps() {
+      return {
+        isPopupAction: true,
+      };
     },
   },
   {

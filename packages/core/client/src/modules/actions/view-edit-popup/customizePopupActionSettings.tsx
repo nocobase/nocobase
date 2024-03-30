@@ -1,7 +1,11 @@
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
-import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
+import {
+  ButtonEditor,
+  RemoveButton,
+  RefreshDataBlockRequest,
+} from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 
@@ -34,6 +38,15 @@ export const customizePopupActionSettings = new SchemaSettings({
       componentProps: {
         openMode: true,
         openSize: true,
+      },
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: true,
+        };
       },
     },
     {

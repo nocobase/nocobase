@@ -14,6 +14,7 @@ export const UpdateSubmitActionInitializer = (props) => {
       type: 'primary',
       htmlType: 'submit',
       useProps: '{{ useUpdateActionProps }}',
+      refreshDataBlockRequest: true,
     },
     'x-action-settings': {
       triggerWorkflows: [],

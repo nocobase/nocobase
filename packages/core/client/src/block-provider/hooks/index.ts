@@ -228,7 +228,7 @@ export const useCreateActionProps = () => {
         setVisible?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
-        __parent?.service?.refresh?.();
+        // __parent?.service?.refresh?.();
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
           await resetFormCorrectly(form);
@@ -670,7 +670,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           } finally {
             actionField.data.loading = false;
           }
-          service?.refresh?.();
+          // service?.refresh?.();
           if (!(resource instanceof TableFieldResource)) {
             __parent?.service?.refresh?.();
           }
@@ -1032,7 +1032,7 @@ export const useBulkDestroyActionProps = () => {
       if (currentPage === totalPage) {
         service.params[0].page = currentPage - 1;
       }
-      service?.refresh?.();
+      // service?.refresh?.();
     },
   };
 };

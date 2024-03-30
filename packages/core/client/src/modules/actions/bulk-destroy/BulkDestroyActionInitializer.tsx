@@ -22,6 +22,7 @@ export const BulkDestroyActionInitializer = (props) => {
         content: "{{t('Are you sure you want to delete it?')}}",
       },
       useProps: '{{ useBulkDestroyActionProps }}',
+      refreshDataBlockRequest: true,
     },
     'x-action-settings': {
       triggerWorkflows: [],

@@ -4,12 +4,11 @@ import {
   SchemaInitializerOpenModeSchemaItems,
   SchemaSettings,
   SchemaSettingsDivider,
-  SchemaSettingsItemGroup,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
-  useCompile,
   useDesignable,
   useSchemaToolbar,
+  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
 import React from 'react';
@@ -104,6 +103,15 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
       Component: UpdateMode,
     },
     {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: true,
+        };
+      },
+    },
+    {
       name: 'remove',
       sort: 100,
       Component: RemoveButton as any,
@@ -144,6 +152,15 @@ export const bulkEditActionSettings = new SchemaSettings({
     {
       name: 'updateMode',
       Component: UpdateMode,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: true,
+        };
+      },
     },
     {
       name: 'remove',

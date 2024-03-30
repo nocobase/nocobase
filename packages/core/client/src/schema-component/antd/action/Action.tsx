@@ -26,6 +26,7 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
+import { useDataBlockRequest } from '../../../data-source';
 
 export const Action: ComposedAction = observer(
   (props: any) => {
@@ -46,6 +47,7 @@ export const Action: ComposedAction = observer(
       actionCallback,
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
+      refreshDataBlockRequest,
       ...others
     } = useProps(props);
     const aclCtx = useACLActionParamsContext();
@@ -74,6 +76,7 @@ export const Action: ComposedAction = observer(
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
+    const service = useDataBlockRequest();
 
     useEffect(() => {
       field.stateOfLinkageRules = {};
@@ -105,7 +108,11 @@ export const Action: ComposedAction = observer(
           const onOk = () => {
             onClick?.(e);
             setVisible(true);
+            console.log(3333);
             run();
+            if (refreshDataBlockRequest) {
+              service?.refresh?.();
+            }
           };
           if (confirm?.content) {
             modal.confirm({

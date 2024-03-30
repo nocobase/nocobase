@@ -704,6 +704,15 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
+        name: 'refreshDataBlockRequest',
+        Component: RefreshDataBlockRequest,
+        useComponentProps() {
+          return {
+            isPopupAction: false,
+          };
+        },
+      },
+      {
         name: 'remove',
         sort: 100,
         Component: RemoveButton as any,
@@ -792,5 +801,31 @@ export const ActionDesigner = (props) => {
   );
 };
 
+export function RefreshDataBlockRequest({ isPopupAction = true }) {
+  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] || {};
+  console.log(refreshDataBlockRequest);
+  return (
+    <SchemaSettingsSwitchItem
+      title={isPopupAction ? t('Refresh data after closing th popup') : t('Refresh data after performing the action')}
+      //兼容历史数据
+      checked={refreshDataBlockRequest !== false}
+      onChange={(value) => {
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].refreshDataBlockRequest = value;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+            },
+          },
+        });
+      }}
+    />
+  );
+}
 ActionDesigner.ButtonEditor = ButtonEditor;
 ActionDesigner.RemoveButton = RemoveButton;
