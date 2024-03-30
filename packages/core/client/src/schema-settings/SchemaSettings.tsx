@@ -42,11 +42,11 @@ import {
   ActionContextProvider,
   AssociationOrCollectionProvider,
   CollectionFieldOptions_deprecated,
+  CollectionRecordProvider,
   DataSourceApplicationProvider,
   Designable,
   FormDialog,
   FormProvider,
-  CollectionRecordProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
@@ -56,6 +56,7 @@ import {
   useAPIClient,
   useBlockRequestContext,
   useCollectionManager_deprecated,
+  useCollectionRecord,
   useCollection_deprecated,
   useCompile,
   useDataBlockProps,
@@ -63,7 +64,6 @@ import {
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
-  useCollectionRecord,
   useRecord,
   useSchemaSettingsItem,
   useSortFields,
@@ -82,9 +82,9 @@ import {
   useFormActiveFields,
 } from '../block-provider/hooks';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
+import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
-import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -291,7 +291,7 @@ export const SchemaSettingsTemplate = function Template(props) {
 
 const findGridSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'FormV2') {
+    if (s['x-component'] === 'FormV2' || s['x-component'] === 'Details') {
       const f = s.reduceProperties((buf, s) => {
         if (s['x-component'] === 'Grid' || s['x-component'] === 'BlockTemplate') {
           return s;
@@ -308,7 +308,7 @@ const findGridSchema = (fieldSchema) => {
 
 const findBlockTemplateSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'FormV2') {
+    if (s['x-component'] === 'FormV2' || s['x-component'] === 'Details') {
       const f = s.reduceProperties((buf, s) => {
         if (s['x-component'] === 'BlockTemplate') {
           return s;
@@ -572,7 +572,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
               field.required = false;
               fieldSchema['required'] = false;
             }
-            if (template && ctx?.dn) {
+            if (template && template.uid === fieldSchema['x-uid'] && ctx?.dn) {
               await ctx?.dn.remove(null, options);
             } else {
               await dn.remove(null, options);

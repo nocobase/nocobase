@@ -1,11 +1,14 @@
 import path from 'path';
 
 import { ApplicationOptions, Plugin } from '@nocobase/server';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer, createMockServer, mockDatabase } from '@nocobase/test';
 
 import functions from './functions';
 import triggers from './triggers';
 import instructions from './instructions';
+import { Resourcer } from '@nocobase/resourcer';
+import { SequelizeDataSource } from '@nocobase/data-source-manager';
+import { uid } from '@nocobase/utils';
 
 export interface MockServerOptions extends ApplicationOptions {
   collectionsPath?: string;
@@ -33,7 +36,7 @@ export async function getApp(options: MockServerOptions = {}): Promise<MockServe
       }
     }
   }
-  return createMockServer({
+  const app = await createMockServer({
     ...others,
     plugins: [
       [
@@ -49,6 +52,30 @@ export async function getApp(options: MockServerOptions = {}): Promise<MockServe
       ...plugins,
     ],
   });
+
+  await app.dataSourceManager.add(
+    new SequelizeDataSource({
+      name: 'another',
+      collectionManager: {
+        database: mockDatabase({
+          tablePrefix: `t${uid(5)}`,
+        }),
+      },
+      resourceManager: {},
+    }),
+  );
+  const another = app.dataSourceManager.dataSources.get('another');
+  // @ts-ignore
+  const anotherDB = another.collectionManager.db;
+
+  await anotherDB.import({
+    directory: path.resolve(__dirname, 'collections'),
+  });
+  await anotherDB.sync();
+
+  another.acl.allow('*', '*');
+
+  return app;
 }
 
 export default class WorkflowTestPlugin extends Plugin {

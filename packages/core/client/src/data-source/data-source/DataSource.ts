@@ -11,6 +11,7 @@ export interface DataSourceOptions {
   collections?: CollectionOptions[];
   errorMessage?: string;
   status?: 'loaded' | 'loading-failed' | 'loading' | 'reloading';
+  isDBInstance?: boolean;
 }
 
 export type DataSourceFactory = new (options: DataSourceOptions, dataSourceManager: DataSourceManager) => DataSource;
@@ -82,6 +83,9 @@ export abstract class DataSource {
   }
 }
 
+/**
+ * @internal
+ */
 export class LocalDataSource extends DataSource {
   getDataSource() {
     return {

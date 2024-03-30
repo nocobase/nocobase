@@ -1,7 +1,7 @@
 import { App, Button, Result, Typography } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CardItem, useCompile, useDesignable } from '../../schema-component';
+import { CardItem, EllipsisWithTooltip, useCompile, useDesignable } from '../../schema-component';
 import { useDataSource } from '../data-source/DataSourceProvider';
 import { useDataSourceManager } from '../data-source';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
@@ -15,6 +15,9 @@ export interface CollectionDeletedPlaceholderProps {
 
 const { Text } = Typography;
 
+/**
+ * @internal
+ */
 export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps> = ({ type, name, message }) => {
   const { designable, dn } = useDesignable();
   const { modal } = App.useApp();
@@ -63,7 +66,11 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
 
   if (designable) {
     if (type === 'Field') {
-      return <Text type="secondary">{messageValue}</Text>;
+      return (
+        <EllipsisWithTooltip ellipsis>
+          <Text type="secondary">{messageValue}</Text>
+        </EllipsisWithTooltip>
+      );
     }
 
     return (

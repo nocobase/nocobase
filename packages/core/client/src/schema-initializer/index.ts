@@ -123,7 +123,6 @@ export * from './buttons';
 export * from './items';
 export {
   createDetailsBlockSchema,
-  createFilterFormBlockSchema,
   createFormBlockSchema,
   createReadPrettyFormBlockSchema,
   createTableBlockSchema,

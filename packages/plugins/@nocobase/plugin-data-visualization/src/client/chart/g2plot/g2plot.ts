@@ -1,12 +1,13 @@
 import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 import configs from './configs';
+import { getAntChart } from './AntChart';
 
 export class G2PlotChart extends Chart {
-  constructor({ name, title, component, config }: ChartProps) {
+  constructor({ name, title, Component, config }: ChartProps) {
     super({
       name,
       title,
-      component,
+      Component: getAntChart(Component),
       config: ['xField', 'yField', 'seriesField', ...(config || [])],
     });
     this.addConfigs(configs);
@@ -35,11 +36,11 @@ export class G2PlotChart extends Chart {
         },
       },
       tooltip: (d, index: number, data, column: any) => {
-        const field = column.y.field;
+        const field = column.y?.field;
         const props = fieldProps[field];
         const name = props?.label || field;
         const transformer = props?.transformer;
-        const value = column.y.value[index];
+        const value = column.y?.value[index];
         return { name, value: transformer ? transformer(value) : value };
       },
       axis: {
@@ -85,7 +86,7 @@ export class G2PlotChart extends Chart {
   getReference() {
     return {
       title: this.title,
-      link: `https://g2plot.antv.antgroup.com/api/plots/${this.name}`,
+      link: `https://ant-design-charts-next.antgroup.com/examples#statistics-${this.name}`,
     };
   }
 }

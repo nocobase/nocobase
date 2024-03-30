@@ -2,15 +2,15 @@ import { Plugin } from '@nocobase/client';
 import { NAMESPACE } from '../constants';
 import { Configuration } from './Configuration';
 
-class APIKeysPlugin extends Plugin {
+export class PluginAPIKeysClient extends Plugin {
   async load() {
-    this.app.pluginSettingsManager.add(NAMESPACE, {
+    this.pluginSettingsManager.add(NAMESPACE, {
       icon: 'KeyOutlined',
-      title: '{{t("API keys", {"ns": "api-keys"})}}',
+      title: this.t('API keys'),
       Component: Configuration,
       aclSnippet: 'pm.api-keys.configuration',
     });
   }
 }
 
-export default APIKeysPlugin;
+export default PluginAPIKeysClient;

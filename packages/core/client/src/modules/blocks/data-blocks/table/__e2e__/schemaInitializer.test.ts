@@ -1,4 +1,5 @@
 import { createBlockInPage, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
+import { T3686 } from './templatesOfBug';
 
 test.describe('where table block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -9,7 +10,45 @@ test.describe('where table block can be added', () => {
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
   });
 
-  test('popup', async () => {});
+  test('popup', async ({ page, mockPage, mockRecord }) => {
+    await mockPage(T3686).goto();
+    await mockRecord('parentCollection');
+    const childRecord = await mockRecord('childCollection');
+
+    // 打开弹窗
+    await page.getByLabel('action-Action.Link-View').click();
+
+    // 添加当前表关系区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'childAssociationField ->' }).click();
+    await page
+      .getByTestId('drawer-Action.Container-childCollection-View record')
+      .getByLabel('schema-initializer-TableV2-')
+      .hover();
+    await page.getByRole('menuitem', { name: 'childTargetText' }).click();
+
+    // 添加父表关系区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'parentAssociationField ->' }).click();
+    await page.getByLabel('schema-initializer-TableV2-table:configureColumns-parentTargetCollection').hover();
+    await page.getByRole('menuitem', { name: 'parentTargetText' }).click();
+
+    // 普通关系区块应该显示正常
+    await expect(
+      page
+        .getByLabel('block-item-CardItem-childTargetCollection-table')
+        .getByText(childRecord.childAssociationField[0].childTargetText),
+    ).toBeVisible();
+
+    // 父表关系区块应该显示正常
+    await expect(
+      page
+        .getByLabel('block-item-CardItem-parentTargetCollection-table')
+        .getByText(childRecord.parentAssociationField[0].parentTargetText),
+    ).toBeVisible();
+  });
 });
 
 test.describe('configure actions', () => {

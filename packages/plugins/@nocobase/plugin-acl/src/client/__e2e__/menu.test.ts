@@ -29,8 +29,10 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
     .nth(1)
     .click();
   await page.getByRole('tab').getByText('Menu').click();
-  await page.waitForSelector('.ant-table');
-  await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input')).toBeChecked({ checked: true });
+  await page.waitForTimeout(1000);
+  await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input').last()).toBeChecked({
+    checked: true,
+  });
   await expect(page.getByRole('row', { name: 'page2' }).locator('.ant-checkbox-input')).toBeChecked({ checked: false });
   //修改菜单权限，page1无权限,page2有权限
   await updateRole({ name: roleData.name, menuUiSchemas: [uid2] });
@@ -47,8 +49,10 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
     .nth(1)
     .click();
   await page.getByRole('tab').getByText('Menu').click();
-  await page.waitForSelector('.ant-table');
-  await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input')).toBeChecked({ checked: false });
+  await page.waitForTimeout(1000);
+  await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input').last()).toBeChecked({
+    checked: false,
+  });
   await expect(page.getByRole('row', { name: 'page2' }).locator('.ant-checkbox-input')).toBeChecked({ checked: true });
   //通过路由访问无权限的菜单,跳到有权限的第一个菜单
   await page.goto(`/admin/${uid1}`);

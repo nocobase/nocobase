@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
 import { useSchemaInitializerRender } from '../../../application';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 interface ActionBarContextForceProps {
   layout?: 'one-column' | 'tow-columns';
@@ -46,10 +47,13 @@ const Portal: React.FC = (props) => {
   );
 };
 
-export const ActionBar = observer(
-  (props: any) => {
+export const ActionBar = withDynamicSchemaProps(
+  observer((props: any) => {
     const { forceProps = {} } = useActionBarContext();
+
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { layout = 'tow-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
+
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
     const { designable } = useDesignable();
@@ -128,6 +132,6 @@ export const ActionBar = observer(
         {render()}
       </div>
     );
-  },
+  }),
   { displayName: 'ActionBar' },
 );

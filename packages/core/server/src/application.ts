@@ -139,19 +139,41 @@ export type MaintainingCommandStatus = {
 };
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
+  /**
+   * @internal
+   */
   declare middleware: any;
+  /**
+   * @internal
+   */
   stopped = false;
+  /**
+   * @internal
+   */
   ready = false;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  /**
+   * @internal
+   */
   public rawOptions: ApplicationOptions;
+  /**
+   * @internal
+   */
   public activatedCommand: {
     name: string;
   } = null;
+  /**
+   * @internal
+   */
   public running = false;
+  /**
+   * @internal
+   */
   public perfHistograms = new Map<string, RecordableHistogram>();
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
+  protected _logger: SystemLogger;
   private _authenticated = false;
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
@@ -169,12 +191,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _loaded: boolean;
 
+  /**
+   * @internal
+   */
   get loaded() {
     return this._loaded;
   }
 
   private _maintainingMessage: string;
 
+  /**
+   * @internal
+   */
   get maintainingMessage() {
     return this._maintainingMessage;
   }
@@ -198,8 +226,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.mainDataSource.collectionManager.db;
   }
 
-  protected _logger: SystemLogger;
-
   get logger() {
     return this._logger;
   }
@@ -220,6 +246,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cache;
   }
 
+  /**
+   * @internal
+   */
   set cache(cache: Cache) {
     this._cache = cache;
   }
@@ -254,6 +283,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _locales: Locale;
 
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link #localeManager} instead.
+   * @deprecated
+   */
   get locales() {
     return this._locales;
   }
@@ -288,10 +322,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._dataSourceManager;
   }
 
+  /**
+   * @internal
+   */
   getMaintaining() {
     return this._maintainingCommandStatus;
   }
 
+  /**
+   * @internal
+   */
   setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
     this._maintainingCommandStatus = _maintainingCommandStatus;
 
@@ -305,6 +345,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._maintaining = true;
   }
 
+  /**
+   * @internal
+   */
   setMaintainingMessage(message: string) {
     this._maintainingMessage = message;
 
@@ -314,11 +357,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
   }
 
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link #this.version.get()} instead.
+   * @deprecated
+   */
   getVersion() {
     return packageJson.version;
   }
 
   /**
+   * This method is deprecated and should not be used.
+   * Use {@link #this.pm.addPreset()} instead.
    * @deprecated
    */
   plugin<O = any>(pluginClass: any, options?: O) {
@@ -335,6 +385,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this;
   }
 
+  /**
+   * @internal
+   */
   callback() {
     const fn = compose(this.middleware.nodes);
 
@@ -348,14 +401,29 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     };
   }
 
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link #this.db.collection()} instead.
+   * @deprecated
+   */
   collection(options: CollectionOptions) {
     return this.db.collection(options);
   }
 
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link #this.resourcer.define()} instead.
+   * @deprecated
+   */
   resource(options: ResourceOptions) {
     return this.resourcer.define(options);
   }
 
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link #this.resourcer.registerActions()} instead.
+   * @deprecated
+   */
   actions(handlers: any, options?: ActionsOptions) {
     return this.resourcer.registerActions(handlers);
   }
@@ -368,11 +436,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
-  async preload() {
-    // load core collections
-    // load plugin commands
-  }
-
+  /**
+   * @internal
+   */
   async reInit() {
     if (!this._loaded) {
       return;
@@ -476,12 +542,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   /**
+   * This method is deprecated and should not be used.
+   * Use {@link this.pm.get()} instead.
    * @deprecated
    */
   getPlugin<P extends Plugin>(name: string | typeof Plugin) {
     return this.pm.get(name) as P;
   }
 
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link this.runAsCLI()} instead.
+   * @deprecated
+   */
   async parse(argv = process.argv) {
     return this.runAsCLI(argv);
   }
@@ -504,7 +577,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return await this.runAsCLI([command, ...args], { from: 'user', throwError: true });
   }
 
-  createCli() {
+  protected createCLI() {
     const command = new AppCommand('nocobase')
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
@@ -544,6 +617,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return command;
   }
 
+  /**
+   * @internal
+   */
   async loadMigrations(options) {
     const { directory, context, namespace } = options;
     const migrations = {
@@ -570,6 +646,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return migrations;
   }
 
+  /**
+   * @internal
+   */
   async loadCoreMigrations() {
     const migrations = await this.loadMigrations({
       directory: resolve(__dirname, 'migrations'),
@@ -600,11 +679,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     };
   }
 
+  /**
+   * @internal
+   */
   async loadPluginCommands() {
     this.log.debug('load plugin commands');
     await this.pm.loadCommands();
   }
 
+  /**
+   * @internal
+   */
   async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean; reqId?: string }) {
     if (this.activatedCommand) {
       return;
@@ -689,6 +774,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.stopped = false;
   }
 
+  /**
+   * @internal
+   */
   async emitStartedEvent(options: StartOptions = {}) {
     await this.emitAsync('__started', this, {
       maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
@@ -700,6 +788,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._started;
   }
 
+  /**
+   * @internal
+   */
   async tryReloadOrRestart(options: StartOptions = {}) {
     if (this._started) {
       await this.restart(options);
@@ -898,6 +989,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     };
   }
 
+  /**
+   * @internal
+   */
   reInitEvents() {
     for (const eventName of this.eventNames()) {
       for (const listener of this.listeners(eventName)) {
@@ -943,7 +1037,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cronJobManager = new CronJobManager(this);
 
-    this._cli = this.createCli();
+    this._cli = this.createCLI();
     this._i18n = createI18n(options);
     this.context.db = this.db;
 

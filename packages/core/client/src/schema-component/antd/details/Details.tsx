@@ -1,11 +1,11 @@
 import React from 'react';
 import { FormV2 } from '../form-v2';
-import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import _ from 'lodash';
 import { Empty } from 'antd';
 import { useDataBlockRequest } from '../../../data-source';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
-export const Details = (props) => {
+export const Details = withDynamicSchemaProps((props) => {
   const request = useDataBlockRequest();
 
   if (!request?.loading && _.isEmpty(request?.data?.data)) {
@@ -13,4 +13,4 @@ export const Details = (props) => {
   }
 
   return <FormV2 {...props} />;
-};
+});

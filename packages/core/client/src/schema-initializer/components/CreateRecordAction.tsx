@@ -2,7 +2,8 @@ import { DownOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, forwardRef, createRef } from 'react';
+import { composeRef } from 'rc-util/lib/ref';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import {
@@ -96,55 +97,55 @@ function useAclCheckFn() {
   return actionAclCheck;
 }
 
-export const CreateRecordAction = observer(
-  (props: any) => {
-    const [visible, setVisible] = useState(false);
-    const collection = useCollection_deprecated();
-    const fieldSchema = useFieldSchema();
-    const field: any = useField();
-    const [currentCollection, setCurrentCollection] = useState(collection.name);
-    const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
-    const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
-    const values = useRecord();
-    const ctx = useActionContext();
-    const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values } as any });
-    useEffect(() => {
-      field.stateOfLinkageRules = {};
-      linkageRules
-        .filter((k) => !k.disabled)
-        .forEach((v) => {
-          v.actions?.forEach((h) => {
-            linkageAction({
-              operator: h.operator,
-              field,
-              condition: v.condition,
-              variables,
-              localVariables,
-            });
+const InternalCreateRecordAction = (props: any, ref) => {
+  const [visible, setVisible] = useState(false);
+  const collection = useCollection_deprecated();
+  const fieldSchema = useFieldSchema();
+  const field: any = useField();
+  const [currentCollection, setCurrentCollection] = useState(collection.name);
+  const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
+  const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
+  const values = useRecord();
+  const ctx = useActionContext();
+  const variables = useVariables();
+  const localVariables = useLocalVariables({ currentForm: { values } as any });
+  useEffect(() => {
+    field.stateOfLinkageRules = {};
+    linkageRules
+      .filter((k) => !k.disabled)
+      .forEach((v) => {
+        v.actions?.forEach((h) => {
+          linkageAction({
+            operator: h.operator,
+            field,
+            condition: v.condition,
+            variables,
+            localVariables,
           });
         });
-    }, [field, linkageRules, localVariables, variables]);
-    return (
-      <div className={actionDesignerCss}>
-        <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
-          <CreateAction
-            {...props}
-            onClick={(collectionData) => {
-              setVisible(true);
-              setCurrentCollection(collectionData.name);
-              setCurrentCollectionDataSource(collectionData.dataSource);
-            }}
-          />
-          <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
-            <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-          </CollectionProvider_deprecated>
-        </ActionContextProvider>
-      </div>
-    );
-  },
-  { displayName: 'CreateRecordAction' },
-);
+      });
+  }, [field, linkageRules, localVariables, variables]);
+  const internalRef = createRef<HTMLButtonElement | HTMLAnchorElement>();
+  const buttonRef = composeRef(ref, internalRef);
+  return (
+    //@ts-ignore
+    <div className={actionDesignerCss} ref={buttonRef as React.Ref<HTMLButtonElement>}>
+      <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+        <CreateAction
+          {...props}
+          onClick={(collectionData) => {
+            setVisible(true);
+            setCurrentCollection(collectionData.name);
+            setCurrentCollectionDataSource(collectionData.dataSource);
+          }}
+        />
+        <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
+          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+        </CollectionProvider_deprecated>
+      </ActionContextProvider>
+    </div>
+  );
+};
 
 function getLinkageCollection(str, form, field) {
   const variablesCtx = { $form: form.values, $iteration: form.values };
@@ -283,6 +284,7 @@ function FinallyButton({
   designable: boolean;
 }) {
   const { getCollection } = useCollectionManager_deprecated();
+
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
@@ -360,6 +362,7 @@ function FinallyButton({
         onClick?.(collection);
       }}
       style={{
+        ...props?.style,
         display: !designable && field?.data?.hidden && 'none',
         opacity: designable && field?.data?.hidden && 0.1,
       }}
@@ -368,3 +371,5 @@ function FinallyButton({
     </Button>
   );
 }
+
+export const CreateRecordAction = forwardRef<HTMLButtonElement | HTMLAnchorElement, any>(InternalCreateRecordAction);

@@ -78,7 +78,8 @@ test('Collection event add data trigger, filter single line text field not null,
   const deleteRecordNode = new DeleteRecordNode(page, deleteRecordNodeName);
   await deleteRecordNode.nodeConfigure.click();
   await deleteRecordNode.collectionDropDown.click();
-  await page.getByText(deleteNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: deleteNodeCollectionDisplayName }).click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
   await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
@@ -172,7 +173,8 @@ test('Collection event add data trigger, filter single line text field is trigge
   const deleteRecordNode = new DeleteRecordNode(page, deleteRecordNodeName);
   await deleteRecordNode.nodeConfigure.click();
   await deleteRecordNode.collectionDropDown.click();
-  await page.getByText(deleteNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: deleteNodeCollectionDisplayName }).click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
   await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
