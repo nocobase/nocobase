@@ -11,12 +11,21 @@ import {
   CollectionBlockInitializer,
   getCollectionFieldOptions,
   useWorkflowAnyExecuted,
+  CheckboxGroupWithTooltip,
+  RadioWithTooltip,
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
+const COLLECTION_TRIGGER_ACTION = {
+  CREATE: 'create',
+  UPDATE: 'update',
+  UPSERT: 'updateOrCreate',
+  DESTROY: 'destroy',
+};
+
 export default class extends Trigger {
   title = `{{t("Action event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Triggers after specific operations on data are submitted, such as create, update, delete, etc., or directly submitting a record to the workflow.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Triggers after specific action on data submitted, such as create, update, etc., or directly submitting a record to the workflow.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       type: 'string',
@@ -33,6 +42,65 @@ export default class extends Trigger {
           fulfill: {
             state: {
               value: [],
+            },
+          },
+        },
+      ],
+    },
+    global: {
+      type: 'boolean',
+      title: `{{t("Trigger mode", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        direction: 'vertical',
+        options: [
+          {
+            label: `{{t("Triggers only when the button bound with this workflow clicked", { ns: "${NAMESPACE}" })}}`,
+            value: false,
+          },
+          {
+            label: `{{t("The following selected actions all trigger this event", { ns: "${NAMESPACE}" })}}`,
+            value: true,
+          },
+        ],
+      },
+      default: false,
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{!!$deps[0]}}',
+            },
+          },
+        },
+      ],
+    },
+    actions: {
+      type: 'number',
+      title: `{{t("Action to trigger", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'CheckboxGroupWithTooltip',
+      'x-component-props': {
+        direction: 'vertical',
+        options: [
+          { label: `{{t("Create a record", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.CREATE },
+          { label: `{{t("Update a record", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPDATE },
+          // { label: `{{t("upsert", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPSERT },
+          // {
+          //   label: `{{t("Delete single or many records", { ns: "${NAMESPACE}" })}}`,
+          //   value: COLLECTION_TRIGGER_ACTION.DESTROY,
+          // },
+        ],
+      },
+      required: true,
+      'x-reactions': [
+        {
+          dependencies: ['collection', 'global'],
+          fulfill: {
+            state: {
+              visible: '{{!!$deps[0] && !!$deps[1]}}',
             },
           },
         },
@@ -67,6 +135,10 @@ export default class extends Trigger {
   scope = {
     useCollectionDataSource,
     useWorkflowAnyExecuted,
+  };
+  components = {
+    RadioWithTooltip,
+    CheckboxGroupWithTooltip,
   };
   isActionTriggerable = (config, context) => {
     return ['create', 'update', 'customize:update', 'customize:triggerWorkflows'].includes(context.action);
