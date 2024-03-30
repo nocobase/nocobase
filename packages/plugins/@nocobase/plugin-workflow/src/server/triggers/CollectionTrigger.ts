@@ -42,7 +42,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     .get(dataSourceName)
     .collectionManager.getCollection(collectionName);
   const { transaction, context } = options;
-  const { repository, model } = collection;
+  const { repository, filterTargetKey } = collection;
 
   // NOTE: if no configured fields changed, do not trigger
   if (
@@ -62,7 +62,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     // const calculation = toCalculation(condition);
     const count = await repository.count({
       filter: {
-        $and: [condition, { [model.primaryKeyAttribute]: data[model.primaryKeyAttribute] }],
+        $and: [condition, { [filterTargetKey]: data[filterTargetKey] }],
       },
       context,
       transaction,
@@ -82,7 +82,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       return set;
     }, new Set());
     result = await repository.findOne({
-      filterByTk: data[model.primaryKeyAttribute],
+      filterByTk: data[filterTargetKey],
       appends: Array.from(includeFields),
       transaction,
     });

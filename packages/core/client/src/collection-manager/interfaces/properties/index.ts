@@ -79,6 +79,15 @@ export const autoIncrement = {
   'x-disabled': '{{ !createMainOnly }}',
 };
 
+export const autoFill = {
+  type: 'boolean',
+  title: '{{t("Default value")}}',
+  'x-content': '{{t("Automatically generate default values")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+  'x-disabled': '{{ !createMainOnly }}',
+};
+
 export const relationshipType: ISchema = {
   type: 'string',
   title: '{{t("Relationship type")}}',

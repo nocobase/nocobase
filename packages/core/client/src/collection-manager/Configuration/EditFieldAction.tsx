@@ -236,6 +236,7 @@ export const EditFieldAction = (props) => {
         </a>
         <SchemaComponent
           schema={schema}
+          distributed={false}
           components={{ ...components, ArrayTable }}
           scope={{
             getContainer,
