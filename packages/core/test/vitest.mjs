@@ -186,8 +186,6 @@ export const defineConfig = () => {
   const isServer = process.env.TEST_ENV === 'server-side';
   const config = vitestConfig(mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()));
 
-
-
   const isCoverage = process.argv.includes('--coverage');
   if (!isCoverage) {
     return config;
@@ -203,7 +201,6 @@ export const defineConfig = () => {
   if (reportsDirectory) {
     config.test.coverage.reportsDirectory = reportsDirectory;
   }
-
 
   return config;
 };
