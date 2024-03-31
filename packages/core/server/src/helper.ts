@@ -77,11 +77,11 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(i18n, { tag: 'i18n', after: 'cors' });
 
-  if (options.dataWrapping !== false) {
-    app.use(dataWrapping(), { tag: 'dataWrapping', after: 'i18n' });
-  }
+  app.use(app.dataSourceManager.middleware(), { tag: 'dataSource' });
 
-  app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'dataWrapping' });
+  if (options.dataWrapping !== false) {
+    app.use(dataWrapping(), { tag: 'dataWrapping', after: 'dataSource' });
+  }
 }
 
 export const createAppProxy = (app: Application) => {

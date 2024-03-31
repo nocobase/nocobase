@@ -9,10 +9,6 @@ export function dataWrapping() {
       return;
     }
 
-    // if (!ctx?.action?.params) {
-    //   return;
-    // }
-
     if (ctx.body instanceof stream.Readable) {
       return;
     }

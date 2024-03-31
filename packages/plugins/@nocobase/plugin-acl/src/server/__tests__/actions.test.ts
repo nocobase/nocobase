@@ -282,6 +282,7 @@ describe('destroy action with acl', () => {
       },
       {
         before: 'acl',
+        after: 'auth',
       },
     );
 
