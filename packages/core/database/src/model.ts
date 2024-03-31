@@ -82,6 +82,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
           return data;
         },
         this.hiddenObjKey,
+        this.handleBigInt,
       ];
       return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), obj);
     };
@@ -137,6 +138,21 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       .map((field) => field.options.name);
 
     return lodash.omit(obj, hiddenFields);
+  }
+
+  private handleBigInt(data, options: JSONTransformerOptions) {
+    const bigIntFields = Object.keys(options.model.rawAttributes).filter(
+      (attribute) => options.model.rawAttributes[attribute].type.constructor.toString() === 'BIGINT',
+    );
+
+    for (const field of bigIntFields) {
+      // if value is less than MAX_SAFE_INTEGER, return number type
+      if (data[field] <= Number.MAX_SAFE_INTEGER) {
+        data[field] = Number(data[field]);
+      }
+    }
+
+    return data;
   }
 
   private sortAssociations(data, { field }: JSONTransformerOptions): any {

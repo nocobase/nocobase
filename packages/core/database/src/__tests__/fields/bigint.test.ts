@@ -37,4 +37,30 @@ describe('bigint', () => {
 
     expect(item.toJSON()['id']).toBe('35809622393264128');
   });
+
+  it('should return number type when bigint is less than MAX_SAFE_INTEGER', async () => {
+    const Test = db.collection({
+      name: 'test',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Test.repository.create({
+      values: {
+        id: 123456,
+      },
+    });
+
+    const item = await Test.repository.findOne();
+
+    expect(item.toJSON()['id']).toBe(123456);
+  });
 });
