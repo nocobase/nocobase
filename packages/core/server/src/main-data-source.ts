@@ -19,14 +19,14 @@ export class MainDataSource extends SequelizeDataSource {
     });
 
     if (options.useACL !== false) {
-      this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
+      this.resourceManager.use(this.acl.middleware(), { group: 'acl', after: 'auth' });
     }
 
     this.resourceManager.use(parseVariables, {
-      tag: 'parseVariables',
+      group: 'parseVariables',
       after: 'acl',
     });
 
-    this.resourceManager.use(dateTemplate, { tag: 'dateTemplate', after: 'acl' });
+    this.resourceManager.use(dateTemplate, { group: 'dateTemplate', after: 'acl' });
   }
 }
