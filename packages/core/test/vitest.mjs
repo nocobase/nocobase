@@ -170,11 +170,14 @@ export const getReportsDirectory = (isServer) => {
   if (!filterFileOrDir) return;
   const isPackage = fs.existsSync(path.join(process.cwd(), filterFileOrDir, 'package.json'));
   if (isPackage) {
-    let reportsDirectory = `./storage/${filterFileOrDir.replace('packages/', '')}`;
+    let reportsDirectory = `./storage/coverage/${filterFileOrDir.replace('packages/', '')}`;
+
     const isCore = filterFileOrDir.includes('packages/core');
+
     if (!isCore) {
       reportsDirectory = `${reportsDirectory}/${isServer ? 'server' : 'client'}`;
     }
+
     return reportsDirectory;
   }
 }
