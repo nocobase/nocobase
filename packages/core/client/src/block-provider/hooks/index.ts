@@ -880,6 +880,7 @@ export const useUpdateActionProps = () => {
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
+        console.log(333);
         actionField.data.loading = false;
         // __parent?.service?.refresh?.();
         setVisible?.(false);
@@ -924,7 +925,7 @@ export const useDestroyActionProps = () => {
   const data = useParamsFromRecord();
   const actionSchema = useFieldSchema();
   return {
-    async onClick(e, callBack) {
+    async onClick(e?, callBack?) {
       const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
       await resource.destroy({
         filterByTk,
@@ -1023,7 +1024,7 @@ export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
   return {
-    async onClick(e, callBack) {
+    async onClick(e?, callBack?) {
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }

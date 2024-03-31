@@ -1,39 +1,40 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useBulkDestroyActionProps, useDestroyActionProps, useUpdateActionProps } from '../../block-provider/hooks';
-import { useSchemaTemplateManager } from '../SchemaTemplateManagerProvider';
 import { uiSchemaTemplatesCollection } from '../collections/uiSchemaTemplates';
 import { CollectionTitle } from './CollectionTitle';
+import { useBlockRequestContext } from '../../block-provider';
 
 const useUpdateSchemaTemplateActionProps = () => {
   const props = useUpdateActionProps();
-  const { refresh } = useSchemaTemplateManager();
+  const { __parent } = useBlockRequestContext();
   return {
     async onClick() {
       await props.onClick();
-      refresh();
+      __parent?.service?.refresh?.();
     },
   };
 };
 
 const useBulkDestroyTemplateProps = () => {
   const props = useBulkDestroyActionProps();
-  const { refresh } = useSchemaTemplateManager();
+  const { service } = useBlockRequestContext();
+
   return {
     async onClick() {
       await props.onClick();
-      refresh();
+      service?.refresh?.();
     },
   };
 };
 
 const useDestroyTemplateProps = () => {
   const props = useDestroyActionProps();
-  const { refresh } = useSchemaTemplateManager();
+  const { service } = useBlockRequestContext();
   return {
     async onClick() {
       await props.onClick();
-      refresh();
+      service?.refresh?.();
     },
   };
 };
@@ -122,6 +123,7 @@ export const uiSchemaTemplatesSchema: ISchema = {
                       'x-component-props': {
                         openMode: 'drawer',
                         icon: 'EditOutlined',
+                        refreshDataBlockRequest: false,
                       },
                       properties: {
                         drawer: {

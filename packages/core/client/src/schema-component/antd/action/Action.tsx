@@ -121,6 +121,7 @@ export const Action: ComposedAction = observer(
             if (onClick) {
               onClick(e, () => {
                 if (refreshDataBlockRequest) {
+                  console.log(888);
                   service?.refresh?.();
                 }
               });
