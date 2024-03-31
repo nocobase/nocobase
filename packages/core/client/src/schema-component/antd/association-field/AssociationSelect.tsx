@@ -58,7 +58,6 @@ const InternalAssociationSelect = observer(
     const form = useForm();
     const api = useAPIClient();
     const resource = api.resource(collectionField.target);
-    const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter);
     const recordData = useCollectionRecordData();
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;
@@ -68,15 +67,14 @@ const InternalAssociationSelect = observer(
     useEffect(() => {
       const id = uid();
       form.addEffects(id, () => {
-        if (linkageFields?.length > 0) {
-          //支持深层次子表单
-          onFieldChange('*', (fieldPath: any) => {
-            if (linkageFields.includes(fieldPath.props.name) && field.value) {
-              props.onChange(field.initialValue);
-              setInnerValue(field.initialValue);
-            }
-          });
-        }
+        //支持深层次子表单
+        onFieldChange('*', (fieldPath: any) => {
+          const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter) || [];
+          if (linkageFields.includes(fieldPath?.props?.name) && field.value) {
+            props.onChange(field.initialValue);
+            setInnerValue(field.initialValue);
+          }
+        });
       });
 
       return () => {
