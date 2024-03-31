@@ -62,6 +62,7 @@ export default class extends Trigger {
           {
             label: `{{t("The following selected actions all trigger this event", { ns: "${NAMESPACE}" })}}`,
             value: true,
+            tooltip: `{{t('Action to submit to workflow directly is only supported on bound buttons, and will not be affected under global mode.', { ns: "${NAMESPACE}" })}}`,
           },
         ],
       },

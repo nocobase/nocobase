@@ -1,11 +1,12 @@
+import React from 'react';
 import { ISchema, useForm } from '@formily/react';
 import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../locale';
 // import { triggers } from '../triggers';
-import React from 'react';
 import { executionSchema } from './executions';
+import { TriggerOptionRender } from '../components/TriggerOptionRender';
 
 const collection = {
   name: 'workflows',
@@ -32,6 +33,7 @@ const collection = {
         'x-component': 'Select',
         'x-component-props': {
           options: `{{getTriggersOptions()}}`,
+          optionRender: TriggerOptionRender,
         },
         required: true,
       } as ISchema,
