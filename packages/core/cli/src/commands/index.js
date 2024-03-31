@@ -18,6 +18,7 @@ module.exports = (cli) => {
   require('./doc')(cli);
   require('./pm2')(cli);
   require('./test')(cli);
+  require('./test-coverage')(cli);
   require('./umi')(cli);
   require('./upgrade')(cli);
   require('./postinstall')(cli);
