@@ -1,6 +1,12 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { ButtonEditor, SchemaSettings, useDesignable, useSchemaToolbar } from '@nocobase/client';
+import {
+  ButtonEditor,
+  SchemaSettings,
+  useDesignable,
+  useSchemaToolbar,
+  RefreshDataBlockRequest,
+} from '@nocobase/client';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShared } from './useShared';
@@ -53,6 +59,15 @@ export const importActionSchemaSettings = new SchemaSettings({
             });
             dn.refresh();
           },
+        };
+      },
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: true,
         };
       },
     },

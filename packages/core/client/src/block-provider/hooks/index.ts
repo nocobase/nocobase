@@ -881,7 +881,7 @@ export const useUpdateActionProps = () => {
             : undefined,
         });
         actionField.data.loading = false;
-        __parent?.service?.refresh?.();
+        // __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;
@@ -924,7 +924,7 @@ export const useDestroyActionProps = () => {
   const data = useParamsFromRecord();
   const actionSchema = useFieldSchema();
   return {
-    async onClick() {
+    async onClick(e, callBack) {
       const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
       await resource.destroy({
         filterByTk,
@@ -941,9 +941,13 @@ export const useDestroyActionProps = () => {
           ...service?.params?.[0],
           page: page - 1,
         });
-      } else {
-        service?.refresh?.();
       }
+      if (callBack) {
+        callBack?.();
+      }
+      //  else {
+      //   service?.refresh?.();
+      // }
 
       if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
@@ -1019,7 +1023,7 @@ export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
   return {
-    async onClick() {
+    async onClick(e, callBack) {
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
@@ -1031,6 +1035,9 @@ export const useBulkDestroyActionProps = () => {
       const totalPage = service.data?.meta?.totalPage;
       if (currentPage === totalPage) {
         service.params[0].page = currentPage - 1;
+      }
+      if (callBack) {
+        callBack?.();
       }
       // service?.refresh?.();
     },

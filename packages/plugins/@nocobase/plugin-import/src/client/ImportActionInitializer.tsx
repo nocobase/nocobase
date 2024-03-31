@@ -65,6 +65,7 @@ export const ImportActionInitializer = () => {
     'x-component-props': {
       icon: 'CloudUploadOutlined',
       openMode: 'modal',
+      refreshDataBlockRequest: true,
     },
     properties: {
       modal: {

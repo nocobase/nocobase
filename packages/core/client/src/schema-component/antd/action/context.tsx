@@ -6,7 +6,7 @@ import { useDataBlockRequest } from '../../../data-source';
 
 export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
-const RefreshDataBlockRequestAction = ['create', 'update', 'destroy', 'customize', 'importXlsx'];
+const RefreshDataBlockRequestAction = ['create', 'update', 'destroy', 'customize'];
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
   const contextProps = useActionContext();
   const { visible, fieldSchema } = contextProps || {};
@@ -16,9 +16,8 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
   useEffect(() => {
     if (
       visible !== undefined &&
-      (refreshDataBlockRequest ||
-        (refreshDataBlockRequest !== false &&
-          RefreshDataBlockRequestAction.find((v) => fieldSchema?.['x-action'].includes(v))))
+      refreshDataBlockRequest !== false &&
+      RefreshDataBlockRequestAction.find((v) => fieldSchema?.['x-action']?.includes?.(v))
     ) {
       if (isFirstRender.current) {
         isFirstRender.current = false;

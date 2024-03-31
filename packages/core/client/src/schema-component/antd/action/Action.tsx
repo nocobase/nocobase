@@ -47,7 +47,6 @@ export const Action: ComposedAction = observer(
       actionCallback,
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
-      refreshDataBlockRequest,
       ...others
     } = useProps(props);
     const aclCtx = useACLActionParamsContext();
@@ -65,6 +64,7 @@ export const Action: ComposedAction = observer(
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+    const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
 
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
@@ -77,7 +77,7 @@ export const Action: ComposedAction = observer(
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
     const service = useDataBlockRequest();
-
+    console.log(refreshDataBlockRequest);
     useEffect(() => {
       field.stateOfLinkageRules = {};
       linkageRules
@@ -106,12 +106,18 @@ export const Action: ComposedAction = observer(
 
         if (!disabled && aclCtx) {
           const onOk = () => {
-            onClick?.(e);
-            setVisible(true);
-            console.log(3333);
-            run();
-            if (refreshDataBlockRequest) {
-              service?.refresh?.();
+            if (onClick) {
+              onClick(e, () => {
+                if (refreshDataBlockRequest) {
+                  service?.refresh?.();
+                }
+              });
+            } else {
+              setVisible(true);
+              run();
+              if (refreshDataBlockRequest) {
+                service?.refresh?.();
+              }
             }
           };
           if (confirm?.content) {

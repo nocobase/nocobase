@@ -28,6 +28,7 @@ export const BulkUpdateActionInitializer = () => {
     'x-component-props': {
       icon: 'EditOutlined',
       useProps: '{{ useCustomizeBulkUpdateActionProps }}',
+      refreshDataBlockRequest: true,
     },
   };
   return <BlockInitializer {...itemConfig} schema={schema} item={itemConfig} />;

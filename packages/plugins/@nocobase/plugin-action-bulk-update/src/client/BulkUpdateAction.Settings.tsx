@@ -145,7 +145,7 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
     Component: RefreshDataBlockRequest,
     useComponentProps() {
       return {
-        isPopupAction: true,
+        isPopupAction: false,
       };
     },
   },
