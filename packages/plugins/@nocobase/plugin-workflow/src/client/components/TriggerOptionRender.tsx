@@ -9,7 +9,9 @@ export function TriggerOptionRender({ data }) {
   return (
     <Space direction="vertical">
       <Tag color={color}>{compile(label)}</Tag>
-      <Typography.Text type="secondary">{compile(options.description)}</Typography.Text>
+      <Typography.Text type="secondary" style={{ whiteSpace: 'normal' }}>
+        {compile(options.description)}
+      </Typography.Text>
     </Space>
   );
 }

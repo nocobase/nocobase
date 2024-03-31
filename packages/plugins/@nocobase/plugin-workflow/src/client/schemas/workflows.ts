@@ -34,6 +34,7 @@ const collection = {
         'x-component-props': {
           options: `{{getTriggersOptions()}}`,
           optionRender: TriggerOptionRender,
+          popupMatchSelectWidth: true,
         },
         required: true,
       } as ISchema,
