@@ -77,7 +77,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test8')).toBeVisible();
 
     // add blocks
-    await addBlock(['table Details right', 'General']);
+    await addBlock(['table Details right', 'Current record']);
     await addBlock(['form Form (Edit)']);
     await addBlock(['Markdown']);
 
@@ -105,16 +105,18 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // add relationship blocks
-    await addBlock(['table Details right', 'Many to one']);
+    await addBlock(['table Details right', 'Association records', 'Many to one']);
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
-    await addBlock(['table Table right', 'One to many']);
+    await addBlock(['table Table right', 'Association records', 'One to many']);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
 
     async function addBlock(names: string[]) {
       await page.getByLabel('schema-initializer-Grid-popup').hover();
-      for (const name of names) {
-        await page.getByRole('menuitem', { name }).click();
+      for (let i = 0; i < names.length - 1; i++) {
+        const name = names[i];
+        await page.getByRole('menuitem', { name }).hover();
       }
+      await page.getByRole('menuitem', { name: names[names.length - 1] }).click();
       await page.mouse.move(300, 0);
     }
   });
@@ -163,7 +165,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add blocks
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).hover();
-    await page.getByRole('menuitem', { name: 'General' }).click();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
@@ -188,12 +190,14 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).hover();
+    await page.getByRole('menuitem', { name: 'Association records' }).hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Association records' }).hover();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();

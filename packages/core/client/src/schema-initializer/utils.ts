@@ -923,13 +923,13 @@ export const useCollectionDataSourceItems = ({
         componentProps: {
           ...dataBlockInitializerProps,
           icon: null,
-          title: t('Associated records'),
+          title: t('Association records'),
           name: 'associationRecords',
           hideSearch: false,
           items: [
             {
               name: 'associationFields',
-              label: t('Associated fields'),
+              label: t('Association fields'),
               type: 'subMenu', // 这里套一层 subMenu 是因为 DataBlockInitializer 组件需要这样的数据结构，其实这层 subMenu 最终是不会渲染出来的
               children: associationFields,
             },
