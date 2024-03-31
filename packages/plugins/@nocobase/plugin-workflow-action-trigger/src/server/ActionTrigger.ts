@@ -73,8 +73,10 @@ export default class extends Trigger {
       if (resourceName === 'workflows' && actionName === 'trigger') {
         localWorkflows.set(item.key, item);
       } else if (item.config.collection === fullCollectionName) {
-        if (item.config.global && item.config.actions?.includes(actionName)) {
-          globalWorkflows.set(item.key, item);
+        if (item.config.global) {
+          if (item.config.actions?.includes(actionName)) {
+            globalWorkflows.set(item.key, item);
+          }
         } else {
           localWorkflows.set(item.key, item);
         }
