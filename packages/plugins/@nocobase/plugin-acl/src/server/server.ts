@@ -692,7 +692,7 @@ export class PluginACL extends Plugin {
           ctx.logger.error(error);
         }
       },
-      { after: 'restApi', group: 'after' },
+      { after: 'dataSource', group: 'with-acl-meta' },
     );
   }
 

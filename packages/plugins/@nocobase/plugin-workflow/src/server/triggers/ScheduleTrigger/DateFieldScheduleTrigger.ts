@@ -283,8 +283,11 @@ export default class ScheduleTrigger {
   }
 
   schedule(workflow: WorkflowModel, record, nextTime, toggle = true, options = {}) {
-    const { model } = this.workflow.app.db.getCollection(workflow.config.collection);
-    const recordPk = record.get(model.primaryKeyAttribute);
+    const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+    const { filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
+      .get(dataSourceName)
+      .collectionManager.getCollection(collectionName);
+    const recordPk = record.get(filterTargetKey);
     if (toggle) {
       const nextInterval = Math.max(0, nextTime - Date.now());
       const key = `${workflow.id}:${recordPk}@${nextTime}`;
@@ -307,8 +310,11 @@ export default class ScheduleTrigger {
   }
 
   async trigger(workflow: WorkflowModel, record, nextTime, { transaction }: Transactionable = {}) {
-    const { repository, model } = this.workflow.app.db.getCollection(workflow.config.collection);
-    const recordPk = record.get(model.primaryKeyAttribute);
+    const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+    const { repository, filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
+      .get(dataSourceName)
+      .collectionManager.getCollection(collectionName);
+    const recordPk = record.get(filterTargetKey);
     const data = await repository.findOne({
       filterByTk: recordPk,
       appends: workflow.config.appends,

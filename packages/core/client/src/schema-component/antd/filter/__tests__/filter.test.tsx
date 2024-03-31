@@ -10,11 +10,12 @@ describe('Filter', () => {
   it('Filter & Action', async () => {
     render(<App3 />);
 
+    let tooltip;
     await waitFor(async () => {
       await userEvent.click(screen.getByText(/open/i));
+      tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
     });
-    const tooltip = screen.getByRole('tooltip');
-    expect(tooltip).toBeInTheDocument();
 
     // 弹窗中显示的内容
     expect(within(tooltip).getByText(/name/i)).toBeInTheDocument();
@@ -78,9 +79,12 @@ describe('Filter', () => {
   it('FilterAction', async () => {
     render(<App5 />);
 
-    await waitFor(() => userEvent.click(screen.getByText(/filter/i)));
-    const tooltip = screen.getByRole('tooltip');
-    expect(tooltip).toBeInTheDocument();
+    let tooltip;
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText(/filter/i));
+      tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+    });
 
     // 弹窗中显示的内容
     expect(within(tooltip).getByText(/name/i)).toBeInTheDocument();

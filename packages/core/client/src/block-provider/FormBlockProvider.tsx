@@ -81,7 +81,11 @@ const InternalFormBlockProvider = (props) => {
  */
 export const useFormBlockType = () => {
   const ctx = useFormBlockContext() || {};
-  return { type: ctx.type } as { type: 'update' | 'create' };
+  const res = useMemo(() => {
+    return { type: ctx.type } as { type: 'update' | 'create' };
+  }, [ctx.type]);
+
+  return res;
 };
 
 export const useIsDetailBlock = () => {
@@ -106,8 +110,9 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
     }
   }
   const createFlag =
-    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) || !currentCollection.name;
-
+    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) ||
+    !currentCollection.name ||
+    !collection;
   if (!detailFlag && !createFlag && !isCusomeizeCreate) {
     return null;
   }
