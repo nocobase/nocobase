@@ -1,5 +1,4 @@
-import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
-import React, { FC, createContext, useContext, useMemo } from 'react';
+import React, { FC, createContext, useContext, useMemo, useRef } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { CollectionRecordProvider, CollectionRecord } from '../collection-record';
@@ -8,7 +7,7 @@ import { useDataBlockResource } from './DataBlockResourceProvider';
 import { useDataSourceHeaders } from '../utils';
 import _ from 'lodash';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
-import { useCollection, useCollectionManager } from '../collection';
+import { useCollectionManager } from '../collection';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
@@ -35,21 +34,9 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 
   const request = useRequest<T>(service, {
     ...requestOptions,
-    manual: true,
+    refreshDeps: [action, resource, JSON.stringify(record), JSON.stringify(params)],
+    ready: action && dataLoadingMode === 'auto',
   });
-
-  // 因为修改 Schema 会导致 params 对象发生变化，所以这里使用 `DeepCompare`
-  useDeepCompareEffect(() => {
-    if (action && dataLoadingMode === 'auto') {
-      request.run();
-    }
-  }, [params, action, record]);
-
-  useUpdateEffect(() => {
-    if (action && dataLoadingMode === 'auto') {
-      request.run();
-    }
-  }, [resource]);
 
   return request;
 }
