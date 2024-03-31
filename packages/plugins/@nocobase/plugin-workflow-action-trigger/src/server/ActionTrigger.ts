@@ -5,7 +5,7 @@ import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
 
 import WorkflowPlugin, { Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
-import { parseCollectionName } from '@nocobase/data-source-manager';
+import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
 interface Context extends ActionContext, DefaultContext {}
 
@@ -54,7 +54,7 @@ export default class extends Trigger {
       params: { triggerWorkflows = '', values },
     } = context.action;
     const dataSourceHeader = context.get('x-data-source') || 'main';
-
+    const fullCollectionName = joinCollectionName(dataSourceHeader, resourceName);
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
     const userInfo = {
@@ -67,30 +67,32 @@ export default class extends Trigger {
     const workflows = Array.from(this.workflow.enabledCache.values()).filter(
       (item) => item.type === 'action' && item.config.collection,
     );
-    const globalWorkflows = [];
-    const localWorkflows = [];
+    const globalWorkflows = new Map();
+    const localWorkflows = new Map();
     workflows.forEach((item) => {
-      if (item.config.global) {
-        if (item.config.actions?.includes(actionName)) {
-          globalWorkflows.push(item);
-        } else if (resourceName === 'workflows' && actionName === 'trigger') {
-          localWorkflows.push(item);
+      if (resourceName === 'workflows' && actionName === 'trigger') {
+        localWorkflows.set(item.key, item);
+      } else if (item.config.collection === fullCollectionName) {
+        if (item.config.global && item.config.actions?.includes(actionName)) {
+          globalWorkflows.set(item.key, item);
+        } else {
+          localWorkflows.set(item.key, item);
         }
-      } else {
-        localWorkflows.push(item);
       }
     });
     const triggeringLocalWorkflows = [];
+    const uniqueTriggersMap = new Map();
     triggers.forEach((trigger) => {
       const [key] = trigger;
-      const workflow = localWorkflows.find((item) => item.key === key);
-      if (workflow) {
+      const workflow = localWorkflows.get(key);
+      if (workflow && !uniqueTriggersMap.has(key)) {
         triggeringLocalWorkflows.push(workflow);
+        uniqueTriggersMap.set(key, true);
       }
     });
     const syncGroup = [];
     const asyncGroup = [];
-    for (const workflow of triggeringLocalWorkflows.concat(globalWorkflows)) {
+    for (const workflow of triggeringLocalWorkflows.concat(...globalWorkflows.values())) {
       const { collection, appends = [] } = workflow.config;
       const [dataSourceName, collectionName] = parseCollectionName(collection);
       const dataPath = triggersKeysMap.get(workflow.key);
