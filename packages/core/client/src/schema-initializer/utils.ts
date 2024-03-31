@@ -923,7 +923,7 @@ export const useCollectionDataSourceItems = ({
         componentProps: {
           ...dataBlockInitializerProps,
           icon: null,
-          title: t('Association records'),
+          title: t('Associated records'),
           name: 'associationRecords',
           hideSearch: false,
           items: [

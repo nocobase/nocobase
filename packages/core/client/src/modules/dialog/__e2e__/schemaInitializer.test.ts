@@ -105,9 +105,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // add relationship blocks
-    await addBlock(['table Details right', 'Association records', 'Many to one']);
+    await addBlock(['table Details right', 'Associated records', 'Many to one']);
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
-    await addBlock(['table Table right', 'Association records', 'One to many']);
+    await addBlock(['table Table right', 'Associated records', 'One to many']);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
 
     async function addBlock(names: string[]) {
@@ -190,14 +190,14 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).hover();
-    await page.getByRole('menuitem', { name: 'Association records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'table Table right' }).hover();
-    await page.getByRole('menuitem', { name: 'Association records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
