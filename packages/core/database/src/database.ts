@@ -247,10 +247,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       opts.timezone = '+00:00';
     }
 
-    if (options.dialect === 'postgres') {
-      // https://github.com/sequelize/sequelize/issues/1774
-      require('pg').defaults.parseInt8 = true;
-    }
+    // if (options.dialect === 'postgres') {
+    //   // https://github.com/sequelize/sequelize/issues/1774
+    //   require('pg').defaults.parseInt8 = true;
+    // }
 
     this.options = opts;
 

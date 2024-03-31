@@ -32,5 +32,9 @@ describe('bigint', () => {
         id: '35809622393264128',
       },
     });
+
+    const item = await Test.repository.findOne();
+
+    expect(item.toJSON()['id']).toBe('35809622393264128');
   });
 });
