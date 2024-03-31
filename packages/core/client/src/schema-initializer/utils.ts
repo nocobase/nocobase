@@ -903,6 +903,8 @@ export const useCollectionDataSourceItems = ({
         collectionName: collection.name,
         dataSource: collection.dataSource,
         Component: DataBlockInitializer,
+        // 目的是使点击无效
+        onClick() {},
         componentProps: {
           ...dataBlockInitializerProps,
           icon: null,
