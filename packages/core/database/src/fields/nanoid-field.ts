@@ -9,11 +9,12 @@ export class NanoidField extends Field {
   }
 
   init() {
-    const { name, size, customAlphabet: customAlphabetOptions } = this.options;
+    const { name, size, customAlphabet: customAlphabetOptions, autoFill } = this.options;
 
     this.listener = async (instance) => {
       const value = instance.get(name);
-      if (!value) {
+
+      if (!value && autoFill !== false) {
         const nanoIdFunc = customAlphabetOptions ? customAlphabet(customAlphabetOptions) : nanoid;
         instance.set(name, nanoIdFunc(size || DEFAULT_SIZE));
       }
@@ -37,4 +38,5 @@ export interface NanoidFieldOptions extends BaseColumnFieldOptions {
   type: 'nanoid';
   size?: number;
   customAlphabet?: string;
+  autoFill?: boolean;
 }

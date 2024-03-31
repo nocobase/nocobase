@@ -56,11 +56,12 @@ export const DynamicComponent = (props: Props) => {
             'x-read-pretty': false,
             'x-validator': undefined,
             'x-decorator': undefined,
+            'x-disabled': disabled,
           }}
         />
       </FieldContext.Provider>
     );
-  }, [props.schema]);
+  }, [props.schema, disabled]);
   return (
     <FormContext.Provider value={form}>
       {component

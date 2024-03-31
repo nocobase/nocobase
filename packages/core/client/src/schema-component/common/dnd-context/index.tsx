@@ -1,86 +1,92 @@
 import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
 import { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
 import { observer } from '@formily/react';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../';
 import { createDesignable, useDesignable } from '../../hooks';
 
-const useDragEnd = (props?: any) => {
+const useDragEnd = (onDragEnd) => {
   const { refresh } = useDesignable();
   const api = useAPIClient();
   const { t } = useTranslation();
 
-  return (event: DragEndEvent) => {
-    const { active, over } = event;
-    const activeSchema = active?.data?.current?.schema;
-    const overSchema = over?.data?.current?.schema;
-    const insertAdjacent = over?.data?.current?.insertAdjacent;
-    const breakRemoveOn = over?.data?.current?.breakRemoveOn;
-    const wrapSchema = over?.data?.current?.wrapSchema;
-    const onSuccess = over?.data?.current?.onSuccess;
-    const removeParentsIfNoChildren = over?.data?.current?.removeParentsIfNoChildren ?? true;
-    if (!activeSchema || !overSchema) {
-      props?.onDragEnd?.(event);
-      return;
-    }
+  return useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      const activeSchema = active?.data?.current?.schema;
+      const overSchema = over?.data?.current?.schema;
+      const insertAdjacent = over?.data?.current?.insertAdjacent;
+      const breakRemoveOn = over?.data?.current?.breakRemoveOn;
+      const wrapSchema = over?.data?.current?.wrapSchema;
+      const onSuccess = over?.data?.current?.onSuccess;
+      const removeParentsIfNoChildren = over?.data?.current?.removeParentsIfNoChildren ?? true;
+      if (!activeSchema || !overSchema) {
+        onDragEnd?.(event);
+        return;
+      }
 
-    if (activeSchema === overSchema) {
-      props?.onDragEnd?.(event);
-      return;
-    }
+      if (activeSchema === overSchema) {
+        onDragEnd?.(event);
+        return;
+      }
 
-    if (activeSchema.parent === overSchema && insertAdjacent === 'beforeEnd') {
-      props?.onDragEnd?.(event);
-      return;
-    }
+      if (activeSchema.parent === overSchema && insertAdjacent === 'beforeEnd') {
+        onDragEnd?.(event);
+        return;
+      }
 
-    const dn = createDesignable({
-      t,
-      api,
-      refresh,
-      current: overSchema,
-    });
-
-    dn.loadAPIClientEvents();
-
-    if (activeSchema.parent === overSchema.parent) {
-      dn.insertBeforeBeginOrAfterEnd(activeSchema);
-      props?.onDragEnd?.(event);
-      return;
-    }
-
-    if (insertAdjacent) {
-      dn.insertAdjacent(insertAdjacent, activeSchema, {
-        wrap: wrapSchema,
-        breakRemoveOn,
-        removeParentsIfNoChildren,
-        onSuccess,
+      const dn = createDesignable({
+        t,
+        api,
+        refresh,
+        current: overSchema,
       });
-      props?.onDragEnd?.(event);
-      return;
-    }
-  };
+
+      dn.loadAPIClientEvents();
+
+      if (activeSchema.parent === overSchema.parent) {
+        dn.insertBeforeBeginOrAfterEnd(activeSchema);
+        onDragEnd?.(event);
+        return;
+      }
+
+      if (insertAdjacent) {
+        dn.insertAdjacent(insertAdjacent, activeSchema, {
+          wrap: wrapSchema,
+          breakRemoveOn,
+          removeParentsIfNoChildren,
+          onSuccess,
+        });
+        onDragEnd?.(event);
+        return;
+      }
+    },
+    [onDragEnd],
+  );
 };
 
 export const DndContext = observer(
   (props: Props) => {
     const { t } = useTranslation();
     const [visible, setVisible] = useState(true);
+
+    const onDragStart = useCallback(
+      (event) => {
+        const { active } = event;
+        const activeSchema = active?.data?.current?.schema;
+        setVisible(!!activeSchema);
+        if (props?.onDragStart) {
+          props?.onDragStart?.(event);
+        }
+      },
+      [props?.onDragStart],
+    );
+
+    const onDragEnd = useDragEnd(props?.onDragEnd);
+
     return (
-      <DndKitContext
-        collisionDetection={rectIntersection}
-        {...props}
-        onDragStart={(event) => {
-          const { active } = event;
-          const activeSchema = active?.data?.current?.schema;
-          setVisible(!!activeSchema);
-          if (props?.onDragStart) {
-            props?.onDragStart?.(event);
-          }
-        }}
-        onDragEnd={useDragEnd(props)}
-      >
+      <DndKitContext collisionDetection={rectIntersection} {...props} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <DragOverlay
           dropAnimation={{
             duration: 10,

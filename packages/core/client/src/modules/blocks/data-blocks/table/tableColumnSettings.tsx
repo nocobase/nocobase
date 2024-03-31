@@ -7,8 +7,9 @@ import { useCollectionManager_deprecated } from '../../../../collection-manager'
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { SchemaSettingsDefaultValue, isPatternDisabled } from '../../../../schema-settings';
+import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { useFieldComponentName } from './utils';
+import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',

@@ -357,10 +357,6 @@ export class Collection<
       );
     }
 
-    if (this.options.autoGenId !== false && options.primaryKey) {
-      this.model.removeAttribute('id');
-    }
-
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);

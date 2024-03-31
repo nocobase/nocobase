@@ -195,6 +195,12 @@ const WithoutForm = (props) => {
   );
 };
 
+const formLayoutCss = css`
+  .ant-formily-item-feedback-layout-loose {
+    margin-bottom: 12px;
+  }
+`;
+
 export const Form: React.FC<FormProps> & {
   Designer?: any;
   FilterDesigner?: any;
@@ -210,14 +216,7 @@ export const Form: React.FC<FormProps> & {
     const formDisabled = disabled || field.disabled;
     return (
       <ConfigProvider componentDisabled={formDisabled}>
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          className={css`
-            .ant-formily-item-feedback-layout-loose {
-              margin-bottom: 12px;
-            }
-          `}
-        >
+        <form onSubmit={(e) => e.preventDefault()} className={formLayoutCss}>
           <Spin spinning={field.loading || false}>
             {form ? (
               <WithForm form={form} {...others} disabled={formDisabled} />

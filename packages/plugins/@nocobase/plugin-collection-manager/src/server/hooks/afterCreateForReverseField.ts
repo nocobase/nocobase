@@ -8,6 +8,7 @@ export function afterCreateForReverseField(db: Database) {
     if (!reverseKey) {
       return;
     }
+
     const reverse = await Field.model.findByPk(reverseKey, { transaction });
     await reverse.update({ reverseKey: model.get('key') }, { hooks: false, transaction });
   };
