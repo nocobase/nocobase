@@ -55,6 +55,8 @@ export function dataWrapping() {
     if (ctx.body && ctx.state.messages?.length) {
       ctx.body.messages = ctx.state.messages;
     }
+
+    ctx.dataWrapped = true;
   };
 }
 
