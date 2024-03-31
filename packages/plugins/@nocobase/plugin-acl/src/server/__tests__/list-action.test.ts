@@ -88,6 +88,7 @@ describe('list action with acl', () => {
       },
       {
         before: 'acl',
+        after: 'auth',
       },
     );
 
@@ -132,6 +133,7 @@ describe('list action with acl', () => {
       },
       {
         before: 'acl',
+        after: 'auth',
       },
     );
 
@@ -172,6 +174,7 @@ describe('list action with acl', () => {
       },
       {
         before: 'acl',
+        after: 'auth',
       },
     );
 
@@ -214,6 +217,7 @@ describe('list action with acl', () => {
       },
       {
         before: 'acl',
+        after: 'auth',
       },
     );
 

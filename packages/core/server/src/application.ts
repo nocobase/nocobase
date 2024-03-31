@@ -1073,13 +1073,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
-    this.resourcer.use(this._authManager.middleware(), { tag: 'auth' });
-    this.resourcer.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
-
-    if (this.options.acl !== false) {
-      this.resourcer.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
-    }
-
     this._locales = new Locale(createAppProxy(this));
 
     if (options.perfHooks) {
@@ -1103,10 +1096,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       database: this.createDatabase(options),
       acl: createACL(),
       resourceManager: createResourcer(options),
+      useACL: options.acl,
     });
 
     this._dataSourceManager = new DataSourceManager();
 
+    // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
   }
 
