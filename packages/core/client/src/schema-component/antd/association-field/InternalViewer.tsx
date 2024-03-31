@@ -47,6 +47,8 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const isTreeCollection = targetCollection?.template === 'tree';
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const getLabelUiSchema = useLabelUiSchemaV2();
+    const [btnHover, setBtnHover] = useState(false);
+
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
         const value = record?.[fieldNames?.label || 'label'];
@@ -70,7 +72,11 @@ export const ReadPrettyInternalViewer: React.FC = observer(
                 text
               ) : enableLink !== false ? (
                 <a
+                  onMouseEnter={() => {
+                    setBtnHover(true);
+                  }}
                   onClick={(e) => {
+                    setBtnHover(true);
                     e.stopPropagation();
                     e.preventDefault();
                     if (designable) {
@@ -91,6 +97,16 @@ export const ReadPrettyInternalViewer: React.FC = observer(
           </Fragment>
         );
       });
+
+    const btnElement = (
+      <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
+        {renderRecords()}
+      </EllipsisWithTooltip>
+    );
+
+    if (enableLink === false || !btnHover) {
+      return btnElement;
+    }
     const renderWithoutTableFieldResourceProvider = () => (
       <WithoutTableFieldResource.Provider value={true}>
         <FormProvider>
@@ -124,9 +140,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       <div>
         <BlockAssociationContext.Provider value={`${collectionField?.collectionName}.${collectionField?.name}`}>
           <CollectionProvider_deprecated name={collectionField?.target ?? collectionField?.targetCollection}>
-            <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-              {renderRecords()}
-            </EllipsisWithTooltip>
+            {btnElement}
             <ActionContextProvider
               value={{
                 visible,

@@ -12,10 +12,10 @@ import { useDesignable, removeNullCondition } from '../../../../schema-component
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsSortField,
-  SchemaSettingsDataScope,
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsTemplate,
-} from '../../../../schema-settings';
+} from '../../../../schema-settings/SchemaSettings';
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';

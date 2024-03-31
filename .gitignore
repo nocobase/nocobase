@@ -42,3 +42,4 @@ tsconfig.paths.json
 ncc-cache/
 yarn--**
 v8-compile-cache-**
+vitest.config.mts.timestamp-*

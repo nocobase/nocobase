@@ -92,7 +92,7 @@ export function Result(props) {
       }
       setEditingValue(v);
       props.onChange(v);
-      ctx.setFormValueChanged(false);
+      ctx?.setFormValueChanged?.(false);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;

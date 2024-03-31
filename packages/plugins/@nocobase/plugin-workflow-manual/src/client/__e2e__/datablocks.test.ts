@@ -1106,6 +1106,19 @@ test.describe('field data', () => {
       .hover();
     await page
       .getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${preManualNodeCollectionName}`)
+      .click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${preManualNodeCollectionName}"]`)
+      .hover();
+    await page
+      .getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${preManualNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
