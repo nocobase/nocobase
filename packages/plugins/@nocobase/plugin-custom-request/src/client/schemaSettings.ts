@@ -9,6 +9,7 @@ import {
   useSchemaToolbar,
 } from '@nocobase/client';
 import { CustomRequestACL, CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
+import { useFieldSchema } from '@formily/react';
 
 export const customizeCustomRequestActionSettings = new SchemaSettings({
   name: 'actionSettings:customRequest',
@@ -17,10 +18,9 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       name: 'editButton',
       Component: ButtonEditor,
       useComponentProps() {
-        const { buttonEditorProps } = useSchemaToolbar();
+        const fieldSchema = useFieldSchema();
         return {
-          isLink: true,
-          ...buttonEditorProps,
+          isLink: fieldSchema['x-action'] === 'customize:table:request',
         };
       },
     },
