@@ -62,5 +62,6 @@ describe('bigint', () => {
     const item = await Test.repository.findOne();
 
     expect(item.toJSON()['id']).toBe(123456);
+    expect(item.id).toBe(123456);
   });
 });
