@@ -1,9 +1,7 @@
 import { Database } from '../database';
 import { mockDatabase } from './index';
 
-const excludeSqlite = () => (process.env.DB_DIALECT != 'sqlite' ? describe : describe.skip);
-
-excludeSqlite()('collection', () => {
+describe.runIf(process.env.DB_DIALECT == 'postgres')('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -52,5 +50,77 @@ excludeSqlite()('collection', () => {
     } else {
       expect(profileTableInfo[profile.model.rawAttributes['userId'].field].type).toBe('BIGINT');
     }
+  });
+
+  it('should handle with number bigger than javascript MAX_SAFE_INTEGER ', async () => {
+    const Test = db.collection({
+      name: 'test',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Test.repository.create({
+      values: {
+        id: '35809622393264128',
+      },
+    });
+
+    const item = await Test.repository.findOne();
+
+    console.log(item.toJSON());
+    expect(item.toJSON()['id']).toBe('35809622393264128');
+  });
+
+  it('should return number type when bigint is less than MAX_SAFE_INTEGER', async () => {
+    const Test = db.collection({
+      name: 'test',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+        },
+        {
+          type: 'bigInt',
+          name: 'id2',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Test.repository.create({
+      values: [
+        {
+          id: '123456',
+          id2: '35809622393264128',
+        },
+        {
+          id: '35809622393264128',
+          id2: '123456',
+        },
+      ],
+    });
+
+    const item = await Test.repository.findOne();
+
+    expect(item.toJSON()['id']).toBe(123456);
+    expect(item.id).toBe(123456);
+    expect(item['id']).toBe(123456);
+
+    const items = await Test.repository.find({
+      raw: true,
+    });
+
+    expect(items[0]['id']).toBe(123456);
   });
 });
