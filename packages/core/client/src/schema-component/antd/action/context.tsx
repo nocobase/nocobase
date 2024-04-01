@@ -1,15 +1,26 @@
 import { Schema } from '@formily/react';
 import { DrawerProps, ModalProps } from 'antd';
-import React, { createContext, useEffect, useRef } from 'react';
+import React, { createContext, useEffect, useRef, useState, useContext } from 'react';
 import { useActionContext } from './hooks';
 import { useDataBlockRequest } from '../../../data-source';
 
 export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
-const RefreshDataBlockRequestAction = ['create', 'update', 'destroy', 'customize'];
+const RefreshDataBlockRequestAction = ['create', 'view', 'update', 'destroy', 'customize'];
+
+const SubmittedContext = createContext<{ submitted?: boolean; setSubmitted?: (v: boolean) => void }>({});
+
+const SubmittedContextProvider = (props) => {
+  const [submitted, setSubmitted] = useState(false);
+  return <SubmittedContext.Provider value={{ submitted, setSubmitted }}>{props.children}</SubmittedContext.Provider>;
+};
+export const useSubmittedContext = () => {
+  return useContext(SubmittedContext);
+};
+
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
   const contextProps = useActionContext();
-  const { visible, fieldSchema } = contextProps || {};
+  const { visible, fieldSchema } = props || props.value || {};
   const isFirstRender = useRef(true); // 使用ref跟踪是否为首次渲染
   const service = useDataBlockRequest();
   const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] || {};
@@ -31,7 +42,7 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
 
   return (
     <ActionContext.Provider value={{ ...contextProps, ...props, ...props?.value }}>
-      {props.children}
+      <SubmittedContextProvider>{props.children}</SubmittedContextProvider>
     </ActionContext.Provider>
   );
 };

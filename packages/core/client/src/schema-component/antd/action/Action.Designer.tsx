@@ -806,10 +806,9 @@ export function RefreshDataBlockRequest({ isPopupAction = true }) {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] || {};
-  console.log(refreshDataBlockRequest);
   return (
     <SchemaSettingsSwitchItem
-      title={isPopupAction ? t('Refresh data after closing th popup') : t('Refresh data after performing the action')}
+      title={isPopupAction ? t('Refresh data on close') : t('Refresh data on action')}
       //兼容历史数据
       checked={refreshDataBlockRequest !== false}
       onChange={(value) => {
