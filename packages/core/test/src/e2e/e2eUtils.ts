@@ -11,6 +11,7 @@ export { defineConfig };
 export interface CollectionSetting {
   name: string;
   title?: string;
+  titleField?: string;
   /**
    * @default 'general'
    */
@@ -53,6 +54,7 @@ export interface CollectionSetting {
    * @default false
    */
   inherit?: boolean;
+  inherits?: string[];
   category?: any[];
   hidden?: boolean;
   description?: string;
@@ -620,6 +622,9 @@ const deleteCollections = async (collectionNames: string[]) => {
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
     headers,
+    params: {
+      cascade: true,
+    },
   });
 
   if (!result.ok()) {
