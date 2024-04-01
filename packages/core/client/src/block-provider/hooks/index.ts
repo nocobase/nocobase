@@ -880,7 +880,6 @@ export const useUpdateActionProps = () => {
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
-        console.log(333);
         actionField.data.loading = false;
         // __parent?.service?.refresh?.();
         setVisible?.(false);
