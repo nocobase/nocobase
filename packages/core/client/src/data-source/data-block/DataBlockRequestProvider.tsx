@@ -21,7 +21,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const service = useMemo(() => {
     return requestService
       ? requestService
-      : () => {
+      : (customParams) => {
           if (record) return Promise.resolve({ data: record });
           if (!action) {
             throw new Error(
@@ -30,7 +30,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
           }
           const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
 
-          return resource[action]({ ...paramsValue }).then((res) => res.data);
+          return resource[action]({ ...paramsValue, ...customParams }).then((res) => res.data);
         };
   }, [resource, action, JSON.stringify(params), JSON.stringify(record), requestService]);
 
