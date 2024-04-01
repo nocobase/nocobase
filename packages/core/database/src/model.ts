@@ -39,7 +39,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   get(key?: any, value?: any): any {
     const superResults = super.get(key, value);
 
-    if (typeof key === 'string' && this.rawAttributes[key].type.constructor.toString() === 'BIGINT') {
+    if (typeof key === 'string' && this.rawAttributes[key]?.type.constructor.toString() === 'BIGINT') {
       if (superResults <= Number.MAX_SAFE_INTEGER) {
         return Number(superResults);
       }
