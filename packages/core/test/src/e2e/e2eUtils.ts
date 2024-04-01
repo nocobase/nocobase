@@ -11,6 +11,7 @@ export { defineConfig };
 export interface CollectionSetting {
   name: string;
   title?: string;
+  titleField?: string;
   /**
    * @default 'general'
    */
