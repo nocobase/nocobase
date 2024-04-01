@@ -3,7 +3,12 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
-import { CollectionRecord, useCollectionParentRecordData, useCollectionRecord } from '../data-source';
+import {
+  CollectionRecord,
+  useCollectionParentRecordData,
+  useCollectionRecord,
+  useCollectionRecordData,
+} from '../data-source';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
@@ -95,7 +100,7 @@ export const useIsDetailBlock = () => {
 };
 
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
-  const record = useRecord();
+  const record = useCollectionRecordData();
   const parentRecordData = useCollectionParentRecordData();
   const { collection, isCusomeizeCreate } = props;
   const { __collection } = record;
@@ -109,10 +114,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
       detailFlag = __collection === collection;
     }
   }
-  const createFlag =
-    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) ||
-    !currentCollection.name ||
-    !collection;
+  const createFlag = (__collection === collection && !isDetailBlock) || !currentCollection.name || !collection;
   if (!detailFlag && !createFlag && !isCusomeizeCreate) {
     return null;
   }

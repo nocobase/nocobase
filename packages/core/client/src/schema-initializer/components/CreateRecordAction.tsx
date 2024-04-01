@@ -16,6 +16,7 @@ import { ActionContextProvider, useActionContext, useCompile } from '../../schem
 import { linkageAction } from '../../schema-component/antd/action/utils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
+import { CollectionRecordProvider } from '../../data-source';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -139,9 +140,11 @@ const InternalCreateRecordAction = (props: any, ref) => {
             setCurrentCollectionDataSource(collectionData.dataSource);
           }}
         />
-        <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
-          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-        </CollectionProvider_deprecated>
+        <CollectionRecordProvider record={{ __collection: currentCollection }}>
+          <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
+            <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+          </CollectionProvider_deprecated>
+        </CollectionRecordProvider>
       </ActionContextProvider>
     </div>
   );
