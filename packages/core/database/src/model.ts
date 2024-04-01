@@ -40,7 +40,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     const superResults = super.get(key, value);
 
     if (typeof key === 'string' && this.rawAttributes[key]?.type.constructor.toString() === 'BIGINT') {
-      if (superResults && superResults <= Number.MAX_SAFE_INTEGER) {
+      if (typeof superResults === 'string' && superResults <= Number.MAX_SAFE_INTEGER) {
         return Number(superResults);
       }
     }
@@ -48,7 +48,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     if (!key && isPlainObject(superResults)) {
       return _.mapValues(superResults, (value, key) => {
         if (this.rawAttributes[key]?.type.constructor.toString() === 'BIGINT') {
-          if (value && value <= Number.MAX_SAFE_INTEGER) {
+          if (typeof value === 'string' && value && value <= Number.MAX_SAFE_INTEGER) {
             return Number(value);
           }
         }
@@ -170,7 +170,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
     for (const field of bigIntFields) {
       // if value is less than MAX_SAFE_INTEGER, return number type
-      if (data[field] <= Number.MAX_SAFE_INTEGER) {
+      if (typeof data[field] === 'string' && data[field] <= Number.MAX_SAFE_INTEGER) {
         data[field] = Number(data[field]);
       }
     }

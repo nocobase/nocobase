@@ -63,8 +63,12 @@ describe('bigint', () => {
 
     expect(item.toJSON()['id']).toBe(123456);
     expect(item.id).toBe(123456);
+    expect(item['id']).toBe(123456);
 
-    const itemAllData = item.get();
-    console.log(itemAllData);
+    const items = await Test.repository.find({
+      raw: true,
+    });
+
+    console.log(typeof items[0]['id']);
   });
 });
