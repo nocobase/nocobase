@@ -8,6 +8,7 @@ import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
+import { TemplateBlockProvider } from './TemplateBlockProvider';
 
 export const DetailsBlockContext = createContext<any>({});
 DetailsBlockContext.displayName = 'DetailsBlockContext';
@@ -64,9 +65,11 @@ const InternalDetailsBlockProvider = (props) => {
 
 export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
   return (
-    <BlockProvider name="details" {...props}>
-      <InternalDetailsBlockProvider {...props} />
-    </BlockProvider>
+    <TemplateBlockProvider>
+      <BlockProvider name="details" {...props}>
+        <InternalDetailsBlockProvider {...props} />
+      </BlockProvider>
+    </TemplateBlockProvider>
   );
 });
 

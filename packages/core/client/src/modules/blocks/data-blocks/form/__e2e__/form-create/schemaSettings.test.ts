@@ -9,7 +9,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2165, T2174, T3251, T3806 } from './templatesOfBug';
+import { T2165, T2174, T3251, T3806, T3815 } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
@@ -294,6 +294,27 @@ test.describe('creation form block schema settings', () => {
         await page.getByRole('button', { name: 'OK', exact: true }).click();
         await expect(page.getByRole('row', { name: 'Users_Form' }).first()).toBeHidden();
       }
+    });
+
+    // https://nocobase.height.app/T-T3815 &&T-3802
+    test('fireImmediately in create form & edit form', async ({ page, mockPage, mockRecord }) => {
+      const nocoPage = await mockPage(T3815).waitForInit();
+      await mockRecord('general', {
+        RadioGroup: '002',
+        number: 66,
+        select: '002',
+      });
+      await nocoPage.goto();
+
+      // 编辑表单中获取到接口数据后再触发联动规则
+      await page.getByLabel('action-Action.Link-Edit-').click();
+      await expect(await page.getByRole('spinbutton').inputValue()).toBe('66');
+      await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
+
+      //新建表单中的赋默认值后的联动规则
+      await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+      await page.getByLabel('action-Action-Add new-create-').click();
+      await expect(await page.getByRole('spinbutton').inputValue()).toBe('88');
     });
   });
 
