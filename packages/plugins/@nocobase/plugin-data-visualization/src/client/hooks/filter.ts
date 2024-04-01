@@ -221,7 +221,7 @@ export const useChartFilter = () => {
       name: string,
       fieldName: string,
     ): SchemaInitializerItemType => {
-      if (!field.interface) {
+      if (!field.interface || field.isForeignKey) {
         return;
       }
       const fieldInterface = fim.getFieldInterface(field.interface);
