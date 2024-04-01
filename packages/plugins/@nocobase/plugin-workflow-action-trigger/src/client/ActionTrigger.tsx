@@ -25,7 +25,7 @@ const COLLECTION_TRIGGER_ACTION = {
 
 export default class extends Trigger {
   title = `{{t("Action event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Triggers after specific action on data submitted, such as create, update, etc., or directly submitting a record to the workflow.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Event triggers on user clicked action buttons and after corresponding operation is done. Such as the submission buttons for creating or updating a record, or \\"Submit to workflow\\" buttons. This is applicable to processes where data changes are caused by user actions and require the use of operator-related variables during processing.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       type: 'string',

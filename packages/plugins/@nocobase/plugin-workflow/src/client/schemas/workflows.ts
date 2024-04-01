@@ -35,6 +35,7 @@ const collection = {
           options: `{{getTriggersOptions()}}`,
           optionRender: TriggerOptionRender,
           popupMatchSelectWidth: true,
+          listHeight: 300,
         },
         required: true,
       } as ISchema,

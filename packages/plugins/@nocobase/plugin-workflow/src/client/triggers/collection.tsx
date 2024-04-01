@@ -28,7 +28,7 @@ const collectionModeOptions = [
 
 export default class extends Trigger {
   title = `{{t("Collection event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Event will be triggered on collection data row created, updated or deleted.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Event will be triggered on data changes in a collection, such as created, updated or deleted a record. Applicable for monitoring data changes and automatically responding processes.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       ...collection,
