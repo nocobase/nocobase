@@ -806,7 +806,7 @@ export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, setSubmitted } = useActionContext();
+  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
   const { fields, getField, name } = useCollection_deprecated();
@@ -885,6 +885,7 @@ export const useUpdateActionProps = () => {
         // __parent?.service?.refresh?.();
         setVisible?.(false);
         setSubmitted?.(true);
+        setFormValueChanged?.(false);
         if (!onSuccess?.successMessage) {
           return;
         }
