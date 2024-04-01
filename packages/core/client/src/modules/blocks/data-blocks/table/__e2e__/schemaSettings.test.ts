@@ -10,6 +10,7 @@ import {
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
+import { T3843 } from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -716,6 +717,35 @@ test.describe('actions schema settings', () => {
         supportedOptions: ['Edit button', 'Open mode', 'Popup size', 'Delete'],
       });
     });
+  });
+});
+
+test.describe('table column schema settings', () => {
+  // https://nocobase.height.app/T-3843
+  test('set data scope', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T3843).waitForInit();
+    const record1 = await mockRecord('collection1');
+    await nocoPage.goto();
+
+    // 1. 关系字段下拉框中应该有数据
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
+
+    // 2. 为该关系字段设置一个数据范围后，下拉框中应该有一个匹配项
+    await page.getByRole('button', { name: 'manyToMany1', exact: true }).hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-collection2').hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+    await page.getByRole('spinbutton').click();
+    await page.getByRole('spinbutton').fill('1');
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
   });
 });
 
