@@ -6,4 +6,5 @@ export * from './FormFieldProvider';
 export * from './TableBlockProvider';
 export * from './TableFieldProvider';
 export * from './TableSelectorProvider';
+export * from './DetailsBlockProvider';
 export * from './hooks';

@@ -1,8 +1,12 @@
+/// <reference types="vitest" />
+
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path, { resolve } from 'path';
 import { URL } from 'url';
-import { defineConfig as vitestConfig } from 'vitest/config';
+import { mergeConfig, defineConfig as vitestConfig } from 'vitest/config';
+
+const CORE_CLIENT_PACKAGES = ['sdk', 'client'];
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
@@ -44,75 +48,159 @@ function tsConfigPathsToAlias() {
   ];
 }
 
-export const defineConfig = (config = {}) => {
-  return vitestConfig(
-    process.env.TEST_ENV === 'server-side'
-      ? {
-          root: process.cwd(),
-          resolve: {
-            mainFields: ['module'],
-          },
-          test: {
-            globals: true,
-            setupFiles: resolve(__dirname, './setup/server.ts'),
-            alias: tsConfigPathsToAlias(),
-            include: ['packages/**/__tests__/**/*.test.ts'],
-            exclude: [
-              '**/node_modules/**',
-              '**/dist/**',
-              '**/lib/**',
-              '**/es/**',
-              '**/e2e/**',
-              '**/__e2e__/**',
-              '**/{vitest,commitlint}.config.*',
-              'packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}',
-            ],
-            testTimeout: 300000,
-            hookTimeout: 300000,
-            // bail: 1,
-            // 在 GitHub Actions 中不输出日志
-            silent: !!process.env.GITHUB_ACTIONS,
-            // poolOptions: {
-            //   threads: {
-            //     singleThread: process.env.SINGLE_THREAD == 'false' ? false : true,
-            //   },
-            // },
-          },
-        }
-      : {
-          plugins: [react()],
-          resolve: {
-            mainFields: ['module'],
-          },
-          define: {
-            'process.env.__TEST__': true,
-            'process.env.__E2E__': false,
-          },
-          test: {
-            globals: true,
-            setupFiles: resolve(__dirname, './setup/client.ts'),
-            environment: 'jsdom',
-            css: false,
-            alias: tsConfigPathsToAlias(),
-            include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
-            exclude: [
-              '**/node_modules/**',
-              '**/dist/**',
-              '**/lib/**',
-              '**/es/**',
-              '**/e2e/**',
-              '**/__e2e__/**',
-              '**/{vitest,commitlint}.config.*',
-            ],
-            testTimeout: 300000,
-            // 在 GitHub Actions 中不输出日志
-            silent: !!process.env.GITHUB_ACTIONS,
-            server: {
-              deps: {
-                inline: ['@juggle/resize-observer', 'clsx'],
-              },
-            },
-          },
+const defineCommonConfig = () => {
+  return vitestConfig({
+    root: process.cwd(),
+    resolve: {
+      mainFields: ['module'],
+    },
+    test: {
+      globals: true,
+      alias: tsConfigPathsToAlias(),
+      testTimeout: 300000,
+      hookTimeout: 300000,
+      silent: !!process.env.GITHUB_ACTIONS,
+      include: [
+        'packages/**/src/**/__tests__/**/*.test.ts',
+      ],
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/lib/**',
+        '**/es/**',
+        '**/.dumi/**',
+        '**/e2e/**',
+        '**/__e2e__/**',
+        '**/{vitest,commitlint}.config.*',
+      ],
+      watchExclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/lib/**',
+        '**/es/**',
+        '**/.dumi/**',
+        '**/e2e/**',
+        '**/__e2e__/**',
+        '**/{vitest,commitlint}.config.*',
+      ],
+      coverage: {
+        provider: 'istanbul',
+        include: [
+          'packages/**/src/**/*.{ts,tsx}',
+        ],
+        exclude: ['**/swagger/**', '**/.dumi/**', '**/.umi/**', '**/.plugins/**', '**/lib/**', '**/__tests__/**', '**/e2e/**', '**/client.js', '**/server.js', '**/*.d.ts']
+      }
+    }
+  })
+}
+
+function getExclude(isServer) {
+  return [
+    `packages/core/${isServer ? '' : '!'}(${CORE_CLIENT_PACKAGES.join('|')})/**/*`,
+    `packages/**/src/${isServer ? 'client' : 'server'}/**/*`,
+  ]
+}
+
+const defineServerConfig = () => {
+  return vitestConfig({
+    test: {
+      setupFiles: resolve(__dirname, './setup/server.ts'),
+      exclude: getExclude(true)
+    },
+    coverage: {
+      exclude: getExclude(true)
+    }
+  })
+}
+
+const defineClientConfig = () => {
+  return vitestConfig({
+    plugins: [react()],
+    define: {
+      'process.env.__TEST__': true,
+      'process.env.__E2E__': false,
+    },
+    test: {
+      environment: 'jsdom',
+      css: false,
+      setupFiles: resolve(__dirname, './setup/client.ts'),
+      server: {
+        deps: {
+          inline: ['@juggle/resize-observer', 'clsx'],
         },
-  );
+      },
+      exclude: getExclude(false),
+      coverage: {
+        exclude: getExclude(false)
+      }
+    }
+  })
+}
+
+export const getFilterInclude = (isServer, isCoverage) => {
+  let filterFileOrDir = process.argv.slice(2).find(arg => !arg.startsWith('-'));
+  if (!filterFileOrDir) return;
+  const absPath = path.join(process.cwd(), filterFileOrDir);
+  const isDir = fs.existsSync(absPath) && fs.statSync(absPath).isDirectory();
+  // 如果是文件，则只测试当前文件
+  if (!isDir) {
+    return [filterFileOrDir];
+  }
+
+  const suffix = isCoverage ? `**/*.{ts,tsx}` : `**/__tests__/**/*.{test,spec}.{ts,tsx}`
+
+  // 判断是否为包目录，如果不是包目录，则只测试当前目录
+  const isPackage = fs.existsSync(path.join(absPath, 'package.json'));
+  if (!isPackage) {
+    return [`${filterFileOrDir}/${suffix}`];
+  }
+
+  // 判断是否为 core 包目录，不分 client 和 server
+  const isCore = absPath.includes('packages/core');
+  if (isCore) {
+    return [`${filterFileOrDir}/src/${suffix}`];
+  }
+
+  // 插件目录，区分 client 和 server
+  return [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`];
+}
+
+export const getReportsDirectory = (isServer) => {
+  let filterFileOrDir = process.argv.slice(2).find(arg => !arg.startsWith('-'));
+  if (!filterFileOrDir) return;
+  const isPackage = fs.existsSync(path.join(process.cwd(), filterFileOrDir, 'package.json'));
+  if (isPackage) {
+    let reportsDirectory = `./storage/coverage/${filterFileOrDir.replace('packages/', '')}`;
+
+    const isCore = filterFileOrDir.includes('packages/core');
+
+    if (!isCore) {
+      reportsDirectory = `${reportsDirectory}/${isServer ? 'server' : 'client'}`;
+    }
+
+    return reportsDirectory;
+  }
+}
+
+export const defineConfig = () => {
+  const isServer = process.env.TEST_ENV === 'server-side';
+  const config = vitestConfig(mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()));
+
+  const isCoverage = process.argv.includes('--coverage');
+  if (!isCoverage) {
+    return config;
+  }
+
+  const filterInclude = getFilterInclude(isServer);
+  if (filterInclude) {
+    config.test.include = getFilterInclude(isServer);
+  }
+
+  config.test.coverage.include = getFilterInclude(isServer, true);
+  const reportsDirectory = getReportsDirectory(isServer);
+  if (reportsDirectory) {
+    config.test.coverage.reportsDirectory = reportsDirectory;
+  }
+
+  return config;
 };

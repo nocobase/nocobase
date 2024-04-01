@@ -16,7 +16,9 @@ module.exports = (cli) => {
   require('./e2e')(cli);
   require('./clean')(cli);
   require('./doc')(cli);
+  require('./pm2')(cli);
   require('./test')(cli);
+  require('./test-coverage')(cli);
   require('./umi')(cli);
   require('./upgrade')(cli);
   require('./postinstall')(cli);

@@ -10,10 +10,11 @@ import {
   useCollection_deprecated,
   useCollectionManager_deprecated,
   useFormBlockContext,
+  ActionContext,
 } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 
 import { toDbType } from '../../../utils';
 
@@ -58,11 +59,13 @@ export function Result(props) {
   const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const formBlockContext = useFormBlockContext();
-  const field = useField();
+  const field: any = useField();
   const path: any = field.path.entire;
   const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
   const fieldName = fieldPath.split('.')[0];
   const index = parseInt(fieldPath.split('.')?.[1]);
+  const ctx = useContext(ActionContext);
+
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
@@ -88,7 +91,8 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      v !== value && props.onChange(v);
+      props.onChange(v);
+      ctx?.setFormValueChanged?.(false);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;

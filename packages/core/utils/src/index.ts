@@ -8,6 +8,7 @@ export * from './date';
 export * from './dayjs';
 export * from './forEach';
 export * from './fs-exists';
+export * from './isValidFilter';
 export * from './json-templates';
 export * from './koa-multer';
 export * from './measure-execution-time';

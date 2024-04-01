@@ -107,6 +107,17 @@ test.describe('field data update', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -260,6 +271,17 @@ test.describe('field data update', () => {
     }
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
@@ -419,6 +441,17 @@ test.describe('field data update', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -572,6 +605,17 @@ test.describe('field data update', () => {
     }
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
@@ -731,6 +775,17 @@ test.describe('field data update', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -884,6 +939,17 @@ test.describe('field data update', () => {
     }
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
@@ -1059,6 +1125,17 @@ test.describe('field data update', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -1228,6 +1305,17 @@ test.describe('field data update', () => {
     }
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
@@ -1403,6 +1491,17 @@ test.describe('field data update', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -1573,6 +1672,17 @@ test.describe('field data update', () => {
     }
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
@@ -1757,6 +1867,17 @@ test.describe('field data update', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -1926,6 +2047,17 @@ test.describe('field data update', () => {
     }
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();
@@ -2104,6 +2236,17 @@ test.describe('field data update', () => {
     }
     await page.getByRole('menuitem', { name: manualNodeCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
+    await page
+      .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
+      .hover();
+    await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).click();
+    await page.getByRole('menuitem', { name: 'Filter settings' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page.getByTestId('select-filter-operator').click();
+    await page.getByRole('option', { name: 'exists', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
       .hover();

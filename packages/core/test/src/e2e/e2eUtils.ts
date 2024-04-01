@@ -53,7 +53,6 @@ export interface CollectionSetting {
    * @default false
    */
   inherit?: boolean;
-  inherits?: string[];
   category?: any[];
   hidden?: boolean;
   description?: string;
@@ -621,10 +620,6 @@ const deleteCollections = async (collectionNames: string[]) => {
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
     headers,
-    params: {
-      // 自动删除依赖于集合的对象（如视图），进而删除依赖于这些对象的所有对象
-      cascade: true,
-    },
   });
 
   if (!result.ok()) {

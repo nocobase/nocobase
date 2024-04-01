@@ -18,6 +18,7 @@
   "scripts": {
     "nocobase": "nocobase",
     "pm": "nocobase pm",
+    "pm2": "nocobase pm2",
     "dev": "nocobase dev",
     "dev-server": "nocobase dev --server",
     "start": "nocobase start",
@@ -25,7 +26,9 @@
     "tar": "nocobase tar",
     "test": "nocobase test",
     "test:server": "nocobase test:server",
+    "test:server-coverage": "nocobase test-coverage:server",
     "test:client": "nocobase test:client",
+    "test:client-coverage": "nocobase test-coverage:client",
     "e2e": "nocobase e2e",
     "ts": "nocobase test:server",
     "tc": "nocobase test:client",

@@ -1424,7 +1424,7 @@ function useAssociationFields({
           };
         }
         return {
-          key: `${componentName}_table_subMenu_${index}`,
+          key: `associationFiled_${componentName}_table_subMenu_${index}`,
           type: 'subMenu',
           name: `${field.target}_${index}`,
           title,
@@ -1442,7 +1442,7 @@ function useAssociationFields({
               type: 'divider',
             },
             {
-              key: `${componentName}_table_subMenu_${index}_copy`,
+              key: `associationFiled_${componentName}_table_subMenu_${index}_copy`,
               type: 'subMenu',
               name: 'copy',
               dataSource,
@@ -1464,7 +1464,7 @@ function useAssociationFields({
               }),
             },
             {
-              key: `${componentName}_table_subMenu_${index}_ref`,
+              key: `associationFiled_${componentName}_table_subMenu_${index}_ref`,
               type: 'subMenu',
               name: 'ref',
               dataSource,
