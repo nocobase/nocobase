@@ -1,4 +1,5 @@
-import React, { FC, createContext, useContext, useMemo, useRef } from 'react';
+import { useDeepCompareEffect, useUpdateEffect, useWhyDidYouUpdate } from 'ahooks';
+import React, { FC, createContext, useContext, useMemo } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { CollectionRecordProvider, CollectionRecord } from '../collection-record';
@@ -16,10 +17,11 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
+
   const service = useMemo(() => {
     return requestService
       ? requestService
-      : (customParams) => {
+      : () => {
           if (record) return Promise.resolve({ data: record });
           if (!action) {
             throw new Error(
@@ -28,14 +30,14 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
           }
           const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
 
-          return resource[action]({ ...paramsValue, ...customParams }).then((res) => res.data);
+          return resource[action]({ ...paramsValue }).then((res) => res.data);
         };
-  }, [resource, action, params, record, requestService]);
+  }, [resource, action, JSON.stringify(params), JSON.stringify(record), requestService]);
 
   const request = useRequest<T>(service, {
     ...requestOptions,
-    refreshDeps: [action, resource, JSON.stringify(record), JSON.stringify(params)],
     ready: action && dataLoadingMode === 'auto',
+    refreshDeps: [action, JSON.stringify(params), JSON.stringify(record), resource],
   });
 
   return request;
