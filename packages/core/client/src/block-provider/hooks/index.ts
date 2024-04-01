@@ -189,7 +189,7 @@ export const useCreateActionProps = () => {
   const record = useCollectionRecord();
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
@@ -201,8 +201,6 @@ export const useCreateActionProps = () => {
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   const dataLoadingMode = useDataLoadingMode();
-
-  console.log('dataLoadingMode', dataLoadingMode);
 
   return {
     async onClick() {
@@ -226,6 +224,7 @@ export const useCreateActionProps = () => {
           updateAssociationValues,
         });
         setVisible?.(false);
+        setSubmitted?.(true);
         actionField.data.loading = false;
         actionField.data.data = data;
         // __parent?.service?.refresh?.();
@@ -269,7 +268,7 @@ export const useCreateActionProps = () => {
 export const useAssociationCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, fieldSchema } = useActionContext();
+  const { setVisible, fieldSchema, setSubmitted } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
   const { fields, getField, getTreeParentField, name } = useCollection_deprecated();
@@ -352,6 +351,8 @@ export const useAssociationCreateActionProps = () => {
         actionField.data.data = data;
         __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted?.(true);
+
         if (!onSuccess?.successMessage) {
           return;
         }
@@ -805,7 +806,7 @@ export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
   const { fields, getField, name } = useCollection_deprecated();
@@ -883,6 +884,7 @@ export const useUpdateActionProps = () => {
         actionField.data.loading = false;
         // __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted?.(true);
         if (!onSuccess?.successMessage) {
           return;
         }
@@ -920,7 +922,7 @@ export const useUpdateActionProps = () => {
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, block, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const data = useParamsFromRecord();
   const actionSchema = useFieldSchema();
   return {
@@ -952,6 +954,7 @@ export const useDestroyActionProps = () => {
       if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted?.(true);
       }
     },
   };
@@ -973,7 +976,7 @@ export const useRemoveActionProps = (associationName) => {
 export const useDisassociateActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, block, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   return {
     async onClick() {
       await resource.remove({
@@ -993,6 +996,7 @@ export const useDisassociateActionProps = () => {
       if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted?.(true);
       }
     },
   };

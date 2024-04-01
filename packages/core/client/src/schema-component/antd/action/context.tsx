@@ -1,48 +1,46 @@
 import { Schema } from '@formily/react';
 import { DrawerProps, ModalProps } from 'antd';
-import React, { createContext, useEffect, useRef, useState, useContext } from 'react';
+import React, { createContext, useEffect, useRef, useState } from 'react';
 import { useActionContext } from './hooks';
 import { useDataBlockRequest } from '../../../data-source';
 
 export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
-const RefreshDataBlockRequestAction = ['create', 'view', 'update', 'destroy', 'customize'];
-
-const SubmittedContext = createContext<{ submitted?: boolean; setSubmitted?: (v: boolean) => void }>({});
-
-const SubmittedContextProvider = (props) => {
-  const [submitted, setSubmitted] = useState(false);
-  return <SubmittedContext.Provider value={{ submitted, setSubmitted }}>{props.children}</SubmittedContext.Provider>;
-};
-export const useSubmittedContext = () => {
-  return useContext(SubmittedContext);
-};
+const RefreshDataBlockRequestAction = ['create', 'view', 'update', 'destroy', 'customize', 'submit'];
 
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
+  const [submitted, setSubmitted] = useState(false); //是否有提交记录
   const contextProps = useActionContext();
-  const { visible, fieldSchema } = props || props.value || {};
+  const { visible, fieldSchema } = { ...props, ...props.value } || {};
   const isFirstRender = useRef(true); // 使用ref跟踪是否为首次渲染
   const service = useDataBlockRequest();
+  const { setSubmitted: setParentSubmitted } = contextProps;
   const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] || {};
+
   useEffect(() => {
     if (
       visible !== undefined &&
       refreshDataBlockRequest !== false &&
-      RefreshDataBlockRequestAction.find((v) => fieldSchema?.['x-action']?.includes?.(v))
+      (RefreshDataBlockRequestAction.find((v) => fieldSchema?.['x-action']?.includes?.(v)) ||
+        fieldSchema?.['x-collection-field'])
     ) {
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
-        if (visible === false) {
+        if (visible === false && submitted) {
           service.refresh();
+          setParentSubmitted?.(true); //传递给上一层
         }
       }
     }
+    return () => {
+      setSubmitted(false);
+    };
   }, [visible]);
 
   return (
-    <ActionContext.Provider value={{ ...contextProps, ...props, ...props?.value }}>
-      <SubmittedContextProvider>{props.children}</SubmittedContextProvider>
+    <ActionContext.Provider value={{ ...contextProps, ...props, ...props?.value, submitted, setSubmitted }}>
+      {props.children}
     </ActionContext.Provider>
   );
 };
@@ -61,4 +59,6 @@ export interface ActionContextProps {
   fieldSchema?: Schema;
   drawerProps?: DrawerProps;
   modalProps?: ModalProps;
+  submitted?: boolean;
+  setSubmitted?: (v: boolean) => void;
 }

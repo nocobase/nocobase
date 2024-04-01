@@ -86,7 +86,7 @@ export const useCustomizeBulkEditActionProps = () => {
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
-  const { setVisible, fieldSchema: actionSchema } = actionContext;
+  const { setVisible, fieldSchema: actionSchema, setSubmitted } = actionContext;
   return {
     async onClick() {
       const { onSuccess, skipValidator, updateMode } = actionSchema?.['x-action-settings'] ?? {};
@@ -132,6 +132,7 @@ export const useCustomizeBulkEditActionProps = () => {
         }
         // __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted(true);
         if (!onSuccess?.successMessage) {
           return;
         }
