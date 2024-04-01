@@ -1,7 +1,7 @@
 import { Database } from '../database';
 import { mockDatabase } from './index';
 
-describe.skipIf(process.env.DB_DIALECT == 'sqlite')('collection', () => {
+describe.runIf(process.env.DB_DIALECT == 'postgres')('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -111,11 +111,8 @@ describe.skipIf(process.env.DB_DIALECT == 'sqlite')('collection', () => {
       ],
     });
 
-    console.log(await Test.repository.find({ raw: true }));
-
     const item = await Test.repository.findOne();
 
-    console.log(item.toJSON());
     expect(item.toJSON()['id']).toBe(123456);
     expect(item.id).toBe(123456);
     expect(item['id']).toBe(123456);
@@ -124,6 +121,6 @@ describe.skipIf(process.env.DB_DIALECT == 'sqlite')('collection', () => {
       raw: true,
     });
 
-    console.log(typeof items[0]['id']);
+    expect(items[0]['id']).toBe(123456);
   });
 });
