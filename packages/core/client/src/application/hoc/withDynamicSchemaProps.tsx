@@ -1,5 +1,4 @@
 import { useExpressionScope } from '@formily/react';
-import { merge, omit } from 'lodash';
 import React, { ComponentType, useMemo } from 'react';
 import { useDesignable } from '../../schema-component';
 
@@ -41,7 +40,7 @@ export function withDynamicSchemaProps<T = any>(Component: any, options: WithSch
     const schemaProps = useSchemaProps(props);
 
     const memoProps = useMemo(() => {
-      return merge(omit(props, 'children'), omit(schemaProps, 'children'));
+      return { ...props, ...schemaProps };
     }, [schemaProps, props]);
 
     return <Component {...memoProps}>{props.children}</Component>;
