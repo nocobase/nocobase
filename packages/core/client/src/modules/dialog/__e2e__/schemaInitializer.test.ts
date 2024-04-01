@@ -295,6 +295,7 @@ test.describe('add blocks to the popup', () => {
     await page.getByRole('menuitem', { name: 'table Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record right' }).hover();
     await page.getByRole('menuitem', { name: 'father' }).click();
+    await page.mouse.move(-300, 0);
     await page.getByLabel('schema-initializer-Grid-details:configureFields-father').hover();
     await page.getByRole('menuitem', { name: 'singleLineText' }).click();
     await page.mouse.move(300, 0);
@@ -307,6 +308,7 @@ test.describe('add blocks to the popup', () => {
     await page.getByRole('menuitem', { name: 'table Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();
+    await page.mouse.move(-300, 0);
     await page
       .getByTestId('drawer-Action.Container-father-View record')
       .getByLabel('schema-initializer-TableV2-')
