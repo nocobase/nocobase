@@ -36,6 +36,18 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     return this.constructor.database;
   }
 
+  get(key?: any, value?: any): any {
+    const superResults = super.get(key, value);
+
+    if (typeof key === 'string' && this.rawAttributes[key].type.constructor.toString() === 'BIGINT') {
+      if (superResults <= Number.MAX_SAFE_INTEGER) {
+        return Number(superResults);
+      }
+    }
+
+    return superResults;
+  }
+
   static async sync(options) {
     const runner = new SyncRunner(this);
     return runner.runSync(options);
