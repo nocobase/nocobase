@@ -76,7 +76,7 @@ function useRecordBlocks() {
             return false;
           },
           onlyCurrentDataSource: true,
-          // hideSearch: true,
+          hideSearch: true,
           componentType: 'ReadPrettyFormItem',
           createBlockSchema,
           templateWrap: useCallback(
@@ -92,7 +92,6 @@ function useRecordBlocks() {
             [templateWrap, templateWrapOfAssociationDetailsWithoutPagination],
           ),
           showAssociationFields: true,
-          hideChildrenIfSingleCollection: true,
         };
       },
     },
@@ -115,12 +114,11 @@ function useRecordBlocks() {
             return false;
           },
           onlyCurrentDataSource: true,
-          // hideSearch: true,
+          hideSearch: true,
           componentType: 'FormItem',
           createBlockSchema: createEditFormBlock,
           templateWrap: templateWrap,
           showAssociationFields: true,
-          hideChildrenIfSingleCollection: true,
         };
       },
       useVisible() {
@@ -143,7 +141,7 @@ function useRecordBlocks() {
             return false;
           },
           onlyCurrentDataSource: true,
-          // hideSearch: true,
+          hideSearch: true,
           componentType: 'FormItem',
           createBlockSchema: createAssociationFormBlock,
           templateWrap: templateWrap,
@@ -179,7 +177,7 @@ function useRecordBlocks() {
         const { createAssociationTableBlock } = useCreateAssociationTableBlock();
 
         return {
-          // hideSearch: true,
+          hideSearch: true,
           onlyCurrentDataSource: true,
           filterCollections({ associationField }) {
             if (associationField) {
@@ -210,7 +208,7 @@ function useRecordBlocks() {
         const { createAssociationListBlock } = useCreateAssociationListBlock();
 
         return {
-          // hideSearch: true,
+          hideSearch: true,
           onlyCurrentDataSource: true,
           filterCollections({ associationField }) {
             if (associationField) {
@@ -241,7 +239,7 @@ function useRecordBlocks() {
         const { createAssociationGridCardBlock } = useCreateAssociationGridCardBlock();
 
         return {
-          // hideSearch: true,
+          hideSearch: true,
           onlyCurrentDataSource: true,
           filterCollections({ associationField }) {
             if (associationField) {

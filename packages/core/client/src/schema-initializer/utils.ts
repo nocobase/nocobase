@@ -5,6 +5,7 @@ import _ from 'lodash';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  DataBlockInitializer,
   DataSource,
   SchemaInitializerItemType,
   useCollection,
@@ -840,12 +841,14 @@ export const useCollectionDataSourceItems = ({
   onlyCurrentDataSource = false,
   showAssociationFields,
   filterDataSource,
+  dataBlockInitializerProps,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource?: boolean;
   showAssociationFields?: boolean;
   filterDataSource?: (dataSource?: DataSource) => boolean;
+  dataBlockInitializerProps?: any;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -867,7 +870,8 @@ export const useCollectionDataSourceItems = ({
   }
 
   const { getTemplatesByCollection } = useSchemaTemplateManager();
-  const res = useMemo(() => {
+
+  const noAssociationMenu = useMemo(() => {
     return allCollections.map(({ key, displayName, collections }) => ({
       name: key,
       label: displayName,
@@ -885,12 +889,80 @@ export const useCollectionDataSourceItems = ({
           const inherits = _.toArray(collection?.inherits || []);
           if (item.name === collection?.name || inherits.some((inheritName) => inheritName === item.name)) return -1;
         }),
-        ...associationFields,
       ],
     }));
-  }, [allCollections, associationFields, componentName, getTemplatesByCollection, t]);
+  }, [allCollections, collection?.inherits, collection?.name, componentName, getTemplatesByCollection, t]);
 
-  return res;
+  // https://nocobase.height.app/T-3821
+  // showAssociationFields 的值是固定不变的，所以在 if 语句里使用 hooks 是安全的
+  if (showAssociationFields) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useMemo(() => {
+      const currentRecord = {
+        name: 'currentRecord',
+        collectionName: collection.name,
+        dataSource: collection.dataSource,
+        Component: DataBlockInitializer,
+        // 目的是使点击无效
+        onClick() {},
+        componentProps: {
+          ...dataBlockInitializerProps,
+          icon: null,
+          title: t('Current record'),
+          name: 'currentRecord',
+          hideSearch: false,
+          hideChildrenIfSingleCollection: true,
+          items: noAssociationMenu,
+        },
+      };
+      const associationRecords = {
+        name: 'associationRecords',
+        Component: DataBlockInitializer,
+        // 目的是使点击无效
+        onClick() {},
+        componentProps: {
+          ...dataBlockInitializerProps,
+          icon: null,
+          title: t('Associated records'),
+          name: 'associationRecords',
+          hideSearch: false,
+          items: [
+            {
+              name: 'associationFields',
+              label: t('Association fields'),
+              type: 'subMenu', // 这里套一层 subMenu 是因为 DataBlockInitializer 组件需要这样的数据结构，其实这层 subMenu 最终是不会渲染出来的
+              children: associationFields,
+            },
+          ],
+        },
+      };
+      let children;
+
+      if (noAssociationMenu[0].children.length && associationFields.length) {
+        children = [currentRecord, associationRecords];
+      } else if (noAssociationMenu[0].children.length) {
+        // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
+        if (noAssociationMenu[0].children.length <= 1) {
+          noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
+          return noAssociationMenu;
+        }
+        children = [currentRecord];
+      } else {
+        children = [associationRecords];
+      }
+
+      return [
+        {
+          name: 'records',
+          label: t('Records'),
+          type: 'subMenu',
+          children,
+        },
+      ];
+    }, [associationFields, collection.dataSource, collection.name, dataBlockInitializerProps, noAssociationMenu, t]);
+  }
+
+  return noAssociationMenu;
 };
 
 export const createDetailsBlockSchema = (options: {
@@ -1393,8 +1465,7 @@ function useAssociationFields({
       .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
       .filter((field) => filterCollections({ associationField: field }))
       .map((field, index) => {
-        const targetCollection = cm.getCollection(field.target);
-        const title = `${compile(field.uiSchema.title || field.name)} -> ${compile(targetCollection.title)}`;
+        const title = compile(field.uiSchema.title || field.name);
         const templates = getTemplatesByCollection(dataSource, field.target).filter((template) => {
           // 针对弹窗中的详情区块
           if (componentName === 'ReadPrettyFormItem') {
