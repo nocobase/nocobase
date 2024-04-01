@@ -254,12 +254,11 @@ const setTheDataScope: any = {
       },
       onSubmit: ({ filter }) => {
         filter = removeNullCondition(filter);
-        _.set(field.componentProps, 'service.params.filter', filter);
-        fieldSchema['x-component-props'] = field.componentProps;
+        _.set(fieldSchema['x-component-props'], 'service.params.filter', filter);
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': field.componentProps,
+            'x-component-props': fieldSchema['x-component-props'],
           },
         });
       },
