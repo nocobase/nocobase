@@ -36,29 +36,6 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     return this.constructor.database;
   }
 
-  get(key?: any, value?: any): any {
-    const superResults = super.get(key, value);
-
-    if (typeof key === 'string' && this.rawAttributes[key]?.type.constructor.toString() === 'BIGINT') {
-      if (typeof superResults === 'string' && superResults <= Number.MAX_SAFE_INTEGER) {
-        return Number(superResults);
-      }
-    }
-
-    if (!key && isPlainObject(superResults)) {
-      return _.mapValues(superResults, (value, key) => {
-        if (this.rawAttributes[key]?.type.constructor.toString() === 'BIGINT') {
-          if (typeof value === 'string' && value && value <= Number.MAX_SAFE_INTEGER) {
-            return Number(value);
-          }
-        }
-        return value;
-      });
-    }
-
-    return superResults;
-  }
-
   static async sync(options) {
     const runner = new SyncRunner(this);
     return runner.runSync(options);
@@ -105,7 +82,6 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
           return data;
         },
         this.hiddenObjKey,
-        this.handleBigInt,
       ];
       return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), obj);
     };
@@ -161,21 +137,6 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       .map((field) => field.options.name);
 
     return lodash.omit(obj, hiddenFields);
-  }
-
-  private handleBigInt(data, options: JSONTransformerOptions) {
-    const bigIntFields = Object.keys(options.model.rawAttributes).filter(
-      (attribute) => options.model.rawAttributes[attribute].type.constructor.toString() === 'BIGINT',
-    );
-
-    for (const field of bigIntFields) {
-      // if value is less than MAX_SAFE_INTEGER, return number type
-      if (typeof data[field] === 'string' && data[field] <= Number.MAX_SAFE_INTEGER) {
-        data[field] = Number(data[field]);
-      }
-    }
-
-    return data;
   }
 
   private sortAssociations(data, { field }: JSONTransformerOptions): any {

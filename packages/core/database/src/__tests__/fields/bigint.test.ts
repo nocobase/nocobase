@@ -69,6 +69,6 @@ describe('bigint', () => {
       raw: true,
     });
 
-    console.log(typeof items[0]['id']);
+    expect(items[0]['id']).toBe(123456);
   });
 });
