@@ -1,4 +1,4 @@
-import lodash from 'lodash';
+import lodash, { isPlainObject } from 'lodash';
 import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -40,9 +40,20 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     const superResults = super.get(key, value);
 
     if (typeof key === 'string' && this.rawAttributes[key]?.type.constructor.toString() === 'BIGINT') {
-      if (superResults <= Number.MAX_SAFE_INTEGER) {
+      if (superResults && superResults <= Number.MAX_SAFE_INTEGER) {
         return Number(superResults);
       }
+    }
+
+    if (!key && isPlainObject(superResults)) {
+      return _.mapValues(superResults, (value, key) => {
+        if (this.rawAttributes[key]?.type.constructor.toString() === 'BIGINT') {
+          if (value && value <= Number.MAX_SAFE_INTEGER) {
+            return Number(value);
+          }
+        }
+        return value;
+      });
     }
 
     return superResults;

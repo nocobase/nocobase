@@ -63,5 +63,8 @@ describe('bigint', () => {
 
     expect(item.toJSON()['id']).toBe(123456);
     expect(item.id).toBe(123456);
+
+    const itemAllData = item.get();
+    console.log(itemAllData);
   });
 });
