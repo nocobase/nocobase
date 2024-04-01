@@ -9,7 +9,7 @@ test.describe('where single data details block can be added', () => {
     await page.getByLabel('action-Action.Link-View-view-general-table-0').click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).hover();
-    await page.getByRole('menuitem', { name: 'General' }).click();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.mouse.move(300, 0);
 
     await expect(page.getByLabel('block-item-CardItem-general-details')).toBeVisible();
@@ -25,7 +25,7 @@ test.describe('configure actions', () => {
     await page.getByLabel('action-Action.Link-View-view-general-table-0').click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).hover();
-    await page.getByRole('menuitem', { name: 'General' }).click();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.mouse.move(300, 0);
 
     // create edit ------------------------------------------------------------------------------------

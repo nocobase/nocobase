@@ -51,6 +51,7 @@ export class PluginCalendarClient extends Plugin {
           },
           createBlockSchema: createAssociationCalendarBlock,
           showAssociationFields: true,
+          hideSearch: true,
         };
       },
     });

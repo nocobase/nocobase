@@ -55,7 +55,8 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
           }
           .ant-menu-root {
             margin: 0 -${token.margin}px;
-            .ant-menu-submenu-title {
+            .ant-menu-submenu-title,
+            .ant-menu-item-only-child {
               margin-inline: 0;
               margin-block: 0;
               width: 100%;
