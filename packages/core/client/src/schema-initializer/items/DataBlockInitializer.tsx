@@ -277,6 +277,7 @@ export interface DataBlockInitializerProps {
   showAssociationFields?: boolean;
   /** 如果只有一项数据表时，不显示 children 列表 */
   hideChildrenIfSingleCollection?: boolean;
+  items?: ReturnType<typeof useCollectionDataSourceItems>[];
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -293,6 +294,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     showAssociationFields,
     hideChildrenIfSingleCollection,
     filterDataSource,
+    items: itemsFromProps,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -311,13 +313,17 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     },
     [getTemplateSchemaByMode, insert, onCreateBlockSchema, setVisible, templateWrap],
   );
-  const items = useCollectionDataSourceItems({
-    componentName: componentType,
-    filter,
-    filterDataSource,
-    onlyCurrentDataSource,
-    showAssociationFields,
-  });
+  const items =
+    itemsFromProps ||
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useCollectionDataSourceItems({
+      componentName: componentType,
+      filter,
+      filterDataSource,
+      onlyCurrentDataSource,
+      showAssociationFields,
+      dataBlockInitializerProps: props,
+    });
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {
     return getMenuItems(items, name);
@@ -326,8 +332,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys, hideSearch });
   const compiledMenuItems = useMemo(() => {
     let children = searchedChildren.filter((item) => item.key !== 'search' && item.key !== 'empty');
-    const hasAssociationField = children.some((item) => item.associationField);
-    if (hideChildrenIfSingleCollection && !hasAssociationField && children.length === 1) {
+    if (hideChildrenIfSingleCollection && children.length === 1) {
       // 只有一项可选时，直接展开
       children = children[0].children;
     } else {
@@ -345,7 +350,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
         children,
       },
     ];
-  }, [name, compile, title, icon, searchedChildren, onClick, props]);
+  }, [searchedChildren, hideChildrenIfSingleCollection, name, compile, title, icon, onClick, props]);
 
   if (childItems.length > 1 || (childItems.length === 1 && childItems[0].children?.length > 0)) {
     return (
