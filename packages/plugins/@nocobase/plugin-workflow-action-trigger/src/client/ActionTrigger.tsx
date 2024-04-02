@@ -58,14 +58,12 @@ export default class extends Trigger {
         direction: 'vertical',
         options: [
           {
-            label: `{{t("Local mode", { ns: "${NAMESPACE}" })}}`,
+            label: `{{t("Local mode, triggered after the completion of actions bound to this workflow", { ns: "${NAMESPACE}" })}}`,
             value: false,
-            tooltip: `{{t('Triggered only when the button bound with this workflow is clicked.', { ns: "${NAMESPACE}" })}}`,
           },
           {
-            label: `{{t("Global mode", { ns: "${NAMESPACE}" })}}`,
+            label: `{{t("Global mode, triggered after the completion of the following actions", { ns: "${NAMESPACE}" })}}`,
             value: true,
-            tooltip: `{{t('Triggered by any of the following actions initiated from any location or form.', { ns: "${NAMESPACE}" })}}`,
           },
         ],
       },
@@ -89,8 +87,8 @@ export default class extends Trigger {
       'x-component-props': {
         direction: 'vertical',
         options: [
-          { label: `{{t("A record is created", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.CREATE },
-          { label: `{{t("A record is updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPDATE },
+          { label: `{{t("Create record action", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.CREATE },
+          { label: `{{t("Update record action", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPDATE },
           // { label: `{{t("upsert", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPSERT },
           // {
           //   label: `{{t("Delete single or many records", { ns: "${NAMESPACE}" })}}`,
