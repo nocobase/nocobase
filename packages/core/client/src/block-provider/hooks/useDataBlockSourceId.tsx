@@ -1,6 +1,6 @@
+import { useFieldSchema } from '@formily/react';
 import {
   InheritanceCollectionMixin,
-  useCollection,
   useCollectionManager,
   useCollectionParentRecordData,
   useCollectionRecordData,
@@ -18,21 +18,18 @@ import {
  * @returns
  */
 export const useDataBlockSourceId = ({ association }: { association: string }) => {
+  const fieldSchema = useFieldSchema();
   const recordData = useCollectionRecordData();
   const parentRecordData = useCollectionParentRecordData();
   const cm = useCollectionManager();
-  const collectionOutsideBlock = useCollection<InheritanceCollectionMixin>();
 
   if (!association) return;
 
   const associationField = cm.getCollectionField(association);
   const associationCollection = cm.getCollection<InheritanceCollectionMixin>(associationField.collectionName);
 
-  if (
-    collectionOutsideBlock.name === associationCollection.name ||
-    collectionOutsideBlock.getParentCollectionsName?.().includes(associationCollection.name)
-  ) {
-    return recordData?.[
+  if (fieldSchema['x-is-current']) {
+    return parentRecordData?.[
       associationField.sourceKey ||
         associationCollection.filterTargetKey ||
         associationCollection.getPrimaryKey() ||
@@ -40,7 +37,7 @@ export const useDataBlockSourceId = ({ association }: { association: string }) =
     ];
   }
 
-  return parentRecordData?.[
+  return recordData?.[
     associationField.sourceKey || associationCollection.filterTargetKey || associationCollection.getPrimaryKey() || 'id'
   ];
 };
