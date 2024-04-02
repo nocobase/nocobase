@@ -28,6 +28,7 @@
         "@types/multer": "^1.4.5",
         "axios": "^0.26.1",
         "chalk": "^4.1.1",
+        "clear-module": "^4.1.2",
         "commander": "^9.2.0",
         "cron": "^2.4.4",
         "cronstrue": "^2.11.0",

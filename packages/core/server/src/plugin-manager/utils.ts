@@ -1,6 +1,7 @@
 import { importModule, isURL } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
+import clearModule from 'clear-module';
 import decompress from 'decompress';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
@@ -220,6 +221,7 @@ export async function copyTempPackageToStorageAndLinkToNodeModules(
   // symlink to node_modules
   await createStoragePluginSymLink(packageName);
 
+  clearModule(packageName);
   // remove temp dir
   await removeTmpDir(tempFile, tempPackageContentDir);
 
