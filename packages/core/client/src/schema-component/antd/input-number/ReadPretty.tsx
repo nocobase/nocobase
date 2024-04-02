@@ -38,7 +38,6 @@ export function formatNumberWithSeparator(number, format = '0.00', step = 1) {
   } else {
     formattedNumber = number.toString();
   }
-  console.log(formattedNumber);
   return formattedNumber;
 }
 
@@ -91,16 +90,13 @@ export function formatNumber(props) {
   if (!isValid(value)) {
     return null;
   }
-  if (!formatStyle) {
-    return value;
-  }
   //单位换算
   const unitData = formatUnitConversion(value, unitConversionType, unitConversion);
   //精度换算
   const preciationData = toFixedByStep(unitData, step);
   let result;
   //分隔符换算
-  result = formatNumberWithSeparator(Number(preciationData), separator, countDecimalPlaces(step));
+  result = formatNumberWithSeparator(preciationData, separator, countDecimalPlaces(step));
   if (formatStyle === 'scientifix') {
     //科学计数显示
     result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
