@@ -28,7 +28,7 @@ const collectionModeOptions = [
 
 export default class extends Trigger {
   title = `{{t("Collection event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Event will be triggered on data changes in a collection, such as created, updated or deleted a record. Applicable for monitoring data changes and automatically responding processes.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t('Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike "Post-action event", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use "Post-action event".', { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       ...collection,
