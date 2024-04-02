@@ -20,6 +20,7 @@ import lodash from 'lodash';
 import { getFormulaComponent, getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
 import { findSchema, getFilterFieldPrefix, parseFilterFieldName } from '../filter/utils';
+import _ from 'lodash';
 
 export const useCustomFieldInterface = () => {
   const { getInterface } = useCollectionManager_deprecated();
@@ -135,7 +136,7 @@ export const useChartFilter = () => {
         };
       }
       if (['oho', 'o2m'].includes(field.interface)) {
-        schema['x-component-props'].useOriginalFilter = true;
+        _.set(schema, 'x-component-props.useOriginalFilter', true);
       }
       const resultItem: SchemaInitializerItemType = {
         key: `${name}.${field.name}`,

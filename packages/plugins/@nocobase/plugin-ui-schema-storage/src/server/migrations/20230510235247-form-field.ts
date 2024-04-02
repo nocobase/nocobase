@@ -2,6 +2,7 @@ import { Schema } from '@formily/json-schema';
 import { Migration } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 import UiSchemaRepository from '../repository';
+import _ from 'lodash';
 
 export default class extends Migration {
   appVersion = '<0.9.3-alpha.1';
@@ -23,7 +24,7 @@ export default class extends Migration {
         const schema = item.schema;
         schema['type'] = 'object';
         schema['x-component'] = 'CollectionField';
-        schema['x-component-props']['mode'] = 'Nester';
+        _.set(schema, 'x-component-props.mode', 'Nester');
         item.set('schema', schema);
         await item.save({ transaction });
         const s = await r.getProperties(item['x-uid'], { transaction });

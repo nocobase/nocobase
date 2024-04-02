@@ -31,6 +31,7 @@ export default class extends Migration {
         if (!field) {
           continue;
         }
+        schema['x-component-props'] = schema['x-component-props'] || {};
         schema['x-component-props'].action = schema['x-component-props'].action.replace(
           'attachementField',
           'attachmentField',

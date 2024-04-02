@@ -95,7 +95,7 @@ export const AssociationFilterItemDesigner = (props) => {
         checked={field.componentProps.defaultCollapse}
         onChange={(v) => {
           field.componentProps.defaultCollapse = v;
-          fieldSchema['x-component-props']['defaultCollapse'] = v;
+          _.set(fieldSchema, 'x-component-props.defaultCollapse', v);
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
