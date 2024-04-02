@@ -70,7 +70,6 @@ export function useCreateAssociationDetailsWithoutPagination() {
         createDetailsUISchema({
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
-          'x-use-decorator-props': 'useDetailsByAssociationRecordDecoratorProps',
         }),
       );
     },

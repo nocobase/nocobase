@@ -1,7 +1,11 @@
-import { useCollectionParentRecordData } from '../../../../../data-source/collection-record/CollectionRecordProvider';
+import {
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+} from '../../../../../data-source/collection-record/CollectionRecordProvider';
 import { useParamsFromRecord } from '../../../../../block-provider/BlockProvider';
 import { useCollectionManager } from '../../../../../data-source/collection/CollectionManagerProvider';
 import { InheritanceCollectionMixin } from '../../../../../collection-manager/mixins/InheritanceCollectionMixin';
+import { useFieldSchema } from '@formily/react';
 
 /**
  * 应用在通过 Current record 选项创建的区块中（弹窗中的 Add block 菜单）
@@ -25,6 +29,8 @@ export function useDetailsDecoratorProps(props) {
 }
 
 function useSourceId(association: string) {
+  const fieldSchema = useFieldSchema();
+  const recordData = useCollectionRecordData();
   const parentRecordData = useCollectionParentRecordData();
   const cm = useCollectionManager();
 
@@ -35,7 +41,16 @@ function useSourceId(association: string) {
   const associationField = cm.getCollectionField(association);
   const associationCollection = cm.getCollection<InheritanceCollectionMixin>(associationField.collectionName);
 
-  return parentRecordData?.[
+  if (fieldSchema['x-is-current']) {
+    return parentRecordData?.[
+      associationField.sourceKey ||
+        associationCollection.filterTargetKey ||
+        associationCollection.getPrimaryKey() ||
+        'id'
+    ];
+  }
+
+  return recordData?.[
     associationField.sourceKey || associationCollection.filterTargetKey || associationCollection.getPrimaryKey() || 'id'
   ];
 }

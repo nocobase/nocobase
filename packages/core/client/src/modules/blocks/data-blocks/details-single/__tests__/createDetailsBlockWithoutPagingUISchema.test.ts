@@ -64,7 +64,7 @@ describe('createDetailsBlockWithoutPagingUISchema', () => {
     const options = {
       collectionName: 'users',
       dataSource: 'usersDataSource',
-      'x-use-decorator-props': 'useCustomDecoratorProps',
+      isCurrent: true,
     };
 
     const result = createDetailsUISchema(options);
@@ -108,9 +108,10 @@ describe('createDetailsBlockWithoutPagingUISchema', () => {
           "dataSource": "usersDataSource",
           "readPretty": true,
         },
+        "x-is-current": true,
         "x-settings": "blockSettings:details",
         "x-toolbar": "BlockSchemaToolbar",
-        "x-use-decorator-props": "useCustomDecoratorProps",
+        "x-use-decorator-props": "useDetailsDecoratorProps",
       }
     `);
   });
