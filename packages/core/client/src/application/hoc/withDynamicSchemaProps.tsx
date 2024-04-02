@@ -1,5 +1,4 @@
 import { useExpressionScope } from '@formily/react';
-import { merge, omit } from 'lodash';
 import React, { ComponentType, useMemo } from 'react';
 import { useDesignable } from '../../schema-component';
 
