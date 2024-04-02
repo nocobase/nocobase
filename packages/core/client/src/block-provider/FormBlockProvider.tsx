@@ -13,6 +13,7 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useCollectionManager_deprecated } from '../collection-manager';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
@@ -102,11 +103,13 @@ export const useIsDetailBlock = () => {
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const record = useCollectionRecordData();
   const parentRecordData = useCollectionParentRecordData();
-  const { collection, isCusomeizeCreate } = props;
-  const { __collection } = record;
+  const { association, isCusomeizeCreate, dataSource } = props;
+  const { getCollection } = useCollectionManager_deprecated(dataSource);
+  const { __collection, isNew } = record;
   const currentCollection = useCollection_deprecated();
   const { designable } = useDesignable();
   const isDetailBlock = useIsDetailBlock();
+  const collection = props.collection || getCollection(association, dataSource).name;
   let detailFlag = false;
   if (isDetailBlock) {
     detailFlag = true;
@@ -114,7 +117,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
       detailFlag = __collection === collection;
     }
   }
-  const createFlag = (__collection === collection && !isDetailBlock) || !currentCollection.name || !collection;
+  const createFlag = (__collection === collection && isNew) || !currentCollection.name || !collection;
   if (!detailFlag && !createFlag && !isCusomeizeCreate) {
     return null;
   }

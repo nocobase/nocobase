@@ -140,7 +140,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
             setCurrentCollectionDataSource(collectionData.dataSource);
           }}
         />
-        <CollectionRecordProvider record={{ __collection: currentCollection }}>
+        <CollectionRecordProvider record={{ __collection: currentCollection, isNew: true }}>
           <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
           </CollectionProvider_deprecated>
