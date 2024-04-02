@@ -38,7 +38,7 @@ export function formatNumberWithSeparator(number, format = '0.00', step = 1) {
   } else {
     formattedNumber = number.toString();
   }
-
+  console.log(formattedNumber);
   return formattedNumber;
 }
 
@@ -91,7 +91,9 @@ export function formatNumber(props) {
   if (!isValid(value)) {
     return null;
   }
-
+  if (!formatStyle) {
+    return value;
+  }
   //单位换算
   const unitData = formatUnitConversion(value, unitConversionType, unitConversion);
   //精度换算
@@ -108,7 +110,6 @@ export function formatNumber(props) {
 
 export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) => {
   const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
-
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
   }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);
