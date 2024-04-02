@@ -146,7 +146,8 @@ export default class extends Trigger {
   };
   isActionTriggerable = (config, context) => {
     return (
-      ['create', 'update', 'customize:update', 'customize:triggerWorkflows'].includes(context.action) && !config.global
+      context.action === 'customize:triggerWorkflows' ||
+      (['create', 'update', 'customize:update'].includes(context.action) && !config.global)
     );
   };
   useVariables(config, options) {
