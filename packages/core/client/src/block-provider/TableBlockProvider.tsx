@@ -134,7 +134,6 @@ export const useTableBlockProps = () => {
   const ctx = useTableBlockContext();
   const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
   const { getDataBlocks } = useFilterBlock();
-
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = [];
@@ -174,11 +173,13 @@ export const useTableBlockProps = () => {
       ctx.service.refresh();
     },
     onChange({ current, pageSize }, filters, sorter) {
-      const sort = sorter.order
-        ? sorter.order === `ascend`
-          ? [sorter.field]
-          : [`-${sorter.field}`]
-        : globalSort || ctx.service.params?.[0]?.sort;
+      const sort = !ctx.dragSort
+        ? sorter.order
+          ? sorter.order === `ascend`
+            ? [sorter.field]
+            : [`-${sorter.field}`]
+          : globalSort || ctx.service.params?.[0]?.sort
+        : ctx.service.params?.[0]?.sort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
     onClickRow(record, setSelectedRow, selectedRow) {
