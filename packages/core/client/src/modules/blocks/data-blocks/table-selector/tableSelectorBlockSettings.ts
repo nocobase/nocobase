@@ -46,10 +46,6 @@ export const tableSelectorBlockSettings = new SchemaSettings({
               }
             }
 
-            if (dataLoadingMode === 'auto') {
-              service.run({ ...service.params?.[0], filter: serviceFilter, page: 1 });
-            }
-
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

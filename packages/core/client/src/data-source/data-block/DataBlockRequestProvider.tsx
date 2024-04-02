@@ -1,4 +1,3 @@
-import { useDeepCompareEffect, useUpdateEffect, useWhyDidYouUpdate } from 'ahooks';
 import React, { FC, createContext, useContext, useMemo } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
@@ -36,7 +35,8 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 
   const request = useRequest<T>(service, {
     ...requestOptions,
-    ready: action && dataLoadingMode === 'auto',
+    manual: dataLoadingMode === 'manual',
+    ready: action,
     refreshDeps: [action, JSON.stringify(params), JSON.stringify(record), resource],
   });
 
