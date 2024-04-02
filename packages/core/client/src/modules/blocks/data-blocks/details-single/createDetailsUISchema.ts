@@ -6,6 +6,7 @@ export function createDetailsUISchema(options: {
   collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
+  'x-use-decorator-props'?: any;
 }): ISchema {
   const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
@@ -18,7 +19,7 @@ export function createDetailsUISchema(options: {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
     'x-decorator': 'DetailsBlockProvider',
-    'x-use-decorator-props': 'useDetailsDecoratorProps',
+    'x-use-decorator-props': options['x-use-decorator-props'] || 'useDetailsDecoratorProps',
     'x-decorator-props': {
       dataSource,
       collection: collectionName,

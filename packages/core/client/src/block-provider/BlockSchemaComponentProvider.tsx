@@ -31,6 +31,7 @@ import { useDetailsProps } from '../modules/blocks/data-blocks/details-single/ho
 import { useDetailsWithPaginationProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationProps';
 import { useDetailsDecoratorProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsDecoratorProps';
 import { useDetailsWithPaginationDecoratorProps } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationDecoratorProps';
+import { useDetailsByAssociationRecordDecoratorProps } from '../modules/blocks/data-blocks/details-single/hooks/useDetailsByAssociationRecordDecoratorProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -61,6 +62,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useDetailsProps,
         useDetailsWithPaginationProps,
         useDetailsDecoratorProps,
+        useDetailsByAssociationRecordDecoratorProps,
         useDetailsWithPaginationDecoratorProps,
         useTableFieldProps,
         useTableBlockProps,
@@ -119,6 +121,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useDetailsProps,
       useDetailsWithPaginationProps,
       useDetailsDecoratorProps,
+      useDetailsByAssociationRecordDecoratorProps,
       useDetailsWithPaginationDecoratorProps,
       useTableFieldProps,
       useTableBlockProps,

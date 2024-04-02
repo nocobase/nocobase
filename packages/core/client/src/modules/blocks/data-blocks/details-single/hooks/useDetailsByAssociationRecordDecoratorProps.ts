@@ -2,11 +2,11 @@ import { useParamsFromRecord } from '../../../../../block-provider/BlockProvider
 import { useDataBlockSourceId } from '../../../../../block-provider/hooks/useDataBlockSourceId';
 
 /**
- * 应用在通过 Current record 选项创建的区块中（弹窗中的 Add block 菜单）
+ * 应用在通过 Association records 选项创建的区块中（弹窗中的 Add block 菜单）
  * @param props
  * @returns
  */
-export function useDetailsDecoratorProps(props) {
+export const useDetailsByAssociationRecordDecoratorProps = (props) => {
   const params = useParamsFromRecord();
   let sourceId;
 
@@ -20,4 +20,4 @@ export function useDetailsDecoratorProps(props) {
     params,
     sourceId,
   };
-}
+};
