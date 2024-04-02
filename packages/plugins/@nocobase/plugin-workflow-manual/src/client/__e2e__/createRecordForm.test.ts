@@ -703,7 +703,7 @@ test.describe('field data entry', () => {
 
     const manualNodeJobResult = manualNodeJob.result;
     const hasPhone = Object.values(manualNodeJobResult).some(
-      (value) => (value as { staffnum: number }).staffnum === manualNodeRecord,
+      (value) => (value as { staffnum: number }).staffnum == manualNodeRecord,
     );
     expect(hasPhone).toBe(true);
 
@@ -842,7 +842,7 @@ test.describe('field data entry', () => {
 
     const manualNodeJobResult = manualNodeJob.result;
     const hasRegcapital = Object.values(manualNodeJobResult).some(
-      (value) => (value as { regcapital: number }).regcapital === manualNodeRecord,
+      (value) => (value as { regcapital: number }).regcapital == manualNodeRecord,
     );
     expect(hasRegcapital).toBe(true);
 
