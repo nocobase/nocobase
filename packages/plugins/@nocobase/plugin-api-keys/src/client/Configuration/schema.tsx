@@ -166,9 +166,9 @@ export const configurationSchema: ISchema = {
         [uid()]: {
           type: 'array',
           'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowKey: 'id',
-            useProps: '{{ useTableBlockProps }}',
           },
           properties: {
             column1: {

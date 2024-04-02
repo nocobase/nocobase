@@ -26,9 +26,10 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
-export const Action: ComposedAction = observer(
-  (props: any) => {
+export const Action: ComposedAction = withDynamicSchemaProps(
+  observer((props: any) => {
     const {
       popover,
       confirm,
@@ -48,7 +49,7 @@ export const Action: ComposedAction = observer(
       addChild,
       onMouseEnter,
       ...others
-    } = useProps(props);
+    } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
@@ -209,7 +210,7 @@ export const Action: ComposedAction = observer(
     }
 
     return wrapSSR(result);
-  },
+  }),
   { displayName: 'Action' },
 );
 

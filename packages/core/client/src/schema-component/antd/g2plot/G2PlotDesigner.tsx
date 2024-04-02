@@ -9,6 +9,7 @@ import {
   SchemaSettingsRemove,
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import _ from 'lodash';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -94,9 +95,9 @@ export const G2PlotDesigner = () => {
           } else {
             field.componentProps.config = conf;
           }
-          fieldSchema.title = title;
-          fieldSchema['x-component-props']['plot'] = plot;
-          fieldSchema['x-component-props']['config'] = JSON.parse(config);
+          _.set(fieldSchema, 'title', title);
+          _.set(fieldSchema, 'x-component-props.plot', plot);
+          _.set(fieldSchema, 'x-component-props.config', JSON.parse(config));
           dn.emit('patch', {
             schema: {
               title,

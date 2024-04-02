@@ -22,6 +22,7 @@ export type DraggerV2Props = Omit<AntdDraggerProps, 'onChange'> & {
   title?: string;
   subTitle?: string;
   children?: React.ReactNode;
+  /** @deprecated */
   useProps?: () => any;
 };
 

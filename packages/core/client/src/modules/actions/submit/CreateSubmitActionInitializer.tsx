@@ -6,12 +6,12 @@ export const CreateSubmitActionInitializer = (props) => {
     title: '{{ t("Submit") }}',
     'x-action': 'submit',
     'x-component': 'Action',
+    'x-use-component-props': 'useCreateActionProps',
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:createSubmit',
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',
-      useProps: '{{ useCreateActionProps }}',
     },
     'x-action-settings': {
       triggerWorkflows: [],

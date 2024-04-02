@@ -137,9 +137,9 @@ export const collectionTableSchema: ISchema = {
           },
           'x-action': 'filter',
           'x-component': 'Filter.Action',
+          'x-use-component-props': 'cm.useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
-            useProps: '{{ cm.useFilterActionProps }}',
           },
           'x-align': 'left',
         },
