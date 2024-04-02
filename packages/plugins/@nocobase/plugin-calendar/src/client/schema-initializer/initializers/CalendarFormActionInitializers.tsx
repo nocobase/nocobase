@@ -132,6 +132,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
           schema: {
             title: generateNTemplate('Update record'),
             'x-component': 'Action',
+            'x-use-component-props': 'useCustomizeUpdateActionProps',
             // 'x-designer': 'Action.Designer',
             'x-toolbar': 'ActionSchemaToolbar',
             'x-settings': 'actionSettings:updateRecord',
@@ -145,9 +146,6 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
                 successMessage: generateNTemplate('Updated successfully'),
               },
               triggerWorkflows: [],
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
           useVisible() {

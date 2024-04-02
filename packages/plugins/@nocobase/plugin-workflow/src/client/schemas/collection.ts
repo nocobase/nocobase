@@ -30,19 +30,21 @@ export const filter = {
   title: '{{t("Filter")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Filter',
+  'x-use-component-props': () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { values } = useForm();
+    const [dataSourceName, collectionName] = parseCollectionName(values?.collection);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const options = useCollectionFilterOptions(collectionName, dataSourceName);
+    return {
+      options,
+      className: css`
+        position: relative;
+        width: 100%;
+      `,
+    };
+  },
   'x-component-props': {
-    useProps() {
-      const { values } = useForm();
-      const [dataSourceName, collectionName] = parseCollectionName(values?.collection);
-      const options = useCollectionFilterOptions(collectionName, dataSourceName);
-      return {
-        options,
-        className: css`
-          position: relative;
-          width: 100%;
-        `,
-      };
-    },
     dynamicComponent: 'FilterDynamicComponent',
   },
 };

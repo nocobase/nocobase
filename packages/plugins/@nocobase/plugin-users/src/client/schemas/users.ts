@@ -152,9 +152,9 @@ export const usersSchema: ISchema = {
               title: '{{ t("Filter") }}',
               'x-action': 'filter',
               'x-component': 'Filter.Action',
+              'x-use-component-props': 'useFilterActionProps',
               'x-component-props': {
                 icon: 'FilterOutlined',
-                useProps: '{{ useFilterActionProps }}',
               },
               'x-align': 'left',
             },
@@ -493,9 +493,9 @@ export const getRoleUsersSchema = (): ISchema => ({
           title: '{{ t("Filter") }}',
           'x-action': 'filter',
           'x-component': 'Filter.Action',
+          'x-use-component-props': 'useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
-            useProps: '{{ useFilterActionProps }}',
           },
           'x-align': 'left',
         },
@@ -556,9 +556,9 @@ export const getRoleUsersSchema = (): ISchema => ({
                               },
                               'x-action': 'filter',
                               'x-component': 'Filter.Action',
+                              'x-use-component-props': 'useFilterActionProps',
                               'x-component-props': {
                                 icon: 'FilterOutlined',
-                                useProps: '{{ useFilterActionProps }}',
                               },
                               'x-align': 'left',
                             },

@@ -266,10 +266,7 @@ export const TriggerConfig = () => {
                   title: titleText,
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'FormV2',
-                  'x-decorator-props': {
-                    // form,
-                    useProps: '{{ useFormProviderProps }}',
-                  },
+                  'x-use-decorator-props': 'useFormProviderProps',
                   properties: {
                     ...(trigger.description
                       ? {

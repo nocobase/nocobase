@@ -61,9 +61,9 @@ export const ExportActionInitializer = () => {
     'x-settings': 'actionSettings:export',
     'x-decorator': 'ACLActionProvider',
     'x-component': 'Action',
+    'x-use-component-props': 'useExportAction',
     'x-component-props': {
       icon: 'clouddownloadoutlined',
-      useProps: '{{ useExportAction }}',
     },
   };
   return (

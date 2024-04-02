@@ -15,7 +15,7 @@ import {
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsTemplate,
 } from '../../../../schema-settings/SchemaSettings';
-import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope'
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';
