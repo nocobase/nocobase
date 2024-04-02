@@ -31,10 +31,12 @@ export default class extends Trigger {
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
+      'x-decorator-props': {
+        tooltip: `{{t("The collection to which the triggered data belongs.", { ns: "${NAMESPACE}" })}}`,
+      },
       'x-component': 'DataSourceCollectionCascader',
       'x-disabled': '{{ useWorkflowAnyExecuted() }}',
       title: `{{t("Collection", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Which collection record belongs to.", { ns: "${NAMESPACE}" })}}`,
       'x-reactions': [
         {
           target: 'appends',
@@ -56,13 +58,14 @@ export default class extends Trigger {
         direction: 'vertical',
         options: [
           {
-            label: `{{t("Triggers only when the button bound with this workflow clicked", { ns: "${NAMESPACE}" })}}`,
+            label: `{{t("Local mode", { ns: "${NAMESPACE}" })}}`,
             value: false,
+            tooltip: `{{t('Triggered only when the button bound with this workflow is clicked.', { ns: "${NAMESPACE}" })}}`,
           },
           {
-            label: `{{t("The following selected actions all trigger this event", { ns: "${NAMESPACE}" })}}`,
+            label: `{{t("Global mode", { ns: "${NAMESPACE}" })}}`,
             value: true,
-            tooltip: `{{t('Action to submit to workflow directly is only supported on bound buttons, and will not be affected under global mode.', { ns: "${NAMESPACE}" })}}`,
+            tooltip: `{{t('Triggered by any of the following actions initiated from any location or form.', { ns: "${NAMESPACE}" })}}`,
           },
         ],
       },
@@ -80,14 +83,14 @@ export default class extends Trigger {
     },
     actions: {
       type: 'number',
-      title: `{{t("Action to trigger", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Select actions", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'CheckboxGroupWithTooltip',
       'x-component-props': {
         direction: 'vertical',
         options: [
-          { label: `{{t("Create a record", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.CREATE },
-          { label: `{{t("Update a record", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPDATE },
+          { label: `{{t("A record is created", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.CREATE },
+          { label: `{{t("A record is updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPDATE },
           // { label: `{{t("upsert", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPSERT },
           // {
           //   label: `{{t("Delete single or many records", { ns: "${NAMESPACE}" })}}`,
