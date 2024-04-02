@@ -13,7 +13,6 @@ export const SubmitActionInitializer = (props) => {
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',
-      // useProps: '{{ bp.useSubmitActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

@@ -346,6 +346,7 @@ const BodyRowComponent = (props) => {
 };
 
 interface TableProps {
+  /** @deprecated */
   useProps?: () => any;
   onChange?: (pagination, filters, sorter, extra) => void;
   onRowSelectionChange?: (selectedRowKeys: any[], selectedRows: any[]) => void;
@@ -365,8 +366,10 @@ export const Table: any = withDynamicSchemaProps(
   observer((props: TableProps) => {
     const { token } = useToken();
     const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus', 'value']);
+
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { pagination: pagination2, ...others2 } = useProps?.() || {};
+
     const {
       dragSort = false,
       showIndex = true,

@@ -99,9 +99,7 @@ const formSchema: ISchema = {
     form: {
       type: 'void',
       'x-component': 'FormV2',
-      'x-component-props': {
-        useProps: '{{ useFormBlockProps }}',
-      },
+      'x-use-component-props': 'useFormBlockProps',
       properties: {
         id: {
           type: 'string',
@@ -157,12 +155,12 @@ const schema: ISchema = {
           type: 'array',
           title: `编辑模式`,
           'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowKey: 'id',
             rowSelection: {
               type: 'checkbox',
             },
-            useProps: '{{ useTableBlockProps }}',
           },
           properties: {
             column1: {

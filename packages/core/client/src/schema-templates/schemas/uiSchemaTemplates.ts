@@ -72,13 +72,13 @@ export const uiSchemaTemplatesSchema: ISchema = {
               title: '{{ t("Delete") }}',
               'x-action': 'destroy',
               'x-component': 'Action',
+              'x-use-component-props': useBulkDestroyTemplateProps,
               'x-component-props': {
                 icon: 'DeleteOutlined',
                 confirm: {
                   title: "{{t('Delete record')}}",
                   content: "{{t('Are you sure you want to delete it?')}}",
                 },
-                useProps: useBulkDestroyTemplateProps,
               },
             },
           },
@@ -86,11 +86,11 @@ export const uiSchemaTemplatesSchema: ISchema = {
         [uid()]: {
           type: 'array',
           'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowSelection: {
               type: 'checkbox',
             },
-            useProps: '{{ useTableBlockProps }}',
           },
           properties: {
             actions: {
@@ -146,9 +146,7 @@ export const uiSchemaTemplatesSchema: ISchema = {
                                 [uid()]: {
                                   type: 'void',
                                   'x-component': 'FormV2',
-                                  'x-component-props': {
-                                    useProps: '{{ useFormBlockProps }}',
-                                  },
+                                  'x-use-component-props': 'useFormBlockProps',
                                   properties: {
                                     name: {
                                       type: 'string',
@@ -171,10 +169,10 @@ export const uiSchemaTemplatesSchema: ISchema = {
                                           title: '{{t("Submit")}}',
                                           'x-action': 'submit',
                                           'x-component': 'Action',
+                                          'x-use-component-props': useUpdateSchemaTemplateActionProps,
                                           'x-component-props': {
                                             type: 'primary',
                                             htmlType: 'submit',
-                                            useProps: useUpdateSchemaTemplateActionProps,
                                           },
                                           type: 'void',
                                         },
@@ -192,13 +190,13 @@ export const uiSchemaTemplatesSchema: ISchema = {
                       title: '{{ t("Delete") }}',
                       'x-action': 'destroy',
                       'x-component': 'Action.Link',
+                      'x-use-component-props': useDestroyTemplateProps,
                       'x-component-props': {
                         icon: 'DeleteOutlined',
                         confirm: {
                           title: "{{t('Delete record')}}",
                           content: "{{t('Are you sure you want to delete it?')}}",
                         },
-                        useProps: useDestroyTemplateProps,
                       },
                     },
                   },

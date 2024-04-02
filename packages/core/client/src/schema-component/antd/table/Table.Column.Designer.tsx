@@ -10,6 +10,7 @@ import {
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useActionContext } from '../action';
+import _ from 'lodash';
 
 const useLabelFields = (collectionName?: any) => {
   const compile = useCompile();
@@ -122,10 +123,10 @@ export const TableColumnDesigner = (props) => {
           value={fieldSchema?.['x-component-props']?.['fieldNames']?.['label']}
           onChange={(label) => {
             const fieldNames = {
-              ...fieldSchema['x-component-props']['fieldNames'],
+              ...fieldSchema['x-component-props']?.['fieldNames'],
               label,
             };
-            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            _.set(fieldSchema, 'x-component-props.fieldNames', fieldNames);
             field.query(`.*.${fieldSchema.name}`).take((f) => {
               f.componentProps.fieldNames = fieldNames;
             });

@@ -2,6 +2,7 @@ import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Action, SchemaComponent, SchemaComponentProvider, useActionContext } from '@nocobase/client';
 import { Radio } from 'antd';
+import _ from 'lodash';
 import React, { useRef } from 'react';
 
 const useCloseAction = () => {
@@ -25,7 +26,7 @@ const Editable = observer(
             value={field.componentProps.openMode}
             onChange={(e) => {
               field.componentProps.openMode = e.target.value;
-              schema['x-component-props']['openMode'] = e.target.value;
+              _.set(schema, 'x-component-props.openMode', e.target.value);
             }}
           >
             <Radio.Button value="drawer">Drawer</Radio.Button>
