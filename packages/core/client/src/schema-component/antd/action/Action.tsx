@@ -120,7 +120,7 @@ export const Action: ComposedAction = observer(
           const onOk = () => {
             if (onClick) {
               onClick(e, () => {
-                if (refreshDataBlockRequest) {
+                if (refreshDataBlockRequest !== false) {
                   service?.refresh?.();
                 }
               });
