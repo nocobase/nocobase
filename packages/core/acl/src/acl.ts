@@ -19,9 +19,15 @@ interface CanResult {
 
 export interface DefineOptions {
   role: string;
+  /**
+   * @internal
+   */
   allowConfigure?: boolean;
   strategy?: string | AvailableStrategyOptions;
   actions?: ResourceActionsOptions;
+  /**
+   * @internal
+   */
   routes?: any;
   snippets?: string[];
 }

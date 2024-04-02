@@ -4,6 +4,9 @@ import DataVisualizationPlugin from '..';
 import { lang } from '../locale';
 
 export class ChartGroup {
+  /**
+   * @internal
+   */
   charts: Map<string, ChartType[]> = new Map();
 
   setGroup(name: string, charts: ChartType[]) {

@@ -24,6 +24,9 @@ export class BaseAuth extends Auth {
     return this.userCollection.repository;
   }
 
+  /**
+   * @internal
+   */
   get jwt(): JwtService {
     return this.ctx.app.authManager.jwt;
   }

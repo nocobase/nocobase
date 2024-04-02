@@ -67,7 +67,7 @@ export interface KoaMiddlewareOptions {
   };
 }
 
-export interface ResourcerOptions {
+export interface ResourceManagerOptions {
   /**
    * 前缀
    */
@@ -149,11 +149,11 @@ export interface ImportOptions {
   extensions?: string[];
 }
 
-export class Resourcer {
+export class ResourceManager {
   /**
    * @internal
    */
-  public readonly options: ResourcerOptions;
+  public readonly options: ResourceManagerOptions;
   protected resources = new Map<string, Resource>();
   /**
    * 全局定义的 action handlers
@@ -163,7 +163,7 @@ export class Resourcer {
   protected middlewareHandlers = new Map<string, any>();
   protected middlewares: Toposort<any>;
 
-  constructor(options: ResourcerOptions = {}) {
+  constructor(options: ResourceManagerOptions = {}) {
     this.options = options;
     this.middlewares = new Toposort<any>();
   }
@@ -296,12 +296,7 @@ export class Resourcer {
     this.middlewares.add(middlewares, options);
   }
 
-  /**
-   * This method is deprecated and should not be used.
-   * Use {@link this.middleware()} instead.
-   * @deprecated
-   */
-  restApiMiddleware({ prefix, accessors, skipIfDataSourceExists = false }: KoaMiddlewareOptions = {}) {
+  middleware({ prefix, accessors, skipIfDataSourceExists = false }: KoaMiddlewareOptions = {}) {
     return async (ctx: ResourcerContext, next: () => Promise<any>) => {
       if (skipIfDataSourceExists) {
         const dataSource = ctx.get('x-data-source');
@@ -382,8 +377,13 @@ export class Resourcer {
     };
   }
 
-  middleware(options: KoaMiddlewareOptions = {}) {
-    return this.restApiMiddleware(options);
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link this.middleware()} instead.
+   * @deprecated
+   */
+  restApiMiddleware(options: KoaMiddlewareOptions = {}) {
+    return this.middleware(options);
   }
 
   /**
@@ -397,4 +397,19 @@ export class Resourcer {
   }
 }
 
-export default Resourcer;
+/**
+ * This interface is deprecated and should not be used.
+ * Use {@link ResourceManagerOptions} instead.
+ * @deprecated
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ResourcerOptions extends ResourceManagerOptions {}
+
+/**
+ * This class is deprecated and should not be used.
+ * Use {@link ResourceManager} instead.
+ * @deprecated
+ */
+export class Resourcer extends ResourceManager {}
+
+export default ResourceManager;

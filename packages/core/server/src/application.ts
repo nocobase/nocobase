@@ -230,6 +230,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._logger;
   }
 
+  get resourceManager() {
+    return this.mainDataSource.resourceManager;
+  }
+
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link #resourceManager} instead.
+   * @deprecated
+   */
   get resourcer() {
     return this.mainDataSource.resourceManager;
   }
@@ -412,20 +421,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.resourcer.define()} instead.
+   * Use {@link #this.resourceManager.define()} instead.
    * @deprecated
    */
   resource(options: ResourceOptions) {
-    return this.resourcer.define(options);
+    return this.resourceManager.define(options);
   }
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.resourcer.registerActions()} instead.
+   * Use {@link #this.resourceManager.registerActionHandlers()} instead.
    * @deprecated
    */
   actions(handlers: any, options?: ActionsOptions) {
-    return this.resourcer.registerActions(handlers);
+    return this.resourceManager.registerActionHandlers(handlers);
   }
 
   command(name: string, desc?: string, opts?: CommandOptions): AppCommand {
@@ -1041,7 +1050,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._i18n = createI18n(options);
     this.context.db = this.db;
 
-    this.context.resourcer = this.resourcer;
+    /**
+     * This method is deprecated and should not be used.
+     * Use {@link #this.context.resourceManager} instead.
+     * @deprecated
+     */
+    this.context.resourcer = this.resourceManager;
+    this.context.resourceManager = this.resourceManager;
     this.context.cacheManager = this._cacheManager;
     this.context.cache = this._cache;
 
@@ -1064,16 +1079,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       ...(this.options.authManager || {}),
     });
 
-    this.resource({
+    this.resourceManager.define({
       name: 'auth',
       actions: authActions,
     });
 
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
-    this.resourcer.use(this._authManager.middleware(), { tag: 'auth' });
+    this.resourceManager.use(this._authManager.middleware(), { tag: 'auth' });
 
     if (this.options.acl !== false) {
-      this.resourcer.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
+      this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
 
     this._locales = new Locale(createAppProxy(this));

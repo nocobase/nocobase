@@ -30,7 +30,13 @@ export class CacheManager {
       close?: (store: Store) => Promise<void>;
     }
   >();
+  /**
+   * @internal
+   */
   storeTypes = new Map<string, StoreOptions>();
+  /**
+   * @internal
+   */
   caches = new Map<string, Cache>();
 
   constructor(options?: CacheManagerOptions) {
