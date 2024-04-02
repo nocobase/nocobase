@@ -101,7 +101,7 @@ export const useIsDetailBlock = () => {
 };
 
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
-  const record = useCollectionRecordData();
+  const record = useCollectionRecordData() || {};
   const parentRecordData = useCollectionParentRecordData();
   const { association, isCusomeizeCreate, dataSource } = props;
   const { getCollection } = useCollectionManager_deprecated(dataSource);
@@ -109,7 +109,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const currentCollection = useCollection_deprecated();
   const { designable } = useDesignable();
   const isDetailBlock = useIsDetailBlock();
-  const collection = props.collection || getCollection(association, dataSource).name;
+  const collection = props.collection || getCollection(association, dataSource)?.name;
   let detailFlag = false;
   if (isDetailBlock) {
     detailFlag = true;
@@ -117,7 +117,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
       detailFlag = __collection === collection;
     }
   }
-  const createFlag = (__collection === collection && isNew) || !currentCollection.name || !collection;
+  const createFlag = (__collection === collection && isNew) || !currentCollection?.name || !collection;
   if (!detailFlag && !createFlag && !isCusomeizeCreate) {
     return null;
   }
