@@ -36,7 +36,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const request = useRequest<T>(service, {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
-    ready: action,
+    ready: !!action,
     refreshDeps: [action, JSON.stringify(params), JSON.stringify(record), resource],
   });
 
