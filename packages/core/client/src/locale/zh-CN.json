@@ -644,6 +644,7 @@
   "Current user": "当前用户",
   "Current role": "当前角色",
   "Current record": "当前记录",
+  "Associated records": "关联记录",
   "Parent record": "上级记录",
   "Current time": "当前时间",
   "Now": "现在",
@@ -918,5 +919,6 @@
   "Multiply by":"乘以",
   "Divide by":"除以",
   "Scientifix notation":"科学计数法",
-  "Normal":"常规"
+  "Normal":"常规",
+  "Automatically generate default values":"随机生成默认值"
 }

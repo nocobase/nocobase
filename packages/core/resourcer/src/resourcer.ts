@@ -219,7 +219,7 @@ export class ResourceManager {
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link this.registerActionHandler()} instead.
+   * Use {@link ResourceManager#registerActionHandler} instead.
    * @deprecated
    */
   registerAction(name: ActionName, handler: HandlerType) {
@@ -228,7 +228,7 @@ export class ResourceManager {
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link this.registerActionHandlers()} instead.
+   * Use {@link ResourceManager#registerActionHandlers} instead.
    * @deprecated
    */
   registerActions(handlers: Handlers) {
@@ -379,7 +379,7 @@ export class ResourceManager {
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link this.middleware()} instead.
+   * Use {@link ResourceManager#middleware} instead.
    * @deprecated
    */
   restApiMiddleware(options: KoaMiddlewareOptions = {}) {

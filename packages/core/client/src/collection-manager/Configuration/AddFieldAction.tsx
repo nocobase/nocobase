@@ -348,6 +348,7 @@ export const AddFieldAction = (props) => {
           </Dropdown>
           <SchemaComponent
             schema={schema}
+            distributed={false}
             components={{ ...components, ArrayTable }}
             scope={{
               getContainer,

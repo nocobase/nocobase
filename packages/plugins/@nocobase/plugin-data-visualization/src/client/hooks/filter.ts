@@ -20,6 +20,7 @@ import lodash from 'lodash';
 import { getFormulaComponent, getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
 import { findSchema, getFilterFieldPrefix, parseFilterFieldName } from '../filter/utils';
+import _ from 'lodash';
 
 export const useCustomFieldInterface = () => {
   const { getInterface } = useCollectionManager_deprecated();
@@ -135,7 +136,7 @@ export const useChartFilter = () => {
         };
       }
       if (['oho', 'o2m'].includes(field.interface)) {
-        schema['x-component-props'].useOriginalFilter = true;
+        _.set(schema, 'x-component-props.useOriginalFilter', true);
       }
       const resultItem: SchemaInitializerItemType = {
         key: `${name}.${field.name}`,
@@ -221,7 +222,7 @@ export const useChartFilter = () => {
       name: string,
       fieldName: string,
     ): SchemaInitializerItemType => {
-      if (!field.interface) {
+      if (!field.interface || field.isForeignKey) {
         return;
       }
       const fieldInterface = fim.getFieldInterface(field.interface);
@@ -305,12 +306,15 @@ export const useChartFilter = () => {
       .filter(([_, props]) => props)
       .forEach(([name, props]) => {
         const { operator } = props || {};
-        const { dataSource, fieldName } = parseFilterFieldName(name);
+        const { dataSource, fieldName: _fieldName } = parseFilterFieldName(name);
+        let fieldName = _fieldName;
         const ds = dm.getDataSource(dataSource);
         const cm = ds.collectionManager;
         const field = cm.getCollectionField(fieldName);
         if (field?.target) {
-          name = `${fieldName}.${field.targetKey || 'id'}`;
+          const tk = field.targetKey || 'id';
+          fieldName = `${fieldName}.${tk}`;
+          name = `${name}.${tk}`;
         }
         const [collection, ...fields] = fieldName.split('.');
         const value = getValuesByPath(values, name);

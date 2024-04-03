@@ -1,11 +1,10 @@
 import { createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useParsedFilter } from './hooks';
-import { useTableBlockParams } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
+import { useTableBlockParams } from '../modules/blocks/data-blocks/table';
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 export const TableBlockContext = createContext<any>({});
@@ -41,14 +40,19 @@ const InternalTableBlockProvider = (props: Props) => {
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
-  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const [expandFlag, setExpandFlag] = useState(fieldNames ? true : false);
   const allIncludesChildren = useMemo(() => {
+    const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+    const data = service?.data?.data;
     if (treeTable !== false) {
-      const keys = getIdsWithChildren(service?.data?.data);
-      return keys || [];
+      const keys = getIdsWithChildren(data);
+      return keys;
     }
-  }, [service?.loading]);
+  }, [service?.loading, fieldSchema]);
+
+  const setExpandFlagValue = useCallback(() => {
+    setExpandFlag(!expandFlag);
+  }, [expandFlag]);
 
   return (
     <FixedBlockWrapper>
@@ -65,7 +69,7 @@ const InternalTableBlockProvider = (props: Props) => {
           expandFlag,
           childrenColumnName,
           allIncludesChildren,
-          setExpandFlag: () => setExpandFlag(!expandFlag),
+          setExpandFlag: setExpandFlagValue,
         }}
       >
         <RenderChildrenWithAssociationFilter {...props} />

@@ -3,7 +3,7 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
@@ -26,9 +26,10 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
-export const Action: ComposedAction = observer(
-  (props: any) => {
+export const Action: ComposedAction = withDynamicSchemaProps(
+  observer((props: any) => {
     const {
       popover,
       confirm,
@@ -46,8 +47,9 @@ export const Action: ComposedAction = observer(
       actionCallback,
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
+      onMouseEnter,
       ...others
-    } = useProps(props);
+    } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
@@ -65,17 +67,28 @@ export const Action: ComposedAction = observer(
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
 
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
-    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-    let actionTitle = title || compile(fieldSchema.title);
-    actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
+    const [btnHover, setBtnHover] = useState(popover);
 
     useEffect(() => {
+      if (popover) {
+        setBtnHover(true);
+      }
+    }, [popover]);
+
+    const actionTitle = useMemo(() => {
+      const res = title || compile(fieldSchema.title);
+      return lodash.isString(res) ? t(res) : res;
+    }, [title, fieldSchema.title, t]);
+
+    useEffect(() => {
+      if (!btnHover) return;
       field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
@@ -90,13 +103,14 @@ export const Action: ComposedAction = observer(
             });
           });
         });
-    }, [field, linkageRules, localVariables, record, variables]);
+    }, [btnHover, field, linkageRules, localVariables, record, variables]);
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
         if (isPortalInBody(e.target as Element)) {
           return;
         }
+        setBtnHover(true);
 
         e.preventDefault();
         e.stopPropagation();
@@ -128,6 +142,13 @@ export const Action: ComposedAction = observer(
       };
     }, [designable, field?.data?.hidden, style]);
 
+    const handleMouseEnter = useCallback(
+      (e) => {
+        setBtnHover(true);
+        onMouseEnter?.(e);
+      },
+      [onMouseEnter],
+    );
     const renderButton = () => {
       if (!designable && (field?.data?.hidden || !aclCtx)) {
         return null;
@@ -138,6 +159,7 @@ export const Action: ComposedAction = observer(
           role="button"
           aria-label={getAriaLabel()}
           {...others}
+          onMouseEnter={handleMouseEnter}
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
@@ -152,9 +174,16 @@ export const Action: ComposedAction = observer(
         </SortableItem>
       );
     };
+
+    const buttonElement = renderButton();
+
+    // if (!btnHover) {
+    //   return buttonElement;
+    // }
+
     const result = (
       <ActionContextProvider
-        button={renderButton()}
+        button={buttonElement}
         visible={visible}
         setVisible={setVisible}
         formValueChanged={formValueChanged}
@@ -181,7 +210,7 @@ export const Action: ComposedAction = observer(
     }
 
     return wrapSSR(result);
-  },
+  }),
   { displayName: 'Action' },
 );
 

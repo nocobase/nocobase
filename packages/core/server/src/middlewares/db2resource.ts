@@ -2,10 +2,6 @@ import Database from '@nocobase/database';
 import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@nocobase/resourcer';
 
 export async function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
-  const dataSource = ctx.get('x-data-source');
-  if (dataSource) {
-    return next();
-  }
   const resourcer = ctx.resourcer;
   const database = ctx.db;
 
@@ -33,12 +29,8 @@ export async function db2resource(ctx: ResourcerContext & { db: Database }, next
 
   const splitResult = resourceName.split('.');
 
-  let collectionName = splitResult[0];
+  const collectionName = splitResult[0];
   const fieldName = splitResult[1];
-
-  if (collectionName.includes('@')) {
-    collectionName = collectionName.split('@')[1];
-  }
 
   // 如果经过加载后是已经定义的表
   if (!database.hasCollection(collectionName)) {

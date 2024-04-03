@@ -24,7 +24,9 @@ import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockPr
 export interface FormProps {
   [key: string]: any;
 }
-
+function hasInitialValues(obj) {
+  return Object.values(obj).some((value) => value !== null);
+}
 const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
@@ -153,7 +155,7 @@ const WithForm = (props: WithFormProps) => {
                     return result;
                   },
                   getSubscriber(action, field, rule, variables, localVariables),
-                  { fireImmediately: false },
+                  { fireImmediately: hasInitialValues(form.initialValues) },
                 ),
               );
             });
@@ -195,6 +197,12 @@ const WithoutForm = (props) => {
   );
 };
 
+const formLayoutCss = css`
+  .ant-formily-item-feedback-layout-loose {
+    margin-bottom: 12px;
+  }
+`;
+
 export const Form: React.FC<FormProps> & {
   Designer?: any;
   FilterDesigner?: any;
@@ -210,14 +218,7 @@ export const Form: React.FC<FormProps> & {
     const formDisabled = disabled || field.disabled;
     return (
       <ConfigProvider componentDisabled={formDisabled}>
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          className={css`
-            .ant-formily-item-feedback-layout-loose {
-              margin-bottom: 12px;
-            }
-          `}
-        >
+        <form onSubmit={(e) => e.preventDefault()} className={formLayoutCss}>
           <Spin spinning={field.loading || false}>
             {form ? (
               <WithForm form={form} {...others} disabled={formDisabled} />

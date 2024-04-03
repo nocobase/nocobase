@@ -341,7 +341,7 @@ export class ACL extends EventEmitter {
         can: ctx.can({ resource: resourceName, action: actionName }),
       };
 
-      return compose(acl.middlewares.nodes)(ctx, next);
+      return await compose(acl.middlewares.nodes)(ctx, next);
     };
   }
 

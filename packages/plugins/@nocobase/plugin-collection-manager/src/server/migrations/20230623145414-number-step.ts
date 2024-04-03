@@ -1,6 +1,7 @@
 import { Collection } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 import { FieldModel } from '../models';
+import _ from 'lodash';
 
 export default class extends Migration {
   appVersion = '<0.10.0-alpha.3';
@@ -24,7 +25,7 @@ export default class extends Migration {
         if (uiSchema?.['x-component-props']?.step !== '0') {
           continue;
         }
-        uiSchema['x-component-props']['step'] = '1';
+        _.set(uiSchema, 'x-component-props.step', '1');
         fieldRecord.set('uiSchema', uiSchema);
         await fieldRecord.save({
           transaction,

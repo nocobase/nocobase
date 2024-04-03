@@ -48,6 +48,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
+import validateFilterParams from './middlewares/validate-filter-params';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -1085,11 +1086,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
-    this.resourceManager.use(this._authManager.middleware(), { tag: 'auth' });
-
-    if (this.options.acl !== false) {
-      this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
-    }
+    this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     this._locales = new Locale(createAppProxy(this));
 
@@ -1114,10 +1111,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       database: this.createDatabase(options),
       acl: createACL(),
       resourceManager: createResourcer(options),
+      useACL: options.acl,
     });
 
     this._dataSourceManager = new DataSourceManager();
 
+    // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
   }
 

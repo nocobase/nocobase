@@ -145,9 +145,9 @@ export const AuditLogs: any = () => {
                 'x-action': 'filter',
                 // 'x-designer': 'Filter.Action.Designer',
                 'x-component': 'Filter.Action',
+                'x-use-component-props': 'useFilterActionProps',
                 'x-component-props': {
                   icon: 'FilterOutlined',
-                  useProps: '{{ useFilterActionProps }}',
                 },
                 'x-align': 'left',
               },
@@ -156,12 +156,12 @@ export const AuditLogs: any = () => {
           y84dlntcaup: {
             type: 'array',
             'x-component': 'TableV2',
+            'x-use-component-props': 'useTableBlockProps',
             'x-component-props': {
               rowKey: 'id',
               rowSelection: {
                 type: 'checkbox',
               },
-              useProps: '{{ useTableBlockProps }}',
             },
             properties: {
               actions: {
@@ -232,10 +232,8 @@ export const AuditLogs: any = () => {
                                               mevpuonrda0: {
                                                 type: 'void',
                                                 'x-component': 'FormV2',
+                                                'x-use-component-props': 'useFormBlockProps',
                                                 'x-read-pretty': true,
-                                                'x-component-props': {
-                                                  useProps: '{{ useFormBlockProps }}',
-                                                },
                                                 properties: {
                                                   grid: {
                                                     type: 'void',

@@ -30,6 +30,7 @@ import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
+import { useTemplateBlockContext } from './TemplateBlockProvider';
 
 /**
  * @deprecated
@@ -136,19 +137,13 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   if (associationFilterSchema) {
     return (
       <Component {...field.componentProps}>
-        <Row
-          className={css`
-            height: 100%;
-          `}
-          gutter={16}
-          wrap={false}
-        >
+        <Row style={{ height: '100%' }} gutter={16} wrap={false}>
           <Col
-            className={css`
-              width: 200px;
-              flex: 0 0 auto;
-            `}
-            style={props.associationFilterStyle}
+            style={{
+              ...(props.associationFilterStyle || {}),
+              width: 200,
+              flex: '0 0 auto',
+            }}
           >
             <RecursionField
               schema={fieldSchema}
@@ -157,17 +152,17 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
             />
           </Col>
           <Col
-            className={css`
-              flex: 1 1 auto;
-              min-width: 0;
-            `}
+            style={{
+              flex: '1 1 auto',
+              minWidth: 0,
+            }}
           >
             <div
-              className={css`
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-              `}
+              style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
             >
               <RecursionField
                 schema={fieldSchema}
@@ -228,6 +223,7 @@ export const BlockProvider = (props: {
 }) => {
   const { name, dataSource, association, useParams, parentRecord } = props;
   const sourceId = useCompatDataBlockSourceId(props);
+  const { templateFinshed } = useTemplateBlockContext();
 
   // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
@@ -239,7 +235,7 @@ export const BlockProvider = (props: {
       return { ...props.params, appends, ...paramsFromHook };
     }
     return { ...props.params, ...paramsFromHook };
-  }, [appends, paramsFromHook, props.params]);
+  }, [appends, paramsFromHook, props.params, templateFinshed]);
   const blockValue = useMemo(() => ({ name }), [name]);
 
   return (
