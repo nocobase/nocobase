@@ -6,11 +6,11 @@ export const RefreshActionInitializer = (props) => {
     title: '{{ t("Refresh") }}',
     'x-action': 'refresh',
     'x-component': 'Action',
+    'x-use-component-props': 'useRefreshActionProps',
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:refresh',
     'x-component-props': {
       icon: 'ReloadOutlined',
-      useProps: '{{ useRefreshActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

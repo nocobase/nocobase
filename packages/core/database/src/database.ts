@@ -248,8 +248,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     if (options.dialect === 'postgres') {
-      // https://github.com/sequelize/sequelize/issues/1774
-      require('pg').defaults.parseInt8 = true;
+      const types = require('pg').types;
+
+      types.setTypeParser(types.builtins.INT8, function (val) {
+        if (val <= Number.MAX_SAFE_INTEGER) {
+          return Number(val);
+        }
+
+        return val;
+      });
     }
 
     this.options = opts;

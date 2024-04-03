@@ -140,7 +140,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               }
 
               if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
-                s['x-component-props'].defaultChecked = defaultValue;
+                _.set(s, 'x-component-props.defaultChecked', defaultValue);
 
                 // 在这里如果不设置 type 为 void，会导致设置的默认值不生效
                 // 但是我不知道为什么必须要设置为 void ？
