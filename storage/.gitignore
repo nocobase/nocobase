@@ -3,3 +3,4 @@ tmp
 app.watch.ts
 /e2e
 nocobase.conf
+app-upgrading

@@ -7,7 +7,7 @@ import { useDataBlockResource } from './DataBlockResourceProvider';
 import { useDataSourceHeaders } from '../utils';
 import _ from 'lodash';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
-import { useCollectionManager } from '../collection';
+import { useSourceKey } from '../../modules/blocks/useSourceKey';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
@@ -46,21 +46,17 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const { sourceId, association, parentRecord } = options;
   const api = useAPIClient();
-  const cm = useCollectionManager();
   const dataBlockProps = useDataBlockProps();
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
+  const sourceKey = useSourceKey(association);
   return useRequest<T>(
     async () => {
       if (parentRecord) return Promise.resolve({ data: parentRecord });
-      if (!association) return Promise.resolve({ data: undefined });
+      if (!association || !sourceKey) return Promise.resolve({ data: undefined });
       // "association": "Collection.Field"
       const arr = association.split('.');
-      const field = cm.getCollectionField(association);
-      const isM2O = field.interface === 'm2o';
-      const filterTargetKey = cm.getCollection(arr[0]).getOption('filterTargetKey');
-      const filterKey = isM2O ? filterTargetKey : field.sourceKey;
       // <collection>:get?filter[filterKey]=sourceId
-      const url = `${arr[0]}:get?filter[${filterKey}]=${sourceId}`;
+      const url = `${arr[0]}:get?filter[${sourceKey}]=${sourceId}`;
       const res = await api.request({ url, headers });
       return res.data;
     },
