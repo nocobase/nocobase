@@ -1,5 +1,5 @@
-import { useDataBlockSourceId } from '@nocobase/client';
 import { useCalendarBlockParams } from './useCalendarBlockParams';
+import { useSourceIdCommon } from 'packages/core/client/src/modules/blocks/useSourceIdCommon';
 
 export function useCalendarBlockDecoratorProps(props) {
   const params = useCalendarBlockParams(props);
@@ -8,7 +8,7 @@ export function useCalendarBlockDecoratorProps(props) {
   // 因为 association 是一个固定的值，所以可以在 hooks 中直接使用
   if (props.association) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    sourceId = useDataBlockSourceId({ association: props.association });
+    sourceId = useSourceIdCommon(props.association);
   }
 
   return {
