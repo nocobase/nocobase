@@ -558,13 +558,20 @@ Menu.URL = observer(
         key: schema.name,
         eventKey: schema.name,
         schema,
-        onClick: () => {
-          window.open(props.href, '_blank');
-        },
+        onClick: () => {},
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false} aria-label={t(field.title)}>
+              <SortableItem
+                className={designerCss}
+                onClick={(event) => {
+                  window.open(props.href, '_blank');
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                removeParentsIfNoChildren={false}
+                aria-label={t(field.title)}
+              >
                 <Icon type={icon} />
                 <span
                   style={{
