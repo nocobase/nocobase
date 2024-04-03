@@ -1,5 +1,5 @@
+import { useSourceIdCommon } from '@nocobase/client';
 import { useCalendarBlockParams } from './useCalendarBlockParams';
-import { useSourceIdCommon } from 'packages/core/client/src/modules/blocks/useSourceIdCommon';
 
 export function useCalendarBlockDecoratorProps(props) {
   const params = useCalendarBlockParams(props);

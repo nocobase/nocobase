@@ -3,6 +3,7 @@ import { useCollectionRecordData } from '../../data-source/collection-record/Col
 import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
 
 /**
+ * @internal
  * 大部分区块（除了详情和编辑表单）都适用的获取 sourceId 的 hook
  * @param association
  * @returns
