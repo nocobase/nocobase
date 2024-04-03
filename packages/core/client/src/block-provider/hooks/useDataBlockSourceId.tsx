@@ -5,6 +5,7 @@ import {
   useCollectionParentRecordData,
   useCollectionRecordData,
 } from '../..';
+import { useSourceKey } from '../../modules/blocks/useSourceKey';
 
 /**
  * @internal
@@ -24,26 +25,19 @@ export const useDataBlockSourceId = ({ association }: { association: string }) =
   const recordData = useCollectionRecordData();
   const parentRecordData = useCollectionParentRecordData();
   const cm = useCollectionManager();
-  const collectionOutsideBlock = useCollection<InheritanceCollectionMixin>();
+  const currentRecordCollection = useCollection<InheritanceCollectionMixin>();
+  const sourceKey = useSourceKey(association);
 
   if (!association) return;
 
-  const associationField = cm.getCollectionField(association);
-  const associationCollection = cm.getCollection<InheritanceCollectionMixin>(associationField.collectionName);
+  const sourceCollection = cm.getCollection<InheritanceCollectionMixin>(association.split('.')[0]);
 
   if (
-    collectionOutsideBlock.name === associationCollection.name ||
-    collectionOutsideBlock.getParentCollectionsName?.().includes(associationCollection.name)
+    currentRecordCollection.name === sourceCollection.name ||
+    currentRecordCollection.getParentCollectionsName?.().includes(sourceCollection.name)
   ) {
-    return recordData?.[
-      associationField.sourceKey ||
-        associationCollection.filterTargetKey ||
-        associationCollection.getPrimaryKey() ||
-        'id'
-    ];
+    return recordData?.[sourceKey];
   }
 
-  return parentRecordData?.[
-    associationField.sourceKey || associationCollection.filterTargetKey || associationCollection.getPrimaryKey() || 'id'
-  ];
+  return parentRecordData?.[sourceKey];
 };
