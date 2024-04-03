@@ -46,7 +46,7 @@ export const useTableBlockProps = () => {
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort && ctx.dragSortBy,
     rowKey: ctx.rowKey || 'id',
-    pagination: field.componentProps.pagination,
+    pagination: fieldSchema['x-component-props'].pagination,
     onRowSelectionChange: useCallback((selectedRowKeys) => {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
