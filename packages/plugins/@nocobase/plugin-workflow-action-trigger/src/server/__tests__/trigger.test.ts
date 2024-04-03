@@ -572,6 +572,126 @@ describe('workflow > action-trigger', () => {
     });
   });
 
+  describe('global workflow', () => {
+    it('no action configured should not be triggered', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          global: true,
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(0);
+
+      const res2 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res2.status).toBe(200);
+
+      await sleep(500);
+
+      const e2 = await workflow.getExecutions();
+      expect(e2.length).toBe(0);
+    });
+
+    it('trigger on both create and update actions', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          global: true,
+          actions: ['create', 'update'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1[0].context.data).toMatchObject({ title: 't1' });
+
+      const res2 = await userAgents[0].resource('posts').update({
+        filterByTk: res1.body.data.id,
+        values: { title: 't2' },
+      });
+
+      await sleep(500);
+
+      const e2 = await workflow.getExecutions({ order: [['id', 'ASC']] });
+      expect(e2.length).toBe(2);
+      expect(e2[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2[1].context.data).toMatchObject({ title: 't2' });
+    });
+
+    it('trigger on action when bound to button', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          global: true,
+          actions: ['create', 'update'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1[0].context.data).toMatchObject({ title: 't1' });
+    });
+
+    it('trigger on action directly submit to workflow', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          global: true,
+          actions: ['create', 'update'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('workflows').trigger({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(202);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1[0].context.data).toMatchObject({ title: 't1' });
+    });
+  });
+
   describe('multiple data source', () => {
     it('trigger on different data source', async () => {
       const workflow = await WorkflowModel.create({
