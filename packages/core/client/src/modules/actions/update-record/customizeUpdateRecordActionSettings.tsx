@@ -10,6 +10,7 @@ import {
   RemoveButton,
   SecondConFirm,
   WorkflowConfig,
+  RefreshDataBlockRequest,
 } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 
@@ -56,6 +57,16 @@ export const customizeUpdateRecordActionSettings = new SchemaSettings({
         return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
       },
     },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
+      },
+    },
+
     {
       name: 'delete',
       sort: 100,
