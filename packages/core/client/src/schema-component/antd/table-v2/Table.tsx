@@ -675,16 +675,12 @@ export const Table: any = withDynamicSchemaProps(
           overflow: hidden;
           .ant-table-wrapper {
             height: 100%;
-            overflow: hidden;
-            .ant-table-wrapper {
+            .ant-spin-nested-loading {
               height: 100%;
-              .ant-spin-nested-loading {
+              .ant-spin-container {
                 height: 100%;
-                .ant-spin-container {
-                  height: 100%;
-                  display: flex;
-                  flex-direction: column;
-                }
+                display: flex;
+                flex-direction: column;
               }
             }
           }
