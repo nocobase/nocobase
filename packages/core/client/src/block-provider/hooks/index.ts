@@ -519,7 +519,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { name, getField } = useCollection_deprecated();
 
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -560,7 +560,10 @@ export const useCustomizeUpdateActionProps = () => {
           ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
           : undefined,
       });
-      service?.refresh?.();
+      // service?.refresh?.();
+      if (callBack) {
+        callBack?.();
+      }
       if (!(resource instanceof TableFieldResource)) {
         __parent?.service?.refresh?.();
       }
@@ -968,6 +971,7 @@ export const useRemoveActionProps = (associationName) => {
   const resource = api.resource(associationName, filterByTk);
   return {
     async onClick(value) {
+      console.log(888);
       await resource.remove({
         values: [value.id],
       });
@@ -978,9 +982,9 @@ export const useRemoveActionProps = (associationName) => {
 export const useDisassociateActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, block, __parent } = useBlockRequestContext();
-  const { setVisible, setSubmitted } = useActionContext();
+  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       await resource.remove({
         values: [filterByTk],
       });
@@ -992,13 +996,15 @@ export const useDisassociateActionProps = () => {
           page: page - 1,
         });
       } else {
-        service?.refresh?.();
+        if (callBack) {
+          callBack?.();
+        }
       }
-
+      setSubmitted?.(true);
       if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
-        setSubmitted?.(true);
+        setFormValueChanged?.(false);
       }
     },
   };
