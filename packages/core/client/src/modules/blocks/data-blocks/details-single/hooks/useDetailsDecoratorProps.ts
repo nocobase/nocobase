@@ -19,7 +19,7 @@ export function useDetailsDecoratorProps(props) {
   // association 的值是固定不变的，所以可以在条件中使用 hooks
   if (props.association) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    sourceId = useSourceId(props.association);
+    sourceId = useDetailsSourceId(props.association);
   }
 
   return {
@@ -28,14 +28,12 @@ export function useDetailsDecoratorProps(props) {
   };
 }
 
-function useSourceId(association: string) {
+export function useDetailsSourceId(association: string) {
   const fieldSchema = useFieldSchema();
   const recordData = useCollectionRecordData();
   const parentRecordData = useCollectionParentRecordData();
   const cm = useCollectionManager();
 
-  // 通过 Current record 选项创建的区块，如果有 association，则说明该弹窗是通过直接点击一个关系字段打开的，
-  // 此时需要通过 parentRecordData 才能获取到正确的 sourceId
   if (!association) return;
 
   const associationField = cm.getCollectionField(association);
