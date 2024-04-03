@@ -37,15 +37,6 @@ export const editActionSettings = new SchemaSettings({
       },
     },
     {
-      name: 'refreshDataBlockRequest',
-      Component: RefreshDataBlockRequest,
-      useComponentProps() {
-        return {
-          isPopupAction: true,
-        };
-      },
-    },
-    {
       name: 'delete',
       type: 'remove',
     },

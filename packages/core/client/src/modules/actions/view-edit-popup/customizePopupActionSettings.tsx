@@ -41,15 +41,6 @@ export const customizePopupActionSettings = new SchemaSettings({
       },
     },
     {
-      name: 'refreshDataBlockRequest',
-      Component: RefreshDataBlockRequest,
-      useComponentProps() {
-        return {
-          isPopupAction: true,
-        };
-      },
-    },
-    {
       name: 'remove',
       sort: 100,
       Component: RemoveButton as any,

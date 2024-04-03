@@ -103,15 +103,6 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
       Component: UpdateMode,
     },
     {
-      name: 'refreshDataBlockRequest',
-      Component: RefreshDataBlockRequest,
-      useComponentProps() {
-        return {
-          isPopupAction: true,
-        };
-      },
-    },
-    {
       name: 'remove',
       sort: 100,
       Component: RemoveButton as any,
@@ -152,15 +143,6 @@ export const bulkEditActionSettings = new SchemaSettings({
     {
       name: 'updateMode',
       Component: UpdateMode,
-    },
-    {
-      name: 'refreshDataBlockRequest',
-      Component: RefreshDataBlockRequest,
-      useComponentProps() {
-        return {
-          isPopupAction: true,
-        };
-      },
     },
     {
       name: 'remove',

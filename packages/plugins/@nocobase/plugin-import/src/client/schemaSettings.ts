@@ -63,15 +63,6 @@ export const importActionSchemaSettings = new SchemaSettings({
       },
     },
     {
-      name: 'refreshDataBlockRequest',
-      Component: RefreshDataBlockRequest,
-      useComponentProps() {
-        return {
-          isPopupAction: true,
-        };
-      },
-    },
-    {
       name: 'divider',
       type: 'divider',
     },
