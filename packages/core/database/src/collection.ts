@@ -330,7 +330,7 @@ export class Collection<
 
         if (!sourceField) {
           this.db.logger.warn(
-            `source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}"`,
+            `Source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}". Source collection: "${sourceCollectionName}"`,
           );
         } else {
           options = { ...lodash.omit(sourceField.options, ['name', 'primaryKey']), ...options };
