@@ -24,7 +24,7 @@ test.describe('where edit form block can be added', () => {
     // 1.打开弹窗
     await page.getByRole('button', { name: '2', exact: true }).getByText('2').click();
 
-    // 2.通过 Current record 创建一个详情区块
+    // 2.创建一个编辑表单区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'form Form (Edit)' }).click();
     await page.mouse.move(300, 0);
