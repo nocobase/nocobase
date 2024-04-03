@@ -15,7 +15,7 @@ import { SCHEDULE_MODE } from './constants';
 export default class extends Trigger {
   sync = false;
   title = `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Event will be scheduled and triggered base on time conditions.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     config: {
       type: 'void',

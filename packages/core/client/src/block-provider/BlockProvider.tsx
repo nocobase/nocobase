@@ -1,4 +1,3 @@
-import { css } from '@emotion/css';
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
@@ -11,13 +10,13 @@ import {
   TableFieldResource,
   WithoutTableFieldResource,
   useCollectionManager,
+  useCollectionParentRecord,
+  useCollectionParentRecordData,
+  useCollectionRecord,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockResource,
   useDesignable,
-  useCollectionParentRecord,
-  useCollectionParentRecordData,
-  useCollectionRecord,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
@@ -29,8 +28,7 @@ import {
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
-import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
-import { useTemplateBlockContext } from './TemplateBlockProvider';
+import { useDataBlockParentRecord } from './hooks/useDataBlockSourceId';
 
 /**
  * @deprecated
@@ -191,16 +189,16 @@ export const useBlockContext = () => {
 /**
  * 用于兼容旧版本 Schema
  */
-const useCompatDataBlockSourceId = (props) => {
+const useCompatDataBlockParentRecord = (props) => {
   const fieldSchema = useFieldSchema();
 
   // 如果存在 x-use-decorator-props，说明是新版 Schema
   if (fieldSchema['x-use-decorator-props']) {
-    return props.sourceId;
+    return props.parentRecord;
   } else {
     // 是否存在 x-use-decorator-props 是固定不变的，所以这里可以使用 hooks
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useDataBlockSourceId(props);
+    return useDataBlockParentRecord(props);
   }
 };
 
@@ -221,9 +219,8 @@ export const BlockProvider = (props: {
   /** @deprecated */
   useParams?: any;
 }) => {
-  const { name, dataSource, association, useParams, parentRecord } = props;
-  const sourceId = useCompatDataBlockSourceId(props);
-  const { templateFinshed } = useTemplateBlockContext();
+  const { name, dataSource, useParams, parentRecord } = props;
+  const parentRecordFromHook = useCompatDataBlockParentRecord(props);
 
   // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
@@ -235,20 +232,12 @@ export const BlockProvider = (props: {
       return { ...props.params, appends, ...paramsFromHook };
     }
     return { ...props.params, ...paramsFromHook };
-  }, [appends, paramsFromHook, props.params, templateFinshed]);
+  }, [appends, paramsFromHook, props.params]);
   const blockValue = useMemo(() => ({ name }), [name]);
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <DataBlockProvider
-        {...(props as any)}
-        params={params}
-        sourceId={sourceId}
-        // 此处是针对树表格的 Add child 按钮优化的，因为点击 Add child 打开的表单中需要用到父级的数据；
-        // 但是当是关系区块时，在 DataBlockProvider 中会自动请求父级数据，所以这里不需要再传 parentRecord。
-        // 具体问题记录在这里：https://nocobase.height.app/T-3235/description
-        parentRecord={association ? undefined : parentRecord}
-      >
+      <DataBlockProvider {...(props as any)} params={params} parentRecord={parentRecord || parentRecordFromHook}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
           <DataBlockCollector {...props} params={params}>
             {props.children}

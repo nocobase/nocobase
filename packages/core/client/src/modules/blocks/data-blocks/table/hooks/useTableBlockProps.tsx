@@ -1,12 +1,12 @@
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
+import { isEqual } from 'lodash';
 import { useCallback, useEffect, useMemo } from 'react';
+import { useTableBlockContext } from '../../../../../block-provider/TableBlockProvider';
+import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
-import { findFilterTargets } from '../../../../../block-provider/hooks';
-import { useTableBlockContext } from '../../../../../block-provider/TableBlockProvider';
-import { isEqual } from 'lodash';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
@@ -38,7 +38,7 @@ export const useTableBlockProps = () => {
       field.componentProps.pagination.total = meta?.count;
       field.componentProps.pagination.current = meta?.page;
     }
-  }, [field, ctx?.service?.data, isLoading]);
+  }, [field, ctx?.service?.data, isLoading, ctx?.field?.data?.selectedRowKeys]);
 
   return {
     childrenColumnName: ctx.childrenColumnName,
@@ -46,14 +46,7 @@ export const useTableBlockProps = () => {
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort && ctx.dragSortBy,
     rowKey: ctx.rowKey || 'id',
-    pagination: useMemo(() => {
-      return params?.paginate !== false
-        ? {
-            defaultCurrent: params?.page || 1,
-            defaultPageSize: params?.pageSize,
-          }
-        : false;
-    }, [params?.page, params?.pageSize, params?.paginate]),
+    pagination: field.componentProps.pagination,
     onRowSelectionChange: useCallback((selectedRowKeys) => {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;

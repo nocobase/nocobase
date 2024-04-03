@@ -1,4 +1,5 @@
 import { Page, expect, expectSettingsMenu, oneEmptyTableBlockWithActions, test } from '@nocobase/test/e2e';
+import { T3848 } from './templatesOfBug';
 
 test.describe('where single data details block can be added', () => {
   test('popup', async ({ page, mockPage, mockRecord }) => {
@@ -13,6 +14,38 @@ test.describe('where single data details block can be added', () => {
     await page.mouse.move(300, 0);
 
     await expect(page.getByLabel('block-item-CardItem-general-details')).toBeVisible();
+  });
+
+  // https://nocobase.height.app/T-3848/description
+  test('popup opened by clicking on the button for the relationship field', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T3848).waitForInit();
+    await mockRecord('example');
+    await nocoPage.goto();
+
+    // 1.打开弹窗
+    await page.getByRole('button', { name: '2', exact: true }).getByText('2').click();
+
+    // 2.通过 Current record 创建一个详情区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-example').hover();
+    await page.getByRole('menuitem', { name: 'ID' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CollectionField-').getByText('2')).toBeVisible();
+
+    // 3.通过 Associated records 创建一个详情区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'manyToOne' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-example').nth(1).hover();
+    await page.getByRole('menuitem', { name: 'ID' }).click();
+    await page.mouse.move(300, 0);
+    // id 为 2 的记录的关系字段对应的是 3。但是如果 mockRecord 的逻辑变更的话，这里可能会有问题
+    await expect(page.getByLabel('block-item-CollectionField-').nth(1).getByText('3')).toBeVisible();
   });
 });
 
