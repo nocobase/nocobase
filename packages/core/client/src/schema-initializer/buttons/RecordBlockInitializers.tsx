@@ -13,8 +13,8 @@ import {
   useCreateEditFormBlock,
 } from '../..';
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
-import { gridRowColWrap } from '../utils';
 import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
+import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -259,6 +259,7 @@ function useRecordBlocks() {
 
 /**
  * @deprecated
+ * use `recordBlockInitializers` instead
  */
 export const recordBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'RecordBlockInitializers',

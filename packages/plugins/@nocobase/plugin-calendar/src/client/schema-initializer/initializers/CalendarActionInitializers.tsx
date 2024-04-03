@@ -3,6 +3,7 @@ import { generateNTemplate } from '../../../locale';
 
 /**
  * @deprecated
+ * use `calendarActionInitializers` instead
  * 日历的操作配置
  */
 export const CalendarActionInitializers_deprecated = new CompatibleSchemaInitializer({

@@ -3,6 +3,7 @@ import { gridRowColWrap } from '../../schema-initializer/utils';
 
 /**
  * @deprecated
+ * use `blockInitializers` instead
  */
 export const blockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'BlockInitializers',

@@ -8,6 +8,11 @@ import { getPath } from '../../variables/utils/getPath';
 import { getVariableName } from '../../variables/utils/getVariableName';
 import { isVariable } from '../../variables/utils/isVariable';
 
+/**
+ * @internal
+ * @param param0
+ * @returns
+ */
 export function useParsedFilter({ filterOption }: { filterOption: any }) {
   const { parseFilter, findVariable } = useParseDataScopeFilter();
   const [filter, setFilter] = useState({});

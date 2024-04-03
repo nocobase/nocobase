@@ -2,6 +2,7 @@ import { CompatibleSchemaInitializer } from '../../../../application/schema-init
 
 /**
  * @deprecated
+ * use `detailsActionInitializers` instead
  * 表单的操作配置
  */
 export const detailsActionInitializers_deprecated = new CompatibleSchemaInitializer({

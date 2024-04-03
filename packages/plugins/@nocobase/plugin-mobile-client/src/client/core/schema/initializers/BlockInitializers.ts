@@ -77,6 +77,7 @@ const mBlockInitializersOptions = {
 
 /**
  * @deprecated
+ * use `mBlockInitializers` instead
  */
 export const mBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   ...mBlockInitializersOptions,
