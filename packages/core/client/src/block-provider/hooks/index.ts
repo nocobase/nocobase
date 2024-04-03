@@ -353,7 +353,6 @@ export const useAssociationCreateActionProps = () => {
         __parent?.service?.refresh?.();
         setVisible?.(false);
         setSubmitted?.(true);
-
         if (!onSuccess?.successMessage) {
           return;
         }
@@ -955,7 +954,7 @@ export const useDestroyActionProps = () => {
       //  else {
       //   service?.refresh?.();
       // }
-
+      setSubmitted?.(true);
       if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
@@ -971,7 +970,6 @@ export const useRemoveActionProps = (associationName) => {
   const resource = api.resource(associationName, filterByTk);
   return {
     async onClick(value) {
-      console.log(888);
       await resource.remove({
         values: [value.id],
       });
