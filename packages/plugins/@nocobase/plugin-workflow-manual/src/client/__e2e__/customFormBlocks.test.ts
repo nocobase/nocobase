@@ -719,13 +719,13 @@ test.describe('field data entry', () => {
       return b.id - a.id;
     });
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
-    const manualNodeJob = jobs.find((job) => job.nodeId.toString() === manualNodeId);
+    const manualNodeJob = jobs.find((job) => job.nodeId.toString() == manualNodeId);
     const manualNodeJobStatus = manualNodeJob.status;
     expect(manualNodeJobStatus).toBe(1);
 
     const manualNodeJobResult = manualNodeJob.result;
     const hasStaffnum = Object.values(manualNodeJobResult).some(
-      (value) => (value as { staffnum: number }).staffnum === manualNodeRecord,
+      (value) => (value as { staffnum: number }).staffnum == manualNodeRecord,
     );
     expect(hasStaffnum).toBe(true);
 
@@ -862,13 +862,13 @@ test.describe('field data entry', () => {
       return b.id - a.id;
     });
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
-    const manualNodeJob = jobs.find((job) => job.nodeId.toString() === manualNodeId);
+    const manualNodeJob = jobs.find((job) => job.nodeId.toString() == manualNodeId);
     const manualNodeJobStatus = manualNodeJob.status;
     expect(manualNodeJobStatus).toBe(1);
 
     const manualNodeJobResult = manualNodeJob.result;
     const hasRegcapital = Object.values(manualNodeJobResult).some(
-      (value) => (value as { regcapital: number }).regcapital === manualNodeRecord,
+      (value) => (value as { regcapital: number }).regcapital == manualNodeRecord,
     );
     expect(hasRegcapital).toBe(true);
 
