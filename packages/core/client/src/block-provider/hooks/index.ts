@@ -1032,6 +1032,7 @@ export const useDetailPrintActionProps = () => {
 export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
+  const { setSubmitted } = useActionContext();
   return {
     async onClick(e?, callBack?) {
       if (!field?.data?.selectedRowKeys?.length) {
@@ -1049,6 +1050,7 @@ export const useBulkDestroyActionProps = () => {
       if (callBack) {
         callBack?.();
       }
+      setSubmitted?.(true);
       // service?.refresh?.();
     },
   };
