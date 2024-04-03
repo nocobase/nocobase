@@ -3,6 +3,7 @@ import { useCollection_deprecated } from '../../../../collection-manager';
 
 /**
  * @deprecated
+ * use `gridCardItemActionInitializers` instead
  */
 export const gridCardItemActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'GridCardItemActionInitializers',

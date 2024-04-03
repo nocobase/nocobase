@@ -8,6 +8,7 @@ const useVisibleCollection = () => {
 
 /**
  * @deprecated
+ * use `readPrettyFormActionInitializers` instead
  * 表单的操作配置
  */
 export const readPrettyFormActionInitializers_deprecated = new CompatibleSchemaInitializer({

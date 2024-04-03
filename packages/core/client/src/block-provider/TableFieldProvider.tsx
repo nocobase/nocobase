@@ -6,6 +6,9 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';
 
+/**
+ * @internal
+ */
 export const TableFieldContext = createContext<any>({});
 TableFieldContext.displayName = 'TableFieldContext';
 
@@ -122,9 +125,15 @@ export class TableFieldResource {
   }
 }
 
+/**
+ * @internal
+ */
 export const WithoutTableFieldResource = createContext(null);
 WithoutTableFieldResource.displayName = 'WithoutTableFieldResource';
 
+/**
+ * @internal
+ */
 export const TableFieldProvider = (props) => {
   return (
     <WithoutTableFieldResource.Provider value={false}>
@@ -135,10 +144,16 @@ export const TableFieldProvider = (props) => {
   );
 };
 
+/**
+ * @internal
+ */
 export const useTableFieldContext = () => {
   return useContext(TableFieldContext);
 };
 
+/**
+ * @internal
+ */
 export const useTableFieldProps = () => {
   const field = useField<ArrayField>();
   const ctx = useTableFieldContext();

@@ -2,6 +2,7 @@ import { CompatibleSchemaInitializer } from '../../../../application/schema-init
 
 /**
  * @deprecated
+ * use `updateFormActionInitializers` instead
  */
 export const updateFormActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'UpdateFormActionInitializers',

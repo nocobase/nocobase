@@ -40,6 +40,7 @@ export const CreateFormBulkEditBlockInitializers: SchemaInitializer = new Schema
 
 /**
  * @deprecated
+ * use `bulkEditBlockInitializers` instead
  */
 export const BulkEditBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'BulkEditBlockInitializers',

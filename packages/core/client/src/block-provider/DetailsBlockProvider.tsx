@@ -3,13 +3,16 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useParsedFilter } from './hooks';
-import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
+import { useParsedFilter } from './hooks';
 
+/**
+ * @internal
+ */
 export const DetailsBlockContext = createContext<any>({});
 DetailsBlockContext.displayName = 'DetailsBlockContext';
 
@@ -74,7 +77,7 @@ export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
 });
 
 /**
- * @deprecated
+ * @internal
  */
 export const useDetailsBlockContext = () => {
   return useContext(DetailsBlockContext);
@@ -82,7 +85,7 @@ export const useDetailsBlockContext = () => {
 
 /**
  * @deprecated
- * 即将废弃，请用 useDetailsWithPaginationProps 或者 useDetailsProps
+ * use `useDetailsWithPaginationProps` or `useDetailsProps` instead
  * @returns
  */
 export const useDetailsBlockProps = () => {

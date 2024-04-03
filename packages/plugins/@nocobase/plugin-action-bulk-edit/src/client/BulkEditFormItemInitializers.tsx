@@ -3,6 +3,7 @@ import { useCustomBulkEditFormItemInitializerFields } from './utils';
 
 /**
  * @deprecated
+ * use `bulkEditFormItemInitializers` instead
  */
 export const BulkEditFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'BulkEditFormItemInitializers',

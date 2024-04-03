@@ -7,6 +7,9 @@ const TemplateBlockContext = createContext<{
 }>({});
 TemplateBlockContext.displayName = 'TemplateBlockContext';
 
+/**
+ * @internal
+ */
 export const useTemplateBlockContext = () => {
   return useContext(TemplateBlockContext);
 };
