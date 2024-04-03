@@ -28,6 +28,10 @@ export class ErrorHandler {
       } catch (err) {
         ctx.log.error(err.message, { method: 'error-handler', err: err.stack });
 
+        if (err.statusCode) {
+          ctx.status = err.statusCode;
+        }
+
         for (const handler of self.handlers) {
           if (handler.guard(err)) {
             return handler.render(err, ctx);
