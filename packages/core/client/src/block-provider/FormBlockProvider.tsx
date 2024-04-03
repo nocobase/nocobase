@@ -3,17 +3,11 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection_deprecated } from '../collection-manager';
-import {
-  CollectionRecord,
-  useCollectionParentRecordData,
-  useCollectionRecord,
-  useCollectionRecordData,
-} from '../data-source';
+import { CollectionRecord, useCollectionParentRecordData, useCollectionRecord } from '../data-source';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useCollectionManager_deprecated } from '../collection-manager';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
@@ -101,15 +95,13 @@ export const useIsDetailBlock = () => {
 };
 
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
-  const record = useCollectionRecordData() || {};
+  const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
-  const { association, isCusomeizeCreate, dataSource } = props;
-  const { getCollection } = useCollectionManager_deprecated(dataSource);
-  const { __collection, isNew } = record;
+  const { collection, isCusomeizeCreate } = props;
+  const { __collection } = record;
   const currentCollection = useCollection_deprecated();
   const { designable } = useDesignable();
   const isDetailBlock = useIsDetailBlock();
-  const collection = props.collection || getCollection(association, dataSource)?.name;
   let detailFlag = false;
   if (isDetailBlock) {
     detailFlag = true;
@@ -118,7 +110,9 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
     }
   }
   const createFlag =
-    (__collection === collection && !isDetailBlock) || !currentCollection?.name || !collection || !__collection;
+    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) ||
+    !currentCollection.name ||
+    !collection;
   if (!detailFlag && !createFlag && !isCusomeizeCreate) {
     return null;
   }
