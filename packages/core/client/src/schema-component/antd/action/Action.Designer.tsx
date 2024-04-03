@@ -704,15 +704,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
-        name: 'refreshDataBlockRequest',
-        Component: RefreshDataBlockRequest,
-        useComponentProps() {
-          return {
-            isPopupAction: false,
-          };
-        },
-      },
-      {
         name: 'remove',
         sort: 100,
         Component: RemoveButton as any,
