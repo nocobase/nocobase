@@ -28,7 +28,7 @@ import {
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
-import { useDataBlockParentRecord } from './hooks/useDataBlockSourceId';
+import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
 
 /**
  * @deprecated
