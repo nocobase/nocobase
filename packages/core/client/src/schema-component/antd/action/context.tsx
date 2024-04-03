@@ -6,22 +6,17 @@ import { useDataBlockRequest } from '../../../data-source';
 
 export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
-const RefreshDataBlockRequestAction = ['create', 'view', 'update', 'destroy', 'customize', 'submit'];
 
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
   const [submitted, setSubmitted] = useState(false); //是否有提交记录
   const contextProps = useActionContext();
-  const { visible, fieldSchema } = { ...props, ...props.value } || {};
+  const { visible } = { ...props, ...props.value } || {};
   const isFirstRender = useRef(true); // 使用ref跟踪是否为首次渲染
   const service = useDataBlockRequest();
   const { setSubmitted: setParentSubmitted } = contextProps;
 
   useEffect(() => {
-    if (
-      visible !== undefined &&
-      (RefreshDataBlockRequestAction.find((v) => fieldSchema?.['x-action']?.includes?.(v)) ||
-        fieldSchema?.['x-collection-field'])
-    ) {
+    if (visible !== undefined) {
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
