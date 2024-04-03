@@ -1,4 +1,4 @@
-import { useDataBlockSourceId } from '../../../../../block-provider/hooks/useDataBlockSourceId';
+import { useSourceIdCommon } from '../../../useSourceIdCommon';
 
 export function useListBlockDecoratorProps(props) {
   let sourceId;
@@ -6,7 +6,7 @@ export function useListBlockDecoratorProps(props) {
   // 因为 association 的值是固定的，所以这里可以使用 hooks
   if (props.association) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    sourceId = useDataBlockSourceId({ association: props.association });
+    sourceId = useSourceIdCommon(props.association);
   }
 
   return {

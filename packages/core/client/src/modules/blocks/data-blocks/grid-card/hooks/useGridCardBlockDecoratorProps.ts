@@ -1,4 +1,4 @@
-import { useDataBlockSourceId } from '../../../../../block-provider/hooks/useDataBlockSourceId';
+import { useSourceIdCommon } from '../../../useSourceIdCommon';
 import { useGridCardBlockParams } from './useGridCardBlockParams';
 
 export function useGridCardBlockDecoratorProps(props) {
@@ -8,7 +8,7 @@ export function useGridCardBlockDecoratorProps(props) {
   // 因为 association 是固定的，所以可以在条件中使用 hooks
   if (props.association) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    sourceId = useDataBlockSourceId({ association: props.association });
+    sourceId = useSourceIdCommon(props.association);
   }
 
   return {
