@@ -704,6 +704,19 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
+        name: 'refreshDataBlockRequest',
+        Component: RefreshDataBlockRequest,
+        useComponentProps() {
+          return {
+            isPopupAction: false,
+          };
+        },
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+        },
+      },
+      {
         name: 'remove',
         sort: 100,
         Component: RemoveButton as any,
