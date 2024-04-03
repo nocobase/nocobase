@@ -26,7 +26,7 @@ export const useCustomizeRequestActionProps = () => {
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       const xAction = actionSchema?.['x-action'];
       if (skipValidator !== true && xAction === 'customize:form:request') {
@@ -56,7 +56,10 @@ export const useCustomizeRequestActionProps = () => {
         if (!(resource instanceof TableFieldResource)) {
           __parent?.service?.refresh?.();
         }
-        service?.refresh?.();
+        // service?.refresh?.();
+        if (callBack) {
+          callBack?.();
+        }
         if (xAction === 'customize:form:request') {
           setVisible?.(false);
         }

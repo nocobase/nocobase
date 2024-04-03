@@ -66,7 +66,6 @@ export const customizeUpdateRecordActionSettings = new SchemaSettings({
         };
       },
     },
-
     {
       name: 'delete',
       sort: 100,
