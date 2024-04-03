@@ -297,6 +297,7 @@ export const dataSource: ISchema = {
             'x-reactions': (field: Field) => {
               if (!field.initialValue) {
                 field.initialValue = uid();
+                field.setValue(uid());
               }
             },
           },
