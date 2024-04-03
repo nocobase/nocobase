@@ -3,6 +3,7 @@ import { generateNTemplate } from '../../../locale';
 
 /**
  * @deprecated
+ * use `mBlockInitializers` instead
  */
 export const mBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'MBlockInitializers',

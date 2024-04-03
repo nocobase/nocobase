@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 /**
  * @deprecated
+ * use `auditLogsTableActionColumnInitializers` instead
  */
 export const auditLogsTableActionColumnInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'AuditLogsTableActionColumnInitializers',

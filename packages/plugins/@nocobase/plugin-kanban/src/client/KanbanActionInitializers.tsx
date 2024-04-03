@@ -2,6 +2,7 @@ import { CompatibleSchemaInitializer, useCollection_deprecated } from '@nocobase
 
 /**
  * @deprecated
+ * use `kanbanActionInitializers` instead
  */
 export const kanbanActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'KanbanActionInitializers',

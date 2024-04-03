@@ -2,6 +2,7 @@ import { CompatibleSchemaInitializer, useCollection_deprecated } from '@nocobase
 
 /**
  * @deprecated
+ * use `mapActionInitializers` instead
  * 表格操作配置
  */
 export const mapActionInitializers_deprecated = new CompatibleSchemaInitializer({

@@ -1,8 +1,9 @@
-import { CompatibleSchemaInitializer, SchemaInitializer } from '@nocobase/client';
+import { CompatibleSchemaInitializer } from '@nocobase/client';
 import { BulkEditSubmitActionInitializer } from './BulkEditSubmitActionInitializer';
 
 /**
  * @deprecated
+ * use `bulkEditFormActionInitializers` instead
  */
 export const BulkEditFormActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'BulkEditFormActionInitializers',

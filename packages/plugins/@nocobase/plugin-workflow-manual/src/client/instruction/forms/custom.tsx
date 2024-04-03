@@ -340,6 +340,7 @@ const CustomItemsComponent = (props) => {
 
 /**
  * @deprecated
+ * use `addCustomFormField` instead
  */
 export const addCustomFormField_deprecated = new CompatibleSchemaInitializer({
   name: 'AddCustomFormField',

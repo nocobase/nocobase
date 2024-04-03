@@ -34,9 +34,9 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
+export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
-export * from './useDataBlockSourceId';
 
 export const usePickActionProps = () => {
   const form = useForm();
