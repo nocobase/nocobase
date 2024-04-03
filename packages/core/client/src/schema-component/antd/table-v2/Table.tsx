@@ -516,7 +516,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Input active />}
+            {inView || isIndex ? props.children : <Skeleton.Button active />}
           </td>
         );
       },
