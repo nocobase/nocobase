@@ -2,6 +2,9 @@ import { RedisStore } from 'cache-manager-redis-yet';
 import { BloomFilter } from '.';
 import { Cache } from '../cache';
 
+/**
+ * @experimental
+ */
 export class RedisBloomFilter implements BloomFilter {
   cache: Cache;
   constructor(cache: Cache) {
