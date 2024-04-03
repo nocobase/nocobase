@@ -125,6 +125,7 @@ const ChartFilterCollapseInitializer = (props) => {
 
 /**
  * @deprecated
+ * use `chartFilterActionInitializers` instead
  */
 export const chartFilterActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartFilterActionInitializers',

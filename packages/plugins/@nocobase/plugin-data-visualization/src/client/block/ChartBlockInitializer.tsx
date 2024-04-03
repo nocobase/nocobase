@@ -52,6 +52,7 @@ const ChartInitializer = () => {
 
 /**
  * @deprecated
+ * use `chartInitializers` instead
  */
 export const chartInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartInitializers',

@@ -1,4 +1,3 @@
-import { css } from '@emotion/css';
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
@@ -11,13 +10,13 @@ import {
   TableFieldResource,
   WithoutTableFieldResource,
   useCollectionManager,
+  useCollectionParentRecord,
+  useCollectionParentRecordData,
+  useCollectionRecord,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockResource,
   useDesignable,
-  useCollectionParentRecord,
-  useCollectionParentRecordData,
-  useCollectionRecord,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
@@ -28,9 +27,9 @@ import {
 } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { RecordProvider, useRecordIndex } from '../record-provider';
+import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
-import { useTemplateBlockContext } from './TemplateBlockProvider';
 
 /**
  * @deprecated
@@ -55,11 +54,21 @@ export const BlockRequestContext_deprecated = createContext<{
 }>({});
 BlockRequestContext_deprecated.displayName = 'BlockRequestContext_deprecated';
 
+/**
+ * @deprecated
+ * use `useDataBlockResource` instead
+ * @returns
+ */
 export const useBlockResource = () => {
   const resource = useDataBlockResource();
   return useContext(BlockResourceContext) || resource;
 };
 
+/**
+ * @internal
+ * @param props
+ * @returns
+ */
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
@@ -73,6 +82,7 @@ export const MaybeCollectionProvider = (props) => {
 
 /**
  * @deprecated
+ * use `DataBlockRequestProvider` instead
  * @param props
  * @returns
  */
@@ -117,11 +127,17 @@ export const BlockRequestProvider_deprecated = (props) => {
 
 /**
  * @deprecated
+ * use `useDataBlockRequest` instead
  */
 export const useBlockRequestContext = () => {
   return useContext(BlockRequestContext_deprecated);
 };
 
+/**
+ * @internal
+ * @param props
+ * @returns
+ */
 export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   const fieldSchema = useFieldSchema();
   const { findComponent } = useDesignable();
@@ -178,12 +194,19 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   return props.children;
 };
 
+/**
+ * @internal
+ */
 const BlockContext = createContext<{
   /** 用以区分区块的标识 */
   name: string;
 }>(null);
 BlockContext.displayName = 'BlockContext';
 
+/**
+ * @internal
+ * @returns
+ */
 export const useBlockContext = () => {
   return useContext(BlockContext);
 };
@@ -205,7 +228,8 @@ const useCompatDataBlockSourceId = (props) => {
 };
 
 /**
- * @deprecated use `DataBlockProvider` instead
+ * @deprecated
+ * use `DataBlockProvider` instead
  */
 export const BlockProvider = (props: {
   name: string;
@@ -259,6 +283,11 @@ export const BlockProvider = (props: {
   );
 };
 
+/**
+ * @deprecated
+ * use `useDataBlockProps` instead
+ * @returns
+ */
 export const useBlockAssociationContext = () => {
   const { association } = useDataBlockProps();
   return useContext(BlockAssociationContext) || association;
@@ -287,8 +316,6 @@ export const useFilterByTk = () => {
 
 /**
  * @deprecated
- * 已弃用，应使用 useSourceIdFromParentRecord
- * @returns
  */
 export const useSourceIdFromRecord = () => {
   const record = useRecord();
@@ -300,6 +327,10 @@ export const useSourceIdFromRecord = () => {
   }
 };
 
+/**
+ * @deprecated
+ * @returns
+ */
 export const useSourceIdFromParentRecord = () => {
   const cm = useCollectionManager();
   const parentRecordData = useCollectionParentRecordData();
@@ -314,6 +345,10 @@ export const useSourceIdFromParentRecord = () => {
   }
 };
 
+/**
+ * @internal
+ * @returns
+ */
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   const record = useRecord();

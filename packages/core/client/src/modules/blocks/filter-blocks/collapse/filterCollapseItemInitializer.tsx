@@ -81,6 +81,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
 
 /**
  * @deprecated
+ * use `filterCollapseItemInitializer` instead
  */
 export const filterCollapseItemInitializer_deprecated = new CompatibleSchemaInitializer({
   name: 'AssociationFilterInitializers',

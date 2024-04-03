@@ -1,9 +1,10 @@
-import { gridRowColWrap, useFormItemInitializerFields } from '../../../../schema-initializer/utils';
-import { ParentCollectionFields, AssociatedFields } from '../../../../schema-initializer/buttons/FormItemInitializers';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { AssociatedFields, ParentCollectionFields } from '../../../../schema-initializer/buttons/FormItemInitializers';
+import { gridRowColWrap, useFormItemInitializerFields } from '../../../../schema-initializer/utils';
 
 /**
  * @deprecated
+ * use `formItemInitializers` instead
  * 表单里配置字段
  */
 export const formItemInitializers_deprecated = new CompatibleSchemaInitializer({
