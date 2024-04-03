@@ -1,5 +1,4 @@
 import { useCollectionRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
-import { useSourceKey } from './useSourceKey';
 
 /**
  * @internal
@@ -7,11 +6,10 @@ import { useSourceKey } from './useSourceKey';
  * @param association
  * @returns
  */
-export const useSourceIdCommon = (association: string) => {
+export const useParentRecordCommon = (association: string) => {
   const recordData = useCollectionRecordData();
-  const sourceKey = useSourceKey(association);
 
   if (!association) return;
 
-  return recordData?.[sourceKey];
+  return recordData;
 };

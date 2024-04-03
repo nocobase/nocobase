@@ -15,10 +15,15 @@ export function pageArgsToLimitArgs(
 }
 
 export function getRepositoryFromParams(ctx: Context) {
-  const { resourceName, resourceOf } = ctx.action;
+  const { resourceName, sourceId, actionName } = ctx.action;
 
-  if (resourceOf) {
-    return ctx.db.getRepository<MultipleRelationRepository>(resourceName, resourceOf);
+  if (sourceId === '_' && ['get', 'list'].includes(actionName)) {
+    const collection = ctx.db.getCollection(resourceName);
+    return ctx.db.getRepository<Repository>(collection.name);
+  }
+
+  if (sourceId) {
+    return ctx.db.getRepository<MultipleRelationRepository>(resourceName, sourceId);
   }
 
   return ctx.db.getRepository<Repository>(resourceName);

@@ -1,15 +1,15 @@
 import { useFieldSchema } from '@formily/react';
-import { useParsedFilter } from '../../../../../block-provider/hooks/useParsedFilter';
 import { useMemo } from 'react';
-import { useSourceIdCommon } from '../../../useSourceIdCommon';
+import { useParsedFilter } from '../../../../../block-provider/hooks/useParsedFilter';
+import { useParentRecordCommon } from '../../../useParentRecordCommon';
 
 export const useTableBlockDecoratorProps = (props) => {
   const params = useTableBlockParams(props);
-  const sourceId = useTableBlockSourceId(props);
+  const parentRecord = useParentRecordCommon(props.association);
 
   return {
     params,
-    sourceId,
+    parentRecord,
   };
 };
 
@@ -36,16 +36,4 @@ export function useTableBlockParams(props) {
 
     return paramsWithFilter;
   }, [fieldSchema, parsedFilter, props.dragSort, props.params]);
-}
-
-function useTableBlockSourceId(props) {
-  let sourceId: string | undefined;
-
-  // 因为 association 是固定不变的，所以在条件中使用 hooks 是安全的
-  if (props.association) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    sourceId = useSourceIdCommon(props.association);
-  }
-
-  return sourceId;
 }
