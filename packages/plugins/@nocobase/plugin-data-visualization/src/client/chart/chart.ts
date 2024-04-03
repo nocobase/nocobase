@@ -2,7 +2,7 @@ import React from 'react';
 import { FieldOption } from '../hooks';
 import { QueryProps } from '../renderer';
 import { parseField } from '../utils';
-import { ISchema } from '@formily/react';
+import { ISchema, Schema } from '@formily/react';
 import configs, { AnySchemaProperties, Config } from './configs';
 import { Transformer } from '../block/transformers';
 
@@ -169,9 +169,10 @@ export class Chart implements ChartType {
   }
 
   render({ data, general, advanced, fieldProps }: RenderProps) {
+    const config = this.getProps({ data, general, advanced, fieldProps });
     return () =>
       React.createElement(this.component, {
-        ...this.getProps({ data, general, advanced, fieldProps }),
+        ...Schema.compile(config),
       });
   }
 }
