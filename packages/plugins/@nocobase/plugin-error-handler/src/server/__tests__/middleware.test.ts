@@ -41,14 +41,12 @@ describe('middleware', () => {
         ctx.body = {
           errors: [err.message],
         };
-
-        ctx.status = 400;
       },
     );
 
     app.use(
       (ctx, next) => {
-        throw new CustomError('custom error');
+        ctx.throw(400, new CustomError('custom error'));
       },
       { after: 'dataSource' },
     );
