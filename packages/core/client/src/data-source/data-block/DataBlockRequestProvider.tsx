@@ -56,9 +56,12 @@ function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
       // "association": "Collection.Field"
       const arr = association.split('.');
       const field = cm.getCollectionField(association);
+      const fieldCollection = cm.getCollection(field.collectionName || arr[0]);
       const isM2O = field.interface === 'm2o';
       const filterTargetKey = cm.getCollection(arr[0]).getOption('filterTargetKey');
-      const filterKey = isM2O ? filterTargetKey : field.sourceKey;
+      const filterKey = isM2O
+        ? filterTargetKey
+        : field.sourceKey || fieldCollection.filterTargetKey || fieldCollection.getPrimaryKey() || 'id';
       // <collection>:get?filter[filterKey]=sourceId
       const url = `${arr[0]}:get?filter[${filterKey}]=${sourceId}`;
       const res = await api.request({ url, headers });
