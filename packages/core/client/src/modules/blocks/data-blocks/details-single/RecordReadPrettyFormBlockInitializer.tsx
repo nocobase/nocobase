@@ -69,6 +69,7 @@ export function useCreateSingleDetailsSchema() {
               ? {
                   association,
                   dataSource: item.dataSource,
+                  isCurrent: true,
                 }
               : {
                   collectionName: item.collectionName || item.name,
