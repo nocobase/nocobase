@@ -189,7 +189,7 @@ export const useCreateActionProps = () => {
   const record = useCollectionRecord();
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, setSubmitted } = useActionContext();
+  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
@@ -225,6 +225,7 @@ export const useCreateActionProps = () => {
         });
         setVisible?.(false);
         setSubmitted?.(true);
+        setFormValueChanged?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
         // __parent?.service?.refresh?.();
