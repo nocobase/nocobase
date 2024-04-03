@@ -8,7 +8,7 @@ import { useCollection_deprecated, useSortFields } from '../../../../collection-
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsBlockTitleItem, SchemaSettingsTemplate } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
-import { setDataLoadingModeSettingsItem, useDataLoadingMode } from './setDataLoadingModeSettingsItem';
+import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 
 const commonItems: SchemaSettingsItemType[] = [
@@ -24,9 +24,7 @@ const commonItems: SchemaSettingsItemType[] = [
       const fieldSchema = useFieldSchema();
       const { form } = useFormBlockContext();
       const field = useField();
-      const { service } = useDetailsBlockContext();
       const { dn } = useDesignable();
-      const dataLoadingMode = useDataLoadingMode();
       return {
         collectionName: name,
         defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
@@ -37,10 +35,6 @@ const commonItems: SchemaSettingsItemType[] = [
           params.filter = filter;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-
-          if (dataLoadingMode === 'auto') {
-            service.run({ ...service.params?.[0], filter });
-          }
 
           dn.emit('patch', {
             schema: {

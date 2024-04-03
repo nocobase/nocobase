@@ -10,9 +10,9 @@ export const FilterActionInitializer = (props) => {
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:filter',
     'x-component': 'Filter.Action',
+    'x-use-component-props': 'useFilterActionProps',
     'x-component-props': {
       icon: 'FilterOutlined',
-      useProps: '{{ useFilterActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

@@ -88,11 +88,11 @@ const ChartFilterActionInitializer = (props) => {
     title: '{{ t("Filter") }}',
     'x-action': 'submit',
     'x-component': 'Action',
+    'x-use-component-props': 'useChartFilterActionProps',
     'x-designer': 'ChartFilterActionDesigner',
     'x-component-props': {
       htmlType: 'submit',
       type: 'primary',
-      useProps: '{{ useChartFilterActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;
@@ -103,10 +103,8 @@ const ChartFilterResetInitializer = (props) => {
     title: '{{ t("Reset") }}',
     'x-action': 'reset',
     'x-component': 'Action',
+    'x-use-component-props': 'useChartFilterResetProps',
     'x-designer': 'ChartFilterActionDesigner',
-    'x-component-props': {
-      useProps: '{{ useChartFilterResetProps }}',
-    },
   };
   return <ActionInitializer {...props} schema={schema} />;
 };
@@ -116,9 +114,9 @@ const ChartFilterCollapseInitializer = (props) => {
     title: `{{ t("Collapse") }}`,
     'x-action': 'collapse',
     'x-component': 'Action',
+    'x-use-component-props': 'useChartFilterCollapseProps',
     'x-component-props': {
       type: 'link',
-      useProps: '{{ useChartFilterCollapseProps }}',
     },
     'x-designer': 'ChartFilterCollapseDesigner',
   };

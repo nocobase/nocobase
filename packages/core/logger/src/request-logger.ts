@@ -17,6 +17,9 @@ export interface RequestLoggerOptions extends LoggerOptions {
   responseWhitelist?: string[];
 }
 
+/**
+ * @internal
+ */
 export const requestLogger = (appName: string, options?: RequestLoggerOptions) => {
   const requestLogger = createLogger({
     dirname: getLoggerFilePath(appName),

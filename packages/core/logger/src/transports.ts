@@ -21,6 +21,9 @@ export const Transports = {
     }),
 };
 
+/**
+ * @internal
+ */
 export const getTransports = (options: LoggerOptions) => {
   const { filename, format: _format, transports: _transports } = options;
   let { dirname } = options;

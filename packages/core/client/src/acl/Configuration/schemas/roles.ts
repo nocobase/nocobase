@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import { useRequest } from '../../../api-client';
 import { useRecord } from '../../../record-provider';
 import { useActionContext } from '../../../schema-component';
-import { roleCollectionsSchema } from './roleCollections';
 
 const collection = {
   name: 'roles',

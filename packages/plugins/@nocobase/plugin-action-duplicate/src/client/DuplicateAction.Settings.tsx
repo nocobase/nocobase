@@ -84,7 +84,7 @@ function DuplicationMode() {
   const fieldSchema = useFieldSchema();
   const { name } = useCollection_deprecated();
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
-  const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
+  const duplicateValues = cloneDeep(fieldSchema['x-component-props']?.duplicateFields || []);
   const record = useRecord();
   const syncCallBack = useCallback((treeData, selectFields, form) => {
     form.query('duplicateFields').take((f) => {

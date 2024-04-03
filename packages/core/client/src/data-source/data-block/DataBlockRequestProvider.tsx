@@ -1,4 +1,3 @@
-import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
 import React, { FC, createContext, useContext, useMemo } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
@@ -8,7 +7,7 @@ import { useDataBlockResource } from './DataBlockResourceProvider';
 import { useDataSourceHeaders } from '../utils';
 import _ from 'lodash';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
-import { useCollection, useCollectionManager } from '../collection';
+import { useCollectionManager } from '../collection';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
@@ -17,6 +16,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
+
   const service = useMemo(() => {
     return requestService
       ? requestService
@@ -31,25 +31,14 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 
           return resource[action]({ ...paramsValue, ...customParams }).then((res) => res.data);
         };
-  }, [resource, action, params, record, requestService]);
+  }, [resource, action, JSON.stringify(params), JSON.stringify(record), requestService]);
 
   const request = useRequest<T>(service, {
     ...requestOptions,
-    manual: true,
+    manual: dataLoadingMode === 'manual',
+    ready: !!action,
+    refreshDeps: [action, JSON.stringify(params), JSON.stringify(record), resource],
   });
-
-  // 因为修改 Schema 会导致 params 对象发生变化，所以这里使用 `DeepCompare`
-  useDeepCompareEffect(() => {
-    if (action && dataLoadingMode === 'auto') {
-      request.run();
-    }
-  }, [params, action, record]);
-
-  useUpdateEffect(() => {
-    if (action && dataLoadingMode === 'auto') {
-      request.run();
-    }
-  }, [resource]);
 
   return request;
 }

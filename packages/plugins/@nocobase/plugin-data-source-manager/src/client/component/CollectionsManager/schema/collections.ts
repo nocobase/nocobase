@@ -136,9 +136,9 @@ export const collectionTableSchema: ISchema = {
           },
           'x-action': 'filter',
           'x-component': 'Filter.Action',
+          'x-use-component-props': 'cm.useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
-            useProps: '{{ cm.useFilterActionProps }}',
           },
           'x-align': 'left',
         },
@@ -146,9 +146,9 @@ export const collectionTableSchema: ISchema = {
           type: 'void',
           title: '{{ t("Refresh") }}',
           'x-component': 'Action',
+          'x-use-component-props': 'useRefreshActionProps',
           'x-component-props': {
             icon: 'ReloadOutlined',
-            useProps: '{{ useRefreshActionProps }}',
           },
         },
         delete: {

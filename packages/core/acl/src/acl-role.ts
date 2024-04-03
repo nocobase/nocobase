@@ -18,6 +18,9 @@ export interface ResourceActionsOptions {
   [actionName: string]: RoleActionParams;
 }
 
+/**
+ * @internal
+ */
 export class ACLRole {
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();

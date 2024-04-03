@@ -97,9 +97,9 @@ export const roleCollectionsSchema: ISchema = {
           },
           'x-action': 'filter',
           'x-component': 'Filter.Action',
+          'x-use-component-props': 'useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
-            useProps: '{{ useFilterActionProps }}',
           },
           'x-align': 'left',
         },
