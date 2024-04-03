@@ -42,7 +42,7 @@ function createWithACLMetaMiddleware() {
     if (ctx.body?.data) {
       listData = ctx.data;
     } else if (ctx.body?.rows) {
-      listData = ctx.data.rows;
+      listData = ctx.body.rows;
     } else if (ctx.body) {
       listData = ctx.body;
     }
