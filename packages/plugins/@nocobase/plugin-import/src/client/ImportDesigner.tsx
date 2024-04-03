@@ -8,7 +8,6 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   useDesignable,
-  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -115,7 +114,6 @@ export const ImportDesigner = () => {
         }}
       />
       <SchemaSettingsDivider />
-      <RefreshDataBlockRequest />
       <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={(s) => {

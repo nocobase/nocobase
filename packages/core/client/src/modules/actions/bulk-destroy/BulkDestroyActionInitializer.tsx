@@ -16,7 +16,6 @@ export const BulkDestroyActionInitializer = (props) => {
         title: "{{t('Delete record')}}",
         content: "{{t('Are you sure you want to delete it?')}}",
       },
-      refreshDataBlockRequest: true,
     },
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:bulkDelete',

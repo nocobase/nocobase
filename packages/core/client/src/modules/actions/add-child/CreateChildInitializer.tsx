@@ -15,7 +15,6 @@ export const CreateChildInitializer = (props) => {
       addChild: true,
       style: { padding: '0px', marginTop: '-5px' },
       component: 'CreateRecordAction',
-      refreshDataBlockRequest: true,
     },
     properties: {
       drawer: {

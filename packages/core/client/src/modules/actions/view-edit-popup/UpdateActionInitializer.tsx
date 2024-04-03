@@ -13,7 +13,6 @@ export const UpdateActionInitializer = (props) => {
     'x-component-props': {
       openMode: 'drawer',
       icon: 'EditOutlined',
-      refreshDataBlockRequest: true,
     },
     properties: {
       drawer: {

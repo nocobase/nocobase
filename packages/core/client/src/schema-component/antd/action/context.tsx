@@ -15,12 +15,10 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
   const isFirstRender = useRef(true); // 使用ref跟踪是否为首次渲染
   const service = useDataBlockRequest();
   const { setSubmitted: setParentSubmitted } = contextProps;
-  const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] || {};
 
   useEffect(() => {
     if (
       visible !== undefined &&
-      refreshDataBlockRequest !== false &&
       (RefreshDataBlockRequestAction.find((v) => fieldSchema?.['x-action']?.includes?.(v)) ||
         fieldSchema?.['x-collection-field'])
     ) {

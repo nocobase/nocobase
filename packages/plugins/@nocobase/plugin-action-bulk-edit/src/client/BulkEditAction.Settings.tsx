@@ -8,7 +8,6 @@ import {
   SchemaSettingsSelectItem,
   useDesignable,
   useSchemaToolbar,
-  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
 import React from 'react';

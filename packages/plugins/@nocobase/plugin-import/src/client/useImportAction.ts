@@ -94,7 +94,6 @@ export const useImportStartAction = () => {
   const form = useForm();
   const { setVisible, fieldSchema } = useActionContext();
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
-  const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] || {};
   return {
     async run() {
       const { importColumns, explain } = lodash.cloneDeep(
@@ -134,10 +133,7 @@ export const useImportStartAction = () => {
         });
         setImportResult(data);
         form.reset();
-        if (refreshDataBlockRequest !== false) {
-          console.log(8);
-          await service?.refresh?.();
-        }
+        await service?.refresh?.();
         setImportStatus(ImportStatus.IMPORTED);
       } catch (error) {
         setImportModalVisible(false);

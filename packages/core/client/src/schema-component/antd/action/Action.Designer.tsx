@@ -801,14 +801,14 @@ export const ActionDesigner = (props) => {
   );
 };
 
-export function RefreshDataBlockRequest({ isPopupAction = true }) {
+export function RefreshDataBlockRequest(props) {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] || {};
   return (
     <SchemaSettingsSwitchItem
-      title={isPopupAction ? t('Refresh data on close') : t('Refresh data on action')}
+      title={t('Refresh data on action')}
       //兼容历史数据
       checked={refreshDataBlockRequest !== false}
       onChange={(value) => {
