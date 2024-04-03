@@ -247,6 +247,7 @@ const commonOptions = {
 
 /**
  * @deprecated
+ * use `tableActionColumnInitializers` instead
  */
 export const tableActionColumnInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'TableActionColumnInitializers',

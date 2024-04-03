@@ -61,6 +61,7 @@ export const KanbanCardDesigner = () => {
 
 /**
  * @deprecated
+ * use `kanbanCardInitializers` instead
  */
 export const kanbanCardInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'KanbanCardInitializers',

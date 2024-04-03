@@ -2,6 +2,7 @@ import { CompatibleSchemaInitializer } from '../../../../application/schema-init
 
 /**
  * @deprecated
+ * use `filterFormActionInitializers` instead
  * 表单的操作配置
  */
 export const filterFormActionInitializers_deprecated = new CompatibleSchemaInitializer({

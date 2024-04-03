@@ -4,6 +4,7 @@ import { useCollection_deprecated } from '../../../../collection-manager/hooks/u
 
 /**
  * @deprecated
+ * use `tableActionInitializers` instead
  * 表格操作配置
  */
 export const tableActionInitializers_deprecated = new CompatibleSchemaInitializer({

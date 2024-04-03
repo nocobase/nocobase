@@ -3,6 +3,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
@@ -11,7 +12,6 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
-import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 type Params = {
   filter?: any;
@@ -20,6 +20,9 @@ type Params = {
   sort?: any;
 };
 
+/**
+ * @internal
+ */
 export const TableSelectorContext = createContext<any>({});
 TableSelectorContext.displayName = 'TableSelectorContext';
 const TableSelectorParamsContext = createContext<Params>({}); // 用于传递参数

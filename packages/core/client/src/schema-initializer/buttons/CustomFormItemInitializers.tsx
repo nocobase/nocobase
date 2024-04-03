@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
+import { SchemaInitializerChildren } from '../../application/schema-initializer/components/SchemaInitializerChildren';
 import { useCompile } from '../../schema-component';
 import { gridRowColWrap, useCustomFormItemInitializerFields, useInheritsFormItemInitializerFields } from '../utils';
-import { SchemaInitializerChildren } from '../../application/schema-initializer/components/SchemaInitializerChildren';
-import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 
 // 表单里配置字段
 const ParentCollectionFields = () => {
@@ -26,6 +26,7 @@ const ParentCollectionFields = () => {
 
 /**
  * @deprecated
+ * use `customFormItemInitializers` instead
  */
 export const customFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'CustomFormItemInitializers',

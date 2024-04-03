@@ -3,6 +3,7 @@ import { useCollection_deprecated } from '../../../../collection-manager';
 
 /**
  * @deprecated
+ * use `listItemActionInitializers` instead
  */
 export const listItemActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ListItemActionInitializers',
