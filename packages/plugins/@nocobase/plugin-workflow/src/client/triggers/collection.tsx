@@ -123,9 +123,7 @@ export default class extends Trigger {
     condition: {
       ...filter,
       title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`,
-      'x-component-props': {
-        useProps: filter['x-component-props'].useProps,
-      },
+      'x-component-props': {},
       'x-reactions': [
         {
           dependencies: ['collection'],

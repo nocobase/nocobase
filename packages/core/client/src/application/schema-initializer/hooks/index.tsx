@@ -44,11 +44,16 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
           if (!item.key) {
             item.key = `${compiledTitle}-${indexA}`;
           }
-          return {
-            key: item.key,
-            label: element,
-            associationField: item.associationField,
-          };
+          return item.associationField
+            ? {
+                key: item.key,
+                label: element,
+                associationField: item.associationField,
+              }
+            : {
+                key: item.key,
+                label: element,
+              };
         }
         if (item.type === 'itemGroup') {
           const label = typeof compiledTitle === 'string' ? compiledTitle : item.title;
@@ -77,19 +82,28 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
 
         const label = element || compiledTitle || item.label;
         const key = item.key || `${parentKey}-${compiledTitle}-${indexA}`;
-        return {
-          key,
-          label,
-          associationField: item.associationField,
-          onClick: (info) => {
-            if (info.key !== key) return;
-            if (item.onClick) {
-              item.onClick({ ...info, item });
-            } else {
-              onClick?.({ ...info, item });
-            }
-          },
+        const handleClick = (info) => {
+          info.domEvent.stopPropagation();
+          if (info.key !== key) return;
+          if (item.onClick) {
+            item.onClick({ ...info, item });
+          } else {
+            onClick?.({ ...info, item });
+          }
         };
+
+        return item.associationField
+          ? {
+              key,
+              label,
+              associationField: item.associationField,
+              onClick: handleClick,
+            }
+          : {
+              key,
+              label,
+              onClick: handleClick,
+            };
       });
     },
     [compile, onClick],

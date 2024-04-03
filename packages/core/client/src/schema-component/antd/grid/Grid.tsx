@@ -9,6 +9,7 @@ import { useFormBlockType } from '../../../block-provider';
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
+import _ from 'lodash';
 
 const GridRowContext = createContext<any>({});
 GridRowContext.displayName = 'GridRowContext';
@@ -127,8 +128,8 @@ const ColDivider = (props) => {
         el.parentElement.clientWidth
       ).toFixed(2);
 
-      prevSchema['x-component-props']['width'] = preWidth;
-      nextSchema['x-component-props']['width'] = nextWidth;
+      _.set(prevSchema, 'x-component-props.width', preWidth);
+      _.set(nextSchema, 'x-component-props.width', nextWidth);
       dn.emit('batchPatch', {
         schemas: [
           {

@@ -27,6 +27,7 @@ import DataSetPreviewTable from './DataSetPreviewTable';
 import { useFieldsById } from './hooks';
 import { lang } from './locale';
 import { templates } from './templates';
+import _ from 'lodash';
 
 export const jsonConfigDesc = (title: string, link: string) => {
   return (
@@ -231,7 +232,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
             field.title = values.chart.title;
             fieldSchema['title'] = values.chart.title;
             field.componentProps.chartBlockEngineMetaData = values;
-            fieldSchema['x-component-props'].chartBlockEngineMetaData = values;
+            _.set(fieldSchema, 'x-component-props.chartBlockEngineMetaData', values);
             dn.emit('patch', {
               schema: {
                 'x-uid': fieldSchema['x-uid'],

@@ -48,9 +48,7 @@ function InnerCollectionBlockInitializer({ collection, dataPath, ...props }) {
         grid: {
           type: 'void',
           'x-component': 'FormV2',
-          'x-component-props': {
-            useProps: '{{useDetailsBlockProps}}',
-          },
+          'x-use-component-props': 'useDetailsBlockProps',
           'x-read-pretty': true,
           properties: {
             grid: template || {

@@ -7,11 +7,11 @@ export const CreateFilterActionInitializer = (props) => {
     title: '{{ t("Filter") }}',
     'x-action': 'submit',
     'x-component': 'Action',
+    'x-use-component-props': 'useFilterBlockActionProps',
     'x-designer': 'Action.Designer',
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',
-      useProps: '{{ useFilterBlockActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

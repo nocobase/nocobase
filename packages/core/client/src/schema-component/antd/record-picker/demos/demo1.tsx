@@ -92,12 +92,12 @@ const schema: ISchema = {
                 value: {
                   type: 'array',
                   'x-component': 'TableV2.Selector',
+                  'x-use-component-props': 'useTableSelectorProps',
                   'x-component-props': {
                     rowKey: 'id',
                     rowSelection: {
                       type: 'checkbox',
                     },
-                    useProps: '{{ useTableSelectorProps }}',
                   },
                   properties: {
                     column1: {
@@ -129,10 +129,10 @@ const schema: ISchema = {
                       title: '{{ t("Submit") }}',
                       'x-action': 'submit',
                       'x-component': 'Action',
+                      'x-use-component-props': 'usePickActionProps',
                       'x-component-props': {
                         type: 'primary',
                         htmlType: 'submit',
-                        useProps: '{{ usePickActionProps }}',
                       },
                     },
                   },

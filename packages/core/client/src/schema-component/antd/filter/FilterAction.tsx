@@ -10,19 +10,23 @@ import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { Action } from '../action';
 import { StablePopover } from '../popover';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export const FilterActionContext = createContext<any>(null);
 FilterActionContext.displayName = 'FilterActionContext';
 
-export const FilterAction = observer(
-  (props: any) => {
+export const FilterAction = withDynamicSchemaProps(
+  observer((props: any) => {
     const { t } = useTranslation();
     const field = useField<Field>();
     const [visible, setVisible] = useState(false);
     const { designable, dn } = useDesignable();
     const fieldSchema = useFieldSchema();
     const form = useMemo<Form>(() => props.form || createForm(), []);
+
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { options, onSubmit, onReset, ...others } = useProps(props);
+
     const onOpenChange = useCallback((visible: boolean): void => {
       setVisible(visible);
     }, []);
@@ -93,7 +97,7 @@ export const FilterAction = observer(
         </StablePopover>
       </FilterActionContext.Provider>
     );
-  },
+  }),
   { displayName: 'FilterAction' },
 );
 
