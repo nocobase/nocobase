@@ -6,9 +6,14 @@ export function createDetailsUISchema(options: {
   collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
+  /**
+   * 如果为 true，则表示当前创建的区块 record 就是 useRecord 返回的 record
+   */
+  isCurrent?: boolean;
 }): ISchema {
   const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
+  const isCurrentObj = options.isCurrent ? { 'x-is-current': true } : {};
 
   if (!dataSource) {
     throw new Error('dataSource are required');
@@ -29,6 +34,7 @@ export function createDetailsUISchema(options: {
     'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'blockSettings:details',
     'x-component': 'CardItem',
+    ...isCurrentObj,
     properties: {
       [uid()]: {
         type: 'void',

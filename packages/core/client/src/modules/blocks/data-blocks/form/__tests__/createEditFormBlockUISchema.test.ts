@@ -1,4 +1,3 @@
-import { ISchema } from '@formily/react';
 import { vi } from 'vitest';
 import { createEditFormBlockUISchema } from '../createEditFormBlockUISchema';
 
@@ -53,6 +52,63 @@ describe('createEditFormBlockUISchema', () => {
           "collection": "users",
           "dataSource": "UserDataSource",
         },
+        "x-settings": "blockSettings:editForm",
+        "x-toolbar": "BlockSchemaToolbar",
+        "x-use-decorator-props": "useEditFormBlockDecoratorProps",
+      }
+    `);
+  });
+
+  it('should create a valid schema with custom x-use-decorator-props', () => {
+    const options = {
+      collectionName: 'users',
+      dataSource: 'usersDataSource',
+      isCurrent: true,
+    };
+
+    const result = createEditFormBlockUISchema(options);
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "properties": {
+          "uniqueId": {
+            "properties": {
+              "grid": {
+                "properties": {},
+                "type": "void",
+                "x-component": "Grid",
+                "x-initializer": "form:configureFields",
+              },
+              "uniqueId": {
+                "type": "void",
+                "x-component": "ActionBar",
+                "x-component-props": {
+                  "layout": "one-column",
+                  "style": {
+                    "marginTop": 24,
+                  },
+                },
+                "x-initializer": "editForm:configureActions",
+              },
+            },
+            "type": "void",
+            "x-component": "FormV2",
+            "x-use-component-props": "useEditFormBlockProps",
+          },
+        },
+        "type": "void",
+        "x-acl-action": "users:update",
+        "x-acl-action-props": {
+          "skipScopeCheck": false,
+        },
+        "x-component": "CardItem",
+        "x-decorator": "FormBlockProvider",
+        "x-decorator-props": {
+          "action": "get",
+          "association": undefined,
+          "collection": "users",
+          "dataSource": "usersDataSource",
+        },
+        "x-is-current": true,
         "x-settings": "blockSettings:editForm",
         "x-toolbar": "BlockSchemaToolbar",
         "x-use-decorator-props": "useEditFormBlockDecoratorProps",

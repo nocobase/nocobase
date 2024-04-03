@@ -7,6 +7,7 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFormBlockContext } from '../../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollectionField } from '../../../../data-source';
 import { useRecord } from '../../../../record-provider';
 import { removeNullCondition, useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
@@ -23,7 +24,6 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
-import { useCollectionField } from '../../../../data-source';
 
 const enableLink = {
   name: 'enableLink',
@@ -255,6 +255,7 @@ const setTheDataScope: any = {
       onSubmit: ({ filter }) => {
         filter = removeNullCondition(filter);
         _.set(fieldSchema['x-component-props'], 'service.params.filter', filter);
+        _.set(field.componentProps, 'service.params.filter', filter);
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
