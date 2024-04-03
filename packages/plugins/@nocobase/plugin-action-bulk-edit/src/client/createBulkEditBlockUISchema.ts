@@ -36,9 +36,7 @@ export function createBulkEditBlockUISchema(options: {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useCreateFormBlockProps }}',
-        },
+        'x-use-component-props': 'useCreateFormBlockProps',
         properties: {
           grid: {
             type: 'void',

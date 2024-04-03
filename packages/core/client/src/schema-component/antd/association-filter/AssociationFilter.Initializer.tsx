@@ -19,7 +19,6 @@ export const associationFilterInitializer = new SchemaInitializer({
       title: '{{t("Association fields")}}',
       useChildren() {
         const associatedFields = useAssociatedFields();
-        const useProps = '{{useAssociationFilterProps}}';
         const children: SchemaInitializerItemType[] = associatedFields.map((field) => ({
           type: 'item',
           name: field.key,
@@ -33,11 +32,11 @@ export const associationFilterInitializer = new SchemaInitializer({
             'x-toolbar': 'CollapseItemSchemaToolbar',
             'x-settings': 'fieldSettings:FilterCollapseItem',
             'x-component': 'AssociationFilter.Item',
+            'x-use-component-props': 'useAssociationFilterProps',
             'x-component-props': {
               fieldNames: {
                 label: field.targetKey || 'id',
               },
-              useProps,
             },
             properties: {},
           },

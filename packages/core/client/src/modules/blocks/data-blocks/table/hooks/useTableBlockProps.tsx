@@ -49,9 +49,9 @@ export const useTableBlockProps = () => {
     pagination: useMemo(() => {
       return params?.paginate !== false
         ? {
-          defaultCurrent: params?.page || 1,
-          defaultPageSize: params?.pageSize,
-        }
+            defaultCurrent: params?.page || 1,
+            defaultPageSize: params?.pageSize,
+          }
         : false;
     }, [params?.page, params?.pageSize, params?.paginate]),
     onRowSelectionChange: useCallback((selectedRowKeys) => {
@@ -74,10 +74,14 @@ export const useTableBlockProps = () => {
     ),
     onChange: useCallback(
       ({ current, pageSize }, filters, sorter) => {
-        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
+        const sort = !ctx.dragSort
+          ? sorter.order
+            ? sorter.order === `ascend`
+              ? [sorter.field]
+              : [`-${sorter.field}`]
+            : globalSort || ctx.dragSortBy
+          : ctx.dragSortBy;
         ctx.service.run({ ...params?.[0], page: current, pageSize, sort });
-        // ctx.service
-        // eslint-disable-next-line react-hooks/exhaustive-deps
       },
       [globalSort, params],
     ),

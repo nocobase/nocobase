@@ -346,6 +346,7 @@ const BodyRowComponent = (props) => {
 };
 
 interface TableProps {
+  /** @deprecated */
   useProps?: () => any;
   onChange?: (pagination, filters, sorter, extra) => void;
   onRowSelectionChange?: (selectedRowKeys: any[], selectedRows: any[]) => void;
@@ -365,8 +366,10 @@ export const Table: any = withDynamicSchemaProps(
   observer((props: TableProps) => {
     const { token } = useToken();
     const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus', 'value']);
+
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { pagination: pagination2, ...others2 } = useProps?.() || {};
+
     const {
       dragSort = false,
       showIndex = true,
@@ -513,7 +516,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Input active />}
+            {inView || isIndex ? props.children : <Skeleton.Button active />}
           </td>
         );
       },
@@ -672,16 +675,12 @@ export const Table: any = withDynamicSchemaProps(
           overflow: hidden;
           .ant-table-wrapper {
             height: 100%;
-            overflow: hidden;
-            .ant-table-wrapper {
+            .ant-spin-nested-loading {
               height: 100%;
-              .ant-spin-nested-loading {
+              .ant-spin-container {
                 height: 100%;
-                .ant-spin-container {
-                  height: 100%;
-                  display: flex;
-                  flex-direction: column;
-                }
+                display: flex;
+                flex-direction: column;
               }
             }
           }

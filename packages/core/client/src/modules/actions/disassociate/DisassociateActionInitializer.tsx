@@ -7,6 +7,7 @@ export const DisassociateActionInitializer = (props) => {
     title: '{{ t("Disassociate") }}',
     'x-action': 'disassociate',
     'x-component': 'Action',
+    'x-use-component-props': 'useDisassociateActionProps',
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:disassociate',
     'x-component-props': {
@@ -15,7 +16,6 @@ export const DisassociateActionInitializer = (props) => {
         title: "{{t('Disassociate record')}}",
         content: "{{t('Are you sure you want to disassociate it?')}}",
       },
-      useProps: '{{ useDisassociateActionProps }}',
     },
     'x-action-settings': {
       triggerWorkflows: [],

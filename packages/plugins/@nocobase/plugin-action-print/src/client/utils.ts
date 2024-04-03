@@ -1,10 +1,11 @@
-import { useDetailsBlockContext } from '@nocobase/client';
+import { useDetailsBlockContext, useFormBlockContext } from '@nocobase/client';
 import { useReactToPrint } from 'react-to-print';
 
 export const useDetailPrintActionProps = () => {
+  const context = useFormBlockContext();
   const { formBlockRef } = useDetailsBlockContext();
   const printHandler = useReactToPrint({
-    content: () => formBlockRef.current,
+    content: () => context?.formBlockRef?.current || formBlockRef?.current,
     pageStyle: `@media print {
         * {
           margin: 0;

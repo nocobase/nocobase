@@ -1,6 +1,7 @@
 import { useExpressionScope } from '@formily/react';
 import React, { ComponentType, useMemo } from 'react';
 import { useDesignable } from '../../schema-component';
+import _ from 'lodash';
 
 const useDefaultSchemaProps = () => undefined;
 
@@ -28,14 +29,35 @@ export function withDynamicSchemaProps<T = any>(Component: any, options: WithSch
       }
     }, [dn]);
     const useSchemaProps = useMemo(() => {
-      let res = undefined;
-      if (useComponentPropsStr) {
-        res = scope[useComponentPropsStr];
-        if (!res) {
-          console.error(`${useComponentPropsStr} is not registered`);
+      const getHook = (str: string, scope: Record<string, any>, allText: string) => {
+        let res = undefined;
+        if (_.isFunction(str)) {
+          res = str;
+        } else {
+          res = scope[str];
+          if (!res) {
+            console.error(`${allText} is not registered`);
+          }
         }
+        return res || useDefaultSchemaProps;
+      };
+
+      if (!useComponentPropsStr) {
+        return useDefaultSchemaProps;
       }
-      return res || useDefaultSchemaProps;
+
+      if (_.isFunction(useComponentPropsStr)) {
+        return useComponentPropsStr;
+      }
+
+      const pathList = useComponentPropsStr.split('.');
+      let result;
+
+      for (const item of pathList) {
+        result = getHook(item, result || scope, useComponentPropsStr);
+      }
+
+      return result;
     }, [scope, useComponentPropsStr]);
     const schemaProps = useSchemaProps(props);
 
