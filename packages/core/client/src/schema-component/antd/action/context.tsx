@@ -13,7 +13,7 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
   const { visible } = { ...props, ...props.value } || {};
   const isFirstRender = useRef(true); // 使用ref跟踪是否为首次渲染
   const service = useDataBlockRequest();
-  const { setSubmitted: setParentSubmitted } = contextProps;
+  const { setSubmitted: setParentSubmitted } = { ...props, ...props.value, ...contextProps };
 
   useEffect(() => {
     if (visible !== undefined) {

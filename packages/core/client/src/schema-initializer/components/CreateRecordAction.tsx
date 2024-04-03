@@ -98,6 +98,7 @@ function useAclCheckFn() {
 }
 
 const InternalCreateRecordAction = (props: any, ref) => {
+  const [visible, setVisible] = useState(false);
   const collection = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const field: any = useField();
@@ -124,17 +125,16 @@ const InternalCreateRecordAction = (props: any, ref) => {
         });
       });
   }, [field, linkageRules, localVariables, variables]);
-
   const internalRef = createRef<HTMLButtonElement | HTMLAnchorElement>();
   const buttonRef = composeRef(ref, internalRef);
   return (
     //@ts-ignore
     <div className={actionDesignerCss} ref={buttonRef as React.Ref<HTMLButtonElement>}>
-      <ActionContextProvider value={{ ...ctx, fieldSchema }}>
+      <ActionContextProvider value={{ ...ctx, fieldSchema, visible, setVisible }}>
         <CreateAction
           {...props}
-          onClick={(e, collectionData) => {
-            props?.onClick?.(e);
+          onClick={(collectionData) => {
+            setVisible(true);
             setCurrentCollection(collectionData.name);
             setCurrentCollectionDataSource(collectionData.dataSource);
           }}
@@ -206,7 +206,7 @@ export const CreateAction = observer(
       return inheritsCollections.map((option) => ({
         key: option.name,
         label: compile(option.title),
-        onClick: (e) => onClick?.(e, option),
+        onClick: () => onClick?.(option),
       }));
     }, [inheritsCollections, onClick]);
 
@@ -304,7 +304,7 @@ function FinallyButton({
           ]}
           menu={menu}
           onClick={(info) => {
-            onClick?.(info, collection);
+            onClick?.(collection);
           }}
         >
           {icon}
@@ -339,7 +339,7 @@ function FinallyButton({
             ? collectionName
             : collection.name;
           const targetCollection = getCollection(targetCollectionName);
-          onClick?.(info, targetCollection);
+          onClick?.(targetCollection);
         }}
         style={{
           display: !designable && field?.data?.hidden && 'none',
@@ -359,7 +359,7 @@ function FinallyButton({
       danger={props.danger}
       icon={icon}
       onClick={(info) => {
-        onClick?.(info, collection);
+        onClick?.(collection);
       }}
       style={{
         ...props?.style,
