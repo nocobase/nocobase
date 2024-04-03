@@ -131,7 +131,7 @@ export const Kanban: any = withDynamicSchemaProps(
             const columnIndex = dataSource?.indexOf(column);
             const cardIndex = column?.cards?.indexOf(card);
             const { ref, inView } = useInView({
-              threshold: 0.8,
+              threshold: 0,
               triggerOnce: true,
               initialInView: lastDraggedCard.current && lastDraggedCard.current === card[primaryKey],
             });

@@ -7,7 +7,7 @@ import {
   useCollection_deprecated,
   useSortFields,
 } from '../../../../collection-manager';
-import { mergeFilter, FilterBlockType } from '../../../../filter-provider';
+import { FilterBlockType } from '../../../../filter-provider';
 import { useDesignable, removeNullCondition } from '../../../../schema-component';
 import {
   SchemaSettingsBlockTitleItem,
@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';
 import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { setDataLoadingModeSettingsItem, useDataLoadingMode } from '../details-multi/setDataLoadingModeSettingsItem';
+import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -139,7 +139,6 @@ export const tableBlockSettings = new SchemaSettings({
         const { form } = useFormBlockContext();
         const { service } = useTableBlockContext();
         const { dn } = useDesignable();
-        const dataLoadingMode = useDataLoadingMode();
         const onDataScopeSubmit = useCallback(
           ({ filter }) => {
             filter = removeNullCondition(filter);
@@ -148,13 +147,6 @@ export const tableBlockSettings = new SchemaSettings({
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
             const filters = service.params?.[1]?.filters || {};
-
-            if (dataLoadingMode === 'auto') {
-              service.run(
-                { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
-                { filters },
-              );
-            }
 
             dn.emit('patch', {
               schema: {

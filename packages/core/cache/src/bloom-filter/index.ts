@@ -1,3 +1,6 @@
+/**
+ * @experimental
+ */
 export interface BloomFilter {
   reserve(key: string, errorRate: number, capacity: number): Promise<void>;
   add(key: string, val: string): Promise<void>;

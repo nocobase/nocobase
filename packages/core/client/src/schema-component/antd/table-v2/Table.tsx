@@ -516,7 +516,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Input active />}
+            {inView || isIndex ? props.children : <Skeleton.Button active />}
           </td>
         );
       },
@@ -675,16 +675,12 @@ export const Table: any = withDynamicSchemaProps(
           overflow: hidden;
           .ant-table-wrapper {
             height: 100%;
-            overflow: hidden;
-            .ant-table-wrapper {
+            .ant-spin-nested-loading {
               height: 100%;
-              .ant-spin-nested-loading {
+              .ant-spin-container {
                 height: 100%;
-                .ant-spin-container {
-                  height: 100%;
-                  display: flex;
-                  flex-direction: column;
-                }
+                display: flex;
+                flex-direction: column;
               }
             }
           }

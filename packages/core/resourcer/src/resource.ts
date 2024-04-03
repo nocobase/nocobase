@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import Action, { ActionName, ActionType } from './action';
 import Middleware, { MiddlewareType } from './middleware';
-import { HandlerType, Resourcer } from './resourcer';
+import { HandlerType, ResourceManager } from './resourcer';
 
 export type ResourceType = 'single' | 'hasOne' | 'hasMany' | 'belongsTo' | 'belongsToMany';
 
@@ -50,7 +50,7 @@ export interface ResourceOptions {
 }
 
 export class Resource {
-  public readonly resourcer: Resourcer;
+  public readonly resourcer: ResourceManager;
 
   public readonly middlewares: Middleware[];
 
@@ -60,7 +60,7 @@ export class Resource {
 
   public readonly except: Array<ActionName>;
 
-  constructor(options: ResourceOptions, resourcer: Resourcer) {
+  constructor(options: ResourceOptions, resourcer: ResourceManager) {
     const { middleware, middlewares, actions = {}, only = [], except = [] } = options;
     this.options = options;
     this.resourcer = resourcer;

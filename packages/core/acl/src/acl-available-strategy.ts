@@ -7,6 +7,9 @@ export interface AvailableStrategyOptions {
   displayName?: string;
   actions?: false | string | string[];
   allowConfigure?: boolean;
+  /**
+   * @internal
+   */
   resource?: '*';
 }
 

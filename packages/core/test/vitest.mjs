@@ -60,8 +60,11 @@ const defineCommonConfig = () => {
       testTimeout: 300000,
       hookTimeout: 300000,
       silent: !!process.env.GITHUB_ACTIONS,
-      include: ['packages/**/src/**/__tests__/**/*.test.{ts,tsx}'],
+      include: [
+        'packages/**/src/**/__tests__/**/*.test.{ts,tsx}',
+      ],
       exclude: [
+        '**/demos/**',
         '**/node_modules/**',
         '**/dist/**',
         '**/lib/**',
@@ -83,8 +86,11 @@ const defineCommonConfig = () => {
       ],
       coverage: {
         provider: 'istanbul',
-        include: ['packages/**/src/**/*.{ts,tsx}'],
+        include: [
+          'packages/**/src/**/*.{ts,tsx}',
+        ],
         exclude: [
+          '**/demos/**',
           '**/swagger/**',
           '**/.dumi/**',
           '**/.umi/**',
@@ -94,31 +100,31 @@ const defineCommonConfig = () => {
           '**/e2e/**',
           '**/client.js',
           '**/server.js',
-          '**/*.d.ts',
-        ],
-      },
-    },
-  });
-};
+          '**/*.d.ts'
+        ]
+      }
+    }
+  })
+}
 
 function getExclude(isServer) {
   return [
     `packages/core/${isServer ? '' : '!'}(${CORE_CLIENT_PACKAGES.join('|')})/**/*`,
     `packages/**/src/${isServer ? 'client' : 'server'}/**/*`,
-  ];
+  ]
 }
 
 const defineServerConfig = () => {
   return vitestConfig({
     test: {
       setupFiles: resolve(__dirname, './setup/server.ts'),
-      exclude: getExclude(true),
+      exclude: getExclude(true)
     },
     coverage: {
-      exclude: getExclude(true),
-    },
-  });
-};
+      exclude: getExclude(true)
+    }
+  })
+}
 
 const defineClientConfig = () => {
   return vitestConfig({
@@ -138,14 +144,14 @@ const defineClientConfig = () => {
       },
       exclude: getExclude(false),
       coverage: {
-        exclude: getExclude(false),
-      },
-    },
-  });
-};
+        exclude: getExclude(false)
+      }
+    }
+  })
+}
 
 export const getFilterInclude = (isServer, isCoverage) => {
-  let filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
+  let filterFileOrDir = process.argv.slice(2).find(arg => !arg.startsWith('-'));
   if (!filterFileOrDir) return;
   const absPath = path.join(process.cwd(), filterFileOrDir);
   const isDir = fs.existsSync(absPath) && fs.statSync(absPath).isDirectory();
@@ -154,7 +160,7 @@ export const getFilterInclude = (isServer, isCoverage) => {
     return [filterFileOrDir];
   }
 
-  const suffix = isCoverage ? `**/*.{ts,tsx}` : `**/__tests__/**/*.{test,spec}.{ts,tsx}`;
+  const suffix = isCoverage ? `**/*.{ts,tsx}` : `**/__tests__/**/*.{test,spec}.{ts,tsx}`
 
   // 判断是否为包目录，如果不是包目录，则只测试当前目录
   const isPackage = fs.existsSync(path.join(absPath, 'package.json'));
@@ -170,10 +176,10 @@ export const getFilterInclude = (isServer, isCoverage) => {
 
   // 插件目录，区分 client 和 server
   return [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`];
-};
+}
 
 export const getReportsDirectory = (isServer) => {
-  let filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
+  let filterFileOrDir = process.argv.slice(2).find(arg => !arg.startsWith('-'));
   if (!filterFileOrDir) return;
   const isPackage = fs.existsSync(path.join(process.cwd(), filterFileOrDir, 'package.json'));
   if (isPackage) {
@@ -187,13 +193,11 @@ export const getReportsDirectory = (isServer) => {
 
     return reportsDirectory;
   }
-};
+}
 
 export const defineConfig = () => {
   const isServer = process.env.TEST_ENV === 'server-side';
-  const config = vitestConfig(
-    mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()),
-  );
+  const config = vitestConfig(mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()));
 
   const isCoverage = process.argv.includes('--coverage');
   if (!isCoverage) {
