@@ -155,9 +155,9 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
         <Row style={{ height: '100%' }} gutter={16} wrap={false}>
           <Col
             style={{
-              ...(props.associationFilterStyle || {}),
               width: 200,
               flex: '0 0 auto',
+              ...(props.associationFilterStyle || {}),
             }}
           >
             <RecursionField
