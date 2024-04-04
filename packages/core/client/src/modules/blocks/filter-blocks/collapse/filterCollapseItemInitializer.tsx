@@ -4,11 +4,7 @@ import { useOptionalFieldList } from '../../../../block-provider/hooks';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { useAssociatedFields } from '../../../../filter-provider/utils';
 
-/**
- * @deprecated
- */
-export const associationFilterFilterBlockInitializer = new SchemaInitializer({
-  name: 'AssociationFilter.FilterBlockInitializer',
+const commonOptions: any = {
   style: { marginTop: 16 },
   icon: 'SettingOutlined',
   title: '{{t("Configure fields")}}',
@@ -18,6 +14,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
       name: 'associationFields',
       title: '{{t("Association fields")}}',
       useChildren() {
+        const cm = useCollectionManager_deprecated();
         const associatedFields = useAssociatedFields();
         const children = associatedFields.map((field) => ({
           name: field.key,
@@ -34,7 +31,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
             'x-use-component-props': 'useAssociationFilterBlockProps',
             'x-component-props': {
               fieldNames: {
-                label: field.targetKey || 'id',
+                label: field.targetKey || cm.getCollection(field.target)?.getPrimaryKey() || 'id',
               },
             },
             properties: {},
@@ -77,6 +74,14 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
       },
     },
   ],
+};
+
+/**
+ * @deprecated
+ */
+export const associationFilterFilterBlockInitializer = new SchemaInitializer({
+  name: 'AssociationFilter.FilterBlockInitializer',
+  ...commonOptions,
 });
 
 /**
@@ -85,149 +90,13 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
  */
 export const filterCollapseItemInitializer_deprecated = new CompatibleSchemaInitializer({
   name: 'AssociationFilterInitializers',
-  style: { marginTop: 16 },
-  icon: 'SettingOutlined',
-  title: '{{t("Configure fields")}}',
-  items: [
-    {
-      type: 'itemGroup',
-      name: 'associationFields',
-      title: '{{t("Association fields")}}',
-      useChildren() {
-        const associatedFields = useAssociatedFields();
-        const cm = useCollectionManager_deprecated();
-        const children = associatedFields.map((field) => ({
-          name: field.key,
-          title: field.uiSchema?.title,
-          Component: 'AssociationFilterDesignerDisplayField',
-          schema: {
-            name: field.name,
-            title: field.uiSchema?.title,
-            type: 'void',
-            // 'x-designer': 'AssociationFilter.Item.Designer',
-            'x-toolbar': 'CollapseItemSchemaToolbar',
-            'x-settings': 'fieldSettings:FilterCollapseItem',
-            'x-component': 'AssociationFilter.Item',
-            'x-use-component-props': 'useAssociationFilterBlockProps',
-            'x-component-props': {
-              fieldNames: {
-                label: cm.getCollection(field.target)?.getPrimaryKey() || 'id',
-              },
-            },
-            properties: {},
-          },
-        }));
-        return children;
-      },
-    },
-    {
-      name: 'choicesFields',
-      type: 'itemGroup',
-      title: '{{t("Choices fields")}}',
-      hideIfNoChildren: true,
-      useChildren() {
-        const optionalList = useOptionalFieldList();
-        const optionalChildren = optionalList.map((field) => ({
-          name: field.key,
-          title: field.uiSchema.title,
-          Component: 'AssociationFilterDesignerDisplayField',
-          schema: {
-            name: field.name,
-            title: field.uiSchema.title,
-            interface: field.interface,
-            type: 'void',
-            // 'x-designer': 'AssociationFilter.Item.Designer',
-            'x-toolbar': 'CollapseItemSchemaToolbar',
-            'x-settings': 'fieldSettings:FilterCollapseItem',
-            'x-component': 'AssociationFilter.Item',
-            'x-use-component-props': 'useAssociationFilterBlockProps',
-            'x-component-props': {
-              fieldNames: {
-                label: field.name,
-              },
-            },
-            properties: {},
-          },
-        }));
-
-        return optionalChildren;
-      },
-    },
-  ],
+  ...commonOptions,
 });
 
 export const filterCollapseItemInitializer = new CompatibleSchemaInitializer(
   {
     name: 'filterCollapse:configureFields',
-    style: { marginTop: 16 },
-    icon: 'SettingOutlined',
-    title: '{{t("Configure fields")}}',
-    items: [
-      {
-        type: 'itemGroup',
-        name: 'associationFields',
-        title: '{{t("Association fields")}}',
-        useChildren() {
-          const associatedFields = useAssociatedFields();
-          const cm = useCollectionManager_deprecated();
-          const children = associatedFields.map((field) => ({
-            name: field.key,
-            title: field.uiSchema?.title,
-            Component: 'AssociationFilterDesignerDisplayField',
-            schema: {
-              name: field.name,
-              title: field.uiSchema?.title,
-              type: 'void',
-              // 'x-designer': 'AssociationFilter.Item.Designer',
-              'x-toolbar': 'CollapseItemSchemaToolbar',
-              'x-settings': 'fieldSettings:FilterCollapseItem',
-              'x-component': 'AssociationFilter.Item',
-              'x-use-component-props': 'useAssociationFilterBlockProps',
-              'x-component-props': {
-                fieldNames: {
-                  label: cm.getCollection(field.target)?.getPrimaryKey() || 'id',
-                },
-              },
-              properties: {},
-            },
-          }));
-          return children;
-        },
-      },
-      {
-        name: 'choicesFields',
-        type: 'itemGroup',
-        title: '{{t("Choices fields")}}',
-        hideIfNoChildren: true,
-        useChildren() {
-          const optionalList = useOptionalFieldList();
-          const optionalChildren = optionalList.map((field) => ({
-            name: field.key,
-            title: field.uiSchema.title,
-            Component: 'AssociationFilterDesignerDisplayField',
-            schema: {
-              name: field.name,
-              title: field.uiSchema.title,
-              interface: field.interface,
-              type: 'void',
-              // 'x-designer': 'AssociationFilter.Item.Designer',
-              'x-toolbar': 'CollapseItemSchemaToolbar',
-              'x-settings': 'fieldSettings:FilterCollapseItem',
-              'x-component': 'AssociationFilter.Item',
-              'x-use-component-props': 'useAssociationFilterBlockProps',
-              'x-component-props': {
-                fieldNames: {
-                  label: field.name,
-                },
-              },
-              properties: {},
-            },
-          }));
-
-          return optionalChildren;
-        },
-      },
-    ],
+    ...commonOptions,
   },
   filterCollapseItemInitializer_deprecated,
 );
