@@ -916,9 +916,11 @@
   "Separator": "分隔符",
   "Prefix": "前缀",
   "Suffix": "后缀",
-  "Multiply by":"乘以",
-  "Divide by":"除以",
-  "Scientifix notation":"科学计数法",
-  "Normal":"常规",
-  "Automatically generate default values":"随机生成默认值"
+  "Multiply by": "乘以",
+  "Divide by": "除以",
+  "Scientifix notation": "科学计数法",
+  "Normal": "常规",
+  "Automatically generate default values": "随机生成默认值",
+  "Refresh data on close": "关闭后刷新数据",
+  "Refresh data on action": "执行后刷新数据"
 }

@@ -130,7 +130,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
   return (
     //@ts-ignore
     <div className={actionDesignerCss} ref={buttonRef as React.Ref<HTMLButtonElement>}>
-      <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+      <ActionContextProvider value={{ ...ctx, fieldSchema, visible, setVisible }}>
         <CreateAction
           {...props}
           onClick={(collectionData) => {
