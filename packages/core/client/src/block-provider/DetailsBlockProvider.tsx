@@ -9,6 +9,9 @@ import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { useParsedFilter } from './hooks';
+import { useCollectionManager_deprecated } from '../collection-manager';
+import { useCollectionRecordData } from '../data-source';
+import { useDesignable } from '../schema-component';
 
 /**
  * @internal
@@ -67,6 +70,21 @@ const InternalDetailsBlockProvider = (props) => {
 };
 
 export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
+  const record = useCollectionRecordData();
+  const { association, dataSource } = props;
+  const { getCollection } = useCollectionManager_deprecated(dataSource);
+  const { __collection } = record || {};
+  const { designable } = useDesignable();
+  const collection = props.collection || getCollection(association, dataSource).name;
+  let detailFlag = true;
+  if (!designable && __collection) {
+    detailFlag = __collection === collection;
+  }
+
+  if (!detailFlag) {
+    return null;
+  }
+
   return (
     <TemplateBlockProvider>
       <BlockProvider name="details" {...props}>
