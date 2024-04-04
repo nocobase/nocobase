@@ -2,6 +2,7 @@ import { connect, mapReadPretty } from '@formily/react';
 import { InputNumber as AntdNumber, InputNumberProps } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
+import BigNumber from 'bignumber.js';
 
 type ComposedInputNumber = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
@@ -12,7 +13,7 @@ type ComposedInputNumber = React.ForwardRefExoticComponent<
 export const InputNumber: ComposedInputNumber = connect((props) => {
   const { onChange, ...others } = props;
   const handleChange = (v) => {
-    onChange(Number.isNaN(v) ? null : Number(v));
+    onChange(Number.isNaN(v) ? null : new BigNumber(v).toString());
   };
   return <AntdNumber onChange={handleChange} {...others} />;
 }, mapReadPretty(ReadPretty));
