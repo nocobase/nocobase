@@ -5,6 +5,7 @@ import type { InputNumberProps } from 'antd/es/input-number';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
+import BigNumber from 'bigNumber.js';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -20,11 +21,7 @@ const separators = {
   '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
 };
 //分隔符换算
-export function formatNumberWithSeparator(value, format = '0.00', step = 1, formatStyle) {
-  let number = value;
-  if (formatStyle) {
-    number = Number(value);
-  }
+export function formatNumberWithSeparator(number, format = '0.00', step = 1, formatStyle) {
   let formattedNumber = '';
 
   if (separators[format]) {
@@ -100,7 +97,7 @@ export function formatNumber(props) {
   const preciationData = toFixedByStep(unitData, step);
   let result;
   //分隔符换算
-  result = formatNumberWithSeparator(preciationData, separator, countDecimalPlaces(step), formatStyle);
+  result = formatNumberWithSeparator(new BigNumber(preciationData), separator, countDecimalPlaces(step), formatStyle);
   if (formatStyle === 'scientifix') {
     //科学计数显示
     result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
