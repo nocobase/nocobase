@@ -1158,12 +1158,12 @@ export const useAssociationFilterProps = () => {
 export const useOptionalFieldList = () => {
   const { currentFields = [] } = useCollection_deprecated();
 
-  return currentFields.filter((field) => isOptionalField(field) && field.uiSchema.enum);
+  return currentFields.filter((field) => isOptionalField(field));
 };
 
 const isOptionalField = (field) => {
   const optionalInterfaces = ['select', 'multipleSelect', 'checkbox', 'checkboxGroup', 'chinaRegion'];
-  return optionalInterfaces.includes(field.interface);
+  return optionalInterfaces.includes(field.interface) && field.uiSchema.enum;
 };
 
 export const useAssociationFilterBlockProps = () => {
@@ -1206,16 +1206,16 @@ export const useAssociationFilterBlockProps = () => {
 
   useEffect(() => {
     // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
-    if (!isOptionalField(fieldSchema)) {
+    if (!isOptionalField(collectionField)) {
       run();
     }
-  }, [labelKey, valueKey, JSON.stringify(field.componentProps?.params || {}), isOptionalField(fieldSchema)]);
+  }, [collectionField, labelKey, run, valueKey]);
 
   if (!collectionField) {
     return {};
   }
 
-  if (isOptionalField(fieldSchema)) {
+  if (isOptionalField(collectionField)) {
     const field = optionalFieldList.find((field) => field.name === fieldSchema.name);
     const operatorMap = {
       select: '$in',

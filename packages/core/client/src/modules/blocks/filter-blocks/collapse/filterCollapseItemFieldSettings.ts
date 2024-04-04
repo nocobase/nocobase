@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
+import { useCollectionManager } from '../../../../data-source/collection/CollectionManagerProvider';
 import { useCompile, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDefaultSortingRules } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
@@ -150,10 +151,10 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
               const { getField } = useCollection_deprecated();
               const collectionField =
                 getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-              const { getCollectionFields } = useCollectionManager_deprecated();
+              const cm = useCollectionManager();
               const compile = useCompile();
               const { dn } = useDesignable();
-              const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
+              const targetFields = collectionField?.target ? cm.getCollectionFields(collectionField?.target) : [];
               const options = targetFields
                 .filter((field) => !field?.target && field.type !== 'boolean')
                 .map((field) => ({
