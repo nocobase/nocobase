@@ -20,7 +20,11 @@ const separators = {
   '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
 };
 //分隔符换算
-export function formatNumberWithSeparator(number, format = '0.00', step = 1) {
+export function formatNumberWithSeparator(value, format = '0.00', step = 1, formatStyle) {
+  let number = value;
+  if (formatStyle) {
+    number = Number(value);
+  }
   let formattedNumber = '';
 
   if (separators[format]) {
@@ -96,7 +100,7 @@ export function formatNumber(props) {
   const preciationData = toFixedByStep(unitData, step);
   let result;
   //分隔符换算
-  result = formatNumberWithSeparator(preciationData, separator, countDecimalPlaces(step));
+  result = formatNumberWithSeparator(preciationData, separator, countDecimalPlaces(step), formatStyle);
   if (formatStyle === 'scientifix') {
     //科学计数显示
     result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
