@@ -3,6 +3,7 @@ import { CompatibleSchemaInitializer, useCollection_deprecated } from '@nocobase
 
 /**
  * @deprecated
+ * use `ganttActionInitializers` instead
  */
 export const GanttActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'GanttActionInitializers',

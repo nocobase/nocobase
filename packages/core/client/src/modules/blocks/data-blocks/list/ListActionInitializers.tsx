@@ -3,6 +3,7 @@ import { useCollection_deprecated } from '../../../../collection-manager';
 
 /**
  * @deprecated
+ * use `listActionInitializers` instead
  * 表单的操作配置
  */
 export const listActionInitializers_deprecated = new CompatibleSchemaInitializer({

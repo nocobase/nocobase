@@ -2,6 +2,7 @@ import { CompatibleSchemaInitializer } from '@nocobase/client';
 
 /**
  * @deprecated
+ * use `auditLogsTableActionInitializers` instead
  * 操作记录表格操作配置
  */
 export const auditLogsTableActionInitializers_deprecated = new CompatibleSchemaInitializer({

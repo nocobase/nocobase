@@ -3,6 +3,7 @@ import { NAMESPACE } from '../../locale';
 
 /**
  * @deprecated
+ * use `snapshotBlockInitializers` instead
  */
 export const snapshotBlockInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'SnapshotBlockInitializers',

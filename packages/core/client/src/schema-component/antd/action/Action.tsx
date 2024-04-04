@@ -27,6 +27,7 @@ import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useDataBlockRequest } from '../../../data-source';
 
 export const Action: ComposedAction = withDynamicSchemaProps(
   observer((props: any) => {
@@ -65,6 +66,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+    const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
 
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
     const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
@@ -75,7 +77,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const [btnHover, setBtnHover] = useState(popover);
-
+    const service = useDataBlockRequest();
     useEffect(() => {
       if (popover) {
         setBtnHover(true);
@@ -117,9 +119,16 @@ export const Action: ComposedAction = withDynamicSchemaProps(
 
         if (!disabled && aclCtx) {
           const onOk = () => {
-            onClick?.(e);
-            setVisible(true);
-            run();
+            if (onClick) {
+              onClick(e, () => {
+                if (refreshDataBlockRequest !== false) {
+                  service?.refresh?.();
+                }
+              });
+            } else {
+              setVisible(true);
+              run();
+            }
           };
           if (confirm?.content) {
             modal.confirm({

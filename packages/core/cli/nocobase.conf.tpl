@@ -23,19 +23,6 @@ server {
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
-    # 不缓存 HTML 文件
-    # location ~ \.html$ {
-    #   if_modified_since off;
-    #   expires off;
-    #   etag off;
-    # }
-
-    # # 缓存 JavaScript 和 CSS 文件
-    # location ~* \.(js|css)$ {
-    #   expires 365d;
-    #   add_header Cache-Control "public";
-    # }
-
     location {{publicPath}}storage/uploads/ {
         alias {{cwd}}/storage/uploads/;
         add_header Cache-Control "public";
@@ -51,6 +38,10 @@ server {
         if_modified_since off;
         expires off;
         etag off;
+        location ~* \.(js|css)$ {
+            expires 365d;
+            add_header Cache-Control "public";
+        }
     }
 
     location ^~ {{publicPath}}api/ {

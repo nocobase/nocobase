@@ -1,7 +1,11 @@
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
-import { ButtonEditor, SecondConFirm } from '../../../schema-component/antd/action/Action.Designer';
+import {
+  ButtonEditor,
+  SecondConFirm,
+  RefreshDataBlockRequest,
+} from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 
 export const disassociateActionSettings = new SchemaSettings({
@@ -24,6 +28,15 @@ export const disassociateActionSettings = new SchemaSettings({
         return {
           ...linkageRulesProps,
           collectionName: name,
+        };
+      },
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
         };
       },
     },

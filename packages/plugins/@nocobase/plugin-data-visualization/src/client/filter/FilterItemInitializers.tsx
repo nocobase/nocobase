@@ -9,15 +9,14 @@ import {
   CollectionFieldProvider,
   CollectionManagerProvider,
   CollectionProvider,
-  DEFAULT_DATA_SOURCE_KEY,
   CompatibleSchemaInitializer,
+  DEFAULT_DATA_SOURCE_KEY,
   FormDialog,
   HTMLEncode,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializerItem,
   gridRowColWrap,
-  useCollectionManager_deprecated,
   useDataSourceManager,
   useDesignable,
   useGlobalTheme,
@@ -311,6 +310,7 @@ const filterItemInitializers = {
 
 /**
  * @deprecated
+ * use `chartFilterItemInitializers` instead
  */
 export const chartFilterItemInitializers_deprecated = new CompatibleSchemaInitializer({
   ...filterItemInitializers,

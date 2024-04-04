@@ -230,7 +230,7 @@ export const useCollectionFieldsOptions = (dataSource: string, collectionName: s
   const fields = collectionFields.filter((v) => !excludes.includes(v.interface));
 
   const field2option = (field, depth, prefix?) => {
-    if (!field.interface) {
+    if (!field.interface || field.isForeignKey) {
       return;
     }
     const fieldInterface = fim.getFieldInterface(field.interface);
@@ -287,7 +287,7 @@ export const useCollectionFilterOptions = (dataSource: string, collection: strin
   return useMemo(() => {
     const fields = cm.getCollectionFields(collection || _collection);
     const field2option = (field, depth) => {
-      if (!field.interface) {
+      if (!field.interface || field.isForeignKey) {
         return;
       }
       const fieldInterface = fim.getFieldInterface(field.interface);

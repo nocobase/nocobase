@@ -84,6 +84,7 @@ const commonOptions = {
 
 /**
  * @deprecated
+ * use `tableSelectorInitializers` instead
  */
 export const tableSelectorInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'TableSelectorInitializers',

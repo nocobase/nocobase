@@ -1,15 +1,21 @@
 import { createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollectionManager_deprecated } from '../collection-manager';
+import { useTableBlockParams } from '../modules/blocks/data-blocks/table';
 import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useTableBlockParams } from '../modules/blocks/data-blocks/table';
-import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
+/**
+ * @internal
+ */
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
 
+/**
+ * @internal
+ */
 export function getIdsWithChildren(nodes) {
   const ids = [];
   if (nodes) {
@@ -79,6 +85,7 @@ const InternalTableBlockProvider = (props: Props) => {
 };
 
 /**
+ * @internal
  * 用于兼容旧版本的 schema，当不需要兼容时可直接移除该方法
  * @param props
  * @returns
@@ -138,6 +145,9 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   );
 });
 
+/**
+ * @internal
+ */
 export const useTableBlockContext = () => {
   return useContext(TableBlockContext);
 };

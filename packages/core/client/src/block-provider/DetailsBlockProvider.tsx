@@ -3,13 +3,19 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useParsedFilter } from './hooks';
-import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
+import { useParsedFilter } from './hooks';
+import { useCollectionManager_deprecated } from '../collection-manager';
+import { useCollectionRecordData } from '../data-source';
+import { useDesignable } from '../schema-component';
 
+/**
+ * @internal
+ */
 export const DetailsBlockContext = createContext<any>({});
 DetailsBlockContext.displayName = 'DetailsBlockContext';
 
@@ -64,6 +70,21 @@ const InternalDetailsBlockProvider = (props) => {
 };
 
 export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
+  const record = useCollectionRecordData();
+  const { association, dataSource } = props;
+  const { getCollection } = useCollectionManager_deprecated(dataSource);
+  const { __collection } = record || {};
+  const { designable } = useDesignable();
+  const collection = props.collection || getCollection(association, dataSource).name;
+  let detailFlag = true;
+  if (!designable && __collection) {
+    detailFlag = __collection === collection;
+  }
+
+  if (!detailFlag) {
+    return null;
+  }
+
   return (
     <TemplateBlockProvider>
       <BlockProvider name="details" {...props}>
@@ -74,7 +95,7 @@ export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
 });
 
 /**
- * @deprecated
+ * @internal
  */
 export const useDetailsBlockContext = () => {
   return useContext(DetailsBlockContext);
@@ -82,7 +103,7 @@ export const useDetailsBlockContext = () => {
 
 /**
  * @deprecated
- * 即将废弃，请用 useDetailsWithPaginationProps 或者 useDetailsProps
+ * use `useDetailsWithPaginationProps` or `useDetailsProps` instead
  * @returns
  */
 export const useDetailsBlockProps = () => {
