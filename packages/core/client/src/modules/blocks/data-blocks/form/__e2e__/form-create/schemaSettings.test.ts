@@ -9,7 +9,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2165, T2174, T3251, T3806, T3815 } from './templatesOfBug';
+import { T2165, T2174, T3251, T3806, T3815, T3871 } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
@@ -765,6 +765,22 @@ test.describe('creation form block schema settings', () => {
         .hover();
 
       await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
+    });
+
+    // https://nocobase.height.app/T-3871
+    test('should immediate effect when set default value', async ({ page, mockPage }) => {
+      await mockPage(T3871).goto();
+
+      // 1. 为 Nickname 设置默认值
+      await page.getByLabel('block-item-CollectionField-').getByRole('textbox').hover();
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+      await page.getByRole('menuitem', { name: 'Set default value' }).click();
+      await page.getByLabel('block-item-VariableInput-').getByRole('textbox').click();
+      await page.getByLabel('block-item-VariableInput-').getByRole('textbox').fill('abcd');
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+      // 2. 设置的 ‘abcd’ 应该立即显示在 Nickname 字段的输入框中
+      await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abcd');
     });
   });
 
