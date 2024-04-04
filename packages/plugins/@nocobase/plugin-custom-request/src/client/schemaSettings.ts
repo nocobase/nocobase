@@ -7,6 +7,7 @@ import {
   SecondConFirm,
   useCollection,
   useSchemaToolbar,
+  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import { CustomRequestACL, CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
 import { useFieldSchema } from '@formily/react';
@@ -51,6 +52,15 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
     {
       name: 'accessControl',
       Component: CustomRequestACL,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
+      },
     },
     {
       name: 'delete',

@@ -4,10 +4,8 @@ import {
   SchemaInitializerOpenModeSchemaItems,
   SchemaSettings,
   SchemaSettingsDivider,
-  SchemaSettingsItemGroup,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
-  useCompile,
   useDesignable,
   useSchemaToolbar,
 } from '@nocobase/client';

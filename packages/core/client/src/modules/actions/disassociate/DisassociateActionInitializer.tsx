@@ -16,6 +16,7 @@ export const DisassociateActionInitializer = (props) => {
         title: "{{t('Disassociate record')}}",
         content: "{{t('Are you sure you want to disassociate it?')}}",
       },
+      refreshDataBlockRequest: true,
     },
     'x-action-settings': {
       triggerWorkflows: [],

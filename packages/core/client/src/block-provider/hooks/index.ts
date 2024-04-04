@@ -189,7 +189,7 @@ export const useCreateActionProps = () => {
   const record = useCollectionRecord();
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
@@ -201,8 +201,6 @@ export const useCreateActionProps = () => {
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   const dataLoadingMode = useDataLoadingMode();
-
-  console.log('dataLoadingMode', dataLoadingMode);
 
   return {
     async onClick() {
@@ -226,9 +224,11 @@ export const useCreateActionProps = () => {
           updateAssociationValues,
         });
         setVisible?.(false);
+        setSubmitted?.(true);
+        setFormValueChanged?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
-        __parent?.service?.refresh?.();
+        // __parent?.service?.refresh?.();
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
           await resetFormCorrectly(form);
@@ -269,7 +269,7 @@ export const useCreateActionProps = () => {
 export const useAssociationCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, fieldSchema } = useActionContext();
+  const { setVisible, fieldSchema, setSubmitted } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
   const { fields, getField, getTreeParentField, name } = useCollection_deprecated();
@@ -352,6 +352,7 @@ export const useAssociationCreateActionProps = () => {
         actionField.data.data = data;
         __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted?.(true);
         if (!onSuccess?.successMessage) {
           return;
         }
@@ -517,7 +518,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { name, getField } = useCollection_deprecated();
 
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -558,7 +559,10 @@ export const useCustomizeUpdateActionProps = () => {
           ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
           : undefined,
       });
-      service?.refresh?.();
+      // service?.refresh?.();
+      if (callBack) {
+        callBack?.();
+      }
       if (!(resource instanceof TableFieldResource)) {
         __parent?.service?.refresh?.();
       }
@@ -670,7 +674,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           } finally {
             actionField.data.loading = false;
           }
-          service?.refresh?.();
+          // service?.refresh?.();
           if (!(resource instanceof TableFieldResource)) {
             __parent?.service?.refresh?.();
           }
@@ -805,7 +809,7 @@ export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
   const { fields, getField, name } = useCollection_deprecated();
@@ -881,8 +885,10 @@ export const useUpdateActionProps = () => {
             : undefined,
         });
         actionField.data.loading = false;
-        __parent?.service?.refresh?.();
+        // __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted?.(true);
+        setFormValueChanged?.(false);
         if (!onSuccess?.successMessage) {
           return;
         }
@@ -920,11 +926,11 @@ export const useUpdateActionProps = () => {
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, block, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const data = useParamsFromRecord();
   const actionSchema = useFieldSchema();
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
       await resource.destroy({
         filterByTk,
@@ -941,13 +947,18 @@ export const useDestroyActionProps = () => {
           ...service?.params?.[0],
           page: page - 1,
         });
-      } else {
-        service?.refresh?.();
       }
-
+      if (callBack) {
+        callBack?.();
+      }
+      //  else {
+      //   service?.refresh?.();
+      // }
+      setSubmitted?.(true);
       if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted?.(true);
       }
     },
   };
@@ -969,9 +980,9 @@ export const useRemoveActionProps = (associationName) => {
 export const useDisassociateActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, block, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       await resource.remove({
         values: [filterByTk],
       });
@@ -983,12 +994,15 @@ export const useDisassociateActionProps = () => {
           page: page - 1,
         });
       } else {
-        service?.refresh?.();
+        if (callBack) {
+          callBack?.();
+        }
       }
-
+      setSubmitted?.(true);
       if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
+        setFormValueChanged?.(false);
       }
     },
   };
@@ -1018,8 +1032,9 @@ export const useDetailPrintActionProps = () => {
 export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
+  const { setSubmitted } = useActionContext();
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
@@ -1032,7 +1047,11 @@ export const useBulkDestroyActionProps = () => {
       if (currentPage === totalPage) {
         service.params[0].page = currentPage - 1;
       }
-      service?.refresh?.();
+      if (callBack) {
+        callBack?.();
+      }
+      setSubmitted?.(true);
+      // service?.refresh?.();
     },
   };
 };

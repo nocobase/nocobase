@@ -12,6 +12,7 @@ export const PopupActionInitializer = (props) => {
     'x-component': props?.['x-component'] || 'Action.Link',
     'x-component-props': {
       openMode: 'drawer',
+      refreshDataBlockRequest: true,
     },
     properties: {
       drawer: {
