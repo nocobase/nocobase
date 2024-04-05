@@ -24,7 +24,7 @@ describe('InputNumber', () => {
 
     // empty value
     fireEvent.change(input, { target: { value: '' } });
-    expect(input.value).toBe(0);
+    expect(input.value).toBe('');
     expect(screen.queryByText('NaN')).toBeNull();
   });
 });
@@ -48,7 +48,7 @@ describe('InputNumber: addonBefore/addonAfter', () => {
 
     // empty value
     fireEvent.change(input, { target: { value: '' } });
-    expect(input.value).toBe(0);
+    expect(input.value).toBe('');
     expect(screen.queryByText('NaN')).toBeNull();
   });
 });
