@@ -9,14 +9,21 @@ type ComposedInputNumber = React.ForwardRefExoticComponent<
 > & {
   ReadPretty?: React.FC<InputNumberProps>;
 };
-
+function toSafeNumber(value) {
+  if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
+    return new BigNumber(value).toString();
+  } else {
+    return value;
+  }
+}
 export const InputNumber: ComposedInputNumber = connect((props) => {
   const { onChange, ...others } = props;
   const handleChange = (v) => {
-    if (Number.isNaN(v) || !v) {
+    if (Number.isNaN(v)) {
       onChange(null);
     } else {
-      onChange(new BigNumber(v).toString());
+      console.log(toSafeNumber(v));
+      onChange(toSafeNumber(v));
     }
   };
   return <AntdNumber onChange={handleChange} {...others} />;

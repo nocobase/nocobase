@@ -24,7 +24,7 @@ describe('InputNumber', () => {
 
     // empty value
     fireEvent.change(input, { target: { value: '' } });
-    expect(input.value).toBe('');
+    expect(input.value).toBe(0);
     expect(screen.queryByText('NaN')).toBeNull();
   });
 });
@@ -48,7 +48,7 @@ describe('InputNumber: addonBefore/addonAfter', () => {
 
     // empty value
     fireEvent.change(input, { target: { value: '' } });
-    expect(input.value).toBe('');
+    expect(input.value).toBe(0);
     expect(screen.queryByText('NaN')).toBeNull();
   });
 });
@@ -72,7 +72,7 @@ describe('InputNumber: High precision decimals', () => {
 
     // empty value
     fireEvent.change(input, { target: { value: '' } });
-    expect(input.value).toBe('');
+    expect(input.value).toBe(0);
     expect(screen.queryByText('NaN')).toBeNull();
   });
 });
