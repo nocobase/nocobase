@@ -8,7 +8,9 @@ import set from 'lodash/set';
 import React, { ComponentType, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
+import { useCurrentAppInfo } from '../../appInfo/CurrentAppInfoProvider';
 import { SchemaComponentContext } from '../context';
+import { addAppVersion } from './addAppVersion';
 
 interface CreateDesignableProps {
   current: Schema;
@@ -18,6 +20,10 @@ interface CreateDesignableProps {
   refresh?: () => void;
   onSuccess?: any;
   t?: any;
+  /**
+   * NocoBase 系统版本
+   */
+  appVersion?: string;
 }
 
 export function createDesignable(options: CreateDesignableProps) {
@@ -101,11 +107,16 @@ const translate = (v?: any) => v;
 export class Designable {
   current: Schema;
   options: CreateDesignableProps;
+  /**
+   * NocoBase 系统版本
+   */
+  appVersion: string;
   events = {};
 
   constructor(options: CreateDesignableProps) {
     this.options = options;
     this.current = options.current;
+    this.appVersion = options.appVersion;
   }
 
   get model() {
@@ -158,7 +169,7 @@ export class Designable {
         url: `/uiSchemas:insertAdjacent/${current['x-uid']}?position=${position}`,
         method: 'post',
         data: {
-          schema,
+          schema: addAppVersion(schema, this.appVersion),
           wrap,
         },
       });
@@ -701,6 +712,7 @@ export function useFindComponent() {
 
 // TODO
 export function useDesignable() {
+  const data = useCurrentAppInfo();
   const { designable, setDesignable, refresh, reset } = useContext(SchemaComponentContext);
   const schemaOptions = useContext(SchemaOptionsContext);
   const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
@@ -715,8 +727,8 @@ export function useDesignable() {
   const api = useAPIClient();
   const { t } = useTranslation();
   const dn = useMemo(() => {
-    return createDesignable({ t, api, refresh, current: fieldSchema, model: field });
-  }, [t, api, refresh, fieldSchema, field]);
+    return createDesignable({ t, api, refresh, current: fieldSchema, model: field, appVersion: data?.data?.version });
+  }, [t, api, refresh, fieldSchema, field, data?.data?.version]);
 
   useEffect(() => {
     dn.loadAPIClientEvents();
