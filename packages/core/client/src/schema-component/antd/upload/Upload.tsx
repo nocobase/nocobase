@@ -7,12 +7,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useProps } from '../../hooks/useProps';
 import { ReadPretty } from './ReadPretty';
 import { isImage, isPdf, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { useProps } from '../../hooks/useProps';
 
 export const Upload: ComposedUpload = connect(
   (props: UploadProps) => {
