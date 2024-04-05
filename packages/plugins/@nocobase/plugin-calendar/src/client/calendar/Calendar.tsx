@@ -105,7 +105,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
       };
 
       if (cron === 'every_week') {
-        const nextStart = start
+        let nextStart = start
           .clone()
           .year(startDate.year())
           .month(startDate.month())
@@ -115,7 +115,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
           if (push(nextStart.clone())) {
             break;
           }
-          nextStart.add(1, 'week');
+          nextStart = nextStart.add(1, 'week');
         }
       } else if (cron === 'every_month') {
         push(start.clone().year(dateM.year()).month(dateM.month()));
@@ -142,7 +142,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
       }
     });
     return events;
-  }, [dataSource, fieldNames, date, view]);
+  }, [dataSource, fieldNames.start, fieldNames.end, fieldNames.id, fieldNames.title, date, view, t]);
 };
 
 const CalendarRecordViewer = (props) => {
