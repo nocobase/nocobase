@@ -141,15 +141,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       description: `{{t( "Filter data based on the specific field, with the requirement that the field value must be unique.")}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
-      'x-reactions': (field) => {
-        const { fields } = field.form.values;
-        field.dataSource = fields?.map((item: any) => {
-          return {
-            label: item.uiSchema?.title || item.name,
-            value: item.name,
-          };
-        });
-      },
+      'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
     },
     ...getConfigurableProperties('category', 'description'),
   };
