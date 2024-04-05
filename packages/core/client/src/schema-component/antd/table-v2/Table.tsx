@@ -3,18 +3,18 @@ import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
-import { useCreation } from 'ahooks';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
+import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
@@ -25,14 +25,13 @@ import {
   useTableBlockContext,
   useTableSelectorContext,
 } from '../../../';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
-import { useInView } from 'react-intersection-observer';
 
 const MemoizedAntdTable = React.memo(AntdTable);
 
@@ -101,7 +100,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           width: 200,
           ...s['x-component-props'],
           render: (v, record) => {
-            if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
+            // 这行代码会导致这里的测试不通过：packages/core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaInitializer.test.ts:189
+            // if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
