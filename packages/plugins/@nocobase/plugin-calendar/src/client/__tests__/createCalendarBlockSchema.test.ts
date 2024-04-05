@@ -55,7 +55,7 @@ describe('createCalendarBlockSchema', () => {
                         "type": "void",
                         "x-component": "Tabs",
                         "x-component-props": {},
-                        "x-initializer": "TabPaneInitializers",
+                        "x-initializer": "popup:addTab",
                         "x-initializer-props": {
                           "gridInitializer": "popup:common:addBlock",
                         },
