@@ -113,6 +113,7 @@ import {
   recordBlockInitializers_deprecated,
   subTableActionInitializers,
   subTableActionInitializers_deprecated,
+  tabPaneInitializers,
   tabPaneInitializersForBulkEditFormBlock,
   tabPaneInitializersForRecordBlock,
   tabPaneInitializers_deprecated,
@@ -225,6 +226,7 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(tableSelectorInitializers_deprecated);
     this.app.schemaInitializerManager.add(tableSelectorInitializers);
     this.app.schemaInitializerManager.add(tabPaneInitializers_deprecated);
+    this.app.schemaInitializerManager.add(tabPaneInitializers);
     this.app.schemaInitializerManager.add(tabPaneInitializersForRecordBlock);
     this.app.schemaInitializerManager.add(tabPaneInitializersForBulkEditFormBlock);
     this.app.schemaInitializerManager.add(menuItemInitializer_deprecated);
