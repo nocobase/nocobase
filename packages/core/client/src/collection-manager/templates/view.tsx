@@ -112,7 +112,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
     fields: {
       type: 'array',
       'x-component': PreviewFields,
-      'x-visible': '{{ createOnly }}',
+      'x-hidden': '{{ !createOnly }}',
       'x-reactions': {
         dependencies: ['name'],
         fulfill: {
@@ -123,7 +123,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
     },
     preview: {
-      type: 'object',
+      type: 'void',
       'x-visible': '{{ createOnly }}',
       'x-component': PreviewTable,
       'x-reactions': {
@@ -135,7 +135,14 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         },
       },
     },
-
+    filterTargetKey: {
+      title: `{{ t("Filter target key")}}`,
+      type: 'single',
+      description: `{{t( "Filter data based on the specific field, with the requirement that the field value must be unique.")}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
+    },
     ...getConfigurableProperties('category', 'description'),
   };
 }

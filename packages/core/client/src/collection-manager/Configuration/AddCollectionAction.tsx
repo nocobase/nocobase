@@ -179,7 +179,6 @@ export const AddCollectionAction = (props) => {
       items,
     };
   }, [category, items]);
-
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
