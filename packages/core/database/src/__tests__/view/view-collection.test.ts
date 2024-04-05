@@ -530,6 +530,7 @@ describe('create view', () => {
           source: 'posts.user',
         },
       ],
+      schema: db.inDialect('postgres') ? 'public' : undefined,
     });
 
     const post = await ViewCollection.repository.findOne({
