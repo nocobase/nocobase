@@ -40,6 +40,27 @@ describe('string operator', () => {
     expect(u1Res).toBeNull();
   });
 
+  it('should query with include operator with array values', async () => {
+    await db.getRepository('users').create({
+      values: [
+        {
+          name: 'u1',
+        },
+        {
+          name: 'u2',
+        },
+      ],
+    });
+
+    const res = await db.getRepository('users').find({
+      filter: {
+        'name.$includes': ['u1', 'u2'],
+      },
+    });
+
+    expect(res.length).toEqual(2);
+  });
+
   it('should query with include operator', async () => {
     const u1 = await db.getRepository('users').create({
       values: {
