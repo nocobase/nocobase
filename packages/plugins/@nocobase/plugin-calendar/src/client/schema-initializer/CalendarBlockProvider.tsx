@@ -8,7 +8,7 @@ import {
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import _ from 'lodash';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useCalendarBlockParams } from '../hooks/useCalendarBlockParams';
 
 export const CalendarBlockContext = createContext<any>({});
@@ -57,14 +57,17 @@ const useCompatCalendarBlockParams = (props) => {
   }
 };
 
-export const CalendarBlockProvider = withDynamicSchemaProps((props) => {
-  const params = useCompatCalendarBlockParams(props);
-  return (
-    <BlockProvider name="calendar" {...props} params={params}>
-      <InternalCalendarBlockProvider {...props} />
-    </BlockProvider>
-  );
-});
+export const CalendarBlockProvider = withDynamicSchemaProps(
+  (props) => {
+    const params = useCompatCalendarBlockParams(props);
+    return (
+      <BlockProvider name="calendar" {...props} params={params}>
+        <InternalCalendarBlockProvider {...props} />
+      </BlockProvider>
+    );
+  },
+  { displayName: 'CalendarBlockProvider' },
+);
 
 export const useCalendarBlockContext = () => {
   return useContext(CalendarBlockContext);
