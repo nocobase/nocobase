@@ -325,13 +325,15 @@ export class Collection<
         this.db.logger.warn(
           `source collection "${sourceCollectionName}" not found for field "${name}" at collection "${this.name}"`,
         );
+        return null;
       } else {
         const sourceField = sourceCollection.fields.get(sourceFieldName);
 
         if (!sourceField) {
           this.db.logger.warn(
-            `source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}"`,
+            `Source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}". Source collection: "${sourceCollectionName}"`,
           );
+          return null;
         } else {
           options = { ...lodash.omit(sourceField.options, ['name', 'primaryKey']), ...options };
         }

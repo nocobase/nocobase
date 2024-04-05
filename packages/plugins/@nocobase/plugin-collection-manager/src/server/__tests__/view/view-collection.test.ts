@@ -149,6 +149,101 @@ describe('view collection', function () {
     }
   });
 
+  it('should load view collection belongs to field', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'hasMany',
+            name: 'posts',
+            target: 'posts',
+            foreignKey: 'userId',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+            foreignKey: 'userId',
+            target: 'users',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('users').create({
+      values: [
+        {
+          name: 'u1',
+          posts: [
+            {
+              title: 'p1',
+            },
+          ],
+        },
+      ],
+    });
+
+    const Post = db.getCollection('posts');
+
+    const viewName = `test_view_${uid(6)}`;
+    await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
+
+    const viewSQL = `
+       CREATE VIEW ${viewName} as SELECT users.* FROM ${Post.quotedTableName()} as users
+    `;
+
+    await db.sequelize.query(viewSQL);
+
+    await collectionRepository.create({
+      values: {
+        name: viewName,
+        view: true,
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+            source: 'posts.title',
+          },
+          {
+            name: 'user',
+            type: 'belongsTo',
+            source: 'posts.user',
+          },
+        ],
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+      },
+      context: {},
+    });
+
+    // recall loadFields
+    await app.runCommand('restart');
+
+    db = app.db;
+
+    const viewCollection = db.getCollection(viewName);
+    await viewCollection.repository.find({
+      appends: ['user'],
+    });
+  });
+
   it('should use view collection as through collection', async () => {
     const User = await collectionRepository.create({
       values: {
@@ -167,8 +262,6 @@ describe('view collection', function () {
     });
 
     const UserCollection = db.getCollection('users');
-
-    console.log(UserCollection);
 
     await db.getRepository('users').create({
       values: [{ name: 'u1' }, { name: 'u2' }],
