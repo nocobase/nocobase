@@ -72,7 +72,7 @@ describe('InputNumber: High precision decimals', () => {
 
     // empty value
     fireEvent.change(input, { target: { value: '' } });
-    expect(input.value).toBe(0);
+    expect(input.value).toBe('');
     expect(screen.queryByText('NaN')).toBeNull();
   });
 });
