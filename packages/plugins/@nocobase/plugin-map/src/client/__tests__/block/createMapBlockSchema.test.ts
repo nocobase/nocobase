@@ -55,7 +55,7 @@ test('createMapBlockSchema should return an object with expected properties', ()
                   "type": "void",
                   "x-component": "Tabs",
                   "x-component-props": {},
-                  "x-initializer": "TabPaneInitializers",
+                  "x-initializer": "popup:addTab",
                 },
               },
               "title": "{{ t("View record") }}",
