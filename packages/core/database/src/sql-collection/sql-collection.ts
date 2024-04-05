@@ -18,6 +18,17 @@ export class SqlCollection extends Collection {
     return undefined;
   }
 
+  get filterTargetKey() {
+    const targetKey = this.options?.filterTargetKey || 'id';
+    if (targetKey && this.model.getAttributes()[targetKey]) {
+      return targetKey;
+    }
+    if (this.model.primaryKeyAttributes.length > 1) {
+      return null;
+    }
+    return this.model.primaryKeyAttribute;
+  }
+
   modelInit() {
     const { autoGenId, sql } = this.options;
     const model = class extends SQLModel {};
