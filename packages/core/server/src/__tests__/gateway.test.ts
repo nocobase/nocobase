@@ -196,12 +196,16 @@ describe('gateway', () => {
           plugins: ['nocobase'],
         });
         await waitSecond();
+
         await app.runAsCLI(['install'], {
           from: 'user',
+          throwError: true,
         });
+
         await app.runAsCLI(['start'], {
           from: 'user',
         });
+
         await waitSecond();
         clearMessages();
       });

@@ -24,6 +24,9 @@ export const createLogger = (options: LoggerOptions) => {
   return winston.createLogger(winstonOptions);
 };
 
+/**
+ * @internal
+ */
 export const createConsoleLogger = (options?: winston.LoggerOptions) => {
   const { format, ...rest } = options || {};
   return winston.createLogger({

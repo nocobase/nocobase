@@ -2,6 +2,7 @@ import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollection_deprecated } from '../collection-manager';
 import { CollectionRecord, useCollectionParentRecordData, useCollectionRecord } from '../data-source';
 import { RecordProvider, useRecord } from '../record-provider';
@@ -10,7 +11,6 @@ import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
-import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 
 export const FormBlockContext = createContext<{
   form?: any;
@@ -76,6 +76,7 @@ const InternalFormBlockProvider = (props) => {
 };
 
 /**
+ * @internal
  * 获取表单区块的类型：update 表示是表单编辑区块，create 表示是表单新增区块
  * @returns
  */
@@ -128,10 +129,17 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
   );
 });
 
+/**
+ * @internal
+ * @returns
+ */
 export const useFormBlockContext = () => {
   return useContext(FormBlockContext);
 };
 
+/**
+ * @internal
+ */
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
   const record = useRecord();
@@ -169,6 +177,9 @@ const RenderChildrenWithDataTemplates = ({ form }) => {
   );
 };
 
+/**
+ * @internal
+ */
 export const findFormBlock = (schema: Schema) => {
   while (schema) {
     if (schema['x-decorator'] === 'FormBlockProvider') {

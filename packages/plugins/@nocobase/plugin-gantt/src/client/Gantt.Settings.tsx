@@ -10,7 +10,6 @@ import {
   useCollection,
   useCollection_deprecated,
   useCompile,
-  useDataLoadingMode,
   useDesignable,
   useFormBlockContext,
 } from '@nocobase/client';
@@ -206,9 +205,7 @@ export const oldGanttSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
-        const { service } = useGanttBlockContext();
         const { dn } = useDesignable();
-        const dataLoadingMode = useDataLoadingMode();
         return {
           collectionName: name,
           defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
@@ -219,10 +216,6 @@ export const oldGanttSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-
-            if (dataLoadingMode === 'auto') {
-              service.run({ ...service.params?.[0], filter });
-            }
 
             dn.emit('patch', {
               schema: {
@@ -452,9 +445,7 @@ export const ganttSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
-        const { service } = useGanttBlockContext();
         const { dn } = useDesignable();
-        const dataLoadingMode = useDataLoadingMode();
         return {
           collectionName: name,
           defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
@@ -465,10 +456,6 @@ export const ganttSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-
-            if (dataLoadingMode === 'auto') {
-              service.run({ ...service.params?.[0], filter });
-            }
 
             dn.emit('patch', {
               schema: {

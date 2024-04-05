@@ -1,6 +1,11 @@
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { ButtonEditor, RemoveButton, SecondConFirm } from '../../../schema-component/antd/action/Action.Designer';
+import {
+  ButtonEditor,
+  RemoveButton,
+  SecondConFirm,
+  RefreshDataBlockRequest,
+} from '../../../schema-component/antd/action/Action.Designer';
 
 export const bulkDeleteActionSettings = new SchemaSettings({
   name: 'actionSettings:bulkDelete',
@@ -16,6 +21,15 @@ export const bulkDeleteActionSettings = new SchemaSettings({
     {
       name: 'secondConFirm',
       Component: SecondConFirm,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
+      },
     },
     {
       name: 'remove',

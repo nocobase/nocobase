@@ -68,7 +68,7 @@ export class DualAxes extends G2PlotChart {
   getProps({ data, general, advanced, fieldProps }: RenderProps) {
     const props = super.getProps({ data, general, advanced, fieldProps });
     return {
-      ...lodash.omit(props, ['legend', 'tooltip']),
+      ...lodash.omit(props, ['legend', 'tooltip', 'yField']),
       children:
         props.yField?.map((yField: string, index: number) => {
           return {

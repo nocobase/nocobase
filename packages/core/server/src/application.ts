@@ -48,6 +48,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
+import validateFilterParams from './middlewares/validate-filter-params';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -230,6 +231,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._logger;
   }
 
+  get resourceManager() {
+    return this.mainDataSource.resourceManager;
+  }
+
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link #resourceManager} instead.
+   * @deprecated
+   */
   get resourcer() {
     return this.mainDataSource.resourceManager;
   }
@@ -412,20 +422,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.resourcer.define()} instead.
+   * Use {@link #this.resourceManager.define()} instead.
    * @deprecated
    */
   resource(options: ResourceOptions) {
-    return this.resourcer.define(options);
+    return this.resourceManager.define(options);
   }
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.resourcer.registerActions()} instead.
+   * Use {@link #this.resourceManager.registerActionHandlers()} instead.
    * @deprecated
    */
   actions(handlers: any, options?: ActionsOptions) {
-    return this.resourcer.registerActions(handlers);
+    return this.resourceManager.registerActionHandlers(handlers);
   }
 
   command(name: string, desc?: string, opts?: CommandOptions): AppCommand {
@@ -1041,7 +1051,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._i18n = createI18n(options);
     this.context.db = this.db;
 
-    this.context.resourcer = this.resourcer;
+    /**
+     * This method is deprecated and should not be used.
+     * Use {@link #this.context.resourceManager} instead.
+     * @deprecated
+     */
+    this.context.resourcer = this.resourceManager;
+    this.context.resourceManager = this.resourceManager;
     this.context.cacheManager = this._cacheManager;
     this.context.cache = this._cache;
 
@@ -1064,17 +1080,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       ...(this.options.authManager || {}),
     });
 
-    this.resource({
+    this.resourceManager.define({
       name: 'auth',
       actions: authActions,
     });
 
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
-    this.resourcer.use(this._authManager.middleware(), { tag: 'auth' });
-
-    if (this.options.acl !== false) {
-      this.resourcer.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
-    }
+    this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     this._locales = new Locale(createAppProxy(this));
 
@@ -1099,10 +1111,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       database: this.createDatabase(options),
       acl: createACL(),
       resourceManager: createResourcer(options),
+      useACL: options.acl,
     });
 
     this._dataSourceManager = new DataSourceManager();
 
+    // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
   }
 

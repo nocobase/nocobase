@@ -21,17 +21,24 @@ export class PluginAPIKeysServer extends Plugin {
   }
 
   async load() {
-    this.app.resourcer.use(async (ctx, next) => {
-      const { resourceName, actionName } = ctx.action;
-      if (resourceName === this.resourceName && ['list', 'destroy'].includes(actionName)) {
-        ctx.action.mergeParams({
-          filter: {
-            createdById: ctx.auth.user.id,
-          },
-        });
-      }
-      await next();
-    });
+    this.app.resourcer.use(
+      async (ctx, next) => {
+        const { resourceName, actionName } = ctx.action;
+        if (resourceName === this.resourceName && ['list', 'destroy'].includes(actionName)) {
+          ctx.action.mergeParams({
+            filter: {
+              createdById: ctx.auth.user.id,
+            },
+          });
+        }
+        await next();
+      },
+      {
+        group: 'apiKeys',
+        before: 'acl',
+        after: 'auth',
+      },
+    );
   }
 }
 

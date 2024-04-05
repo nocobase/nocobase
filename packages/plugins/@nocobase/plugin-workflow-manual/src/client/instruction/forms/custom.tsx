@@ -95,10 +95,7 @@ function CustomFormBlockInitializer() {
             [uid()]: {
               type: 'void',
               'x-component': 'FormV2',
-              'x-component-props': {
-                // disabled / read-pretty / initialValues
-                useProps: '{{ useFormBlockProps }}',
-              },
+              'x-use-component-props': 'useFormBlockProps',
               properties: {
                 grid: {
                   type: 'void',
@@ -343,6 +340,7 @@ const CustomItemsComponent = (props) => {
 
 /**
  * @deprecated
+ * use `addCustomFormField` instead
  */
 export const addCustomFormField_deprecated = new CompatibleSchemaInitializer({
   name: 'AddCustomFormField',

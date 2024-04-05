@@ -92,7 +92,7 @@ export const useImportStartAction = () => {
   const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
   const form = useForm();
-  const { setVisible } = useActionContext();
+  const { setVisible, fieldSchema } = useActionContext();
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   return {
     async run() {

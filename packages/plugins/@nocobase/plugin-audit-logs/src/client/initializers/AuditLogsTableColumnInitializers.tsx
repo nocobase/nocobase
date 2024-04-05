@@ -46,6 +46,7 @@ const AssociatedFields = () => {
 
 /**
  * @deprecated
+ * use `auditLogsTableColumnInitializers` instead
  */
 export const auditLogsTableColumnInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'AuditLogsTableColumnInitializers',

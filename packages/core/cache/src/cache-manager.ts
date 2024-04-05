@@ -30,7 +30,13 @@ export class CacheManager {
       close?: (store: Store) => Promise<void>;
     }
   >();
+  /**
+   * @internal
+   */
   storeTypes = new Map<string, StoreOptions>();
+  /**
+   * @internal
+   */
   caches = new Map<string, Cache>();
 
   constructor(options?: CacheManagerOptions) {
@@ -122,6 +128,9 @@ export class CacheManager {
     await Promise.all(promises);
   }
 
+  /**
+   * @experimental
+   */
   async createBloomFilter(options?: { store?: string }): Promise<BloomFilter> {
     const name = 'bloom-filter';
     const { store = this.defaultStore } = options || {};

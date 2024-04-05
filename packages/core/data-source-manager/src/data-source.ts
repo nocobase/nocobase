@@ -1,9 +1,8 @@
 import { ACL } from '@nocobase/acl';
-import { getNameByParams, parseRequest } from '@nocobase/resourcer';
+import { ResourceManager, getNameByParams, parseRequest } from '@nocobase/resourcer';
 import EventEmitter from 'events';
 import compose from 'koa-compose';
 import { loadDefaultActions } from './load-default-actions';
-import { ResourceManager } from './resource-manager';
 import { ICollectionManager } from './types';
 
 export type DataSourceOptions = any;
@@ -62,13 +61,19 @@ export abstract class DataSource extends EventEmitter {
       if (this.resourceManager.isDefined(resourceName)) {
         return next();
       }
-      // 如果经过加载后是已经定义的表
-      if (!this.collectionManager.hasCollection(resourceName)) {
+
+      const splitResult = resourceName.split('.');
+
+      const collectionName = splitResult[0];
+
+      if (!this.collectionManager.hasCollection(collectionName)) {
         return next();
       }
+
       this.resourceManager.define({
         name: resourceName,
       });
+
       return next();
     };
   }
@@ -86,7 +91,7 @@ export abstract class DataSource extends EventEmitter {
         return this.collectionManager.getRepository(resourceName, resourceOf);
       };
 
-      return compose([this.collectionToResourceMiddleware(), this.resourceManager.restApiMiddleware()])(ctx, next);
+      return compose([this.collectionToResourceMiddleware(), this.resourceManager.middleware()])(ctx, next);
     };
   }
 

@@ -976,6 +976,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: BigInt(Number.MAX_SAFE_INTEGER),
           });
+
           expect(test.get('result')).toBe(`${Number.MAX_SAFE_INTEGER}`);
         });
       });

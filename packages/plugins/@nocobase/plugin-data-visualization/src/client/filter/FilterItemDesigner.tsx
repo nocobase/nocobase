@@ -14,6 +14,10 @@ import {
   SchemaSettingsSelectItem,
   CollectionFieldOptions_deprecated,
   DEFAULT_DATA_SOURCE_KEY,
+  useIsAssociationField,
+  SchemaSettingsDataScope,
+  removeNullCondition,
+  useFormBlockContext,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
@@ -299,6 +303,37 @@ const EditTitleField = () => {
   ) : null;
 };
 
+const EditDataScope: React.FC = () => {
+  const { dn } = useDesignable();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const dataSource = fieldSchema['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
+  const { form } = useFormBlockContext();
+  const { cm } = useChartDataSource(dataSource);
+  const collectionField = cm.getCollectionField(fieldSchema['x-collection-field']);
+  if (!collectionField) {
+    return null;
+  }
+  return (
+    <SchemaSettingsDataScope
+      form={form}
+      defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
+      collectionName={collectionField.target}
+      onSubmit={({ filter }) => {
+        filter = removeNullCondition(filter);
+        _.set(field.componentProps, 'service.params.filter', filter);
+        fieldSchema['x-component-props'] = field.componentProps;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': field.componentProps,
+          },
+        });
+      }}
+    />
+  );
+};
+
 export const ChartFilterItemDesigner: React.FC = () => {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getField } = useCollection_deprecated();
@@ -310,6 +345,7 @@ export const ChartFilterItemDesigner: React.FC = () => {
   const isCustom = fieldName.startsWith('custom.');
   const hasProps = getPropsSchemaByComponent(fieldSchema['x-component']);
   const originalTitle = useCollectionJoinFieldTitle(dataSource, fieldName);
+  const isAssociationField = useIsAssociationField();
   return (
     <GeneralSchemaDesigner disableInitializer>
       {!isCustom && (
@@ -328,6 +364,7 @@ export const ChartFilterItemDesigner: React.FC = () => {
       {!isCustom && <EditOperator />}
       <EditTitleField />
       <EditDefaultValue />
+      {isAssociationField && <EditDataScope />}
       {collectionField ? <SchemaSettingsDivider /> : null}
       <SchemaSettingsRemove
         key="remove"

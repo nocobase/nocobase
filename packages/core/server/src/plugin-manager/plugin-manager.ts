@@ -815,7 +815,16 @@ export class PluginManager {
     } else {
       await this.upgradeByNpm(options as any);
     }
-    await this.app.upgrade();
+    const file = resolve(process.cwd(), 'storage/app-upgrading');
+    await fs.promises.writeFile(file, '', 'utf-8');
+    // await this.app.upgrade();
+    if (process.env.IS_DEV_CMD) {
+      await tsxRerunning();
+    } else {
+      await execa('yarn', ['nocobase', 'pm2-restart'], {
+        env: process.env,
+      });
+    }
   }
 
   /**

@@ -7,7 +7,7 @@ export const getAntChart = (Component: React.FC<any>) => (props: any) => {
   const [height, setHeight] = React.useState<number>(0);
   useEffect(() => {
     const el = chartRef.current;
-    if (!el || service.loading === true) {
+    if (!el || service.loading === true || props.height) {
       return;
     }
     const observer = new ResizeObserver((entries) => {
@@ -17,10 +17,10 @@ export const getAntChart = (Component: React.FC<any>) => (props: any) => {
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [service.loading]);
+  }, [service.loading, props.height]);
   return (
-    <div ref={chartRef} style={height ? { height: `${height}px` } : {}}>
-      <Component {...props} {...(height ? { height } : {})} />
+    <div ref={chartRef} style={height ? { height: `${props.height || height}px` } : {}}>
+      <Component {...props} {...(height ? { height: props.height || height } : {})} />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { SchemaInitializerChildren } from '../../../../application/schema-initializer/components/SchemaInitializerChildren';
 import { useCompile } from '../../../../schema-component';
 import {
   gridRowColWrap,
@@ -8,7 +9,6 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../../../../schema-initializer/utils';
-import { SchemaInitializerChildren } from '../../../../application/schema-initializer/components/SchemaInitializerChildren';
 
 const ParentCollectionFields = () => {
   const inheritFields = useInheritsFormItemInitializerFields();
@@ -47,7 +47,7 @@ const AssociatedFields = () => {
 
 /**
  * @deprecated
- * 已弃用，请使用 readPrettyFormItemInitializers 代替
+ * use `readPrettyFormItemInitializers` instead
  */
 export const readPrettyFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ReadPrettyFormItemInitializers',

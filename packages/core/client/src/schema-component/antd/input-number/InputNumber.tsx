@@ -12,8 +12,7 @@ type ComposedInputNumber = React.ForwardRefExoticComponent<
 export const InputNumber: ComposedInputNumber = connect((props) => {
   const { onChange, ...others } = props;
   const handleChange = (v) => {
-    const result = parseFloat(v);
-    onChange(Number.isNaN(result) ? null : result);
+    onChange(Number.isNaN(v) ? null : v);
   };
   return <AntdNumber onChange={handleChange} {...others} />;
 }, mapReadPretty(ReadPretty));

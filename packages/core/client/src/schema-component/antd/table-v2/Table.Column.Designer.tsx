@@ -21,6 +21,7 @@ import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettings
 import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
 import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
+import _ from 'lodash';
 
 export const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -234,11 +235,11 @@ export const TableColumnDesigner = (props) => {
           value={fieldNames?.['label']}
           onChange={(label) => {
             const fieldNames = {
-              ...collectionField?.uiSchema?.['x-component-props']['fieldNames'],
+              ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
               ...fieldSchema?.['x-component-props']?.['fieldNames'],
               label,
             };
-            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            _.set(fieldSchema, 'x-component-props.fieldNames', fieldNames);
             const path = field.path?.splice(field.path?.length - 1, 1);
             field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
               f.componentProps.fieldNames = fieldNames;

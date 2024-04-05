@@ -36,7 +36,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const localVariables = useLocalVariables();
 
   return {
-    async onClick() {
+    async onClick(e, callBack) {
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -98,7 +98,10 @@ export const useCustomizeBulkUpdateActionProps = () => {
           } finally {
             actionField.data.loading = false;
           }
-          service?.refresh?.();
+          if (callBack) {
+            callBack?.();
+          }
+          // service?.refresh?.();
           if (!(resource instanceof TableFieldResource)) {
             __parent?.service?.refresh?.();
           }
