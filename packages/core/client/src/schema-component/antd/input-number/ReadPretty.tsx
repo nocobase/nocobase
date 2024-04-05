@@ -20,7 +20,7 @@ const separators = {
   '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
 };
 //分隔符换算
-export function formatNumberWithSeparator(value, format = '0.00', step = 1, formatStyle) {
+export function formatNumberWithSeparator(value, format = '0.00', step = 1, formatStyle?) {
   let number = value;
   if (formatStyle) {
     number = Number(value);
