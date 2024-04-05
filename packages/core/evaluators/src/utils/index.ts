@@ -11,7 +11,7 @@ export function appendArrayColumn(scope, key) {
     const path = paths[p];
     const isIndex = path.match(/^\d+$/);
     if (Array.isArray(data) && !isIndex && !data[path]) {
-      data[path] = data.map((item) => item[path]);
+      data[path] = data.map((item) => item[path]).flat();
     }
     data = data?.[path];
   }
