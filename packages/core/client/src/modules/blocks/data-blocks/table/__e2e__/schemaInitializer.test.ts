@@ -109,8 +109,13 @@ test.describe('configure actions', () => {
 test.describe('configure columns', () => {
   // 该用例在 CI 并发环境下容易报错，原因未知，通过增加重试次数可以解决
   test.describe.configure({ retries: process.env.CI ? 4 : 0 });
-  test('action column & display collection fields & display association fields', async ({ page, mockPage }) => {
+  test('action column & display collection fields & display association fields', async ({
+    page,
+    mockPage,
+    mockRecord,
+  }) => {
     await mockPage(oneEmptyTable).goto();
+    const record = await mockRecord('t_unp4scqamw9');
     const configureColumnButton = page.getByLabel('schema-initializer-TableV2-table:configureColumns-t_unp4scqamw9');
 
     // Action column -------------------------------------------------------------
@@ -181,6 +186,7 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-').getByText(record.f_pw7uiecc8uc.nickname)).toBeVisible();
 
     // 点击开关，删除创建的字段
     await configureColumnButton.hover();
