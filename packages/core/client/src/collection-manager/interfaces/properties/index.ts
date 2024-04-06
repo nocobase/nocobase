@@ -60,7 +60,7 @@ export const primaryKey = {
   'x-reactions': [
     {
       dependencies: ['unique'],
-      when: '{{$deps[0]}}',
+      when: '{{$deps[0]&&createMainOnly}}',
       fulfill: {
         state: {
           value: false,
