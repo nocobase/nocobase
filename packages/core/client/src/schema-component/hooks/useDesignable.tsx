@@ -7,10 +7,12 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { ComponentType, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import clientPkg from '../../../package.json';
 import { APIClient, useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
 import { addAppVersion } from './addAppVersion';
+
+// @ts-ignore
+import clientPkg from '../../../package.json';
 
 interface CreateDesignableProps {
   current: Schema;
