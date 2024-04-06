@@ -7,8 +7,8 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { ComponentType, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import clientPkg from '../../../package.json';
 import { APIClient, useAPIClient } from '../../api-client';
-import { useCurrentAppInfo } from '../../appInfo/CurrentAppInfoProvider';
 import { SchemaComponentContext } from '../context';
 import { addAppVersion } from './addAppVersion';
 
@@ -712,7 +712,6 @@ export function useFindComponent() {
 
 // TODO
 export function useDesignable() {
-  const data = useCurrentAppInfo();
   const { designable, setDesignable, refresh, reset } = useContext(SchemaComponentContext);
   const schemaOptions = useContext(SchemaOptionsContext);
   const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
@@ -727,8 +726,8 @@ export function useDesignable() {
   const api = useAPIClient();
   const { t } = useTranslation();
   const dn = useMemo(() => {
-    return createDesignable({ t, api, refresh, current: fieldSchema, model: field, appVersion: data?.data?.version });
-  }, [t, api, refresh, fieldSchema, field, data?.data?.version]);
+    return createDesignable({ t, api, refresh, current: fieldSchema, model: field, appVersion: clientPkg.version });
+  }, [t, api, refresh, fieldSchema, field]);
 
   useEffect(() => {
     dn.loadAPIClientEvents();

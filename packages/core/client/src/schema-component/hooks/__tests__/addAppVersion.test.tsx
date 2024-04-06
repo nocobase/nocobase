@@ -13,7 +13,7 @@ describe('addAppVersion', () => {
 
     const result = addAppVersion(schema, appVersion);
 
-    expect(result.appVersion).toBe(appVersion);
+    expect(result['x-app-version']).toBe(appVersion);
   });
 
   it('should add appVersion to nested schemas', () => {
@@ -33,11 +33,11 @@ describe('addAppVersion', () => {
 
     const result = addAppVersion(schema, appVersion);
 
-    expect(result.appVersion).toBe(appVersion);
-    expect(result.properties.prop1.appVersion).toBe(appVersion);
-    expect(result.properties.prop1.properties.nestedProp1.appVersion).toBe(appVersion);
-    expect(result.properties.prop1.properties.nestedProp2.appVersion).toBe(appVersion);
-    expect(result.properties.prop2.appVersion).toBe(appVersion);
+    expect(result['x-app-version']).toBe(appVersion);
+    expect(result.properties.prop1['x-app-version']).toBe(appVersion);
+    expect(result.properties.prop1.properties.nestedProp1['x-app-version']).toBe(appVersion);
+    expect(result.properties.prop1.properties.nestedProp2['x-app-version']).toBe(appVersion);
+    expect(result.properties.prop2['x-app-version']).toBe(appVersion);
   });
 
   it('should handle empty schema', () => {

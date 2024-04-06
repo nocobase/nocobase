@@ -3,7 +3,7 @@ export function addAppVersion(schema: any, appVersion: string) {
     return;
   }
 
-  schema.appVersion = appVersion;
+  schema['x-app-version'] = appVersion;
 
   Object.keys(schema.properties || {}).forEach((key) => {
     addAppVersion(schema.properties?.[key], appVersion);
