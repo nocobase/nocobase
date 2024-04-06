@@ -13,7 +13,7 @@ function toSafeNumber(value) {
   if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
     return new BigNumber(value).toString();
   } else {
-    return value;
+    return Number(value);
   }
 }
 export const InputNumber: ComposedInputNumber = connect((props) => {
@@ -22,7 +22,6 @@ export const InputNumber: ComposedInputNumber = connect((props) => {
     if (Number.isNaN(v)) {
       onChange(null);
     } else {
-      console.log(toSafeNumber(v));
       onChange(toSafeNumber(v));
     }
   };
