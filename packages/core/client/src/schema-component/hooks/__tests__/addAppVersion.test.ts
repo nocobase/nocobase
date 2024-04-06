@@ -48,4 +48,20 @@ describe('addAppVersion', () => {
 
     expect(result).toBeUndefined();
   });
+
+  it('should not override existing x-app-version', () => {
+    const schema = {
+      'x-app-version': '0.0.1',
+      properties: {
+        prop1: {},
+        prop2: {},
+      },
+    };
+
+    const appVersion = '1.0.0';
+
+    const result = addAppVersion(schema, appVersion);
+
+    expect(result['x-app-version']).toBe('0.0.1');
+  });
 });
