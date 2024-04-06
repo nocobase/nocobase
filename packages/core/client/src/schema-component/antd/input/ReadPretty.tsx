@@ -21,7 +21,9 @@ type Composed = {
 export const ReadPretty: Composed = () => null;
 
 ReadPretty.Input = (props) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-input', props);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
@@ -35,7 +37,9 @@ ReadPretty.Input = (props) => {
 };
 
 ReadPretty.TextArea = (props) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-textarea', props);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
   const value = compile(props.value ?? '');
   const { autop = true, ellipsis, text } = props;
@@ -76,12 +80,15 @@ function convertToText(html: string) {
 }
 
 ReadPretty.Html = (props) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-textarea', props);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
   const value = compile(props.value ?? '');
   const { autop = true, ellipsis } = props;
   const html = (
     <div
+      style={{ lineHeight: '1.42' }}
       dangerouslySetInnerHTML={{
         __html: value,
       }}
@@ -105,6 +112,7 @@ ReadPretty.Html = (props) => {
 };
 
 ReadPretty.URL = (props) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-url', props);
   const content = props.value && (
     <Typography.Link ellipsis target={'_blank'} href={props.value as any}>
@@ -123,6 +131,7 @@ ReadPretty.URL = (props) => {
 };
 
 ReadPretty.JSON = (props) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('json', props);
   return (
     <pre
