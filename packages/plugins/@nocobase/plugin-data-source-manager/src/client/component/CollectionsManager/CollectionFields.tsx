@@ -84,14 +84,14 @@ export const CollectionFields = () => {
   };
 
   const dm = useDataSourceManager();
-  const handleFieldChange = async (value, filterByTk) => {
+  const handleFieldChange = async (value, filterByTk, flag = true) => {
     await api.request({
       url: `dataSourcesCollections/${dataSourceKey}.${name}/fields:update?filterByTk=${filterByTk}`,
       method: 'post',
       data: value,
     });
     dm.getDataSource(dataSourceKey).reload();
-    message.success(t('Saved successfully'));
+    flag && message.success(t('Saved successfully'));
   };
   const useTitleFieldProps = () => {
     return {
