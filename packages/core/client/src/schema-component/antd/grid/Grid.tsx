@@ -5,14 +5,9 @@ import { uid } from '@formily/shared';
 import cls from 'classnames';
 import _ from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  FilterBlockProvider,
-  SchemaComponent,
-  useDesignable,
-  useFormBlockContext,
-  useSchemaInitializerRender,
-} from '../../../';
+import { SchemaComponent, useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
 import { useFormBlockType } from '../../../block-provider';
+import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
