@@ -10,6 +10,9 @@ type ComposedInputNumber = React.ForwardRefExoticComponent<
   ReadPretty?: React.FC<InputNumberProps>;
 };
 function toSafeNumber(value) {
+  if (!value) {
+    return value;
+  }
   if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
     return new BigNumber(value).toString();
   } else {
