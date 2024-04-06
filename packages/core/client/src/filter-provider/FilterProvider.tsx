@@ -3,9 +3,9 @@ import { uniqBy } from 'lodash';
 import React, { createContext, useCallback, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../collection-manager';
+import { useDataLoadingMode } from '../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
-import { useDataLoadingMode } from '../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -138,11 +138,20 @@ export const DataBlockCollector = ({
         this.service.mutate(undefined);
       },
     });
-  }, [associatedFields, collection, dataLoadingMode, field, fieldSchema, params?.filter, recordDataBlocks, service]);
+  }, [
+    associatedFields,
+    collection,
+    dataLoadingMode,
+    field.componentProps.title,
+    fieldSchema,
+    params?.filter,
+    recordDataBlocks,
+    service,
+  ]);
 
   useEffect(() => {
     if (shouldApplyFilter) addBlockToDataBlocks();
-  }, [params.filter, service, dataLoadingMode, shouldApplyFilter, addBlockToDataBlocks]);
+  }, [addBlockToDataBlocks, shouldApplyFilter]);
 
   useEffect(() => {
     return () => {
