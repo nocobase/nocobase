@@ -17,14 +17,14 @@ test('actions', async ({ page, mockPage }) => {
     .getByLabel('action-Action-Add new-create-users-table')
     .getByLabel('designer-drag')
     .dragTo(page.getByLabel('action-Action-Delete-destroy-users-table'));
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(1000);
 
   await page.getByLabel('action-Action-Add new-create-users-table').hover();
   await page
     .getByLabel('action-Action-Add new-create-users-table')
     .getByLabel('designer-drag')
     .dragTo(page.getByLabel('action-Action-Refresh-refresh-users-table'));
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(1000);
 
   const addNew = await page.getByLabel('action-Action-Add new-create-users-table').boundingBox();
   const del = await page.getByLabel('action-Action-Delete-destroy-users-table').boundingBox();
