@@ -85,7 +85,6 @@ export const autoFill = {
   'x-content': '{{t("Automatically generate default values")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
-  'x-disabled': '{{ !createMainOnly }}',
 };
 
 export const relationshipType: ISchema = {
