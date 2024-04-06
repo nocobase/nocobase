@@ -491,7 +491,7 @@ const _test = base.extend<ExtendUtils>({
       const state = await api.storageState();
       const headers = getHeaders(state);
       const filter = {
-        filterByTk: { $exists: true },
+        key: { $exists: true },
       };
 
       const result = await api.post(`/api/uiSchemaTemplates:destroy?filter=${JSON.stringify(filter)}`, {
@@ -503,7 +503,11 @@ const _test = base.extend<ExtendUtils>({
       }
     };
 
-    await use(clearBlockTemplates);
+    try {
+      await use(clearBlockTemplates);
+    } catch (error) {
+      await clearBlockTemplates();
+    }
   },
 });
 
