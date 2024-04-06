@@ -3,8 +3,8 @@ import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useBlockAssociationContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
-import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
+import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { createDetailsUISchema } from './createDetailsUISchema';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
@@ -39,6 +39,7 @@ export function useCreateSingleDetailsSchema() {
                 association,
                 dataSource: item.dataSource,
                 templateSchema: templateSchema,
+                isCurrent: true,
               }
             : {
                 collectionName: item.collectionName || item.name,
