@@ -132,6 +132,23 @@ export class CollectionManager {
   }
 
   /**
+   * 1. hasOne 和 hasMany 和 belongsToMany 的字段存在 sourceKey，所以会直接返回 sourceKey；
+   * 2. belongsTo 不存在 sourceKey，所以会使用 filterTargetKey；
+   * 3. 后面的主键和 id 是为了保险起见加上的；
+   */
+  getSourceKeyByAssocation(associationName: string) {
+    if (!associationName) {
+      return;
+    }
+    const field = this.getCollectionField(associationName);
+    if (field.sourceKey) {
+      return field.sourceKey;
+    }
+    const sourceCollection = this.getCollection(associationName.split('.')[0]);
+    return sourceCollection.filterTargetKey || sourceCollection.getPrimaryKey() || 'id';
+  }
+
+  /**
    * @internal
    */
   clone(collections: CollectionOptions[] = []) {
