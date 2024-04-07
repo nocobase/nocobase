@@ -1,5 +1,5 @@
 import { Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('action test', () => {
   let app: MockServer;
@@ -15,6 +15,35 @@ describe('action test', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  test('get parent property', async () => {
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
+        },
+      });
+
+    const response = await app.agent().resource('uiSchemas').getParentProperty({
+      filterByTk: 'n2',
+    });
+
+    expect(response.body.data['x-uid']).toEqual('n1');
   });
 
   test('insert action', async () => {

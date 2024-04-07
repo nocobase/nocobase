@@ -70,6 +70,7 @@ export function useCreateEditFormBlock() {
                 association,
                 dataSource: item.dataSource,
                 templateSchema: templateSchema,
+                isCurrent: true,
               }
             : {
                 collectionName: item.collectionName || item.name,

@@ -20,6 +20,7 @@ describe('uuid field', () => {
         {
           name: 'uuid',
           type: 'uuid',
+          allowNull: false,
         },
       ],
     });

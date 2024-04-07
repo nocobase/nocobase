@@ -60,7 +60,7 @@ export const primaryKey = {
   'x-reactions': [
     {
       dependencies: ['unique'],
-      when: '{{$deps[0]}}',
+      when: '{{$deps[0]&&createMainOnly}}',
       fulfill: {
         state: {
           value: false,
@@ -85,6 +85,7 @@ export const autoFill = {
   'x-content': '{{t("Automatically generate default values")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
+  default: true,
 };
 
 export const relationshipType: ISchema = {
