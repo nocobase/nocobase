@@ -553,6 +553,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
   const form = useForm();
   const { modal } = App.useApp();
   const { removeActiveFieldName } = useFormActiveFields() || {};
+  const { removeDataBlock } = useFilterBlock();
 
   return (
     <SchemaSettingsItem
@@ -584,6 +585,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
               field.setInitialValue(null);
               field.reset();
             }
+            removeDataBlock(fieldSchema['x-uid']);
           },
         });
       }}
