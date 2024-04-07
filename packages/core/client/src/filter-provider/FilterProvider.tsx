@@ -91,7 +91,7 @@ export const DataBlockCollector = ({
   params?: { filter: FilterParam };
 }) => {
   const collection = useCollection_deprecated();
-  const { recordDataBlocks, removeDataBlock } = useFilterBlock();
+  const { recordDataBlocks } = useFilterBlock();
   const { service } = useBlockRequestContext();
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -153,12 +153,6 @@ export const DataBlockCollector = ({
     if (shouldApplyFilter) addBlockToDataBlocks();
   }, [addBlockToDataBlocks, shouldApplyFilter]);
 
-  useEffect(() => {
-    return () => {
-      removeDataBlock(fieldSchema['x-uid']);
-    };
-  }, []);
-
   return <div ref={container}>{children}</div>;
 };
 
@@ -185,18 +179,14 @@ export const useFilterBlock = () => {
 
     if (existingBlock) {
       // 这里的值有可能会变化，所以需要更新
-      existingBlock.service = block.service;
-      existingBlock.defaultFilter = block.defaultFilter;
-      existingBlock.dataLoadingMode = block.dataLoadingMode;
+      Object.assign(existingBlock, block);
       return;
     }
     // 由于 setDataBlocks 是异步操作，所以上面的 existingBlock 在判断时有可能用的是旧的 dataBlocks,所以下面还需要根据 uid 进行去重操作
     setDataBlocks((prev) => uniqBy([...prev, block], 'uid'));
   };
   const removeDataBlock = (uid: string) => {
-    const blocks = dataBlocks.filter((item) => item.uid !== uid);
-    if (blocks.length === dataBlocks.length) return;
-
+    if (dataBlocks.every((item) => item.uid !== uid)) return;
     setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
   };
 
