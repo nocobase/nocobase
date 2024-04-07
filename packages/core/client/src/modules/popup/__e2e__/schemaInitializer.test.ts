@@ -6,7 +6,7 @@ import {
   oneFormBlockWithRolesFieldBasedUsers,
   test,
 } from '@nocobase/test/e2e';
-import { tableWithRoles, tableWithUsers, tableWithInherit, tableWithInheritWithoutAssociation } from './templatesOfBug';
+import { tableWithInherit, tableWithInheritWithoutAssociation, tableWithRoles, tableWithUsers } from './templatesOfBug';
 
 test.describe('where to open a popup and what can be added to it', () => {
   test('add new', async ({ page, mockPage }) => {
@@ -16,7 +16,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('action-Action-Add new-create-general-table').click();
 
     // add a tab
-    await page.getByLabel('schema-initializer-Tabs-TabPaneInitializersForCreateFormBlock-general').click();
+    await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test123');
     await page.getByLabel('action-Action-Submit-general-table').click();
@@ -41,7 +41,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('action-Action-Add record-customize:create-general-table').click();
 
     // add a tab
-    await page.getByLabel('schema-initializer-Tabs-TabPaneInitializersForCreateFormBlock-general').click();
+    await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test7');
     await page.getByLabel('action-Action-Submit-general-table').click();
@@ -70,7 +70,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('action-Action.Link-View-view-general-table-0').click();
 
     // add a tab
-    await page.getByLabel('schema-initializer-Tabs-TabPaneInitializers-general').click();
+    await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test8');
     await page.getByLabel('action-Action-Submit-general-table-0').click();
@@ -127,7 +127,7 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     // open dialog
     await page.getByLabel('action-Action-Bulk edit-customize:bulkEdit-general-table').click();
-    await page.getByLabel('schema-initializer-Tabs-TabPaneInitializersForBulkEditFormBlock-general').click();
+    await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test1');
     await page.getByLabel('action-Action-Submit-general-table').click();
@@ -156,7 +156,7 @@ test.describe('where to open a popup and what can be added to it', () => {
       .click();
 
     // add a tab
-    await page.getByLabel('schema-initializer-Tabs-TabPaneInitializers-general').click();
+    await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test8');
     await page.getByLabel('action-Action-Submit-general-details').click();

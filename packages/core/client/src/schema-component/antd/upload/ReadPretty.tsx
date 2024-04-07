@@ -136,6 +136,7 @@ ReadPretty.File = function File(props: UploadProps) {
       </div>
       {visible && fileType === 'image' && (
         <Lightbox
+          reactModalStyle={{ overlay: { zIndex: 9999 } }}
           // discourageDownloads={true}
           mainSrc={images[fileIndex]?.imageUrl}
           nextSrc={images[(fileIndex + 1) % images.length]?.imageUrl}

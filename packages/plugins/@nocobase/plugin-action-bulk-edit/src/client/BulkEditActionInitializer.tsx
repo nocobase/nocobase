@@ -27,7 +27,10 @@ export const BulkEditActionInitializer = () => {
             type: 'void',
             'x-component': 'Tabs',
             'x-component-props': {},
-            'x-initializer': 'TabPaneInitializersForBulkEditFormBlock',
+            'x-initializer': 'popup:addTab',
+            'x-initializer-props': {
+              gridInitializer: 'popup:bulkEdit:addBlock',
+            },
             properties: {
               tab1: {
                 type: 'void',
