@@ -41,6 +41,28 @@ describe('acl', () => {
     });
   });
 
+  it('should getRole', () => {
+    const role = acl.define({
+      role: 'admin',
+      actions: {
+        'posts:edit': {
+          own: true,
+        },
+      },
+    });
+
+    expect(acl.getRole('admin')).toBe(role);
+  });
+
+  it('should set available action', () => {
+    acl.setAvailableAction('edit', {
+      displayName: 'Edit',
+    });
+
+    const action = acl.getAvailableAction('edit');
+    expect(action.name).toBe('edit');
+  });
+
   it('should define role with predicate', () => {
     acl.setAvailableAction('edit', {
       type: 'old-data',
