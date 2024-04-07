@@ -260,7 +260,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  toggle(workflow: WorkflowModel, enable?: boolean) {
+  private toggle(workflow: WorkflowModel, enable?: boolean) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
@@ -511,6 +511,13 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
+  /**
+   * @experimental
+   * @param {string} dataSourceName
+   * @param {Transaction} transaction
+   * @param {boolean} create
+   * @returns {Trasaction}
+   */
   useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
     // @ts-ignore
     const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;

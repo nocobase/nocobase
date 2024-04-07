@@ -330,6 +330,9 @@ export const TriggerConfig = () => {
   );
 };
 
+/**
+ * @experimental
+ */
 export function useTrigger() {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const { workflow } = useFlowContext();
