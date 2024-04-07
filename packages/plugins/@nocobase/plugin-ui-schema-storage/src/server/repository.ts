@@ -206,7 +206,7 @@ export class UiSchemaRepository extends Repository {
       return null;
     }
 
-    return this.getProperties(parentUid, options);
+    return this.getJsonSchema(parentUid, options);
   }
 
   async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {

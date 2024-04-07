@@ -43,7 +43,7 @@ describe('action test', () => {
       filterByTk: 'n2',
     });
 
-    expect(response.body.data.type).toEqual('object');
+    expect(response.body.data['x-uid']).toEqual('n1');
   });
 
   test('insert action', async () => {

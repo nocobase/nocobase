@@ -1,5 +1,5 @@
 import { Collection, Database } from '@nocobase/database';
-import { createMockServer, MockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 
@@ -405,7 +405,7 @@ describe('ui_schema repository', () => {
       });
 
       const parentProperty = await repository.getParentProperty('n2');
-      expect(parentProperty['properties']['b']['x-uid']).toBe('n2');
+      expect(parentProperty['x-uid']).toBe('n1');
     });
 
     it('should getJsonSchema by subTree', async () => {
