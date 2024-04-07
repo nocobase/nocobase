@@ -8,8 +8,9 @@ This Agreement applies to any use, quotation, contract, invoice, and all softwar
 
 The Company reserves the right to formulate and modify this Agreement from time to time as needed. If there are changes, the Company will announce them in the form of website announcements, without further individual notification. The changed Agreement will automatically take effect once it is announced, becoming part of this Agreement.
 
+==============
 1. Definitions
-
+==============
 1.1 "Software" refers to the NocoBase kernel and plugins placed in the same code repository as the kernel, including their source code, installation packages, images, and all their modifications, updates, and upgrades.
 
 1.2 "Plugin Market" refers to the market provided by the Company for selling Software plugins and solutions.
@@ -24,23 +25,31 @@ The Company reserves the right to formulate and modify this Agreement from time 
 
 1.7 "Third-Party Open Source Software" refers to open source software provided with Software and Commercial Plugins. They are licensed through various published open source software licenses or copyright notices accompanying such software.
 
+===================================
 2. Intellectual Property Protection
+===================================
 
 Except for Third-Party Open Source Software, the Company owns all copyrights, trademark rights, patent rights, trade secrets, and other intellectual property rights of the Software and Commercial Plugins, and has registered and protected them in relevant countries and regions according to the "Paris Convention" or "TRIPS Agreement", ensuring that the intellectual property rights of the Software and Commercial Plugins are internationally recognized and protected.
 
+=============
 3. Disclaimer
+=============
 
 3.1 Users shall not use the Software and Commercial Plugins to engage in activities that violate local laws and regulations, religious beliefs. All legal responsibilities and legal consequences arising from the use of Software and Commercial Plugins shall be borne by the User.
 
 3.2 The Company shall not be liable for any direct, indirect, special, incidental, or consequential damages (including but not limited to loss of profits, business interruption, data loss, or business information disclosure) caused by the User's use of the Software and Commercial Plugins, even if it has been previously informed of the possibility of such damages.
 
+===============
 4. License Type
+===============
 
 4.1 The Software uses a dual license type of AGPL-3.0 Open Source License https://www.gnu.org/licenses/agpl-3..en.htm and Commercial License.
 
 4.2 Commercial Plugins use Commercial License.
 
+================================================
 5. Rights and Obligations of Open Source License
+================================================
 
 5.1 The Software can be used for commercial purposes, such as developing applications for internal use within a company or for clients.
 
@@ -56,7 +65,9 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 5.7 Comply with all requirements of the AGPL-3.0 agreement.
 
+===============================
 6. Rights of Commercial License
+===============================
 
 6.1 Obtain a permanent commercial license for a Root Version of the Software or Commercial Plugin.
 
@@ -78,7 +89,9 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 6.10 If there are other agreements in the contract for the above rights, the contract agreement shall prevail.
 
+====================================
 7. Obligations of Commercial License
+====================================
 
 7.1 It is not allowed to remove or change all intellectual property statements about NocoBase in the code.
 
@@ -96,7 +109,9 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 7.8 If there are other agreements in the contract for the above obligations, the contract agreement shall prevail.
 
+=============================================================
 8. Legal Jurisdiction, Interpretation, and Dispute Resolution
+=============================================================
 
 8.1 Except for Mainland China, the interpretation, application, and all matters related to this agreement are subject to the jurisdiction of Singapore law.
 
