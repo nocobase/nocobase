@@ -6,6 +6,7 @@ import {
   SchemaComponent,
   Variable,
   css,
+  parseCollectionName,
   useCollectionManager_deprecated,
   useCompile,
   useToken,
@@ -21,7 +22,8 @@ function AssociationInput(props) {
   const { path } = useField();
   const fieldName = path.segments[path.segments.length - 1] as string;
   const { values: config } = useForm();
-  const fields = getCollectionFields(config?.collection);
+  const [dataSourceName, collectionName] = parseCollectionName(config?.collection);
+  const fields = getCollectionFields(collectionName, dataSourceName);
   const { type } = fields.find((item) => item.name === fieldName);
 
   const value = Array.isArray(props.value) ? props.value.join(',') : props.value;
@@ -39,11 +41,11 @@ const CollectionFieldSet = observer(
     const { t } = useTranslation();
     const compile = useCompile();
     const form = useForm();
-    const { getCollection, getCollectionFields } = useCollectionManager_deprecated();
+    const { getCollectionFields } = useCollectionManager_deprecated();
     const scope = useWorkflowVariableOptions();
     const { values: config } = form;
-    const collectionName = config?.collection;
-    const collectionFields = getCollectionFields(collectionName).filter((field) => field.uiSchema);
+    const [dataSourceName, collectionName] = parseCollectionName(config?.collection);
+    const collectionFields = getCollectionFields(collectionName, dataSourceName).filter((field) => field.uiSchema);
     const fields = filter ? collectionFields.filter(filter.bind(config)) : collectionFields;
 
     const unassignedFields = useMemo(() => fields.filter((field) => !value || !(field.name in value)), [fields, value]);
@@ -79,7 +81,7 @@ const CollectionFieldSet = observer(
         `}
       >
         {fields.length ? (
-          <CollectionProvider_deprecated collection={getCollection(collectionName)}>
+          <CollectionProvider_deprecated name={collectionName} dataSource={dataSourceName}>
             {fields
               .filter((field) => value && field.name in value)
               .map((field) => {

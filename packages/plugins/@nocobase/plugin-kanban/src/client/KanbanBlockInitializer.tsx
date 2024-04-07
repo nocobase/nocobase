@@ -16,7 +16,7 @@ import {
   useSchemaInitializerItem,
   useAPIClient,
 } from '@nocobase/client';
-import { createKanbanBlockSchema } from './utils';
+import { createKanbanBlockUISchema } from './createKanbanBlockUISchema';
 import { CreateAndSelectSort } from './CreateAndSelectSort';
 import { NAMESPACE } from './locale';
 
@@ -157,14 +157,13 @@ export const KanbanBlockInitializer = () => {
           initialValues: {},
         });
         insert(
-          createKanbanBlockSchema({
+          createKanbanBlockUISchema({
             sortField: values.dragSortBy,
             groupField: values.groupField.value,
-            collection: item.name,
+            collectionName: item.name,
             dataSource: item.dataSource,
             params: {
               sort: [values.dragSortBy],
-              paginate: false,
             },
           }),
         );

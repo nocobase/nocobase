@@ -26,7 +26,7 @@ export const ViewActionInitializer = (props) => {
             type: 'void',
             'x-component': 'Tabs',
             'x-component-props': {},
-            'x-initializer': 'TabPaneInitializers',
+            'x-initializer': 'popup:addTab',
             properties: {
               tab1: {
                 type: 'void',
@@ -38,7 +38,7 @@ export const ViewActionInitializer = (props) => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'RecordBlockInitializers',
+                    'x-initializer': 'popup:common:addBlock',
                     properties: {},
                   },
                 },

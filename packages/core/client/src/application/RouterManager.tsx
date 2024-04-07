@@ -1,4 +1,4 @@
-import { set, get } from 'lodash';
+import { get, set } from 'lodash';
 import React, { ComponentType } from 'react';
 import {
   BrowserRouter,
@@ -10,8 +10,8 @@ import {
   RouteObject,
   useRoutes,
 } from 'react-router-dom';
-import { BlankComponent, RouterContextCleaner } from './components';
 import { Application } from './Application';
+import { BlankComponent, RouterContextCleaner } from './components';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -41,6 +41,9 @@ export class RouterManager {
     this.app = app;
   }
 
+  /**
+   * @internal
+   */
   getRoutesTree(): RouteObject[] {
     type RouteTypeWithChildren = RouteType & { children?: RouteTypeWithChildren };
     const routes: Record<string, RouteTypeWithChildren> = {};
@@ -98,10 +101,17 @@ export class RouterManager {
     this.options.type = type;
   }
 
+  getBasename() {
+    return this.options.basename;
+  }
+
   setBasename(basename: string) {
     this.options.basename = basename;
   }
 
+  /**
+   * @internal
+   */
   getRouterComponent() {
     const { type = 'browser', ...opts } = this.options;
     const Routers = {
@@ -111,9 +121,9 @@ export class RouterManager {
     };
 
     const ReactRouter = Routers[type];
+    const routes = this.getRoutesTree();
 
     const RenderRoutes = () => {
-      const routes = this.getRoutesTree();
       const element = useRoutes(routes);
       return element;
     };

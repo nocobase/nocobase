@@ -16,7 +16,11 @@ import {
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
+import { setDataLoadingModeSettingsItem } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
+/**
+ * @deprecated
+ */
 export const formSettings = new SchemaSettings({
   name: 'FormSettings',
   items: [
@@ -58,7 +62,8 @@ export const formSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           componentName: 'FormItem',
           collectionName: name,
@@ -83,6 +88,9 @@ export const formSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const readPrettyFormSettings = new SchemaSettings({
   name: 'ReadPrettyFormSettings',
   items: [
@@ -96,7 +104,8 @@ export const readPrettyFormSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           insertAdjacentPosition: 'beforeEnd',
           componentName: 'ReadPrettyFormItem',
@@ -122,6 +131,9 @@ export const readPrettyFormSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const formDetailsSettings = new SchemaSettings({
   name: 'FormDetailsSettings',
   items: [
@@ -160,6 +172,7 @@ export const formDetailsSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'sortingRules',
       type: 'modal',
@@ -283,7 +296,8 @@ export const formDetailsSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           componentName: 'Details',
           collectionName: name,

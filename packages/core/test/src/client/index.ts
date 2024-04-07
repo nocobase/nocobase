@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react';
+export { renderHook } from '@testing-library/react-hooks';
 
 function customRender(ui: React.ReactElement, options = {}) {
   return render(ui, {

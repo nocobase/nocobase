@@ -4,11 +4,14 @@ import {
   RecordProvider,
   SchemaComponentOptions,
   useCreateActionProps as useCAP,
+  useCollection,
   useCollectionParentRecordData,
   useProps,
+  withDynamicSchemaProps,
 } from '@nocobase/client';
-import { Spin, Tag } from 'antd';
-import React, { useContext, useMemo, useState } from 'react';
+import { Spin, Tag, Card, Skeleton } from 'antd';
+import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { Board } from './board';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 import { useStyles } from './style';
@@ -56,10 +59,18 @@ export const toColumns = (groupField: any, dataSource: Array<any> = [], primaryK
   return Object.values(columns);
 };
 
-export const Kanban: any = observer(
-  (props: any) => {
+const MemorizedRecursionField = React.memo(RecursionField);
+MemorizedRecursionField.displayName = 'MemorizedRecursionField';
+
+export const Kanban: any = withDynamicSchemaProps(
+  observer((props: any) => {
     const { styles } = useStyles();
+
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
+
+    const collection = useCollection();
+    const primaryKey = collection.getPrimaryKey();
     const parentRecordData = useCollectionParentRecordData();
     const field = useField<ArrayField>();
     const fieldSchema = useFieldSchema();
@@ -81,17 +92,26 @@ export const Kanban: any = observer(
         ),
       [],
     );
-    const handleCardRemove = (card, column) => {
-      const updatedBoard = Board.removeCard({ columns: field.value }, column, card);
-      field.value = updatedBoard.columns;
-      setDataSource(updatedBoard.columns);
-    };
-    const handleCardDragEnd = (card, fromColumn, toColumn) => {
-      onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
-      const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
-      field.value = updatedBoard.columns;
-      setDataSource(updatedBoard.columns);
-    };
+    const handleCardRemove = useCallback(
+      (card, column) => {
+        const updatedBoard = Board.removeCard({ columns: field.value }, column, card);
+        field.value = updatedBoard.columns;
+        setDataSource(updatedBoard.columns);
+      },
+      [field],
+    );
+    const lastDraggedCard = useRef(null);
+    const handleCardDragEnd = useCallback(
+      (card, fromColumn, toColumn) => {
+        lastDraggedCard.current = card[primaryKey];
+        onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
+        const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
+        field.value = updatedBoard.columns;
+        setDataSource(updatedBoard.columns);
+      },
+      [field],
+    );
+
     return (
       <Spin wrapperClassName={styles.nbKanban} spinning={field.loading || false}>
         <Board
@@ -110,6 +130,11 @@ export const Kanban: any = observer(
           renderCard={(card, { column, dragging }) => {
             const columnIndex = dataSource?.indexOf(column);
             const cardIndex = column?.cards?.indexOf(card);
+            const { ref, inView } = useInView({
+              threshold: 0,
+              triggerOnce: true,
+              initialInView: lastDraggedCard.current && lastDraggedCard.current === card[primaryKey],
+            });
             return (
               schemas.card && (
                 <RecordProvider record={card} parent={parentRecordData}>
@@ -125,7 +150,15 @@ export const Kanban: any = observer(
                       cardIndex,
                     }}
                   >
-                    <RecursionField name={schemas.card.name} schema={schemas.card} />
+                    <div ref={ref}>
+                      {inView ? (
+                        <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
+                      ) : (
+                        <Card bordered={false}>
+                          <Skeleton active paragraph={{ rows: 4 }} />
+                        </Card>
+                      )}
+                    </div>
                   </KanbanCardContext.Provider>
                 </RecordProvider>
               )
@@ -138,7 +171,7 @@ export const Kanban: any = observer(
             return (
               <KanbanColumnContext.Provider value={{ column, groupField }}>
                 <SchemaComponentOptions scope={{ useCreateActionProps }}>
-                  <RecursionField name={schemas.cardAdder.name} schema={schemas.cardAdder} />
+                  <MemorizedRecursionField name={schemas.cardAdder.name} schema={schemas.cardAdder} />
                 </SchemaComponentOptions>
               </KanbanColumnContext.Provider>
             );
@@ -150,6 +183,6 @@ export const Kanban: any = observer(
         </Board>
       </Spin>
     );
-  },
+  }),
   { displayName: 'Kanban' },
 );

@@ -1,9 +1,10 @@
 import { useFieldSchema } from '@formily/react';
-import { Card } from 'antd';
+import { Card, Skeleton } from 'antd';
 import React from 'react';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { BlockItem } from '../block-item';
 import useStyles from './style';
+import { useInView } from 'react-intersection-observer';
 
 interface Props {
   children?: React.ReactNode;
@@ -18,11 +19,18 @@ export const CardItem = (props: Props) => {
   const fieldSchema = useFieldSchema();
   const templateKey = fieldSchema?.['x-template-key'];
   const { wrapSSR, componentCls, hashId } = useStyles();
+  const { ref, inView } = useInView({
+    threshold: 0,
+    initialInView: true,
+    triggerOnce: true,
+    skip: !!process.env.__E2E__,
+  });
+
   return wrapSSR(
     templateKey && !template ? null : (
       <BlockItem name={name} className={`${componentCls} ${hashId} noco-card-item`}>
-        <Card className="card" bordered={false} {...restProps}>
-          {props.children}
+        <Card ref={ref} className="card" bordered={false} {...restProps}>
+          {inView ? props.children : <Skeleton active paragraph={{ rows: 4 }} />}
         </Card>
       </BlockItem>
     ),

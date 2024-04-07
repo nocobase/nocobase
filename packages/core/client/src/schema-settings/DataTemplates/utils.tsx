@@ -184,7 +184,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             selectFields.add(path);
           }
           if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
-            formData.add({ name: path, fieldMode: s['x-component-props']['mode'] || 'Select' });
+            formData.add({ name: path, fieldMode: s['x-component-props']?.['mode'] || 'Select' });
             if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
               const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
               getAssociationAppends(s, bufPrefix);

@@ -2,8 +2,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-import { getWorkflowDetailPath } from './constant';
 import { useActionContext, useGetAriaLabelOfAction, useRecord } from '@nocobase/client';
+
+import { getWorkflowDetailPath } from './utils';
 
 export const WorkflowLink = () => {
   const { t } = useTranslation();

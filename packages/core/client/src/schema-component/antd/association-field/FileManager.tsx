@@ -145,8 +145,8 @@ const InternalFileManager = (props) => {
       <FileSelector
         value={options}
         multiple={multiple}
-        quickUpload={fieldSchema['x-component-props'].quickUpload !== false}
-        selectFile={fieldSchema['x-component-props'].selectFile !== false}
+        quickUpload={fieldSchema['x-component-props']?.quickUpload !== false}
+        selectFile={fieldSchema['x-component-props']?.selectFile !== false}
         action={`${collectionField?.target}:create`}
         onSelect={handleSelect}
         onRemove={handleRemove}

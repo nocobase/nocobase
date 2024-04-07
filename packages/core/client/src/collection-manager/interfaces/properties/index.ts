@@ -60,7 +60,7 @@ export const primaryKey = {
   'x-reactions': [
     {
       dependencies: ['unique'],
-      when: '{{$deps[0]}}',
+      when: '{{$deps[0]&&createMainOnly}}',
       fulfill: {
         state: {
           value: false,
@@ -77,6 +77,14 @@ export const autoIncrement = {
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
   'x-disabled': '{{ !createMainOnly }}',
+};
+
+export const autoFill = {
+  type: 'boolean',
+  title: '{{t("Default value")}}',
+  'x-content': '{{t("Automatically generate default values")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
 };
 
 export const relationshipType: ISchema = {
@@ -288,6 +296,7 @@ export const dataSource: ISchema = {
             'x-reactions': (field: Field) => {
               if (!field.initialValue) {
                 field.initialValue = uid();
+                field.setValue(uid());
               }
             },
           },
@@ -386,7 +395,7 @@ export const recordPickerViewer = {
       type: 'void',
       'x-component': 'Tabs',
       'x-component-props': {},
-      'x-initializer': 'TabPaneInitializers',
+      'x-initializer': 'popup:addTab',
       properties: {
         tab1: {
           type: 'void',
@@ -398,7 +407,7 @@ export const recordPickerViewer = {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'RecordBlockInitializers',
+              'x-initializer': 'popup:common:addBlock',
               properties: {},
             },
           },

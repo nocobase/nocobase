@@ -1,16 +1,25 @@
 import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import _ from 'lodash';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemType, useDataSourceKey, useFormActiveFields, useFormBlockContext } from '../';
-import { FieldOptions, useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
-import { isAssocField } from '../filter-provider/utils';
-import { useActionContext, useDesignable } from '../schema-component';
-import { useSchemaTemplateManager } from '../schema-templates';
-import { Collection } from '../data-source/collection/Collection';
+import {
+  DataBlockInitializer,
+  DataSource,
+  SchemaInitializerItemType,
+  useCollection,
+  useCollectionManager,
+  useDataSourceKey,
+  useFormActiveFields,
+  useFormBlockContext,
+} from '../';
+import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
+import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
-import { DataSourceManager } from '../data-source/data-source/DataSourceManager';
+import { isAssocField } from '../filter-provider/utils';
+import { useActionContext, useCompile, useDesignable } from '../schema-component';
+import { useSchemaTemplateManager } from '../schema-templates';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -726,7 +735,7 @@ const recursiveParent = (schema: Schema) => {
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
   const { removeActiveFieldName } = useFormActiveFields() || {};
-  const { form }: { form: Form } = useFormBlockContext();
+  const { form }: { form?: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
   if (!fieldSchema?.['x-initializer'] && fieldSchema?.['x-decorator'] === 'FormItem') {
     const recursiveInitializerSchema = recursiveParent(fieldSchema);
@@ -750,6 +759,10 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   };
 };
 
+/**
+ * @deprecated
+ * 待统一区块的创建之后，将废弃该方法
+ */
 export const useRecordCollectionDataSourceItems = (
   componentName,
   item = null,
@@ -822,67 +835,183 @@ export const useRecordCollectionDataSourceItems = (
   ];
 };
 
-export const useCollectionDataSourceItems = (
+export const useCollectionDataSourceItems = ({
   componentName,
-  filter: (collection: Collection) => boolean = () => true,
+  filter = () => true,
   onlyCurrentDataSource = false,
-) => {
+  showAssociationFields,
+  filterDataSource,
+  dataBlockInitializerProps,
+}: {
+  componentName;
+  filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
+  onlyCurrentDataSource?: boolean;
+  showAssociationFields?: boolean;
+  filterDataSource?: (dataSource?: DataSource) => boolean;
+  dataBlockInitializerProps?: any;
+}) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
   const dataSourceKey = useDataSourceKey();
-  let allCollections = dm.getAllCollections(filter);
+  const collection = useCollection();
+  const associationFields = useAssociationFields({ componentName, filterCollections: filter, showAssociationFields });
+
+  let allCollections = dm.getAllCollections({
+    filterCollection: (collection) => {
+      if (onlyCurrentDataSource && collection.dataSource !== dataSourceKey) {
+        return false;
+      }
+      return filter({ collection });
+    },
+    filterDataSource,
+  });
   if (onlyCurrentDataSource) {
     allCollections = allCollections.filter((collection) => collection.key === dataSourceKey);
   }
 
   const { getTemplatesByCollection } = useSchemaTemplateManager();
-  const res = useMemo(() => {
+
+  const noAssociationMenu = useMemo(() => {
     return allCollections.map(({ key, displayName, collections }) => ({
       name: key,
       label: displayName,
       type: 'subMenu',
-      children: getChildren({
-        collections,
-        componentName,
-        searchValue: '',
-        dataSource: key,
-        getTemplatesByCollection,
-        t,
-      }),
+      children: [
+        ...getChildren({
+          collections,
+          componentName,
+          searchValue: '',
+          dataSource: key,
+          getTemplatesByCollection,
+          t,
+        }).sort((item) => {
+          // fix https://nocobase.height.app/T-3551
+          const inherits = _.toArray(collection?.inherits || []);
+          if (item.name === collection?.name || inherits.some((inheritName) => inheritName === item.name)) return -1;
+        }),
+      ],
     }));
-  }, [allCollections, componentName, dm, getTemplatesByCollection, t]);
+  }, [allCollections, collection?.inherits, collection?.name, componentName, getTemplatesByCollection, t]);
 
-  return res;
+  // https://nocobase.height.app/T-3821
+  // showAssociationFields 的值是固定不变的，所以在 if 语句里使用 hooks 是安全的
+  if (showAssociationFields) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useMemo(() => {
+      const currentRecord = {
+        name: 'currentRecord',
+        collectionName: collection.name,
+        dataSource: collection.dataSource,
+        Component: DataBlockInitializer,
+        // 目的是使点击无效
+        onClick() {},
+        componentProps: {
+          ...dataBlockInitializerProps,
+          icon: null,
+          title: t('Current record'),
+          name: 'currentRecord',
+          hideSearch: false,
+          hideChildrenIfSingleCollection: true,
+          items: noAssociationMenu,
+        },
+      };
+      const associationRecords = {
+        name: 'associationRecords',
+        Component: DataBlockInitializer,
+        // 目的是使点击无效
+        onClick() {},
+        componentProps: {
+          ...dataBlockInitializerProps,
+          icon: null,
+          title: t('Associated records'),
+          name: 'associationRecords',
+          hideSearch: false,
+          items: [
+            {
+              name: 'associationFields',
+              label: t('Association fields'),
+              type: 'subMenu', // 这里套一层 subMenu 是因为 DataBlockInitializer 组件需要这样的数据结构，其实这层 subMenu 最终是不会渲染出来的
+              children: associationFields,
+            },
+          ],
+        },
+      };
+      let children;
+
+      if (noAssociationMenu[0].children.length && associationFields.length) {
+        children = [currentRecord, associationRecords];
+      } else if (noAssociationMenu[0].children.length) {
+        // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
+        if (noAssociationMenu[0].children.length <= 1) {
+          noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
+          return noAssociationMenu;
+        }
+        children = [currentRecord];
+      } else {
+        children = [associationRecords];
+      }
+
+      return [
+        {
+          name: 'records',
+          label: t('Records'),
+          type: 'subMenu',
+          children,
+        },
+      ];
+    }, [associationFields, collection.dataSource, collection.name, dataBlockInitializerProps, noAssociationMenu, t]);
+  }
+
+  return noAssociationMenu;
 };
 
-export const createDetailsBlockSchema = (options) => {
+/**
+ * @deprecated
+ * 已弃用，请使用 createDetailsUISchema 和 createDetailsWithPaginationUISchema 替代
+ * @param options
+ * @returns
+ */
+export const createDetailsBlockSchema = (options: {
+  collection: string;
+  dataSource: string;
+  rowKey?: string;
+  formItemInitializers?: string;
+  actionInitializers?: string;
+  association?: string;
+  template?: any;
+  settings?: string;
+  action?: string;
+  [key: string]: any;
+}) => {
   const {
-    formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'DetailsActionInitializers',
+    formItemInitializers = 'details:configureFields',
+    actionInitializers = 'detailsWithPaging:configureActions',
     collection,
     dataSource,
     association,
-    resource,
     template,
     settings,
+    action = 'list',
     ...others
   } = options;
-  const resourceName = resource || association || collection;
+  const resourceName = association || collection;
   const schema: ISchema = {
     type: 'void',
-    'x-acl-action': `${resourceName}:view`,
+    'x-acl-action': action === 'get' ? `${resourceName}:get` : `${resourceName}:view`,
     'x-decorator': 'DetailsBlockProvider',
     'x-decorator-props': {
-      resource: resourceName,
       dataSource,
       collection,
       association,
       readPretty: true,
-      action: 'list',
-      params: {
-        pageSize: 1,
-      },
-      // useParams: '{{ useParamsFromRecord }}',
+      action,
+      ...(action === 'list'
+        ? {
+            params: {
+              pageSize: 1,
+            },
+          }
+        : {}),
       ...others,
     },
     'x-toolbar': 'BlockSchemaToolbar',
@@ -892,10 +1021,8 @@ export const createDetailsBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-component': 'Details',
+        'x-use-component-props': 'useDetailsBlockProps',
         'x-read-pretty': true,
-        'x-component-props': {
-          useProps: '{{ useDetailsBlockProps }}',
-        },
         properties: {
           [uid()]: {
             type: 'void',
@@ -914,13 +1041,15 @@ export const createDetailsBlockSchema = (options) => {
             'x-initializer': formItemInitializers,
             properties: {},
           },
-          pagination: {
-            type: 'void',
-            'x-component': 'Pagination',
-            'x-component-props': {
-              useProps: '{{ useDetailsPaginationProps }}',
-            },
-          },
+          ...(action === 'list'
+            ? {
+                pagination: {
+                  type: 'void',
+                  'x-component': 'Pagination',
+                  'x-use-component-props': 'useDetailsPaginationProps',
+                },
+              }
+            : {}),
         },
       },
     },
@@ -928,192 +1057,30 @@ export const createDetailsBlockSchema = (options) => {
   return schema;
 };
 
-export const createListBlockSchema = (options) => {
+/**
+ * @deprecated
+ * 已弃用，请使用 createCreateFormBlockUISchema 或者 createEditFormBlockUISchema 替代
+ * @param options
+ * @returns
+ */
+export const createFormBlockSchema = (options: {
+  formItemInitializers?: string;
+  actionInitializers?: string;
+  collection: string;
+  resource?: string;
+  dataSource?: string;
+  association?: string;
+  action?: string;
+  actions?: Record<string, any>;
+  template?: any;
+  title?: string;
+  settings?: any;
+  'x-designer'?: string;
+  [key: string]: any;
+}) => {
   const {
-    formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'ListActionInitializers',
-    itemActionInitializers = 'ListItemActionInitializers',
-    collection,
-    dataSource,
-    association,
-    resource,
-    template,
-    settings,
-    ...others
-  } = options;
-  const resourceName = resource || association || collection;
-  const schema: ISchema = {
-    type: 'void',
-    'x-acl-action': `${resourceName}:view`,
-    'x-decorator': 'List.Decorator',
-    'x-decorator-props': {
-      resource: resourceName,
-      collection,
-      dataSource,
-      association,
-      readPretty: true,
-      action: 'list',
-      params: {
-        pageSize: 10,
-      },
-      runWhenParamsChanged: true,
-      ...others,
-    },
-    'x-component': 'CardItem',
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': settings,
-    properties: {
-      actionBar: {
-        type: 'void',
-        'x-initializer': actionInitializers,
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
-        properties: {},
-      },
-      list: {
-        type: 'array',
-        'x-component': 'List',
-        'x-component-props': {
-          props: '{{ useListBlockProps }}',
-        },
-        properties: {
-          item: {
-            type: 'object',
-            'x-component': 'List.Item',
-            'x-read-pretty': true,
-            'x-component-props': {
-              useProps: '{{ useListItemProps }}',
-            },
-            properties: {
-              grid: template || {
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': formItemInitializers,
-                'x-initializer-props': {
-                  useProps: '{{ useListItemInitializerProps }}',
-                },
-                properties: {},
-              },
-              actionBar: {
-                type: 'void',
-                'x-align': 'left',
-                'x-initializer': itemActionInitializers,
-                'x-component': 'ActionBar',
-                'x-component-props': {
-                  useProps: '{{ useListActionBarProps }}',
-                  layout: 'one-column',
-                },
-                properties: {},
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-  return schema;
-};
-
-export const createGridCardBlockSchema = (options) => {
-  const {
-    formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'GridCardActionInitializers',
-    itemActionInitializers = 'GridCardItemActionInitializers',
-    collection,
-    association,
-    resource,
-    template,
-    dataSource,
-    settings,
-    ...others
-  } = options;
-  const resourceName = resource || association || collection;
-  const schema: ISchema = {
-    type: 'void',
-    'x-acl-action': `${resourceName}:view`,
-    'x-decorator': 'GridCard.Decorator',
-    'x-decorator-props': {
-      resource: resourceName,
-      collection,
-      association,
-      dataSource,
-      readPretty: true,
-      action: 'list',
-      params: {
-        pageSize: 12,
-      },
-      runWhenParamsChanged: true,
-      ...others,
-    },
-    'x-component': 'BlockItem',
-    'x-component-props': {
-      useProps: '{{ useGridCardBlockItemProps }}',
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': settings,
-    properties: {
-      actionBar: {
-        type: 'void',
-        'x-initializer': actionInitializers,
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
-        properties: {},
-      },
-      list: {
-        type: 'array',
-        'x-component': 'GridCard',
-        'x-component-props': {
-          useProps: '{{ useGridCardBlockProps }}',
-        },
-        properties: {
-          item: {
-            type: 'object',
-            'x-component': 'GridCard.Item',
-            'x-read-pretty': true,
-            'x-component-props': {
-              useProps: '{{ useGridCardItemProps }}',
-            },
-            properties: {
-              grid: template || {
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': formItemInitializers,
-                'x-initializer-props': {
-                  useProps: '{{ useGridCardItemInitializerProps }}',
-                },
-                properties: {},
-              },
-              actionBar: {
-                type: 'void',
-                'x-align': 'left',
-                'x-initializer': itemActionInitializers,
-                'x-component': 'ActionBar',
-                'x-component-props': {
-                  useProps: '{{ useGridCardActionBarProps }}',
-                  layout: 'one-column',
-                },
-                properties: {},
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-  return schema;
-};
-export const createFormBlockSchema = (options) => {
-  const {
-    formItemInitializers = 'FormItemInitializers',
-    actionInitializers = 'FormActionInitializers',
+    formItemInitializers = 'form:configureFields',
+    actionInitializers = 'createForm:configureActions',
     collection,
     resource,
     dataSource,
@@ -1141,8 +1108,6 @@ export const createFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // action: 'get',
-      // useParams: '{{ useParamsFromRecord }}',
     },
     'x-toolbar': 'BlockSchemaToolbar',
     ...(settings ? { 'x-settings': settings } : { 'x-designer': designer }),
@@ -1154,9 +1119,7 @@ export const createFormBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
-        },
+        'x-use-component-props': 'useFormBlockProps',
         properties: {
           grid: template || {
             type: 'void',
@@ -1183,75 +1146,16 @@ export const createFormBlockSchema = (options) => {
   return schema;
 };
 
-export const createFilterFormBlockSchema = (options) => {
-  const {
-    formItemInitializers = 'FilterFormItemInitializers',
-    actionInitializers = 'FilterFormActionInitializers',
-    collection,
-    resource,
-    association,
-    dataSource,
-    action,
-    template,
-    settings,
-    ...others
-  } = options;
-  const resourceName = resource || association || collection;
-  const schema: ISchema = {
-    type: 'void',
-    'x-decorator': 'FilterFormBlockProvider',
-    'x-decorator-props': {
-      ...others,
-      action,
-      resource: resourceName,
-      dataSource,
-      collection,
-      association,
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    ...(settings ? { 'x-settings': settings } : { 'x-designer': 'FormV2.FilterDesigner' }),
-    'x-component': 'CardItem',
-    // 保存当前筛选区块所能过滤的数据区块
-    'x-filter-targets': [],
-    // 用于存储用户设置的每个字段的运算符，目前仅筛选表单区块支持自定义
-    'x-filter-operators': {},
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-component': 'FormV2',
-        'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
-        },
-        properties: {
-          grid: template || {
-            type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': formItemInitializers,
-            properties: {},
-          },
-          [uid()]: {
-            type: 'void',
-            'x-initializer': actionInitializers,
-            'x-component': 'ActionBar',
-            'x-component-props': {
-              layout: 'one-column',
-              style: {
-                float: 'right',
-              },
-            },
-            properties: {},
-          },
-        },
-      },
-    },
-  };
-  return schema;
-};
-
+/**
+ * @deprecated
+ * 已弃用，可以使用 createDetailsBlockSchema 替换
+ * @param options
+ * @returns
+ */
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
-    formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'ReadPrettyFormActionInitializers',
+    formItemInitializers = 'details:configureFields',
+    actionInitializers = 'details:configureActions',
     collection,
     association,
     dataSource,
@@ -1282,10 +1186,8 @@ export const createReadPrettyFormBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
+        'x-use-component-props': 'useFormBlockProps',
         'x-read-pretty': true,
-        'x-component-props': {
-          useProps: '{{ useFormBlockProps }}',
-        },
         properties: {
           [uid()]: {
             type: 'void',
@@ -1312,10 +1214,15 @@ export const createReadPrettyFormBlockSchema = (options) => {
   return schema;
 };
 
+/**
+ * @deprecated
+ * 已弃用，可以使用 createTableBlockUISchema 替换
+ * @param options
+ * @returns
+ */
 export const createTableBlockSchema = (options) => {
   const {
     collection,
-    resource,
     rowKey,
     tableActionInitializers,
     tableColumnInitializers,
@@ -1330,11 +1237,10 @@ export const createTableBlockSchema = (options) => {
   const schema: ISchema = {
     type: 'void',
     'x-decorator': tableBlockProvider ?? 'TableBlockProvider',
-    'x-acl-action': `${resource || collection}:list`,
+    'x-acl-action': `${collection}:list`,
     'x-decorator-props': {
       collection,
       dataSource,
-      resource: resource || collection,
       action: 'list',
       params: {
         pageSize,
@@ -1353,7 +1259,7 @@ export const createTableBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': tableActionInitializers ?? 'TableActionInitializers',
+        'x-initializer': tableActionInitializers ?? 'table:configureActions',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -1364,14 +1270,14 @@ export const createTableBlockSchema = (options) => {
       },
       [uid()]: {
         type: 'array',
-        'x-initializer': tableColumnInitializers ?? 'TableColumnInitializers',
+        'x-initializer': tableColumnInitializers ?? 'table:configureColumns',
         'x-component': 'TableV2',
+        'x-use-component-props': 'useTableBlockProps',
         'x-component-props': {
           rowKey: 'id',
           rowSelection: {
             type: 'checkbox',
           },
-          useProps: '{{ useTableBlockProps }}',
         },
         properties: {
           actions: {
@@ -1381,7 +1287,7 @@ export const createTableBlockSchema = (options) => {
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
             'x-designer': 'TableV2.ActionColumnDesigner',
-            'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
+            'x-initializer': tableActionColumnInitializers ?? 'table:configureItemActions',
             properties: {
               [uid()]: {
                 type: 'void',
@@ -1399,87 +1305,6 @@ export const createTableBlockSchema = (options) => {
     },
   };
   // console.log(JSON.stringify(schema, null, 2));
-  return schema;
-};
-
-export const createCollapseBlockSchema = (options) => {
-  const { collection, dataSource, blockType } = options;
-  const schema: ISchema = {
-    type: 'void',
-    'x-decorator': 'AssociationFilter.Provider',
-    'x-decorator-props': {
-      collection,
-      dataSource,
-      blockType,
-      associationFilterStyle: {
-        width: '100%',
-      },
-      name: 'filter-collapse',
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:filterCollapse',
-    'x-component': 'CardItem',
-    'x-filter-targets': [],
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-action': 'associateFilter',
-        'x-initializer': 'AssociationFilterInitializers',
-        'x-component': 'AssociationFilter',
-        properties: {},
-      },
-    },
-  };
-
-  return schema;
-};
-
-export const createTableSelectorSchema = (options) => {
-  const { collection, dataSource, resource, rowKey, ...others } = options;
-  const schema: ISchema = {
-    type: 'void',
-    'x-acl-action': `${resource || collection}:list`,
-    'x-decorator': 'TableSelectorProvider',
-    'x-decorator-props': {
-      collection,
-      resource: resource || collection,
-      dataSource,
-      action: 'list',
-      params: {
-        pageSize: 20,
-      },
-      rowKey,
-      ...others,
-    },
-    'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:tableSelector',
-    'x-component': 'CardItem',
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-initializer': 'TableActionInitializers',
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
-        properties: {},
-      },
-      value: {
-        type: 'array',
-        'x-initializer': 'TableColumnInitializers',
-        'x-component': 'TableV2.Selector',
-        'x-component-props': {
-          rowSelection: {
-            type: 'checkbox',
-          },
-          useProps: '{{ useTableSelectorProps }}',
-        },
-        properties: {},
-      },
-    },
-  };
   return schema;
 };
 
@@ -1526,7 +1351,9 @@ const getChildren = ({
         return (
           componentName &&
           template.componentName === componentName &&
-          (!template.resourceName || template.resourceName === item.name)
+          (['FormItem', 'ReadPrettyFormItem'].includes(componentName) ||
+            !template.resourceName ||
+            template.resourceName === item.name)
         );
       });
       if (!templates.length) {
@@ -1560,8 +1387,9 @@ const getChildren = ({
             dataSource,
             title: t('Duplicate template'),
             children: templates.map((template) => {
-              const templateName =
-                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+                ? `${template?.name} ${t('(Fields only)')}`
+                : template?.name;
               return {
                 type: 'item',
                 mode: 'copy',
@@ -1579,8 +1407,9 @@ const getChildren = ({
             dataSource,
             title: t('Reference template'),
             children: templates.map((template) => {
-              const templateName =
-                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+                ? `${template?.name} ${t('(Fields only)')}`
+                : template?.name;
               return {
                 type: 'item',
                 mode: 'reference',
@@ -1595,3 +1424,150 @@ const getChildren = ({
       };
     });
 };
+
+function useAssociationFields({
+  componentName,
+  filterCollections,
+  showAssociationFields,
+}: {
+  componentName: string;
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
+  showAssociationFields?: boolean;
+}) {
+  const fieldSchema = useFieldSchema();
+  const { getCollectionFields } = useCollectionManager_deprecated();
+  const collection = useCollection_deprecated();
+  const cm = useCollectionManager();
+  const dataSource = useDataSourceKey();
+  const { getTemplatesByCollection } = useSchemaTemplateManager();
+  const { t } = useTranslation();
+  const compile = useCompile();
+
+  return useMemo(() => {
+    if (!showAssociationFields) {
+      return [];
+    }
+
+    let fields: CollectionFieldOptions[] = [];
+
+    if (fieldSchema['x-initializer']) {
+      fields = collection.fields;
+    } else {
+      const collection = recursiveParent(fieldSchema.parent);
+      if (collection) {
+        fields = getCollectionFields(collection);
+      }
+    }
+
+    return fields
+      .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
+      .filter((field) => filterCollections({ associationField: field }))
+      .map((field, index) => {
+        const title = compile(field.uiSchema.title || field.name);
+        const templates = getTemplatesByCollection(dataSource, field.target).filter((template) => {
+          // 针对弹窗中的详情区块
+          if (componentName === 'ReadPrettyFormItem') {
+            if (['hasOne', 'belongsTo'].includes(field.type)) {
+              return template.componentName === 'ReadPrettyFormItem';
+            } else {
+              return template.componentName === 'Details';
+            }
+          }
+
+          return (
+            componentName &&
+            template.componentName === componentName &&
+            (['FormItem', 'ReadPrettyFormItem'].includes(componentName) ||
+              !template.resourceName ||
+              template.resourceName === `${field.collectionName}.${field.name}`)
+          );
+        });
+        if (!templates.length) {
+          return {
+            type: 'item',
+            name: `${field.collectionName}.${field.name}`,
+            collectionName: field.target,
+            title,
+            dataSource,
+            associationField: field,
+          };
+        }
+        return {
+          key: `associationFiled_${componentName}_table_subMenu_${index}`,
+          type: 'subMenu',
+          name: `${field.target}_${index}`,
+          title,
+          dataSource,
+          children: [
+            {
+              type: 'item',
+              name: `${field.collectionName}.${field.name}`,
+              collectionName: field.target,
+              dataSource,
+              title: t('Blank block'),
+              associationField: field,
+            },
+            {
+              type: 'divider',
+            },
+            {
+              key: `associationFiled_${componentName}_table_subMenu_${index}_copy`,
+              type: 'subMenu',
+              name: 'copy',
+              dataSource,
+              title: t('Duplicate template'),
+              children: templates.map((template) => {
+                const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+                  ? `${template?.name} ${t('(Fields only)')}`
+                  : template?.name;
+                return {
+                  type: 'item',
+                  mode: 'copy',
+                  name: `${field.collectionName}.${field.name}`,
+                  collectionName: field.target,
+                  template,
+                  dataSource,
+                  title: templateName || t('Untitled'),
+                  associationField: field,
+                };
+              }),
+            },
+            {
+              key: `associationFiled_${componentName}_table_subMenu_${index}_ref`,
+              type: 'subMenu',
+              name: 'ref',
+              dataSource,
+              title: t('Reference template'),
+              children: templates.map((template) => {
+                const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+                  ? `${template?.name} ${t('(Fields only)')}`
+                  : template?.name;
+                return {
+                  type: 'item',
+                  mode: 'reference',
+                  name: `${field.collectionName}.${field.name}`,
+                  collectionName: field.target,
+                  template,
+                  dataSource,
+                  title: templateName || t('Untitled'),
+                  associationField: field,
+                };
+              }),
+            },
+          ],
+        };
+      });
+  }, [
+    cm,
+    collection.fields,
+    compile,
+    componentName,
+    dataSource,
+    fieldSchema,
+    filterCollections,
+    getCollectionFields,
+    getTemplatesByCollection,
+    showAssociationFields,
+    t,
+  ]);
+}

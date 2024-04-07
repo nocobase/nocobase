@@ -6,6 +6,7 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsTemplate,
   removeNullCondition,
+  setDataLoadingModeSettingsItem,
   useCollection,
   useCollection_deprecated,
   useCompile,
@@ -204,7 +205,6 @@ export const oldGanttSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
-        const { service } = useGanttBlockContext();
         const { dn } = useDesignable();
         return {
           collectionName: name,
@@ -216,7 +216,7 @@ export const oldGanttSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service.params?.[0], filter });
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -373,6 +373,7 @@ export const ganttSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'endDateField',
       Component: SchemaSettingsSelectItem,
@@ -444,7 +445,6 @@ export const ganttSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
-        const { service } = useGanttBlockContext();
         const { dn } = useDesignable();
         return {
           collectionName: name,
@@ -456,7 +456,7 @@ export const ganttSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service.params?.[0], filter });
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

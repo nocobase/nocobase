@@ -1,8 +1,8 @@
 import { useCollectionDataSource } from '@nocobase/client';
+import { isValidFilter } from '@nocobase/utils/client';
 
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { collection, filter } from '../schemas/collection';
-import { isValidFilter } from '../utils';
 import { Instruction } from '.';
 import { NAMESPACE, lang } from '../locale';
 
@@ -12,7 +12,29 @@ export default class extends Instruction {
   group = 'collection';
   description = `{{t("Delete records of a collection. Could use variables in workflow context as filter. All records match the filter will be deleted.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
-    collection,
+    collection: {
+      ...collection,
+      'x-reactions': [
+        ...collection['x-reactions'],
+        {
+          target: 'params',
+          fulfill: {
+            state: {
+              visible: '{{!!$self.value}}',
+            },
+          },
+        },
+        {
+          target: 'params',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: '{{Object.create({})}}',
+            },
+          },
+        },
+      ],
+    },
     params: {
       type: 'object',
       properties: {

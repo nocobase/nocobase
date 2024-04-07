@@ -91,6 +91,7 @@ export const configurationSchema: ISchema = {
               title: generateNTemplate('Add API key'),
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'PlusOutlined',
                 openMode: 'drawer',
                 type: 'primary',
               },
@@ -165,9 +166,9 @@ export const configurationSchema: ISchema = {
         [uid()]: {
           type: 'array',
           'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowKey: 'id',
-            useProps: '{{ useTableBlockProps }}',
           },
           properties: {
             column1: {

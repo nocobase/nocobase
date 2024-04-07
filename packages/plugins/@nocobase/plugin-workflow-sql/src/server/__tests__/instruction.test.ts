@@ -92,6 +92,26 @@ describe('workflow > instructions > sql', () => {
   });
 
   describe('sql with variables', () => {
+    it('$system.now', async () => {
+      const queryInterface = db.sequelize.getQueryInterface();
+      const n1 = await workflow.createNode({
+        type: 'sql',
+        config: {
+          sql: `select '{{$system.now}}' as a`,
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [sqlJob] = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
+      // expect(queryJob.status).toBe(JOB_STATUS.RESOLVED);
+      // expect(queryJob.result.read).toBe(post.id);
+    });
+
     it('update', async () => {
       const queryInterface = db.sequelize.getQueryInterface();
       const n1 = await workflow.createNode({
@@ -193,6 +213,37 @@ describe('workflow > instructions > sql', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
+    });
+  });
+
+  describe('multiple data source', () => {
+    it('query on another data source', async () => {
+      const anotherSource = app.dataSourceManager.dataSources.get('another');
+      const PostCollection = anotherSource.collectionManager.getCollection('posts');
+      const { repository: AnotherPostRepo } = PostCollection;
+      const post = await AnotherPostRepo.create({ values: { title: 't1' } });
+      const p1s = await AnotherPostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const n1 = await workflow.createNode({
+        type: 'sql',
+        config: {
+          dataSource: 'another',
+          sql: `select * from ${PostCollection.quotedTableName()}`,
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.result.length).toBe(2);
+      expect(job.result[0].length).toBe(1);
+      // @ts-ignore
+      expect(job.result[0][0].id).toBe(post.id);
     });
   });
 });

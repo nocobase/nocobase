@@ -9,7 +9,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2165, T2174, T3251 } from './templatesOfBug';
+import { T2165, T2174, T3251, T3806, T3815, T3871 } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
@@ -254,6 +254,68 @@ test.describe('creation form block schema settings', () => {
         page.getByLabel('block-item-CollectionField-users-form-users.email-Email').getByRole('textbox'),
       ).toBeEditable();
     });
+
+    // https://nocobase.height.app/T-3806
+    test('after save as block template', async ({ page, mockPage }) => {
+      await mockPage(T3806).goto();
+
+      // 1. 一开始联动规则应该正常
+      await page
+        .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+        .getByRole('textbox')
+        .fill('123');
+      await expect(
+        page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+      ).toHaveValue('123');
+
+      try {
+        // 2. 将表单区块保存为模板后
+        await page.getByLabel('block-item-CardItem-users-form').hover();
+        await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
+        await page.getByRole('menuitem', { name: 'Save as block template' }).click();
+        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await page.waitForTimeout(1000);
+
+        // 3. 联动规则应该依然是正常的
+        await page
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox')
+          .fill('456');
+        await expect(
+          page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+        ).toHaveValue('456');
+      } catch (err) {
+        throw err;
+      } finally {
+        // 4. 把创建的模板删除
+        await page.goto('/admin/settings/ui-schema-storage');
+        await page.getByLabel('Select all').check();
+        await page.getByLabel('action-Action-Delete-destroy-').click();
+        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await expect(page.getByRole('row', { name: 'Users_Form' }).first()).toBeHidden();
+      }
+    });
+
+    // https://nocobase.height.app/T-T3815 &&T-3802
+    test('fireImmediately in create form & edit form', async ({ page, mockPage, mockRecord }) => {
+      const nocoPage = await mockPage(T3815).waitForInit();
+      await mockRecord('general', {
+        RadioGroup: '002',
+        number: 66,
+        select: '002',
+      });
+      await nocoPage.goto();
+
+      // 编辑表单中获取到接口数据后再触发联动规则
+      await page.getByLabel('action-Action.Link-Edit-').click();
+      await expect(await page.getByRole('spinbutton').inputValue()).toBe('66');
+      await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
+
+      //新建表单中的赋默认值后的联动规则
+      await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+      await page.getByLabel('action-Action-Add new-create-').click();
+      await expect(await page.getByRole('spinbutton').inputValue()).toBe('88');
+    });
   });
 
   test('Save as block template & convert reference to duplicate', async ({ page, mockPage }) => {
@@ -350,7 +412,7 @@ test.describe('creation form block schema settings', () => {
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).toBeVisible();
 
     // 创建区块的时候，可以选择刚才保存的模板 --------------------------------------------------
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'General right' }).hover();
 
@@ -359,7 +421,7 @@ test.describe('creation form block schema settings', () => {
     await page.getByRole('menuitem', { name: 'new_form_template (Fields only)' }).click();
 
     // Reference template
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'General right' }).hover();
     await page.getByRole('menuitem', { name: 'General right' }).click();
@@ -549,7 +611,7 @@ test.describe('creation form block schema settings', () => {
         .hover();
       await page.mouse.move(100, 0);
 
-      await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
+      await page.getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
       await page.getByRole('menuitem', { name: 'Nickname' }).click();
       await page.getByRole('menuitem', { name: 'Username' }).click();
 
@@ -622,7 +684,7 @@ test.describe('creation form block schema settings', () => {
         .hover();
       await page.mouse.move(100, 0);
 
-      await page.getByLabel('schema-initializer-AssociationField.SubTable-TableColumnInitializers-users').hover();
+      await page.getByLabel('schema-initializer-AssociationField.SubTable-table:configureColumns-users').hover();
       await page.getByRole('menuitem', { name: 'Nickname' }).click();
       await page.getByRole('menuitem', { name: 'Username' }).click();
 
@@ -704,6 +766,22 @@ test.describe('creation form block schema settings', () => {
 
       await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
     });
+
+    // https://nocobase.height.app/T-3871
+    test('should immediate effect when set default value', async ({ page, mockPage }) => {
+      await mockPage(T3871).goto();
+
+      // 1. 为 Nickname 设置默认值
+      await page.getByLabel('block-item-CollectionField-').getByRole('textbox').hover();
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+      await page.getByRole('menuitem', { name: 'Set default value' }).click();
+      await page.getByLabel('block-item-VariableInput-').getByRole('textbox').click();
+      await page.getByLabel('block-item-VariableInput-').getByRole('textbox').fill('abcd');
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+      // 2. 设置的 ‘abcd’ 应该立即显示在 Nickname 字段的输入框中
+      await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abcd');
+    });
   });
 
   test('save block template & using block template', async ({ page, mockPage }) => {
@@ -719,7 +797,7 @@ test.describe('creation form block schema settings', () => {
             version: '2.0',
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
+            'x-initializer': 'page:addBlock',
             properties: {
               gdj0ceke8ac: {
                 _isJSONSchemaObject: true,
@@ -764,7 +842,7 @@ test.describe('creation form block schema settings', () => {
                                 version: '2.0',
                                 type: 'void',
                                 'x-component': 'Grid',
-                                'x-initializer': 'FormItemInitializers',
+                                'x-initializer': 'form:configureFields',
                                 properties: {
                                   gnw25oyqe56: {
                                     _isJSONSchemaObject: true,
@@ -810,7 +888,7 @@ test.describe('creation form block schema settings', () => {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
                                 type: 'void',
-                                'x-initializer': 'FormActionInitializers',
+                                'x-initializer': 'createForm:configureActions',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   layout: 'one-column',
@@ -879,7 +957,7 @@ test.describe('creation form block schema settings', () => {
             version: '2.0',
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
+            'x-initializer': 'page:addBlock',
             properties: {
               ibb0kjq3kyl: {
                 _isJSONSchemaObject: true,
@@ -919,7 +997,7 @@ test.describe('creation form block schema settings', () => {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'TableActionInitializers',
+                            'x-initializer': 'table:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
@@ -980,7 +1058,7 @@ test.describe('creation form block schema settings', () => {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'CreateFormBlockInitializers',
+                                                'x-initializer': 'popup:addNew:addBlock',
                                                 'x-uid': 'w224zhqyair',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -1014,7 +1092,7 @@ test.describe('creation form block schema settings', () => {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'array',
-                            'x-initializer': 'TableColumnInitializers',
+                            'x-initializer': 'table:configureColumns',
                             'x-component': 'TableV2',
                             'x-component-props': {
                               rowKey: 'id',
@@ -1033,7 +1111,7 @@ test.describe('creation form block schema settings', () => {
                                 'x-decorator': 'TableV2.Column.ActionBar',
                                 'x-component': 'TableV2.Column',
                                 'x-designer': 'TableV2.ActionColumnDesigner',
-                                'x-initializer': 'TableActionColumnInitializers',
+                                'x-initializer': 'table:configureItemActions',
                                 properties: {
                                   actions: {
                                     _isJSONSchemaObject: true,
@@ -1094,7 +1172,7 @@ test.describe('creation form block schema settings', () => {
                                                         version: '2.0',
                                                         type: 'void',
                                                         'x-component': 'Grid',
-                                                        'x-initializer': 'RecordBlockInitializers',
+                                                        'x-initializer': 'popup:common:addBlock',
                                                         'x-uid': 's49vs6v3qs0',
                                                         'x-async': false,
                                                         'x-index': 1,
@@ -1160,7 +1238,7 @@ test.describe('creation form block schema settings', () => {
         'x-index': 1,
       },
     }).goto();
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     //使用复制模板
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Users' }).hover();
@@ -1171,25 +1249,25 @@ test.describe('creation form block schema settings', () => {
 
     //在新建操作中使用引用模板
     await page.getByLabel('action-Action-Add new-create-users-table').click();
-    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
     await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
 
     //在编辑操作中使用引用模板
     await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
-    await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').click();
-    await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-users').click();
+    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
 
     //修改引用模板
-    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
+    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
     await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步

@@ -43,6 +43,13 @@ export const roleEditSchema = {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-content': '{{t("Default role")}}',
+          'x-reactions': (field) => {
+            if (field.initialValue) {
+              field.disabled = true;
+            } else {
+              field.disabled = false;
+            }
+          },
         },
         footer: {
           type: 'void',
@@ -90,9 +97,9 @@ export const roleCollectionsSchema: ISchema = {
           },
           'x-action': 'filter',
           'x-component': 'Filter.Action',
+          'x-use-component-props': 'useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
-            useProps: '{{ useFilterActionProps }}',
           },
           'x-align': 'left',
         },

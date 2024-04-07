@@ -22,7 +22,7 @@ export type RenderProps = {
 export interface ChartType {
   name: string;
   title: string;
-  component: React.FC<any>;
+  Component: React.FC<any>;
   schema: ISchema;
   init?: (
     fields: FieldOption[],
@@ -34,7 +34,7 @@ export interface ChartType {
     general?: any;
     advanced?: any;
   };
-  render: (props: RenderProps) => React.FC<any>;
+  getProps(props: RenderProps): any;
   getReference?: () => {
     title: string;
     link: string;
@@ -44,21 +44,21 @@ export interface ChartType {
 export type ChartProps = {
   name: string;
   title: string;
-  component: React.FC<any>;
+  Component: React.FC<any>;
   config?: Config[];
 };
 
 export class Chart implements ChartType {
   name: string;
   title: string;
-  component: React.FC<any>;
+  Component: React.FC<any>;
   config: Config[];
   configs = new Map<string, Function>();
 
-  constructor({ name, title, component, config }: ChartProps) {
+  constructor({ name, title, Component, config }: ChartProps) {
     this.name = name;
     this.title = title;
-    this.component = component;
+    this.Component = Component;
     this.config = config;
     this.addConfigs(configs);
   }
@@ -121,6 +121,7 @@ export class Chart implements ChartType {
     let xField: FieldOption;
     let yField: FieldOption;
     let seriesField: FieldOption;
+    let colorField: FieldOption;
     let yFields: FieldOption[];
     const getField = (fields: FieldOption[], selected: { field: string | string[]; alias?: string }) => {
       if (selected.alias) {
@@ -146,17 +147,19 @@ export class Chart implements ChartType {
             xIndex = i;
           }
         });
-        if (xIndex) {
-          // If there is a time field, the other field is used as the series field by default.
-          const index = xIndex === 0 ? 1 : 0;
-          seriesField = getField(fields, dimensions[index]);
-        } else {
-          xField = getField(fields, dimensions[0]);
-          seriesField = getField(fields, dimensions[1]);
+        xIndex = xIndex || 0;
+        xField = xField || getField(fields, dimensions[xIndex]);
+        const restFields = dimensions.filter((_, i) => i !== xIndex).map((i) => getField(fields, i));
+        if (restFields.length === 1) {
+          seriesField = restFields[0];
+          colorField = restFields[0];
+        } else if (restFields.length > 1) {
+          colorField = restFields[0];
+          seriesField = restFields[1];
         }
       }
     }
-    return { xField, yField, seriesField, yFields };
+    return { xField, yField, seriesField, colorField, yFields };
   }
 
   /**
@@ -166,12 +169,5 @@ export class Chart implements ChartType {
    */
   getProps(props: RenderProps): any {
     return props;
-  }
-
-  render({ data, general, advanced, fieldProps }: RenderProps) {
-    return () =>
-      React.createElement(this.component, {
-        ...this.getProps({ data, general, advanced, fieldProps }),
-      });
   }
 }

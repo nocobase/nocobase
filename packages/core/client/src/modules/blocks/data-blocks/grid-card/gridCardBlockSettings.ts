@@ -18,6 +18,7 @@ import {
 import { SchemaSettingsTemplate } from '../../../../schema-settings';
 import { columnCountMarks } from './utils';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const gridCardBlockSettings = new SchemaSettings({
   name: 'blockSettings:gridCard',
@@ -90,7 +91,6 @@ export const gridCardBlockSettings = new SchemaSettings({
         const { form } = useFormBlockContext();
         const field = useField();
         const { dn } = useDesignable();
-        const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
 
         return {
           collectionName: name,
@@ -224,6 +224,7 @@ export const gridCardBlockSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',
       type: 'select',
@@ -256,7 +257,8 @@ export const gridCardBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
 
         return {
           componentName: 'GridCard',

@@ -3,6 +3,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
@@ -19,6 +20,9 @@ type Params = {
   sort?: any;
 };
 
+/**
+ * @internal
+ */
 export const TableSelectorContext = createContext<any>({});
 TableSelectorContext.displayName = 'TableSelectorContext';
 const TableSelectorParamsContext = createContext<Params>({}); // 用于传递参数
@@ -141,7 +145,7 @@ const useAssociationNames = (collection) => {
   );
 };
 
-export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
+export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelectorProviderProps) => {
   const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
@@ -263,7 +267,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
       </BlockProvider>
     </SchemaComponentOptions>
   );
-};
+});
 
 export const useTableSelectorContext = () => {
   return useContext(TableSelectorContext);
@@ -290,7 +294,16 @@ export const useTableSelectorProps = () => {
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-  }, [ctx?.service?.loading]);
+  }, [
+    collectionField?.foreignKey,
+    ctx?.field?.data?.selectedRowKeys,
+    ctx?.service?.data?.data,
+    ctx?.service?.data?.meta?.count,
+    ctx?.service?.data?.meta?.page,
+    ctx?.service?.data?.meta?.pageSize,
+    ctx?.service?.loading,
+    field,
+  ]);
   return {
     loading: ctx?.service?.loading,
     showIndex: false,

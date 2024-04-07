@@ -2,16 +2,18 @@ import { TableOutlined } from '@ant-design/icons';
 import React from 'react';
 
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { createCollapseBlockSchema } from '../../../../schema-initializer/utils';
+import { createCollapseBlockSchema } from './createFilterCollapseBlockSchema';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { Collection } from '../../../../data-source';
+import { Collection, CollectionFieldOptions } from '../../../../data-source';
 
 export const FilterCollapseBlockInitializer = ({
-  filterMenuItemChildren,
+  filterCollections,
   onlyCurrentDataSource,
+  hideChildrenIfSingleCollection,
 }: {
-  filterMenuItemChildren: (collection: Collection) => boolean;
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
+  hideChildrenIfSingleCollection?: boolean;
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
@@ -25,13 +27,14 @@ export const FilterCollapseBlockInitializer = ({
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
           dataSource: item.dataSource,
-          collection: item.collectionName || item.name,
+          collectionName: item.collectionName || item.name,
           // 与数据区块做区分
           blockType: 'filter',
         });
         insert(schema);
       }}
-      filter={filterMenuItemChildren}
+      filter={filterCollections}
+      hideChildrenIfSingleCollection={hideChildrenIfSingleCollection}
     />
   );
 };

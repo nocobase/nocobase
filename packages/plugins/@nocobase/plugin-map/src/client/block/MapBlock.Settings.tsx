@@ -10,13 +10,13 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
   SchemaSettingsTemplate,
-  mergeFilter,
   useCollection,
-  useCollectionManager,
   useDesignable,
   useFormBlockContext,
   SchemaSettings,
   useCollectionManager_deprecated,
+  setDataLoadingModeSettingsItem,
+  useDataLoadingMode,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { useMapTranslation } from '../locale';
@@ -127,6 +127,7 @@ export const mapBlockSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'defaultZoomLevel',
       Component: SchemaSettingsModalItem,
@@ -187,10 +188,7 @@ export const mapBlockSettings = new SchemaSettings({
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
             const filters = service.params?.[1]?.filters || {};
-            service.run(
-              { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
-              { filters },
-            );
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -223,7 +221,8 @@ export const mapBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           componentName: 'Map',
           collectionName: name,

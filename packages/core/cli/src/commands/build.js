@@ -1,6 +1,6 @@
 const { resolve } = require('path');
 const { Command } = require('commander');
-const { run, nodeCheck, isPackageValid } = require('../util');
+const { run, nodeCheck, isPackageValid, buildIndexHtml } = require('../util');
 
 /**
  *
@@ -13,6 +13,7 @@ module.exports = (cli) => {
     .argument('[packages...]')
     .option('-v, --version', 'print version')
     .option('-c, --compile', 'compile the @nocobase/build package')
+    .option('-r, --retry', 'retry the last failed package')
     .option('-w, --watch', 'watch compile the @nocobase/build package')
     .option('-s, --sourcemap', 'generate sourcemap')
     .option('--no-dts', 'not generate dts')
@@ -24,12 +25,15 @@ module.exports = (cli) => {
         });
         if (options.watch) return;
       }
+      process.env['VITE_CJS_IGNORE_WARNING'] = 'true';
 
       await run('nocobase-build', [
         ...pkgs,
         options.version ? '--version' : '',
         !options.dts ? '--no-dts' : '',
         options.sourcemap ? '--sourcemap' : '',
+        options.retry ? '--retry' : '',
       ]);
+      buildIndexHtml(true);
     });
 };

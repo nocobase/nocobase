@@ -18,11 +18,15 @@ import { isVariable, REGEX_OF_VARIABLE } from '../../../variables/utils/isVariab
 import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitls';
 import { useProps } from '../../hooks/useProps';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 
 export interface FormProps {
   [key: string]: any;
 }
-
+function hasInitialValues(obj) {
+  return Object.values(obj).some((value) => value !== null);
+}
 const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
@@ -86,6 +90,7 @@ const WithForm = (props: WithFormProps) => {
   const { setFormValueChanged } = useActionContext();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
+  const { templateFinshed } = useTemplateBlockContext();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
@@ -150,7 +155,7 @@ const WithForm = (props: WithFormProps) => {
                     return result;
                   },
                   getSubscriber(action, field, rule, variables, localVariables),
-                  { fireImmediately: true },
+                  { fireImmediately: hasInitialValues(form.initialValues) },
                 ),
               );
             });
@@ -165,7 +170,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [linkageRules]);
+  }, [linkageRules, templateFinshed]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
@@ -192,25 +197,28 @@ const WithoutForm = (props) => {
   );
 };
 
+const formLayoutCss = css`
+  .ant-formily-item-feedback-layout-loose {
+    margin-bottom: 12px;
+  }
+`;
+
 export const Form: React.FC<FormProps> & {
   Designer?: any;
   FilterDesigner?: any;
   ReadPrettyDesigner?: any;
   Templates?: any;
-} = observer(
-  (props) => {
+} = withDynamicSchemaProps(
+  observer((props) => {
     const field = useField<Field>();
+
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { form, disabled, ...others } = useProps(props);
+
     const formDisabled = disabled || field.disabled;
     return (
       <ConfigProvider componentDisabled={formDisabled}>
-        <form
-          className={css`
-            .ant-formily-item-feedback-layout-loose {
-              margin-bottom: 12px;
-            }
-          `}
-        >
+        <form onSubmit={(e) => e.preventDefault()} className={formLayoutCss}>
           <Spin spinning={field.loading || false}>
             {form ? (
               <WithForm form={form} {...others} disabled={formDisabled} />
@@ -221,7 +229,7 @@ export const Form: React.FC<FormProps> & {
         </form>
       </ConfigProvider>
     );
-  },
+  }),
   { displayName: 'Form' },
 );
 

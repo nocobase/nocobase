@@ -10,6 +10,7 @@ import {
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
+import { T3843 } from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -101,7 +102,7 @@ test.describe('table block schema settings', () => {
       ).toBeChecked();
       await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
       // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
       await page.getByLabel('schema-initializer-TableV2-').click();
@@ -141,7 +142,7 @@ test.describe('table block schema settings', () => {
     }
 
     async function createColumnItem(page: Page, fieldName: string) {
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: fieldName, exact: true }).click();
       await page.mouse.move(300, 0);
     }
@@ -213,7 +214,7 @@ test.describe('table block schema settings', () => {
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
       await page.getByRole('menuitem', { name: 'email' }).click();
       await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
       await page.mouse.move(300, 0);
@@ -567,7 +568,7 @@ test.describe('actions schema settings', () => {
   test.describe('popup', () => {
     const addSomeCustomActions = async (page: Page) => {
       // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'View' }).click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
@@ -624,7 +625,7 @@ test.describe('actions schema settings', () => {
   test.describe('update record', () => {
     const addSomeCustomActions = async (page: Page) => {
       // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'View' }).click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
@@ -677,13 +678,13 @@ test.describe('actions schema settings', () => {
 
       // 添加一行数据
       // TODO: 使用 mockRecord 为 tree 表添加一行数据无效
-      await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-table:configureActions-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).click();
       await page.getByRole('button', { name: 'Add new' }).click();
-      await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
       await page.mouse.move(300, 0);
-      await page.getByLabel('schema-initializer-ActionBar-CreateFormActionInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.mouse.move(300, 0);
       await page.getByRole('button', { name: 'Submit' }).click();
@@ -716,6 +717,35 @@ test.describe('actions schema settings', () => {
         supportedOptions: ['Edit button', 'Open mode', 'Popup size', 'Delete'],
       });
     });
+  });
+});
+
+test.describe('table column schema settings', () => {
+  // https://nocobase.height.app/T-3843
+  test('set data scope', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T3843).waitForInit();
+    const record1 = await mockRecord('collection1');
+    await nocoPage.goto();
+
+    // 1. 关系字段下拉框中应该有数据
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
+
+    // 2. 为该关系字段设置一个数据范围后，下拉框中应该有一个匹配项
+    await page.getByRole('button', { name: 'manyToMany1', exact: true }).hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-collection2').hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+    await page.getByRole('spinbutton').click();
+    await page.getByRole('spinbutton').fill('1');
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
   });
 });
 

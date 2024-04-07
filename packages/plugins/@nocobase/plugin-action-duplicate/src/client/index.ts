@@ -4,7 +4,7 @@ import { deprecatedDuplicateActionSettings, duplicateActionSettings } from './Du
 import { DuplicateActionInitializer } from './DuplicateActionInitializer';
 import { DuplicatePluginProvider } from './DuplicatePluginProvider';
 
-export class PluginDuplicateClient extends Plugin {
+export class PluginActionDuplicateClient extends Plugin {
   async load() {
     this.app.use(DuplicatePluginProvider);
     this.app.addComponents({
@@ -60,13 +60,9 @@ export class PluginDuplicateClient extends Plugin {
       },
     };
 
-    this.app.schemaInitializerManager.addItem(
-      'TableActionColumnInitializers',
-      'actions.duplicate',
-      initializerTableData,
-    );
+    this.app.schemaInitializerManager.addItem('table:configureItemActions', 'actions.duplicate', initializerTableData);
   }
 }
 
-export default PluginDuplicateClient;
+export default PluginActionDuplicateClient;
 export * from './DuplicateAction';

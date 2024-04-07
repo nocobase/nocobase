@@ -6,12 +6,16 @@ import { Alert, Flex, ModalProps, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
-import { useApp } from '../../../application';
+import { isInitializersSame, useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import {
+  joinCollectionName,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
+} from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
@@ -28,6 +32,7 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { DataSourceProvider, useDataSourceKey } from '../../../data-source';
 
 const MenuGroup = (props) => {
   return props.children;
@@ -139,7 +144,7 @@ export function AssignedFieldValues() {
     type: 'void',
     'x-uid': uid(),
     'x-component': 'Grid',
-    'x-initializer': 'CustomFormItemInitializers',
+    'x-initializer': 'assignFieldValuesForm:configureFields',
   };
   const tips = {
     'customize:update': t(
@@ -327,7 +332,8 @@ function WorkflowSelect({ actionType, direct = false, ...props }) {
   const { setValuesIn } = useForm();
   const baseCollection = useCollection_deprecated();
   const { getCollection } = useCollectionManager_deprecated();
-  const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
+  const dataSourceKey = useDataSourceKey();
+  const [workflowCollection, setWorkflowCollection] = useState(joinCollectionName(dataSourceKey, baseCollection.name));
   const compile = useCompile();
 
   const workflowPlugin = usePlugin('workflow') as any;
@@ -351,11 +357,11 @@ function WorkflowSelect({ actionType, direct = false, ...props }) {
           const path = paths[i];
           const associationField = collection.fields.find((f) => f.name === path);
           if (associationField) {
-            collection = getCollection(associationField.target);
+            collection = getCollection(associationField.target, dataSourceKey);
           }
         }
       }
-      setWorkflowCollection(collection.name);
+      setWorkflowCollection(joinCollectionName(dataSourceKey, collection.name));
       setValuesIn(`group[${index}].workflowKey`, null);
     });
   });
@@ -375,38 +381,40 @@ function WorkflowSelect({ actionType, direct = false, ...props }) {
   );
 
   return (
-    <RemoteSelect
-      manual={false}
-      placeholder={t('Select workflow', { ns: 'workflow' })}
-      fieldNames={{
-        label: 'title',
-        value: 'key',
-      }}
-      service={{
-        resource: 'workflows',
-        action: 'list',
-        params: {
-          filter: {
-            type: workflowTypes,
-            enabled: true,
-            'config.collection': workflowCollection,
+    <DataSourceProvider dataSource="main">
+      <RemoteSelect
+        manual={false}
+        placeholder={t('Select workflow', { ns: 'workflow' })}
+        fieldNames={{
+          label: 'title',
+          value: 'key',
+        }}
+        service={{
+          resource: 'workflows',
+          action: 'list',
+          params: {
+            filter: {
+              type: workflowTypes,
+              enabled: true,
+              'config.collection': workflowCollection,
+            },
           },
-        },
-      }}
-      optionFilter={optionFilter}
-      optionRender={({ label, data }) => {
-        const typeOption = workflowPlugin.getTriggersOptions().find((item) => item.value === data.type);
-        return typeOption ? (
-          <Flex justify="space-between">
-            <span>{label}</span>
-            <Tag color={typeOption.color}>{compile(typeOption.label)}</Tag>
-          </Flex>
-        ) : (
-          label
-        );
-      }}
-      {...props}
-    />
+        }}
+        optionFilter={optionFilter}
+        optionRender={({ label, data }) => {
+          const typeOption = workflowPlugin.getTriggersOptions().find((item) => item.value === data.type);
+          return typeOption ? (
+            <Flex justify="space-between">
+              <span>{label}</span>
+              <Tag color={typeOption.color}>{compile(typeOption.label)}</Tag>
+            </Flex>
+          ) : (
+            label
+          );
+        }}
+        {...props}
+      />
+    </DataSourceProvider>
   );
 }
 
@@ -414,7 +422,7 @@ export function WorkflowConfig() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const { name: collection } = useCollection_deprecated();
+  const collection = useCollection_deprecated();
   // TODO(refactor): should refactor for getting certain action type, better from 'x-action'.
   const formBlock = useFormBlockContext();
   const actionType = formBlock?.type || fieldSchema['x-action'];
@@ -483,7 +491,9 @@ export function WorkflowConfig() {
                         'x-component-props': {
                           placeholder: t('Select context', { ns: 'workflow' }),
                           popupMatchSelectWidth: false,
-                          collection,
+                          collection: `${
+                            collection.dataSource && collection.dataSource !== 'main' ? `${collection.dataSource}:` : ''
+                          }${collection.name}`,
                           filter: '{{ fieldFilter }}',
                           rootOption: {
                             label: t('Full form data', { ns: 'workflow' }),
@@ -671,7 +681,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           const fieldSchema = useFieldSchema();
           return (
             fieldSchema['x-action'] === 'submit' &&
-            fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
+            isInitializersSame(fieldSchema.parent?.['x-initializer'], 'createForm:configureActions')
           );
         },
       },
@@ -691,6 +701,19 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           return {
             collectionName: name,
           };
+        },
+      },
+      {
+        name: 'refreshDataBlockRequest',
+        Component: RefreshDataBlockRequest,
+        useComponentProps() {
+          return {
+            isPopupAction: false,
+          };
+        },
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
         },
       },
       {
@@ -745,6 +768,10 @@ export function SecondConFirm() {
     />
   );
 }
+
+/**
+ * @deprecated
+ */
 export const actionSettings = new SchemaSettings({
   name: 'ActionSettings',
   items: actionSettingsItems,
@@ -778,5 +805,30 @@ export const ActionDesigner = (props) => {
   );
 };
 
+export function RefreshDataBlockRequest(props) {
+  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] || {};
+  return (
+    <SchemaSettingsSwitchItem
+      title={t('Refresh data on action')}
+      //兼容历史数据
+      checked={refreshDataBlockRequest !== false}
+      onChange={(value) => {
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].refreshDataBlockRequest = value;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+            },
+          },
+        });
+      }}
+    />
+  );
+}
 ActionDesigner.ButtonEditor = ButtonEditor;
 ActionDesigner.RemoveButton = RemoveButton;

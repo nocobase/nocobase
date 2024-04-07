@@ -4,9 +4,12 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
-import { SchemaInitializerActionModal, SchemaInitializerItem, useSchemaInitializer } from '../../../../application';
-import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { SchemaInitializerActionModal } from '../../../../application/schema-initializer/components/SchemaInitializerActionModal';
+import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
+import { useSchemaInitializer } from '../../../../application/schema-initializer/context';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { useDataBlockProps } from '../../../../data-source';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
@@ -63,8 +66,7 @@ export const Resizable = () => {
   );
 };
 
-export const tableActionColumnInitializers = new SchemaInitializer({
-  name: 'TableActionColumnInitializers',
+const commonOptions = {
   insertPosition: 'beforeEnd',
   useInsert: function useInsert() {
     const { refresh } = useDesignable();
@@ -153,6 +155,27 @@ export const tableActionColumnInitializers = new SchemaInitializer({
         },
         {
           type: 'item',
+          title: '{{t("Disassociate")}}',
+          name: 'disassociate',
+          Component: 'DisassociateActionInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'disassociate',
+            'x-acl-action': 'destroy',
+            'x-decorator': 'ACLActionProvider',
+          },
+          useVisible() {
+            const props = useDataBlockProps();
+            const collection = useCollection_deprecated();
+            return (
+              !!props?.association &&
+              (collection.template !== 'view' || collection?.writableView) &&
+              collection.template !== 'sql'
+            );
+          },
+        },
+        {
+          type: 'item',
           title: '{{t("Add child")}}',
           name: 'addChildren',
           Component: 'CreateChildInitializer',
@@ -220,4 +243,21 @@ export const tableActionColumnInitializers = new SchemaInitializer({
       Component: Resizable,
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `tableActionColumnInitializers` instead
+ */
+export const tableActionColumnInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'TableActionColumnInitializers',
+  ...commonOptions,
 });
+
+export const tableActionColumnInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'table:configureItemActions',
+    ...commonOptions,
+  },
+  tableActionColumnInitializers_deprecated,
+);

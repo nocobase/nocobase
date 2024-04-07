@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { Card, Row, Col, Tabs, Divider } from 'antd';
-import { CollectionProvider, CollectionProvider_deprecated, ResourceActionProvider, usePlugin } from '@nocobase/client';
+import {
+  CollectionProvider,
+  CollectionProvider_deprecated,
+  ResourceActionProvider,
+  SchemaComponentContext,
+  usePlugin,
+  useSchemaComponentContext,
+} from '@nocobase/client';
 import { ISchema, Schema } from '@formily/react';
 import { RolesMenu } from './RolesMenu';
 import { useACLTranslation } from './locale';
@@ -58,53 +65,55 @@ export const RolesManagement: React.FC = () => {
     children: item.Component ? React.createElement(item.Component, { active: activeKey === name }) : null,
   }));
   const [role, setRole] = useState(null);
+  const scCtx = useSchemaComponentContext();
 
   return (
-    <RolesManagerContext.Provider value={{ role, setRole }}>
-      <Card>
-        <Row gutter={24} style={{ flexWrap: 'nowrap' }}>
-          <Col flex="280px" style={{ borderRight: '1px solid #eee', minWidth: '250px' }}>
-            <ResourceActionProvider
-              collection={collection}
-              request={{
-                resource: 'roles',
-                action: 'list',
-                params: {
-                  pagination: false,
-                  filter: {
-                    'name.$ne': 'root',
+    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+      <RolesManagerContext.Provider value={{ role, setRole }}>
+        <Card>
+          <Row gutter={24} style={{ flexWrap: 'nowrap' }}>
+            <Col flex="280px" style={{ borderRight: '1px solid #eee', minWidth: '250px' }}>
+              <ResourceActionProvider
+                collection={collection}
+                request={{
+                  resource: 'roles',
+                  action: 'list',
+                  params: {
+                    filter: {
+                      'name.$ne': 'root',
+                    },
+                    showAnonymous: true,
+                    sort: ['createdAt'],
+                    appends: [],
                   },
-                  showAnonymous: true,
-                  sort: ['createdAt'],
-                  appends: [],
-                },
-              }}
-            >
-              <CollectionProvider_deprecated collection={collection}>
-                <Row>
-                  <NewRole />
-                </Row>
-                <Divider style={{ margin: '12px 0' }} />
-                <RolesMenu />
-              </CollectionProvider_deprecated>
-            </ResourceActionProvider>
-          </Col>
-          <Col flex="auto" style={{ overflow: 'hidden' }}>
-            <Tabs
-              activeKey={activeKey}
-              onChange={(key) => setActiveKey(key)}
-              items={[
-                {
-                  key: 'permissions',
-                  label: t('Permissions'),
-                  children: <Permissions active={activeKey === 'permissions'} />,
-                },
-                ...tabs,
-              ]}
-            />
-          </Col>
-        </Row>
-      </Card>
-    </RolesManagerContext.Provider>
+                }}
+              >
+                <CollectionProvider_deprecated collection={collection}>
+                  <Row>
+                    <NewRole />
+                  </Row>
+                  <Divider style={{ margin: '12px 0' }} />
+                  <RolesMenu />
+                </CollectionProvider_deprecated>
+              </ResourceActionProvider>
+            </Col>
+            <Col flex="auto" style={{ overflow: 'hidden' }}>
+              <Tabs
+                activeKey={activeKey}
+                onChange={(key) => setActiveKey(key)}
+                items={[
+                  {
+                    key: 'permissions',
+                    label: t('Permissions'),
+                    children: <Permissions active={activeKey === 'permissions'} />,
+                  },
+                  ...tabs,
+                ]}
+              />
+            </Col>
+          </Row>
+        </Card>
+      </RolesManagerContext.Provider>
+    </SchemaComponentContext.Provider>
   );
 };

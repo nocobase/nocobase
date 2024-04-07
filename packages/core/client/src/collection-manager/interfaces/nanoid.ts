@@ -1,5 +1,5 @@
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { operators } from './properties';
+import { operators, autoFill, primaryKey, unique } from './properties';
 export class NanoidFieldInterface extends CollectionFieldInterface {
   name = 'nanoid';
   type = 'object';
@@ -15,7 +15,7 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
       'x-component': 'NanoIDInput',
     },
   };
-  availableTypes = ['string', 'uid'];
+  availableTypes = ['string', 'nanoid'];
   properties = {
     'uiSchema.title': {
       type: 'string',
@@ -28,9 +28,9 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
       type: 'string',
       title: '{{t("Field name")}}',
       required: true,
-      'x-disabled': true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
+      'x-disabled': '{{ !createOnly }}',
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
@@ -47,6 +47,22 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
       default: 21,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
+    },
+    autoFill,
+    layout: {
+      type: 'void',
+      title: '{{t("Index")}}',
+      'x-component': 'Space',
+      'x-decorator': 'FormItem',
+      'x-decorator-props': {
+        style: {
+          marginBottom: '0px',
+        },
+      },
+      properties: {
+        primaryKey,
+        unique,
+      },
     },
   };
   filterable = {

@@ -78,7 +78,7 @@ const recordPickerViewer = {
       type: 'void',
       'x-component': 'Tabs',
       'x-component-props': {},
-      // 'x-initializer': 'TabPaneInitializers',
+      // 'x-initializer': 'popup:addTab',
       properties: {
         tab1: {
           type: 'void',
@@ -90,7 +90,7 @@ const recordPickerViewer = {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'SnapshotBlockInitializers',
+              'x-initializer': 'popup:snapshot:addBlock',
               properties: {},
             },
           },

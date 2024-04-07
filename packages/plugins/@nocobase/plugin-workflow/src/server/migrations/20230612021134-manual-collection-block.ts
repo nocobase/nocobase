@@ -56,15 +56,13 @@ function migrateSchema(schema = {}): object {
           type: 'void',
           name: id,
           'x-component': 'FormV2',
-          'x-component-props': {
-            useProps: '{{useDetailsBlockProps}}',
-          },
+          'x-use-component-props': 'useDetailsBlockProps',
           properties: {
             grid: {
               type: 'void',
               name: 'grid',
               'x-component': 'Grid',
-              'x-initializer': 'ReadPrettyFormItemInitializers',
+              'x-initializer': 'details:configureFields',
               properties: grid.properties,
             },
           },

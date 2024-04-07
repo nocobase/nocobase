@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/client';
 import { deprecatedPrintActionSettings, printActionSettings } from './PrintAction.Settings';
 import { PrintActionPluginProvider } from './PrintActionPluginProvider';
-export class PrintPlugin extends Plugin {
+export class PluginActionPrintClient extends Plugin {
   async load() {
     this.app.use(PrintActionPluginProvider);
     this.app.schemaSettingsManager.add(deprecatedPrintActionSettings);
@@ -18,13 +18,9 @@ export class PrintPlugin extends Plugin {
       },
     };
 
-    this.app.schemaInitializerManager.addItem(
-      'ReadPrettyFormActionInitializers',
-      'enableActions.print',
-      initializerData,
-    );
+    this.app.schemaInitializerManager.addItem('details:configureActions', 'enableActions.print', initializerData);
     this.app.schemaInitializerManager.addItem('CalendarFormActionInitializers', 'enableActions.print', initializerData);
   }
 }
 
-export default PrintPlugin;
+export default PluginActionPrintClient;

@@ -62,40 +62,6 @@ export class FieldModel extends MagicAttributeModel {
     });
   }
 
-  async migrate({ isNew, ...options }: MigrateOptions = {}) {
-    let field;
-    try {
-      field = await this.load({
-        transaction: options.transaction,
-      });
-
-      if (!field) {
-        return;
-      }
-      const collection = this.getFieldCollection();
-
-      if (isNew && collection.model.rawAttributes[this.get('name')] && this.get('unique')) {
-        // trick: set unique to false to avoid auto sync unique index
-        collection.model.rawAttributes[this.get('name')].unique = false;
-      }
-
-      await field.sync(options);
-
-      if (isNew && this.get('unique')) {
-        await this.syncUniqueIndex({
-          transaction: options.transaction,
-        });
-      }
-    } catch (error) {
-      // field sync failed, delete from memory
-      if (isNew && field) {
-        // update field should not remove field from memory
-        field.remove();
-      }
-      throw error;
-    }
-  }
-
   async remove(options?: any) {
     const collection = this.getFieldCollection();
 

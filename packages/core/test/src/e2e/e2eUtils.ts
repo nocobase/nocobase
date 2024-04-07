@@ -11,6 +11,7 @@ export { defineConfig };
 export interface CollectionSetting {
   name: string;
   title?: string;
+  titleField?: string;
   /**
    * @default 'general'
    */
@@ -53,6 +54,7 @@ export interface CollectionSetting {
    * @default false
    */
   inherit?: boolean;
+  inherits?: string[];
   category?: any[];
   hidden?: boolean;
   description?: string;
@@ -119,6 +121,23 @@ interface AclRoleSetting {
   key?: string;
   //菜单权限配置
   menuUiSchemas?: string[];
+  dataSourceKey?: string;
+}
+
+interface DatabaseSetting {
+  database: string;
+  host: string;
+  port: string;
+  schema?: string;
+  username?: string;
+  password?: string;
+}
+interface DataSourceSetting {
+  key: string;
+  displayName: string;
+  type: string;
+  options: DatabaseSetting;
+  enabled?: boolean;
 }
 
 export interface PageConfig {
@@ -228,6 +247,19 @@ interface ExtendUtils {
    * 更新角色权限配置
    */
   updateRole: <T = any>(roleSetting: AclRoleSetting) => Promise<T>;
+  /**
+   * 创建一个外部数据源（pg）
+   */
+  mockExternalDataSource: <T = any>(DataSourceSetting: DataSourceSetting) => Promise<T>;
+  /**
+   * 删除外部数据源
+   * @param key 外部数据源key
+   */
+  destoryExternalDataSource: <T = any>(key: string) => Promise<T>;
+  /**
+   * 清空区块模板
+   */
+  clearBlockTemplates: () => Promise<void>;
 }
 
 const PORT = process.env.APP_PORT || 20000;
@@ -436,6 +468,47 @@ const _test = base.extend<ExtendUtils>({
 
     await use(updateRole);
   },
+  mockExternalDataSource: async ({ browser }, use) => {
+    const mockExternalDataSource = async (DataSourceSetting: DataSourceSetting) => {
+      return createExternalDataSource(DataSourceSetting);
+    };
+
+    await use(mockExternalDataSource);
+  },
+  destoryExternalDataSource: async ({ browser }, use) => {
+    const destoryDataSource = async (key: string) => {
+      return destoryExternalDataSource(key);
+    };
+
+    await use(destoryDataSource);
+  },
+  clearBlockTemplates: async ({ page }, use) => {
+    const clearBlockTemplates = async () => {
+      const api = await request.newContext({
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+      });
+
+      const state = await api.storageState();
+      const headers = getHeaders(state);
+      const filter = {
+        key: { $exists: true },
+      };
+
+      const result = await api.post(`/api/uiSchemaTemplates:destroy?filter=${JSON.stringify(filter)}`, {
+        headers,
+      });
+
+      if (!result.ok()) {
+        throw new Error(await result.text());
+      }
+    };
+
+    try {
+      await use(clearBlockTemplates);
+    } catch (error) {
+      await clearBlockTemplates();
+    }
+  },
 });
 
 export const test = Object.assign(_test, {
@@ -526,7 +599,7 @@ const createPage = async (options?: CreatePageOptions) => {
                 version: '2.0',
                 type: 'void',
                 'x-component': 'Grid',
-                'x-initializer': 'BlockInitializers',
+                'x-initializer': 'page:addBlock',
                 'x-uid': uid(),
                 name: gridName,
               },
@@ -580,6 +653,9 @@ const deleteCollections = async (collectionNames: string[]) => {
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
     headers,
+    params: {
+      cascade: true,
+    },
   });
 
   if (!result.ok()) {
@@ -691,8 +767,12 @@ const updateRole = async (roleSetting: AclRoleSetting) => {
   const state = await api.storageState();
   const headers = getHeaders(state);
   const name = roleSetting.name;
+  const dataSourceKey = roleSetting.dataSourceKey;
 
-  const result = await api.post(`/api/roles:update?filterByTk=${name}`, {
+  const url = !dataSourceKey
+    ? `/api/roles:update?filterByTk=${name}`
+    : `/api/dataSources/${dataSourceKey}/roles:update?filterByTk=${name}`;
+  const result = await api.post(url, {
     headers,
     data: { ...roleSetting },
   });
@@ -719,7 +799,48 @@ const setDefaultRole = async (name) => {
     data: { roleName: name },
   });
 };
+/**
+ * 创建外部数据源
+ * @paramn
+ */
+const createExternalDataSource = async (dataSourceSetting: DataSourceSetting) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.post(`/api/dataSources:create`, {
+    headers,
+    data: { ...dataSourceSetting },
+  });
 
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const dataSourceData = (await result.json()).data;
+  return dataSourceData;
+};
+
+/**
+ * 删除外部数据源
+ * @paramn
+ */
+const destoryExternalDataSource = async (key) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.post(`/api/dataSources:destroy?filterByTk=${key}`, {
+    headers,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const dataSourceData = (await result.json()).data;
+  return dataSourceData;
+};
 /**
  * 根据 collection 的配置生成 Faker 数据
  * @param collectionSetting
@@ -864,7 +985,7 @@ export async function expectInitializerMenu({ showMenu, supportedOptions, page }
  * @param name
  */
 export const createBlockInPage = async (page: Page, name: string) => {
-  await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+  await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
 
   if (name === 'Form') {
     await page.getByText('Form', { exact: true }).first().hover();

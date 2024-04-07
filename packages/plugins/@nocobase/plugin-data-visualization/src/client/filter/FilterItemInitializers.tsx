@@ -7,15 +7,17 @@ import {
   ACLCollectionFieldProvider,
   BlockItem,
   CollectionFieldProvider,
+  CollectionManagerProvider,
   CollectionProvider,
+  CompatibleSchemaInitializer,
+  DEFAULT_DATA_SOURCE_KEY,
   FormDialog,
   HTMLEncode,
   SchemaComponent,
   SchemaComponentOptions,
-  SchemaInitializer,
   SchemaInitializerItem,
   gridRowColWrap,
-  useCollectionManager_deprecated,
+  useDataSourceManager,
   useDesignable,
   useGlobalTheme,
   useSchemaInitializerItem,
@@ -50,6 +52,7 @@ const ErrorFallback = ({ error }) => {
 
 export const ChartFilterFormItem = observer(
   (props: any) => {
+    const { t } = useChartsTranslation();
     const field = useField<Field>();
     const schema = useFieldSchema();
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
@@ -80,21 +83,31 @@ export const ChartFilterFormItem = observer(
         },
       );
     }, [showTitle]);
+    const dataSource = schema?.['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
     const collectionField = schema?.['x-collection-field'] || '';
     const [collection] = collectionField.split('.');
-
+    // const { getIsChartCollectionExists } = useChartData();
+    // const exists = (schema.name as string).startsWith('custom.') || getIsChartCollectionExists(dataSource, collection);
     return (
-      <CollectionProvider name={collection} allowNull={!collection}>
-        <CollectionFieldProvider name={schema.name} allowNull={!schema['x-collection-field']}>
-          <ACLCollectionFieldProvider>
-            <BlockItem className={'nb-form-item'}>
-              <ErrorBoundary onError={(err) => console.log(err)} FallbackComponent={ErrorFallback}>
-                <FormItem className={className} {...props} extra={extra} />
-              </ErrorBoundary>
-            </BlockItem>
-          </ACLCollectionFieldProvider>
-        </CollectionFieldProvider>
-      </CollectionProvider>
+      <BlockItem className={'nb-form-item'}>
+        <CollectionManagerProvider dataSource={dataSource}>
+          <CollectionProvider name={collection} allowNull={!collection}>
+            <CollectionFieldProvider name={schema.name} allowNull={!schema['x-collection-field']}>
+              <ACLCollectionFieldProvider>
+                {/* {exists ? ( */}
+                <ErrorBoundary onError={(err) => console.log(err)} FallbackComponent={ErrorFallback}>
+                  <FormItem className={className} {...props} extra={extra} />
+                </ErrorBoundary>
+                {/* ) : ( */}
+                {/*   <div style={{ color: '#ccc', marginBottom: '10px' }}> */}
+                {/*     {t('The chart using the collection of this field have been deleted. Please  remove this field.')} */}
+                {/*   </div> */}
+                {/* )} */}
+              </ACLCollectionFieldProvider>
+            </CollectionFieldProvider>
+          </CollectionProvider>
+        </CollectionManagerProvider>
+      </BlockItem>
     );
   },
   { displayName: 'ChartFilterFormItem' },
@@ -110,7 +123,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   const { theme } = useGlobalTheme();
   const { insert } = props;
   const itemConfig = useSchemaInitializerItem();
-  const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
+  const dm = useDataSourceManager();
   const sourceFields = useChartFilterSourceFields();
   const { options: fieldComponents, values: fieldComponentValues } = useFieldComponents();
   const handleClick = useCallback(async () => {
@@ -177,8 +190,17 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       },
       effects() {
         onFieldValueChange('source', (field) => {
-          const name = field.value?.join('.');
-          const props = getCollectionJoinField(name);
+          if (!field.value) {
+            return;
+          }
+          const [dataSource, ...fields] = field.value;
+          const ds = dm.getDataSource(dataSource);
+          if (!ds) {
+            return;
+          }
+          const cm = ds.collectionManager;
+          const name = fields.join('.');
+          const props = cm.getCollectionField(name);
           if (!props) {
             return;
           }
@@ -204,7 +226,8 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       },
     });
     const { name, title, component, props } = values;
-    const defaultSchema = getInterface(component)?.default?.uiSchema || {};
+    const fim = dm.collectionFieldInterfaceManager;
+    const defaultSchema = fim.getFieldInterface(component)?.default?.uiSchema || {};
     insert(
       gridRowColWrap({
         'x-component': component,
@@ -227,8 +250,8 @@ export const ChartFilterCustomItemInitializer: React.FC<{
 });
 ChartFilterCustomItemInitializer.displayName = 'ChartFilterCustomItemInitializer';
 
-export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'ChartFilterItemInitializers',
+const filterItemInitializers = {
+  name: 'chartFilterForm:configureFields',
   'data-testid': 'configure-fields-button-of-chart-filter-item',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
@@ -239,23 +262,34 @@ export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitiali
       name: 'displayFields',
       title: '{{ t("Display fields") }}',
       useChildren: () => {
-        const { getCollection } = useCollectionManager_deprecated();
-        const { getChartCollections } = useChartData();
+        const { t } = useChartsTranslation();
+        const { chartCollections, showDataSource } = useChartData();
         const { getChartFilterFields } = useChartFilter();
-        const collections = getChartCollections();
+        const dm = useDataSourceManager();
+        const fim = dm.collectionFieldInterfaceManager;
 
         return useMemo(() => {
-          return collections.map((name: any) => {
-            const collection = getCollection(name);
-            const fields = getChartFilterFields(collection);
+          const options = Object.entries(chartCollections).map(([dataSource, collections]) => {
+            const ds = dm.getDataSource(dataSource);
             return {
-              name: collection.key,
+              name: ds.key,
+              title: Schema.compile(ds.displayName, { t }),
               type: 'subMenu',
-              title: collection.title,
-              children: fields,
+              children: collections.map((name) => {
+                const cm = ds.collectionManager;
+                const collection = cm.getCollection(name);
+                const fields = getChartFilterFields({ dataSource, collection, cm, fim });
+                return {
+                  name: collection.key,
+                  title: Schema.compile(collection.title, { t }),
+                  type: 'subMenu',
+                  children: fields,
+                };
+              }),
             };
           });
-        }, [collections]);
+          return showDataSource ? options : options[0]?.children || [];
+        }, [chartCollections, showDataSource]);
       },
     },
     {
@@ -272,4 +306,18 @@ export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitiali
       },
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `chartFilterItemInitializers` instead
+ */
+export const chartFilterItemInitializers_deprecated = new CompatibleSchemaInitializer({
+  ...filterItemInitializers,
+  name: 'ChartFilterItemInitializers',
 });
+
+export const chartFilterItemInitializers = new CompatibleSchemaInitializer(
+  filterItemInitializers,
+  chartFilterItemInitializers_deprecated,
+);

@@ -25,6 +25,7 @@ export * from './collection-manager';
 
 export * from './common';
 export * from './css-variable';
+export * from './data-source';
 export * from './document-title';
 export * from './filter-provider';
 export * from './flag-provider';
@@ -50,11 +51,12 @@ export * from './system-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';
-export * from './data-source';
 
 export { withDynamicSchemaProps } from './application/hoc/withDynamicSchemaProps';
 
 export * from './modules/blocks/BlockSchemaToolbar';
-export * from './modules/blocks/data-blocks/table';
+export * from './modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 export * from './modules/blocks/data-blocks/form';
+export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
+export * from './modules/blocks/useParentRecordCommon';

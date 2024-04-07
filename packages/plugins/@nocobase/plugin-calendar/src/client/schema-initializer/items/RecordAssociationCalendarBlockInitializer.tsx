@@ -15,7 +15,7 @@ import {
   useSchemaInitializer,
   SchemaInitializerItem,
 } from '@nocobase/client';
-import { createCalendarBlockSchema } from '../utils';
+import { createCalendarBlockUISchema } from '../createCalendarBlockUISchema';
 import { useTranslation } from '../../../locale';
 
 export const RecordAssociationCalendarBlockInitializer = () => {
@@ -98,10 +98,9 @@ export const RecordAssociationCalendarBlockInitializer = () => {
             initialValues: {},
           });
           insert(
-            createCalendarBlockSchema({
-              collection: field.target,
-              resource,
+            createCalendarBlockUISchema({
               association: resource,
+              dataSource: item.dataSource,
               fieldNames: {
                 ...values,
               },
@@ -113,3 +112,85 @@ export const RecordAssociationCalendarBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationCalendarBlock() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+  const { t } = useTranslation();
+  const options = useContext(SchemaOptionsContext);
+  const { theme } = useGlobalTheme();
+
+  const createAssociationCalendarBlock = async ({ item }) => {
+    const field = item.associationField;
+    const collection = getCollection(field.target);
+
+    const stringFields = collection?.fields
+      ?.filter((field) => field.type === 'string')
+      ?.map((field) => {
+        return {
+          label: field?.uiSchema?.title,
+          value: field.name,
+        };
+      });
+    const dateFields = collection?.fields
+      ?.filter((field) => field.type === 'date')
+      ?.map((field) => {
+        return {
+          label: field?.uiSchema?.title,
+          value: field.name,
+        };
+      });
+    const values = await FormDialog(
+      t('Create calendar block'),
+      () => {
+        return (
+          <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+            <FormLayout layout={'vertical'}>
+              <SchemaComponent
+                schema={{
+                  properties: {
+                    title: {
+                      title: t('Title field'),
+                      enum: stringFields,
+                      required: true,
+                      'x-component': 'Select',
+                      'x-decorator': 'FormItem',
+                    },
+                    start: {
+                      title: t('Start date field'),
+                      enum: dateFields,
+                      required: true,
+                      default: 'createdAt',
+                      'x-component': 'Select',
+                      'x-decorator': 'FormItem',
+                    },
+                    end: {
+                      title: t('End date field'),
+                      enum: dateFields,
+                      'x-component': 'Select',
+                      'x-decorator': 'FormItem',
+                    },
+                  },
+                }}
+              />
+            </FormLayout>
+          </SchemaComponentOptions>
+        );
+      },
+      theme,
+    ).open({
+      initialValues: {},
+    });
+    insert(
+      createCalendarBlockUISchema({
+        association: `${field.collectionName}.${field.name}`,
+        dataSource: item.dataSource,
+        fieldNames: {
+          ...values,
+        },
+      }),
+    );
+  };
+
+  return { createAssociationCalendarBlock };
+}

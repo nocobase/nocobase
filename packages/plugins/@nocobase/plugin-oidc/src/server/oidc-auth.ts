@@ -1,7 +1,7 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
+import { AuthModel } from '@nocobase/plugin-auth';
 import { Issuer } from 'openid-client';
 import { cookieName } from '../constants';
-import { AuthModel } from '@nocobase/plugin-auth';
 
 export class OIDCAuth extends BaseAuth {
   constructor(config: AuthConfig) {
@@ -17,7 +17,7 @@ export class OIDCAuth extends BaseAuth {
     const { http, port } = this.getOptions();
     const protocol = http ? 'http' : 'https';
     const host = port ? `${ctx.hostname}${port ? `:${port}` : ''}` : ctx.host;
-    return `${protocol}://${host}/api/oidc:redirect`;
+    return `${protocol}://${host}${process.env.API_BASE_PATH}oidc:redirect`;
   }
 
   getOptions() {

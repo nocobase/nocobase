@@ -1,0 +1,52 @@
+import { useSchemaToolbar } from '../../../application';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useCollection_deprecated } from '../../../collection-manager';
+import {
+  ButtonEditor,
+  SecondConFirm,
+  RefreshDataBlockRequest,
+} from '../../../schema-component/antd/action/Action.Designer';
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+
+export const disassociateActionSettings = new SchemaSettings({
+  name: 'actionSettings:disassociate',
+  items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
+      },
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
+      },
+    },
+    {
+      name: 'secondConFirm',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'delete',
+      type: 'remove',
+    },
+  ],
+});

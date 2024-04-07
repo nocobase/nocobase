@@ -9,6 +9,7 @@ import {
   apiUpdateWorkflowTrigger,
   appendJsonCollectionName,
   generalWithNoRelationalFields,
+  apiGetDataSourceCount,
 } from '@nocobase/plugin-workflow-test/e2e';
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
@@ -51,15 +52,20 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await formEventTriggerNode.nodeConfigure.click();
     await formEventTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await formEventTriggerNode.submitButton.click();
 
     //配置录入数据区块
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
+    const dataSourcesCount = await apiGetDataSourceCount();
+    if (dataSourcesCount > 1) {
+      await page.getByRole('menuitem', { name: 'Main right' }).hover();
+    }
     await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}` }).click();
 
     // 移开鼠标，关闭菜单
@@ -71,16 +77,16 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
     await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
-    await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-popup:addNew:addBlock-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
     await page
-      .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
+      .getByLabel(`schema-initializer-ActionBar-createForm:configureActions-${triggerNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     // 绑定工作流
-    await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-form:configureFields-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`).hover();
@@ -143,15 +149,20 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await formEventTriggerNode.nodeConfigure.click();
     await formEventTriggerNode.collectionDropDown.click();
-    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
     await formEventTriggerNode.submitButton.click();
 
     //配置录入数据区块
     const newPage = mockPage();
     await newPage.goto();
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
+    const dataSourcesCount = await apiGetDataSourceCount();
+    if (dataSourcesCount > 1) {
+      await page.getByRole('menuitem', { name: 'Main right' }).hover();
+    }
     await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}` }).click();
 
     // 移开鼠标，关闭菜单
@@ -164,7 +175,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
 
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
-    await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-popup:addNew:addBlock-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
 
     // 移开鼠标，关闭菜单
@@ -172,11 +183,11 @@ test.describe('Configuration page to configure the Trigger node', () => {
 
     // 绑定工作流
     await page
-      .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
+      .getByLabel(`schema-initializer-ActionBar-createForm:configureActions-${triggerNodeCollectionName}`)
       .hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Submit to workflow' }).click();
-    await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
+    await page.getByLabel(`schema-initializer-Grid-form:configureFields-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Submit to workflow' }).hover();
@@ -649,8 +660,11 @@ test.describe('Configuration page copy to new version', () => {
     // 3、预期结果：新版本工作流配置内容同旧版本一样
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await formEventTriggerNode.nodeConfigure.click();
-    await expect(page.getByRole('button', { name: triggerNodeCollectionDisplayName })).toBeVisible();
-
+    await expect(
+      page
+        .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+        .getByText(`Main / ${triggerNodeCollectionDisplayName}`),
+    ).toBeVisible();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });

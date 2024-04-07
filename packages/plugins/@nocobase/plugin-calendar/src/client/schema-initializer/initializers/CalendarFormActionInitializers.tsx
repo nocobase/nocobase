@@ -1,8 +1,25 @@
-import { SchemaInitializer, useCollection_deprecated } from '@nocobase/client';
+import { SchemaInitializer, SchemaInitializerItemType, useCollection_deprecated } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
-// 表单的操作配置
-export const CalendarFormActionInitializers: SchemaInitializer = new SchemaInitializer({
+export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
+  name: 'deleteEvent',
+  title: generateNTemplate('Delete Event'),
+  Component: 'DeleteEventActionInitializer',
+  schema: {
+    'x-component': 'Action',
+    'x-decorator': 'ACLActionProvider',
+  },
+  useVisible() {
+    const collection = useCollection_deprecated();
+    return collection.template === 'calendar';
+  },
+};
+
+/**
+ * @deprecated
+ * 表单的操作配置
+ */
+export const CalendarFormActionInitializers = new SchemaInitializer({
   title: generateNTemplate('Configure actions'),
   name: 'CalendarFormActionInitializers',
   icon: 'SettingOutlined',
@@ -44,19 +61,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
-        {
-          name: 'deleteEvent',
-          title: generateNTemplate('Delete Event'),
-          Component: 'DeleteEventActionInitializer',
-          schema: {
-            'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
-          },
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
-        },
+        deleteEventActionInitializer,
       ],
     },
     {
@@ -96,7 +101,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
                     type: 'void',
                     'x-component': 'Tabs',
                     'x-component-props': {},
-                    'x-initializer': 'TabPaneInitializers',
+                    'x-initializer': 'popup:addTab',
                     properties: {
                       tab1: {
                         type: 'void',
@@ -108,7 +113,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'RecordBlockInitializers',
+                            'x-initializer': 'popup:common:addBlock',
                             properties: {},
                           },
                         },
@@ -127,6 +132,7 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
           schema: {
             title: generateNTemplate('Update record'),
             'x-component': 'Action',
+            'x-use-component-props': 'useCustomizeUpdateActionProps',
             // 'x-designer': 'Action.Designer',
             'x-toolbar': 'ActionSchemaToolbar',
             'x-settings': 'actionSettings:updateRecord',
@@ -140,9 +146,6 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
                 successMessage: generateNTemplate('Updated successfully'),
               },
               triggerWorkflows: [],
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
           useVisible() {

@@ -4,7 +4,6 @@ import {
   CollectionProvider_deprecated,
   SchemaInitializerItem,
   SchemaInitializerItemType,
-  createFormBlockSchema,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -14,6 +13,7 @@ import {
 import { JOB_STATUS, traverseSchema } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../../locale';
+import { createManualFormBlockUISchema } from './createManualFormBlockUISchema';
 
 function InternalFormBlockInitializer({ schema, ...others }) {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
@@ -21,8 +21,8 @@ function InternalFormBlockInitializer({ schema, ...others }) {
   const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemType[];
   async function onConfirm({ item }) {
     const template = item.template ? await getTemplateSchemaByMode(item) : null;
-    const result = createFormBlockSchema({
-      actionInitializers: 'AddActionButton',
+    const result = createManualFormBlockUISchema({
+      actionInitializers: 'workflowManual:form:configureActions',
       actions: {
         resolve: {
           type: 'void',

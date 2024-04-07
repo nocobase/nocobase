@@ -8,10 +8,11 @@ import {
   gridRowColWrap,
   useAPIClient,
   useCollection_deprecated,
+  useDataSource,
   useDesignable,
 } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../configure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
@@ -27,17 +28,16 @@ export const ChartRenderer: React.FC & {
 } = (props) => {
   const { t } = useChartsTranslation();
   const ctx = useContext(ChartRendererContext);
-  const { config, transform, collection, service, data: _data } = ctx;
-  const fields = useFieldsWithAssociation(collection);
-  const data = useData(_data, collection);
+  const { config, transform, dataSource, collection, service, data: _data } = ctx;
+  const fields = useFieldsWithAssociation(dataSource, collection);
+  const data = useData(_data, dataSource, collection);
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const api = useAPIClient();
-
   const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
-  const Component = chart?.render({
+  const chartProps = chart?.getProps({
     data,
     general,
     advanced,
@@ -50,30 +50,27 @@ export const ChartRenderer: React.FC & {
       return props;
     }, {}),
   });
+  const C = chart?.Component;
 
-  const C = () =>
-    chart ? (
+  if (!chart) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
+  }
+  if (!(data && data.length) && !service.loading) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
+  }
+
+  return (
+    <Spin spinning={service.loading}>
       <ErrorBoundary
         onError={(error) => {
           console.error(error);
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component />
+        <C {...chartProps} />
       </ErrorBoundary>
-    ) : (
-      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />
-    );
-
-  if (service.loading) {
-    return <Spin />;
-  }
-
-  if (!(data && data.length)) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure and run query')} />;
-  }
-
-  return <C />;
+    </Spin>
+  );
 };
 
 ChartRenderer.Designer = function Designer() {
@@ -84,14 +81,15 @@ ChartRenderer.Designer = function Designer() {
   const field = useField();
   const schema = useFieldSchema();
   const { insertAdjacent } = useDesignable();
-  const { name, title, dataSource } = useCollection_deprecated();
+  const dataSource = useDataSource();
+  const { name, title } = useCollection_deprecated();
   return (
     <GeneralSchemaDesigner disableInitializer title={title || name}>
       <SchemaSettingsItem
         title="Configure"
         key="configure"
         onClick={async () => {
-          setCurrent({ schema, field, dataSource, collection: name, service, data: service.data });
+          setCurrent({ schema, field, dataSource: dataSource.key, collection: name, service, data: service.data });
           setVisible(true);
         }}
       >

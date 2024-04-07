@@ -20,6 +20,7 @@ import { getSource } from '../../utils';
 import { AMapComponent, AMapForwardedRefProps } from './Map';
 
 export const AMapBlock = (props) => {
+  // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
     useProps(props);
   const { name, getPrimaryKey } = useCollection_deprecated();

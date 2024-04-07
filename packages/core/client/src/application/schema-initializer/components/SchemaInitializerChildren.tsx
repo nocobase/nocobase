@@ -49,7 +49,10 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = memo((props
   const componentVal = Component || component;
   const isBuiltType = !componentVal && type && typeComponentMap[type];
 
-  const componentChildren = useChildrenRes || children;
+  const componentChildren = useMemo(() => {
+    const res = [...(useChildrenRes || []), ...(children || [])];
+    return res.length === 0 ? undefined : res;
+  }, [useChildrenRes, children]);
   const contextValue = useMemo(() => {
     return {
       ...others,

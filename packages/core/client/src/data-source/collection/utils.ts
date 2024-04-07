@@ -1,6 +1,9 @@
 import type { Application } from '../../application/Application';
 import type { CollectionOptions } from './Collection';
 
+/**
+ * @internal
+ */
 export const collectionTransform = (collection: CollectionOptions, app: Application) => {
   const { rawTitle, title, fields = [], ...rest } = collection;
   return {
@@ -26,6 +29,9 @@ export const collectionTransform = (collection: CollectionOptions, app: Applicat
   };
 };
 
+/**
+ * @internal
+ */
 export function applyMixins(Cls: any, mixins: any[], options?: any, collectionManager?: any) {
   const instance = new Cls(options, collectionManager);
   mixins.forEach((MixinClass) => {

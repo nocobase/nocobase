@@ -15,6 +15,7 @@ import {
   useDesignable,
   useMenuSearch,
 } from '@nocobase/client';
+import { isValidFilter } from '@nocobase/utils/client';
 import { FilterDynamicComponent } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../../../locale';
@@ -37,15 +38,15 @@ function UpdateFormDesigner() {
           name: 'filter',
           type: 'object',
           title: `{{t("Filter")}}`,
-          // 'x-decorator': 'FormItem',
           'x-component': 'Filter',
+          'x-use-component-props': () => {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const options = useCollectionFilterOptions(fieldSchema?.['x-decorator-props']?.collection);
+            return {
+              options,
+            };
+          },
           'x-component-props': {
-            useProps() {
-              const options = useCollectionFilterOptions(fieldSchema?.['x-decorator-props']?.collection);
-              return {
-                options,
-              };
-            },
             dynamicComponent: 'FilterDynamicComponent',
           },
         }}
@@ -101,7 +102,7 @@ export default {
         [allCollections],
       );
       const [openMenuKeys, setOpenMenuKeys] = useState([]);
-      const searchedChildren = useMenuSearch(childItems, openMenuKeys);
+      const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys });
       return {
         name: 'updateRecordForm',
         key: 'updateRecordForm',
@@ -155,5 +156,12 @@ export default {
       // useFormBlockProps
     },
     components: {},
+  },
+  validate({ filter }) {
+    if (!filter || !isValidFilter(filter)) {
+      return 'Please check one of your update record form, and add at least one filter condition in form settings.';
+    }
+
+    return null;
   },
 } as ManualFormType;

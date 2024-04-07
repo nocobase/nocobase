@@ -16,6 +16,7 @@ import { getVariableName } from '../../../variables/utils/getVariableName';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldContext } from './context';
+import { Collection } from '../../../data-source';
 
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
@@ -178,7 +179,10 @@ export const useFieldNames = (props) => {
   return { label: 'label', value: 'value', ...fieldNames };
 };
 
-const SubFormContext = createContext<Record<string, any>>(null);
+const SubFormContext = createContext<{
+  value: any;
+  collection: Collection;
+}>(null);
 SubFormContext.displayName = 'SubFormContext';
 export const SubFormProvider = SubFormContext.Provider;
 
@@ -192,8 +196,9 @@ export const SubFormProvider = SubFormContext.Provider;
  * @returns
  */
 export const useSubFormValue = () => {
-  const context = useContext(SubFormContext);
+  const { value, collection } = useContext(SubFormContext) || {};
   return {
-    formValue: context,
+    formValue: value,
+    collection,
   };
 };

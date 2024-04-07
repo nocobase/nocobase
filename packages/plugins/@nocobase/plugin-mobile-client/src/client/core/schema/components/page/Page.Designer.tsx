@@ -75,9 +75,9 @@ export const PageDesigner = (props) => {
               name: 'tabs',
               'x-component': 'Tabs',
               'x-component-props': {},
-              'x-initializer': 'TabPaneInitializers',
+              'x-initializer': 'popup:addTab',
               'x-initializer-props': {
-                gridInitializer: 'MBlockInitializers',
+                gridInitializer: 'mobilePage:addBlock',
               },
               properties: {
                 tab1: {

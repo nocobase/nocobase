@@ -1,5 +1,5 @@
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { operators } from './properties';
+import { operators, autoFill, primaryKey, unique } from './properties';
 
 export class UUIDFieldInterface extends CollectionFieldInterface {
   name = 'uuid';
@@ -17,7 +17,7 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
       'x-validator': 'uuid',
     },
   };
-  availableTypes = ['string', 'uid'];
+  availableTypes = ['string', 'uid', 'uuid'];
   properties = {
     'uiSchema.title': {
       type: 'string',
@@ -30,11 +30,27 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
       type: 'string',
       title: '{{t("Field name")}}',
       required: true,
-      'x-disabled': true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
+      'x-disabled': '{{ !createOnly }}',
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+    },
+    autoFill,
+    layout: {
+      type: 'void',
+      title: '{{t("Index")}}',
+      'x-component': 'Space',
+      'x-decorator': 'FormItem',
+      'x-decorator-props': {
+        style: {
+          marginBottom: '0px',
+        },
+      },
+      properties: {
+        primaryKey,
+        unique,
+      },
     },
   };
   filterable = {

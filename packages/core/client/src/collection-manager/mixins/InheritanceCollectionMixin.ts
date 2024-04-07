@@ -110,7 +110,7 @@ export class InheritanceCollectionMixin extends Collection {
   }
 
   // override Collection
-  getFieldsMap() {
+  protected getFieldsMap() {
     if (this.fieldsMap) {
       return this.fieldsMap;
     }
@@ -193,7 +193,7 @@ export class InheritanceCollectionMixin extends Collection {
     };
 
     this.allCollectionsInheritChain = getInheritChain(this.name);
-    return this.allCollectionsInheritChain;
+    return this.allCollectionsInheritChain || [];
   }
 
   getInheritCollectionsChain() {

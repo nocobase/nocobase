@@ -42,19 +42,19 @@ export class SubTableFieldInterface extends CollectionFieldInterface {
         properties: {
           actions: {
             type: 'void',
-            'x-initializer': 'SubTableActionInitializers',
+            'x-initializer': 'subTable:configureActions',
             'x-component': 'TableField.ActionBar',
             'x-component-props': {},
           },
           [field.name]: {
             type: 'array',
-            'x-initializer': 'TableColumnInitializers',
+            'x-initializer': 'table:configureColumns',
             'x-component': 'TableV2',
+            'x-use-component-props': 'useTableFieldProps',
             'x-component-props': {
               rowSelection: {
                 type: 'checkbox',
               },
-              useProps: '{{ useTableFieldProps }}',
             },
           },
         },

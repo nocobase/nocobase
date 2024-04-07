@@ -42,11 +42,11 @@ import {
   ActionContextProvider,
   AssociationOrCollectionProvider,
   CollectionFieldOptions_deprecated,
+  CollectionRecordProvider,
   DataSourceApplicationProvider,
   Designable,
   FormDialog,
   FormProvider,
-  CollectionRecordProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
@@ -56,6 +56,7 @@ import {
   useAPIClient,
   useBlockRequestContext,
   useCollectionManager_deprecated,
+  useCollectionRecord,
   useCollection_deprecated,
   useCompile,
   useDataBlockProps,
@@ -63,13 +64,13 @@ import {
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
-  useCollectionRecord,
   useRecord,
   useSchemaSettingsItem,
   useSortFields,
 } from '..';
 import {
   BlockRequestContext_deprecated,
+  FormBlockContext,
   useFormBlockContext,
   useFormBlockType,
   useTableBlockContext,
@@ -81,9 +82,9 @@ import {
   useFormActiveFields,
 } from '../block-provider/hooks';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
+import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
-import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -290,7 +291,7 @@ export const SchemaSettingsTemplate = function Template(props) {
 
 const findGridSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'FormV2') {
+    if (s['x-component'] === 'FormV2' || s['x-component'] === 'Details') {
       const f = s.reduceProperties((buf, s) => {
         if (s['x-component'] === 'Grid' || s['x-component'] === 'BlockTemplate') {
           return s;
@@ -307,7 +308,7 @@ const findGridSchema = (fieldSchema) => {
 
 const findBlockTemplateSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'FormV2') {
+    if (s['x-component'] === 'FormV2' || s['x-component'] === 'Details') {
       const f = s.reduceProperties((buf, s) => {
         if (s['x-component'] === 'BlockTemplate') {
           return s;
@@ -424,6 +425,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
           collectionName,
           resourceName,
           componentName,
+          dataSourceKey: collection.dataSource,
           name: values.name,
           uid: gridSchema['x-uid'],
         });
@@ -570,7 +572,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
               field.required = false;
               fieldSchema['required'] = false;
             }
-            if (template && ctx?.dn) {
+            if (template && template.uid === fieldSchema['x-uid'] && ctx?.dn) {
               await ctx?.dn.remove(null, options);
             } else {
               await dn.remove(null, options);
@@ -967,9 +969,10 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const dataSourceKey = useDataSourceKey();
   const record = useCollectionRecord();
   const { association } = useDataBlockProps() || {};
+  const formCtx = useFormBlockContext();
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
-  const { formValue: subFormValue } = useSubFormValue();
+  const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
 
   if (hidden) {
     return null;
@@ -986,44 +989,49 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           () => {
             return (
               <CollectionRecordProvider record={record}>
-                <SubFormProvider value={subFormValue}>
-                  <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
-                    <Router location={location} navigator={null}>
-                      <BlockRequestContext_deprecated.Provider value={ctx}>
-                        <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
-                          <AssociationOrCollectionProvider
-                            allowNull
-                            collection={collection.name}
-                            association={association}
-                          >
-                            <SchemaComponentOptions scope={options.scope} components={options.components}>
-                              <FormLayout
-                                layout={'vertical'}
-                                className={css`
-                                  // screen > 576px
-                                  @media (min-width: 576px) {
-                                    min-width: 520px;
-                                  }
+                <FormBlockContext.Provider value={formCtx}>
+                  <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
+                    <FormActiveFieldsProvider
+                      name="form"
+                      getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
+                    >
+                      <Router location={location} navigator={null}>
+                        <BlockRequestContext_deprecated.Provider value={ctx}>
+                          <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                            <AssociationOrCollectionProvider
+                              allowNull
+                              collection={collection.name}
+                              association={association}
+                            >
+                              <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                <FormLayout
+                                  layout={'vertical'}
+                                  className={css`
+                                    // screen > 576px
+                                    @media (min-width: 576px) {
+                                      min-width: 520px;
+                                    }
 
-                                  // screen <= 576px
-                                  @media (max-width: 576px) {
-                                    min-width: 320px;
-                                  }
-                                `}
-                              >
-                                <APIClientProvider apiClient={apiClient}>
-                                  <ConfigProvider locale={locale}>
-                                    <SchemaComponent components={components} scope={scope} schema={schema} />
-                                  </ConfigProvider>
-                                </APIClientProvider>
-                              </FormLayout>
-                            </SchemaComponentOptions>
-                          </AssociationOrCollectionProvider>
-                        </DataSourceApplicationProvider>
-                      </BlockRequestContext_deprecated.Provider>
-                    </Router>
-                  </FormActiveFieldsProvider>
-                </SubFormProvider>
+                                    // screen <= 576px
+                                    @media (max-width: 576px) {
+                                      min-width: 320px;
+                                    }
+                                  `}
+                                >
+                                  <APIClientProvider apiClient={apiClient}>
+                                    <ConfigProvider locale={locale}>
+                                      <SchemaComponent components={components} scope={scope} schema={schema} />
+                                    </ConfigProvider>
+                                  </APIClientProvider>
+                                </FormLayout>
+                              </SchemaComponentOptions>
+                            </AssociationOrCollectionProvider>
+                          </DataSourceApplicationProvider>
+                        </BlockRequestContext_deprecated.Provider>
+                      </Router>
+                    </FormActiveFieldsProvider>
+                  </SubFormProvider>
+                </FormBlockContext.Provider>
               </CollectionRecordProvider>
             );
           },
@@ -1232,22 +1240,22 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       properties: {
         fieldReaction: {
           'x-component': FormLinkageRules,
-          'x-component-props': {
-            useProps: () => {
-              const options = useLinkageCollectionFilterOptions(collectionName);
-              return {
-                options,
-                defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
-                type,
-                linkageOptions: useLinkageCollectionFieldOptions(collectionName),
-                collectionName,
-                form,
-                variables,
-                localVariables,
-                record,
-                formBlockType,
-              };
-            },
+          'x-use-component-props': () => {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const options = useLinkageCollectionFilterOptions(collectionName);
+            return {
+              options,
+              defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
+              type,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              linkageOptions: useLinkageCollectionFieldOptions(collectionName),
+              collectionName,
+              form,
+              variables,
+              localVariables,
+              record,
+              formBlockType,
+            };
           },
         },
       },
@@ -1261,7 +1269,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       for (const rule of v.fieldReaction.rules) {
         rules.push(_.pickBy(rule, _.identity));
       }
-      const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
+      const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props']?.templateId;
       const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
       const schema = {
         ['x-uid']: uid,
@@ -1319,15 +1327,15 @@ export const SchemaSettingsDataTemplates = function DataTemplates(props) {
         fieldReaction: {
           'x-decorator': (props) => <FlagProvider {...props} isInFormDataTemplate />,
           'x-component': FormDataTemplates,
+          'x-use-component-props': () => {
+            return {
+              defaultValues: templateData,
+              collectionName,
+            };
+          },
           'x-component-props': {
             designerCtx,
             formSchema,
-            useProps: () => {
-              return {
-                defaultValues: templateData,
-                collectionName,
-              };
-            },
           },
         },
       },
@@ -1382,13 +1390,11 @@ export function SchemaSettingsEnableChildCollections(props) {
           properties: {
             enableChildren: {
               'x-component': EnableChildCollections,
-              'x-component-props': {
-                useProps: () => {
-                  return {
-                    defaultValues: fieldSchema?.['x-enable-children'],
-                    collectionName,
-                  };
-                },
+              'x-use-component-props': () => {
+                return {
+                  defaultValues: fieldSchema?.['x-enable-children'],
+                  collectionName,
+                };
               },
             },
             allowAddToCurrent: {

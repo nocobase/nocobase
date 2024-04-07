@@ -3,7 +3,7 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { MobileClientProvider } from './MobileClientProvider';
 import MApplication from './router/Application';
-import { mBlockInitializers } from './core/schema';
+import { mBlockInitializers, mBlockInitializers_deprecated } from './core/schema';
 import { AppConfiguration, InterfaceConfiguration } from './configuration';
 import { NAMESPACE } from './locale';
 
@@ -14,6 +14,7 @@ export class MobileClientPlugin extends Plugin {
     this.addRoutes();
     this.addSettings();
     this.app.use(MobileClientProvider);
+    this.app.schemaInitializerManager.add(mBlockInitializers_deprecated);
     this.app.schemaInitializerManager.add(mBlockInitializers);
   }
 

@@ -25,6 +25,7 @@ import {
 import { AssociationFieldContext } from './context';
 import { SubFormProvider, useAssociationFieldContext } from './hooks';
 import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
+import { useCollection } from '../../../data-source';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -48,6 +49,7 @@ export const Nester = (props) => {
 const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
   const recordV2 = useCollectionRecord();
+  const collection = useCollection();
 
   const isAllowToSetDefaultValue = useCallback(
     ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
@@ -84,7 +86,7 @@ const ToOneNester = (props) => {
 
   return (
     <FormActiveFieldsProvider name="nester">
-      <SubFormProvider value={field.value}>
+      <SubFormProvider value={{ value: field.value, collection }}>
         <RecordProvider isNew={recordV2?.isNew} record={field.value} parent={recordV2?.data}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
@@ -101,6 +103,7 @@ const ToManyNester = observer(
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
     const recordData = useCollectionRecordData();
+    const collection = useCollection();
 
     if (!Array.isArray(field.value)) {
       field.value = [];
@@ -193,7 +196,7 @@ const ToManyNester = observer(
                 )}
               </div>
               <FormActiveFieldsProvider name="nester">
-                <SubFormProvider value={value}>
+                <SubFormProvider value={{ value, collection }}>
                   <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>

@@ -26,10 +26,9 @@ export const UploadActionInitializer = (props) => {
             type: 'void',
             title: '{{ t("Upload files") }}',
             'x-component': 'Upload.DraggerV2',
+            'x-use-component-props': 'useUploadFiles',
             'x-component-props': {
               height: '50vh',
-              // action: `${collection.name}:create`,
-              useProps: '{{useUploadFiles}}',
               multiple: true,
               listType: 'picture',
             },

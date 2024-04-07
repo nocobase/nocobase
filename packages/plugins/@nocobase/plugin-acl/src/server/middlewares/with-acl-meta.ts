@@ -37,8 +37,19 @@ function createWithACLMetaMiddleware() {
     // @ts-ignore
     const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
 
-    const dataPath = ctx.body?.rows ? 'body.rows' : 'body';
-    let listData = lodash.get(ctx, dataPath);
+    let listData;
+
+    if (ctx.body?.data) {
+      listData = ctx.data;
+    } else if (ctx.body?.rows) {
+      listData = ctx.body.rows;
+    } else if (ctx.body) {
+      listData = ctx.body;
+    }
+
+    if (!listData) {
+      return;
+    }
 
     if (actionName == 'get') {
       listData = lodash.castArray(listData);

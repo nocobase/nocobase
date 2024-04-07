@@ -2,6 +2,8 @@ import { FormOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import {
+  Collection,
+  CollectionFieldOptions,
   DataBlockInitializer,
   FormDialog,
   SchemaComponent,
@@ -12,10 +14,22 @@ import {
   useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { createCalendarBlockSchema } from '../utils';
+import { createCalendarBlockUISchema } from '../createCalendarBlockUISchema';
 import { useTranslation } from '../../../locale';
 
-export const CalendarBlockInitializer = () => {
+export const CalendarBlockInitializer = ({
+  filterCollections,
+  onlyCurrentDataSource,
+  hideSearch,
+  createBlockSchema,
+  showAssociationFields,
+}: {
+  filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
+  onlyCurrentDataSource: boolean;
+  hideSearch?: boolean;
+  createBlockSchema?: (options: any) => any;
+  showAssociationFields?: boolean;
+}) => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const { getCollectionField, getCollectionFieldsOptions } = useCollectionManager_deprecated();
@@ -29,6 +43,10 @@ export const CalendarBlockInitializer = () => {
       componentType={'Calendar'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
+        if (createBlockSchema) {
+          return createBlockSchema({ item });
+        }
+
         const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string', { dataSource: item.dataSource });
         const dateFieldsOptions = getCollectionFieldsOptions(item.name, 'date', {
           association: ['o2o', 'obo', 'oho', 'm2o'],
@@ -77,16 +95,19 @@ export const CalendarBlockInitializer = () => {
           initialValues: {},
         });
         insert(
-          createCalendarBlockSchema({
-            collection: item.name,
+          createCalendarBlockUISchema({
+            collectionName: item.name,
             dataSource: item.dataSource,
             fieldNames: {
               ...values,
             },
-            settings: 'blockSettings:calendar',
           }),
         );
       }}
+      onlyCurrentDataSource={onlyCurrentDataSource}
+      hideSearch={hideSearch}
+      filter={filterCollections}
+      showAssociationFields={showAssociationFields}
     />
   );
 };

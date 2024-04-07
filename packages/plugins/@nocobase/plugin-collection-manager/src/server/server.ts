@@ -13,7 +13,7 @@ import {
   beforeDestroyForeignKey,
   beforeInitOptions,
 } from './hooks';
-import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
+import { beforeCreateForValidateField, beforeUpdateForValidateField } from './hooks/beforeCreateForValidateField';
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
@@ -60,7 +60,7 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
 
     this.app.db.on(
-      'collections.afterCreateWithAssociations',
+      'collections.afterSaveWithAssociations',
       async (model: CollectionModel, { context, transaction }) => {
         if (context) {
           await model.migrate({
@@ -120,21 +120,11 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
-
-    this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
-      if (context) {
-        await model.migrate({
-          isNew: true,
-          transaction,
-        });
-      }
-    });
-
-    // after migrate
-    this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
+    this.app.db.on('fields.beforeUpdate', beforeUpdateForValidateField(this.app.db));
 
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
       const newValue = options.values;
+
       if (
         model.get('reverseKey') &&
         lodash.get(newValue, 'reverseField') &&
@@ -147,6 +137,7 @@ export class CollectionManagerPlugin extends Plugin {
           throw new Error('cant update field without a reverseField key');
         }
       }
+
       // todo: 目前只支持一对多
       if (model.get('sortable') && model.get('type') === 'hasMany') {
         model.set('sortBy', model.get('foreignKey') + 'Sort');
@@ -185,9 +176,36 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, { context, transaction }) => {
+    const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
+
+    this.app.db.on('fields.afterCreate', async (model: FieldModel, options) => {
+      const { context, transaction } = options;
       if (context) {
         await model.load({ transaction });
+        await afterCreateForForeignKeyFieldHook(model, options);
+      }
+    });
+
+    this.app.db.on('fields.afterUpdate', async (model: FieldModel, options) => {
+      const { context, transaction } = options;
+      if (context) {
+        await model.load({ transaction });
+      }
+    });
+
+    this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, options) => {
+      const { context, transaction } = options;
+      if (context) {
+        const collection = this.app.db.getCollection(model.get('collectionName'));
+        const syncOptions = {
+          transaction,
+          force: false,
+          alter: {
+            drop: false,
+          },
+        };
+
+        await collection.sync(syncOptions);
       }
     });
 

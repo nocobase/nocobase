@@ -12,7 +12,7 @@ describe('workflow > action-trigger', () => {
   let PostRepo;
   let CommentRepo;
   let WorkflowModel;
-  let UserModel;
+  let UserRepo;
   let users;
   let userAgents;
 
@@ -26,12 +26,14 @@ describe('workflow > action-trigger', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
-    UserModel = db.getCollection('users').model;
+    UserRepo = db.getCollection('users').repository;
 
-    users = await UserModel.bulkCreate([
-      { id: 2, nickname: 'a' },
-      { id: 3, nickname: 'b' },
-    ]);
+    users = await UserRepo.create({
+      values: [
+        { id: 2, nickname: 'a', roles: [{ name: 'root' }] },
+        { id: 3, nickname: 'b' },
+      ],
+    });
 
     userAgents = users.map((user) => app.agent().login(user));
   });
@@ -567,6 +569,171 @@ describe('workflow > action-trigger', () => {
       const e3s = await w1.getExecutions();
       expect(e3s.length).toBe(1);
       expect(e3s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
+  describe('global workflow', () => {
+    it('no action configured should not be triggered', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          global: true,
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(0);
+
+      const res2 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res2.status).toBe(200);
+
+      await sleep(500);
+
+      const e2 = await workflow.getExecutions();
+      expect(e2.length).toBe(0);
+    });
+
+    it('trigger on both create and update actions', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          global: true,
+          actions: ['create', 'update'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1[0].context.data).toMatchObject({ title: 't1' });
+
+      const res2 = await userAgents[0].resource('posts').update({
+        filterByTk: res1.body.data.id,
+        values: { title: 't2' },
+      });
+
+      await sleep(500);
+
+      const e2 = await workflow.getExecutions({ order: [['id', 'ASC']] });
+      expect(e2.length).toBe(2);
+      expect(e2[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2[1].context.data).toMatchObject({ title: 't2' });
+    });
+
+    it('trigger on action when bound to button', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          global: true,
+          actions: ['create', 'update'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1[0].context.data).toMatchObject({ title: 't1' });
+    });
+
+    it('trigger on action directly submit to workflow', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+          global: true,
+          actions: ['create', 'update'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('workflows').trigger({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(202);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1[0].context.data).toMatchObject({ title: 't1' });
+    });
+  });
+
+  describe('multiple data source', () => {
+    it('trigger on different data source', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'another:posts',
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      // const res2 = await userAgents[0]
+      //   .set('x-data-source', 'another')
+      //   .resource('posts')
+      //   .create({
+      //     values: { title: 't2' },
+      //     triggerWorkflows: `${workflow.key}`,
+      //   });
+      const res2 = await agent
+        .login(users[0])
+        .set('x-data-source', 'another')
+        .post('/api/posts:create')
+        .query({ triggerWorkflows: `${workflow.key}` })
+        .send({ title: 't2' });
+
+      expect(res2.status).toBe(200);
+
+      await sleep(500);
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
     });
   });
 });

@@ -1,11 +1,12 @@
+import React from 'react';
 import { ISchema, useForm } from '@formily/react';
 import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../locale';
 // import { triggers } from '../triggers';
-import React from 'react';
 import { executionSchema } from './executions';
+import { TriggerOptionRender } from '../components/TriggerOptionRender';
 
 const collection = {
   name: 'workflows',
@@ -32,6 +33,9 @@ const collection = {
         'x-component': 'Select',
         'x-component-props': {
           options: `{{getTriggersOptions()}}`,
+          optionRender: TriggerOptionRender,
+          popupMatchSelectWidth: true,
+          listHeight: 300,
         },
         required: true,
       } as ISchema,
@@ -178,9 +182,9 @@ export const workflowSchema: ISchema = {
               },
               'x-action': 'filter',
               'x-component': 'Filter.Action',
+              'x-use-component-props': 'cm.useFilterActionProps',
               'x-component-props': {
                 icon: 'FilterOutlined',
-                useProps: '{{ cm.useFilterActionProps }}',
               },
               'x-align': 'left',
             },
@@ -189,6 +193,7 @@ export const workflowSchema: ISchema = {
               title: '{{t("Delete")}}',
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'DeleteOutlined',
                 useAction: '{{ cm.useBulkDestroyAction }}',
                 confirm: {
                   title: "{{t('Delete record')}}",
@@ -202,6 +207,7 @@ export const workflowSchema: ISchema = {
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
+                icon: 'PlusOutlined',
               },
               properties: {
                 drawer: {

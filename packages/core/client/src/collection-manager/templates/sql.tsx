@@ -1,8 +1,8 @@
 import { Field } from '@formily/core';
-import { SQLInput, PreviewTable, FieldsConfigure, SQLRequestProvider } from './components/sql-collection';
-import { getConfigurableProperties } from './properties';
-import { i18n } from '../../i18n';
 import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
+import { i18n } from '../../i18n';
+import { FieldsConfigure, PreviewTable, SQLInput, SQLRequestProvider } from './components/sql-collection';
+import { getConfigurableProperties } from './properties';
 
 export class SqlCollectionTemplate extends CollectionTemplate {
   name = 'sql';
@@ -75,5 +75,13 @@ export class SqlCollectionTemplate extends CollectionTemplate {
       },
     },
     ...getConfigurableProperties('category'),
+    filterTargetKey: {
+      title: `{{ t("Filter target key")}}`,
+      type: 'single',
+      description: `{{t( "Filter data based on the specific field, with the requirement that the field value must be unique.")}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
+    },
   };
 }

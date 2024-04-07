@@ -359,6 +359,7 @@ export function NodeDefaultView(props) {
         >
           <FormProvider form={form}>
             <SchemaComponent
+              distributed={false}
               scope={{
                 ...instruction.scope,
                 useFormProviderProps,
@@ -407,10 +408,7 @@ export function NodeDefaultView(props) {
                       </div>
                     ),
                     'x-decorator': 'FormV2',
-                    'x-decorator-props': {
-                      // form,
-                      useProps: '{{ useFormProviderProps }}',
-                    },
+                    'x-use-decorator-props': 'useFormProviderProps',
                     'x-component': 'Action.Drawer',
                     properties: {
                       ...(instruction.description

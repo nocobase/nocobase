@@ -21,6 +21,7 @@ import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;
@@ -38,7 +39,8 @@ export const GridCardDesigner = () => {
   const sortFields = useSortFields(name);
   const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const defaultResource =
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
   const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
 
   const columnCountSchema = useMemo(() => {
@@ -209,6 +211,7 @@ export const GridCardDesigner = () => {
             });
           }}
         />
+        <SetDataLoadingMode />
         <SchemaSettingsSelectItem
           title={t('Records per page')}
           value={field.decoratorProps?.params?.pageSize || 20}

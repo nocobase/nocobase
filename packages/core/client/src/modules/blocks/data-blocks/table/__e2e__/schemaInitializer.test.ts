@@ -1,15 +1,56 @@
 import { createBlockInPage, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
+import { T3686 } from './templatesOfBug';
 
 test.describe('where table block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Table');
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
   });
 
-  test('popup', async () => {});
+  test('popup', async ({ page, mockPage, mockRecord }) => {
+    await mockPage(T3686).goto();
+    await mockRecord('parentCollection');
+    const childRecord = await mockRecord('childCollection');
+
+    // 打开弹窗
+    await page.getByLabel('action-Action.Link-View').click();
+
+    // 添加当前表关系区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'childAssociationField' }).click();
+    await page
+      .getByTestId('drawer-Action.Container-childCollection-View record')
+      .getByLabel('schema-initializer-TableV2-')
+      .hover();
+    await page.getByRole('menuitem', { name: 'childTargetText' }).click();
+
+    // 添加父表关系区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'parentAssociationField' }).click();
+    await page.getByLabel('schema-initializer-TableV2-table:configureColumns-parentTargetCollection').hover();
+    await page.getByRole('menuitem', { name: 'parentTargetText' }).click();
+
+    // 普通关系区块应该显示正常
+    await expect(
+      page
+        .getByLabel('block-item-CardItem-childTargetCollection-table')
+        .getByText(childRecord.childAssociationField[0].childTargetText),
+    ).toBeVisible();
+
+    // 父表关系区块应该显示正常
+    await expect(
+      page
+        .getByLabel('block-item-CardItem-parentTargetCollection-table')
+        .getByText(childRecord.parentAssociationField[0].parentTargetText),
+    ).toBeVisible();
+  });
 });
 
 test.describe('configure actions', () => {
@@ -17,7 +58,7 @@ test.describe('configure actions', () => {
     await mockPage(oneEmptyTable).goto();
 
     // add buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -35,7 +76,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -56,7 +97,7 @@ test.describe('configure actions', () => {
   test('customize: add record', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTable).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'add record' }).click();
 
@@ -68,9 +109,14 @@ test.describe('configure actions', () => {
 test.describe('configure columns', () => {
   // 该用例在 CI 并发环境下容易报错，原因未知，通过增加重试次数可以解决
   test.describe.configure({ retries: process.env.CI ? 4 : 0 });
-  test('action column & display collection fields & display association fields', async ({ page, mockPage }) => {
+  test('action column & display collection fields & display association fields', async ({
+    page,
+    mockPage,
+    mockRecord,
+  }) => {
     await mockPage(oneEmptyTable).goto();
-    const configureColumnButton = page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9');
+    const record = await mockRecord('t_unp4scqamw9');
+    const configureColumnButton = page.getByLabel('schema-initializer-TableV2-table:configureColumns-t_unp4scqamw9');
 
     // Action column -------------------------------------------------------------
     // 1. 点击开关，可以开启和关闭 Action column
@@ -140,6 +186,7 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-').getByText(record.f_pw7uiecc8uc.nickname)).toBeVisible();
 
     // 点击开关，删除创建的字段
     await configureColumnButton.hover();

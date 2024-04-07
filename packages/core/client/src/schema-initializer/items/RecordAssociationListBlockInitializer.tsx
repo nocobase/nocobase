@@ -1,10 +1,11 @@
 import { TableOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { createListBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { useRecordCollectionDataSourceItems } from '../utils';
+import { createListBlockSchema } from '../../modules/blocks/data-blocks/list/createListBlockSchema';
 
 export const RecordAssociationListBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -28,11 +29,8 @@ export const RecordAssociationListBlockInitializer = () => {
           insert(
             createListBlockSchema({
               rowKey: collection.filterTargetKey,
-              collection: field.target,
-              resource,
               dataSource: collection.dataSource,
               association: resource,
-              settings: 'blockSettings:list',
             }),
           );
         }
@@ -41,3 +39,26 @@ export const RecordAssociationListBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationListBlock() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createAssociationListBlock = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      insert(
+        createListBlockSchema({
+          rowKey: collection.filterTargetKey,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+        }),
+      );
+    },
+    [getCollection, insert],
+  );
+
+  return { createAssociationListBlock };
+}

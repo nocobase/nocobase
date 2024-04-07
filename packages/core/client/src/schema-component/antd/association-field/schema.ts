@@ -6,7 +6,7 @@ export default {
       grid: {
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'FormItemInitializers',
+        'x-initializer': 'form:configureFields',
       },
     },
   },
@@ -23,7 +23,10 @@ export default {
         type: 'void',
         'x-component': 'Tabs',
         'x-component-props': {},
-        'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+        'x-initializer': 'popup:addTab',
+        'x-initializer-props': {
+          gridInitializer: 'popup:addNew:addBlock',
+        },
         properties: {
           tab1: {
             type: 'void',
@@ -35,7 +38,7 @@ export default {
               grid: {
                 type: 'void',
                 'x-component': 'Grid',
-                'x-initializer': 'CreateFormBlockInitializers',
+                'x-initializer': 'popup:addNew:addBlock',
                 properties: {},
               },
             },
@@ -55,7 +58,7 @@ export default {
       grid: {
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'TableSelectorInitializers',
+        'x-initializer': 'popup:tableSelector:addBlock',
         properties: {},
       },
       footer: {
@@ -71,13 +74,13 @@ export default {
                 title: '{{ t("Submit") }}',
                 'x-action': 'submit',
                 'x-component': 'Action',
+                'x-use-component-props': 'usePickActionProps',
                 // 'x-designer': 'Action.Designer',
                 'x-toolbar': 'ActionSchemaToolbar',
-                'x-settings': 'actionSettings:updateSubmit',
+                'x-settings': 'actionSettings:submit',
                 'x-component-props': {
                   type: 'primary',
                   htmlType: 'submit',
-                  useProps: '{{ usePickActionProps }}',
                 },
               },
             },
@@ -98,7 +101,7 @@ export default {
         type: 'void',
         'x-component': 'Tabs',
         'x-component-props': {},
-        'x-initializer': 'TabPaneInitializers',
+        'x-initializer': 'popup:addTab',
         properties: {
           tab1: {
             type: 'void',
@@ -110,7 +113,7 @@ export default {
               grid: {
                 type: 'void',
                 'x-component': 'Grid',
-                'x-initializer': 'RecordBlockInitializers',
+                'x-initializer': 'popup:common:addBlock',
                 properties: {},
               },
             },
@@ -122,7 +125,7 @@ export default {
   SubTable: {
     type: 'void',
     'x-component': 'AssociationField.SubTable',
-    'x-initializer': 'TableColumnInitializers',
+    'x-initializer': 'table:configureColumns',
     'x-initializer-props': {
       action: false,
     },

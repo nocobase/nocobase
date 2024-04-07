@@ -48,7 +48,7 @@ export class Auth {
     if (typeof window === 'undefined') {
       return;
     }
-    const appName = getSubAppName();
+    const appName = getSubAppName(this.api['app'] ? this.api['app'].getPublicPath() : '/');
     if (!appName) {
       return;
     }
@@ -88,6 +88,9 @@ export class Auth {
     this.setAuthenticator(value);
   }
 
+  /**
+   * @internal
+   */
   getOption(key: string) {
     if (!this.KEYS[key]) {
       return;
@@ -95,6 +98,9 @@ export class Auth {
     return this.api.storage.getItem(this.KEYS[key]);
   }
 
+  /**
+   * @internal
+   */
   setOption(key: string, value?: string) {
     if (!this.KEYS[key]) {
       return;
@@ -103,34 +109,66 @@ export class Auth {
     return this.api.storage.setItem(this.KEYS[key], value || '');
   }
 
+  /**
+   * @internal
+   * use {@link Auth#locale} instead
+   */
   getLocale() {
     return this.getOption('locale');
   }
 
+  /**
+   * @internal
+   * use {@link Auth#locale} instead
+   */
   setLocale(locale: string) {
     this.setOption('locale', locale);
   }
 
+  /**
+   * @internal
+   * use {@link Auth#role} instead
+   */
   getRole() {
     return this.getOption('role');
   }
 
+  /**
+   * @internal
+   * use {@link Auth#role} instead
+   */
   setRole(role: string) {
     this.setOption('role', role);
   }
 
+  /**
+   * @internal
+   * use {@link Auth#token} instead
+   */
   getToken() {
     return this.getOption('token');
   }
 
+  /**
+   * @internal
+   * use {@link Auth#token} instead
+   */
   setToken(token: string) {
     this.setOption('token', token);
   }
 
+  /**
+   * @internal
+   * use {@link Auth#authenticator} instead
+   */
   getAuthenticator() {
     return this.getOption('authenticator');
   }
 
+  /**
+   * @internal
+   * use {@link Auth#authenticator} instead
+   */
   setAuthenticator(authenticator: string) {
     this.setOption('authenticator', authenticator);
   }

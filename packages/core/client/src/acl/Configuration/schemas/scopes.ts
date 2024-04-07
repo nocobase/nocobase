@@ -124,9 +124,7 @@ export const scopesSchema: ISchema = {
                                 form: {
                                   type: 'void',
                                   'x-component': 'FormV2',
-                                  'x-component-props': {
-                                    useProps: useFormBlockProps,
-                                  },
+                                  'x-use-component-props': useFormBlockProps,
                                   properties: {
                                     name: {
                                       type: 'string',
@@ -139,15 +137,17 @@ export const scopesSchema: ISchema = {
                                       name: 'filter',
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Filter',
+                                      'x-use-component-props': () => {
+                                        // eslint-disable-next-line react-hooks/rules-of-hooks
+                                        const ctx = useContext(RoleResourceCollectionContext);
+                                        // eslint-disable-next-line react-hooks/rules-of-hooks
+                                        const options = useFilterOptions(ctx.name);
+                                        return {
+                                          options,
+                                        };
+                                      },
                                       'x-component-props': {
                                         dynamicComponent: VariableInput,
-                                        useProps() {
-                                          const ctx = useContext(RoleResourceCollectionContext);
-                                          const options = useFilterOptions(ctx.name);
-                                          return {
-                                            options,
-                                          };
-                                        },
                                       },
                                     },
                                     actions: {
@@ -164,10 +164,10 @@ export const scopesSchema: ISchema = {
                                           title: '{{ t("Submit") }}',
                                           'x-action': 'submit',
                                           'x-component': 'Action',
+                                          'x-use-component-props': 'useCreateActionProps',
                                           'x-component-props': {
                                             type: 'primary',
                                             htmlType: 'submit',
-                                            useProps: '{{ useCreateActionProps }}',
                                           },
                                         },
                                       },
@@ -185,12 +185,12 @@ export const scopesSchema: ISchema = {
                 value: {
                   type: 'array',
                   'x-component': 'TableV2.Selector',
+                  'x-use-component-props': 'useTableSelectorProps',
                   'x-component-props': {
                     rowKey: 'id',
                     rowSelection: {
                       type: 'checkbox',
                     },
-                    useProps: '{{ useTableSelectorProps }}',
                   },
                   properties: {
                     column1: {
@@ -252,9 +252,7 @@ export const scopesSchema: ISchema = {
                                         form: {
                                           type: 'void',
                                           'x-component': 'FormV2',
-                                          'x-component-props': {
-                                            useProps: '{{ useFormBlockProps }}',
-                                          },
+                                          'x-use-component-props': 'useFormBlockProps',
                                           properties: {
                                             name: {
                                               type: 'string',
@@ -267,15 +265,17 @@ export const scopesSchema: ISchema = {
                                               name: 'filter',
                                               'x-decorator': 'FormItem',
                                               'x-component': 'Filter',
+                                              'x-use-component-props': () => {
+                                                // eslint-disable-next-line react-hooks/rules-of-hooks
+                                                const ctx = useContext(RoleResourceCollectionContext);
+                                                // eslint-disable-next-line react-hooks/rules-of-hooks
+                                                const options = useFilterOptions(ctx.name);
+                                                return {
+                                                  options,
+                                                };
+                                              },
                                               'x-component-props': {
                                                 dynamicComponent: VariableInput,
-                                                useProps() {
-                                                  const ctx = useContext(RoleResourceCollectionContext);
-                                                  const options = useFilterOptions(ctx.name);
-                                                  return {
-                                                    options,
-                                                  };
-                                                },
                                               },
                                             },
                                             actions: {
@@ -292,10 +292,10 @@ export const scopesSchema: ISchema = {
                                                   title: '{{ t("Submit") }}',
                                                   'x-action': 'submit',
                                                   'x-component': 'Action',
+                                                  'x-use-component-props': 'useUpdateActionProps',
                                                   'x-component-props': {
                                                     type: 'primary',
                                                     htmlType: 'submit',
-                                                    useProps: '{{ useUpdateActionProps }}',
                                                   },
                                                 },
                                               },
@@ -313,13 +313,13 @@ export const scopesSchema: ISchema = {
                               'x-action': 'destroy',
                               'x-decorator': 'ACLActionProvider',
                               'x-component': 'Action.Link',
+                              'x-use-component-props': 'useDestroyActionProps',
                               'x-component-props': {
                                 icon: 'DeleteOutlined',
                                 confirm: {
                                   title: "{{t('Delete record')}}",
                                   content: "{{t('Are you sure you want to delete it?')}}",
                                 },
-                                useProps: '{{ useDestroyActionProps }}',
                               },
                             },
                           },
@@ -343,10 +343,10 @@ export const scopesSchema: ISchema = {
                       title: '{{ t("Submit") }}',
                       'x-action': 'submit',
                       'x-component': 'Action',
+                      'x-use-component-props': 'usePickActionProps',
                       'x-component-props': {
                         type: 'primary',
                         htmlType: 'submit',
-                        useProps: '{{ usePickActionProps }}',
                       },
                     },
                   },
