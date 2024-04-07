@@ -3,11 +3,13 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useDataBlockRequest } from '../../../data-source';
 import { Icon } from '../../../icon';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
@@ -26,8 +28,6 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { useDataBlockRequest } from '../../../data-source';
 
 export const Action: ComposedAction = withDynamicSchemaProps(
   observer((props: any) => {
@@ -76,13 +76,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-    const [btnHover, setBtnHover] = useState(popover);
     const service = useDataBlockRequest();
-    useEffect(() => {
-      if (popover) {
-        setBtnHover(true);
-      }
-    }, [popover]);
 
     const actionTitle = useMemo(() => {
       const res = title || compile(fieldSchema.title);
@@ -90,7 +84,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [title, fieldSchema.title, t]);
 
     useEffect(() => {
-      if (!btnHover) return;
       field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
@@ -105,15 +98,13 @@ export const Action: ComposedAction = withDynamicSchemaProps(
             });
           });
         });
-    }, [btnHover, field, linkageRules, localVariables, record, variables]);
+    }, [field, linkageRules, localVariables, variables]);
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
         if (isPortalInBody(e.target as Element)) {
           return;
         }
-        setBtnHover(true);
-
         e.preventDefault();
         e.stopPropagation();
 
@@ -153,7 +144,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
 
     const handleMouseEnter = useCallback(
       (e) => {
-        setBtnHover(true);
         onMouseEnter?.(e);
       },
       [onMouseEnter],
