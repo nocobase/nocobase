@@ -153,12 +153,6 @@ export const DataBlockCollector = ({
     if (shouldApplyFilter) addBlockToDataBlocks();
   }, [addBlockToDataBlocks, shouldApplyFilter]);
 
-  useEffect(() => {
-    return () => {
-      removeDataBlock(fieldSchema['x-uid']);
-    };
-  }, []);
-
   return <div ref={container}>{children}</div>;
 };
 
@@ -194,9 +188,7 @@ export const useFilterBlock = () => {
     setDataBlocks((prev) => uniqBy([...prev, block], 'uid'));
   };
   const removeDataBlock = (uid: string) => {
-    const blocks = dataBlocks.filter((item) => item.uid !== uid);
-    if (blocks.length === dataBlocks.length) return;
-
+    if (dataBlocks.every((item) => item.uid !== uid)) return;
     setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
   };
 
