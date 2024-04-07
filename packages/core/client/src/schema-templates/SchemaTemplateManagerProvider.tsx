@@ -122,7 +122,7 @@ export const useSchemaTemplateManager = () => {
   };
 };
 
-const Internal = (props) => {
+export const RemoteSchemaTemplateManagerProvider = (props) => {
   const api = useAPIClient();
   const { render } = useAppSpin();
   const options = {
@@ -153,19 +153,10 @@ const Internal = (props) => {
   );
 };
 
-export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNode }> = (props) => {
-  const location = useLocation();
-  if (location.pathname.startsWith('/admin')) {
-    return <Internal {...props} />;
-  }
-  return <>{props.children}</>;
-};
-
 export class RemoteSchemaTemplateManagerPlugin extends Plugin {
   async load() {
     this.addRoutes();
     this.addComponents();
-    this.app.use(RemoteSchemaTemplateManagerProvider);
   }
 
   addComponents() {
