@@ -497,7 +497,7 @@ export class PluginManager {
   }
 
   async enable(name: string | string[]) {
-    let pluginNames = [];
+    let pluginNames = name;
     if (name === '*') {
       const items = await this.repository.find();
       pluginNames = items.map((item: any) => item.name);
