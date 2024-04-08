@@ -1,6 +1,7 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
+import { Slider } from 'antd';
 import _ from 'lodash';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,9 +17,9 @@ import {
   screenSizeTitleMaps,
 } from '../../../../schema-component/antd/grid-card/options';
 import { SchemaSettingsTemplate } from '../../../../schema-settings';
-import { columnCountMarks } from './utils';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
+import { columnCountMarks } from './utils';
 
 export const gridCardBlockSettings = new SchemaSettings({
   name: 'blockSettings:gridCard',
@@ -35,7 +36,7 @@ export const gridCardBlockSettings = new SchemaSettings({
 
         const columnCountSchema = useMemo(() => {
           return {
-            'x-component': 'Slider',
+            'x-component': Slider,
             'x-decorator': 'FormItem',
             'x-component-props': {
               min: 1,
