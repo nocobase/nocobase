@@ -24,7 +24,8 @@ test.describe('where can be added', () => {
     await page.getByLabel('action-Action.Link-View-view-').first().click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'form Calendar right' }).hover();
-    await page.getByRole('menuitem', { name: 'manyToMany -> calendar' }).click();
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'manyToMany' }).click();
 
     await page.getByLabel('block-item-Select-Title field').getByTestId('select-single').click();
     await page.getByRole('option', { name: 'Repeats' }).click();

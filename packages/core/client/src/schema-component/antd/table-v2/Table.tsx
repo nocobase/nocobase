@@ -3,18 +3,18 @@ import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
-import { useCreation } from 'ahooks';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
+import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
@@ -25,14 +25,13 @@ import {
   useTableBlockContext,
   useTableSelectorContext,
 } from '../../../';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
-import { useInView } from 'react-intersection-observer';
 
 const MemoizedAntdTable = React.memo(AntdTable);
 
@@ -101,7 +100,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           width: 200,
           ...s['x-component-props'],
           render: (v, record) => {
-            if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
+            // 这行代码会导致这里的测试不通过：packages/core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaInitializer.test.ts:189
+            // if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
@@ -346,6 +346,7 @@ const BodyRowComponent = (props) => {
 };
 
 interface TableProps {
+  /** @deprecated */
   useProps?: () => any;
   onChange?: (pagination, filters, sorter, extra) => void;
   onRowSelectionChange?: (selectedRowKeys: any[], selectedRows: any[]) => void;
@@ -365,8 +366,10 @@ export const Table: any = withDynamicSchemaProps(
   observer((props: TableProps) => {
     const { token } = useToken();
     const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus', 'value']);
+
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { pagination: pagination2, ...others2 } = useProps?.() || {};
+
     const {
       dragSort = false,
       showIndex = true,
@@ -513,7 +516,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Input active />}
+            {inView || isIndex ? props.children : <Skeleton.Button active />}
           </td>
         );
       },
@@ -672,16 +675,12 @@ export const Table: any = withDynamicSchemaProps(
           overflow: hidden;
           .ant-table-wrapper {
             height: 100%;
-            overflow: hidden;
-            .ant-table-wrapper {
+            .ant-spin-nested-loading {
               height: 100%;
-              .ant-spin-nested-loading {
+              .ant-spin-container {
                 height: 100%;
-                .ant-spin-container {
-                  height: 100%;
-                  display: flex;
-                  flex-direction: column;
-                }
+                display: flex;
+                flex-direction: column;
               }
             }
           }

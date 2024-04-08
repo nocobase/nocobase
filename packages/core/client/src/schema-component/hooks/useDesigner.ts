@@ -3,7 +3,7 @@ import { useComponent, useDesignable } from '.';
 import { useMemo } from 'react';
 import { SchemaToolbar } from '../../schema-settings';
 
-const Def = () => null;
+const DefaultSchemaToolbar = () => null;
 
 export const useDesigner = () => {
   const { designable } = useDesignable();
@@ -16,9 +16,9 @@ export const useDesigner = () => {
     if (fieldSchema['x-settings']) {
       return SchemaToolbar;
     }
-    return Def;
+    return DefaultSchemaToolbar;
   }, [fieldSchema]);
 
   const component = useComponent(toolbar);
-  return designable ? component || Def : Def;
+  return designable ? component || DefaultSchemaToolbar : DefaultSchemaToolbar;
 };

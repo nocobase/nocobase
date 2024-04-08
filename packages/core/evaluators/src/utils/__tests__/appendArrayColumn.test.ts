@@ -1,0 +1,31 @@
+import { get } from 'lodash';
+
+import { appendArrayColumn } from '..';
+
+describe('evaluators > appendArrayColumn()', () => {
+  it('simple array', () => {
+    const scope = {
+      a: [{ b: 1 }, { b: 2 }],
+    };
+    appendArrayColumn(scope, 'a.b');
+    expect(get(scope, 'a.b')).toEqual([1, 2]);
+  });
+
+  it('nested array', () => {
+    const scope = {
+      a: [
+        {
+          b: [{ c: 1 }, { c: 2 }],
+        },
+        {
+          b: [{ c: 3 }, { c: 4 }],
+        },
+      ],
+    };
+    appendArrayColumn(scope, 'a.b.c');
+    const a_b: any = [{ c: 1 }, { c: 2 }, { c: 3 }, { c: 4 }];
+    a_b.c = [1, 2, 3, 4];
+    expect(get(scope, 'a.b')).toEqual(a_b);
+    expect(get(scope, 'a.b.c')).toEqual([1, 2, 3, 4]);
+  });
+});

@@ -17,14 +17,12 @@ import {
   SchemaComponentContext,
   SchemaInitializerItem,
   SchemaInitializerItemType,
-  SchemaSettingsBlockTitleItem,
   SchemaSettingsDivider,
   SchemaSettingsItem,
   SchemaSettingsRemove,
   VariableScopeProvider,
   css,
   gridRowColWrap,
-  useCompile,
   useDataSourceManager,
   useFormActiveFields,
   useFormBlockContext,
@@ -34,8 +32,8 @@ import {
   useSchemaOptionsContext,
 } from '@nocobase/client';
 import WorkflowPlugin, {
-  JOB_STATUS,
   DetailsBlockProvider,
+  JOB_STATUS,
   SimpleDesigner,
   useAvailableUpstreams,
   useFlowContext,
@@ -108,6 +106,7 @@ const blockTypeNames = {
 
 /**
  * @deprecated
+ * use `addBlockButton` instead
  */
 export const addBlockButton_deprecated = new CompatibleSchemaInitializer({
   name: 'AddBlockButton',
@@ -421,6 +420,7 @@ function ActionInitializer() {
 
 /**
  * @deprecated
+ * use `addActionButton` instead
  */
 export const addActionButton_deprecated = new CompatibleSchemaInitializer({
   name: 'AddActionButton',
@@ -531,7 +531,7 @@ export function SchemaConfig({ value, onChange }) {
                 type: 'void',
                 'x-component': 'Tabs',
                 'x-component-props': {},
-                'x-initializer': 'TabPaneInitializers',
+                'x-initializer': 'popup:addTab',
                 'x-initializer-props': {
                   gridInitializer: 'workflowManual:popup:configureUserInterface:addBlock',
                 },

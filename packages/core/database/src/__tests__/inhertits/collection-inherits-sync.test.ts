@@ -1,10 +1,7 @@
-import { Collection } from '../../collection';
 import Database from '../../database';
-import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
-import pgOnly from './helper';
 
-pgOnly()('sync inherits', () => {
+describe.runIf(process.env['DB_DIALECT'] === 'postgres')('sync inherits', () => {
   let db: Database;
 
   beforeEach(async () => {

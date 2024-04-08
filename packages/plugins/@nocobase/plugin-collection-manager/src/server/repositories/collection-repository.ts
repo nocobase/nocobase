@@ -91,10 +91,13 @@ export class CollectionRepository extends Repository {
         submodule: 'CollectionRepository',
         method: 'load',
       });
+
       this.app.setMaintainingMessage(`load ${instanceName} collection`);
 
       await nameMap[instanceName].load({ skipField });
     }
+
+    const fieldWithSourceAttributes = new Map<string, Array<string>>();
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
@@ -103,8 +106,20 @@ export class CollectionRepository extends Repository {
         method: 'load',
         viewCollectionName,
       });
+
+      const skipField = (() => {
+        const fields = nameMap[viewCollectionName].get('fields');
+
+        return fields.filter((field) => field.options?.source).map((field) => field.get('name'));
+      })();
+
       this.app.setMaintainingMessage(`load ${viewCollectionName} collection fields`);
-      await nameMap[viewCollectionName].loadFields({});
+
+      if (lodash.isArray(skipField) && skipField.length) {
+        fieldWithSourceAttributes.set(viewCollectionName, skipField);
+      }
+
+      await nameMap[viewCollectionName].loadFields({ skipField });
     }
 
     // load lazy collection field
@@ -114,6 +129,18 @@ export class CollectionRepository extends Repository {
         method: 'load',
         collectionName,
       });
+      this.app.setMaintainingMessage(`load ${collectionName} collection fields`);
+      await nameMap[collectionName].loadFields({ includeFields: skipField });
+    }
+
+    // load source attribute fields
+    for (const [collectionName, skipField] of fieldWithSourceAttributes) {
+      this.database.logger.debug(`load collection fields`, {
+        submodule: 'CollectionRepository',
+        method: 'load',
+        collectionName,
+      });
+
       this.app.setMaintainingMessage(`load ${collectionName} collection fields`);
       await nameMap[collectionName].loadFields({ includeFields: skipField });
     }

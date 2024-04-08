@@ -19,6 +19,7 @@ import {
   CollectionCategroriesContext,
   FieldSummary,
   TemplateSummary,
+  useRequest,
 } from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
@@ -100,6 +101,7 @@ export const ConfigurationTable = () => {
   const api = useAPIClient();
   const resource = api.resource('dbViews');
   const compile = useCompile();
+  const form = useForm();
 
   /**
    *
@@ -131,6 +133,7 @@ export const ConfigurationTable = () => {
       value: item.name,
     }));
   };
+
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
       label: compile(item.name),
@@ -145,6 +148,20 @@ export const ConfigurationTable = () => {
         return {
           label: schema ? `${schema}.${compile(item.name)}` : item.name,
           value: schema ? `${schema}_${item.name}` : item.name,
+        };
+      });
+    });
+  };
+
+  const loadFilterTargetKeys = async (field) => {
+    const { fields } = field.form.values;
+    return Promise.resolve({
+      data: fields,
+    }).then(({ data }) => {
+      return data?.map((item: any) => {
+        return {
+          label: compile(item.uiSchema?.title) || item.name,
+          value: item.name,
         };
       });
     });
@@ -178,6 +195,7 @@ export const ConfigurationTable = () => {
           CollectionFields,
         }}
         scope={{
+          loadFilterTargetKeys,
           useDestroySubField,
           useBulkDestroySubField,
           useSelectedRowKeys,

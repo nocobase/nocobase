@@ -10,6 +10,7 @@ import {
   SecondConFirm,
   SkipValidation,
   WorkflowConfig,
+  RefreshDataBlockRequest,
 } from '../../../schema-component/antd/action/Action.Designer';
 
 export const customizeSaveRecordActionSettings = new SchemaSettings({
@@ -46,6 +47,15 @@ export const customizeSaveRecordActionSettings = new SchemaSettings({
     {
       name: 'bindWorkflow',
       Component: WorkflowConfig,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
+      },
     },
     {
       name: 'delete',

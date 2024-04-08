@@ -26,6 +26,9 @@ type AuthConfig = {
 };
 
 export class AuthManager {
+  /**
+   * @internal
+   */
   jwt: JwtService;
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();

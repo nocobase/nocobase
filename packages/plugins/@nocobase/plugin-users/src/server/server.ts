@@ -138,7 +138,7 @@ export default class PluginUsersServer extends Plugin {
         ['add', 'remove', 'set'].includes(actionName) &&
         values?.length
       ) {
-        // Delete cache when the members of a department changed
+        // Delete cache when the members of a role changed
         for (const userId of values) {
           await cache.del(`roles:${userId}`);
         }

@@ -2,6 +2,7 @@ import { CompatibleSchemaInitializer } from '../../application/schema-initialize
 
 /**
  * @deprecated
+ * use `subTableActionInitializers` instead
  * 表格操作配置
  */
 export const subTableActionInitializers_deprecated = new CompatibleSchemaInitializer({

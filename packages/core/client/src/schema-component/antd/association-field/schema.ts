@@ -23,7 +23,10 @@ export default {
         type: 'void',
         'x-component': 'Tabs',
         'x-component-props': {},
-        'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+        'x-initializer': 'popup:addTab',
+        'x-initializer-props': {
+          gridInitializer: 'popup:addNew:addBlock',
+        },
         properties: {
           tab1: {
             type: 'void',
@@ -71,13 +74,13 @@ export default {
                 title: '{{ t("Submit") }}',
                 'x-action': 'submit',
                 'x-component': 'Action',
+                'x-use-component-props': 'usePickActionProps',
                 // 'x-designer': 'Action.Designer',
                 'x-toolbar': 'ActionSchemaToolbar',
                 'x-settings': 'actionSettings:submit',
                 'x-component-props': {
                   type: 'primary',
                   htmlType: 'submit',
-                  useProps: '{{ usePickActionProps }}',
                 },
               },
             },
@@ -98,7 +101,7 @@ export default {
         type: 'void',
         'x-component': 'Tabs',
         'x-component-props': {},
-        'x-initializer': 'TabPaneInitializers',
+        'x-initializer': 'popup:addTab',
         properties: {
           tab1: {
             type: 'void',

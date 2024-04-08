@@ -7,8 +7,10 @@ import {
   SecondConFirm,
   useCollection,
   useSchemaToolbar,
+  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import { CustomRequestACL, CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
+import { useFieldSchema } from '@formily/react';
 
 export const customizeCustomRequestActionSettings = new SchemaSettings({
   name: 'actionSettings:customRequest',
@@ -17,10 +19,9 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       name: 'editButton',
       Component: ButtonEditor,
       useComponentProps() {
-        const { buttonEditorProps } = useSchemaToolbar();
+        const fieldSchema = useFieldSchema();
         return {
-          isLink: true,
-          ...buttonEditorProps,
+          isLink: fieldSchema['x-action'] === 'customize:table:request',
         };
       },
     },
@@ -51,6 +52,15 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
     {
       name: 'accessControl',
       Component: CustomRequestACL,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
+      },
     },
     {
       name: 'delete',

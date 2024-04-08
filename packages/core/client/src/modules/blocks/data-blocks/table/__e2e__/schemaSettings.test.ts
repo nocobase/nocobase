@@ -10,6 +10,7 @@ import {
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
+import { T3843, oneTableWithRoles } from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -286,6 +287,91 @@ test.describe('table block schema settings', () => {
     });
 
     test('connecting two blocks connected by a foreign key', async ({ page, mockPage, mockRecords }) => {});
+
+    test('should immediately show in the drop-down menu of Connect data blocks when adding a block for the first time', async ({
+      page,
+      mockPage,
+    }) => {
+      await mockPage(oneTableWithRoles).goto();
+
+      // 1. 创建一个详情区块
+      await page.getByLabel('schema-initializer-Grid-page:').hover();
+      await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+      await page.getByRole('menuitem', { name: 'Roles' }).click();
+      await page.mouse.move(300, 0);
+      await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
+      await page.getByRole('menuitem', { name: 'Role name' }).click();
+      await page.mouse.move(300, 0);
+
+      // 2. 创建的详情区块应该立即出现在 Connect data blocks 的下拉菜单中
+      await page.getByLabel('block-item-CardItem-roles-table').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
+      await page.getByRole('menuitem', { name: 'Roles #' }).click();
+
+      // 3. 点击 Table 行，筛选功能应该正常
+      // 初次点击，变为选中状态
+      await page.getByRole('button', { name: 'Admin' }).click();
+      await expect(page.getByLabel('block-item-CollectionField-').getByText('Admin')).toBeVisible();
+      // 再次点击，取消选中状态
+      await page.getByRole('button', { name: 'Admin' }).click();
+      await expect(page.getByLabel('block-item-CollectionField-').getByText('Admin')).toBeHidden();
+
+      // 4. 删除详情区块，Connect data blocks 的下拉菜单应该立即消失
+      await page.getByLabel('block-item-CardItem-roles-details').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-roles').hover();
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+      await page.getByLabel('block-item-CardItem-roles-').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
+      await expect(page.getByRole('menuitem', { name: 'No blocks to connect' })).toBeVisible();
+    });
+
+    test('should not lose the filtering function when dragging and connecting', async ({ page, mockPage }) => {
+      await mockPage(oneTableWithRoles).goto();
+
+      // 1. 创建一个详情区块
+      await page.getByLabel('schema-initializer-Grid-page:').hover();
+      await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+      await page.getByRole('menuitem', { name: 'Roles' }).click();
+      await page.mouse.move(300, 0);
+      await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
+      await page.getByRole('menuitem', { name: 'Role name' }).click();
+      await page.mouse.move(300, 0);
+
+      // 2. 拖动详情区块
+      await page.getByLabel('block-item-CardItem-roles-details').hover();
+      await page
+        .getByLabel('designer-drag-handler-CardItem-blockSettings:detailsWithPagination-roles')
+        .dragTo(page.getByLabel('block-item-CardItem-roles-table'));
+
+      // 3. 创建的详情区块应该立即出现在 Connect data blocks 的下拉菜单中
+      await page.getByLabel('block-item-CardItem-roles-table').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
+      await page.getByRole('menuitem', { name: 'Roles #' }).click();
+
+      // 4. 点击 Table 行，筛选功能应该正常
+      // 初次点击，变为选中状态
+      await page.getByRole('button', { name: 'Admin' }).click();
+      await expect(page.getByLabel('block-item-CollectionField-').getByText('Admin')).toBeVisible();
+      // 再次点击，取消选中状态
+      await page.getByRole('button', { name: 'Admin' }).click();
+      await expect(page.getByLabel('block-item-CollectionField-').getByText('Admin')).toBeHidden();
+
+      // 5. 删除详情区块，Connect data blocks 的下拉菜单应该立即消失
+      await page.getByLabel('block-item-CardItem-roles-details').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-roles').hover();
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+      await page.getByLabel('block-item-CardItem-roles-').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
+      await expect(page.getByRole('menuitem', { name: 'No blocks to connect' })).toBeVisible();
+    });
   });
 });
 
@@ -716,6 +802,35 @@ test.describe('actions schema settings', () => {
         supportedOptions: ['Edit button', 'Open mode', 'Popup size', 'Delete'],
       });
     });
+  });
+});
+
+test.describe('table column schema settings', () => {
+  // https://nocobase.height.app/T-3843
+  test('set data scope', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T3843).waitForInit();
+    const record1 = await mockRecord('collection1');
+    await nocoPage.goto();
+
+    // 1. 关系字段下拉框中应该有数据
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
+
+    // 2. 为该关系字段设置一个数据范围后，下拉框中应该有一个匹配项
+    await page.getByRole('button', { name: 'manyToMany1', exact: true }).hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-collection2').hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+    await page.getByRole('spinbutton').click();
+    await page.getByRole('spinbutton').fill('1');
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
   });
 });
 

@@ -10,6 +10,7 @@ import { TableSelector } from './TableSelector';
 export * from './TableBlockDesigner';
 export * from './TableField';
 export * from './TableSelectorDesigner';
+export { useColumnSchema } from './Table.Column.Decorator';
 
 export const TableV2 = Table;
 

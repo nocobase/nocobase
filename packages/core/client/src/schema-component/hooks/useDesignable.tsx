@@ -9,6 +9,10 @@ import React, { ComponentType, useCallback, useContext, useEffect, useMemo } fro
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
+import { addAppVersion } from './addAppVersion';
+
+// @ts-ignore
+import clientPkg from '../../../package.json';
 
 interface CreateDesignableProps {
   current: Schema;
@@ -18,6 +22,10 @@ interface CreateDesignableProps {
   refresh?: () => void;
   onSuccess?: any;
   t?: any;
+  /**
+   * NocoBase 系统版本
+   */
+  appVersion?: string;
 }
 
 export function createDesignable(options: CreateDesignableProps) {
@@ -101,11 +109,16 @@ const translate = (v?: any) => v;
 export class Designable {
   current: Schema;
   options: CreateDesignableProps;
+  /**
+   * NocoBase 系统版本
+   */
+  appVersion: string;
   events = {};
 
   constructor(options: CreateDesignableProps) {
     this.options = options;
     this.current = options.current;
+    this.appVersion = options.appVersion;
   }
 
   get model() {
@@ -158,7 +171,7 @@ export class Designable {
         url: `/uiSchemas:insertAdjacent/${current['x-uid']}?position=${position}`,
         method: 'post',
         data: {
-          schema,
+          schema: addAppVersion(schema, this.appVersion),
           wrap,
         },
       });
@@ -715,7 +728,7 @@ export function useDesignable() {
   const api = useAPIClient();
   const { t } = useTranslation();
   const dn = useMemo(() => {
-    return createDesignable({ t, api, refresh, current: fieldSchema, model: field });
+    return createDesignable({ t, api, refresh, current: fieldSchema, model: field, appVersion: clientPkg.version });
   }, [t, api, refresh, fieldSchema, field]);
 
   useEffect(() => {

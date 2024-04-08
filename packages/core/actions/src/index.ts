@@ -21,6 +21,9 @@ export interface Context extends Koa.Context {
   [key: string]: any;
 }
 
+/**
+ * @internal
+ */
 export function registerActions(api: any) {
   api.actions(
     lodash.pick(actions, [

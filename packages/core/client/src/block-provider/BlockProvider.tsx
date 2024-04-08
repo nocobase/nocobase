@@ -1,4 +1,3 @@
-import { css } from '@emotion/css';
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
@@ -10,14 +9,12 @@ import {
   DataBlockProvider,
   TableFieldResource,
   WithoutTableFieldResource,
-  useCollectionManager,
+  useCollectionParentRecord,
+  useCollectionRecord,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockResource,
   useDesignable,
-  useCollectionParentRecord,
-  useCollectionParentRecordData,
-  useCollectionRecord,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
@@ -27,9 +24,10 @@ import {
   useCollection_deprecated,
 } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
+import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
-import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
+import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
 
 /**
  * @deprecated
@@ -54,11 +52,21 @@ export const BlockRequestContext_deprecated = createContext<{
 }>({});
 BlockRequestContext_deprecated.displayName = 'BlockRequestContext_deprecated';
 
+/**
+ * @deprecated
+ * use `useDataBlockResource` instead
+ * @returns
+ */
 export const useBlockResource = () => {
   const resource = useDataBlockResource();
   return useContext(BlockResourceContext) || resource;
 };
 
+/**
+ * @internal
+ * @param props
+ * @returns
+ */
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
@@ -72,6 +80,7 @@ export const MaybeCollectionProvider = (props) => {
 
 /**
  * @deprecated
+ * use `DataBlockRequestProvider` instead
  * @param props
  * @returns
  */
@@ -116,11 +125,17 @@ export const BlockRequestProvider_deprecated = (props) => {
 
 /**
  * @deprecated
+ * use `useDataBlockRequest` instead
  */
 export const useBlockRequestContext = () => {
   return useContext(BlockRequestContext_deprecated);
 };
 
+/**
+ * @internal
+ * @param props
+ * @returns
+ */
 export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   const fieldSchema = useFieldSchema();
   const { findComponent } = useDesignable();
@@ -139,9 +154,9 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
         <Row style={{ height: '100%' }} gutter={16} wrap={false}>
           <Col
             style={{
-              ...(props.associationFilterStyle || {}),
               width: 200,
               flex: '0 0 auto',
+              ...(props.associationFilterStyle || {}),
             }}
           >
             <RecursionField
@@ -177,12 +192,19 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   return props.children;
 };
 
+/**
+ * @internal
+ */
 const BlockContext = createContext<{
   /** 用以区分区块的标识 */
   name: string;
 }>(null);
 BlockContext.displayName = 'BlockContext';
 
+/**
+ * @internal
+ * @returns
+ */
 export const useBlockContext = () => {
   return useContext(BlockContext);
 };
@@ -190,21 +212,22 @@ export const useBlockContext = () => {
 /**
  * 用于兼容旧版本 Schema
  */
-const useCompatDataBlockSourceId = (props) => {
+const useCompatDataBlockParentRecord = (props) => {
   const fieldSchema = useFieldSchema();
 
   // 如果存在 x-use-decorator-props，说明是新版 Schema
   if (fieldSchema['x-use-decorator-props']) {
-    return props.sourceId;
+    return props.parentRecord;
   } else {
     // 是否存在 x-use-decorator-props 是固定不变的，所以这里可以使用 hooks
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useDataBlockSourceId(props);
+    return useDataBlockParentRecord(props);
   }
 };
 
 /**
- * @deprecated use `DataBlockProvider` instead
+ * @deprecated
+ * use `DataBlockProvider` instead
  */
 export const BlockProvider = (props: {
   name: string;
@@ -220,8 +243,8 @@ export const BlockProvider = (props: {
   /** @deprecated */
   useParams?: any;
 }) => {
-  const { name, dataSource, association, useParams, parentRecord } = props;
-  const sourceId = useCompatDataBlockSourceId(props);
+  const { name, dataSource, useParams, parentRecord } = props;
+  const parentRecordFromHook = useCompatDataBlockParentRecord(props);
 
   // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
@@ -238,15 +261,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <DataBlockProvider
-        {...(props as any)}
-        params={params}
-        sourceId={sourceId}
-        // 此处是针对树表格的 Add child 按钮优化的，因为点击 Add child 打开的表单中需要用到父级的数据；
-        // 但是当是关系区块时，在 DataBlockProvider 中会自动请求父级数据，所以这里不需要再传 parentRecord。
-        // 具体问题记录在这里：https://nocobase.height.app/T-3235/description
-        parentRecord={association ? undefined : parentRecord}
-      >
+      <DataBlockProvider {...(props as any)} params={params} parentRecord={parentRecord || parentRecordFromHook}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
           <DataBlockCollector {...props} params={params}>
             {props.children}
@@ -257,6 +272,11 @@ export const BlockProvider = (props: {
   );
 };
 
+/**
+ * @deprecated
+ * use `useDataBlockProps` instead
+ * @returns
+ */
 export const useBlockAssociationContext = () => {
   const { association } = useDataBlockProps();
   return useContext(BlockAssociationContext) || association;
@@ -285,8 +305,6 @@ export const useFilterByTk = () => {
 
 /**
  * @deprecated
- * 已弃用，应使用 useSourceIdFromParentRecord
- * @returns
  */
 export const useSourceIdFromRecord = () => {
   const record = useRecord();
@@ -298,20 +316,18 @@ export const useSourceIdFromRecord = () => {
   }
 };
 
+/**
+ * @deprecated
+ * use `useSourceId` instead
+ */
 export const useSourceIdFromParentRecord = () => {
-  const cm = useCollectionManager();
-  const parentRecordData = useCollectionParentRecordData();
-  const { getCollectionField } = useCollectionManager_deprecated();
-  const association = useBlockAssociationContext();
-  if (association) {
-    const collectionField = getCollectionField(association);
-    const collection = cm.getCollection(collectionField.collectionName);
-    return parentRecordData?.[
-      collectionField.sourceKey || collection.filterTargetKey || collection.getPrimaryKey() || 'id'
-    ];
-  }
+  return useSourceId();
 };
 
+/**
+ * @internal
+ * @returns
+ */
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   const record = useRecord();

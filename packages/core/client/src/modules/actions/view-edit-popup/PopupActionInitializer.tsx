@@ -12,6 +12,7 @@ export const PopupActionInitializer = (props) => {
     'x-component': props?.['x-component'] || 'Action.Link',
     'x-component-props': {
       openMode: 'drawer',
+      refreshDataBlockRequest: true,
     },
     properties: {
       drawer: {
@@ -26,7 +27,7 @@ export const PopupActionInitializer = (props) => {
             type: 'void',
             'x-component': 'Tabs',
             'x-component-props': {},
-            'x-initializer': 'TabPaneInitializers',
+            'x-initializer': 'popup:addTab',
             properties: {
               tab1: {
                 type: 'void',

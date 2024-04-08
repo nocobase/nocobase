@@ -82,13 +82,13 @@ export function useRecordTriggerWorkflowsActionProps() {
   const actionField = useField();
   const actionSchema = useFieldSchema();
   const { field, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const { modal } = App.useApp();
   const navigate = useNavigate();
   const { onSuccess, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
 
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       actionField.data = field.data || {};
       actionField.data.loading = true;
 
@@ -100,8 +100,12 @@ export function useRecordTriggerWorkflowsActionProps() {
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
-        __parent?.service?.refresh?.();
+        // __parent?.service?.refresh?.();
+        if (callBack) {
+          callBack();
+        }
         setVisible?.(false);
+        setSubmitted?.(true);
         if (!onSuccess?.successMessage) {
           return;
         }

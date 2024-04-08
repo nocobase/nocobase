@@ -11,6 +11,7 @@ export { defineConfig };
 export interface CollectionSetting {
   name: string;
   title?: string;
+  titleField?: string;
   /**
    * @default 'general'
    */
@@ -53,6 +54,7 @@ export interface CollectionSetting {
    * @default false
    */
   inherit?: boolean;
+  inherits?: string[];
   category?: any[];
   hidden?: boolean;
   description?: string;
@@ -254,6 +256,10 @@ interface ExtendUtils {
    * @param key 外部数据源key
    */
   destoryExternalDataSource: <T = any>(key: string) => Promise<T>;
+  /**
+   * 清空区块模板
+   */
+  clearBlockTemplates: () => Promise<void>;
 }
 
 const PORT = process.env.APP_PORT || 20000;
@@ -476,6 +482,33 @@ const _test = base.extend<ExtendUtils>({
 
     await use(destoryDataSource);
   },
+  clearBlockTemplates: async ({ page }, use) => {
+    const clearBlockTemplates = async () => {
+      const api = await request.newContext({
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+      });
+
+      const state = await api.storageState();
+      const headers = getHeaders(state);
+      const filter = {
+        key: { $exists: true },
+      };
+
+      const result = await api.post(`/api/uiSchemaTemplates:destroy?filter=${JSON.stringify(filter)}`, {
+        headers,
+      });
+
+      if (!result.ok()) {
+        throw new Error(await result.text());
+      }
+    };
+
+    try {
+      await use(clearBlockTemplates);
+    } catch (error) {
+      await clearBlockTemplates();
+    }
+  },
 });
 
 export const test = Object.assign(_test, {
@@ -620,6 +653,9 @@ const deleteCollections = async (collectionNames: string[]) => {
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
     headers,
+    params: {
+      cascade: true,
+    },
   });
 
   if (!result.ok()) {

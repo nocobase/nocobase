@@ -60,7 +60,7 @@ export const primaryKey = {
   'x-reactions': [
     {
       dependencies: ['unique'],
-      when: '{{$deps[0]}}',
+      when: '{{$deps[0]&&createMainOnly}}',
       fulfill: {
         state: {
           value: false,
@@ -85,7 +85,7 @@ export const autoFill = {
   'x-content': '{{t("Automatically generate default values")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
-  'x-disabled': '{{ !createMainOnly }}',
+  default: true,
 };
 
 export const relationshipType: ISchema = {
@@ -297,6 +297,7 @@ export const dataSource: ISchema = {
             'x-reactions': (field: Field) => {
               if (!field.initialValue) {
                 field.initialValue = uid();
+                field.setValue(uid());
               }
             },
           },
@@ -395,7 +396,7 @@ export const recordPickerViewer = {
       type: 'void',
       'x-component': 'Tabs',
       'x-component-props': {},
-      'x-initializer': 'TabPaneInitializers',
+      'x-initializer': 'popup:addTab',
       properties: {
         tab1: {
           type: 'void',

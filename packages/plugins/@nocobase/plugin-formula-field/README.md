@@ -1,4 +1,4 @@
-# math-formula-field
+# Formula field
 
 English | [中文](./README.zh-CN.md)
 

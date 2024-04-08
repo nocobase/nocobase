@@ -9,7 +9,7 @@ export * from './SchemaSettingsDataScope';
 export * from './SchemaSettingsDefaultValue';
 export * from './SchemaSettingsDateFormat';
 export * from './SchemaSettingsSortingRule';
-
+export * from './SchemaSettingsNumberFormat';
 export { default as useParseDataScopeFilter } from './hooks/useParseDataScopeFilter';
 
 export { SchemaSettingsPlugin } from './SchemaSettingsPlugin';

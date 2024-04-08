@@ -15,12 +15,17 @@ export function pageArgsToLimitArgs(
 }
 
 export function getRepositoryFromParams(ctx: Context): IRepository {
-  const { resourceName, resourceOf } = ctx.action;
+  const { resourceName, sourceId, actionName } = ctx.action;
 
   const dataSource: DataSource = ctx.dataSource;
 
-  if (resourceOf) {
-    return dataSource.collectionManager.getRepository(resourceName, resourceOf);
+  if (sourceId === '_' && ['get', 'list'].includes(actionName)) {
+    const collection = dataSource.collectionManager.getCollection(resourceName);
+    return dataSource.collectionManager.getRepository(collection.name);
+  }
+
+  if (sourceId) {
+    return dataSource.collectionManager.getRepository(resourceName, sourceId);
   }
 
   return dataSource.collectionManager.getRepository(resourceName);
