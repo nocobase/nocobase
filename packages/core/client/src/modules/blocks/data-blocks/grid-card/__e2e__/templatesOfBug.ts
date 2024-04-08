@@ -1,6 +1,7 @@
-import { PageConfig } from '@nocobase/test/e2e';
+import { PageConfig, generalWithM2oSingleSelect } from '@nocobase/test/e2e';
 
 export const T3813: PageConfig = {
+  collections: generalWithM2oSingleSelect,
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',
