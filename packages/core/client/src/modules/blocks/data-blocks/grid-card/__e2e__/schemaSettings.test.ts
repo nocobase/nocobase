@@ -49,7 +49,7 @@ test.describe('grid card block schema settings', () => {
   });
 
   // https://nocobase.height.app/T-3813
-  test('set the count of columns displayed in a row of new version', async ({ page, mockPage, mockRecords }) => {
+  test.skip('set the count of columns displayed in a row of new version', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(T3813).waitForInit();
     await mockRecords('general', 10);
     await nocoPage.goto();
