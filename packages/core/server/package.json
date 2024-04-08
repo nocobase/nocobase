@@ -28,7 +28,7 @@
         "@types/multer": "^1.4.5",
         "axios": "^0.26.1",
         "chalk": "^4.1.1",
-        "commander": "^9.2.0",
+        "commander": "^12.0.0",
         "cron": "^2.4.4",
         "cronstrue": "^2.11.0",
         "dayjs": "^1.11.8",

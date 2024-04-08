@@ -7,7 +7,7 @@
     "@umijs/utils": "3.5.20",
     "axios": "^0.26.1",
     "chalk": "^4.1.1",
-    "commander": "^9.2.0",
+    "commander": "^12.0.0",
     "tar": "6.1.11"
   },
   "bin": {
