@@ -3647,14 +3647,6 @@
     bessel "^1.0.2"
     jstat "^1.9.6"
 
-"@formulajs/formulajs@^4.2.0":
-  version "4.3.4"
-  resolved "https://registry.npmmirror.com/@formulajs/formulajs/-/formulajs-4.3.4.tgz#b2a48ab9dd8ad60901ae6b3ca76cfc5416bd27e0"
-  integrity sha512-iETOopDEUmKaeEUofUfazebhihErh+klyRQbEemDnnBj0hcwNu3xF0oAPHVL0vU/E01rVjy/ZC+1UBMOVkXrvQ==
-  dependencies:
-    bessel "^1.0.2"
-    jstat "^1.9.6"
-
 "@gar/promisify@^1.0.1":
   version "1.1.3"
   resolved "https://registry.npmmirror.com/@gar/promisify/-/promisify-1.1.3.tgz#555193ab2e3bb3b6adc3d551c9c030d9e860daf6"
@@ -4873,6 +4865,13 @@
   dependencies:
     "@opentelemetry/semantic-conventions" "1.19.0"
 
+"@opentelemetry/core@1.23.0":
+  version "1.23.0"
+  resolved "https://registry.npmmirror.com/@opentelemetry/core/-/core-1.23.0.tgz#f2e7ada7f35750f3c1674aef1e52c879005c0731"
+  integrity sha512-hdQ/a9TMzMQF/BO8Cz1juA43/L5YGtCSiKoOHmrTEf7VMDAZgy8ucpWx3eQTnQ3gBloRcWtzvcrMZABC3PTSKQ==
+  dependencies:
+    "@opentelemetry/semantic-conventions" "1.23.0"
+
 "@opentelemetry/instrumentation@^0.46.0":
   version "0.46.0"
   resolved "https://registry.npmmirror.com/@opentelemetry/instrumentation/-/instrumentation-0.46.0.tgz#a8a252306f82e2eace489312798592a14eb9830e"
@@ -4898,7 +4897,7 @@
   dependencies:
     "@opentelemetry/core" "1.19.0"
 
-"@opentelemetry/resources@1.19.0", "@opentelemetry/resources@^1.19.0":
+"@opentelemetry/resources@1.19.0":
   version "1.19.0"
   resolved "https://registry.npmmirror.com/@opentelemetry/resources/-/resources-1.19.0.tgz#2df9e0e8623cd390569243e2c9c15d7cce063c2f"
   integrity sha512-RgxvKuuMOf7nctOeOvpDjt2BpZvZGr9Y0vf7eGtY5XYZPkh2p7e2qub1S2IArdBMf9kEbz0SfycqCviOu9isqg==
@@ -4906,13 +4905,21 @@
     "@opentelemetry/core" "1.19.0"
     "@opentelemetry/semantic-conventions" "1.19.0"
 
-"@opentelemetry/sdk-metrics@^1.19.0":
-  version "1.19.0"
-  resolved "https://registry.npmmirror.com/@opentelemetry/sdk-metrics/-/sdk-metrics-1.19.0.tgz#fe8029af29402563eb8dba75a85fc02006ea92c4"
-  integrity sha512-FiMii40zr0Fmys4F1i8gmuCvbinBnBsDeGBr4FQemOf0iPCLytYQm5AZJ/nn4xSc71IgKBQwTFQRAGJI7JvZ4Q==
+"@opentelemetry/resources@1.23.0", "@opentelemetry/resources@^1.19.0":
+  version "1.23.0"
+  resolved "https://registry.npmmirror.com/@opentelemetry/resources/-/resources-1.23.0.tgz#4c71430f3e20c4d88b67ef5629759fae108485e5"
+  integrity sha512-iPRLfVfcEQynYGo7e4Di+ti+YQTAY0h5mQEUJcHlU9JOqpb4x965O6PZ+wMcwYVY63G96KtdS86YCM1BF1vQZg==
   dependencies:
-    "@opentelemetry/core" "1.19.0"
-    "@opentelemetry/resources" "1.19.0"
+    "@opentelemetry/core" "1.23.0"
+    "@opentelemetry/semantic-conventions" "1.23.0"
+
+"@opentelemetry/sdk-metrics@^1.19.0":
+  version "1.23.0"
+  resolved "https://registry.npmmirror.com/@opentelemetry/sdk-metrics/-/sdk-metrics-1.23.0.tgz#b4cf3cc86b6dedf5c438c67c829df7399bf64be1"
+  integrity sha512-4OkvW6+wST4h6LFG23rXSTf6nmTf201h9dzq7bE0z5R9ESEVLERZz6WXwE7PSgg1gdjlaznm1jLJf8GttypFDg==
+  dependencies:
+    "@opentelemetry/core" "1.23.0"
+    "@opentelemetry/resources" "1.23.0"
     lodash.merge "^4.6.2"
 
 "@opentelemetry/sdk-trace-base@1.19.0", "@opentelemetry/sdk-trace-base@^1.19.0":
@@ -4940,6 +4947,11 @@
   version "1.19.0"
   resolved "https://registry.npmmirror.com/@opentelemetry/semantic-conventions/-/semantic-conventions-1.19.0.tgz#0c17f80b45de1c8778dfdf17acb1e9d4c4aa4ba8"
   integrity sha512-14jRpC8f5c0gPSwoZ7SbEJni1PqI+AhAE8m1bMz6v+RPM4OlP1PT2UHBJj5Qh/ALLPjhVU/aZUK3YyjTUqqQVg==
+
+"@opentelemetry/semantic-conventions@1.23.0":
+  version "1.23.0"
+  resolved "https://registry.npmmirror.com/@opentelemetry/semantic-conventions/-/semantic-conventions-1.23.0.tgz#627f2721b960fe586b7f72a07912cb7699f06eef"
+  integrity sha512-MiqFvfOzfR31t8cc74CTP1OZfz7MbqpAnLCra8NqQoaHJX6ncIRTdYOQYBDQ2uFISDq0WY8Y9dDTWvsgzzBYRg==
 
 "@pkgr/utils@^2.3.1", "@pkgr/utils@^2.4.2":
   version "2.4.2"
@@ -5235,10 +5247,10 @@
   resolved "https://registry.npmmirror.com/@remix-run/router/-/router-1.14.0.tgz#9bc39a5a3a71b81bdb310eba6def5bc3966695b7"
   integrity sha512-WOHih+ClN7N8oHk9N4JUiMxQJmRVaOxcg8w7F/oHUXzJt920ekASLI/7cYX8XkntDWRhLZtsk6LbGrkgOAvi5A==
 
-"@remix-run/router@1.14.1":
-  version "1.14.1"
-  resolved "https://registry.npmmirror.com/@remix-run/router/-/router-1.14.1.tgz#6d2dd03d52e604279c38911afc1079d58c50a755"
-  integrity sha512-Qg4DMQsfPNAs88rb2xkdk03N3bjK4jgX5fR24eHCTR9q6PrhZQZ4UJBPzCHJkIpTRN1UKxx2DzjZmnC+7Lj0Ow==
+"@remix-run/router@1.15.3":
+  version "1.15.3"
+  resolved "https://registry.npmmirror.com/@remix-run/router/-/router-1.15.3.tgz#d2509048d69dbb72d5389a14945339f1430b2d3c"
+  integrity sha512-Oy8rmScVrVxWZVOpEF57ovlnhpZ8CCPlnIIumVcV9nFdiSIrus99+Lw78ekXyGvVDlIsFJbSfmSovJUhCWYV3w==
 
 "@restart/hooks@^0.4.7":
   version "0.4.15"
@@ -9008,7 +9020,7 @@ big.js@^5.2.2:
   resolved "https://registry.npmmirror.com/big.js/-/big.js-5.2.2.tgz#65f0af382f578bcdc742bd9c281e9cb2d7768328"
   integrity sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==
 
-bignumber.js@^9.0.0:
+bignumber.js@^9.0.0, bignumber.js@^9.1.2:
   version "9.1.2"
   resolved "https://registry.npmmirror.com/bignumber.js/-/bignumber.js-9.1.2.tgz#b7c4242259c008903b13707983b5f4bbd31eda0c"
   integrity sha512-2/mKyZH9K85bzOEfhXDBFZTGd1CTs+5IHpeFQo9luiBG7hghdC851Pj2WAhb6E3R6b9tZj/XKhbg4fum+Kepug==
@@ -22162,11 +22174,11 @@ react-router-dom@6.3.0, react-router-dom@6.x, react-router-dom@^6.11.2:
     react-router "6.21.0"
 
 react-router@6.21.0, react-router@6.3.0, react-router@^6.11.2:
-  version "6.21.1"
-  resolved "https://registry.npmmirror.com/react-router/-/react-router-6.21.1.tgz#8db7ee8d7cfc36513c9a66b44e0897208c33be34"
-  integrity sha512-W0l13YlMTm1YrpVIOpjCADJqEUpz1vm+CMo47RuFX4Ftegwm6KOYsL5G3eiE52jnJpKvzm6uB/vTKTPKM8dmkA==
+  version "6.22.3"
+  resolved "https://registry.npmmirror.com/react-router/-/react-router-6.22.3.tgz#9d9142f35e08be08c736a2082db5f0c9540a885e"
+  integrity sha512-dr2eb3Mj5zK2YISHK++foM9w4eBnO23eKnZEDs7c880P6oKbrjz/Svg9+nxqtHQK+oMW4OtjZca0RqPglXxguQ==
   dependencies:
-    "@remix-run/router" "1.14.1"
+    "@remix-run/router" "1.15.3"
 
 react-side-effect@^2.1.0:
   version "2.1.2"
