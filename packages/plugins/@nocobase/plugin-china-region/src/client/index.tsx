@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/client';
 import { useChinaRegionDataSource, useChinaRegionLoadData } from './ChinaRegionProvider';
 
-export class ChinaRegionPlugin extends Plugin {
+export class PluginChinaRegionClient extends Plugin {
   async load() {
     this.app.addScopes({
       useChinaRegionDataSource,
@@ -10,4 +10,4 @@ export class ChinaRegionPlugin extends Plugin {
   }
 }
 
-export default ChinaRegionPlugin;
+export default PluginChinaRegionClient;

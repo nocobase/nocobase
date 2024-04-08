@@ -20,7 +20,7 @@ import collectionActions from './resourcers/collections';
 import sqlResourcer from './resourcers/sql';
 import viewResourcer from './resourcers/views';
 
-export class CollectionManagerPlugin extends Plugin {
+export class PluginCollectionManagerServer extends Plugin {
   public schema: string;
 
   private loadFilter: Filter = {};
@@ -383,4 +383,4 @@ export class CollectionManagerPlugin extends Plugin {
   }
 }
 
-export default CollectionManagerPlugin;
+export default PluginCollectionManagerServer;

@@ -6,7 +6,7 @@ import { Plugin } from '@nocobase/client';
 import { ExportPluginProvider } from './ExportPluginProvider';
 import { exportActionSchemaSettings } from './schemaSettings';
 
-export class ExportPlugin extends Plugin {
+export class PluginExportClient extends Plugin {
   async load() {
     this.app.use(ExportPluginProvider);
 
@@ -29,4 +29,4 @@ export class ExportPlugin extends Plugin {
   }
 }
 
-export default ExportPlugin;
+export default PluginExportClient;

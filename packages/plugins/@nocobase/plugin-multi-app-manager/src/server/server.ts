@@ -119,7 +119,7 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
   };
 };
 
-export class PluginMultiAppManager extends Plugin {
+export class PluginMultiAppManagerServer extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;

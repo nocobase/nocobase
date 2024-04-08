@@ -3,7 +3,7 @@ import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { getAccessible } from './actions/getAccessible';
 
-export class UiRoutesStoragePlugin extends Plugin {
+export class PluginUIRoutesStorageServer extends Plugin {
   async install() {
     const repository = this.app.db.getRepository('uiRoutes');
     const routes = [
@@ -93,4 +93,4 @@ export class UiRoutesStoragePlugin extends Plugin {
   }
 }
 
-export default UiRoutesStoragePlugin;
+export default PluginUIRoutesStorageServer;

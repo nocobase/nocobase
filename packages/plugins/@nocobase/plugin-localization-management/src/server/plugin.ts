@@ -9,7 +9,7 @@ import Resources from './resources';
 import { getTextsFromDBRecord } from './utils';
 import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from './constans';
 
-export class LocalizationManagementPlugin extends Plugin {
+export class PluginLocalizationServer extends Plugin {
   resources: Resources;
 
   registerUISchemahook(plugin?: UiSchemaStoragePlugin) {
@@ -151,4 +151,4 @@ export class LocalizationManagementPlugin extends Plugin {
   async remove() {}
 }
 
-export default LocalizationManagementPlugin;
+export default PluginLocalizationServer;

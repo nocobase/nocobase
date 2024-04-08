@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/client';
 import { Localization } from './Localization';
 import { NAMESPACE } from './locale';
 
-export class LocalizationManagementPlugin extends Plugin {
+export class PluginLocalizationClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Localization", { ns: "${NAMESPACE}" })}}`,
@@ -13,4 +13,4 @@ export class LocalizationManagementPlugin extends Plugin {
   }
 }
 
-export default LocalizationManagementPlugin;
+export default PluginLocalizationClient;

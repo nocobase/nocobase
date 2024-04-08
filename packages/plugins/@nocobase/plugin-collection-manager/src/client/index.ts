@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/client';
 
-class CollectionManagerPlugin extends Plugin {
+class PluginCollectionManagerClient extends Plugin {
   async load() {}
 }
 
-export default CollectionManagerPlugin;
+export default PluginCollectionManagerClient;

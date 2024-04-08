@@ -4,7 +4,7 @@ import { resolve } from 'path';
 import { authType } from '../constants';
 import { SMSAuth } from './sms-auth';
 
-export class SmsAuthPlugin extends Plugin {
+export class PluginSMSAuthServer extends Plugin {
   afterAdd() {}
 
   async load() {
@@ -49,4 +49,4 @@ export class SmsAuthPlugin extends Plugin {
   async remove() {}
 }
 
-export default SmsAuthPlugin;
+export default PluginSMSAuthServer;

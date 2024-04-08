@@ -1,7 +1,7 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { exportXlsx } from './actions';
 
-export class ExportPlugin extends Plugin {
+export class PluginExportServer extends Plugin {
   beforeLoad() {}
 
   async load() {
@@ -15,4 +15,4 @@ export class ExportPlugin extends Plugin {
   async install(options: InstallOptions) {}
 }
 
-export default ExportPlugin;
+export default PluginExportServer;

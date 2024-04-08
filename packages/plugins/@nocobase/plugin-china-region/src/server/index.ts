@@ -10,7 +10,7 @@ function getChinaDivisionData(key: string) {
   }
 }
 
-export class PluginChinaRegion extends Plugin {
+export class PluginChinaRegionServer extends Plugin {
   async install() {
     await this.importData();
   }
@@ -86,4 +86,4 @@ export class PluginChinaRegion extends Plugin {
   }
 }
 
-export default PluginChinaRegion;
+export default PluginChinaRegionServer;

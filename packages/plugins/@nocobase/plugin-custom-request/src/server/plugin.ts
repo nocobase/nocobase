@@ -4,7 +4,7 @@ import { resolve } from 'path';
 import { listByCurrentRole } from './actions/listByCurrentRole';
 import { send } from './actions/send';
 
-export class CustomRequestPlugin extends Plugin {
+export class PluginCustomRequestServer extends Plugin {
   logger: Logger;
 
   afterAdd() {}
@@ -51,4 +51,4 @@ export class CustomRequestPlugin extends Plugin {
   async remove() {}
 }
 
-export default CustomRequestPlugin;
+export default PluginCustomRequestServer;
