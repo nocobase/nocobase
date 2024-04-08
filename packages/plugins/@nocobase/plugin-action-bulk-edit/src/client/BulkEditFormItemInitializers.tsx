@@ -30,7 +30,7 @@ export const BulkEditFormItemInitializers_deprecated = new CompatibleSchemaIniti
         'x-editable': false,
         'x-decorator': 'FormItem',
         // 'x-designer': 'Markdown.Void.Designer',
-        'x-toolbar': 'BlockSchemaToolbar',
+        'x-toolbar': 'FormItemSchemaToolbar',
         'x-settings': 'blockSettings:markdown',
         'x-component': 'Markdown.Void',
         'x-component-props': {
@@ -67,7 +67,7 @@ export const bulkEditFormItemInitializers = new CompatibleSchemaInitializer(
           'x-editable': false,
           'x-decorator': 'FormItem',
           // 'x-designer': 'Markdown.Void.Designer',
-          'x-toolbar': 'BlockSchemaToolbar',
+          'x-toolbar': 'FormItemSchemaToolbar',
           'x-settings': 'blockSettings:markdown',
           'x-component': 'Markdown.Void',
           'x-component-props': {
