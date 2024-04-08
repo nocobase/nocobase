@@ -30,7 +30,7 @@
     "update-notifier": "3.0.0",
     "vite-plugin-css-injected-by-js": "^3.2.1",
     "vite-plugin-lib-inject-css": "1.2.0",
-    "yargs-parser": "13.1.2"
+    "yargs-parser": "21.1.1"
   },
   "license": "Apache-2.0",
   "scripts": {
