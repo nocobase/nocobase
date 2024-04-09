@@ -19,7 +19,7 @@ async function getLang(ctx) {
   return lang;
 }
 
-export class ClientPlugin extends Plugin {
+export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
   async install() {
@@ -106,4 +106,4 @@ export class ClientPlugin extends Plugin {
   }
 }
 
-export default ClientPlugin;
+export default PluginClientServer;

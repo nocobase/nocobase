@@ -95,7 +95,7 @@ const defaultDbCreator = async (app: Application) => {
 };
 
 const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
-  const rawDatabaseOptions = PluginMultiAppManager.getDatabaseConfig(mainApp);
+  const rawDatabaseOptions = PluginMultiAppManagerServer.getDatabaseConfig(mainApp);
 
   if (rawDatabaseOptions.dialect === 'sqlite') {
     const mainAppStorage = rawDatabaseOptions.storage;
@@ -119,7 +119,7 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
   };
 };
 
-export class PluginMultiAppManager extends Plugin {
+export class PluginMultiAppManagerServer extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;

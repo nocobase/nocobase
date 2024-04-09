@@ -1,5 +1,5 @@
 import { Model } from '@nocobase/database';
-import { UiSchemaStoragePlugin } from '@nocobase/plugin-ui-schema-storage';
+import PluginUISchemaStorageServer from '@nocobase/plugin-ui-schema-storage';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import deepmerge from 'deepmerge';
 import { resolve } from 'path';
@@ -9,11 +9,11 @@ import Resources from './resources';
 import { getTextsFromDBRecord } from './utils';
 import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from './constans';
 
-export class LocalizationManagementPlugin extends Plugin {
+export class PluginLocalizationServer extends Plugin {
   resources: Resources;
 
-  registerUISchemahook(plugin?: UiSchemaStoragePlugin) {
-    const uiSchemaStoragePlugin = plugin || this.app.getPlugin<UiSchemaStoragePlugin>('ui-schema-storage');
+  registerUISchemahook(plugin?: PluginUISchemaStorageServer) {
+    const uiSchemaStoragePlugin = plugin || this.app.getPlugin<PluginUISchemaStorageServer>('ui-schema-storage');
     if (!uiSchemaStoragePlugin) {
       return;
     }
@@ -141,7 +141,7 @@ export class LocalizationManagementPlugin extends Plugin {
   async afterEnable() {}
 
   async afterDisable() {
-    const uiSchemaStoragePlugin = this.app.getPlugin<UiSchemaStoragePlugin>('ui-schema-storage');
+    const uiSchemaStoragePlugin = this.app.getPlugin<PluginUISchemaStorageServer>('ui-schema-storage');
     if (!uiSchemaStoragePlugin) {
       return;
     }
@@ -151,4 +151,4 @@ export class LocalizationManagementPlugin extends Plugin {
   async remove() {}
 }
 
-export default LocalizationManagementPlugin;
+export default PluginLocalizationServer;

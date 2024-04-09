@@ -30,7 +30,7 @@ const KanbanPluginProvider = React.memo((props) => {
 });
 KanbanPluginProvider.displayName = 'KanbanPluginProvider';
 
-class KanbanPlugin extends Plugin {
+class PluginKanbanClient extends Plugin {
   async load() {
     this.app.use(KanbanPluginProvider);
     this.app.schemaInitializerManager.add(kanbanCardInitializers_deprecated);
@@ -47,4 +47,4 @@ class KanbanPlugin extends Plugin {
   }
 }
 
-export default KanbanPlugin;
+export default PluginKanbanClient;

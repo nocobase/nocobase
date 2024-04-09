@@ -2,7 +2,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import path, { resolve } from 'path';
 import { compact, compactDark, dark, defaultTheme } from './builtinThemes';
 
-export class ThemeEditorPlugin extends Plugin {
+export class PluginThemeEditorServer extends Plugin {
   theme: any;
 
   afterAdd() {}
@@ -48,4 +48,4 @@ export class ThemeEditorPlugin extends Plugin {
   async remove() {}
 }
 
-export default ThemeEditorPlugin;
+export default PluginThemeEditorServer;

@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/server';
 import path from 'path';
 import { afterCreate, afterDestroy, afterUpdate } from './hooks';
 
-export default class PluginActionLogs extends Plugin {
+export default class PluginAuditLogsServer extends Plugin {
   async beforeLoad() {
     this.db.on('afterCreate', afterCreate);
     this.db.on('afterUpdate', afterUpdate);

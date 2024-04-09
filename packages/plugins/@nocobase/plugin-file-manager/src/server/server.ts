@@ -6,7 +6,7 @@ import { getStorageConfig } from './storages';
 
 export { default as storageTypes } from './storages';
 
-export default class PluginFileManager extends Plugin {
+export default class PluginFileManagerServer extends Plugin {
   storageType() {
     return 'local';
   }
