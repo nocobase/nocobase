@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/e2e';
+import { deleteRecords, expect, test } from '@nocobase/test/e2e';
 import { T3529, T3953 } from './templatesOfBug';
 
 test.describe('association form block', () => {
@@ -30,5 +30,8 @@ test.describe('association form block', () => {
 
     // 2. 提交后，Table 会显示新增的数据
     await expect(page.getByLabel('block-item-CardItem-users-').getByText('1234')).toBeVisible();
+
+    // 3. 将创建的 roles record 删除，防止影响其他测试
+    await deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } });
   });
 });

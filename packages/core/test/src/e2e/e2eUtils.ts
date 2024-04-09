@@ -668,7 +668,7 @@ const deleteCollections = async (collectionNames: string[]) => {
  * @param collectionName
  * @param records
  */
-const deleteRecords = async (collectionName: string, filter: any) => {
+export const deleteRecords = async (collectionName: string, filter: any) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
