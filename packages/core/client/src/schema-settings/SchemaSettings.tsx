@@ -1479,10 +1479,11 @@ export const SchemaSettingsSortField = () => {
   const compile = useCompile();
   const { service } = useTableBlockContext();
   const options = fields
-    .filter((field) => !field?.target && field.interface === 'sort' && !field.scopeKey)
+    .filter((field) => !field?.target && field.interface === 'sort')
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
+      disabled: field.scopeKey,
     }));
 
   return (
