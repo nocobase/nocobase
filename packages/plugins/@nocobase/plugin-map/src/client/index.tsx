@@ -16,7 +16,7 @@ const MapProvider = React.memo((props) => {
 });
 MapProvider.displayName = 'MapProvider';
 
-export class MapPlugin extends Plugin {
+export class PluginMapClient extends Plugin {
   async load() {
     this.app.use(MapProvider);
 
@@ -50,4 +50,4 @@ export class MapPlugin extends Plugin {
   }
 }
 
-export default MapPlugin;
+export default PluginMapClient;
