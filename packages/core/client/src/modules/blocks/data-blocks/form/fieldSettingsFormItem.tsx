@@ -235,12 +235,18 @@ export const fieldSettingsFormItem = new SchemaSettings({
               const { t } = useTranslation();
               const field = useField<Field>();
               const fieldSchema = useFieldSchema();
+              const ctx = useFormBlockContext();
               const { dn } = useDesignable();
+              const { getCollectionJoinField } = useCollectionManager_deprecated();
+              const { getField } = useCollection_deprecated();
+              const collectionField =
+                getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+
               let readOnlyMode = 'editable';
-              if (fieldSchema['x-disabled'] === true) {
+              if (field.disabled === true) {
                 readOnlyMode = 'readonly';
               }
-              if (fieldSchema['x-read-pretty'] === true) {
+              if (field.readPretty === true) {
                 readOnlyMode = 'read-pretty';
               }
               return {
@@ -294,6 +300,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
 
                   dn.refresh();
                 },
+                disabled: ctx?.type === 'update' && collectionField?.primaryKey,
               };
             },
           },

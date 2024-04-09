@@ -6,10 +6,18 @@ export interface SelectWithTitleProps {
   defaultValue?: any;
   options?: any;
   fieldNames?: any;
+  disabled?: any;
   onChange?: (...args: any[]) => void;
 }
 
-export function SelectWithTitle({ title, defaultValue, onChange, options, fieldNames }: SelectWithTitleProps) {
+export function SelectWithTitle({
+  title,
+  defaultValue,
+  onChange,
+  options,
+  fieldNames,
+  disabled,
+}: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
   return (
@@ -38,6 +46,7 @@ export function SelectWithTitle({ title, defaultValue, onChange, options, fieldN
         onMouseEnter={() => {
           clearTimeout(timerRef.current);
         }}
+        disabled={disabled}
       />
     </div>
   );

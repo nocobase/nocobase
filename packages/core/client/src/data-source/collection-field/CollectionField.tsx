@@ -22,7 +22,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const compile = useCompile();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
+  const { uiSchema: uiSchemaOrigin, defaultValue, primaryKey } = useCollectionField();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
@@ -38,7 +38,6 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     }
   }, [fieldSchema, uiSchema]);
   const ctx = useFormBlockContext();
-
   useEffect(() => {
     if (ctx?.field) {
       ctx.field.added = ctx.field.added || new Set();
@@ -66,6 +65,10 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
       field.disabled = true;
     }
     if (fieldSchema['x-read-pretty'] === true) {
+      field.readPretty = true;
+    }
+    if (ctx?.type === 'update' && primaryKey) {
+      fieldSchema['x-read-pretty'] === true;
       field.readPretty = true;
     }
     setRequired();
