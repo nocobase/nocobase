@@ -1477,14 +1477,18 @@ export const SchemaSettingsSortField = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const compile = useCompile();
-  const { service } = useTableBlockContext();
+  const { service, association } = useTableBlockContext();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const collectionField = getCollectionJoinField(association);
   const options = fields
     .filter((field) => !field?.target && field.interface === 'sort')
-    .map((field) => ({
-      value: field?.name,
-      label: compile(field?.uiSchema?.title) || field?.name,
-      disabled: field.scopeKey,
-    }));
+    .map((field) => {
+      return {
+        value: field?.name,
+        label: compile(field?.uiSchema?.title) || field?.name,
+        disabled: field?.scopeKey && collectionField?.foreignKey !== field.scopeKey,
+      };
+    });
 
   return (
     <SchemaSettingsSelectItem
