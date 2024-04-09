@@ -86,6 +86,7 @@ const defineCommonConfig = () => {
         provider: 'istanbul',
         include: ['packages/**/src/**/*.{ts,tsx}'],
         exclude: [
+          '**/requirejs.ts',
           '**/demos/**',
           '**/swagger/**',
           '**/.dumi/**',
