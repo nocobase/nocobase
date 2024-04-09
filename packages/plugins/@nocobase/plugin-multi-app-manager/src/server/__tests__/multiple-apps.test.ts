@@ -3,7 +3,7 @@ import { AppSupervisor, Gateway } from '@nocobase/server';
 import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
-import { PluginMultiAppManager } from '../server';
+import { PluginMultiAppManagerServer } from '../server';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -48,7 +48,7 @@ describe('multiple apps', () => {
   it('should register db creator', async () => {
     const fn = vi.fn();
 
-    const appPlugin = app.getPlugin<PluginMultiAppManager>(PluginMultiAppManager);
+    const appPlugin = app.getPlugin<PluginMultiAppManagerServer>(PluginMultiAppManagerServer);
     const defaultDbCreator = appPlugin.appDbCreator;
 
     appPlugin.setAppDbCreator(async (app) => {
