@@ -165,8 +165,8 @@ describe('gateway', () => {
         wsClient.on('open', resolve);
       });
     };
-    const getLastMessage = () => {
-      return JSON.parse(messages[messages.length - 1]);
+    const getLastMessage = (n = 0) => {
+      return JSON.parse(messages[messages.length - (1 + n)]);
     };
     const clearMessages = () => {
       messages = [];
@@ -376,6 +376,33 @@ describe('gateway', () => {
           code: 'APP_STOPPED',
         },
       });
+    });
+    it('should receive error message with cause property', async () => {
+      await connectClient(port);
+      const app = new Application({
+        database: {
+          dialect: 'sqlite',
+          storage: ':memory:',
+        },
+      });
+      await waitSecond();
+      await app.runCommand('start');
+      await app.runCommand('install');
+      await waitSecond();
+      expect(getLastMessage()).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_RUNNING',
+        },
+      });
+      await app.runAsCLI(['pm', 'add', 'not-exists-plugin'], {
+        from: 'user',
+      });
+      await waitSecond();
+      const errorMsg = getLastMessage(1);
+      expect(errorMsg.type).toBe('notification');
+      expect(errorMsg.payload.type).toBe('error');
+      expect(errorMsg.payload.message).contains('Failed to add plugin:');
     });
   });
 });
