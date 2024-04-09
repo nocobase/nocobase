@@ -95,7 +95,7 @@ const defaultDbCreator = async (app: Application) => {
 };
 
 const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
-  const rawDatabaseOptions = PluginMultiAppManager.getDatabaseConfig(mainApp);
+  const rawDatabaseOptions = PluginMultiAppManagerServer.getDatabaseConfig(mainApp);
 
   if (rawDatabaseOptions.dialect === 'sqlite') {
     const mainAppStorage = rawDatabaseOptions.storage;
