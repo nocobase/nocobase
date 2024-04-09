@@ -85,9 +85,9 @@ export class AuthManager {
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }
-    const { auth } = this.authTypes.get(authenticator.authType);
+    const { auth } = this.authTypes.get(authenticator.authType) || {};
     if (!auth) {
-      throw new Error(`AuthType [${name}] is not found.`);
+      throw new Error(`AuthType [${authenticator.authType}] is not found.`);
     }
     return new auth({ authenticator, options: authenticator.options, ctx });
   }

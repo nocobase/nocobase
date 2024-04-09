@@ -1,3 +1,4 @@
+/* istanbul ignore file -- @preserve */
 import { Context, Next } from '@nocobase/actions';
 
 export default {
