@@ -93,7 +93,15 @@ export const BulkEditField = (props: any) => {
 
   useEffect(() => {
     field.value = toFormFieldValue({ [type]: value });
-  }, [type, value]);
+    if (field.required) {
+      if (field.value) {
+        field.modify();
+        field.form.clearErrors(field.address);
+      } else if (field.modified) {
+        field.form.validate(field.address);
+      }
+    }
+  }, [field, type, value]);
 
   const typeChangeHandler = (val) => {
     setType(val);
