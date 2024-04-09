@@ -67,6 +67,15 @@ export const primaryKey = {
         },
       },
     },
+    (field) => {
+      const { uiSchema } = field.form.values;
+      if (field.value) {
+        const { uiSchema } = field.form.values;
+        field.form.setValuesIn('uiSchema', { ...uiSchema, 'x-read-pretty': true });
+      } else {
+        field.form.setValuesIn('uiSchema', { ...uiSchema, 'x-read-pretty': false });
+      }
+    },
   ],
 };
 
