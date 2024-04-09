@@ -151,7 +151,9 @@ const useAllowedActions = () => {
 
 const useResourceName = () => {
   const props = useDataBlockProps();
-  return props?.association || props?.collection;
+  const service = useResourceActionContext();
+  const result = useBlockRequestContext();
+  return props?.association || props?.collection || service?.defaultRequest?.resource || result?.props?.resource;
 };
 
 export function useACLRoleContext() {
