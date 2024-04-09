@@ -64,4 +64,9 @@ export default abstract class QueryInterface {
     currentVal: number;
     transaction?: Transaction;
   }): Promise<void>;
+
+  public quoteIdentifier(identifier: string) {
+    // @ts-ignore
+    return this.db.sequelize.getQueryInterface().queryGenerator.quoteIdentifier(identifier);
+  }
 }
