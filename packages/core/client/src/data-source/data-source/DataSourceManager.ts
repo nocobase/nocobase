@@ -56,9 +56,9 @@ export class DataSourceManager {
     this.getDataSources().forEach((dataSource) => dataSource.collectionManager.reAddCollections());
   }
 
-  getDataSources(filterCollection?: (dataSource: DataSource) => boolean) {
+  getDataSources(filterDataSource?: (dataSource: DataSource) => boolean) {
     const allDataSources = Object.values(this.dataSourceInstancesMap);
-    return filterCollection ? _.filter(allDataSources, filterCollection) : allDataSources;
+    return filterDataSource ? _.filter(allDataSources, filterDataSource) : allDataSources;
   }
 
   getDataSource(key?: string) {

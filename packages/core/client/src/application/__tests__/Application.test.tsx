@@ -18,7 +18,9 @@ describe('Application', () => {
   const router: any = { type: 'memory', initialEntries: ['/'] };
   const initialProvidersLength = 7;
   it('basic', () => {
-    const app = new Application({ router });
+    const options = { router };
+    const app = new Application(options);
+    expect(app.getOptions()).toEqual(options);
     expect(app.i18n).toBeDefined();
     expect(app.apiClient).toBeDefined();
     expect(app.components).toBeDefined();
@@ -28,6 +30,26 @@ describe('Application', () => {
     expect(app.scopes).toBeDefined();
     expect(app.providers.length).toBeGreaterThan(1);
     expect(Object.keys(app.components).length).toBeGreaterThan(1);
+  });
+
+  describe('publicPath', () => {
+    it('default', () => {
+      const app = new Application({});
+      expect(app.getPublicPath()).toBe('/');
+      expect(app.getRouteUrl('/test')).toBe('/test');
+    });
+
+    it('custom', () => {
+      const app = new Application({ publicPath: '/admin' });
+      expect(app.getPublicPath()).toBe('/admin');
+      expect(app.getRouteUrl('/test')).toBe('/admin/test');
+    });
+
+    it('custom end with /', () => {
+      const app = new Application({ publicPath: '/admin/' });
+      expect(app.getPublicPath()).toBe('/admin/');
+      expect(app.getRouteUrl('/test')).toBe('/admin/test');
+    });
   });
 
   describe('components', () => {

@@ -94,6 +94,7 @@ const defineCommonConfig = () => {
           '**/lib/**',
           '**/__tests__/**',
           '**/e2e/**',
+          '**/__e2e__/**',
           '**/client.js',
           '**/server.js',
           '**/*.d.ts',

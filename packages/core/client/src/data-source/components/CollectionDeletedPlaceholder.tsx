@@ -8,7 +8,7 @@ import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourc
 import { useCollection } from '../collection';
 
 export interface CollectionDeletedPlaceholderProps {
-  type: 'Collection' | 'Field' | 'DataSource';
+  type: 'Collection' | 'Field' | 'Data Source';
   name?: string | number;
   message?: string;
 }
@@ -27,7 +27,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
   const collection = useCollection();
   const dataSourceManager = useDataSourceManager();
   const nameValue = useMemo(() => {
-    if (type === 'DataSource') {
+    if (type === 'Data Source') {
       return name;
     }
     const dataSourcePrefix =

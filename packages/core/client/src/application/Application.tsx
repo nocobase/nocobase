@@ -168,7 +168,7 @@ export class Application {
   }
 
   getRouteUrl(pathname: string) {
-    return this.options.publicPath.replace(/\/$/g, '') + pathname;
+    return this.getPublicPath().replace(/\/$/g, '') + pathname;
   }
 
   getCollectionManager(dataSource?: string) {
