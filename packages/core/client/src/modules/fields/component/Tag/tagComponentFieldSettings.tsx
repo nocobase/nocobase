@@ -150,7 +150,7 @@ export const tagComponentFieldSettings = new SchemaSettings({
         return {
           title: t('Tag color field'),
           options: colorFieldOptions,
-          value: fieldSchema?.['x-component-props']['tagColorField'],
+          value: fieldSchema?.['x-component-props']?.['tagColorField'],
           onChange(tagColorField) {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
