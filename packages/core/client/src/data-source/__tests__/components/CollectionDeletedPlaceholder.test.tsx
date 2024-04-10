@@ -45,7 +45,7 @@ describe('CollectionDeletedPlaceholder', () => {
     });
   });
 
-  test.only('designable: true, render `Result` component', () => {
+  test('designable: true, render `Result` component', () => {
     renderApp('test', true);
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(
