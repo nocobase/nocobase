@@ -13,7 +13,6 @@ import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
   useCollectionRecord,
-  useDataLoadingMode,
   useDataSourceHeaders,
   useFormActiveFields,
   useFormBlockContext,
@@ -188,7 +187,7 @@ export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const record = useCollectionRecord();
   const form = useForm();
-  const { field, resource, __parent } = useBlockRequestContext();
+  const { field, resource } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
@@ -200,7 +199,6 @@ export const useCreateActionProps = () => {
   const collectValues = useCollectValuesToSubmit();
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
-  const dataLoadingMode = useDataLoadingMode();
 
   return {
     async onClick() {

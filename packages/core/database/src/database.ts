@@ -406,6 +406,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
       instance?.toChangedWithAssociations?.();
     });
 
+    this.on('beforeValidate', async (instance) => {
+      for (const [key, attribute] of Object.entries(instance.constructor.rawAttributes)) {
+        // @ts-ignore
+        if (attribute.unique && instance.changed(key)) {
+          if (instance.get(key) === '') {
+            instance.set(key, null);
+          }
+        }
+      }
+    });
+
     this.on('afterUpdate', async (instance) => {
       instance?.toChangedWithAssociations?.();
     });
