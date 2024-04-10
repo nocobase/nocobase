@@ -1,18 +1,17 @@
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import { omit } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
+import { omit } from 'lodash';
 import { useAPIClient, useRequest } from '../api-client';
-import { useApp } from '../application';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
-import { useDataBlockProps } from '../data-source';
-import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { useApp } from '../application';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 
 export const ACLContext = createContext<any>({});
 ACLContext.displayName = 'ACLContext';
@@ -150,10 +149,14 @@ const useAllowedActions = () => {
 };
 
 const useResourceName = () => {
-  const props = useDataBlockProps();
   const service = useResourceActionContext();
-  const result = useBlockRequestContext();
-  return props?.association || props?.collection || service?.defaultRequest?.resource || result?.props?.resource;
+  const result = useBlockRequestContext() || { service };
+  return (
+    result?.props?.resource ||
+    result?.props?.association ||
+    result?.props?.collection ||
+    result?.service?.defaultRequest?.resource
+  );
 };
 
 export function useACLRoleContext() {
