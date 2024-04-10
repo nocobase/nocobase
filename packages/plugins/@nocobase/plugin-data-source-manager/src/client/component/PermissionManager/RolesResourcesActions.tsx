@@ -64,7 +64,7 @@ export const RolesResourcesActions = connect((props) => {
     } else {
       actionMap[actionName] = {
         name: actionName,
-        fields: collectionFields?.filter((field) => field.interface)?.map?.((item) => item.name),
+        fields: collectionFields?.map?.((item) => item.name),
       };
     }
     onChange(Object.values(actionMap));

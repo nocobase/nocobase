@@ -4,9 +4,7 @@ import {
   ActionContextProvider,
   CollectionProvider_deprecated,
   RecordProvider,
-  CollectionProvider,
   FormBlockContext,
-  CollectionRecordProvider,
   fetchTemplateData,
   useAPIClient,
   useActionContext,
@@ -17,10 +15,10 @@ import {
   useFormBlockContext,
   useCollectionParentRecordData,
   useRecord,
-  useCollectionRecord,
+  useACLActionParamsContext,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const actionDesignerCss = css`
@@ -85,6 +83,12 @@ export const DuplicateAction = observer(
     const { t } = useTranslation();
     const collectionFields = getCollectionFields(__collection || name);
     const formctx = useFormBlockContext();
+    const aclCtx = useACLActionParamsContext();
+    const buttonStyle = useMemo(() => {
+      return {
+        opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+      };
+    }, [designable, field?.data?.hidden]);
     const template = {
       key: 'duplicate',
       dataId: id,
@@ -118,7 +122,7 @@ export const DuplicateAction = observer(
       }
     };
     const handelDuplicate = () => {
-      if (!disabled && !loading) {
+      if (!disabled && !loading && aclCtx) {
         if (duplicateFields?.length > 0) {
           if (duplicateMode === 'quickDulicate') {
             handelQuickDuplicate();
@@ -166,6 +170,7 @@ export const DuplicateAction = observer(
                   opacity: designable && field?.data?.hidden && 0.1,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   position: 'relative',
+                  ...buttonStyle,
                 }}
                 onClick={handelDuplicate}
               >

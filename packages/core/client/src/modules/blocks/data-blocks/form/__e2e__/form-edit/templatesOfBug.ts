@@ -699,6 +699,18 @@ export const T3825: PageConfig = {
 };
 
 export const T3924: PageConfig = {
+  collections: [
+    {
+      name: 'users2',
+      fields: [
+        {
+          name: 'nickname',
+          title: 'Nickname',
+          interface: 'input',
+        },
+      ],
+    },
+  ],
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',
@@ -733,10 +745,10 @@ export const T3924: PageConfig = {
                     version: '2.0',
                     type: 'void',
                     'x-decorator': 'TableBlockProvider',
-                    'x-acl-action': 'users:list',
+                    'x-acl-action': 'users2:list',
                     'x-use-decorator-props': 'useTableBlockDecoratorProps',
                     'x-decorator-props': {
-                      collection: 'users',
+                      collection: 'users2',
                       dataSource: 'main',
                       action: 'list',
                       params: {
@@ -851,11 +863,11 @@ export const T3924: PageConfig = {
                                                         'x-acl-action-props': {
                                                           skipScopeCheck: true,
                                                         },
-                                                        'x-acl-action': 'users:create',
+                                                        'x-acl-action': 'users2:create',
                                                         'x-decorator': 'FormBlockProvider',
                                                         'x-decorator-props': {
                                                           dataSource: 'main',
-                                                          collection: 'users',
+                                                          collection: 'users2',
                                                         },
                                                         'x-toolbar': 'BlockSchemaToolbar',
                                                         'x-settings': 'blockSettings:createForm',
@@ -902,7 +914,7 @@ export const T3924: PageConfig = {
                                                                               'fieldSettings:BulkEditFormItem',
                                                                             'x-component': 'BulkEditField',
                                                                             'x-decorator': 'FormItem',
-                                                                            'x-collection-field': 'users.nickname',
+                                                                            'x-collection-field': 'users2.nickname',
                                                                             'x-app-version': '0.21.0-alpha.6',
                                                                             'x-uid': 't8dfuwjgiqb',
                                                                             'x-async': false,
