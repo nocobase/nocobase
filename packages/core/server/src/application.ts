@@ -731,7 +731,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.activatedCommand) {
       return;
     }
-    if (options.reqId) {
+    if (options?.reqId) {
       this.context.reqId = options.reqId;
       this._logger = this._logger.child({ reqId: this.context.reqId });
     }
