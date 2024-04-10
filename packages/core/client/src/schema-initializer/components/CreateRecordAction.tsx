@@ -5,7 +5,7 @@ import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState, forwardRef, createRef } from 'react';
 import { composeRef } from 'rc-util/lib/ref';
 import { useDesignable } from '../../';
-import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
+import { useACLRolesCheck, useRecordPkValue, useACLActionParamsContext } from '../../acl/ACLProvider';
 import {
   CollectionProvider_deprecated,
   useCollection_deprecated,
@@ -284,6 +284,12 @@ function FinallyButton({
   designable: boolean;
 }) {
   const { getCollection } = useCollectionManager_deprecated();
+  const aclCtx = useACLActionParamsContext();
+  const buttonStyle = useMemo(() => {
+    return {
+      opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+    };
+  }, [designable, field?.data?.hidden]);
 
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
@@ -293,6 +299,7 @@ function FinallyButton({
           danger={props.danger}
           type={componentType}
           icon={<DownOutlined />}
+          style={{ ...props?.style, ...buttonStyle }}
           buttonsRender={([leftButton, rightButton]) => [
             React.cloneElement(leftButton as React.ReactElement<any, string>, {
               style: props?.style,
@@ -318,7 +325,7 @@ function FinallyButton({
               icon={icon}
               type={componentType}
               danger={props.danger}
-              style={props?.style}
+              style={{ ...props?.style, ...buttonStyle }}
             >
               {props.children} <DownOutlined />
             </Button>
@@ -344,6 +351,7 @@ function FinallyButton({
         style={{
           display: !designable && field?.data?.hidden && 'none',
           opacity: designable && field?.data?.hidden && 0.1,
+          ...buttonStyle,
         }}
       >
         {props.children}
@@ -365,6 +373,7 @@ function FinallyButton({
         ...props?.style,
         display: !designable && field?.data?.hidden && 'none',
         opacity: designable && field?.data?.hidden && 0.1,
+        ...buttonStyle,
       }}
     >
       {props.children}
