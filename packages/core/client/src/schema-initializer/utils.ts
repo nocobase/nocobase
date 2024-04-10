@@ -4,18 +4,22 @@ import { uid } from '@formily/shared';
 import _ from 'lodash';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  DataBlockInitializer,
+  DataSource,
+  SchemaInitializerItemType,
+  useCollection,
+  useCollectionManager,
+  useDataSourceKey,
+  useFormBlockContext,
+} from '../';
 import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
 import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { useFormBlockContext } from '../block-provider';
 import { useFormActiveFields } from '../block-provider/hooks/useFormActiveFields';
-import { SchemaInitializerItemType } from '../application';
-import { DataSource, useDataSourceKey, useCollection, useCollectionManager } from '../data-source';
-import { DataBlockInitializer } from './items';
-
 export const itemsMerge = (items1) => {
   return items1;
 };
