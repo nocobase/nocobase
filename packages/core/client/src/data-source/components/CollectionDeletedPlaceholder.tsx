@@ -8,7 +8,7 @@ import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourc
 import { useCollection } from '../collection';
 
 export interface CollectionDeletedPlaceholderProps {
-  type: 'Collection' | 'Field' | 'Data Source';
+  type: 'Collection' | 'Field' | 'Data Source' | 'Block template';
   name?: string | number;
   message?: string;
 }
@@ -60,7 +60,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
     return t(`The {{type}} "{{name}}" may have been deleted. Please remove this {{blockType}}.`, {
       type: t(type).toLocaleLowerCase(),
       name: nameValue,
-      blockType: t(blockType),
+      blockType: t(blockType).toLocaleLowerCase(),
     }).replaceAll('&gt;', '>');
   }, [message, nameValue, type, t, blockType]);
 

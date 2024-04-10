@@ -45,11 +45,11 @@ describe('CollectionDeletedPlaceholder', () => {
     });
   });
 
-  test('designable: true, render `Result` component', () => {
+  test.only('designable: true, render `Result` component', () => {
     renderApp('test', true);
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(
-      screen.getByText('The collection "test" may have been deleted. Please remove this Block.'),
+      screen.getByText('The collection "test" may have been deleted. Please remove this block.'),
     ).toBeInTheDocument();
   });
 

@@ -70,7 +70,7 @@ describe('DataSourceProvider', () => {
     renderComponent('non-existent');
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(
-      screen.getByText('The data source "non-existent" may have been deleted. Please remove this Block.'),
+      screen.getByText('The data source "non-existent" may have been deleted. Please remove this block.'),
     ).toBeInTheDocument();
   });
 

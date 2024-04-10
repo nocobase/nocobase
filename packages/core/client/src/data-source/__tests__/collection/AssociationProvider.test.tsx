@@ -96,7 +96,7 @@ describe('AssociationProvider', () => {
 
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(
-      screen.getByText('The collection "users.not-exists" may have been deleted. Please remove this Block.'),
+      screen.getByText('The collection "users.not-exists" may have been deleted. Please remove this block.'),
     ).toBeInTheDocument();
   });
 });

@@ -397,6 +397,7 @@
   "Save as template": "テンプレートとして保存",
   "Save as block template": "ブロックテンプレートとして保存",
   "Block templates": "ブロックテンプレート",
+  "Block template": "ブロックテンプレート",
   "Convert reference to duplicate": "参照を複製に変換",
   "Template name": "テンプレート名",
   "Block type": "ブロックタイプ",
@@ -686,8 +687,9 @@
   "loading": "ロード中",
   "name is required": "名前は必須です",
   "data source": "データソース",
-  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" は削除されている可能性があります。この {{blockType}} を削除してください。",
+  "Data source": "データソース",
   "DataSource": "データソース",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" は削除されている可能性があります。この {{blockType}} を削除してください。",
   "Home page": "ホームページ",
   "Handbook": "ユーザーマニュアル",
   "License": "ライセンス"
