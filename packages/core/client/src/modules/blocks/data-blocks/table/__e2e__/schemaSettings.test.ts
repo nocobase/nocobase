@@ -784,6 +784,24 @@ test.describe('actions schema settings', () => {
         showMenu: () => showMenu(page),
         supportedOptions: ['Edit button', 'Linkage rules', 'Open mode', 'Popup size', 'Delete'],
       });
+
+      // https://nocobase.height.app/T-3235
+      // add child 表单中的 Parent 字段应该有数据
+      await page.getByLabel('action-Action.Link-Add child-').click({
+        position: { x: 5, y: 5 }, // 防止按钮被遮挡
+      });
+      await page.getByLabel('schema-initializer-Grid-popup').hover();
+      await page.getByRole('menuitem', { name: 'form Form' }).click();
+      await page.mouse.move(300, 0);
+      await page.getByLabel('schema-initializer-Grid-form:').hover();
+      await page.getByRole('menuitem', { name: 'Parent', exact: true }).click();
+      await page.mouse.move(300, 0);
+      await expect(
+        page
+          .getByLabel('block-item-CollectionField-')
+          .getByTestId('select-object-single')
+          .getByText('1', { exact: true }),
+      ).toBeVisible();
     });
   });
 
