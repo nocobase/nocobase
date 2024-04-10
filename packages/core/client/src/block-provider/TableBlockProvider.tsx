@@ -120,13 +120,14 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const params = useTableBlockParamsCompat(props);
 
   let childrenColumnName = 'children';
-  if (collection?.tree && treeTable) {
+
+  if (treeTable) {
     if (resourceName?.includes('.')) {
       const f = getCollectionField(resourceName);
       if (f?.treeChildren) {
         childrenColumnName = f.name;
-        params['tree'] = true;
       }
+      params['tree'] = true;
     } else {
       const f = collection.fields.find((f) => f.treeChildren);
       if (f) {
