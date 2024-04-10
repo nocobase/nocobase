@@ -124,7 +124,7 @@ export default class MysqlQueryInterface extends QueryInterface {
   }): Promise<void> {
     const { tableInfo, columnName, seqName, currentVal, transaction } = options;
 
-    const sql = `ALTER TABLE ${tableInfo.tableName} AUTO_INCREMENT = ${currentVal};`;
+    const sql = `ALTER TABLE ${this.quoteIdentifier(tableInfo.tableName)} AUTO_INCREMENT = ${currentVal};`;
     await this.db.sequelize.query(sql, { transaction });
   }
 }

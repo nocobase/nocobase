@@ -3,11 +3,16 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useSystemSettings, PoweredBy, useRequest, useAPIClient } from '@nocobase/client';
 import { AuthenticatorsContext } from '../authenticator';
+import { Spin } from 'antd';
 
 export function AuthLayout(props: any) {
   const { data } = useSystemSettings();
   const api = useAPIClient();
-  const { data: authenticators = [], error } = useRequest(() =>
+  const {
+    data: authenticators = [],
+    error,
+    loading,
+  } = useRequest(() =>
     api
       .resource('authenticators')
       .publicList()
@@ -15,6 +20,10 @@ export function AuthLayout(props: any) {
         return res?.data?.data || [];
       }),
   );
+
+  if (loading) {
+    return <Spin />;
+  }
 
   if (error) {
     throw error;
