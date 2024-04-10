@@ -3,8 +3,10 @@ import { T3924 } from './templatesOfBug';
 
 test.describe('bulk edit form', () => {
   // https://nocobase.height.app/T-3924/description
-  test('should be required when switching to "Changed to"', async ({ page, mockPage }) => {
-    await mockPage(T3924).goto();
+  test('should be required when switching to "Changed to"', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T3924).waitForInit();
+    await mockRecord('users2');
+    await nocoPage.goto();
 
     // 1. 先选中一条记录
     await page.getByLabel('table-index-').hover();
@@ -23,11 +25,13 @@ test.describe('bulk edit form', () => {
     await page.getByRole('button', { name: 'Submit' }).click();
 
     // 4. Table 中的值应该被改变
-    await expect(page.getByRole('button', { name: '123' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '123', exact: true })).toBeVisible();
   });
 
-  test('should be success to submit', async ({ page, mockPage }) => {
-    await mockPage(T3924).goto();
+  test('should be success to submit', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T3924).waitForInit();
+    await mockRecord('users2');
+    await nocoPage.goto();
 
     // 1. 打开弹窗，显示出批量编辑表单
     await page.getByLabel('action-Action-Bulk edit-').click();
