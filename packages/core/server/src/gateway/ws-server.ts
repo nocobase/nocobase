@@ -62,10 +62,16 @@ export class WSServer {
     });
 
     AppSupervisor.getInstance().on('appError', async ({ appName, error }) => {
+      let message = error.message;
+
+      if (error.cause) {
+        message = `${message}: ${error.cause.message}`;
+      }
+
       this.sendToConnectionsByTag('app', appName, {
         type: 'notification',
         payload: {
-          message: error.message,
+          message,
           type: 'error',
         },
       });

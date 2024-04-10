@@ -765,6 +765,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       if (options?.throwError) {
         throw error;
+      } else {
+        this.log.error(error);
       }
     } finally {
       const _actionCommand = this._actionCommand;
