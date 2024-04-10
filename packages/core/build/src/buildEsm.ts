@@ -4,15 +4,21 @@ import { PkgLog, UserConfig } from './utils';
 import { build as viteBuild } from 'vite';
 import fg from 'fast-glob';
 
+const clientExt = '.{ts,tsx,js,jsx}';
+
+function getSingleEntry(file: string, cwd: string) {
+  return fg.sync([`${file}${clientExt}`], { cwd, absolute: true, onlyFiles: true })?.[0]?.replaceAll(/\\/g, '/');
+}
+
 export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
   log('build esm');
 
-  const indexEntry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
+  const indexEntry = getSingleEntry('src/index', cwd);
   const outDir = path.resolve(cwd, 'es');
 
   await build(cwd, indexEntry, outDir, userConfig, sourcemap, log);
 
-  const clientEntry = fg.sync(['src/client/index.ts', 'src/client.ts'], { cwd, absolute: true, onlyFiles: true })?.[0]?.replaceAll(/\\/g, '/');
+  const clientEntry = getSingleEntry('src/client/index', cwd) || getSingleEntry('src/client', cwd);
   const clientOutDir = path.resolve(cwd, 'es/client');
   if (clientEntry) {
     await build(cwd, clientEntry, clientOutDir, userConfig, sourcemap, log);
@@ -20,8 +26,9 @@ export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: b
 
   const pkg = require(path.join(cwd, 'package.json'));
   if (pkg.name === '@nocobase/test') {
-    const e2eEntry = path.join(cwd, 'src/e2e/index.ts').replaceAll(/\\/g, '/');
+    const e2eEntry = getSingleEntry('src/e2e/index', cwd);
     const e2eOutDir = path.resolve(cwd, 'es/e2e');
+    debugger
     await build(cwd, e2eEntry, e2eOutDir, userConfig, sourcemap, log);
   }
 }

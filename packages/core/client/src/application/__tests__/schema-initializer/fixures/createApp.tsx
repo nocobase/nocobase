@@ -1,8 +1,7 @@
 import React from 'react';
 import { observer } from '@formily/reactive-react';
-import { render, screen, waitFor } from '@nocobase/test/client';
+import { renderApp } from '@nocobase/test/client';
 import {
-  Application,
   SchemaComponent,
   SchemaInitializer,
   useSchemaInitializer,
@@ -75,16 +74,10 @@ export async function createApp(options = {}, appOptions = {}) {
       />
     );
   };
-  const app = new Application({
+  await renderApp({
     providers: [Root],
     schemaInitializers: [testInitializers],
     designable: true,
     ...appOptions,
-  });
-  const App = app.getRootComponent();
-
-  render(<App />);
-  await waitFor(() => {
-    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
   });
 }

@@ -6,6 +6,7 @@ import { Link, Outlet } from 'react-router-dom';
 import { describe } from 'vitest';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
+import { useApp } from '../hooks';
 
 describe('Application', () => {
   beforeAll(() => {
@@ -262,6 +263,30 @@ describe('Application', () => {
       });
       await userEvent.click(screen.getByText('About'));
       expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+    });
+
+    it('Root with children', async () => {
+      const app = new Application({ name: 'test' });
+
+      const Demo = () => {
+        const app = useApp();
+        return <div>{app.name}</div>;
+      };
+
+      const Root = app.getRootComponent();
+      render(
+        <Root>
+          <Demo />
+        </Root>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Loading...')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('test')).toBeInTheDocument();
+      });
     });
 
     it('mount', async () => {
