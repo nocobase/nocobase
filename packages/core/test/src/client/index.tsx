@@ -4,6 +4,7 @@ import { render, waitFor, screen } from '@testing-library/react';
 import { renderHook } from '@testing-library/react-hooks';
 import MockAdapter from 'axios-mock-adapter';
 import { AxiosInstance } from 'axios';
+// @ts-ignore
 import { Application, ApplicationOptions } from '@nocobase/client';
 
 export { renderHook } from '@testing-library/react-hooks';
