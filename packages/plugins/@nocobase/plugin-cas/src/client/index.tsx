@@ -4,7 +4,7 @@ import { Options } from './Options';
 import { authType } from '../constants';
 import AuthPlugin from '@nocobase/plugin-auth/client';
 
-export class SamlPlugin extends Plugin {
+export class PluginCASClient extends Plugin {
   async load() {
     const auth = this.app.pm.get(AuthPlugin);
     auth.registerType(authType, {
@@ -16,4 +16,4 @@ export class SamlPlugin extends Plugin {
   }
 }
 
-export default SamlPlugin;
+export default PluginCASClient;

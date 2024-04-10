@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/client';
 
-class ErrorHandlerPlugin extends Plugin {
+class PluginErrorHandlerClient extends Plugin {
   async load() {}
 }
 
-export default ErrorHandlerPlugin;
+export default PluginErrorHandlerClient;

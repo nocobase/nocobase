@@ -23,7 +23,7 @@ export interface Interceptor {
   validate?(ctx: Context, receiver: string): boolean | Promise<boolean>;
 }
 
-export default class VerificationPlugin extends Plugin {
+export default class PluginVerficationServer extends Plugin {
   providers: Registry<typeof Provider> = new Registry();
   interceptors: Registry<Interceptor> = new Registry();
 

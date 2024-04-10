@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/client';
 import { VerificationProviders } from './VerificationProviders';
 import { NAMESPACE } from './locale';
 
-export class VerificationPlugin extends Plugin {
+export class PluginVerificationClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'CheckCircleOutlined',
@@ -13,4 +13,4 @@ export class VerificationPlugin extends Plugin {
   }
 }
 
-export default VerificationPlugin;
+export default PluginVerificationClient;

@@ -10,7 +10,7 @@ import { Plugin, useCollection_deprecated } from '@nocobase/client';
 import { ImportPluginProvider } from './ImportPluginProvider';
 import { importActionSchemaSettings } from './schemaSettings';
 
-export class ImportPlugin extends Plugin {
+export class PluginImportClient extends Plugin {
   async load() {
     this.app.use(ImportPluginProvider);
 
@@ -42,4 +42,4 @@ export class ImportPlugin extends Plugin {
   }
 }
 
-export default ImportPlugin;
+export default PluginImportClient;
