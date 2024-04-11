@@ -63,7 +63,7 @@ describe('UnixTimestamp', () => {
     expect(onChange).toBeCalledWith(1712880000000);
   });
 
-  it.only('read pretty', async () => {
+  it('read pretty', async () => {
     const { container } = await renderComponentReadPrettySchema({
       Component: UnixTimestamp,
       value: '2024-04-11',
