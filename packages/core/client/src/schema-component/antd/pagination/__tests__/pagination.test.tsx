@@ -1,9 +1,9 @@
-import { renderSchema } from '@nocobase/test/client';
+import { renderComponentWithSchema } from '@nocobase/test/client';
 import { Pagination } from '@nocobase/client';
 
 describe('Pagination', () => {
   it('renders without errors', () => {
-    const { container } = renderSchema({
+    const { container } = renderComponentWithSchema({
       Component: Pagination,
       props: {
         total: 20,
@@ -108,7 +108,7 @@ describe('Pagination', () => {
   });
 
   it('hides when hidden prop is true', () => {
-    const { container } = renderSchema({
+    const { container } = renderComponentWithSchema({
       Component: Pagination,
       props: {
         hidden: true,

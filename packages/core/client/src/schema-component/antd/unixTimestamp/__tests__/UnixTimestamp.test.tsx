@@ -1,9 +1,15 @@
-import { screen, renderSchema, userEvent, waitFor, renderReadPrettySchema } from '@nocobase/test/client';
+import {
+  screen,
+  renderComponentWithSchema,
+  userEvent,
+  waitFor,
+  renderComponentReadPrettySchema,
+} from '@nocobase/test/client';
 import { UnixTimestamp } from '@nocobase/client';
 
 describe('UnixTimestamp', () => {
   it('renders without errors', () => {
-    const { container } = renderSchema({
+    const { container } = renderComponentWithSchema({
       Component: UnixTimestamp,
     });
     expect(container).toMatchInlineSnapshot(`
@@ -77,7 +83,7 @@ describe('UnixTimestamp', () => {
   });
 
   it('millisecond', () => {
-    renderSchema({
+    renderComponentWithSchema({
       Component: UnixTimestamp,
       value: 1712819630000,
     });
@@ -85,7 +91,7 @@ describe('UnixTimestamp', () => {
   });
 
   it('second', () => {
-    renderSchema({
+    renderComponentWithSchema({
       Component: UnixTimestamp,
       value: 1712819630,
       props: {
@@ -96,7 +102,7 @@ describe('UnixTimestamp', () => {
   });
 
   it('string', () => {
-    renderSchema({
+    renderComponentWithSchema({
       Component: UnixTimestamp,
       value: '2024-04-11',
     });
@@ -105,7 +111,7 @@ describe('UnixTimestamp', () => {
 
   it('change', async () => {
     const onChange = vitest.fn();
-    renderSchema({
+    renderComponentWithSchema({
       Component: UnixTimestamp,
       value: '2024-04-11',
       onChange,
@@ -125,7 +131,7 @@ describe('UnixTimestamp', () => {
   });
 
   it('read pretty', () => {
-    const { container } = renderReadPrettySchema({
+    const { container } = renderComponentReadPrettySchema({
       Component: UnixTimestamp,
       value: '2024-04-11',
     });

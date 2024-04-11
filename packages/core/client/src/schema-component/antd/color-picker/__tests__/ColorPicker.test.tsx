@@ -1,9 +1,15 @@
 import { ColorPicker } from '@nocobase/client';
-import { renderSchema, screen, renderReadPrettySchema, userEvent, waitFor } from '@nocobase/test/client';
+import {
+  renderComponentWithSchema,
+  screen,
+  renderComponentReadPrettySchema,
+  userEvent,
+  waitFor,
+} from '@nocobase/test/client';
 
 describe('ColorPicker', () => {
   test('basic', async () => {
-    const { container } = renderSchema({
+    const { container } = renderComponentWithSchema({
       Component: ColorPicker,
       value: 'rgb(139, 187, 17)',
     });
@@ -39,7 +45,7 @@ describe('ColorPicker', () => {
   });
 
   test('change', async () => {
-    const { container } = renderSchema({
+    const { container } = renderComponentWithSchema({
       Component: ColorPicker,
       value: 'rgb(139, 187, 17)',
     });
@@ -63,7 +69,7 @@ describe('ColorPicker', () => {
   });
 
   test('read pretty', async () => {
-    const { container } = renderReadPrettySchema({
+    const { container } = renderComponentReadPrettySchema({
       Component: ColorPicker,
       value: 'rgb(139, 187, 17)',
     });

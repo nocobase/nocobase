@@ -168,7 +168,7 @@ export const getFilterInclude = (isServer, isCoverage) => {
   const isPackage = fs.existsSync(path.join(absPath, 'package.json'));
   if (!isPackage) {
     return {
-      include: [`${filterFileOrDir}/${suffix}`]
+      include: [`${filterFileOrDir}/${suffix}`],
     };
   }
 
@@ -176,22 +176,23 @@ export const getFilterInclude = (isServer, isCoverage) => {
   const isCore = absPath.includes('packages/core');
   if (isCore) {
     return {
-      include: [`${filterFileOrDir}/src/${suffix}`]
+      include: [`${filterFileOrDir}/src/${suffix}`],
     };
   }
 
   // 插件目录，区分 client 和 server
   return {
-    include: [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`]
+    include: [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`],
   };
 };
 
 export const getReportsDirectory = (isServer) => {
   let filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
   if (!filterFileOrDir) return;
+  const basePath = `./storage/coverage/`;
   const isPackage = fs.existsSync(path.join(process.cwd(), filterFileOrDir, 'package.json'));
   if (isPackage) {
-    let reportsDirectory = `./storage/coverage/${filterFileOrDir.replace('packages/', '')}`;
+    let reportsDirectory = `${basePath}${filterFileOrDir.replace('packages/', '')}`;
 
     const isCore = filterFileOrDir.includes('packages/core');
 
@@ -200,11 +201,12 @@ export const getReportsDirectory = (isServer) => {
     }
 
     return reportsDirectory;
+  } else {
+    return basePath;
   }
 };
 
 export const defineConfig = () => {
-  debugger
   const isServer = process.env.TEST_ENV === 'server-side';
   const config = vitestConfig(
     mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()),
@@ -215,11 +217,11 @@ export const defineConfig = () => {
     config.test.include = filterInclude;
     if (isFile) {
       // 减少收集的文件
-      config.test.root = path.dirname(filterInclude[0])
+      config.test.root = path.dirname(filterInclude[0]);
       config.test.exclude = [];
       config.test.coverage = {
-        enabled: false
-      }
+        enabled: false,
+      };
 
       return config;
     }
@@ -230,7 +232,7 @@ export const defineConfig = () => {
     return config;
   }
 
-  const { include: coverageInclude } = getFilterInclude(isServer, true)
+  const { include: coverageInclude } = getFilterInclude(isServer, true);
   if (coverageInclude) {
     config.test.coverage.include = coverageInclude;
   }

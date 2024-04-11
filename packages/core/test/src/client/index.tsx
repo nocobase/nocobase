@@ -1,5 +1,5 @@
 import { expect } from 'vitest';
-import React, { ComponentType, Fragment } from 'react';
+import React, { ComponentType, FC, Fragment } from 'react';
 import { render, waitFor, screen } from '@testing-library/react';
 import { renderHook } from '@testing-library/react-hooks';
 import MockAdapter from 'axios-mock-adapter';
@@ -52,10 +52,14 @@ export const mockAppApi = (app: Application, apis: MockApis = {}) => {
   return mock;
 };
 
-export const getApp = (appOrAppOptions: AppOrOptions, ProviderComponent?: ComponentType, apis?: MockApis) => {
-  const app = appOrAppOptions instanceof Application ? appOrAppOptions : new Application(appOrAppOptions);
-  if (ProviderComponent) {
-    app.addProvider(ProviderComponent);
+export const getApp = (
+  appOptions?: AppOrOptions,
+  providers?: (ComponentType | [ComponentType, any])[],
+  apis?: MockApis,
+) => {
+  const app = appOptions instanceof Application ? appOptions : new Application(appOptions);
+  if (providers) {
+    app.addProviders(providers);
   }
 
   mockAppApi(app, apis);
@@ -74,8 +78,8 @@ export const WaitApp = async () => {
   });
 };
 
-export const renderApp = async (appOrAppOptions: AppOrOptions, apis?: MockApis) => {
-  const { App, app } = getApp(appOrAppOptions, undefined, apis);
+export const renderApp = async (appOptions: AppOrOptions, apis?: MockApis) => {
+  const { App, app } = getApp(appOptions, undefined, apis);
   render(<App />);
 
   await WaitApp();
@@ -86,9 +90,9 @@ export const renderApp = async (appOrAppOptions: AppOrOptions, apis?: MockApis) 
 export const renderComponentWithApp = async (
   Component: ComponentType<any>,
   apis?: MockApis,
-  appOrAppOptions?: AppOrOptions,
+  appOptions?: AppOrOptions,
 ) => {
-  const { App, app } = getApp(appOrAppOptions, Component, apis);
+  const { App, app } = getApp(appOptions, [Component], apis);
   render(<App />);
 
   await WaitApp();
@@ -100,10 +104,10 @@ export const renderHookWithApp = async (
   hook: () => any,
   Wrapper: ComponentType<any> = Fragment,
   apis?: MockApis,
-  appOrAppOptions?: AppOrOptions,
+  appOptions?: AppOrOptions,
 ) => {
-  const { App } = getApp(appOrAppOptions, undefined, apis);
-  const WrapperValue = ({ children }) => (
+  const { App } = getApp(appOptions, undefined, apis);
+  const WrapperValue: FC<{ children: React.ReactNode }> = ({ children }) => (
     <App>
       <Wrapper>{children}</Wrapper>
     </App>
@@ -116,7 +120,7 @@ export const renderHookWithApp = async (
   return res;
 };
 
-interface RenderSchemaOptions {
+interface RenderComponentSchemaOptions {
   Component: ComponentType<any>;
   value?: any;
   props?: any;
@@ -125,7 +129,7 @@ interface RenderSchemaOptions {
   onChange?: (value: any) => void;
 }
 
-export const renderSchema = (options: RenderSchemaOptions) => {
+export const renderComponentWithSchema = (options: RenderComponentSchemaOptions) => {
   const { Component, value, props, onChange, schema: optionsSchema = {}, CheckerComponent = Fragment } = options;
   const schema = {
     type: 'object',
@@ -146,24 +150,33 @@ export const renderSchema = (options: RenderSchemaOptions) => {
   );
 };
 
-export const renderReadPrettySchema = (options: RenderSchemaOptions) => {
-  return renderSchema({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
+export const renderComponentReadPrettySchema = (options: RenderComponentSchemaOptions) => {
+  return renderComponentWithSchema({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
 };
 
-export const renderSchemaWithApp = async (Component: ComponentType<any>, props: any = {}, apis: MockApis) => {
-  const { App } = getApp(undefined, undefined, apis);
-  const schema = {
-    type: 'void',
-    name: 'root',
-    'x-component': Component,
-    'x-component-props': props,
+interface RenderSchemaOptions {
+  schema: any;
+  appOptions?: AppOrOptions;
+  apis?: MockApis;
+}
+
+export const renderSchema = async (options: RenderSchemaOptions) => {
+  const { schema, appOptions, apis } = options;
+  if (!schema.name) {
+    schema.name = 'test';
+  }
+
+  if (!schema.type) {
+    schema.type = 'void';
+  }
+
+  const TestDemo = () => {
+    return <SchemaComponent schema={schema} />;
   };
 
-  const res = render(
-    <App>
-      <SchemaComponent schema={schema} />
-    </App>,
-  );
+  const { App } = getApp(appOptions, [TestDemo], apis);
+
+  const res = render(<App />);
 
   await WaitApp();
 
