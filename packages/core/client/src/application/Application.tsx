@@ -167,6 +167,15 @@ export class Application {
     return this.options.publicPath || '/';
   }
 
+  getApiUrl(pathname = '') {
+    let baseURL = this.apiClient.axios['defaults']['baseURL'];
+    if (!baseURL.startsWith('http://') || !baseURL.startsWith('https://')) {
+      const { protocol, host } = window.location;
+      baseURL = `${protocol}//${host}/`;
+    }
+    return baseURL + pathname;
+  }
+
   getRouteUrl(pathname: string) {
     return this.options.publicPath.replace(/\/$/g, '') + pathname;
   }
