@@ -306,7 +306,9 @@ export class Application {
   }
 
   getRootComponent() {
-    const Root: FC = ({ children }) => <AppComponent app={this}>{children}</AppComponent>;
+    const Root: FC<{ children?: React.ReactNode }> = ({ children }) => (
+      <AppComponent app={this}>{children}</AppComponent>
+    );
     return Root;
   }
 

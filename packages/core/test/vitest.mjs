@@ -151,12 +151,15 @@ const defineClientConfig = () => {
 
 export const getFilterInclude = (isServer, isCoverage) => {
   let filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
-  if (!filterFileOrDir) return;
+  if (!filterFileOrDir) return {};
   const absPath = path.join(process.cwd(), filterFileOrDir);
   const isDir = fs.existsSync(absPath) && fs.statSync(absPath).isDirectory();
   // 如果是文件，则只测试当前文件
   if (!isDir) {
-    return [filterFileOrDir];
+    return {
+      isFile: true,
+      include: [filterFileOrDir],
+    };
   }
 
   const suffix = isCoverage ? `**/*.{ts,tsx}` : `**/__tests__/**/*.{test,spec}.{ts,tsx}`;
@@ -164,17 +167,23 @@ export const getFilterInclude = (isServer, isCoverage) => {
   // 判断是否为包目录，如果不是包目录，则只测试当前目录
   const isPackage = fs.existsSync(path.join(absPath, 'package.json'));
   if (!isPackage) {
-    return [`${filterFileOrDir}/${suffix}`];
+    return {
+      include: [`${filterFileOrDir}/${suffix}`]
+    };
   }
 
   // 判断是否为 core 包目录，不分 client 和 server
   const isCore = absPath.includes('packages/core');
   if (isCore) {
-    return [`${filterFileOrDir}/src/${suffix}`];
+    return {
+      include: [`${filterFileOrDir}/src/${suffix}`]
+    };
   }
 
   // 插件目录，区分 client 和 server
-  return [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`];
+  return {
+    include: [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`]
+  };
 };
 
 export const getReportsDirectory = (isServer) => {
@@ -200,14 +209,24 @@ export const defineConfig = () => {
     mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()),
   );
 
+  const { isFile, include: filterInclude } = getFilterInclude(isServer);
+  if (filterInclude) {
+    config.test.include = filterInclude;
+    if (isFile) {
+      // 减少收集的文件，加快速度
+      config.test.root = path.dirname(filterInclude[0])
+      config.test.exclude = [];
+      config.test.coverage = {
+        enabled: false
+      }
+
+      return config;
+    }
+  }
+
   const isCoverage = process.argv.includes('--coverage');
   if (!isCoverage) {
     return config;
-  }
-
-  const filterInclude = getFilterInclude(isServer);
-  if (filterInclude) {
-    config.test.include = getFilterInclude(isServer);
   }
 
   config.test.coverage.include = getFilterInclude(isServer, true);

@@ -5,7 +5,7 @@ import { renderHook } from '@testing-library/react-hooks';
 import MockAdapter from 'axios-mock-adapter';
 import { AxiosInstance } from 'axios';
 // @ts-ignore
-import { Application, ApplicationOptions } from '@nocobase/client';
+import { Application, ApplicationOptions, FormItem, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 
 export { renderHook } from '@testing-library/react-hooks';
 
@@ -110,6 +110,60 @@ export const renderHookWithApp = async (
   );
 
   const res = renderHook(hook, { wrapper: WrapperValue });
+
+  await WaitApp();
+
+  return res;
+};
+
+interface RenderSchemaOptions {
+  Component: ComponentType<any>;
+  value?: any;
+  props?: any;
+  CheckerComponent?: ComponentType;
+  schema?: any;
+  onChange?: (value: any) => void;
+}
+
+export const renderSchema = (options: RenderSchemaOptions) => {
+  const { Component, value, props, onChange, schema: optionsSchema = {}, CheckerComponent = Fragment } = options;
+  const schema = {
+    type: 'object',
+    name: 'test',
+    default: value,
+    'x-component': Component,
+    'x-component-props': {
+      onChange,
+      ...props,
+    },
+    ...optionsSchema,
+  };
+  return render(
+    <SchemaComponentProvider components={{ FormItem }}>
+      <SchemaComponent schema={schema} />
+      <CheckerComponent />
+    </SchemaComponentProvider>,
+  );
+};
+
+export const renderReadPrettySchema = (options: RenderSchemaOptions) => {
+  return renderSchema({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
+};
+
+export const renderSchemaWithApp = async (Component: ComponentType<any>, props: any = {}, apis: MockApis) => {
+  const { App } = getApp(undefined, undefined, apis);
+  const schema = {
+    type: 'void',
+    name: 'root',
+    'x-component': Component,
+    'x-component-props': props,
+  };
+
+  const res = render(
+    <App>
+      <SchemaComponent schema={schema} />
+    </App>,
+  );
 
   await WaitApp();
 
