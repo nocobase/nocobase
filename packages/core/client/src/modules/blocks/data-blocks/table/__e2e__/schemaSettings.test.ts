@@ -760,6 +760,7 @@ test.describe('actions schema settings', () => {
     test('supported options', async ({ page, mockPage, mockRecord }) => {
       const nocoPage = await mockPage(oneEmptyTableWithTreeCollection).waitForInit();
       await nocoPage.goto();
+      await page.getByLabel('block-item-CardItem-treeCollection-table').hover();
 
       // 添加一行数据
       // TODO: 使用 mockRecord 为 tree 表添加一行数据无效
@@ -773,6 +774,9 @@ test.describe('actions schema settings', () => {
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.mouse.move(300, 0);
       await page.getByRole('button', { name: 'Submit' }).click();
+
+      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-treeCollection').hover();
+      await page.getByRole('menuitem', { name: 'Tree table' }).click();
 
       // 添加 add child 按钮
       await page.getByRole('button', { name: 'Actions', exact: true }).hover();

@@ -161,7 +161,7 @@ export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelecto
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (collectionField?.target === collectionField?.collectionName && collection?.tree && treeTable !== false) {
+  if (collectionField?.target === collectionField?.collectionName && collection?.tree && treeTable) {
     params['tree'] = true;
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
