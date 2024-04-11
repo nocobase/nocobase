@@ -305,7 +305,18 @@ describe('list association action with acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users');
+    await db.getRepository('roles.resources', 'newRole').create({
+      values: {
+        name: 'comments',
+        usingActionConfig: true,
+        actions: [
+          {
+            name: 'view',
+          },
+        ],
+      },
+    });
+
     const userAgent = app.agent().login(user).set('X-With-ACL-Meta', true);
 
     await userAgent.resource('posts').create({

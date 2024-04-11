@@ -229,11 +229,7 @@ describe('association field acl', () => {
         resource: 'users.orders',
         action: 'add',
       }),
-    ).toMatchObject({
-      role: 'new',
-      resource: 'users.orders',
-      action: 'add',
-    });
+    ).toBeNull();
 
     const viewAction = await db.getRepository('dataSourcesRolesResourcesActions').findOne({
       filter: {
