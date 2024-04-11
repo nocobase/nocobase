@@ -842,6 +842,7 @@ export const useCollectionDataSourceItems = ({
   showAssociationFields,
   filterDataSource,
   dataBlockInitializerProps,
+  hideOtherRecordsInPopup,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
@@ -849,6 +850,10 @@ export const useCollectionDataSourceItems = ({
   showAssociationFields?: boolean;
   filterDataSource?: (dataSource?: DataSource) => boolean;
   dataBlockInitializerProps?: any;
+  /**
+   * 隐藏弹窗中的 Other records 选项
+   */
+  hideOtherRecordsInPopup?: boolean;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -962,16 +967,28 @@ export const useCollectionDataSourceItems = ({
       let children;
 
       if (noAssociationMenu[0].children.length && associationFields.length) {
-        children = [currentRecord, associationRecords, otherRecords];
-      } else if (noAssociationMenu[0].children.length) {
-        // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
-        if (noAssociationMenu[0].children.length <= 1) {
-          noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
-          return noAssociationMenu;
+        if (hideOtherRecordsInPopup) {
+          children = [currentRecord, associationRecords];
+        } else {
+          children = [currentRecord, associationRecords, otherRecords];
         }
-        children = [currentRecord, otherRecords];
+      } else if (noAssociationMenu[0].children.length) {
+        if (hideOtherRecordsInPopup) {
+          // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
+          if (noAssociationMenu[0].children.length <= 1) {
+            noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
+            return noAssociationMenu;
+          }
+          children = [currentRecord];
+        } else {
+          children = [currentRecord, otherRecords];
+        }
       } else {
-        children = [associationRecords, otherRecords];
+        if (hideOtherRecordsInPopup) {
+          children = [associationRecords];
+        } else {
+          children = [associationRecords, otherRecords];
+        }
       }
 
       return [
@@ -982,7 +999,15 @@ export const useCollectionDataSourceItems = ({
           children,
         },
       ];
-    }, [associationFields, collection.dataSource, collection.name, dataBlockInitializerProps, noAssociationMenu, t]);
+    }, [
+      associationFields,
+      collection.dataSource,
+      collection.name,
+      dataBlockInitializerProps,
+      hideOtherRecordsInPopup,
+      noAssociationMenu,
+      t,
+    ]);
   }
 
   return noAssociationMenu;

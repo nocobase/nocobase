@@ -129,6 +129,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
+          hideOtherRecordsInPopup: true,
           componentType: 'FormItem',
           createBlockSchema: createEditFormBlock,
           templateWrap: templateWrapEdit,

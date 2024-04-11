@@ -284,6 +284,10 @@ export interface DataBlockInitializerProps {
    * 是否是点击弹窗中的 Others 选项进入的
    */
   fromOthersInPopup?: boolean;
+  /**
+   * 隐藏弹窗中的 Other records 选项
+   */
+  hideOtherRecordsInPopup?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -302,6 +306,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     filterDataSource,
     items: itemsFromProps,
     fromOthersInPopup,
+    hideOtherRecordsInPopup,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -330,6 +335,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
       onlyCurrentDataSource,
       showAssociationFields,
       dataBlockInitializerProps: props,
+      hideOtherRecordsInPopup,
     });
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {
