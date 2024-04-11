@@ -12,11 +12,11 @@ export const SigninPage = (props: { authenticator: Authenticator }) => {
   const params = new URLSearchParams(location.search);
   const redirect = params.get('redirect');
   const app = useApp();
-
+  const apiBaseURL = app.getOptions().apiClient?.['baseURL'];
   const appName = getSubAppName(app.getPublicPath()) || 'main';
   const login = async () => {
     window.location.replace(
-      `/api/cas:login?authenticator=${authenticator.name}&__appName=${appName}&redirect=${redirect}`,
+      `${apiBaseURL}cas:login?authenticator=${authenticator.name}&__appName=${appName}&redirect=${redirect}`,
     );
   };
 
