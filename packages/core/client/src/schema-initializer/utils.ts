@@ -750,9 +750,9 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     exists: !!schema,
     remove() {
       removeActiveFieldName?.(schema.name);
-      form?.query(schema.name).forEach((field: Field) => {
-        field.setInitialValue?.(field.initialValue);
-        field.reset?.();
+      form?.query(new RegExp(`${schema.parent.name}.${schema.name}$`)).forEach((field: Field) => {
+        // 如果字段被删掉，那么在提交的时候不应该提交这个字段
+        field.setValue?.(undefined);
       });
       schema && rm(schema, remove);
     },

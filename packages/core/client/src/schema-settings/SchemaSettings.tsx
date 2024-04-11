@@ -581,10 +581,10 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
             await confirm?.onOk?.();
             delete form.values[fieldSchema.name];
             removeActiveFieldName?.(fieldSchema.name as string);
-            if (field?.setInitialValue && field?.reset) {
-              field.setInitialValue(null);
-              field.reset();
-            }
+            form?.query(new RegExp(`${fieldSchema.parent.name}.${fieldSchema.name}$`)).forEach((field: Field) => {
+              // 如果字段被删掉，那么在提交的时候不应该提交这个字段
+              field.setValue?.(undefined);
+            });
             removeDataBlock(fieldSchema['x-uid']);
           },
         });
