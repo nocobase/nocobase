@@ -11,7 +11,7 @@ export const FormBlockInitializer = ({
   hideSearch,
   createBlockSchema,
   componentType = 'FormItem',
-  templateWrap,
+  templateWrap: customizeTemplateWrap,
   showAssociationFields,
   hideChildrenIfSingleCollection,
 }: {
@@ -34,24 +34,17 @@ export const FormBlockInitializer = ({
   showAssociationFields?: boolean;
   hideChildrenIfSingleCollection?: boolean;
 }) => {
-  const { insert } = useSchemaInitializer();
   const itemConfig = useSchemaInitializerItem();
-  const { isCusomeizeCreate } = itemConfig;
+  const { createFormBlock, templateWrap } = useCreateFormBlock();
   const onCreateFormBlockSchema = useCallback(
-    ({ item }) => {
+    (options) => {
       if (createBlockSchema) {
-        return createBlockSchema({ item });
+        return createBlockSchema(options);
       }
 
-      insert(
-        createCreateFormBlockUISchema({
-          collectionName: item.collectionName || item.name,
-          dataSource: item.dataSource,
-          isCusomeizeCreate,
-        }),
-      );
+      createFormBlock(options);
     },
-    [createBlockSchema, insert, isCusomeizeCreate],
+    [createBlockSchema, createFormBlock],
   );
 
   return (
@@ -59,21 +52,12 @@ export const FormBlockInitializer = ({
       {...itemConfig}
       icon={<FormOutlined />}
       componentType={componentType}
-      templateWrap={(templateSchema, { item }) => {
-        if (templateWrap) {
-          return templateWrap(templateSchema, { item });
+      templateWrap={(templateSchema, options) => {
+        if (customizeTemplateWrap) {
+          return customizeTemplateWrap(templateSchema, options);
         }
 
-        const schema = createCreateFormBlockUISchema({
-          isCusomeizeCreate,
-          dataSource: item.dataSource,
-          templateSchema: templateSchema,
-          collectionName: item.name,
-        });
-        if (item.template && item.mode === 'reference') {
-          schema['x-template-key'] = item.template.key;
-        }
-        return schema;
+        return templateWrap(templateSchema, options);
       }}
       onCreateBlockSchema={onCreateFormBlockSchema}
       filter={filterCollections}
@@ -83,4 +67,38 @@ export const FormBlockInitializer = ({
       hideChildrenIfSingleCollection={hideChildrenIfSingleCollection}
     />
   );
+};
+
+export const useCreateFormBlock = () => {
+  const { insert } = useSchemaInitializer();
+  const itemConfig = useSchemaInitializerItem();
+  const { isCusomeizeCreate: isCustomizeCreate } = itemConfig;
+
+  const createFormBlock = ({ item }) => {
+    insert(
+      createCreateFormBlockUISchema({
+        collectionName: item.collectionName || item.name,
+        dataSource: item.dataSource,
+        isCusomeizeCreate: isCustomizeCreate,
+      }),
+    );
+  };
+
+  const templateWrap = (templateSchema, { item }) => {
+    const schema = createCreateFormBlockUISchema({
+      isCusomeizeCreate: isCustomizeCreate,
+      dataSource: item.dataSource,
+      templateSchema: templateSchema,
+      collectionName: item.name,
+    });
+    if (item.template && item.mode === 'reference') {
+      schema['x-template-key'] = item.template.key;
+    }
+    return schema;
+  };
+
+  return {
+    createFormBlock,
+    templateWrap,
+  };
 };

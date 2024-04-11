@@ -11,9 +11,14 @@ import {
   useCreateAssociationListBlock,
   useCreateAssociationTableBlock,
   useCreateEditFormBlock,
+  useCreateFormBlock,
+  useCreateTableBlock,
 } from '../..';
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
+import { useCreateDetailsBlock } from '../../modules/blocks/data-blocks/details-multi/DetailsBlockInitializer';
 import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
+import { useCreateGridCardBlock } from '../../modules/blocks/data-blocks/grid-card/GridCardBlockInitializer';
+import { useCreateListBlock } from '../../modules/blocks/data-blocks/list/ListBlockInitializer';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -52,9 +57,13 @@ function useRecordBlocks() {
           createAssociationDetailsWithoutPagination,
           templateWrap: templateWrapOfAssociationDetailsWithoutPagination,
         } = useCreateAssociationDetailsWithoutPagination();
+        const { createDetailsBlock } = useCreateDetailsBlock();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
         const createBlockSchema = useCallback(
-          ({ item }) => {
+          ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createDetailsBlock({ item });
+            }
             if (item.associationField) {
               if (['hasOne', 'belongsTo'].includes(item.associationField.type)) {
                 return createAssociationDetailsWithoutPagination({ item });
@@ -63,7 +72,12 @@ function useRecordBlocks() {
             }
             return createSingleDetailsSchema({ item });
           },
-          [createAssociationDetailsBlock, createAssociationDetailsWithoutPagination, createSingleDetailsSchema],
+          [
+            createAssociationDetailsBlock,
+            createAssociationDetailsWithoutPagination,
+            createDetailsBlock,
+            createSingleDetailsSchema,
+          ],
         );
         return {
           filterCollections({ collection, associationField }) {
@@ -103,7 +117,7 @@ function useRecordBlocks() {
       dataSource: collection.dataSource,
       useComponentProps() {
         const currentCollection = useCollection_deprecated();
-        const { createEditFormBlock, templateWrap } = useCreateEditFormBlock();
+        const { createEditFormBlock, templateWrap: templateWrapEdit } = useCreateEditFormBlock();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
         return {
@@ -117,7 +131,7 @@ function useRecordBlocks() {
           hideSearch: true,
           componentType: 'FormItem',
           createBlockSchema: createEditFormBlock,
-          templateWrap: templateWrap,
+          templateWrap: templateWrapEdit,
           showAssociationFields: true,
         };
       },
@@ -133,6 +147,7 @@ function useRecordBlocks() {
       dataSource: collection.dataSource,
       useComponentProps() {
         const { createAssociationFormBlock, templateWrap } = useCreateAssociationFormBlock();
+        const { createFormBlock, templateWrap: templateWrapCollection } = useCreateFormBlock();
         return {
           filterCollections({ collection, associationField }) {
             if (associationField) {
@@ -143,8 +158,18 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           hideSearch: true,
           componentType: 'FormItem',
-          createBlockSchema: createAssociationFormBlock,
-          templateWrap: templateWrap,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createFormBlock({ item });
+            }
+            createAssociationFormBlock({ item });
+          },
+          templateWrap: (templateSchema, { item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return templateWrapCollection(templateSchema, { item });
+            }
+            templateWrap(templateSchema, { item });
+          },
           showAssociationFields: true,
         };
       },
@@ -175,6 +200,7 @@ function useRecordBlocks() {
       },
       useComponentProps() {
         const { createAssociationTableBlock } = useCreateAssociationTableBlock();
+        const { createTableBlock } = useCreateTableBlock();
 
         return {
           hideSearch: true,
@@ -185,7 +211,12 @@ function useRecordBlocks() {
             }
             return false;
           },
-          createBlockSchema: createAssociationTableBlock,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createTableBlock({ item });
+            }
+            createAssociationTableBlock({ item });
+          },
           showAssociationFields: true,
         };
       },
@@ -206,6 +237,7 @@ function useRecordBlocks() {
       },
       useComponentProps() {
         const { createAssociationListBlock } = useCreateAssociationListBlock();
+        const { createListBlock } = useCreateListBlock();
 
         return {
           hideSearch: true,
@@ -216,7 +248,12 @@ function useRecordBlocks() {
             }
             return false;
           },
-          createBlockSchema: createAssociationListBlock,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createListBlock({ item });
+            }
+            createAssociationListBlock({ item });
+          },
           showAssociationFields: true,
         };
       },
@@ -237,6 +274,7 @@ function useRecordBlocks() {
       },
       useComponentProps() {
         const { createAssociationGridCardBlock } = useCreateAssociationGridCardBlock();
+        const { createGridCardBlock } = useCreateGridCardBlock();
 
         return {
           hideSearch: true,
@@ -247,7 +285,12 @@ function useRecordBlocks() {
             }
             return false;
           },
-          createBlockSchema: createAssociationGridCardBlock,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createGridCardBlock({ item });
+            }
+            createAssociationGridCardBlock({ item });
+          },
           showAssociationFields: true,
         };
       },

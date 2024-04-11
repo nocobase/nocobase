@@ -1,8 +1,10 @@
 import { Plugin, canMakeAssociationBlock, useCollection } from '@nocobase/client';
+import { useMemo } from 'react';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { calendarBlockSettings } from './calendar/Calender.Settings';
 import { CalendarCollectionTemplate } from './collection-templates/calendar';
+import { useCalendarBlockDecoratorProps } from './hooks/useCalendarBlockDecoratorProps';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
 import {
   CalendarActionInitializers_deprecated,
@@ -14,9 +16,8 @@ import {
   CalendarBlockInitializer,
   RecordAssociationCalendarBlockInitializer,
   useCreateAssociationCalendarBlock,
+  useCreateCalendarBlock,
 } from './schema-initializer/items';
-import { useMemo } from 'react';
-import { useCalendarBlockDecoratorProps } from './hooks/useCalendarBlockDecoratorProps';
 
 export class PluginCalendarClient extends Plugin {
   async load() {
@@ -40,6 +41,7 @@ export class PluginCalendarClient extends Plugin {
       },
       useComponentProps() {
         const { createAssociationCalendarBlock } = useCreateAssociationCalendarBlock();
+        const { createCalendarBlock } = useCreateCalendarBlock();
 
         return {
           onlyCurrentDataSource: true,
@@ -49,7 +51,12 @@ export class PluginCalendarClient extends Plugin {
             }
             return false;
           },
-          createBlockSchema: createAssociationCalendarBlock,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createCalendarBlock({ item });
+            }
+            createAssociationCalendarBlock({ item });
+          },
           showAssociationFields: true,
           hideSearch: true,
         };

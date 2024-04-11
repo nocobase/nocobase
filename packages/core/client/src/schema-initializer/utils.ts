@@ -936,19 +936,42 @@ export const useCollectionDataSourceItems = ({
           ],
         },
       };
+      const otherRecords = {
+        name: 'otherRecords',
+        Component: DataBlockInitializer,
+        // 目的是使点击无效
+        onClick() {},
+        componentProps: {
+          icon: null,
+          title: t('Others'),
+          name: 'otherRecords',
+          showAssociationFields: false,
+          onlyCurrentDataSource: false,
+          hideChildrenIfSingleCollection: false,
+          onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
+          fromOthersInPopup: true,
+          filter({ collection: c, associationField }) {
+            if (c.name === collection.name) {
+              return false;
+            }
+            return true;
+          },
+        },
+      };
+
       let children;
 
       if (noAssociationMenu[0].children.length && associationFields.length) {
-        children = [currentRecord, associationRecords];
+        children = [currentRecord, associationRecords, otherRecords];
       } else if (noAssociationMenu[0].children.length) {
         // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
         if (noAssociationMenu[0].children.length <= 1) {
           noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
           return noAssociationMenu;
         }
-        children = [currentRecord];
+        children = [currentRecord, otherRecords];
       } else {
-        children = [associationRecords];
+        children = [associationRecords, otherRecords];
       }
 
       return [
