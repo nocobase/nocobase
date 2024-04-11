@@ -2,12 +2,12 @@ import { FormOutlined } from '@ant-design/icons';
 import {
   SchemaInitializerItem,
   createCreateFormBlockUISchema,
-  useBlockAssociationContext,
   useCollection_deprecated,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaTemplateManager,
+  useAssociationName,
 } from '@nocobase/client';
 import React from 'react';
 import { createBulkEditBlockUISchema } from './createBulkEditBlockUISchema';
@@ -17,7 +17,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const association = useBlockAssociationContext();
+  const association = useAssociationName();
   const collection = useCollection_deprecated();
   return (
     <SchemaInitializerItem
