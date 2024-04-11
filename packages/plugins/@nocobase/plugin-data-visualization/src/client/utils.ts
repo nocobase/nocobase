@@ -6,7 +6,8 @@ import { FieldOption } from './hooks';
 import { QueryProps } from './renderer';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
-  const { collection } = decoratorProps;
+  const { collection, config } = decoratorProps;
+  const { title, bordered } = config || {};
   return {
     type: 'void',
     'x-decorator': 'ChartRendererProvider',
@@ -16,6 +17,8 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-component': 'CardItem',
     'x-component-props': {
       size: 'small',
+      title,
+      bordered,
     },
     'x-initializer': 'charts:addBlock',
     properties: {

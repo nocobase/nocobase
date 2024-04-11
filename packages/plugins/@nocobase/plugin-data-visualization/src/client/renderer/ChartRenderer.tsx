@@ -102,7 +102,7 @@ ChartRenderer.Designer = function Designer() {
       >
         {t('Duplicate')}
       </SchemaSettingsItem>
-      <SchemaSettingsBlockTitleItem />
+      {/* <SchemaSettingsBlockTitleItem /> */}
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         // removeParentsIfNoChildren

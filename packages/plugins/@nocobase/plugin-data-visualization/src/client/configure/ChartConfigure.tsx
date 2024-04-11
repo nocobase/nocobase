@@ -3,7 +3,7 @@ import { ArrayItems, Editable, FormCollapse, FormItem, FormLayout, Switch } from
 import { Form as FormType, ObjectField, createForm, onFieldChange, onFormInit } from '@formily/core';
 import { FormConsumer, ISchema, Schema } from '@formily/react';
 import { AutoComplete, FormProvider, SchemaComponent, gridRowColWrap, useDesignable } from '@nocobase/client';
-import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
+import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography, theme } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
@@ -27,6 +27,7 @@ import { useChartTypes, useCharts, useDefaultChartType } from '../chart/group';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { ChartConfigContext } from './ChartConfigProvider';
 const { Paragraph, Text } = Typography;
+import { css } from '@emotion/css';
 
 export type SelectedField = {
   field: string | string[];
@@ -100,18 +101,21 @@ export const ChartConfigure: React.FC<{
   };
   const chartType = useDefaultChartType();
   const form = useMemo(
-    () =>
-      createForm({
+    () => {
+      const decoratorProps = initialValues || field?.decoratorProps;
+      const config = decoratorProps?.config || {};
+      return createForm({
         values: {
-          config: { chartType },
-          ...(initialValues || field?.decoratorProps),
+          ...decoratorProps,
+          config: { chartType, ...config, title: config.title || field?.componentProps?.title },
           collection: [dataSource, collection],
         },
         effects: (form) => {
           onFieldChange('config.chartType', () => initChart(true));
           onFormInit(() => queryReact(form));
         },
-      }),
+      });
+    },
     // visible, dataSource, collection added here to re-initialize form when visible, dataSource, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [field, visible, dataSource, collection],
@@ -159,6 +163,7 @@ export const ChartConfigure: React.FC<{
       open={visible}
       onOk={() => {
         const { query, config, transform, mode } = form.values;
+        const { title, bordered } = config || {};
         const afterSave = () => {
           setVisible(false);
           current.service?.run(dataSource, collection, query);
@@ -175,8 +180,18 @@ export const ChartConfigure: React.FC<{
           mode: mode || 'builder',
         };
         if (schema && schema['x-uid']) {
+          schema['x-component-props'] = {
+            ...schema['x-component-props'],
+            title,
+            bordered,
+          };
           schema['x-decorator-props'] = rendererProps;
           field.decoratorProps = rendererProps;
+          field.componentProps = {
+            ...field.componentProps,
+            title,
+            bordered,
+          };
           field['x-acl-action'] = `${collection}:list`;
           dn.emit('patch', {
             schema,
@@ -204,9 +219,20 @@ export const ChartConfigure: React.FC<{
         });
       }}
       width={'95%'}
+      className={css`
+        .ant-modal-content {
+          padding: 0;
+        }
+      `}
       styles={{
+        header: {
+          padding: '12px 24px 0px 24px',
+        },
         body: {
           background: 'rgba(128, 128, 128, 0.08)',
+        },
+        footer: {
+          padding: '0px 24px 12px 24px',
         },
       }}
     >
@@ -216,10 +242,11 @@ export const ChartConfigure: React.FC<{
             <Col span={7}>
               <Card
                 style={{
-                  height: 'calc(100vh - 300px)',
+                  height: 'calc(100vh - 288px)',
                   overflow: 'auto',
-                  margin: '12px 0 12px 12px',
+                  margin: '6px 0 6px 12px',
                 }}
+                bodyStyle={{ padding: '0 16px' }}
                 ref={queryRef}
               >
                 <Tabs
@@ -242,10 +269,11 @@ export const ChartConfigure: React.FC<{
             <Col span={6}>
               <Card
                 style={{
-                  height: 'calc(100vh - 300px)',
+                  height: 'calc(100vh - 288px)',
                   overflow: 'auto',
-                  margin: '12px 3px 12px 3px',
+                  margin: '6px 0',
                 }}
+                bodyStyle={{ padding: '0 16px 10px 16px' }}
                 ref={configRef}
               >
                 <Tabs
@@ -256,8 +284,8 @@ export const ChartConfigure: React.FC<{
                       children: <ChartConfigure.Config />,
                     },
                     {
-                      label: t('Transform'),
-                      key: 'transform',
+                      label: t('Transformation'),
+                      key: 'transformation',
                       children: <ChartConfigure.Transform />,
                     },
                   ]}
@@ -265,13 +293,7 @@ export const ChartConfigure: React.FC<{
               </Card>
             </Col>
             <Col span={11}>
-              <Card
-                style={{
-                  margin: '12px 12px 12px 0',
-                }}
-              >
-                <ChartConfigure.Renderer />
-              </Card>
+              <ChartConfigure.Renderer />
             </Col>
           </Row>
         </FormLayout>
@@ -292,9 +314,18 @@ ChartConfigure.Renderer = function Renderer(props) {
         const config = cloneDeep(form.values.config);
         const transform = cloneDeep(form.values.transform);
         return (
-          <ChartRendererContext.Provider value={{ collection, config, transform, service, data }}>
-            <ChartRenderer {...props} />
-          </ChartRendererContext.Provider>
+          <Card
+            size="small"
+            title={form.values.config?.title}
+            style={{
+              margin: '6px 12px 6px 0',
+            }}
+            bordered={form.values.config?.bordered}
+          >
+            <ChartRendererContext.Provider value={{ collection, config, transform, service, data }}>
+              <ChartRenderer {...props} />
+            </ChartRendererContext.Provider>
+          </Card>
         );
       }}
     </FormConsumer>
@@ -311,6 +342,7 @@ ChartConfigure.Query = function Query() {
   const fieldOptions = useCollectionFieldsOptions(dataSource, collection, 1);
   const compiledFieldOptions = Schema.compile(fieldOptions, { t });
   const filterOptions = useCollectionFilterOptions(dataSource, collection);
+  const { token } = theme.useToken();
 
   const { service } = useContext(ChartRendererContext);
   const onCollectionChange = (value: string[]) => {
@@ -348,6 +380,7 @@ ChartConfigure.Query = function Query() {
         onCollectionChange,
         collection: current?.collection,
         useOrderReaction: useOrderReaction(compiledFieldOptions, fields),
+        collapsePanelBg: token.colorBgContainer,
       }}
       components={{ ArrayItems, Editable, FormCollapse, FormItem, Space, Switch, FromSql, FilterDynamicComponent }}
     />
@@ -373,6 +406,7 @@ ChartConfigure.Config = function Config() {
       </span>
     );
   };
+  const formCollapse = FormCollapse.createFormCollapse(['card', 'basic']);
 
   return (
     <FormConsumer>
@@ -383,8 +417,8 @@ ChartConfigure.Config = function Config() {
         return (
           <SchemaComponent
             schema={getConfigSchema(schema)}
-            scope={{ t, chartTypes, useChartFields: getChartFields, getReference }}
-            components={{ FormItem, ArrayItems, Space, AutoComplete }}
+            scope={{ t, chartTypes, useChartFields: getChartFields, getReference, formCollapse }}
+            components={{ FormItem, ArrayItems, Space, AutoComplete, FormCollapse }}
           />
         );
       }}
