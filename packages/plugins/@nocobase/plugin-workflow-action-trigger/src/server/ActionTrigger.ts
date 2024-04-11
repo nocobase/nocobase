@@ -54,7 +54,10 @@ export default class extends Trigger {
       params: { triggerWorkflows = '', values },
     } = context.action;
     const dataSourceHeader = context.get('x-data-source') || 'main';
-    const fullCollectionName = joinCollectionName(dataSourceHeader, resourceName);
+    const collection = context.app.dataSourceManager.dataSources
+      .get(dataSourceHeader)
+      .collectionManager.getCollection(resourceName);
+    const fullCollectionName = joinCollectionName(dataSourceHeader, collection.name);
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
     const userInfo = {
@@ -95,8 +98,8 @@ export default class extends Trigger {
     const syncGroup = [];
     const asyncGroup = [];
     for (const workflow of triggeringLocalWorkflows.concat(...globalWorkflows.values())) {
-      const { collection, appends = [] } = workflow.config;
-      const [dataSourceName, collectionName] = parseCollectionName(collection);
+      const { appends = [] } = workflow.config;
+      const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
       const dataPath = triggersKeysMap.get(workflow.key);
       const event = [workflow];
       if (context.action.resourceName !== 'workflows') {
