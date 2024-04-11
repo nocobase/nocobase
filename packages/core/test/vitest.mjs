@@ -204,6 +204,7 @@ export const getReportsDirectory = (isServer) => {
 };
 
 export const defineConfig = () => {
+  debugger
   const isServer = process.env.TEST_ENV === 'server-side';
   const config = vitestConfig(
     mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()),
@@ -213,7 +214,7 @@ export const defineConfig = () => {
   if (filterInclude) {
     config.test.include = filterInclude;
     if (isFile) {
-      // 减少收集的文件，加快速度
+      // 减少收集的文件
       config.test.root = path.dirname(filterInclude[0])
       config.test.exclude = [];
       config.test.coverage = {
@@ -229,7 +230,10 @@ export const defineConfig = () => {
     return config;
   }
 
-  config.test.coverage.include = getFilterInclude(isServer, true);
+  const { include: coverageInclude } = getFilterInclude(isServer, true)
+  if (coverageInclude) {
+    config.test.coverage.include = coverageInclude;
+  }
   const reportsDirectory = getReportsDirectory(isServer);
   if (reportsDirectory) {
     config.test.coverage.reportsDirectory = reportsDirectory;
