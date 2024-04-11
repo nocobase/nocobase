@@ -941,6 +941,9 @@ export const useCollectionDataSourceItems = ({
           ],
         },
       };
+      const componentTypeMap = {
+        ReadPrettyFormItem: 'Details',
+      };
       const otherRecords = {
         name: 'otherRecords',
         Component: DataBlockInitializer,
@@ -955,6 +958,7 @@ export const useCollectionDataSourceItems = ({
           hideChildrenIfSingleCollection: false,
           onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
           fromOthersInPopup: true,
+          componentType: dataBlockInitializerProps[componentName] || componentName,
           filter({ collection: c, associationField }) {
             return true;
           },
