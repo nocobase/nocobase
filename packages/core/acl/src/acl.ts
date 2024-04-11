@@ -205,10 +205,6 @@ export class ACL extends EventEmitter {
 
     const snippetAllowed = aclRole.snippetAllowed(`${resource}:${action}`);
 
-    // if (snippetAllowed === false) {
-    //   return null;
-    // }
-
     const fixedParams = this.fixedParamsManager.getParams(resource, action);
 
     const mergeParams = (result: CanResult) => {

@@ -30,7 +30,7 @@ describe('association test', () => {
         name: 'posts',
         fields: [
           { name: 'title', type: 'string' },
-          { name: 'userComments', type: 'hasMany', target: 'comments', interface: 'linkTo' },
+          { name: 'userComments', foreignKey: 'userId', type: 'hasMany', target: 'comments', interface: 'linkTo' },
         ],
       },
       context: {},
@@ -67,13 +67,14 @@ describe('association test', () => {
 
     const role = acl.getRole('test-role');
 
+    // should not have association actions permission
     expect(
       acl.can({
         role: 'test-role',
         action: 'list',
         resource: 'posts.userComments',
       }),
-    ).not.toBeNull();
+    ).toBeFalsy();
 
     const post = await db.getRepository('posts').create({
       values: {
@@ -219,37 +220,6 @@ describe('association field acl', () => {
         ],
       },
     });
-  });
-
-  // skip because of disable grant associations target action
-  it.skip('should revoke target action on association action revoke', async () => {
-    expect(
-      acl.can({
-        role: 'new',
-        resource: 'orders',
-        action: 'list',
-      }),
-    ).toMatchObject({
-      role: 'new',
-      resource: 'orders',
-      action: 'list',
-    });
-
-    await adminAgent.resource('roles.resources', 'new').update({
-      values: {
-        name: 'users',
-        usingActionsConfig: true,
-        actions: [],
-      },
-    });
-
-    expect(
-      acl.can({
-        role: 'new',
-        resource: 'orders',
-        action: 'list',
-      }),
-    ).toBeNull();
   });
 
   it('should revoke association action on action revoke', async () => {
@@ -475,18 +445,6 @@ describe('association field acl', () => {
     });
     // @ts-ignore
     expect(await user.countOrders()).toEqual(1);
-
-    expect(
-      acl.can({
-        role: 'new',
-        resource: 'users.orders',
-        action: 'list',
-      }),
-    ).toMatchObject({
-      role: 'new',
-      resource: 'users.orders',
-      action: 'list',
-    });
 
     expect(
       acl.can({
