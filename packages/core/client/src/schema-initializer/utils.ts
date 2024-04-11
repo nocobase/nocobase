@@ -948,7 +948,7 @@ export const useCollectionDataSourceItems = ({
         onClick() {},
         componentProps: {
           icon: null,
-          title: t('Others'),
+          title: t('Other records'),
           name: 'otherRecords',
           showAssociationFields: false,
           onlyCurrentDataSource: false,
