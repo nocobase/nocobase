@@ -13,10 +13,15 @@ export const SigninPage = (props: { authenticator: Authenticator }) => {
   const redirect = params.get('redirect');
   const app = useApp();
 
+  let prefix = process.env.APP_PUBLIC_PATH || '';
+  if (prefix.endsWith('/')) {
+    prefix = prefix.slice(0, -1);
+  }
+
   const appName = getSubAppName(app.getPublicPath()) || 'main';
   const login = async () => {
     window.location.replace(
-      `/api/cas:login?authenticator=${authenticator.name}&__appName=${appName}&redirect=${redirect}`,
+      `${prefix}/api/cas:login?authenticator=${authenticator.name}&__appName=${appName}&redirect=${redirect}`,
     );
   };
 
