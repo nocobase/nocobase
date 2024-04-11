@@ -956,9 +956,6 @@ export const useCollectionDataSourceItems = ({
           onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
           fromOthersInPopup: true,
           filter({ collection: c, associationField }) {
-            if (c.name === collection.name) {
-              return false;
-            }
             return true;
           },
         },
