@@ -2,7 +2,7 @@ import { render, screen, waitFor, renderSchema, userEvent } from '@nocobase/test
 import React from 'react';
 import App1 from '../demos/demo1';
 import { Page } from '../Page';
-import { DocumentTitleProvider, Form, FormItem, Grid, IconPicker, Input, SchemaSettings } from '@nocobase/client';
+import { DocumentTitleProvider, Form, FormItem, Grid, IconPicker, Input } from '@nocobase/client';
 
 describe('Page', () => {
   it('should render correctly', async () => {
@@ -21,7 +21,7 @@ describe('Page', () => {
 
   describe('Page Component', () => {
     const title = 'Test Title';
-    test.only('schema title', async () => {
+    test('schema title', async () => {
       await renderSchema({
         schema: {
           type: 'void',

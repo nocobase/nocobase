@@ -124,35 +124,9 @@ interface RenderComponentSchemaOptions {
   Component: ComponentType<any>;
   value?: any;
   props?: any;
-  CheckerComponent?: ComponentType;
   schema?: any;
   onChange?: (value: any) => void;
 }
-
-export const renderComponentWithSchema = (options: RenderComponentSchemaOptions) => {
-  const { Component, value, props, onChange, schema: optionsSchema = {}, CheckerComponent = Fragment } = options;
-  const schema = {
-    type: 'object',
-    name: 'test',
-    default: value,
-    'x-component': Component,
-    'x-component-props': {
-      onChange,
-      ...props,
-    },
-    ...optionsSchema,
-  };
-  return render(
-    <SchemaComponentProvider components={{ FormItem }}>
-      <SchemaComponent schema={schema} />
-      <CheckerComponent />
-    </SchemaComponentProvider>,
-  );
-};
-
-export const renderComponentReadPrettySchema = (options: RenderComponentSchemaOptions) => {
-  return renderComponentWithSchema({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
-};
 
 interface RenderSchemaOptions {
   schema: any;
@@ -181,4 +155,24 @@ export const renderSchema = async (options: RenderSchemaOptions) => {
   await WaitApp();
 
   return res;
+};
+
+export const renderComponentWithSchema = (options: RenderComponentSchemaOptions) => {
+  const { Component, value, props, onChange, schema: optionsSchema = {} } = options;
+  const schema = {
+    type: 'object',
+    name: 'test',
+    default: value,
+    'x-component': Component,
+    'x-component-props': {
+      onChange,
+      ...props,
+    },
+    ...optionsSchema,
+  };
+  return renderSchema({ schema });
+};
+
+export const renderComponentReadPrettySchema = (options: RenderComponentSchemaOptions) => {
+  return renderComponentWithSchema({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
 };

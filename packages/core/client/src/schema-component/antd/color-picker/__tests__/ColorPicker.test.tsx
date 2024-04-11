@@ -9,7 +9,7 @@ import {
 
 describe('ColorPicker', () => {
   test('basic', async () => {
-    const { container } = renderComponentWithSchema({
+    const { container } = await renderComponentWithSchema({
       Component: ColorPicker,
       value: 'rgb(139, 187, 17)',
     });
@@ -23,20 +23,25 @@ describe('ColorPicker', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          aria-label="color-picker-normal"
-          role="button"
-          style="display: inline-block;"
+          class="css-dev-only-do-not-override-1mw46su ant-app"
+          style="height: 100%;"
         >
           <div
-            class="ant-color-picker-trigger css-dev-only-do-not-override-dkbvqv"
+            aria-label="color-picker-normal"
+            role="button"
+            style="display: inline-block;"
           >
             <div
-              class="ant-color-picker-color-block"
+              class="ant-color-picker-trigger css-dev-only-do-not-override-1mw46su"
             >
               <div
-                class="ant-color-picker-color-block-inner"
-                style="background: rgb(139, 187, 17);"
-              />
+                class="ant-color-picker-color-block"
+              >
+                <div
+                  class="ant-color-picker-color-block-inner"
+                  style="background: rgb(139, 187, 17);"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -45,7 +50,7 @@ describe('ColorPicker', () => {
   });
 
   test('change', async () => {
-    const { container } = renderComponentWithSchema({
+    const { container } = await renderComponentWithSchema({
       Component: ColorPicker,
       value: 'rgb(139, 187, 17)',
     });
@@ -69,7 +74,7 @@ describe('ColorPicker', () => {
   });
 
   test('read pretty', async () => {
-    const { container } = renderComponentReadPrettySchema({
+    const { container } = await renderComponentReadPrettySchema({
       Component: ColorPicker,
       value: 'rgb(139, 187, 17)',
     });
@@ -82,20 +87,25 @@ describe('ColorPicker', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          aria-label="color-picker-read-pretty"
-          class="ant-description-color-picker css-gy8kge"
-          role="button"
+          class="css-dev-only-do-not-override-1mw46su ant-app"
+          style="height: 100%;"
         >
           <div
-            class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-dkbvqv ant-color-picker-trigger-disabled"
+            aria-label="color-picker-read-pretty"
+            class="ant-description-color-picker css-gy8kge"
+            role="button"
           >
             <div
-              class="ant-color-picker-color-block"
+              class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-1mw46su ant-color-picker-trigger-disabled"
             >
               <div
-                class="ant-color-picker-color-block-inner"
-                style="background: rgb(139, 187, 17);"
-              />
+                class="ant-color-picker-color-block"
+              >
+                <div
+                  class="ant-color-picker-color-block-inner"
+                  style="background: rgb(139, 187, 17);"
+                />
+              </div>
             </div>
           </div>
         </div>
