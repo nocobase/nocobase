@@ -1,4 +1,4 @@
-import transformers from '../block/transformers';
+import transformers, { Transformer, TransformerConfig } from '../transformers';
 import { lang } from '../locale';
 import { ChartRendererProps } from '../renderer';
 import { getSelectedFields } from '../utils';
@@ -12,10 +12,16 @@ import { FieldOption } from './query';
  */
 export const useFieldTypes = (fields: FieldOption[]) => (field: any) => {
   const selectedField = field.query('.field').get('value');
+  if (!selectedField) {
+    field.setState({
+      value: null,
+      disabled: false,
+    });
+  }
   const query = field.query('query').get('value') || {};
   const selectedFields = getSelectedFields(fields, query);
   const fieldProps = selectedFields.find((field) => field.value === selectedField);
-  const supports = Object.keys(transformers);
+  const supports = Object.keys(transformers).filter((key) => key !== 'general');
   field.dataSource = supports.map((key) => ({
     label: lang(key),
     value: key,
@@ -35,36 +41,87 @@ export const useFieldTypes = (fields: FieldOption[]) => (field: any) => {
       value: key,
       disabled: true,
     });
-    return;
+  } else {
+    field.setState({
+      value: field.value,
+      disabled: false,
+    });
   }
-  field.setState({
-    value: null,
-    disabled: false,
-  });
 };
 
 export const useTransformers = (field: any) => {
   const selectedType = field.query('.type').get('value');
   if (!selectedType) {
+    field.setValue(null);
     field.dataSource = [];
     return;
   }
-  const options = Object.keys(transformers[selectedType] || {}).map((key) => ({
-    label: lang(key),
-    value: key,
-  }));
+  const options = Object.entries({ ...transformers.general, ...(transformers[selectedType] || {}) }).map(
+    ([key, config]) => {
+      const label = typeof config === 'function' ? key : config.label || key;
+      return {
+        label: lang(label),
+        value: key,
+      };
+    },
+  );
   field.dataSource = options;
 };
 
+export const useArgument = (field: any) => {
+  const selectedType = field.query('.type').get('value');
+  const format = field.query('.format').get('value');
+  if (!format || !selectedType) {
+    field.setComponentProps({
+      schema: null,
+    });
+    return;
+  }
+  const config = transformers[selectedType][format] || transformers['general'][format];
+  if (!config || typeof config === 'function') {
+    field.setComponentProps({
+      schema: null,
+    });
+    return;
+  }
+  field.setComponentProps({ schema: { name: format, ...config.schema } });
+};
+
 export const useFieldTransformer = (transform: ChartRendererProps['transform'], locale = 'en-US') => {
-  return (transform || [])
+  const transformersMap: {
+    [field: string]: {
+      transformer: TransformerConfig;
+      argument?: string | number;
+    }[];
+  } = (transform || [])
     .filter((item) => item.field && item.type && item.format)
     .reduce((mp, item) => {
-      const transformer = transformers[item.type][item.format];
+      const transformer = transformers[item.type][item.format] || transformers.general[item.format];
       if (!transformer) {
         return mp;
       }
-      mp[item.field] = (val: any) => transformer(val, locale);
+      mp[item.field] = [...(mp[item.field] || []), { transformer, argument: item.argument }];
       return mp;
     }, {});
+  const result = {};
+  Object.entries(transformersMap).forEach(([field, transformers]) => {
+    result[field] = transformers.reduce(
+      (fn: Transformer, config) => {
+        const { transformer, argument } = config;
+        return (val) => {
+          try {
+            if (typeof transformer === 'function') {
+              return transformer(fn(val), locale);
+            }
+            return transformer.fn(fn(val), argument);
+          } catch (e) {
+            console.log(e);
+            return val;
+          }
+        };
+      },
+      (val) => val,
+    );
+  });
+  return result;
 };

@@ -514,47 +514,78 @@ export const querySchema: ISchema = {
 export const transformSchema: ISchema = {
   type: 'void',
   properties: {
-    transform: getArraySchema(
-      {
-        field: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          'x-component-props': {
-            placeholder: '{{t("Field")}}',
-            style: {
-              maxWidth: '100px',
+    transform: {
+      type: 'array',
+      'x-decorator': 'FormItem',
+      'x-component': 'ArrayItems',
+      items: {
+        type: 'object',
+        properties: {
+          space: {
+            type: 'void',
+            'x-component': 'Space',
+            'x-component-props': {
+              wrap: true,
+            },
+            properties: {
+              sort: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.SortHandle',
+              },
+              field: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  placeholder: '{{t("Field")}}',
+                },
+                'x-reactions': '{{ useChartFields }}',
+              },
+              type: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  placeholder: '{{t("Type")}}',
+                },
+                'x-reactions': '{{ useFieldTypeOptions }}',
+              },
+              format: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  placeholder: '{{t("Format")}}',
+                  style: {
+                    maxWidth: '200px',
+                  },
+                },
+                'x-reactions': '{{ useTransformers }}',
+                'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
+              },
+              argument: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'TransformerDynamicComponent',
+                'x-reactions': '{{ useArgument }}',
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
             },
           },
-          'x-reactions': '{{ useChartFields }}',
-        },
-        type: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          'x-component-props': {
-            placeholder: '{{t("Type")}}',
-          },
-          'x-reactions': '{{ useFieldTypeOptions }}',
-        },
-        format: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          'x-component-props': {
-            placeholder: '{{t("Format")}}',
-          },
-          'x-reactions': '{{ useTransformers }}',
-          'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
         },
       },
-      {
-        'x-decorator-props': {
-          style: {
-            width: '50%',
-          },
+      properties: {
+        add: {
+          type: 'void',
+          title: '{{t("Add transformation")}}',
+          'x-component': 'ArrayItems.Addition',
         },
       },
-    ),
+    },
   },
 };

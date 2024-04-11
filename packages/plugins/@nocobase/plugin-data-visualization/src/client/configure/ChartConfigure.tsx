@@ -18,6 +18,7 @@ import {
   useOrderFieldsOptions,
   useOrderReaction,
   useTransformers,
+  useArgument,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererContext } from '../renderer';
@@ -28,6 +29,7 @@ import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { ChartConfigContext } from './ChartConfigProvider';
 const { Paragraph, Text } = Typography;
 import { css } from '@emotion/css';
+import { TransformerDynamicComponent } from './TransformerDynamicComponent';
 
 export type SelectedField = {
   field: string | string[];
@@ -434,8 +436,8 @@ ChartConfigure.Transform = function Transform() {
   return (
     <SchemaComponent
       schema={transformSchema}
-      components={{ FormItem, ArrayItems, Space }}
-      scope={{ useChartFields: getChartFields, useFieldTypeOptions, useTransformers, t }}
+      components={{ FormItem, ArrayItems, Space, TransformerDynamicComponent }}
+      scope={{ useChartFields: getChartFields, useFieldTypeOptions, useTransformers, useArgument, t }}
     />
   );
 };
