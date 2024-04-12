@@ -3,56 +3,88 @@ import { lang } from '../locale';
 import { ChartRendererProps } from '../renderer';
 import { getSelectedFields } from '../utils';
 import { FieldOption } from './query';
+import { useField } from '@formily/react';
+import { Field } from '@formily/core';
+import { uid } from '@formily/shared';
 
-/**
- * useFieldTypes
- * Get field types for using transformers
- * Only supported types will be displayed
- * Some interfaces and types will be mapped to supported types
- */
-export const useFieldTypes = (fields: FieldOption[]) => (field: any) => {
-  const selectedField = field.query('.field').get('value');
-  if (!selectedField) {
-    field.setState({
-      value: null,
-      disabled: false,
-    });
-  }
-  const query = field.query('query').get('value') || {};
-  const selectedFields = getSelectedFields(fields, query);
-  const fieldProps = selectedFields.find((field) => field.value === selectedField);
+export const useFieldSelectProps = (fields: FieldOption[]) =>
+  function useFieldSelectProps() {
+    const field = useField<Field>();
+    const query = field.query('query').get('value') || {};
+    const selectedFields = getSelectedFields(fields, query);
+    const supports = Object.keys(transformers).filter((key) => key !== 'general');
+    return {
+      onChange: (value: string) => {
+        field.value = value;
+        const typeField = field.query('.type').take() as Field;
+        if (!value) {
+          typeField.setState({
+            value: null,
+            disabled: true,
+          });
+        }
+        const fieldProps = selectedFields.find((field) => field.value === value);
+        typeField.dataSource = supports.map((key) => ({
+          label: lang(key),
+          value: key,
+        }));
+        const map = {
+          createdAt: 'datetime',
+          updatedAt: 'datetime',
+          double: 'number',
+          integer: 'number',
+          percent: 'number',
+        };
+        const fieldInterface = fieldProps?.interface;
+        const fieldType = fieldProps?.type;
+        const key = map[fieldInterface] || map[fieldType] || fieldType;
+        if (supports.includes(key)) {
+          typeField.setState({
+            value: key,
+            disabled: true,
+          });
+          return;
+        }
+        typeField.setState({
+          value: null,
+          disabled: false,
+        });
+      },
+    };
+  };
+
+export const useFieldTypeSelectProps = () => {
+  const field = useField<Field>();
   const supports = Object.keys(transformers).filter((key) => key !== 'general');
-  field.dataSource = supports.map((key) => ({
+  const options = supports.map((key) => ({
     label: lang(key),
     value: key,
   }));
-  const map = {
-    createdAt: 'datetime',
-    updatedAt: 'datetime',
-    double: 'number',
-    integer: 'number',
-    percent: 'number',
+
+  return {
+    options,
+    onChange: (value: string) => {
+      field.value = value;
+      const transformerField = field.query('.format').take() as Field;
+      transformerField.setValue(null);
+    },
   };
-  const fieldInterface = fieldProps?.interface;
-  const fieldType = fieldProps?.type;
-  const key = map[fieldInterface] || map[fieldType] || fieldType;
-  if (supports.includes(key)) {
-    field.setState({
-      value: key,
-      disabled: true,
-    });
-  } else {
-    field.setState({
-      value: field.value,
-      disabled: false,
-    });
-  }
+};
+
+export const useTransformerSelectProps = () => {
+  const field = useField<Field>();
+  return {
+    onChange: (value: string) => {
+      field.value = value;
+      const argumentField = field.query('.argument').take() as Field;
+      argumentField.setValue(null);
+    },
+  };
 };
 
 export const useTransformers = (field: any) => {
   const selectedType = field.query('.type').get('value');
   if (!selectedType) {
-    field.setValue(null);
     field.dataSource = [];
     return;
   }
@@ -84,7 +116,13 @@ export const useArgument = (field: any) => {
     });
     return;
   }
-  field.setComponentProps({ schema: { name: format, ...config.schema } });
+  const id = uid();
+  field.setComponentProps({
+    schema: {
+      name: id,
+      ...config.schema,
+    },
+  });
 };
 
 export const useFieldTransformer = (transform: ChartRendererProps['transform'], locale = 'en-US') => {
@@ -107,11 +145,15 @@ export const useFieldTransformer = (transform: ChartRendererProps['transform'], 
   Object.entries(transformersMap).forEach(([field, transformers]) => {
     result[field] = transformers.reduce(
       (fn: Transformer, config) => {
-        const { transformer, argument } = config;
+        const { transformer } = config;
+        let { argument } = config;
         return (val) => {
           try {
             if (typeof transformer === 'function') {
-              return transformer(fn(val), locale);
+              return transformer(fn(val), argument);
+            }
+            if (!argument && !transformer.schema) {
+              argument = locale;
             }
             return transformer.fn(fn(val), argument);
           } catch (e) {

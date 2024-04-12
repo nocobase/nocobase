@@ -540,6 +540,7 @@ export const transformSchema: ISchema = {
                 'x-component-props': {
                   placeholder: '{{t("Field")}}',
                 },
+                'x-use-component-props': 'useFieldSelectProps',
                 'x-reactions': '{{ useChartFields }}',
               },
               type: {
@@ -549,18 +550,19 @@ export const transformSchema: ISchema = {
                 'x-component-props': {
                   placeholder: '{{t("Type")}}',
                 },
-                'x-reactions': '{{ useFieldTypeOptions }}',
+                'x-use-component-props': 'useFieldTypeSelectProps',
               },
               format: {
                 type: 'string',
                 'x-decorator': 'FormItem',
                 'x-component': 'Select',
                 'x-component-props': {
-                  placeholder: '{{t("Format")}}',
+                  placeholder: '{{t("Transformer")}}',
                   style: {
                     maxWidth: '200px',
                   },
                 },
+                'x-use-component-props': 'useTransformerSelectProps',
                 'x-reactions': '{{ useTransformers }}',
                 'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
               },

@@ -2,23 +2,33 @@ import { RightSquareOutlined } from '@ant-design/icons';
 import { ArrayItems, Editable, FormCollapse, FormItem, FormLayout, Switch } from '@formily/antd-v5';
 import { Form as FormType, ObjectField, createForm, onFieldChange, onFormInit } from '@formily/core';
 import { FormConsumer, ISchema, Schema } from '@formily/react';
-import { AutoComplete, FormProvider, SchemaComponent, gridRowColWrap, useDesignable } from '@nocobase/client';
+import {
+  AutoComplete,
+  FormProvider,
+  SchemaComponent,
+  Select,
+  gridRowColWrap,
+  useDesignable,
+  withDynamicSchemaProps,
+} from '@nocobase/client';
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography, theme } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
-import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import React, { useContext, useEffect, useMemo, useRef } from 'react';
 import {
   useChartFields,
   useCollectionOptions,
   useCollectionFieldsOptions,
   useCollectionFilterOptions,
   useData,
-  useFieldTypes,
   useFieldsWithAssociation,
   useFormatters,
   useOrderFieldsOptions,
   useOrderReaction,
-  useTransformers,
+  useFieldTypeSelectProps,
   useArgument,
+  useTransformers,
+  useTransformerSelectProps,
+  useFieldSelectProps,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererContext } from '../renderer';
@@ -431,14 +441,38 @@ ChartConfigure.Config = function Config() {
 ChartConfigure.Transform = function Transform() {
   const { t } = useChartsTranslation();
   const fields = useFieldsWithAssociation();
-  const useFieldTypeOptions = useFieldTypes(fields);
   const getChartFields = useChartFields(fields);
   return (
-    <SchemaComponent
-      schema={transformSchema}
-      components={{ FormItem, ArrayItems, Space, TransformerDynamicComponent }}
-      scope={{ useChartFields: getChartFields, useFieldTypeOptions, useTransformers, useArgument, t }}
-    />
+    <div
+      className={css`
+        .ant-formily-item-feedback-layout-loose {
+          margin-bottom: 0;
+        }
+        .ant-space {
+          margin-bottom: 15px;
+        }
+      `}
+    >
+      <SchemaComponent
+        schema={transformSchema}
+        components={{
+          FormItem,
+          ArrayItems,
+          Space,
+          TransformerDynamicComponent,
+          Select: withDynamicSchemaProps(Select),
+        }}
+        scope={{
+          useChartFields: getChartFields,
+          useTransformers,
+          useTransformerSelectProps,
+          useFieldSelectProps: useFieldSelectProps(fields),
+          useFieldTypeSelectProps,
+          useArgument,
+          t,
+        }}
+      />
+    </div>
   );
 };
 

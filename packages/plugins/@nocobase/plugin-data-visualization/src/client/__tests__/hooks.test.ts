@@ -1,13 +1,12 @@
 import * as client from '@nocobase/client';
 import { renderHook } from '@testing-library/react';
 import { vi } from 'vitest';
-import formatters from '../block/formatters';
-import transformers from '../block/transformers';
+import formatters from '../configure/formatters';
+import transformers from '../transformers';
 import {
   useChartFields,
   useFieldsWithAssociation,
   useFieldTransformer,
-  useFieldTypes,
   useFormatters,
   useOrderFieldsOptions,
   useTransformers,
@@ -172,41 +171,6 @@ describe('hooks', () => {
     };
     func(field);
     expect(field.dataSource).toEqual(formatters.datetime);
-  });
-
-  test('useFieldTypes', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('main', 'orders')).result.current;
-    const { result } = renderHook(() => useFieldTypes(fields));
-    const func = result.current;
-    let state1 = {};
-    let state2 = {};
-    const field = {
-      dataSource: [],
-      state: {},
-    };
-    const query = (path: string, val: string) => ({
-      get: () => {
-        if (path === 'query') {
-          return { measures: [{ field: ['price'] }, { field: ['name'] }] };
-        }
-        return val;
-      },
-    });
-    const field1 = {
-      query: (path: string) => query(path, 'price'),
-      setState: (state) => (state1 = state),
-      ...field,
-    };
-    const field2 = {
-      query: (path: string) => query(path, 'name'),
-      setState: (state) => (state2 = state),
-      ...field,
-    };
-    func(field1);
-    func(field2);
-    expect(field1.dataSource.map((item) => item.value)).toEqual(Object.keys(transformers));
-    expect(state1).toEqual({ value: 'number', disabled: true });
-    expect(state2).toEqual({ value: null, disabled: false });
   });
 
   test('useTransformers', () => {

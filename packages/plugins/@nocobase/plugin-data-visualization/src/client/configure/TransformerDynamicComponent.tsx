@@ -1,5 +1,5 @@
-import { useField, useForm } from '@formily/react';
-import React, { useEffect } from 'react';
+import { useField } from '@formily/react';
+import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { Field } from '@formily/core';
 
