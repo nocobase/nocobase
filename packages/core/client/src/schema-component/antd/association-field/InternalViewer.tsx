@@ -4,6 +4,8 @@ import React, { Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { Collection } from '../../../data-source';
+import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -108,18 +110,20 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       return btnElement;
     }
     const renderWithoutTableFieldResourceProvider = () => (
-      <WithoutTableFieldResource.Provider value={true}>
-        <FormProvider>
-          <RecursionField
-            schema={fieldSchema}
-            onlyRenderProperties
-            basePath={field.address}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.Viewer';
-            }}
-          />
-        </FormProvider>
-      </WithoutTableFieldResource.Provider>
+      <DeclareVariable name="$nPopupRecord" title="弹窗记录" value={record} collection={targetCollection as Collection}>
+        <WithoutTableFieldResource.Provider value={true}>
+          <FormProvider>
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              basePath={field.address}
+              filterProperties={(s) => {
+                return s['x-component'] === 'AssociationField.Viewer';
+              }}
+            />
+          </FormProvider>
+        </WithoutTableFieldResource.Provider>
+      </DeclareVariable>
     );
 
     const renderRecordProvider = () => {

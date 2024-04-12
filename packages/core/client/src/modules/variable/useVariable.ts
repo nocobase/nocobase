@@ -7,7 +7,7 @@ import { DeclareVariableContext } from './DeclareVariable';
  * @returns
  */
 export const useVariable = (variableName: string) => {
-  const { name, value, title, collection } = useContext(DeclareVariableContext);
+  const { name, value, title, collection } = useContext(DeclareVariableContext) || {};
   if (name === variableName) {
     return { value, title, collection };
   }
