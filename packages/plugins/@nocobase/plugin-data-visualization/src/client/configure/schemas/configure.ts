@@ -75,6 +75,7 @@ export const getConfigSchema = (general: any): ISchema => ({
                   'x-content': lang('Show border'),
                   'x-decorator': 'FormItem',
                   'x-component': 'Checkbox',
+                  default: false,
                 },
               },
             },
