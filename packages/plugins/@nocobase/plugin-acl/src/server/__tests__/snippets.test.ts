@@ -60,7 +60,7 @@ describe('snippet', () => {
       values: {
         name: 'testRole',
         strategy: { actions: ['view'] },
-        snippets: ['pm', 'pm.*'],
+        snippets: ['pm.acl.roles'],
       },
     });
 
@@ -77,5 +77,23 @@ describe('snippet', () => {
     });
 
     expect(getResp.statusCode).toEqual(200);
+  });
+
+  it('should allow to get roles dataSourceCollections', async () => {
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        strategy: {},
+        snippets: ['pm.acl.roles'],
+      },
+    });
+
+    const canRes = app.acl.can({
+      role: 'testRole',
+      action: 'list',
+      resource: 'roles.dataSourcesCollections',
+    });
+
+    expect(canRes).toBeTruthy();
   });
 });

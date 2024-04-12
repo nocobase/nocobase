@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 
-export const createListBlockSchema = (options: {
+export const createListBlockUISchema = (options: {
   dataSource: string;
   collectionName?: string;
   association?: string;
