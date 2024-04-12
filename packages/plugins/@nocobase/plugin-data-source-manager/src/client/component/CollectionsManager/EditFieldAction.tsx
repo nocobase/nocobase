@@ -205,7 +205,7 @@ const EditFieldAction = (props) => {
       record?.fields ||
       getCollection(record.collectionName, name)
         ?.options?.fields.filter((v) => {
-          return v.interface === 'select';
+          return ['string', 'bigInt', 'integer'].includes(v.type);
         })
         .map((k) => {
           return {
