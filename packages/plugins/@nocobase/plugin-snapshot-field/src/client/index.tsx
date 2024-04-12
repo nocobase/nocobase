@@ -6,7 +6,7 @@ import {
 } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializers';
 import { SnapshotFieldInterface } from './interface';
 
-export class SnapshotFieldPlugin extends Plugin {
+export class PluginSnapshotFieldClient extends Plugin {
   async load() {
     this.app.use(SnapshotFieldProvider);
     this.app.schemaInitializerManager.add(snapshotBlockInitializers_deprecated);
@@ -15,4 +15,4 @@ export class SnapshotFieldPlugin extends Plugin {
   }
 }
 
-export default SnapshotFieldPlugin;
+export default PluginSnapshotFieldClient;

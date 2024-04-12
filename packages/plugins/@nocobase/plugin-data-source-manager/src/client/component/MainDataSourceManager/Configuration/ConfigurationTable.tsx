@@ -3,7 +3,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldsTable } from '.';
+// import { CollectionFieldsTable } from '.';
 import {
   useAPIClient,
   useCurrentAppInfo,
@@ -191,7 +191,6 @@ export const ConfigurationTable = () => {
           EditSubFieldAction,
           FieldSummary,
           TemplateSummay: TemplateSummary,
-          CollectionFieldsTable,
           CollectionFields,
         }}
         scope={{

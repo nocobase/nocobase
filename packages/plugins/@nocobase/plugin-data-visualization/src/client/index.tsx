@@ -17,7 +17,7 @@ import {
 } from './filter';
 import { lang } from './locale';
 
-class DataVisualizationPlugin extends Plugin {
+class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
   async load() {
@@ -44,7 +44,7 @@ class DataVisualizationPlugin extends Plugin {
   }
 }
 
-export default DataVisualizationPlugin;
+export default PluginDataVisualiztionClient;
 export { Chart } from './chart/chart';
 export type { ChartProps, ChartType, RenderProps } from './chart/chart';
 export { ChartConfigContext } from './configure';

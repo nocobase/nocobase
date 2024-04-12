@@ -581,10 +581,10 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
             await confirm?.onOk?.();
             delete form.values[fieldSchema.name];
             removeActiveFieldName?.(fieldSchema.name as string);
-            if (field?.setInitialValue && field?.reset) {
-              field.setInitialValue(null);
-              field.reset();
-            }
+            form?.query(new RegExp(`${fieldSchema.parent.name}.${fieldSchema.name}$`)).forEach((field: Field) => {
+              // 如果字段被删掉，那么在提交的时候不应该提交这个字段
+              field.setValue?.(undefined);
+            });
             removeDataBlock(fieldSchema['x-uid']);
           },
         });
@@ -1477,14 +1477,18 @@ export const SchemaSettingsSortField = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const compile = useCompile();
-  const { service } = useTableBlockContext();
-
+  const { service, association } = useTableBlockContext();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const collectionField = getCollectionJoinField(association);
   const options = fields
     .filter((field) => !field?.target && field.interface === 'sort')
-    .map((field) => ({
-      value: field?.name,
-      label: compile(field?.uiSchema?.title) || field?.name,
-    }));
+    .map((field) => {
+      return {
+        value: field?.name,
+        label: compile(field?.uiSchema?.title) || field?.name,
+        disabled: field?.scopeKey && collectionField?.foreignKey !== field.scopeKey,
+      };
+    });
 
   return (
     <SchemaSettingsSelectItem

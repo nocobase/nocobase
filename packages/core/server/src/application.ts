@@ -53,9 +53,17 @@ import validateFilterParams from './middlewares/validate-filter-params';
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
 
-export interface ResourcerOptions {
+export interface ResourceManagerOptions {
   prefix?: string;
 }
+
+/**
+ * this interface is deprecated and should not be used.
+ * @deprecated
+ * use {@link ResourceManagerOptions} instead
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ResourcerOptions extends ResourceManagerOptions {}
 
 export interface AppLoggerOptions {
   request: RequestLoggerOptions;
@@ -69,7 +77,13 @@ export interface AppTelemetryOptions extends TelemetryOptions {
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
   cacheManager?: CacheManagerOptions;
-  resourcer?: ResourcerOptions;
+  /**
+   * this property is deprecated and should not be used.
+   * @deprecated
+   * use {@link ApplicationOptions.resourceManager} instead
+   */
+  resourcer?: ResourceManagerOptions;
+  resourceManager?: ResourceManagerOptions;
   bodyParser?: any;
   cors?: any;
   dataWrapping?: boolean;
@@ -78,9 +92,15 @@ export interface ApplicationOptions {
   plugins?: PluginConfiguration[];
   acl?: boolean;
   logger?: AppLoggerOptions;
+  /**
+   * @internal
+   */
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  /**
+   * @internal
+   */
   perfHooks?: boolean;
   telemetry?: AppTelemetryOptions;
 }
@@ -118,6 +138,13 @@ interface ListenOptions {
    */
   ipv6Only?: boolean | undefined;
   signal?: AbortSignal | undefined;
+}
+
+interface LoadOptions {
+  reload?: boolean;
+  hooks?: boolean;
+  sync?: boolean;
+  [key: string]: any;
 }
 
 interface StartOptions {
@@ -474,7 +501,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._loaded = false;
   }
 
-  async load(options?: any) {
+  async load(options?: LoadOptions) {
     if (this._loaded) {
       return;
     }
@@ -533,7 +560,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._loaded = true;
   }
 
-  async reload(options?: any) {
+  async reload(options?: LoadOptions) {
     this.log.debug(`start reload`, { method: 'reload' });
 
     this._loaded = false;
@@ -704,7 +731,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.activatedCommand) {
       return;
     }
-    if (options.reqId) {
+    if (options?.reqId) {
       this.context.reqId = options.reqId;
       this._logger = this._logger.child({ reqId: this.context.reqId });
     }
@@ -738,6 +765,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       if (options?.throwError) {
         throw error;
+      } else {
+        this.log.error(error);
       }
     } finally {
       const _actionCommand = this._actionCommand;

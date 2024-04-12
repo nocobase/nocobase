@@ -1,11 +1,11 @@
 import { TableOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 
-import { useCollectionManager_deprecated } from '../../collection-manager';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollectionManager_deprecated } from '../../collection-manager';
+import { createGridCardBlockUISchema } from '../../modules/blocks/data-blocks/grid-card/createGridCardBlockUISchema';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../utils';
-import { createGridCardBlockSchema } from '../../modules/blocks/data-blocks/grid-card/createGridCardBlockSchema';
 
 /**
  * @deprecated
@@ -30,7 +30,7 @@ export const RecordAssociationGridCardBlockInitializer = () => {
           insert(s);
         } else {
           insert(
-            createGridCardBlockSchema({
+            createGridCardBlockUISchema({
               rowKey: collection.filterTargetKey,
               dataSource: collection.dataSource,
               association: resource,
@@ -53,7 +53,7 @@ export function useCreateAssociationGridCardBlock() {
       const collection = getCollection(field.target);
 
       insert(
-        createGridCardBlockSchema({
+        createGridCardBlockUISchema({
           rowKey: collection.filterTargetKey,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,

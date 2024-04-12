@@ -6,7 +6,7 @@ import { SAMLAuth } from './saml-auth';
 import { authType } from '../constants';
 import { resolve } from 'path';
 
-export class SAMLPlugin extends Plugin {
+export class PluginSAMLServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -47,4 +47,4 @@ export class SAMLPlugin extends Plugin {
   async remove() {}
 }
 
-export default SAMLPlugin;
+export default PluginSAMLServer;

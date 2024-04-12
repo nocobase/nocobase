@@ -41,8 +41,7 @@ export class WebSocketClient {
     if (!this.app) {
       return;
     }
-    const options = this.app.getOptions();
-    const apiBaseURL = options?.apiClient?.['baseURL'];
+    const apiBaseURL = this.app.getApiUrl();
     if (!apiBaseURL) {
       return;
     }

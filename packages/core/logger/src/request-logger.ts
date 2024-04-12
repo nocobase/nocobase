@@ -7,6 +7,8 @@ const defaultRequestWhitelist = [
   'header.x-hostname',
   'header.x-timezone',
   'header.x-locale',
+  'header.x-authenticator',
+  'header.x-data-source',
   'referer',
 ];
 const defaultResponseWhitelist = ['status'];
@@ -17,9 +19,6 @@ export interface RequestLoggerOptions extends LoggerOptions {
   responseWhitelist?: string[];
 }
 
-/**
- * @internal
- */
 export const requestLogger = (appName: string, options?: RequestLoggerOptions) => {
   const requestLogger = createLogger({
     dirname: getLoggerFilePath(appName),

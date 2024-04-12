@@ -1,4 +1,4 @@
-import { createGridCardBlockSchema } from '../createGridCardBlockSchema';
+import { createGridCardBlockUISchema } from '../createGridCardBlockUISchema';
 
 describe('createGridCardBlockSchema', () => {
   test('should return the correct schema', () => {
@@ -10,7 +10,7 @@ describe('createGridCardBlockSchema', () => {
       rowKey: 'testRowKey',
     };
 
-    const schema = createGridCardBlockSchema(options);
+    const schema = createGridCardBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
       {
@@ -86,7 +86,7 @@ describe('createGridCardBlockSchema', () => {
       rowKey: 'testRowKey',
     };
 
-    const schema = createGridCardBlockSchema(options);
+    const schema = createGridCardBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
       {

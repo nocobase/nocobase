@@ -1,7 +1,7 @@
 import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { useBlockAssociationContext } from '../../../../block-provider';
+import { useAssociationName } from '../../../../data-source';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
@@ -39,7 +39,7 @@ export const RecordFormBlockInitializer = () => {
 
 export function useCreateEditFormBlock() {
   const { insert } = useSchemaInitializer();
-  const association = useBlockAssociationContext();
+  const association = useAssociationName();
 
   const createEditFormBlock = useCallback(
     ({ item }) => {
