@@ -473,6 +473,8 @@ export class PluginDataSourceManagerServer extends Plugin {
       name: `pm.${this.name}`,
       actions: [
         'dataSources:*',
+        'dataSources.collections:*',
+        'dataSourcesCollections.fields:*',
         'roles.dataSourceResources',
         'collections:*',
         'collections.fields:*',
