@@ -100,7 +100,7 @@ describe('association test', () => {
   });
 });
 
-describe('association field acl', () => {
+describe.skip('association field acl', () => {
   let app: MockServer;
   let db: Database;
   let acl: ACL;

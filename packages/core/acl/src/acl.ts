@@ -325,7 +325,9 @@ export class ACL extends EventEmitter {
 
     return async function ACLMiddleware(ctx, next) {
       const roleName = ctx.state.currentRole || 'anonymous';
-      const { resourceName, actionName } = ctx.action;
+      const { resourceName: rawResourceName, actionName } = ctx.action;
+
+      const resourceName = rawResourceName.includes('.') ? rawResourceName.split('.').pop() : rawResourceName;
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
         const canResult = acl.can({ role: roleName, ...options });
@@ -335,6 +337,8 @@ export class ACL extends EventEmitter {
 
       ctx.permission = {
         can: ctx.can({ resource: resourceName, action: actionName }),
+        resourceName,
+        actionName,
       };
 
       return await compose(acl.middlewares.nodes)(ctx, next);
@@ -346,7 +350,9 @@ export class ACL extends EventEmitter {
    */
   async getActionParams(ctx) {
     const roleName = ctx.state.currentRole || 'anonymous';
-    const { resourceName, actionName } = ctx.action;
+    const { resourceName: rawResourceName, actionName } = ctx.action;
+
+    const resourceName = rawResourceName.includes('.') ? rawResourceName.split('.').pop() : rawResourceName;
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
       const can = this.can({ role: roleName, ...options });
@@ -358,6 +364,8 @@ export class ACL extends EventEmitter {
 
     ctx.permission = {
       can: ctx.can({ resource: resourceName, action: actionName }),
+      resourceName,
+      actionName,
     };
 
     await compose(this.middlewares.nodes)(ctx, async () => {});
@@ -391,7 +399,7 @@ export class ACL extends EventEmitter {
     this.middlewares.add(
       async (ctx, next) => {
         const resourcerAction: Action = ctx.action;
-        const { resourceName, actionName } = ctx.action;
+        const { resourceName, actionName } = ctx.permission;
 
         const permission = ctx.permission;
 

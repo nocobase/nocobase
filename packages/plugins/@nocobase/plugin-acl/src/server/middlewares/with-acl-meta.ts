@@ -20,7 +20,7 @@ function createWithACLMetaMiddleware() {
       return;
     }
 
-    const { resourceName, actionName } = ctx.action;
+    const { resourceName, actionName } = ctx.permission;
 
     if (!['list', 'get'].includes(actionName)) {
       return;
