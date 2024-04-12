@@ -217,7 +217,6 @@ export const defineConfig = () => {
     config.test.include = filterInclude;
     if (isFile) {
       // 减少收集的文件
-      config.test.root = path.dirname(filterInclude[0]);
       config.test.exclude = [];
       config.test.coverage = {
         enabled: false,
