@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useDataBlockProps } from '../../data-source';
 import { useCollection } from '../../data-source/collection/CollectionProvider';
+import { useCompile } from '../../schema-component';
 import { SchemaToolbar } from '../../schema-settings/GeneralSchemaDesigner';
 import { useSchemaTemplate } from '../../schema-templates';
 
@@ -11,6 +12,7 @@ export const BlockSchemaToolbar = (props) => {
   let { name: currentCollectionName, title: currentCollectionTitle } = useCollection();
   const template = useSchemaTemplate();
   const { association } = useDataBlockProps() || {};
+  const compile = useCompile();
 
   if (association) {
     const [collectionName] = association.split('.');
@@ -29,19 +31,27 @@ export const BlockSchemaToolbar = (props) => {
         collectionTitle: currentCollectionTitle,
         collectionName: currentCollectionName,
         associationField,
+        compile,
       }),
       templateName,
     ].filter(Boolean);
-  }, [associationField, currentCollectionName, templateName, currentCollectionTitle]);
+  }, [compile, currentCollectionTitle, currentCollectionName, associationField, templateName]);
 
   return <SchemaToolbar title={toolbarTitle} {...props} />;
 };
 
-function getCollectionTitle(arg0: { collectionTitle: string; collectionName: string; associationField: any }) {
-  const { collectionTitle, collectionName, associationField } = arg0;
+function getCollectionTitle(arg0: {
+  collectionTitle: string;
+  collectionName: string;
+  associationField: any;
+  compile: any;
+}) {
+  const { collectionTitle, collectionName, associationField, compile } = arg0;
 
   if (associationField) {
-    return `${collectionTitle || collectionName} > ${associationField.uiSchema?.title || associationField.name}`;
+    return `${compile(collectionTitle || collectionName)} > ${compile(
+      associationField.uiSchema?.title || associationField.name,
+    )}`;
   }
 
   return collectionTitle || collectionName;
