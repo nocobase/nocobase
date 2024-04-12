@@ -40,13 +40,15 @@ function addLicenseToFile(filePath) {
 
   const data = fs.readFileSync(filePath, 'utf8');
 
-  if (data.startsWith(licenseText)) return;
+  if (data.startsWith(licenseText)) return false;
 
   // 添加授权信息到文件内容的顶部
   const newData = licenseText + '\n\n' + data;
 
   // 将修改后的内容写回文件
   fs.writeFileSync(filePath, newData, 'utf8');
+
+  return true;
 }
 
 // 执行 git diff 命令
@@ -67,10 +69,13 @@ exec('git diff --cached --name-only --diff-filter=ACM', (error, stdout, stderr) 
     .filter((file) => file.includes('/src/')) // 只检查 src 目录下的文件
     .filter((file) => file.endsWith('.js') || file.endsWith('.jsx') || file.endsWith('.ts') || file.endsWith('.tsx'));
 
-  files.forEach((file) => addLicenseToFile(file));
+  const validFiles = files.map((file) => addLicenseToFile(file));
 
+  if (validFiles.length === 0) {
+    return;
+  }
   // 执行 git add 这些文件
-  exec(`git add ${files.join(' ')}`, (error, stdout, stderr) => {
+  exec(`git add ${validFiles.join(' ')}`, (error, stdout, stderr) => {
     if (error) {
       console.error(`[nocobase]: git add error ${error.message}`);
       process.exit(-1);
