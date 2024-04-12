@@ -1,3 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This program is offered under a commercial and under the AGPL license.
+ * For more information, see <https://www.nocobase.com/agreement>
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/agpl-3.0.html>.
+ */
+
 import execa from 'execa';
 import chalk from 'chalk';
 import path from 'path';
@@ -20,6 +37,7 @@ import { getPackages } from './utils/getPackages';
 import { Package } from '@lerna/package';
 import { tarPlugin } from './tarPlugin'
 import { buildEsm } from './buildEsm';
+import { addLicense } from './utils/addlicense';
 
 const BUILD_ERROR = 'build-error';
 
@@ -134,6 +152,8 @@ export async function buildPackage(
     log('afterBuild');
     await userConfig.afterBuild(log);
   }
+
+  await addLicense(path.join(pkg.location, targetDir), log);
 
   // tar
   if (hasTar) {
