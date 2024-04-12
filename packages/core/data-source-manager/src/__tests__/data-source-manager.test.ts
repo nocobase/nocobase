@@ -166,7 +166,7 @@ describe('example', () => {
       name: 'update-filter',
     });
 
-    app.dataSourceManager.hookOnEveryInstancesOnce(hook);
+    app.dataSourceManager.afterAddDataSource(hook);
     // it should be called on main datasource
     expect(hook).toBeCalledTimes(1);
 

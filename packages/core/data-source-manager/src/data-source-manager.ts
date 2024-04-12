@@ -45,7 +45,7 @@ export class DataSourceManager {
     };
   }
 
-  hookOnEveryInstancesOnce(hook: DataSourceHook) {
+  afterAddDataSource(hook: DataSourceHook) {
     this.addHookAndRun(hook);
   }
 

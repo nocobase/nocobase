@@ -11,7 +11,12 @@ export class PluginImportServer extends Plugin {
   }
 
   async load() {
-    this.app.dataSourceManager.hookOnEveryInstancesOnce((dataSource) => {
+    this.app.dataSourceManager.afterAddDataSource((dataSource) => {
+      // @ts-ignore
+      if (!dataSource.collectionManager.db) {
+        return;
+      }
+
       dataSource.resourceManager.use(importMiddleware);
       dataSource.resourceManager.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
       dataSource.resourceManager.registerActionHandler('importXlsx', importXlsx);
