@@ -102,7 +102,15 @@ const getIsOverriding = (currentFields, record) => {
   return flag;
 };
 export const OverridingFieldAction = (props) => {
-  const { scope, getContainer, item: record, parentItem: parentRecord, children, currentCollection } = props;
+  const {
+    scope,
+    getContainer,
+    item: record,
+    parentItem: parentRecord,
+    children,
+    currentCollection,
+    handleRefresh,
+  } = props;
   const { target, through } = record;
   const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } =
     useCollectionManager_deprecated();
@@ -132,9 +140,9 @@ export const OverridingFieldAction = (props) => {
   }, []);
   const useOverridingCollectionField = () => {
     const form = useForm();
+    const { refresh } = useResourceActionContext();
     const { refreshCM } = useCollectionManager_deprecated();
     const ctx = useActionContext();
-    const { refresh } = useResourceActionContext();
     const { resource } = useResourceContext();
     return {
       async run() {
@@ -156,8 +164,9 @@ export const OverridingFieldAction = (props) => {
           values: data,
         });
         await form.reset();
-        await refresh();
         await refreshCM();
+        await refresh();
+        handleRefresh?.();
         ctx.setVisible(false);
       },
     };
@@ -212,7 +221,6 @@ export const OverridingFieldAction = (props) => {
             isOverride: true,
             targetScope: { target: getFilterCollections(target), through: getFilterCollections(through) },
             collections: currentCollections,
-
             ...scope,
           }}
         />
