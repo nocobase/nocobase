@@ -174,31 +174,11 @@ function useRecordBlocks() {
           showAssociationFields: true,
         };
       },
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
     },
     {
       name: 'table',
       title: '{{t("Table")}}',
       Component: 'TableBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       useComponentProps() {
         const { createAssociationTableBlock } = useCreateAssociationTableBlock();
         const { createTableBlock } = useCreateTableBlock();
@@ -226,16 +206,6 @@ function useRecordBlocks() {
       name: 'list',
       title: '{{t("List")}}',
       Component: 'ListBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       useComponentProps() {
         const { createAssociationListBlock } = useCreateAssociationListBlock();
         const { createListBlock } = useCreateListBlock();
@@ -263,16 +233,6 @@ function useRecordBlocks() {
       name: 'gridCard',
       title: '{{t("Grid Card")}}',
       Component: 'GridCardBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       useComponentProps() {
         const { createAssociationGridCardBlock } = useCreateAssociationGridCardBlock();
         const { createGridCardBlock } = useCreateGridCardBlock();

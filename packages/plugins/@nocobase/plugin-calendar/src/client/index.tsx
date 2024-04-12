@@ -1,5 +1,4 @@
-import { Plugin, canMakeAssociationBlock, useCollection } from '@nocobase/client';
-import { useMemo } from 'react';
+import { Plugin } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { calendarBlockSettings } from './calendar/Calender.Settings';
@@ -29,16 +28,6 @@ export class PluginCalendarClient extends Plugin {
     this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       useComponentProps() {
         const { createAssociationCalendarBlock } = useCreateAssociationCalendarBlock();
         const { createCalendarBlock } = useCreateCalendarBlock();

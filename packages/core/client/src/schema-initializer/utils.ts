@@ -958,7 +958,7 @@ export const useCollectionDataSourceItems = ({
           hideChildrenIfSingleCollection: false,
           onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
           fromOthersInPopup: true,
-          componentType: dataBlockInitializerProps[componentName] || componentName,
+          componentType: componentTypeMap[componentName] || componentName,
           filter({ collection: c, associationField }) {
             return true;
           },
@@ -967,11 +967,12 @@ export const useCollectionDataSourceItems = ({
 
       let children;
 
+      const _associationRecords = associationFields.length ? associationRecords : null;
       if (noAssociationMenu[0].children.length && associationFields.length) {
         if (hideOtherRecordsInPopup) {
-          children = [currentRecord, associationRecords];
+          children = [currentRecord, _associationRecords];
         } else {
-          children = [currentRecord, associationRecords, otherRecords];
+          children = [currentRecord, _associationRecords, otherRecords];
         }
       } else if (noAssociationMenu[0].children.length) {
         if (hideOtherRecordsInPopup) {
@@ -986,9 +987,9 @@ export const useCollectionDataSourceItems = ({
         }
       } else {
         if (hideOtherRecordsInPopup) {
-          children = [associationRecords];
+          children = [_associationRecords];
         } else {
-          children = [associationRecords, otherRecords];
+          children = [_associationRecords, otherRecords];
         }
       }
 
@@ -997,13 +998,14 @@ export const useCollectionDataSourceItems = ({
           name: 'records',
           label: t('Records'),
           type: 'subMenu',
-          children,
+          children: children.filter(Boolean),
         },
       ];
     }, [
       associationFields,
       collection.dataSource,
       collection.name,
+      componentName,
       dataBlockInitializerProps,
       hideOtherRecordsInPopup,
       noAssociationMenu,
