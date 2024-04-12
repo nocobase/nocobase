@@ -9,21 +9,6 @@ export const useShared = () => {
       type: 'void',
       'x-component': 'Grid',
       properties: {
-        warning: {
-          type: 'void',
-          'x-component': 'Markdown.Void',
-          'x-editable': false,
-          'x-component-props': {
-            style: {
-              padding: `var(--paddingContentVerticalSM)`,
-              backgroundColor: `var(--colorWarningBg)`,
-              border: `1px solid var(--colorWarningBorder)`,
-              color: `var(--colorText)`,
-              marginBottom: `var(--marginSM)`,
-            },
-            content: `{{ t("Export warning", {ns: "export" }) }}`,
-          },
-        },
         exportSettings: {
           type: 'array',
           'x-component': 'ArrayItems',
