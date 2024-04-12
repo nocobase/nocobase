@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
 import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Action,
@@ -30,7 +30,24 @@ import {
 } from '@nocobase/client';
 
 import { collection } from './schemas/collectionFields';
-
+const resourceActionProps = {
+  association: {
+    sourceKey: 'name',
+    targetKey: 'name',
+  },
+  collection,
+  request: {
+    resource: 'collections.fields',
+    action: 'list',
+    params: {
+      paginate: false,
+      filter: {
+        $or: [{ 'interface.$not': null }, { 'options.source.$notEmpty': true }],
+      },
+      sort: ['sort'],
+    },
+  },
+};
 const indentStyle = css`
   .ant-table {
     margin-left: -16px !important;
@@ -60,6 +77,7 @@ const tableContainer = css`
 `;
 
 const titlePrompt = 'Default title for each record';
+const RefreshContext = createContext(null);
 
 const CurrentFields = (props) => {
   const compile = useCompile();
@@ -238,9 +256,11 @@ const InheritFields = (props) => {
       dataIndex: 'actions',
       title: t('Actions'),
       render: function Render(_, record) {
+        const { handleRefresh } = useContext(RefreshContext);
         const overrideProps = {
           type: 'primary',
           currentCollection: name,
+          handleRefresh,
         };
         const viewCollectionProps = {
           type: 'primary',
@@ -383,25 +403,6 @@ export const CollectionFields = () => {
       .filter(Boolean),
   );
 
-  const resourceActionProps = {
-    association: {
-      sourceKey: 'name',
-      targetKey: 'name',
-    },
-    collection,
-    request: {
-      resource: 'collections.fields',
-      action: 'list',
-      params: {
-        paginate: false,
-        filter: {
-          $or: [{ 'interface.$not': null }, { 'options.source.$notEmpty': true }],
-        },
-        sort: ['sort'],
-      },
-    },
-  };
-
   const deleteProps = useMemo(
     () => ({
       useAction: useBulkDestroyActionAndRefreshCM,
@@ -417,58 +418,65 @@ export const CollectionFields = () => {
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
+  const [refresh, setRefresh] = useState(false);
+
+  const handleRefresh = () => {
+    setRefresh(!refresh);
+  };
   return (
-    <ResourceActionProvider {...resourceActionProps}>
-      <FormContext.Provider value={form}>
-        <FieldContext.Provider value={f}>
-          <Space
-            align={'end'}
-            className={css`
-              justify-content: flex-end;
-              display: flex;
-              margin-bottom: 16px;
-            `}
-          >
-            <Action {...deleteProps} />
-            <SyncFieldsAction {...syncProps} />
-            <SyncSQLFieldsAction refreshCMList={refreshAsync} />
-            <SchemaComponent
-              schema={{
-                type: 'object',
-                properties: {
-                  ...targetTemplate.configureActions,
-                },
+    <RefreshContext.Provider value={{ refresh, handleRefresh }}>
+      <ResourceActionProvider {...resourceActionProps}>
+        <FormContext.Provider value={form}>
+          <FieldContext.Provider value={f}>
+            <Space
+              align={'end'}
+              className={css`
+                justify-content: flex-end;
+                display: flex;
+                margin-bottom: 16px;
+              `}
+            >
+              <Action {...deleteProps} />
+              <SyncFieldsAction {...syncProps} />
+              <SyncSQLFieldsAction refreshCMList={refreshAsync} />
+              <SchemaComponent
+                schema={{
+                  type: 'object',
+                  properties: {
+                    ...targetTemplate.configureActions,
+                  },
+                }}
+              />
+              <AddCollectionField {...addProps} />
+            </Space>
+            <Table
+              rowKey={'key'}
+              columns={columns}
+              dataSource={dataSource.filter((d) => d.fields.length)}
+              pagination={false}
+              className={tableContainer}
+              expandable={{
+                defaultExpandAllRows: true,
+                defaultExpandedRowKeys: dataSource.map((d) => d.key),
+                expandedRowRender: (record) =>
+                  record.inherit ? (
+                    <InheritFields
+                      fields={record.fields}
+                      collectionResource={collectionResource}
+                      refreshAsync={refreshAsync}
+                    />
+                  ) : (
+                    <CurrentFields
+                      fields={record.fields}
+                      collectionResource={collectionResource}
+                      refreshAsync={refreshAsync}
+                    />
+                  ),
               }}
             />
-            <AddCollectionField {...addProps} />
-          </Space>
-          <Table
-            rowKey={'key'}
-            columns={columns}
-            dataSource={dataSource.filter((d) => d.fields.length)}
-            pagination={false}
-            className={tableContainer}
-            expandable={{
-              defaultExpandAllRows: true,
-              defaultExpandedRowKeys: dataSource.map((d) => d.key),
-              expandedRowRender: (record) =>
-                record.inherit ? (
-                  <InheritFields
-                    fields={record.fields}
-                    collectionResource={collectionResource}
-                    refreshAsync={refreshAsync}
-                  />
-                ) : (
-                  <CurrentFields
-                    fields={record.fields}
-                    collectionResource={collectionResource}
-                    refreshAsync={refreshAsync}
-                  />
-                ),
-            }}
-          />
-        </FieldContext.Provider>
-      </FormContext.Provider>
-    </ResourceActionProvider>
+          </FieldContext.Provider>
+        </FormContext.Provider>
+      </ResourceActionProvider>
+    </RefreshContext.Provider>
   );
 };

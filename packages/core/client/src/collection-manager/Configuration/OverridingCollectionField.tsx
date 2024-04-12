@@ -89,39 +89,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
   };
 };
 
-const useOverridingCollectionField = () => {
-  const form = useForm();
-  const { refreshCM } = useCollectionManager_deprecated();
-  const ctx = useActionContext();
-  const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
-  return {
-    async run() {
-      await form.submit();
-      const values = cloneDeep(form.values);
-      const data = omit(values, [
-        'key',
-        'uiSchemaUid',
-        'collectionName',
-        'autoCreateReverseField',
-        'uiSchema.x-uid',
-        'reverseField',
-        'reverseKey',
-        'parentKey',
-        // 'reverseField.key',
-        // 'reverseField.uiSchemaUid',
-      ]);
-      await resource.create({
-        values: data,
-      });
-      ctx.setVisible(false);
-      await form.reset();
-      refresh();
-      await refreshCM();
-    },
-  };
-};
-
 export const OverridingCollectionField = (props) => {
   const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
@@ -135,7 +102,15 @@ const getIsOverriding = (currentFields, record) => {
   return flag;
 };
 export const OverridingFieldAction = (props) => {
-  const { scope, getContainer, item: record, parentItem: parentRecord, children, currentCollection } = props;
+  const {
+    scope,
+    getContainer,
+    item: record,
+    parentItem: parentRecord,
+    children,
+    currentCollection,
+    handleRefresh,
+  } = props;
   const { target, through } = record;
   const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } =
     useCollectionManager_deprecated();
@@ -163,6 +138,39 @@ export const OverridingFieldAction = (props) => {
       };
     });
   }, []);
+  const useOverridingCollectionField = () => {
+    const form = useForm();
+    const { refresh } = useResourceActionContext();
+    const { refreshCM } = useCollectionManager_deprecated();
+    const ctx = useActionContext();
+    const { resource } = useResourceContext();
+    return {
+      async run() {
+        await form.submit();
+        const values = cloneDeep(form.values);
+        const data = omit(values, [
+          'key',
+          'uiSchemaUid',
+          'collectionName',
+          'autoCreateReverseField',
+          'uiSchema.x-uid',
+          'reverseField',
+          'reverseKey',
+          'parentKey',
+          // 'reverseField.key',
+          // 'reverseField.uiSchemaUid',
+        ]);
+        await resource.create({
+          values: data,
+        });
+        await form.reset();
+        await refreshCM();
+        await refresh();
+        handleRefresh?.();
+        ctx.setVisible(false);
+      },
+    };
+  };
   return (
     <RecordProvider record={{ ...record, collectionName: parentRecord.name }} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -213,7 +221,6 @@ export const OverridingFieldAction = (props) => {
             isOverride: true,
             targetScope: { target: getFilterCollections(target), through: getFilterCollections(through) },
             collections: currentCollections,
-
             ...scope,
           }}
         />
