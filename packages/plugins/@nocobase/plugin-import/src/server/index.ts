@@ -13,7 +13,7 @@ export class PluginImportServer extends Plugin {
   async load() {
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
       // @ts-ignore
-      if (!dataSource.collectionManager.db) {
+      if (!dataSource.collectionManager?.db) {
         return;
       }
 
