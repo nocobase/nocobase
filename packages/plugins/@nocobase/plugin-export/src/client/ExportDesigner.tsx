@@ -10,13 +10,13 @@ import {
   useDesignable,
 } from '@nocobase/client';
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useShared } from './useShared';
+import { useExportTranslation } from './locale';
 
 export const ExportDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { t } = useTranslation();
+  const { t } = useExportTranslation();
   const { dn } = useDesignable();
   const [schema, setSchema] = useState<ISchema>();
   const { schema: pageSchema } = useShared();
@@ -94,6 +94,7 @@ export const ExportDesigner = () => {
         title={t('Exportable fields')}
         schema={schema}
         initialValues={{ exportSettings: fieldSchema?.['x-action-settings']?.exportSettings }}
+        scope={{ t }}
         components={{ ArrayItems }}
         onSubmit={({ exportSettings }) => {
           fieldSchema['x-action-settings']['exportSettings'] = exportSettings

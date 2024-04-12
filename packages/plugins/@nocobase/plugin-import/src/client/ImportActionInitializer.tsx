@@ -85,6 +85,21 @@ export const ImportActionInitializer = () => {
             type: 'void',
             'x-component': 'FormLayout',
             properties: {
+              warning: {
+                type: 'void',
+                'x-component': 'Markdown.Void',
+                'x-editable': false,
+                'x-component-props': {
+                  style: {
+                    padding: `var(--paddingContentVerticalSM)`,
+                    backgroundColor: `var(--colorWarningBg)`,
+                    border: `1px solid var(--colorWarningBorder)`,
+                    color: `var(--colorText)`,
+                    marginBottom: `var(--marginSM)`,
+                  },
+                  content: `{{ t("Import warning", {ns: "${NAMESPACE}" }) }}`,
+                },
+              },
               download: {
                 type: 'void',
                 title: `{{ t("Step 1: Download template", {ns: "${NAMESPACE}" }) }}`,
