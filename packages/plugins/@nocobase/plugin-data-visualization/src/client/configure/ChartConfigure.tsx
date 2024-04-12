@@ -443,36 +443,39 @@ ChartConfigure.Transform = function Transform() {
   const fields = useFieldsWithAssociation();
   const getChartFields = useChartFields(fields);
   return (
-    <div
-      className={css`
-        .ant-formily-item-feedback-layout-loose {
-          margin-bottom: 0;
-        }
-        .ant-space {
-          margin-bottom: 15px;
-        }
-      `}
-    >
-      <SchemaComponent
-        schema={transformSchema}
-        components={{
-          FormItem,
-          ArrayItems,
-          Space,
-          TransformerDynamicComponent,
-          Select: withDynamicSchemaProps(Select),
-        }}
-        scope={{
-          useChartFields: getChartFields,
-          useTransformers,
-          useTransformerSelectProps,
-          useFieldSelectProps: useFieldSelectProps(fields),
-          useFieldTypeSelectProps,
-          useArgument,
-          t,
-        }}
-      />
-    </div>
+    <>
+      <Alert type="info" style={{ marginBottom: '20px' }} message={t('Transformation tip')} closable />
+      <div
+        className={css`
+          .ant-formily-item-feedback-layout-loose {
+            margin-bottom: 0;
+          }
+          .ant-space {
+            margin-bottom: 15px;
+          }
+        `}
+      >
+        <SchemaComponent
+          schema={transformSchema}
+          components={{
+            FormItem,
+            ArrayItems,
+            Space,
+            TransformerDynamicComponent,
+            Select: withDynamicSchemaProps(Select),
+          }}
+          scope={{
+            useChartFields: getChartFields,
+            useTransformers,
+            useTransformerSelectProps,
+            useFieldSelectProps: useFieldSelectProps(fields),
+            useFieldTypeSelectProps,
+            useArgument,
+            t,
+          }}
+        />
+      </div>
+    </>
   );
 };
 
