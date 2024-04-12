@@ -10,16 +10,20 @@ import { SchemaInitializerOptions } from '../types';
 import { useSchemaInitializerStyles } from './style';
 
 export interface SchemaInitializerSubMenuProps {
-  name: string;
+  name?: string;
   title?: string;
   onClick?: (args: any) => void;
   onOpenChange?: (openKeys: string[]) => void;
   icon?: string | ReactNode;
   children?: SchemaInitializerOptions['items'];
+  items?: SchemaInitializerOptions['items'];
 }
 
 const SchemaInitializerSubMenuContext = React.createContext<{ isInMenu?: true }>({});
-const SchemaInitializerMenuProvider = (props) => {
+/**
+ * @internal
+ */
+export const SchemaInitializerMenuProvider = (props) => {
   return (
     <SchemaInitializerSubMenuContext.Provider value={{ isInMenu: true }}>
       {props.children}
@@ -71,25 +75,30 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
 };
 
 export const SchemaInitializerSubMenu: FC<SchemaInitializerSubMenuProps> = (props) => {
-  const { children, title, name = uid(), onOpenChange, icon, ...others } = props;
+  const { children, items: propItems, title, name, onOpenChange, icon, ...others } = props;
   const compile = useCompile();
-  const validChildren = children?.filter((item) => (item.useVisible ? item.useVisible() : true));
+  const schemaInitializerItem = useSchemaInitializerItem();
+  const nameValue = useMemo(() => name || schemaInitializerItem?.name || uid(), [name, schemaInitializerItem]);
+  const validChildren = (propItems || children)?.filter((item) => (item.useVisible ? item.useVisible() : true));
   const childrenItems = useSchemaInitializerMenuItems(validChildren, name);
 
   const items = useMemo(() => {
     return [
       {
         ...others,
-        key: name,
+        key: nameValue,
         label: compile(title),
         icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
         children: childrenItems,
       },
     ];
-  }, [childrenItems, compile, icon, name, others, title]);
+  }, [childrenItems, compile, icon, nameValue, others, title]);
   return <SchemaInitializerMenu onOpenChange={onOpenChange} items={items}></SchemaInitializerMenu>;
 };
 
+/**
+ * @internal
+ */
 export const SchemaInitializerSubMenuInternal = () => {
   const itemConfig = useSchemaInitializerItem<SchemaInitializerSubMenuProps>();
   return <SchemaInitializerSubMenu {...itemConfig}></SchemaInitializerSubMenu>;

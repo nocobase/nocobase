@@ -5,10 +5,9 @@ import {
   DataSourceOptions,
   DataSource,
   SchemaComponent,
-  SchemaComponentProvider,
 } from '@nocobase/client';
 import { DataSourceProvider, useDataSourceKey } from '../../data-source/DataSourceProvider';
-import { render, screen } from '@nocobase/test/client';
+import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import { AppSchemaComponentProvider } from '../../../application/AppSchemaComponentProvider';
 
@@ -54,6 +53,8 @@ describe('DataSourceProvider', () => {
         </DataSourceManagerProvider>
       </AppSchemaComponentProvider>,
     );
+
+    return app.dataSourceManager.getDataSource(dataSource);
   }
   it('should render default dataSource', () => {
     renderComponent();
@@ -67,16 +68,38 @@ describe('DataSourceProvider', () => {
 
   it('should render error state when data source is not found', () => {
     renderComponent('non-existent');
-    expect(document.querySelector('.ant-result')).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(
+      screen.getByText('The data source "non-existent" may have been deleted. Please remove this block.'),
+    ).toBeInTheDocument();
   });
 
-  it('should render loading state when data source is loading', () => {
-    renderComponent('test', 'loading');
+  it('should render loading state when data source is loading', async () => {
+    const ds = renderComponent('test', 'loading');
+    const fn = vitest.spyOn(ds, 'reload');
     expect(screen.getByText('Test data source loading...')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Refresh'));
+
+    await waitFor(() => {
+      expect(fn).toBeCalled();
+    });
+  });
+
+  it('should render loading state when data source is loading', async () => {
+    const ds = renderComponent('test', 'reloading');
+    const fn = vitest.spyOn(ds, 'reload');
+    expect(screen.getByText('Test data source loading...')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Refresh'));
+
+    await waitFor(() => {
+      expect(fn).toBeCalled();
+    });
   });
 
   it('should render error state when data source loading fails', () => {
     renderComponent('test', 'loading-failed');
-    expect(screen.getByText('DataSource "Test" loading failed')).toBeInTheDocument();
+    expect(screen.getByText('Data Source "Test" loading failed')).toBeInTheDocument();
   });
 });

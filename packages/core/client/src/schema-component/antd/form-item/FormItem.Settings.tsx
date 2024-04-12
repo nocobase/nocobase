@@ -960,8 +960,11 @@ function useFormItemCollectionField() {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getField } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const { collectionField: columnCollectionField } = useColumnSchema();
+  const collectionField = fieldSchema
+    ? getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field'])
+    : null;
+  if (!fieldSchema) return null;
   return collectionField || columnCollectionField;
 }
 

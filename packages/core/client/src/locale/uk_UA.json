@@ -488,6 +488,7 @@
   "Save as template": "Зберегти як шаблон",
   "Save as block template": "Зберегти як шаблон блока",
   "Block templates": "Шаблони блоків",
+  "Block template": "Шаблон блока",
   "Convert reference to duplicate": "Конвертувати посилання на дублікат",
   "Template name": "Назва шаблону",
   "Block type": "Тип блока",
@@ -768,8 +769,9 @@
   "loading": "завантаження",
   "name is required": "ім'я обов'язкове",
   "data source": "джерело даних",
-  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" може бути видалено. Будь ласка, видаліть цей {{blockType}}.",
+  "Data source": "джерело даних",
   "DataSource": "Джерело даних",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" може бути видалено. Будь ласка, видаліть цей {{blockType}}.",
   "Home page": "Домашня сторінка",
   "Handbook": "Посібник користувача",
   "License": "Ліцензія"

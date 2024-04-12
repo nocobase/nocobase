@@ -26,6 +26,16 @@
         "default": "./es/client/index.mjs"
       }
     },
+    "./web": {
+      "require": {
+        "types": "./lib/web/index.d.ts",
+        "default": "./lib/web/index.js"
+      },
+      "import": {
+        "types": "./es/web/index.d.ts",
+        "default": "./es/web/index.mjs"
+      }
+    },
     "./e2e": {
       "require": {
         "types": "./lib/e2e/index.d.ts",
@@ -40,6 +50,7 @@
     "./vitest.mjs": "./vitest.mjs"
   },
   "dependencies": {
+    "axios-mock-adapter": "1.22.0",
     "@faker-js/faker": "8.1.0",
     "@nocobase/server": "0.21.0-alpha.6",
     "@playwright/test": "^1.42.1",
