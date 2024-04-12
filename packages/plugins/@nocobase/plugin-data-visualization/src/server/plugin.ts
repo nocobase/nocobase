@@ -3,7 +3,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
 import { resolve } from 'path';
 
-export class DataVisualizationPlugin extends Plugin {
+export class PluginDataVisualizationServer extends Plugin {
   cache: Cache;
 
   afterAdd() {}
@@ -44,4 +44,4 @@ export class DataVisualizationPlugin extends Plugin {
   async remove() {}
 }
 
-export default DataVisualizationPlugin;
+export default PluginDataVisualizationServer;

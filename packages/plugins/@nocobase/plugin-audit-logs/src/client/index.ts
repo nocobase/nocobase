@@ -15,7 +15,7 @@ import {
 export * from './AuditLogsBlockInitializer';
 export * from './AuditLogsProvider';
 
-export class AuditLogsPlugin extends Plugin {
+export class PluginAuditLogsClient extends Plugin {
   async load() {
     this.app.use(AuditLogsProvider);
     this.app.schemaInitializerManager.add(auditLogsTableActionInitializers_deprecated);
@@ -36,4 +36,4 @@ export class AuditLogsPlugin extends Plugin {
   }
 }
 
-export default AuditLogsPlugin;
+export default PluginAuditLogsClient;

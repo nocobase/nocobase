@@ -60,7 +60,7 @@ export const primaryKey = {
   'x-reactions': [
     {
       dependencies: ['unique'],
-      when: '{{$deps[0]}}',
+      when: '{{$deps[0]&&createMainOnly}}',
       fulfill: {
         state: {
           value: false,
@@ -85,7 +85,7 @@ export const autoFill = {
   'x-content': '{{t("Automatically generate default values")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
-  'x-disabled': '{{ !createMainOnly }}',
+  default: true,
 };
 
 export const relationshipType: ISchema = {
@@ -295,7 +295,7 @@ export const dataSource: ISchema = {
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             'x-reactions': (field: Field) => {
-              if (!field.initialValue) {
+              if (!field.initialValue && !field.initialized) {
                 field.initialValue = uid();
                 field.setValue(uid());
               }

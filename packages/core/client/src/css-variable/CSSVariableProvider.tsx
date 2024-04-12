@@ -30,6 +30,8 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--marginSM', `${token.marginSM}px`);
     document.body.style.setProperty('--colorInfoBg', token.colorInfoBg);
     document.body.style.setProperty('--colorInfoBorder', token.colorInfoBorder);
+    document.body.style.setProperty('--colorWarningBg', token.colorWarningBg);
+    document.body.style.setProperty('--colorWarningBorder', token.colorWarningBorder);
     document.body.style.setProperty('--colorText', token.colorText);
     document.body.style.setProperty('--colorPrimaryText', token.colorPrimaryText);
     document.body.style.setProperty('--colorPrimaryTextActive', token.colorPrimaryTextActive);

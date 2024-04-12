@@ -20,6 +20,7 @@ services:
       - "13000:80"
     depends_on:
       - postgres
+    init: true
   postgres:
     image: postgres:10
     restart: always

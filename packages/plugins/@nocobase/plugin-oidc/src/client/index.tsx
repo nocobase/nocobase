@@ -4,7 +4,7 @@ import { authType } from '../constants';
 import { OIDCButton } from './OIDCButton';
 import { Options } from './Options';
 
-export class OidcPlugin extends Plugin {
+export class PluginOIDCClient extends Plugin {
   async load() {
     const auth = this.app.pm.get(AuthPlugin);
     auth.registerType(authType, {
@@ -16,4 +16,4 @@ export class OidcPlugin extends Plugin {
   }
 }
 
-export default OidcPlugin;
+export default PluginOIDCClient;

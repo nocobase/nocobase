@@ -326,13 +326,13 @@ export const ThroughCollection = observer(
       }
     }, []);
     const handleSearch = (value: string) => {
+      const data = loadCollections();
       if (value) {
-        const filteredOptions = options.filter((option) => {
+        const filteredOptions = data.filter((option) => {
           return option.label.toLowerCase().includes(value.toLowerCase());
         });
         setOptions(filteredOptions);
       } else {
-        const data = loadCollections();
         setOptions(data);
       }
     };

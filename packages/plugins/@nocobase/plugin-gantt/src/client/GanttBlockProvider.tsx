@@ -6,8 +6,9 @@ import {
   BlockProvider,
   useBlockRequestContext,
   TableBlockProvider,
+  useTableBlockContext,
 } from '@nocobase/client';
-
+import _ from 'lodash';
 export const GanttBlockContext = createContext<any>({});
 GanttBlockContext.displayName = 'GanttBlockContext';
 
@@ -36,7 +37,7 @@ const formatData = (
         color: item.color,
         isDisabled: disable,
       });
-      formatData(item.children, fieldNames, tasks, item.id + '', hideChildren, checkPermassion);
+      formatData(item.children, fieldNames, tasks, item.id + '', hideChildren, checkPermassion, primaryKey);
     } else {
       tasks.push({
         start: item[fieldNames.start] ? new Date(item[fieldNames.start]) : undefined,
@@ -102,6 +103,8 @@ export const useGanttBlockProps = () => {
   const [tasks, setTasks] = useState<any>([]);
   const { getPrimaryKey, name, template, writableView } = useCollection_deprecated();
   const { parseAction } = useACLRoleContext();
+  const ctxBlock = useTableBlockContext();
+
   const primaryKey = getPrimaryKey();
   const checkPermission = (record) => {
     const actionPath = `${name}:update`;
@@ -135,8 +138,12 @@ export const useGanttBlockProps = () => {
       );
       setTasks(data);
       ctx.field.data = data;
+      if (tasks.length > 0) {
+        ctxBlock.setExpandFlag(true);
+      }
     }
   }, [ctx?.service?.loading]);
+  console.log(tasks);
   return {
     fieldNames: ctx.fieldNames,
     timeRange: ctx.timeRange,

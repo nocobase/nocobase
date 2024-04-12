@@ -27,7 +27,7 @@ const GanttProvider = React.memo((props) => {
 });
 
 GanttProvider.displayName = 'GanttProvider';
-export class GanttPlugin extends Plugin {
+export class PluginGanttClient extends Plugin {
   async load() {
     this.app.use(GanttProvider);
     this.app.schemaSettingsManager.add(oldGanttSettings);
@@ -46,4 +46,4 @@ export class GanttPlugin extends Plugin {
   }
 }
 
-export default GanttPlugin;
+export default PluginGanttClient;

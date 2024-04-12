@@ -19,7 +19,7 @@ const CustomRequestProvider: React.FC = (props) => {
   );
 };
 
-export class CustomRequestPlugin extends Plugin {
+export class PluginCustomRequestClient extends Plugin {
   async load() {
     this.app.use(CustomRequestProvider);
     this.app.schemaSettingsManager.add(customizeCustomRequestActionSettings);
@@ -29,4 +29,4 @@ export class CustomRequestPlugin extends Plugin {
   }
 }
 
-export default CustomRequestPlugin;
+export default PluginCustomRequestClient;

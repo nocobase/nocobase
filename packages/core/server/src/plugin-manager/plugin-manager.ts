@@ -285,7 +285,7 @@ export class PluginManager {
     await tsxRerunning();
   }
 
-  async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {
+  async add(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
     if (!isUpgrade && this.has(plugin)) {
       const name = typeof plugin === 'string' ? plugin : plugin.name;
       this.app.log.warn(`plugin [${name}] added`);

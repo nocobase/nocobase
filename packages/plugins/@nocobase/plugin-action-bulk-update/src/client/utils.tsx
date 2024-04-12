@@ -7,7 +7,6 @@ import {
   useCollection_deprecated,
   useCompile,
   useLocalVariables,
-  useRecord,
   useTableBlockContext,
   useVariables,
 } from '@nocobase/client';
@@ -23,18 +22,15 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionSchema = useFieldSchema();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
-  const selectedRecordKeys =
-    tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
+
   const navigate = useNavigate();
   const compile = useCompile();
   const { t } = useBulkUpdateTranslation();
   const actionField: any = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const record = useRecord();
   const { name, getField } = useCollection_deprecated();
   const localVariables = useLocalVariables();
-
   return {
     async onClick(e, callBack) {
       const {
@@ -44,6 +40,8 @@ export const useCustomizeBulkUpdateActionProps = () => {
       } = actionSchema?.['x-action-settings'] ?? {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
+      const selectedRecordKeys =
+        tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
 
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {

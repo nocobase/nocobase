@@ -110,7 +110,7 @@ export const TableSelectorDesigner = () => {
         <SchemaSettingsSwitchItem
           title={t('Tree table')}
           defaultChecked={true}
-          checked={field.decoratorProps.treeTable !== false}
+          checked={field.decoratorProps.treeTable}
           onChange={(flag) => {
             field.form.clearFormGraph(`${field.address}.*`);
             field.decoratorProps.treeTable = flag;

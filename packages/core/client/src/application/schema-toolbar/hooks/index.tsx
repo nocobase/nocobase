@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
 import { ISchema } from '@formily/json-schema';
+import React, { useMemo } from 'react';
 import { useComponent, useDesignable } from '../../../schema-component';
 import { SchemaToolbar, SchemaToolbarProps } from '../../../schema-settings/GeneralSchemaDesigner';
 
