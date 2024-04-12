@@ -8,19 +8,31 @@ import { useSchemaTemplate } from '../../schema-templates';
 export const BlockSchemaToolbar = (props) => {
   const { t } = useTranslation();
   const cm = useCollectionManager();
-  const { name, title } = useCollection();
+  let { name: currentCollectionName, title: currentCollectionTitle } = useCollection();
   const template = useSchemaTemplate();
-  const { association } = useDataBlockProps();
+  const { association } = useDataBlockProps() || {};
+
+  if (association) {
+    const [collectionName] = association.split('.');
+    const { name, title } = cm.getCollection(collectionName);
+    currentCollectionName = name;
+    currentCollectionTitle = title;
+  }
+
   const associationField = cm.getCollectionField(association);
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`
     : template?.name;
   const toolbarTitle = useMemo(() => {
     return [
-      getCollectionTitle({ collectionTitle: title, collectionName: name, associationField }),
+      getCollectionTitle({
+        collectionTitle: currentCollectionTitle,
+        collectionName: currentCollectionName,
+        associationField,
+      }),
       templateName,
     ].filter(Boolean);
-  }, [associationField, name, templateName, title]);
+  }, [associationField, currentCollectionName, templateName, currentCollectionTitle]);
 
   return <SchemaToolbar title={toolbarTitle} {...props} />;
 };
