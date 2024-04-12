@@ -5,7 +5,11 @@ import { renderHook } from '@testing-library/react-hooks';
 import MockAdapter from 'axios-mock-adapter';
 import { AxiosInstance } from 'axios';
 // @ts-ignore
-import { Application, ApplicationOptions, FormItem, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Application, ApplicationOptions, DataBlockProvider, LocalDataSource, SchemaComponent } from '@nocobase/client';
+
+import dataSourceMainCollections from './dataSourceMainCollections.json';
+import dataSource2 from './dataSource2.json';
+import usersListData from './usersListData.json';
 
 export { renderHook } from '@testing-library/react-hooks';
 
@@ -56,10 +60,17 @@ export const getApp = (
   appOptions?: AppOrOptions,
   providers?: (ComponentType | [ComponentType, any])[],
   apis?: MockApis,
+  enableMultipleDataSource?: boolean,
 ) => {
   const app = appOptions instanceof Application ? appOptions : new Application(appOptions);
   if (providers) {
     app.addProviders(providers);
+  }
+
+  app.getCollectionManager().addCollections(dataSourceMainCollections as any);
+
+  if (enableMultipleDataSource) {
+    app.dataSourceManager.addDataSource(LocalDataSource, dataSource2 as any);
   }
 
   mockAppApi(app, apis);
@@ -120,45 +131,30 @@ export const renderHookWithApp = async (
   return res;
 };
 
-interface RenderComponentSchemaOptions {
-  Component: ComponentType<any>;
-  value?: any;
-  props?: any;
+interface RenderSchemaOptions<V = any, Props = {}> {
   schema?: any;
-  onChange?: (value: any) => void;
-}
-
-interface RenderSchemaOptions {
-  schema: any;
   appOptions?: AppOrOptions;
   apis?: MockApis;
+  Component?: ComponentType<Props>;
+  value?: V;
+  props?: Props;
+  onChange?: (value: V) => void;
+  enableUserListDataBlock?: boolean;
+  enableMultipleDataSource?: boolean;
 }
 
 export const renderSchema = async (options: RenderSchemaOptions) => {
-  const { schema, appOptions, apis } = options;
-  if (!schema.name) {
-    schema.name = 'test';
-  }
-
-  if (!schema.type) {
-    schema.type = 'void';
-  }
-
-  const TestDemo = () => {
-    return <SchemaComponent schema={schema} />;
-  };
-
-  const { App } = getApp(appOptions, [TestDemo], apis);
-
-  const res = render(<App />);
-
-  await WaitApp();
-
-  return res;
-};
-
-export const renderComponentWithSchema = (options: RenderComponentSchemaOptions) => {
-  const { Component, value, props, onChange, schema: optionsSchema = {} } = options;
+  const {
+    Component,
+    enableUserListDataBlock,
+    enableMultipleDataSource,
+    value,
+    props,
+    appOptions,
+    apis,
+    onChange,
+    schema: optionsSchema = {},
+  } = options;
   const schema = {
     type: 'object',
     name: 'test',
@@ -170,9 +166,39 @@ export const renderComponentWithSchema = (options: RenderComponentSchemaOptions)
     },
     ...optionsSchema,
   };
-  return renderSchema({ schema });
+
+  if (!schema.name) {
+    schema.name = 'test';
+  }
+
+  if (!schema.type) {
+    schema.type = 'void';
+  }
+
+  if (enableUserListDataBlock && !apis['users:list']) {
+    apis['users:list'] = usersListData;
+  }
+
+  const TestDemo = () => {
+    if (!enableUserListDataBlock) {
+      return <SchemaComponent schema={schema} />;
+    }
+    return (
+      <DataBlockProvider collection={'users'} action="list">
+        <SchemaComponent schema={schema} />
+      </DataBlockProvider>
+    );
+  };
+
+  const { App } = getApp(appOptions, [TestDemo], apis, enableMultipleDataSource);
+
+  const res = render(<App />);
+
+  await WaitApp();
+
+  return res;
 };
 
-export const renderComponentReadPrettySchema = (options: RenderComponentSchemaOptions) => {
-  return renderComponentWithSchema({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
+export const renderReadPrettySchema = (options: RenderSchemaOptions) => {
+  return renderSchema({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
 };
