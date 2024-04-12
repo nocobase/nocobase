@@ -1,5 +1,6 @@
 import { createMockServer, mockDatabase, supertest } from '@nocobase/test';
 import { SequelizeDataSource } from '../sequelize-data-source';
+import { vi } from 'vitest';
 
 describe('example', () => {
   test.skip('case1', async () => {
@@ -150,6 +151,50 @@ describe('example', () => {
       .set('X-Authenticator', 'basic');
 
     expect(res.status).toBe(500);
+
+    await app.destroy();
+  });
+
+  it('should register every datasource instance', async () => {
+    const hook = vi.fn();
+
+    const app = await createMockServer({
+      acl: false,
+      resourcer: {
+        prefix: '/api/',
+      },
+      name: 'update-filter',
+    });
+
+    app.dataSourceManager.hookOnEveryInstancesOnce(hook);
+    // it should be called on main datasource
+    expect(hook).toBeCalledTimes(1);
+
+    const database = mockDatabase({
+      tablePrefix: 'ds1_',
+    });
+
+    // it should be called when adding a new datasource
+    const ds1 = new SequelizeDataSource({
+      name: 'ds1',
+      resourceManager: {},
+      collectionManager: {
+        database,
+      },
+    });
+
+    ds1.collectionManager.defineCollection({
+      name: 'test1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await ds1.collectionManager.sync();
+
+    ds1.acl.allow('test1', 'update', 'public');
+
+    await app.dataSourceManager.add(ds1);
+
+    expect(hook).toBeCalledTimes(2);
 
     await app.destroy();
   });
