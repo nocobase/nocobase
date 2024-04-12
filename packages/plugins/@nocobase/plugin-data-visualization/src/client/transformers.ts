@@ -78,38 +78,74 @@ const transformers: {
     },
   },
   date: {
+    Format: {
+      schema: {
+        'x-component': 'AutoComplete',
+        'x-component-props': {
+          allowClear: true,
+          style: {
+            minWidth: 200,
+          },
+        },
+        enum: [
+          { label: 'YYYY', value: 'YYYY' },
+          { label: 'MM', value: 'MM' },
+          { label: 'DD', value: 'DD' },
+          { label: 'YYYY-MM', value: 'YYYY-MM' },
+          { label: 'YYYY-MM-DD', value: 'YYYY-MM-DD' },
+        ],
+      },
+      fn: (val: string, format: string) => dayjs(val).format(format),
+    },
     YYYY: {
-      label: 'YYYY (Deprecated, use datetime - Format instead)',
+      label: 'YYYY (Deprecated, use Format instead)',
       fn: (val: string) => dayjs(val).format('YYYY'),
     },
     MM: {
-      label: 'MM (Deprecated, use datetime - Format instead)',
+      label: 'MM (Deprecated, use Format instead)',
       fn: (val: string) => dayjs(val).format('MM'),
     },
     DD: {
-      label: 'DD (Deprecated, use datetime - Format instead)',
+      label: 'DD (Deprecated, use Format instead)',
       fn: (val: string) => dayjs(val).format('DD'),
     },
     'YYYY-MM': {
-      label: 'YYYY-MM (Deprecated, use datetime - Format instead)',
+      label: 'YYYY-MM (Deprecated, use Format instead)',
       fn: (val: string) => dayjs(val).format('YYYY-MM'),
     },
     'YYYY-MM-DD': {
-      label: 'YYYY-MM-DD (Deprecated, use datetime - Format instead)',
+      label: 'YYYY-MM-DD (Deprecated, use Format instead)',
       fn: (val: string) => dayjs(val).format('YYYY-MM-DD'),
     },
   },
   time: {
+    Format: {
+      schema: {
+        'x-component': 'AutoComplete',
+        'x-component-props': {
+          allowClear: true,
+          style: {
+            minWidth: 200,
+          },
+        },
+        enum: [
+          { label: 'hh:mm:ss', value: 'hh:mm:ss' },
+          { label: 'hh:mm', value: 'hh:mm' },
+          { label: 'hh', value: 'hh' },
+        ],
+      },
+      fn: (val: string, format: string) => dayjs(val).format(format),
+    },
     'hh:mm:ss': {
-      label: 'hh:mm:ss (Deprecated, use datetime - Format instead)',
+      label: 'hh:mm:ss (Deprecated, use Format instead)',
       fn: (val: string) => dayjs(val).format('hh:mm:ss'),
     },
     'hh:mm': {
-      label: 'hh:mm (Deprecated, use datetime - Format instead)',
+      label: 'hh:mm (Deprecated, use Format instead)',
       fn: (val: string) => dayjs(val).format('hh:mm'),
     },
     hh: {
-      label: 'hh (Deprecated, use datetime - Format instead)',
+      label: 'hh (Deprecated, use Format instead)',
       fn: (val: string) => dayjs(val).format('hh'),
     },
   },
