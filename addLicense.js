@@ -69,7 +69,7 @@ exec('git diff --cached --name-only --diff-filter=ACM', (error, stdout, stderr) 
     .filter((file) => file.includes('/src/')) // 只检查 src 目录下的文件
     .filter((file) => file.endsWith('.js') || file.endsWith('.jsx') || file.endsWith('.ts') || file.endsWith('.tsx'));
 
-  const validFiles = files.map((file) => addLicenseToFile(file));
+  const validFiles = files.filter((file) => addLicenseToFile(file));
 
   if (validFiles.length === 0) {
     return;
