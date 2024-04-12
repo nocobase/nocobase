@@ -1,5 +1,5 @@
 import React, { FC, ReactNode, createContext, useContext } from 'react';
-import { CollectionFieldProvider } from '../collection-field';
+import { CollectionFieldProvider, useCollectionField } from '../collection-field';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
 import { Collection } from './Collection';
 import { useCollectionManager } from './CollectionManagerProvider';
@@ -40,4 +40,9 @@ export const AssociationProvider: FC<AssociationProviderProps> = (props) => {
       </ParentCollectionProvider>
     </CollectionProvider>
   );
+};
+
+export const useAssociationName = () => {
+  const field = useCollectionField();
+  return field ? `${field.collectionName}.${field.name}` : null;
 };

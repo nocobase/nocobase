@@ -256,6 +256,10 @@ interface ExtendUtils {
    * @param key 外部数据源key
    */
   destoryExternalDataSource: <T = any>(key: string) => Promise<T>;
+  /**
+   * 清空区块模板
+   */
+  clearBlockTemplates: () => Promise<void>;
 }
 
 const PORT = process.env.APP_PORT || 20000;
@@ -340,6 +344,8 @@ const _test = base.extend<ExtendUtils>({
       await nocoPage.destroy();
       await setDefaultRole('root');
     }
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    await removeRedundantUserAndRoles();
   },
   mockManualDestroyPage: async ({ browser }, use) => {
     const mockManualDestroyPage = (config?: PageConfig) => {
@@ -410,13 +416,6 @@ const _test = base.extend<ExtendUtils>({
     };
 
     await use(mockRecords);
-
-    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
-    const deletePromises = [
-      deleteRecords('users', { id: { $ne: 1 } }),
-      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
-    ];
-    await Promise.all(deletePromises);
   },
   mockRecord: async ({ page }, use) => {
     const mockRecord = async (collectionName: string, data?: any) => {
@@ -425,13 +424,6 @@ const _test = base.extend<ExtendUtils>({
     };
 
     await use(mockRecord);
-
-    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
-    const deletePromises = [
-      deleteRecords('users', { id: { $ne: 1 } }),
-      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
-    ];
-    await Promise.all(deletePromises);
   },
   deletePage: async ({ page }, use) => {
     const deletePage = async (pageName: string) => {
@@ -442,13 +434,6 @@ const _test = base.extend<ExtendUtils>({
     };
 
     await use(deletePage);
-
-    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
-    const deletePromises = [
-      deleteRecords('users', { id: { $ne: 1 } }),
-      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
-    ];
-    await Promise.all(deletePromises);
   },
   mockRole: async ({ page }, use) => {
     const mockRole = async (roleSetting: AclRoleSetting) => {
@@ -477,6 +462,33 @@ const _test = base.extend<ExtendUtils>({
     };
 
     await use(destoryDataSource);
+  },
+  clearBlockTemplates: async ({ page }, use) => {
+    const clearBlockTemplates = async () => {
+      const api = await request.newContext({
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+      });
+
+      const state = await api.storageState();
+      const headers = getHeaders(state);
+      const filter = {
+        key: { $exists: true },
+      };
+
+      const result = await api.post(`/api/uiSchemaTemplates:destroy?filter=${JSON.stringify(filter)}`, {
+        headers,
+      });
+
+      if (!result.ok()) {
+        throw new Error(await result.text());
+      }
+    };
+
+    try {
+      await use(clearBlockTemplates);
+    } catch (error) {
+      await clearBlockTemplates();
+    }
   },
 });
 
@@ -637,7 +649,7 @@ const deleteCollections = async (collectionNames: string[]) => {
  * @param collectionName
  * @param records
  */
-const deleteRecords = async (collectionName: string, filter: any) => {
+export const deleteRecords = async (collectionName: string, filter: any) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
@@ -868,6 +880,15 @@ const createRandomData = async (collectionName: string, count = 10, data?: any) 
 
   return (await result.json()).data;
 };
+
+// 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+async function removeRedundantUserAndRoles() {
+  const deletePromises = [
+    deleteRecords('users', { id: { $ne: 1 } }),
+    deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
+  ];
+  await Promise.all(deletePromises);
+}
 
 function getHeaders(storageState: any) {
   const headers: any = {};

@@ -3,7 +3,12 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
-import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
+import {
+  useDesignable,
+  useFieldModeOptions,
+  useIsAddNewForm,
+  useIsFieldReadPretty,
+} from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 
 const fieldComponent: any = {
@@ -49,8 +54,38 @@ const fieldComponent: any = {
     };
   },
 };
-
+const allowSelectExistingRecord = {
+  name: 'allowSelectExistingRecord',
+  type: 'switch',
+  useVisible() {
+    const readPretty = useIsFieldReadPretty();
+    return !readPretty;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn, refresh } = useDesignable();
+    return {
+      title: t('Allow selection of existing records'),
+      checked: fieldSchema['x-component-props']?.allowSelectExistingRecord,
+      onChange(value) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        field.componentProps.allowSelectExistingRecord = value;
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].allowSelectExistingRecord = value;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        dn.emit('patch', {
+          schema,
+        });
+        refresh();
+      },
+    };
+  },
+};
 export const subTablePopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:SubTable',
-  items: [fieldComponent],
+  items: [fieldComponent, allowSelectExistingRecord],
 });

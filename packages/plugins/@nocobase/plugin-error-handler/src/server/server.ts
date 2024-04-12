@@ -6,7 +6,7 @@ import { ErrorHandler } from './error-handler';
 import enUS from './locale/en_US';
 import zhCN from './locale/zh_CN';
 
-export class PluginErrorHandler extends Plugin {
+export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs = 'error-handler';
 
@@ -26,6 +26,10 @@ export class PluginErrorHandler extends Plugin {
       const database = dataSource ? dataSource.collectionManager.db : ctx.db;
 
       const collection = database.modelCollection.get(model);
+
+      if (!collection) {
+        return path;
+      }
 
       const field = collection.getField(path);
       const fieldOptions = Schema.compile(field?.options, { t: tFunc });

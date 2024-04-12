@@ -23,7 +23,7 @@ export class SortFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['bigInt', 'integer', 'sort'];
-  hasDefaultValue = true;
+  hasDefaultValue = false;
   properties = {
     ...defaultProps,
     scopeKey: {

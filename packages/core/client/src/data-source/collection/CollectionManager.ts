@@ -131,6 +131,29 @@ export class CollectionManager {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
+  getSourceKeyByAssocation(associationName: string) {
+    if (!associationName) {
+      return;
+    }
+    const field = this.getCollectionField(associationName);
+    // 字段不存在，返回空
+    if (!field) {
+      return;
+    }
+    // hasOne 和 hasMany 和 belongsToMany 的字段存在 sourceKey，所以会直接返回 sourceKey；
+    if (field.sourceKey) {
+      return field.sourceKey;
+    }
+    // belongsTo 不存在 sourceKey，所以会使用 filterTargetKey；
+    const sourceCollection = this.getCollection(associationName.split('.')[0]);
+    // source collection 不存在，返回空
+    if (!sourceCollection) {
+      return;
+    }
+    // 后面的主键和 id 是为了保险起见加上的；
+    return sourceCollection.filterTargetKey || sourceCollection.getPrimaryKey() || 'id';
+  }
+
   /**
    * @internal
    */

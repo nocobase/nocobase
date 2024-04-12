@@ -8,7 +8,7 @@ import { Pattern, SequenceField } from './fields/sequence-field';
 
 const asyncRandomInt = promisify(randomInt);
 
-export default class SequenceFieldPlugin extends Plugin {
+export default class PluginSequenceFieldServer extends Plugin {
   patternTypes = new Registry<Pattern>();
 
   async load() {

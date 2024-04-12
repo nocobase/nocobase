@@ -4,7 +4,7 @@ import { downloadXlsxTemplate, importXlsx } from './actions';
 import { enUS, zhCN } from './locale';
 import { importMiddleware } from './middleware';
 
-export class ImportPlugin extends Plugin {
+export class PluginImportServer extends Plugin {
   beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
@@ -30,4 +30,4 @@ export class ImportPlugin extends Plugin {
   }
 }
 
-export default ImportPlugin;
+export default PluginImportServer;

@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/client';
 import { GraphCollectionPane } from './GraphCollectionShortcut';
 import { NAMESPACE } from './locale';
-export class GraphCollectionPlugin extends Plugin {
+export class PluginGraphCollectionPlugin extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add(`data-source-manager/main.graph`, {
       title: `{{t("Graphical interface", { ns: "${NAMESPACE}" })}}`,
@@ -13,4 +13,4 @@ export class GraphCollectionPlugin extends Plugin {
   }
 }
 
-export default GraphCollectionPlugin;
+export default PluginGraphCollectionPlugin;

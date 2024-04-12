@@ -3,7 +3,7 @@ import { MultiAppManagerProvider } from './MultiAppManagerProvider';
 import { AppManager } from './AppManager';
 import { NAMESPACE } from '../locale';
 
-export class MultiAppManagerPlugin extends Plugin {
+export class PluginMultiAppManagerClient extends Plugin {
   async load() {
     this.app.use(MultiAppManagerProvider);
 
@@ -16,5 +16,5 @@ export class MultiAppManagerPlugin extends Plugin {
   }
 }
 
-export default MultiAppManagerPlugin;
+export default PluginMultiAppManagerClient;
 export { formSchema, tableActionColumnSchema } from './settings/schemas/applications';

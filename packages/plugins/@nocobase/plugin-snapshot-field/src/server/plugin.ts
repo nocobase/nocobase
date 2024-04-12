@@ -3,7 +3,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { SnapshotField } from './fields/snapshot-field';
 
-export class SnapshotFieldPlugin extends Plugin {
+export class PluginSnapshotFieldServer extends Plugin {
   afterAdd() {}
 
   async beforeLoad() {
@@ -130,4 +130,4 @@ export class SnapshotFieldPlugin extends Plugin {
   async remove() {}
 }
 
-export default SnapshotFieldPlugin;
+export default PluginSnapshotFieldServer;

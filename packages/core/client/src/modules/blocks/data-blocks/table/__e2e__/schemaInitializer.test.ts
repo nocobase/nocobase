@@ -161,7 +161,12 @@ test.describe('configure columns', () => {
 
     // 点击开关，删除创建的字段
     await configureColumnButton.hover();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click({
+      position: {
+        x: 30,
+        y: 10,
+      },
+    });
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();

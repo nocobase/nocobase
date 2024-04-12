@@ -35,7 +35,7 @@ export class GrantHelper {
   constructor() {}
 }
 
-export class PluginACL extends Plugin {
+export class PluginACLServer extends Plugin {
   // association field actions config
 
   associationFieldsActions: AssociationFieldsActions = {};
@@ -180,6 +180,7 @@ export class PluginACL extends Plugin {
         'uiSchemas:getProperties',
         'roles.menuUiSchemas:*',
         'roles.users:*',
+        'dataSources.roles:*',
       ],
     });
 
@@ -715,4 +716,4 @@ export class PluginACL extends Plugin {
   }
 }
 
-export default PluginACL;
+export default PluginACLServer;

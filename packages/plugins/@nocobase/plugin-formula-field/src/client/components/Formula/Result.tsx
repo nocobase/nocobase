@@ -28,8 +28,9 @@ const TypedComponents = {
   string: InputString.ReadPretty,
 };
 
-function useTargetCollectionField() {
-  const fieldSchema = useFieldSchema();
+export function useTargetCollectionField(schema?) {
+  const targetSchema = useFieldSchema();
+  const fieldSchema = schema || targetSchema;
   const providedCollection = useCollection_deprecated();
   const { getCollection, getCollectionField } = useCollectionManager_deprecated();
   const paths = (fieldSchema.name as string).split('.');

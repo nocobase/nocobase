@@ -16,7 +16,12 @@ test.describe('where edit form block can be added', () => {
   });
 
   // https://nocobase.height.app/T-3848/description
-  test('popup opened by clicking on the button for the relationship field', async ({ page, mockPage, mockRecord }) => {
+  test('popup opened by clicking on the button for the relationship field', async ({
+    page,
+    mockPage,
+    mockRecord,
+    clearBlockTemplates,
+  }) => {
     const nocoPage = await mockPage(T3848).waitForInit();
     await mockRecord('example');
     await nocoPage.goto();
@@ -32,6 +37,23 @@ test.describe('where edit form block can be added', () => {
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CollectionField-').getByText('2')).toBeVisible();
+
+    // 3.将上面的编辑表单区块保存为模板，然后再使用该模板创建区块
+    await page.getByLabel('block-item-CardItem-example-form').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:editForm-example').hover();
+    await page.getByRole('menuitem', { name: 'Save as block template' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    // 通过模板创建区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).hover();
+    await page.getByRole('menuitem', { name: 'Duplicate template' }).hover();
+    await page.getByRole('menuitem', { name: 'example_Form (Fields only)' }).click();
+    await page.mouse.move(300, 0);
+    // 通过模板创建的数据应该和普通区块一样
+    await expect(page.getByLabel('block-item-CollectionField-').nth(1).getByText('2')).toBeVisible();
+
+    // 4.删除模板，避免影响后续测试
+    await clearBlockTemplates();
   });
 });
 

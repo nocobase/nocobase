@@ -87,7 +87,10 @@ const getSchema = ({
             return useRequest(
               () =>
                 Promise.resolve({
-                  data: cloneDeep(omit(schema.default, ['uiSchema.rawTitle'])),
+                  data: {
+                    ...cloneDeep(omit(schema.default, ['uiSchema.rawTitle'])),
+                    autoFill: schema.default?.autoFill !== false,
+                  },
                 }),
               options,
             );

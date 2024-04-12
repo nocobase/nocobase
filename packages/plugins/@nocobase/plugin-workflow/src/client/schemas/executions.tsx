@@ -98,6 +98,15 @@ export const executionSchema = {
             },
           },
           properties: {
+            refresher: {
+              type: 'void',
+              title: '{{ t("Refresh") }}',
+              'x-component': 'Action',
+              'x-use-component-props': 'useRefreshActionProps',
+              'x-component-props': {
+                icon: 'ReloadOutlined',
+              },
+            },
             clear: {
               type: 'void',
               title: '{{t("Clear")}}',

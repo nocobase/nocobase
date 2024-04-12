@@ -188,6 +188,38 @@ export const workflowSchema: ISchema = {
               },
               'x-align': 'left',
             },
+            refresher: {
+              type: 'void',
+              title: '{{ t("Refresh") }}',
+              'x-component': 'Action',
+              'x-use-component-props': 'useRefreshActionProps',
+              'x-component-props': {
+                icon: 'ReloadOutlined',
+              },
+            },
+            sync: {
+              type: 'void',
+              title: `{{t("Sync", { ns: "${NAMESPACE}" })}}`,
+              'x-decorator': 'Tooltip',
+              'x-decorator-props': {
+                title: `{{ t("Sync enabled status of all workflows from database", { ns: "${NAMESPACE}" }) }}`,
+              },
+              'x-component': 'Action',
+              'x-component-props': {
+                icon: 'SyncOutlined',
+                useAction() {
+                  const { t } = useTranslation();
+                  const { resource } = useResourceContext();
+                  return {
+                    async run() {
+                      await resource.sync();
+                      message.success(t('Operation succeeded'));
+                    },
+                  };
+                },
+              },
+              'x-reactions': ['{{useWorkflowSyncAction}}'],
+            },
             delete: {
               type: 'void',
               title: '{{t("Delete")}}',
