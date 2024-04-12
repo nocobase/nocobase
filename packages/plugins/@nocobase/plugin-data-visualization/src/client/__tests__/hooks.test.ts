@@ -181,7 +181,9 @@ describe('hooks', () => {
       dataSource: [],
     };
     renderHook(() => useTransformers(field));
-    expect(field.dataSource.map((item) => item.value)).toEqual(Object.keys(transformers['datetime']));
+    expect(field.dataSource.map((item) => item.value)).toEqual(
+      Object.keys({ ...transformers['general'], ...transformers['datetime'] }),
+    );
   });
 
   test('useFieldTransformers', () => {
