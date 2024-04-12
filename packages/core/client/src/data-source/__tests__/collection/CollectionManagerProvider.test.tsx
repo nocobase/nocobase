@@ -84,7 +84,7 @@ describe('CollectionManagerProvider', () => {
 
     const Wrapper = () => {
       return (
-        <CollectionManagerProvider collections={[collections[1] as any]}>
+        <CollectionManagerProvider>
           <Demo></Demo>
         </CollectionManagerProvider>
       );

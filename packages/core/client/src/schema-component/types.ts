@@ -19,6 +19,7 @@ export interface ISchemaComponentProvider {
   form?: Form;
   scope?: any;
   components?: SchemaReactComponents;
+  children?: React.ReactNode;
 }
 
 export interface IRecursionComponentProps extends IRecursionFieldProps {

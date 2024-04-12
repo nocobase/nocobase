@@ -657,6 +657,18 @@ interface SchemaInitializerSwitchItemProps extends SchemaInitializerItemProps {
 
 <code src="./demos/schema-initializer-components-divider.tsx"></code>
 
+### `type: 'actionModal'` &  SchemaInitializerActionModal
+
+#### Component Mode
+
+<code src="./demos/schema-initializer-components-action-modal-1.tsx"></code>
+
+#### Item Mode
+
+`SchemaInitializerActionModal` 需要加上 `isItem` 属性
+
+<code src="./demos/schema-initializer-components-action-modal-2.tsx"></code>
+
 ## 渲染组件
 
 ### SchemaInitializerChildren

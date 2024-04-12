@@ -11,7 +11,6 @@ import {
   useCollection,
   useCollectionManager,
   useDataSourceKey,
-  useFormActiveFields,
   useFormBlockContext,
 } from '../';
 import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
@@ -20,7 +19,7 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-
+import { useFormActiveFields } from '../block-provider/hooks/useFormActiveFields';
 export const itemsMerge = (items1) => {
   return items1;
 };

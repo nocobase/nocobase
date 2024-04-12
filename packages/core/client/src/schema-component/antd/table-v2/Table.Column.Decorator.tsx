@@ -17,7 +17,7 @@ export const useColumnSchema = () => {
   const compile = useCompile();
   const columnSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const fieldSchema = columnSchema.reduceProperties((buf, s) => {
+  const fieldSchema = columnSchema?.reduceProperties((buf, s) => {
     if (isCollectionFieldComponent(s)) {
       return s;
     }
