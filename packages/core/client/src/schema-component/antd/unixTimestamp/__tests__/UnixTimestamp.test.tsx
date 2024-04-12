@@ -1,9 +1,9 @@
-import { screen, renderSchema, userEvent, waitFor, renderReadPrettySchema } from '@nocobase/test/client';
+import { screen, renderApp, userEvent, waitFor, renderReadPrettyApp } from '@nocobase/test/client';
 import { UnixTimestamp } from '@nocobase/client';
 
 describe('UnixTimestamp', () => {
   it('renders without errors', async () => {
-    const { container } = await renderSchema({
+    const { container } = await renderApp({
       Component: UnixTimestamp,
       value: 0,
     });
@@ -58,7 +58,7 @@ describe('UnixTimestamp', () => {
   });
 
   it('millisecond', async () => {
-    await renderSchema({
+    await renderApp({
       Component: UnixTimestamp,
       value: 1712819630000,
     });
@@ -68,7 +68,7 @@ describe('UnixTimestamp', () => {
   });
 
   it('second', async () => {
-    await renderSchema({
+    await renderApp({
       Component: UnixTimestamp,
       value: 1712819630,
       props: {
@@ -82,7 +82,7 @@ describe('UnixTimestamp', () => {
   });
 
   it('string', async () => {
-    await renderSchema({
+    await renderApp({
       Component: UnixTimestamp,
       value: '2024-04-11',
     });
@@ -94,7 +94,7 @@ describe('UnixTimestamp', () => {
 
   it('change', async () => {
     const onChange = vitest.fn();
-    await renderSchema({
+    await renderApp({
       Component: UnixTimestamp,
       value: '2024-04-11',
       onChange,
@@ -114,7 +114,7 @@ describe('UnixTimestamp', () => {
   });
 
   it('read pretty', async () => {
-    const { container } = await renderReadPrettySchema({
+    const { container } = await renderReadPrettyApp({
       Component: UnixTimestamp,
       value: '2024-04-11',
     });

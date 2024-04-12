@@ -1,4 +1,4 @@
-import { render, renderReadPrettySchema, screen, userEvent } from '@nocobase/test/client';
+import { render, renderReadPrettyApp, screen, userEvent } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/checkbox';
 import App2 from '../demos/checkbox.group';
@@ -41,7 +41,7 @@ describe('Checkbox', () => {
 
   describe('read pretty', () => {
     it('true', async () => {
-      const { container } = await renderReadPrettySchema({
+      const { container } = await renderReadPrettyApp({
         Component: Checkbox,
         value: true,
       });
@@ -64,7 +64,7 @@ describe('Checkbox', () => {
     });
 
     it('false', async () => {
-      const { container } = await renderReadPrettySchema({
+      const { container } = await renderReadPrettyApp({
         Component: Checkbox,
         value: false,
       });
@@ -73,7 +73,7 @@ describe('Checkbox', () => {
     });
 
     it('false and showUnchecked', async () => {
-      const { container } = await renderReadPrettySchema({
+      const { container } = await renderReadPrettyApp({
         Component: Checkbox,
         value: false,
         props: {

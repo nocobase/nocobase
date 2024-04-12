@@ -28,8 +28,11 @@ export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: b
   if (pkg.name === '@nocobase/test') {
     const e2eEntry = getSingleEntry('src/e2e/index', cwd);
     const e2eOutDir = path.resolve(cwd, 'es/e2e');
-    debugger
     await build(cwd, e2eEntry, e2eOutDir, userConfig, sourcemap, log);
+
+    const webEntry = getSingleEntry('src/web/index', cwd);
+    const webOutDir = path.resolve(cwd, 'es/web');
+    await build(cwd, webEntry, webOutDir, userConfig, sourcemap, log);
   }
 }
 

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, renderSchema, userEvent } from '@nocobase/test/client';
+import { render, screen, waitFor, renderApp, userEvent } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/demo1';
 import { Page } from '../Page';
@@ -22,7 +22,7 @@ describe('Page', () => {
   describe('Page Component', () => {
     const title = 'Test Title';
     test('schema title', async () => {
-      await renderSchema({
+      await renderApp({
         schema: {
           type: 'void',
           title,
@@ -34,7 +34,7 @@ describe('Page', () => {
     });
 
     test('hide title', async () => {
-      await renderSchema({
+      await renderApp({
         schema: {
           type: 'void',
           title,
@@ -49,7 +49,7 @@ describe('Page', () => {
     });
 
     test('should request remote schema when no title', async () => {
-      await renderSchema({
+      await renderApp({
         schema: {
           type: 'void',
           'x-uid': 'test',
@@ -71,7 +71,7 @@ describe('Page', () => {
     });
 
     test('enablePageTabs', async () => {
-      await renderSchema({
+      await renderApp({
         schema: {
           type: 'void',
           title,
@@ -106,7 +106,7 @@ describe('Page', () => {
     });
 
     test('add tab', async () => {
-      await renderSchema({
+      await renderApp({
         schema: {
           type: 'void',
           title,

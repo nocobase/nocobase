@@ -75,9 +75,11 @@ export async function createApp(options = {}, appOptions = {}) {
     );
   };
   await renderApp({
-    providers: [Root],
-    schemaInitializers: [testInitializers],
-    designable: true,
-    ...appOptions,
+    appOptions: {
+      providers: [Root],
+      schemaInitializers: [testInitializers],
+      designable: true,
+      ...appOptions,
+    },
   });
 }

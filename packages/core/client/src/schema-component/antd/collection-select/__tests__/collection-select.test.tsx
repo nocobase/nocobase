@@ -1,9 +1,9 @@
-import { renderReadPrettySchema, renderSchema, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { renderReadPrettyApp, renderApp, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { FormItem, CollectionSelect } from '@nocobase/client';
 
 describe('CollectionSelect', () => {
   it('should works', async () => {
-    const { container } = await renderSchema({
+    const { container } = await renderApp({
       schema: {
         type: 'object',
         properties: {
@@ -150,7 +150,7 @@ describe('CollectionSelect', () => {
   });
 
   it('read pretty', async () => {
-    const { container } = await renderReadPrettySchema({
+    const { container } = await renderReadPrettyApp({
       value: {
         test: 'users',
       },
@@ -229,7 +229,7 @@ describe('CollectionSelect', () => {
   });
 
   it('read pretty: multiple', async () => {
-    await renderReadPrettySchema({
+    await renderReadPrettyApp({
       value: {
         test: ['users', 'roles'],
       },
