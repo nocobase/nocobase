@@ -513,6 +513,16 @@ test.describe('form item & view form', () => {
     await expect(page.getByRole('option', { name: 'Tag', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Sub-table', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Sub-details', exact: true })).toBeVisible();
+
+    // 切换到 Sub-details，应该显示 Initializer 按钮
+    await page.getByRole('option', { name: 'Sub-details', exact: true }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-general-form-general.oneToMany-oneToMany')
+        .getByLabel('schema-initializer-Grid-form:')
+        .first(),
+    ).toBeVisible();
   });
 
   test('title field', async ({ page, mockPage, mockRecords }) => {

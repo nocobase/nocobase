@@ -60,7 +60,7 @@ export default defineCollection({
       },
     },
     {
-      interface: 'phone',
+      interface: 'input',
       type: 'string',
       name: 'phone',
       unique: true,
@@ -68,7 +68,6 @@ export default defineCollection({
         type: 'string',
         title: '{{t("Phone")}}',
         'x-component': 'Input',
-        'x-validator': 'phone',
         required: true,
       },
     },

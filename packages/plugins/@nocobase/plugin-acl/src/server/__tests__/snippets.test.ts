@@ -54,4 +54,28 @@ describe('snippet', () => {
 
     expect(listResp.statusCode).toEqual(200);
   });
+
+  it('should allow to get roles ', async () => {
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        strategy: { actions: ['view'] },
+        snippets: ['pm', 'pm.*'],
+      },
+    });
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    const userAgent: any = app.agent().login(testUser);
+
+    const getResp = await userAgent.resource('dataSources.roles', 'main').get({
+      filterByTk: 'testRole',
+    });
+
+    expect(getResp.statusCode).toEqual(200);
+  });
 });

@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef } from 're
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollection_deprecated } from '../collection-manager';
 import { CollectionRecord, useCollectionParentRecordData, useCollectionRecord } from '../data-source';
+import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
@@ -147,14 +148,14 @@ export const useFormBlockContext = () => {
  */
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
-  const record = useRecord();
+  const treeParentRecord = useTreeParentRecord();
   const { fieldSchema } = useActionContext();
   const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
     if (addChild) {
       ctx.form?.query('parent').take((field) => {
         field.disabled = true;
-        field.value = new Proxy({ ...record?.__parent }, {});
+        field.value = treeParentRecord;
       });
     }
   });
