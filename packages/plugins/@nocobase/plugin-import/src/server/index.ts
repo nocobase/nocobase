@@ -11,18 +11,20 @@ export class PluginImportServer extends Plugin {
   }
 
   async load() {
-    this.app.resourcer.use(importMiddleware);
-    this.app.resourcer.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
-    this.app.resourcer.registerActionHandler('importXlsx', importXlsx);
+    this.app.dataSourceManager.hookOnEveryInstancesOnce((dataSource) => {
+      dataSource.resourceManager.use(importMiddleware);
+      dataSource.resourceManager.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
+      dataSource.resourceManager.registerActionHandler('importXlsx', importXlsx);
 
-    this.app.acl.setAvailableAction('importXlsx', {
-      displayName: '{{t("Import")}}',
-      allowConfigureFields: true,
-      type: 'new-data',
-      onNewRecord: true,
+      dataSource.acl.setAvailableAction('importXlsx', {
+        displayName: '{{t("Import")}}',
+        allowConfigureFields: true,
+        type: 'new-data',
+        onNewRecord: true,
+      });
+
+      dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
     });
-
-    this.app.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
   }
 
   async install(options: InstallOptions) {
