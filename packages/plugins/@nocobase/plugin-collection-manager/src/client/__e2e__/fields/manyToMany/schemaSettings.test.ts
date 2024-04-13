@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  mockUserRecordsWithoutDepartments,
   oneFilterFormBlockWithAllAssociationFields,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   test,
@@ -11,7 +12,7 @@ import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern } fro
 test.describe('form item & create form', () => {
   test('supported options', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-    await mockRecords('users', 3);
+    await mockUserRecordsWithoutDepartments(mockRecords, 3);
     await nocoPage.goto();
 
     await expectSettingsMenu({
@@ -48,7 +49,7 @@ test.describe('form item & create form', () => {
       gotoPage: async () => {
         recordsOfUser = await (async (mockPage, mockRecords) => {
           const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-          const recordsOfUser = await mockRecords('users', 3);
+          const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
           await nocoPage.goto();
 
           return recordsOfUser;
@@ -88,7 +89,7 @@ test.describe('form item & create form', () => {
       gotoPage: async () => {
         records = await (async (mockPage, mockRecords) => {
           const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-          const recordsOfUser = await mockRecords('users', 3);
+          const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
           await nocoPage.goto();
 
           return recordsOfUser;
@@ -134,7 +135,7 @@ test.describe('form item & create form', () => {
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
     const records = await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       return recordsOfUser;
@@ -180,7 +181,7 @@ test.describe('form item & create form', () => {
   test('set default sorting rules', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       return recordsOfUser;
@@ -217,7 +218,7 @@ test.describe('form item & create form', () => {
   test('field component', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       return recordsOfUser;
@@ -297,7 +298,7 @@ test.describe('form item & create form', () => {
   test('quick create', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       return recordsOfUser;
@@ -318,7 +319,7 @@ test.describe('form item & create form', () => {
   test('allow multiple', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       return recordsOfUser;
@@ -338,7 +339,7 @@ test.describe('form item & create form', () => {
   test('title field', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       return recordsOfUser;
@@ -359,7 +360,7 @@ test.describe('form item & create form', () => {
 test.describe('form item & edit form', () => {
   test('supported options', async ({ page, mockRecords, mockPage }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-    await mockRecords('users', 3);
+    await mockUserRecordsWithoutDepartments(mockRecords, 3);
     await mockRecords('general', 1);
     await nocoPage.goto();
 
@@ -398,7 +399,7 @@ test.describe('form item & edit form', () => {
         record = (
           await (async (mockPage, mockRecords) => {
             const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-            const recordsOfUser = await mockRecords('users', 3);
+            const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
             const record = (await mockRecords('general', 1))[0];
             await nocoPage.goto();
 
@@ -444,7 +445,7 @@ test.describe('form item & edit form', () => {
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
     const { recordsOfUser } = await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       const record = (await mockRecords('general', 1))[0];
       await nocoPage.goto();
 
@@ -490,7 +491,7 @@ test.describe('form item & edit form', () => {
   test('set default sorting rules', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       const record = (await mockRecords('general', 1))[0];
       await nocoPage.goto();
 
@@ -528,7 +529,7 @@ test.describe('form item & edit form', () => {
   test('field component', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       const record = (await mockRecords('general', 1))[0];
       await nocoPage.goto();
 
@@ -556,7 +557,7 @@ test.describe('form item & edit form', () => {
   test('quick create', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       const record = (await mockRecords('general', 1))[0];
       await nocoPage.goto();
 
@@ -578,7 +579,7 @@ test.describe('form item & edit form', () => {
   test('allow multiple', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       const record = (await mockRecords('general', 1))[0];
       await nocoPage.goto();
 
@@ -599,7 +600,7 @@ test.describe('form item & edit form', () => {
   test('title field', async ({ page, mockPage, mockRecords }) => {
     await (async (mockPage, mockRecords) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockRecords('users', 3);
+      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       const record = (await mockRecords('general', 1))[0];
       await nocoPage.goto();
 

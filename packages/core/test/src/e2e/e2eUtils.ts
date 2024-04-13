@@ -1003,3 +1003,13 @@ export const createBlockInPage = async (page: Page, name: string) => {
 
   await page.mouse.move(300, 0);
 };
+
+export const mockUserRecordsWithoutDepartments = (mockRecords: ExtendUtils['mockRecords'], count: number) => {
+  return mockRecords(
+    'users',
+    Array.from({ length: count }).map(() => ({
+      departments: null,
+      mainDepartment: null,
+    })),
+  );
+};
