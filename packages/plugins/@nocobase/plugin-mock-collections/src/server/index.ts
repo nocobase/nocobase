@@ -2,13 +2,13 @@ import Database, { Collection, Repository } from '@nocobase/database';
 import { CollectionRepository } from '@nocobase/plugin-collection-manager';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { merge, uid } from '@nocobase/utils';
+import { promises as fs } from 'fs';
 import _ from 'lodash';
+import path from 'path';
+import { Client } from 'pg';
 import collectionTemplates from './collection-templates';
 import * as fieldInterfaces from './field-interfaces';
 import { mockAttachment } from './field-interfaces';
-import { Client } from 'pg';
-import path from 'path';
-import { promises as fs } from 'fs';
 
 export class PluginMockCollectionsServer extends Plugin {
   async load() {
@@ -190,7 +190,7 @@ export class PluginMockCollectionsServer extends Plugin {
     this.app.resourcer.registerActions({
       mock: async (ctx, next) => {
         const { resourceName } = ctx.action;
-        const { values, count = 10 } = ctx.action.params;
+        const { values, count = 10, maxDepth = 4 } = ctx.action.params;
         const mockCollectionData = async (collectionName, count = 1, depth = 0, maxDepth = 4) => {
           const collection = ctx.db.getCollection(collectionName) as Collection;
           const items = await Promise.all(
@@ -224,7 +224,7 @@ export class PluginMockCollectionsServer extends Plugin {
         if (Array.isArray(values)) {
           size = values.length;
         }
-        const data = await mockCollectionData(resourceName, size);
+        const data = await mockCollectionData(resourceName, size, 0, maxDepth);
         // ctx.body = {
         //   values: (Array.isArray(data) ? data : [data]).map((item, index) => {
         //     if (Array.isArray(values)) {
