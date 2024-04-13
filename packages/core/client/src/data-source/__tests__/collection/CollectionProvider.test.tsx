@@ -80,7 +80,7 @@ describe('CollectionProvider', () => {
 
     renderApp(Demo, { name: 'not-exists', allowNull: false });
 
-    expect(document.body.innerHTML).toContain('ant-result');
+    expect(screen.getByText('Delete')).toBeInTheDocument();
   });
 
   test('useCollectionFields() support predicate', () => {

@@ -81,5 +81,12 @@
   "Time range": "时间范围",
   "Edit field properties": "编辑字段属性",
   "Select a source field to use metadata of the field": "选择来源字段可以复用字段的元数据配置",
-  "Original field": "原始字段"
+  "Original field": "原始字段",
+  "Transformation": "数据转换",
+  "Add transformation": "添加数据转换",
+  "Container": "容器",
+  "Show border": "显示边框",
+  "Transformation tip": "一个字段可以应用多次转换，会按照顺序执行，请注意每次转换后的数据类型，拖动可以调整转换顺序。",
+  "Type conversion": "类型转换",
+  "Transformer": "转换方法"
 }

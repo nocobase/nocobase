@@ -79,17 +79,22 @@ export abstract class DataSource extends EventEmitter {
   }
 
   middleware(middlewares: any = []) {
+    const dataSource = this;
+
     if (!this['_used']) {
       for (const [fn, options] of middlewares) {
         this.resourceManager.use(fn, options);
       }
       this['_used'] = true;
     }
+
     return async (ctx, next) => {
       ctx.getCurrentRepository = () => {
         const { resourceName, resourceOf } = ctx.action;
         return this.collectionManager.getRepository(resourceName, resourceOf);
       };
+
+      ctx.dataSource = dataSource;
 
       return compose([this.collectionToResourceMiddleware(), this.resourceManager.middleware()])(ctx, next);
     };

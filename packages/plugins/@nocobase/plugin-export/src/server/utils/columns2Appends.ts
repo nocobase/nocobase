@@ -2,13 +2,13 @@ export function columns2Appends(columns, ctx) {
   const { resourceName } = ctx.action;
   const appends = new Set([]);
   for (const column of columns) {
-    let collection = ctx.db.getCollection(resourceName);
+    let collection = ctx.dataSource.collectionManager.getCollection(resourceName);
     const appendColumns = [];
     for (let i = 0, iLen = column.dataIndex.length; i < iLen; i++) {
       const field = collection.getField(column.dataIndex[i]);
       if (field?.target) {
         appendColumns.push(column.dataIndex[i]);
-        collection = ctx.db.getCollection(field.target);
+        collection = ctx.dataSource.collectionManager.getCollection(field.target);
       }
     }
     if (appendColumns.length > 0) {

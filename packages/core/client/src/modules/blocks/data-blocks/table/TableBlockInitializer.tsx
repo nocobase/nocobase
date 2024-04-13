@@ -1,9 +1,9 @@
 import { TableOutlined } from '@ant-design/icons';
+import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application/schema-initializer/context';
 import { useCollectionManager_deprecated } from '../../../../collection-manager/hooks/useCollectionManager_deprecated';
-import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import React from 'react';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
+import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { createTableBlockUISchema } from './createTableBlockUISchema';
 
 export const TableBlockInitializer = ({
@@ -28,26 +28,19 @@ export const TableBlockInitializer = ({
   ) => any;
   showAssociationFields?: boolean;
 }) => {
-  const { insert } = useSchemaInitializer();
-  const { getCollection } = useCollectionManager_deprecated();
   const itemConfig = useSchemaInitializerItem();
+  const { createTableBlock } = useCreateTableBlock();
+
   return (
     <DataBlockInitializer
       {...itemConfig}
       icon={<TableOutlined />}
       componentType={'Table'}
-      onCreateBlockSchema={async ({ item }) => {
+      onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
-          return createBlockSchema({ item });
+          return createBlockSchema(options);
         }
-
-        const collection = getCollection(item.name, item.dataSource);
-        const schema = createTableBlockUISchema({
-          collectionName: item.name,
-          dataSource: item.dataSource,
-          rowKey: collection.filterTargetKey || 'id',
-        });
-        insert(schema);
+        createTableBlock(options);
       }}
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
@@ -55,4 +48,21 @@ export const TableBlockInitializer = ({
       showAssociationFields={showAssociationFields}
     />
   );
+};
+
+export const useCreateTableBlock = () => {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createTableBlock = ({ item }) => {
+    const collection = getCollection(item.name, item.dataSource);
+    const schema = createTableBlockUISchema({
+      collectionName: item.name,
+      dataSource: item.dataSource,
+      rowKey: collection.filterTargetKey || 'id',
+    });
+    insert(schema);
+  };
+
+  return { createTableBlock };
 };

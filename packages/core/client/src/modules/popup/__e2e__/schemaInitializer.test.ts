@@ -238,9 +238,10 @@ test.describe('add blocks to the popup', () => {
     // 打开弹窗
     await page.getByLabel('action-Action.Link-View-view-roles-table-root').click();
 
-    // 直接点击 Details 选项创建详情区块
+    // 点击 Details -> Current record 选项创建详情区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details' }).click();
+    await page.getByRole('menuitem', { name: 'table Details' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
     await page.getByRole('menuitem', { name: 'Role UID' }).click();
     await expect(page.getByLabel('block-item-CollectionField-Role').getByText('root')).toBeVisible();
@@ -251,6 +252,7 @@ test.describe('add blocks to the popup', () => {
     await page.getByRole('menuitem', { name: 'form Form (Edit)' }).click();
     await page.getByLabel('schema-initializer-Grid-form:').hover();
     await page.getByRole('menuitem', { name: 'Role UID' }).click();
+    await page.mouse.move(300, 0);
     await expect(
       page.getByLabel('block-item-CollectionField-roles-form-roles.name-Role UID').getByRole('textbox'),
     ).toHaveValue('root');

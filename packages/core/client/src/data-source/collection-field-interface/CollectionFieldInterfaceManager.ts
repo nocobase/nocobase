@@ -37,7 +37,6 @@ export class CollectionFieldInterfaceManager {
       if (item.notSupportDataSourceType) {
         return !item.notSupportDataSourceType?.includes(dataSourceType);
       }
-      return true;
     });
   }
 

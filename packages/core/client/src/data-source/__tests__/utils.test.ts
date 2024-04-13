@@ -1,4 +1,12 @@
-import { CollectionFieldInterface, isTitleField, Application } from '@nocobase/client';
+import {
+  CollectionFieldInterface,
+  isTitleField,
+  Application,
+  useDataSourceHeaders,
+  DEFAULT_DATA_SOURCE_KEY,
+} from '@nocobase/client';
+import { renderHook } from '@nocobase/test/client';
+
 import collections from './collections.json';
 
 describe('utils', () => {
@@ -40,6 +48,52 @@ describe('utils', () => {
         interface: 'demo2',
       };
       expect(isTitleField(dm, field)).toBeTruthy();
+    });
+  });
+
+  describe('useDataSourceHeaders', () => {
+    test('should return undefined when dataSource is not provided', () => {
+      const { result } = renderHook(() => useDataSourceHeaders());
+
+      expect(result.current).toBeUndefined();
+    });
+
+    test('should return undefined when dataSource is the default key', () => {
+      const { result } = renderHook(() => useDataSourceHeaders(DEFAULT_DATA_SOURCE_KEY));
+
+      expect(result.current).toBeUndefined();
+    });
+
+    test('should return correct headers when dataSource is provided and not the default key', () => {
+      const dataSource = 'customDataSource';
+      const { result } = renderHook(() => useDataSourceHeaders(dataSource));
+
+      expect(result.current).toEqual({ 'x-data-source': dataSource });
+    });
+
+    test('should return undefined when dataSource is an empty string', () => {
+      const { result } = renderHook(() => useDataSourceHeaders(''));
+
+      expect(result.current).toBeUndefined();
+    });
+
+    test('should return undefined when dataSource is null', () => {
+      // This test will always pass in TypeScript since the type doesn't allow null, but included for comprehensive testing if the dataSource type changes.
+      const { result } = renderHook(() => useDataSourceHeaders(null as unknown as string));
+
+      expect(result.current).toBeUndefined();
+    });
+
+    test('should handle dataSource change', () => {
+      const { result, rerender } = renderHook(({ dataSource }) => useDataSourceHeaders(dataSource), {
+        initialProps: { dataSource: 'initialDataSource' },
+      });
+
+      expect(result.current).toEqual({ 'x-data-source': 'initialDataSource' });
+
+      // Change the dataSource prop
+      rerender({ dataSource: 'updatedDataSource' });
+      expect(result.current).toEqual({ 'x-data-source': 'updatedDataSource' });
     });
   });
 });

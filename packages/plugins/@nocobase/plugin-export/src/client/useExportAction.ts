@@ -8,7 +8,8 @@ import {
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { saveAs } from 'file-saver';
-import { useTranslation } from 'react-i18next';
+import { App } from 'antd';
+import { useExportTranslation } from './locale';
 
 export const useExportAction = () => {
   const { service, resource } = useBlockRequestContext();
@@ -17,9 +18,17 @@ export const useExportAction = () => {
   const compile = useCompile();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { name, title, getField } = useCollection_deprecated();
-  const { t } = useTranslation();
+  const { t } = useExportTranslation();
+  const { modal } = App.useApp();
   return {
     async onClick() {
+      const confirmed = await modal.confirm({
+        title: t('Export'),
+        content: t('Export warning'),
+      });
+      if (!confirmed) {
+        return;
+      }
       const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =
