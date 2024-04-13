@@ -191,6 +191,7 @@ const EditFieldAction = (props) => {
   const compile = useCompile();
   const { name } = useParams();
   const isDialect = (dialect: string) => currentDatabase?.dialect === dialect;
+  const fields = record?.fields || getCollection(record.collectionName, name)?.options?.fields;
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
@@ -204,7 +205,7 @@ const EditFieldAction = (props) => {
       record?.fields ||
       getCollection(record.collectionName, name)
         ?.options?.fields.filter((v) => {
-          return v.interface === 'select';
+          return ['string', 'bigInt', 'integer'].includes(v.type);
         })
         .map((k) => {
           return {
@@ -213,7 +214,7 @@ const EditFieldAction = (props) => {
           };
         })
     );
-  }, [record.name]);
+  }, [record.name, fields]);
   return (
     <RecordProvider record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
