@@ -2,7 +2,7 @@ import { useVariable } from '../../../modules/variable/useVariable';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
- * 变量：`弹窗记录`
+ * 变量：`Current popup record`
  * @param props
  * @returns
  */

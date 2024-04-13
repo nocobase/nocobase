@@ -57,6 +57,7 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
 };
 
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
+  const { t } = useTranslation();
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -107,7 +108,12 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
             return (
-              <DeclareVariable name="$nPopupRecord" title="弹窗记录" value={record} collection={collection}>
+              <DeclareVariable
+                name="$nPopupRecord"
+                title={t('Current popup record')}
+                value={record}
+                collection={collection}
+              >
                 <SubFormProvider value={{ value: record, collection }}>
                   <RecordIndexProvider index={record.__index || index}>
                     <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>

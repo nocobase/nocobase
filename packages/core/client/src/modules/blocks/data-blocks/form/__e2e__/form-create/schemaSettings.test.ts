@@ -784,10 +784,10 @@ test.describe('creation form block schema settings', () => {
       await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abcd');
     });
 
-    test('弹窗记录', async ({ page, mockPage }) => {
+    test('Current popup record', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableWithUsers).goto();
 
-      // 1. 表单字段默认值中使用 `弹窗记录`
+      // 1. 表单字段默认值中使用 `Current popup record`
       await page.getByLabel('action-Action.Link-View').click();
       await page.getByLabel('schema-initializer-Grid-popup').hover();
       await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
@@ -800,12 +800,12 @@ test.describe('creation form block schema settings', () => {
       await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
       await page.getByRole('menuitem', { name: 'Set default value' }).click();
       await page.getByLabel('variable-button').click();
-      await page.getByRole('menuitemcheckbox', { name: '弹窗记录 right' }).click();
+      await page.getByRole('menuitemcheckbox', { name: 'Current popup record right' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
       await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
 
-      // 2. 表单联动规则中使用 `弹窗记录`
+      // 2. 表单联动规则中使用 `Current popup record`
       // 创建 Username 字段
       await page.getByLabel('schema-initializer-Grid-form:').hover();
       await page.getByRole('menuitem', { name: 'Username' }).click();
@@ -823,7 +823,7 @@ test.describe('creation form block schema settings', () => {
       await page.getByTestId('select-linkage-value-type').click();
       await page.getByTitle('Expression').click();
       await page.getByLabel('variable-button').click();
-      await page.getByRole('menuitemcheckbox', { name: '弹窗记录 right' }).click();
+      await page.getByRole('menuitemcheckbox', { name: 'Current popup record right' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'Username' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
       // 需正确显示变量的值
@@ -831,7 +831,7 @@ test.describe('creation form block schema settings', () => {
         page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
       ).toHaveValue('nocobase');
 
-      // 3. Table 数据选择器中使用 `弹窗记录`
+      // 3. Table 数据选择器中使用 `Current popup record`
       // 创建 Table 区块
       await page.getByLabel('schema-initializer-Grid-popup').hover();
       await page.getByRole('menuitem', { name: 'table Table right' }).hover();
@@ -845,7 +845,7 @@ test.describe('creation form block schema settings', () => {
         .hover();
       await page.getByRole('menuitem', { name: 'Nickname' }).click();
       await page.mouse.move(300, 0);
-      // 设置数据范围（使用 `弹窗记录` 变量）
+      // 设置数据范围（使用 `Current popup record` 变量）
       await page
         .getByTestId('drawer-Action.Container-users-View record')
         .getByLabel('block-item-CardItem-users-table')
@@ -859,7 +859,7 @@ test.describe('creation form block schema settings', () => {
       await page.getByTestId('select-filter-field').click();
       await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
       await page.getByLabel('variable-button').click();
-      await page.getByRole('menuitemcheckbox', { name: '弹窗记录 right' }).click();
+      await page.getByRole('menuitemcheckbox', { name: 'Current popup record right' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
       // 数据需显示正确
