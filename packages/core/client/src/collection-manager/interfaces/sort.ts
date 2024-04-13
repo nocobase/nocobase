@@ -22,7 +22,7 @@ export class SortFieldInterface extends CollectionFieldInterface {
       'x-validator': 'integer',
     },
   };
-  availableTypes = ['bigInt', 'integer', 'sort'];
+  availableTypes = ['sort'];
   hasDefaultValue = false;
   properties = {
     ...defaultProps,
