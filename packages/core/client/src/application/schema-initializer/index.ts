@@ -1,4 +1,4 @@
-export * from './hoc';
+export * from './withInitializer';
 export * from './hooks';
 export * from './types';
 export * from './context';

@@ -1,4 +1,4 @@
-import { createListBlockSchema } from '../createListBlockSchema';
+import { createListBlockUISchema } from '../createListBlockUISchema';
 
 describe('createListBlockSchema', () => {
   test('should return the correct schema', () => {
@@ -20,7 +20,7 @@ describe('createListBlockSchema', () => {
       rowKey: 'id',
     };
 
-    const schema = createListBlockSchema(options);
+    const schema = createListBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
       {

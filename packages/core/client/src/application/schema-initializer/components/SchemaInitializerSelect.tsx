@@ -55,6 +55,9 @@ export const SchemaInitializerSelect: FC<SchemaInitializerSelectItemProps> = (pr
   );
 };
 
+/**
+ * @internal
+ */
 export const SchemaInitializerSelectInternal = () => {
   const itemConfig = useSchemaInitializerItem<SchemaInitializerSelectItemProps>();
   return <SchemaInitializerSelect {...itemConfig} />;

@@ -203,11 +203,8 @@ export class ACL extends EventEmitter {
       return null;
     }
 
-    const snippetAllowed = aclRole.snippetAllowed(`${resource}:${action}`);
-
-    // if (snippetAllowed === false) {
-    //   return null;
-    // }
+    const actionPath = `${resource}:${action}`;
+    const snippetAllowed = aclRole.snippetAllowed(actionPath);
 
     const fixedParams = this.fixedParamsManager.getParams(resource, action);
 

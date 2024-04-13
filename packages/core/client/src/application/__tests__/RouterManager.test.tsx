@@ -188,6 +188,7 @@ describe('Router', () => {
       const RouterComponent = router.getRouterComponent();
       render(<RouterComponent />);
       expect(screen.queryByTestId('content')).not.toBeInTheDocument();
+      expect(router.getBasename()).toBe('/admin');
 
       window.location.hash = '#/admin';
 

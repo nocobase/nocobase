@@ -22,6 +22,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
+import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
@@ -117,7 +118,7 @@ export function useCollectValuesToSubmit() {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord();
+  const treeParentRecord = useTreeParentRecord();
 
   return useCallback(async () => {
     const { assignedValues: originalAssignedValues = {}, overwriteValues } = actionSchema?.['x-action-settings'] ?? {};
@@ -156,8 +157,8 @@ export function useCollectValuesToSubmit() {
     const addChild = fieldSchema?.['x-component-props']?.addChild;
     if (addChild) {
       const treeParentField = getTreeParentField();
-      values[treeParentField?.name ?? 'parent'] = omit(currentRecord?.__parent, ['children']);
-      values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord?.__parent?.id;
+      values[treeParentField?.name ?? 'parent'] = treeParentRecord;
+      values[treeParentField?.foreignKey ?? 'parentId'] = treeParentRecord?.id;
     }
 
     return {
@@ -167,7 +168,6 @@ export function useCollectValuesToSubmit() {
     };
   }, [
     actionSchema,
-    currentRecord?.__parent,
     field,
     fieldNames,
     fieldSchema,
@@ -179,6 +179,7 @@ export function useCollectValuesToSubmit() {
     localVariables,
     name,
     resource,
+    treeParentRecord,
     variables,
   ]);
 }

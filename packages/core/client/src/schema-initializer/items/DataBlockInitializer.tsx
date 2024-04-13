@@ -8,11 +8,11 @@ import {
   useGetSchemaInitializerMenuItems,
   useSchemaInitializer,
 } from '../../application';
+import { DataSource } from '../../data-source';
 import { Collection, CollectionFieldOptions } from '../../data-source/collection/Collection';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
-import { DataSource } from '../../data-source';
 
 const MENU_ITEM_HEIGHT = 40;
 const STEP = 15;
@@ -260,8 +260,10 @@ export interface DataBlockInitializerProps {
     templateSchema: any,
     {
       item,
+      fromOthersInPopup,
     }: {
       item: any;
+      fromOthersInPopup?: boolean;
     },
   ) => any;
   onCreateBlockSchema?: (args: any) => void;
@@ -278,6 +280,14 @@ export interface DataBlockInitializerProps {
   /** 如果只有一项数据表时，不显示 children 列表 */
   hideChildrenIfSingleCollection?: boolean;
   items?: ReturnType<typeof useCollectionDataSourceItems>[];
+  /**
+   * 是否是点击弹窗中的 Others 选项进入的
+   */
+  fromOthersInPopup?: boolean;
+  /**
+   * 隐藏弹窗中的 Other records 选项
+   */
+  hideOtherRecordsInPopup?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -295,6 +305,8 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     hideChildrenIfSingleCollection,
     filterDataSource,
     items: itemsFromProps,
+    fromOthersInPopup,
+    hideOtherRecordsInPopup,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -303,15 +315,15 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     async ({ item }) => {
       if (item.template) {
         const s = await getTemplateSchemaByMode(item);
-        templateWrap ? insert(templateWrap(s, { item })) : insert(s);
+        templateWrap ? insert(templateWrap(s, { item, fromOthersInPopup })) : insert(s);
       } else {
         if (onCreateBlockSchema) {
-          onCreateBlockSchema({ item });
+          onCreateBlockSchema({ item, fromOthersInPopup });
         }
       }
       setVisible(false);
     },
-    [getTemplateSchemaByMode, insert, onCreateBlockSchema, setVisible, templateWrap],
+    [fromOthersInPopup, getTemplateSchemaByMode, insert, onCreateBlockSchema, setVisible, templateWrap],
   );
   const items =
     itemsFromProps ||
@@ -323,6 +335,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
       onlyCurrentDataSource,
       showAssociationFields,
       dataBlockInitializerProps: props,
+      hideOtherRecordsInPopup,
     });
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {

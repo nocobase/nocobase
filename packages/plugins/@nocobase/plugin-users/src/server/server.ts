@@ -114,7 +114,7 @@ export default class PluginUsersServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.*`,
-      actions: ['users:listExcludeRole', 'users:list'],
+      actions: ['users:*'],
     });
   }
 

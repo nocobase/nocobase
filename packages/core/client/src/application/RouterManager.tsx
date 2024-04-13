@@ -112,7 +112,7 @@ export class RouterManager {
   /**
    * @internal
    */
-  getRouterComponent() {
+  getRouterComponent(children?: React.ReactNode) {
     const { type = 'browser', ...opts } = this.options;
     const Routers = {
       hash: HashRouter,
@@ -134,6 +134,7 @@ export class RouterManager {
           <ReactRouter {...opts}>
             <BaseLayout>
               <RenderRoutes />
+              {children}
             </BaseLayout>
           </ReactRouter>
         </RouterContextCleaner>

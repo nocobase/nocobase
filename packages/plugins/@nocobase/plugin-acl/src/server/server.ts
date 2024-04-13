@@ -180,6 +180,9 @@ export class PluginACLServer extends Plugin {
         'uiSchemas:getProperties',
         'roles.menuUiSchemas:*',
         'roles.users:*',
+        'dataSources.roles:*',
+        'roles.dataSourcesCollections:*',
+        'roles.dataSourceResources:*',
       ],
     });
 

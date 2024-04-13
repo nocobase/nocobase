@@ -6,12 +6,11 @@ import { columns2Appends } from '../utils';
 
 export async function exportXlsx(ctx: Context, next: Next) {
   const { title, filter, sort, fields, except } = ctx.action.params;
-  const { resourceName, resourceOf } = ctx.action;
   let columns = ctx.action.params.values?.columns || ctx.action.params?.columns;
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
-  const repository = ctx.db.getRepository<any>(resourceName, resourceOf) as Repository;
+  const repository = ctx.getCurrentRepository() as Repository;
   const collection = repository.collection;
   columns = columns?.filter((col) => collection.hasField(col.dataIndex[0]) && col?.dataIndex?.length > 0);
   const appends = columns2Appends(columns, ctx);
