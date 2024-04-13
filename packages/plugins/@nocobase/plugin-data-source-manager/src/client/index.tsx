@@ -21,7 +21,7 @@ export class PluginDataSourceManagerClient extends Plugin {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       icon: 'ClusterOutlined',
       showTabs: false,
-      aclSnippet: 'pm.database-connections.manager',
+      aclSnippet: 'pm.data-source-manager',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.list`, {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,

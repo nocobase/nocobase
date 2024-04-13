@@ -130,6 +130,10 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         const items = lodash.get(ctx, dataPath);
 
+        if (!Array.isArray(items)) {
+          return;
+        }
+
         lodash.set(
           ctx,
           dataPath,
