@@ -224,7 +224,7 @@ export class PluginMockCollectionsServer extends Plugin {
         if (Array.isArray(values)) {
           size = values.length;
         }
-        const data = await mockCollectionData(resourceName, size, 0, maxDepth);
+        const data = await mockCollectionData(resourceName, size, 0, Number(maxDepth));
         // ctx.body = {
         //   values: (Array.isArray(data) ? data : [data]).map((item, index) => {
         //     if (Array.isArray(values)) {

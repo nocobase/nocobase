@@ -423,6 +423,7 @@ const _test = base.extend<ExtendUtils>({
       let maxDepth: number;
       if (_.isNumber(data)) {
         maxDepth = data;
+        data = undefined;
       }
       if (_.isArray(count)) {
         data = count;
@@ -891,7 +892,7 @@ const createRandomData = async (collectionName: string, count = 10, data?: any, 
   const headers = getHeaders(state);
 
   const result = await api.post(
-    `/api/${collectionName}:mock?count=${count}${maxDepth ? `?maxDepth=${maxDepth}` : ''}`,
+    `/api/${collectionName}:mock?count=${count}&maxDepth=${_.isNumber(maxDepth) ? maxDepth : 1}`,
     {
       headers,
       data,
