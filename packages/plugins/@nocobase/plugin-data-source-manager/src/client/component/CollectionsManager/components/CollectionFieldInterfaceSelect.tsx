@@ -20,7 +20,9 @@ const getInterfaceOptions = (data, type) => {
     return v.children.length > 0;
   });
 };
-
+const isValueInOptions = (value, options) => {
+  return options?.some((option) => option.children?.some?.((child) => child.name === value));
+};
 export const CollectionFieldInterfaceSelect = observer(
   (props: any) => {
     const { value, handleFieldChange } = props;
@@ -51,6 +53,19 @@ export const CollectionFieldInterfaceSelect = observer(
           );
           setSelectValue(targetValue);
         }
+        //选中的值不在选项中切换为第一个
+      } else if (selectValue && !isValueInOptions(selectValue, options)) {
+        const targetValue = options[0]?.children?.[0]?.name;
+        const interfaceConfig = getInterface(targetValue);
+        handleFieldChange(
+          {
+            interface: targetValue,
+            uiSchema: { title: record?.uiSchema?.title, ...interfaceConfig?.default?.uiSchema },
+          },
+          record.name,
+          false,
+        );
+        setSelectValue(targetValue);
       }
     }, [options]);
 
