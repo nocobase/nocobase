@@ -92,8 +92,9 @@ test.describe('configure fields', () => {
 
 test.describe('configure actions', () => {
   test('edit & delete & duplicate', async ({ page, mockPage, mockRecord }) => {
-    await mockPage(oneEmptyDetailsBlock).goto();
+    const nocoPage = await mockPage(oneEmptyDetailsBlock).waitForInit();
     await mockRecord('general');
+    await nocoPage.goto();
 
     await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
