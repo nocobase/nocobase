@@ -47,6 +47,7 @@ interface CanArgs {
   role: string;
   resource: string;
   action: string;
+  rawResourceName?: string;
   ctx?: any;
 }
 
@@ -196,18 +197,17 @@ export class ACL extends EventEmitter {
   }
 
   can(options: CanArgs): CanResult | null {
-    const { role, resource, action } = options;
+    const { role, resource, action, rawResourceName } = options;
     const aclRole = this.roles.get(role);
 
     if (!aclRole) {
       return null;
     }
 
-    const actionPath = `${resource}:${action}`;
+    const actionPath = `${rawResourceName ? rawResourceName : resource}:${action}`;
     const snippetAllowed = aclRole.snippetAllowed(actionPath);
 
-
-    const fixedParams = this.fixedParamsManager.getParams(resource, action);
+    const fixedParams = this.fixedParamsManager.getParams(rawResourceName ? rawResourceName : resource, action);
 
     const mergeParams = (result: CanResult) => {
       const params = result['params'] || {};
@@ -338,7 +338,7 @@ export class ACL extends EventEmitter {
       };
 
       ctx.permission = {
-        can: ctx.can({ resource: resourceName, action: actionName }),
+        can: ctx.can({ resource: resourceName, action: actionName, rawResourceName }),
         resourceName,
         actionName,
       };
@@ -365,7 +365,7 @@ export class ACL extends EventEmitter {
     };
 
     ctx.permission = {
-      can: ctx.can({ resource: resourceName, action: actionName }),
+      can: ctx.can({ resource: resourceName, action: actionName, rawResourceName }),
       resourceName,
       actionName,
     };
