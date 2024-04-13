@@ -9,7 +9,7 @@ export const redirect = async (ctx: Context, next: Next) => {
   if (appName && appName !== 'main') {
     const appSupervisor = AppSupervisor.getInstance();
     if (appSupervisor?.runningMode !== 'single') {
-      prefix += `/apps/${appName}`;
+      prefix += `apps/${appName}`;
     }
   }
   const auth = (await ctx.app.authManager.get(authenticator, ctx)) as SAMLAuth;
@@ -20,7 +20,9 @@ export const redirect = async (ctx: Context, next: Next) => {
     const { token } = await auth.signIn();
     ctx.redirect(`${prefix}${redirect || '/admin'}?authenticator=${authenticator}&token=${token}`);
   } catch (error) {
-    ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&error=${error.message}&redirect=${redirect}`);
+    ctx.redirect(
+      `${prefix}/signin?authenticator=${authenticator}&error=${error.message}&redirect=${redirect || '/admin'}`,
+    );
   }
   await next();
 };
