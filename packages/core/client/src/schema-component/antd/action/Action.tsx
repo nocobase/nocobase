@@ -9,8 +9,9 @@ import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { useDataBlockRequest } from '../../../data-source';
+import { useCollectionParentRecordData, useDataBlockRequest } from '../../../data-source';
 import { Icon } from '../../../icon';
+import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
@@ -63,6 +64,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const compile = useCompile();
     const form = useForm();
     const record = useRecord();
+    const parentRecordData = useCollectionParentRecordData();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
@@ -202,8 +204,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     // fix https://nocobase.height.app/T-3235/description
     if (addChild) {
       return wrapSSR(
-        <RecordProvider record={null} parent={record}>
-          {result}
+        // fix https://nocobase.height.app/T-3966
+        <RecordProvider record={null} parent={parentRecordData}>
+          <TreeRecordProvider parent={record}>{result}</TreeRecordProvider>
         </RecordProvider>,
       );
     }

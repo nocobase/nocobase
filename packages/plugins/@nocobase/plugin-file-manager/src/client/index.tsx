@@ -6,7 +6,7 @@ import { storageTypes } from './schemas/storageTypes';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
 
-export class FileManagerPlugin extends Plugin {
+export class PluginFileManagerClient extends Plugin {
   storageTypes = new Map();
 
   async load() {
@@ -47,4 +47,4 @@ export class FileManagerPlugin extends Plugin {
   }
 }
 
-export default FileManagerPlugin;
+export default PluginFileManagerClient;

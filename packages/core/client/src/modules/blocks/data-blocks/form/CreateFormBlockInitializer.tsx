@@ -2,11 +2,11 @@ import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { useBlockAssociationContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { createCreateFormBlockUISchema } from './createCreateFormBlockUISchema';
+import { useAssociationName } from '../../../../data-source';
 
 // TODO: `SchemaInitializerItem` items
 export const CreateFormBlockInitializer = () => {
@@ -14,7 +14,7 @@ export const CreateFormBlockInitializer = () => {
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { insert } = useSchemaInitializer();
-  const association = useBlockAssociationContext();
+  const association = useAssociationName();
   const collection = useCollection_deprecated();
   return (
     <SchemaInitializerItem

@@ -1,3 +1,7 @@
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
+import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, message } from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
@@ -10,10 +14,6 @@ import {
   useResourceContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, message } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
 
 import { CanvasContent } from './CanvasContent';
 import { ExecutionLink } from './ExecutionLink';
@@ -23,6 +23,7 @@ import { executionSchema } from './schemas/executions';
 import useStyles from './style';
 import { linkNodes, getWorkflowDetailPath } from './utils';
 import { ExecutionStatusColumn } from './components/ExecutionStatus';
+import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -231,6 +232,9 @@ export function WorkflowCanvas() {
                 ExecutionResourceProvider,
                 ExecutionLink,
                 ExecutionStatusColumn,
+              }}
+              scope={{
+                useRefreshActionProps,
               }}
             />
           </ActionContextProvider>

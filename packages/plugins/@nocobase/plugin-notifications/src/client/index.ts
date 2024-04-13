@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/client';
 
-class NotificationPlugin extends Plugin {
+class PluginNotificationClient extends Plugin {
   async load() {}
 }
 
-export default NotificationPlugin;
+export default PluginNotificationClient;

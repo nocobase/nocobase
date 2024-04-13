@@ -32,9 +32,10 @@ test.describe('tree table block schema settings', () => {
     // await expect(page.getByLabel('Expand row').first()).toBeVisible({ timeout: 1000 * 60 });
 
     await showSettingsMenu(page);
-    await expect(page.getByRole('menuitem', { name: 'Tree table' }).getByRole('switch')).toBeChecked();
-    await page.getByRole('menuitem', { name: 'Tree table' }).click();
+    //默认不启用
     await expect(page.getByRole('menuitem', { name: 'Tree table' }).getByRole('switch')).not.toBeChecked();
+    await page.getByRole('menuitem', { name: 'Tree table' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Tree table' }).getByRole('switch')).toBeChecked();
     // await expect(page.getByLabel('Expand row')).toBeHidden();
   });
 });

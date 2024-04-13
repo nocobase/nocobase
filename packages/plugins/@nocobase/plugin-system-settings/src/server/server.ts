@@ -1,7 +1,7 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
-export class SystemSettingsPlugin extends Plugin {
+export class PluginSystemSettingsServer extends Plugin {
   getInitAppLang(options) {
     return options?.cliArgs?.[0]?.opts?.lang || process.env.INIT_APP_LANG || 'en-US';
   }
@@ -48,4 +48,4 @@ export class SystemSettingsPlugin extends Plugin {
   }
 }
 
-export default SystemSettingsPlugin;
+export default PluginSystemSettingsServer;

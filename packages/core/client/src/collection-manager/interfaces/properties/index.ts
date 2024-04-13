@@ -295,7 +295,7 @@ export const dataSource: ISchema = {
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             'x-reactions': (field: Field) => {
-              if (!field.initialValue) {
+              if (!field.initialValue && !field.initialized) {
                 field.initialValue = uid();
                 field.setValue(uid());
               }

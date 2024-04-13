@@ -50,15 +50,18 @@ const InternalTableBlockProvider = (props: Props) => {
   const allIncludesChildren = useMemo(() => {
     const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
     const data = service?.data?.data;
-    if (treeTable !== false) {
+    if (treeTable) {
       const keys = getIdsWithChildren(data);
       return keys;
     }
   }, [service?.loading, fieldSchema]);
 
-  const setExpandFlagValue = useCallback(() => {
-    setExpandFlag(!expandFlag);
-  }, [expandFlag]);
+  const setExpandFlagValue = useCallback(
+    (falg) => {
+      setExpandFlag(falg || !expandFlag);
+    },
+    [expandFlag],
+  );
 
   return (
     <FixedBlockWrapper>
@@ -117,13 +120,14 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const params = useTableBlockParamsCompat(props);
 
   let childrenColumnName = 'children';
-  if (collection?.tree && treeTable !== false) {
+
+  if (treeTable) {
     if (resourceName?.includes('.')) {
       const f = getCollectionField(resourceName);
       if (f?.treeChildren) {
         childrenColumnName = f.name;
-        params['tree'] = true;
       }
+      params['tree'] = true;
     } else {
       const f = collection.fields.find((f) => f.treeChildren);
       if (f) {

@@ -77,14 +77,8 @@ const Usage = observer(
     const name = form.values.name ?? record.name;
 
     const url = useMemo(() => {
-      const options = app.getOptions();
-      const apiBaseURL: string = options?.apiClient?.['baseURL'];
-      const { protocol, host } = window.location;
       const appName = getSubAppName(app.getPublicPath()) || 'main';
-
-      return apiBaseURL.startsWith('http')
-        ? `${apiBaseURL}saml:redirect?authenticator=${name}&__appName=${appName}`
-        : `${protocol}//${host}${apiBaseURL}saml:redirect?authenticator=${name}&__appName=${appName}`;
+      return app.getApiUrl(`saml:redirect?authenticator=${name}&__appName=${appName}`);
     }, [app, name]);
 
     const copy = (text: string) => {

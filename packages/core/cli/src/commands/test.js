@@ -20,7 +20,6 @@ function addTestCommand(name, cli) {
     .arguments('[paths...]')
     .allowUnknownOption()
     .action(async (paths, opts) => {
-      process.argv.push('--disable-console-intercept');
       if (name === 'test:server') {
         process.env.TEST_ENV = 'server-side';
       } else if (name === 'test:client') {

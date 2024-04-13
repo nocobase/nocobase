@@ -50,6 +50,17 @@ test.describe('where table block can be added', () => {
         .getByLabel('block-item-CardItem-parentTargetCollection-table')
         .getByText(childRecord.parentAssociationField[0].parentTargetText),
     ).toBeVisible();
+
+    // 通过 Other records 创建一个表格区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-TableV2-table:configureColumns-users').hover();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByRole('button', { name: 'Super Admin' })).toBeVisible();
   });
 });
 
@@ -161,7 +172,12 @@ test.describe('configure columns', () => {
 
     // 点击开关，删除创建的字段
     await configureColumnButton.hover();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click({
+      position: {
+        x: 30,
+        y: 10,
+      },
+    });
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();

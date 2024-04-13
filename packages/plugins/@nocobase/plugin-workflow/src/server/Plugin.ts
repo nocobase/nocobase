@@ -46,33 +46,6 @@ export default class PluginWorkflowServer extends Plugin {
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
 
-  getLogger(workflowId: ID): Logger {
-    const now = new Date();
-    const date = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}`;
-    const key = `${date}-${workflowId}}`;
-    if (this.loggerCache.has(key)) {
-      return this.loggerCache.get(key);
-    }
-
-    const logger = this.createLogger({
-      dirname: path.join('workflows', date),
-      filename: `${workflowId}.log`,
-      transports: [...(process.env.NODE_ENV !== 'production' ? ['console'] : ['file'])],
-    } as LoggerOptions);
-
-    this.loggerCache.set(key, logger);
-
-    return logger;
-  }
-
-  isWorkflowSync(workflow: WorkflowModel) {
-    const trigger = this.triggers.get(workflow.type);
-    if (!trigger) {
-      throw new Error(`invalid trigger type ${workflow.type} of workflow ${workflow.id}`);
-    }
-    return trigger.sync ?? workflow.sync;
-  }
-
   private onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
 
@@ -119,7 +92,42 @@ export default class PluginWorkflowServer extends Plugin {
     }
   };
 
-  registerTrigger<T extends Trigger>(type: string, trigger: T | { new (p: Plugin): T }) {
+  /**
+   * @experimental
+   */
+  getLogger(workflowId: ID): Logger {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}`;
+    const key = `${date}-${workflowId}}`;
+    if (this.loggerCache.has(key)) {
+      return this.loggerCache.get(key);
+    }
+
+    const logger = this.createLogger({
+      dirname: path.join('workflows', date),
+      filename: `${workflowId}.log`,
+      transports: [...(process.env.NODE_ENV !== 'production' ? ['console'] : ['file'])],
+    } as LoggerOptions);
+
+    this.loggerCache.set(key, logger);
+
+    return logger;
+  }
+
+  /**
+   * @experimental
+   * @param {WorkflowModel} workflow
+   * @returns {boolean}
+   */
+  isWorkflowSync(workflow: WorkflowModel): boolean {
+    const trigger = this.triggers.get(workflow.type);
+    if (!trigger) {
+      throw new Error(`invalid trigger type ${workflow.type} of workflow ${workflow.id}`);
+    }
+    return trigger.sync ?? workflow.sync;
+  }
+
+  public registerTrigger<T extends Trigger>(type: string, trigger: T | { new (p: Plugin): T }) {
     if (typeof trigger === 'function') {
       this.triggers.register(type, new trigger(this));
     } else if (trigger) {
@@ -129,7 +137,10 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
-  registerInstruction(type: string, instruction: InstructionInterface | { new (p: Plugin): InstructionInterface }) {
+  public registerInstruction(
+    type: string,
+    instruction: InstructionInterface | { new (p: Plugin): InstructionInterface },
+  ) {
     if (typeof instruction === 'function') {
       this.instructions.register(type, new instruction(this));
     } else if (instruction) {
@@ -162,6 +173,9 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  /**
+   * @internal
+   */
   async load() {
     const { db, options } = this;
 
@@ -260,7 +274,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  toggle(workflow: WorkflowModel, enable?: boolean) {
+  private toggle(workflow: WorkflowModel, enable?: boolean) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
@@ -511,6 +525,13 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
+  /**
+   * @experimental
+   * @param {string} dataSourceName
+   * @param {Transaction} transaction
+   * @param {boolean} create
+   * @returns {Trasaction}
+   */
   useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
     // @ts-ignore
     const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;

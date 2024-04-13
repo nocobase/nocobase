@@ -263,6 +263,7 @@ const EditFieldAction = (props) => {
             ...scope,
             createOnly: false,
             createMainOnly: false,
+            editMainOnly: true,
           }}
         />
       </ActionContextProvider>

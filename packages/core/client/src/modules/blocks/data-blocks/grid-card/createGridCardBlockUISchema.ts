@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 
-export const createGridCardBlockSchema = (options: {
+export const createGridCardBlockUISchema = (options: {
   dataSource: string;
   collectionName?: string;
   association?: string;

@@ -2,7 +2,7 @@ import { useCollectionRecordData } from '../../data-source/collection-record/Col
 
 /**
  * @internal
- * 大部分区块（除了详情和编辑表单）都适用的获取 sourceId 的 hook
+ * 大部分区块（除了详情和编辑表单）都适用的获取 sourceRecord 的 hook
  * @param association
  * @returns
  */

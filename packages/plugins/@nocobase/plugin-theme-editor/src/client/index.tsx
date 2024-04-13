@@ -75,7 +75,7 @@ const CustomThemeProvider = React.memo((props) => {
 });
 CustomThemeProvider.displayName = 'CustomThemeProvider';
 
-export class ThemeEditorPlugin extends Plugin {
+export class PluginThemeEditorClient extends Plugin {
   async load() {
     this.app.use(CustomThemeProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -87,4 +87,4 @@ export class ThemeEditorPlugin extends Plugin {
   }
 }
 
-export default ThemeEditorPlugin;
+export default PluginThemeEditorClient;

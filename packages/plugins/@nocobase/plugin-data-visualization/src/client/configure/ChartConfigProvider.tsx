@@ -30,18 +30,9 @@ export const ChartConfigProvider: React.FC = (props) => {
   const { insertAdjacent } = useDesignable();
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<ChartConfigCurrent>({} as any);
-  const { token } = theme.useToken();
   return (
     <ChartConfigContext.Provider value={{ visible, setVisible, current, setCurrent }}>
-      <div
-        className={css`
-          .ant-card {
-            border: ${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary};
-          }
-        `}
-      >
-        {props.children}
-      </div>
+      {props.children}
       <ChartRendererProvider {...current.field?.decoratorProps}>
         <ChartConfigure insert={(schema, options) => insertAdjacent('beforeEnd', schema, options)} />
       </ChartRendererProvider>

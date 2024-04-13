@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettings, SchemaSettingsNumberFormat, useColumnSchema, useIsFieldReadPretty } from '@nocobase/client';
-
+import { useTargetCollectionField } from './components/Formula/Result';
 export const FormulaComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Formula.Result',
   items: [
@@ -16,8 +16,13 @@ export const FormulaComponentFieldSettings = new SchemaSettings({
         };
       },
       useVisible() {
+        const schema = useFieldSchema();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const { dataType } = useTargetCollectionField(fieldSchema) || {};
+        const isNumberFormat = ['integer', 'bigInt', 'double', 'decimal'].includes(dataType);
         const isFieldReadPretty = useIsFieldReadPretty();
-        return isFieldReadPretty;
+        return isFieldReadPretty && isNumberFormat;
       },
     },
   ],

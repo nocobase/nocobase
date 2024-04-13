@@ -23,13 +23,13 @@ export const DataSourceProvider: FC<DataSourceProviderProps> = ({ children, data
   const dataSourceValue = dataSourceManager.getDataSource(dataSource);
 
   if (!dataSourceValue) {
-    return <CollectionDeletedPlaceholder type="DataSource" name={dataSource} />;
+    return <CollectionDeletedPlaceholder type="Data Source" name={dataSource} />;
   }
 
   if (dataSourceValue.status === 'loading-failed') {
     return (
       <CollectionDeletedPlaceholder
-        type="DataSource"
+        type="Data Source"
         name={dataSourceValue.displayName || dataSource}
         message={dataSourceValue.errorMessage || 'loading failed'}
       />

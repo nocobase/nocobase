@@ -3,12 +3,12 @@ import { ConfigProvider, Popover, theme } from 'antd';
 import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 
 import { css } from '@emotion/css';
-import { useNiceDropdownMaxHeight } from '../../../common/useNiceDropdownHeight';
-import { useFlag } from '../../../flag-provider';
-import { useDesignable } from '../../../schema-component';
-import { useSchemaInitializerStyles } from '../components/style';
-import { SchemaInitializerContext } from '../context';
-import { SchemaInitializerOptions } from '../types';
+import { useNiceDropdownMaxHeight } from '../../common/useNiceDropdownHeight';
+import { useFlag } from '../../flag-provider';
+import { useDesignable } from '../../schema-component';
+import { useSchemaInitializerStyles } from './components/style';
+import { SchemaInitializerContext } from './context';
+import { SchemaInitializerOptions } from './types';
 
 const defaultWrap = (s: ISchema) => s;
 

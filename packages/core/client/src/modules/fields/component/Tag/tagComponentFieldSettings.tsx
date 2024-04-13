@@ -61,7 +61,7 @@ const titleField: any = {
     return {
       title: t('Title field'),
       options,
-      value: field?.componentProps?.fieldNames?.label,
+      value: fieldSchema?.['x-component-props']?.['fieldNames']?.label,
       onChange(label) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -150,7 +150,7 @@ export const tagComponentFieldSettings = new SchemaSettings({
         return {
           title: t('Tag color field'),
           options: colorFieldOptions,
-          value: field?.componentProps?.tagColorField,
+          value: fieldSchema?.['x-component-props']?.['tagColorField'],
           onChange(tagColorField) {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],

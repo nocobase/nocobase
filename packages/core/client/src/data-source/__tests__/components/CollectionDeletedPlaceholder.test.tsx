@@ -1,7 +1,8 @@
 import React from 'react';
 
-import { render, screen } from '@nocobase/test/client';
+import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { CollectionDeletedPlaceholder, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { App } from 'antd';
 
 function renderApp(name?: any, designable?: boolean) {
   const schema = {
@@ -16,31 +17,45 @@ function renderApp(name?: any, designable?: boolean) {
 
   render(
     <div data-testid="app">
-      <SchemaComponentProvider designable={designable}>
-        <SchemaComponent schema={schema} components={{ CollectionDeletedPlaceholder }} />
-      </SchemaComponentProvider>
+      <App>
+        <SchemaComponentProvider designable={designable}>
+          <SchemaComponent schema={schema} components={{ CollectionDeletedPlaceholder }} />
+        </SchemaComponentProvider>
+      </App>
     </div>,
   );
 }
 
 describe('CollectionDeletedPlaceholder', () => {
-  test('name is undefined, render `Result` component', () => {
+  test('name is undefined, render `Result` component', async () => {
     renderApp(undefined, true);
 
-    expect(document.body.innerHTML).toContain('ant-result');
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByText('Collection name is required')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Are you sure you want to delete it?')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('OK'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+    });
   });
 
-  describe('name exist', () => {
-    test('designable: true, render `Result` component', () => {
-      renderApp('test', true);
+  test('designable: true, render `Result` component', () => {
+    renderApp('test', true);
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(
+      screen.getByText('The collection "test" may have been deleted. Please remove this block.'),
+    ).toBeInTheDocument();
+  });
 
-      expect(document.body.innerHTML).toContain('ant-result');
-    });
+  test('designable: false, render nothing', () => {
+    renderApp('test', false);
 
-    test('designable: false, render nothing', () => {
-      renderApp('test', false);
-
-      expect(screen.getByTestId('app').innerHTML.length).toBe(0);
-    });
+    expect(screen.queryByText('Delete')).not.toBeInTheDocument();
   });
 });

@@ -1,10 +1,10 @@
 import { css, usePlugin } from '@nocobase/client';
 import React from 'react';
-import { MobileClientPlugin } from '../index';
+import { PluginMobileClient } from '../index';
 import { InterfaceProvider } from './InterfaceProvider';
 
 export const InterfaceRouter: React.FC = React.memo(() => {
-  const plugin = usePlugin(MobileClientPlugin);
+  const plugin = usePlugin(PluginMobileClient);
   const MobileRouter = plugin.getMobileRouterComponent();
 
   return (

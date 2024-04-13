@@ -1,8 +1,9 @@
-import { Plugin, canMakeAssociationBlock, useCollection } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { calendarBlockSettings } from './calendar/Calender.Settings';
 import { CalendarCollectionTemplate } from './collection-templates/calendar';
+import { useCalendarBlockDecoratorProps } from './hooks/useCalendarBlockDecoratorProps';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
 import {
   CalendarActionInitializers_deprecated,
@@ -14,9 +15,8 @@ import {
   CalendarBlockInitializer,
   RecordAssociationCalendarBlockInitializer,
   useCreateAssociationCalendarBlock,
+  useCreateCalendarBlock,
 } from './schema-initializer/items';
-import { useMemo } from 'react';
-import { useCalendarBlockDecoratorProps } from './hooks/useCalendarBlockDecoratorProps';
 
 export class PluginCalendarClient extends Plugin {
   async load() {
@@ -28,18 +28,9 @@ export class PluginCalendarClient extends Plugin {
     this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       useComponentProps() {
         const { createAssociationCalendarBlock } = useCreateAssociationCalendarBlock();
+        const { createCalendarBlock } = useCreateCalendarBlock();
 
         return {
           onlyCurrentDataSource: true,
@@ -49,7 +40,12 @@ export class PluginCalendarClient extends Plugin {
             }
             return false;
           },
-          createBlockSchema: createAssociationCalendarBlock,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createCalendarBlock({ item });
+            }
+            createAssociationCalendarBlock({ item });
+          },
           showAssociationFields: true,
           hideSearch: true,
         };

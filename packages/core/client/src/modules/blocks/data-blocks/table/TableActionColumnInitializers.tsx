@@ -188,7 +188,7 @@ const commonOptions = {
             const fieldSchema = useFieldSchema();
             const collection = useCollection_deprecated();
             const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
-            return collection.tree && treeTable !== false;
+            return collection.tree && treeTable;
           },
         },
       ],

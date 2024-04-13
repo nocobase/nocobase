@@ -82,7 +82,7 @@ export const readPrettyFormItemInitializers_deprecated = new CompatibleSchemaIni
         'x-editable': false,
         'x-decorator': 'FormItem',
         // 'x-designer': 'Markdown.Void.Designer',
-        'x-toolbar': 'BlockSchemaToolbar',
+        'x-toolbar': 'FormItemSchemaToolbar',
         'x-settings': 'blockSettings:markdown',
         'x-component': 'Markdown.Void',
         'x-component-props': {
@@ -127,7 +127,7 @@ export const readPrettyFormItemInitializers = new CompatibleSchemaInitializer(
           'x-editable': false,
           'x-decorator': 'FormItem',
           // 'x-designer': 'Markdown.Void.Designer',
-          'x-toolbar': 'BlockSchemaToolbar',
+          'x-toolbar': 'FormItemSchemaToolbar',
           'x-settings': 'blockSettings:markdown',
           'x-component': 'Markdown.Void',
           'x-component-props': {
