@@ -3,8 +3,7 @@ import { Op, Sequelize } from 'sequelize';
 import { isMySQL, isPg } from './utils';
 
 const getFieldName = (ctx) => {
-  const fieldName = ctx.fieldName;
-  return fieldName;
+  return ctx.model.rawAttributes[ctx.fieldName].field;
 };
 
 const escape = (value, ctx) => {
@@ -48,6 +47,7 @@ const emptyQuery = (ctx, operator: '=' | '>') => {
 
 export default {
   $match(value, ctx) {
+    const queryInterface = getQueryInterface(ctx);
     const fieldName = getFieldName(ctx);
 
     if (isPg(ctx)) {
