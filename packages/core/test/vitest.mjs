@@ -150,7 +150,27 @@ const defineClientConfig = () => {
 };
 
 export const getFilterInclude = (isServer, isCoverage) => {
-  let filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
+  let argv = process.argv
+    .slice(2);
+
+  argv = argv
+    .filter((item, index) => {
+      if (!item.startsWith('-')) {
+        const pre = argv[index - 1];
+
+        if (pre && pre.startsWith('--') && !pre.includes('=')) {
+          return false;
+        }
+
+        return true;
+      }
+
+      return false;
+    });
+
+
+  let filterFileOrDir = argv[0];
+
   if (!filterFileOrDir) return {};
   const absPath = path.join(process.cwd(), filterFileOrDir);
   const isDir = fs.existsSync(absPath) && fs.statSync(absPath).isDirectory();
@@ -213,11 +233,13 @@ export const defineConfig = () => {
   );
 
   const { isFile, include: filterInclude } = getFilterInclude(isServer);
+
   if (filterInclude) {
     config.test.include = filterInclude;
     if (isFile) {
       // 减少收集的文件
       config.test.exclude = [];
+
       config.test.coverage = {
         enabled: false,
       };
@@ -239,6 +261,7 @@ export const defineConfig = () => {
   if (reportsDirectory) {
     config.test.coverage.reportsDirectory = reportsDirectory;
   }
+
 
   return config;
 };
