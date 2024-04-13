@@ -1,9 +1,10 @@
-import { test, expect, oneEmptyTable, oneEmptyForm } from '@nocobase/test/e2e';
+import { expect, oneEmptyForm, oneEmptyTable, test } from '@nocobase/test/e2e';
 
 test.describe('custom request action', () => {
   test('edit button', async ({ page, mockPage, mockRecord }) => {
-    await mockPage(oneEmptyTable).goto();
+    const nocoPage = await mockPage(oneEmptyTable).waitForInit();
     await mockRecord('t_unp4scqamw9');
+    await nocoPage.goto();
 
     // 新建一个 custom request action
     await page.getByRole('button', { name: 'Actions', exact: true }).hover();
