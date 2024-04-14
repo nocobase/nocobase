@@ -1,4 +1,9 @@
-import { expectInitializerMenu, oneTableBlockWithAddNewAndViewAndEditAndMediaFields, test } from '@nocobase/test/e2e';
+import {
+  expect,
+  expectInitializerMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndMediaFields,
+  test,
+} from '@nocobase/test/e2e';
 
 test.describe('form item & create form', () => {
   test('configure fields', async ({ page, mockPage }) => {
@@ -19,7 +24,7 @@ test.describe('form item & create form', () => {
 test.describe('form item & edit form', () => {
   test('configure fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
-    await mockRecord('general');
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
@@ -31,6 +36,10 @@ test.describe('form item & edit form', () => {
         await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
+      expectValue: async () => {
+        await expect(page.getByText(record.markdown)).toBeVisible();
+        await expect(page.getByText(record.richtext)).toBeVisible();
+      },
     });
   });
 });
@@ -38,7 +47,7 @@ test.describe('form item & edit form', () => {
 test.describe('form item & view form', () => {
   test('configure fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
-    await mockRecord('general');
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
@@ -50,6 +59,10 @@ test.describe('form item & view form', () => {
         await page.getByLabel('schema-initializer-Grid-details:configureFields-general').hover();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
+      expectValue: async () => {
+        await expect(page.getByText(record.markdown)).toBeVisible();
+        await expect(page.getByText(record.richtext)).toBeVisible();
+      },
     });
   });
 });
@@ -57,15 +70,22 @@ test.describe('form item & view form', () => {
 test.describe('table column & table', () => {
   test('configure columns', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
-    await mockRecord('general');
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
       page,
       showMenu: async () => {
         await page.getByLabel('schema-initializer-TableV2-').hover();
+        await page.getByRole('menuitem', { name: 'markdown' }).click();
+        await page.getByRole('menuitem', { name: 'richtext' }).click();
+        await page.getByRole('menuitem', { name: 'attachment' }).click();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
+      expectValue: async () => {
+        await expect(page.getByText(record.markdown)).toBeVisible();
+        await expect(page.getByText(record.richtext)).toBeVisible();
+      },
     });
   });
 });

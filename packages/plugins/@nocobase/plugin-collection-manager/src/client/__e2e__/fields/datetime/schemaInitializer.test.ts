@@ -1,4 +1,5 @@
 import {
+  expect,
   expectInitializerMenu,
   oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields,
   test,
@@ -23,7 +24,7 @@ test.describe('form item & create form', () => {
 test.describe('form item & edit form', () => {
   test('configure fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields).waitForInit();
-    await mockRecord('general');
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
@@ -33,6 +34,14 @@ test.describe('form item & edit form', () => {
         await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
       },
       supportedOptions: ['datetime', 'time'],
+      expectValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.datetime-datetime').getByRole('textbox'),
+        ).toHaveValue(new RegExp(record.datetime.slice(0, 2)));
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.time-time').getByRole('textbox'),
+        ).toHaveValue(record.time);
+      },
     });
   });
 });
@@ -40,7 +49,7 @@ test.describe('form item & edit form', () => {
 test.describe('form item & view form', () => {
   test('configure fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields).waitForInit();
-    await mockRecord('general');
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
@@ -50,6 +59,16 @@ test.describe('form item & view form', () => {
         await page.getByLabel('schema-initializer-Grid-details:configureFields-general').hover();
       },
       supportedOptions: ['datetime', 'time'],
+      expectValue: async () => {
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.datetime-datetime')
+            .getByText(record.datetime.slice(0, 2)),
+        ).toBeVisible();
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.time-time').getByText(record.time),
+        ).toBeVisible();
+      },
     });
   });
 });
@@ -57,15 +76,21 @@ test.describe('form item & view form', () => {
 test.describe('table column & table', () => {
   test('configure columns', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields).waitForInit();
-    await mockRecord('general');
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
       page,
       showMenu: async () => {
         await page.getByLabel('schema-initializer-TableV2-').hover();
+        await page.getByRole('menuitem', { name: 'datetime' }).click();
+        await page.getByRole('menuitem', { name: 'time', exact: true }).click();
       },
       supportedOptions: ['datetime', 'time'],
+      expectValue: async () => {
+        await expect(page.getByRole('button', { name: record.datetime.slice(0, 2) })).toBeVisible();
+        await expect(page.getByRole('button', { name: record.time })).toBeVisible();
+      },
     });
   });
 });
