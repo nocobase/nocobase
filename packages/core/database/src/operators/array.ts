@@ -42,7 +42,9 @@ const emptyQuery = (ctx, operator: '=' | '>') => {
     funcName = 'json_length';
   }
 
-  return `(select ${ifNull}(${funcName}(${fieldName}), 0) ${operator} 0)`;
+  const queryInterface = getQueryInterface(ctx);
+
+  return `(select ${ifNull}(${funcName}(${queryInterface.quoteIdentifier(fieldName)}), 0) ${operator} 0)`;
 };
 
 export default {
