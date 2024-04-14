@@ -181,6 +181,7 @@ export class PluginACLServer extends Plugin {
         'roles.menuUiSchemas:*',
         'roles.users:*',
         'dataSources.roles:*',
+        'dataSources:list',
         'roles.dataSourcesCollections:*',
         'roles.dataSourceResources:*',
       ],
