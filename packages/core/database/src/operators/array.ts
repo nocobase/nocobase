@@ -3,7 +3,7 @@ import { Op, Sequelize } from 'sequelize';
 import { isMySQL, isPg } from './utils';
 
 const getFieldName = (ctx) => {
-  return ctx.model.rawAttributes[ctx.fieldName].field;
+  return ctx.model.rawAttributes[ctx.fieldName]?.field || ctx.fieldName;
 };
 
 const escape = (value, ctx) => {
