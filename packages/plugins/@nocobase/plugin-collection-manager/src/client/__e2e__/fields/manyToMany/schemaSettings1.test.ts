@@ -215,22 +215,14 @@ test.describe('form item & create form', () => {
   });
 
   test('field component', async ({ page, mockPage, mockRecords }) => {
-    await (async (mockPage, mockRecords) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
-      await nocoPage.goto();
-
-      return recordsOfUser;
-    })(mockPage, mockRecords);
-    await (async (page: Page) => {
-      await page.getByRole('button', { name: 'Add new' }).click();
-    })(page);
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToMany');
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    await mockUserRecordsWithoutDepartments(mockRecords, 3);
+    await nocoPage.goto();
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToMany-manyToMany`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToMany`)
+      .hover();
     await page.getByRole('menuitem', { name: 'Field component' }).click();
 
     // 断言支持的选项
@@ -242,6 +234,7 @@ test.describe('form item & create form', () => {
 
     // 选择 Record picker
     await page.getByRole('option', { name: 'Record picker', exact: true }).click();
+    await page.mouse.move(300, 0);
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
@@ -249,14 +242,13 @@ test.describe('form item & create form', () => {
     ).toBeVisible();
 
     // 选择 Sub-table
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToMany');
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToMany-manyToMany`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToMany`)
+      .hover();
     await page.getByRole('menuitem', { name: 'Field component' }).click();
     await page.getByRole('option', { name: 'Sub-table', exact: true }).click();
+    await page.mouse.move(300, 0);
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
@@ -264,14 +256,13 @@ test.describe('form item & create form', () => {
     ).toBeVisible();
 
     // 选择 Sub-form
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      // await page
-      //   .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-      //   .hover();
-    })(page, 'manyToMany');
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToMany-manyToMany`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToMany`)
+      .hover();
     await page.getByRole('menuitem', { name: 'Field component' }).click();
     await page.getByRole('option', { name: 'Sub-form', exact: true }).click();
+    await page.mouse.move(300, 0);
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
@@ -291,6 +282,7 @@ test.describe('form item & create form', () => {
       .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
       .getByRole('img', { name: 'edit' })
       .click();
+    await page.mouse.move(300, 0);
     await expect(page.getByTestId('popover-CollectionField-general')).toBeVisible();
   });
 
