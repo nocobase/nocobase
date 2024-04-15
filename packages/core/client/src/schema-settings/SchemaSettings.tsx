@@ -94,6 +94,8 @@ import {
 } from '../filter-provider/utils';
 import { FlagProvider } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
+import { DeclareVariable } from '../modules/variable/DeclareVariable';
+import { useVariable } from '../modules/variable/useVariable';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -975,6 +977,9 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
 
+  // 解决变量`$nPopupRecord`值在弹窗中丢失的问题
+  const popupRecordVariable = useVariable('$nPopupRecord');
+
   if (hidden) {
     return null;
   }
@@ -989,51 +994,58 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           { title: schema.title || title, width },
           () => {
             return (
-              <CollectionRecordProvider record={record}>
-                <FormBlockContext.Provider value={formCtx}>
-                  <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
-                    <FormActiveFieldsProvider
-                      name="form"
-                      getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
-                    >
-                      <Router location={location} navigator={null}>
-                        <BlockRequestContext_deprecated.Provider value={ctx}>
-                          <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
-                            <AssociationOrCollectionProvider
-                              allowNull
-                              collection={collection.name}
-                              association={association}
-                            >
-                              <SchemaComponentOptions scope={options.scope} components={options.components}>
-                                <FormLayout
-                                  layout={'vertical'}
-                                  className={css`
-                                    // screen > 576px
-                                    @media (min-width: 576px) {
-                                      min-width: 520px;
-                                    }
+              <DeclareVariable
+                name="$nPopupRecord"
+                title={popupRecordVariable.title}
+                value={popupRecordVariable.value}
+                collection={popupRecordVariable.collection}
+              >
+                <CollectionRecordProvider record={record}>
+                  <FormBlockContext.Provider value={formCtx}>
+                    <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
+                      <FormActiveFieldsProvider
+                        name="form"
+                        getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
+                      >
+                        <Router location={location} navigator={null}>
+                          <BlockRequestContext_deprecated.Provider value={ctx}>
+                            <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                              <AssociationOrCollectionProvider
+                                allowNull
+                                collection={collection.name}
+                                association={association}
+                              >
+                                <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                  <FormLayout
+                                    layout={'vertical'}
+                                    className={css`
+                                      // screen > 576px
+                                      @media (min-width: 576px) {
+                                        min-width: 520px;
+                                      }
 
-                                    // screen <= 576px
-                                    @media (max-width: 576px) {
-                                      min-width: 320px;
-                                    }
-                                  `}
-                                >
-                                  <APIClientProvider apiClient={apiClient}>
-                                    <ConfigProvider locale={locale}>
-                                      <SchemaComponent components={components} scope={scope} schema={schema} />
-                                    </ConfigProvider>
-                                  </APIClientProvider>
-                                </FormLayout>
-                              </SchemaComponentOptions>
-                            </AssociationOrCollectionProvider>
-                          </DataSourceApplicationProvider>
-                        </BlockRequestContext_deprecated.Provider>
-                      </Router>
-                    </FormActiveFieldsProvider>
-                  </SubFormProvider>
-                </FormBlockContext.Provider>
-              </CollectionRecordProvider>
+                                      // screen <= 576px
+                                      @media (max-width: 576px) {
+                                        min-width: 320px;
+                                      }
+                                    `}
+                                  >
+                                    <APIClientProvider apiClient={apiClient}>
+                                      <ConfigProvider locale={locale}>
+                                        <SchemaComponent components={components} scope={scope} schema={schema} />
+                                      </ConfigProvider>
+                                    </APIClientProvider>
+                                  </FormLayout>
+                                </SchemaComponentOptions>
+                              </AssociationOrCollectionProvider>
+                            </DataSourceApplicationProvider>
+                          </BlockRequestContext_deprecated.Provider>
+                        </Router>
+                      </FormActiveFieldsProvider>
+                    </SubFormProvider>
+                  </FormBlockContext.Provider>
+                </CollectionRecordProvider>
+              </DeclareVariable>
             );
           },
           theme,

@@ -1,6 +1,10 @@
+import { useParsedFilter } from '@nocobase/client';
 import { useMemo } from 'react';
 
 export function useCalendarBlockParams(props) {
+  const { filter } = useParsedFilter({
+    filterOption: props.params?.filter,
+  });
   const appends = useMemo(() => {
     const arr: string[] = [];
     const start = props.fieldNames?.start;
@@ -17,6 +21,6 @@ export function useCalendarBlockParams(props) {
   }, [props.fieldNames]);
 
   return useMemo(() => {
-    return { ...props.params, appends: [...appends, ...(props.params.appends || [])], paginate: false };
-  }, [appends, props.params]);
+    return { ...props.params, appends: [...appends, ...(props.params.appends || [])], paginate: false, filter };
+  }, [appends, JSON.stringify(filter), props.params]);
 }
