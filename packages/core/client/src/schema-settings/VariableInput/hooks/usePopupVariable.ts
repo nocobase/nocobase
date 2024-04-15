@@ -16,6 +16,7 @@ export const usePopupVariable = (props: any = {}) => {
     collectionName: collection?.name,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
+    dataSource: collection?.dataSource,
   });
 
   return {
