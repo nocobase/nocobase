@@ -1,3 +1,4 @@
+import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { importModule, isURL } from '@nocobase/utils';
 import { fsExists } from '@nocobase/utils/plugin-symlink';
@@ -328,6 +329,9 @@ export class PluginManager {
     if (options.name) {
       this.pluginAliases.set(options.name, instance);
     }
+    if (options.packageName) {
+      this.pluginAliases.set(options.packageName, instance);
+    }
     if (insert && options.name) {
       await this.repository.updateOrCreate({
         values: {
@@ -478,8 +482,27 @@ export class PluginManager {
     });
   }
 
+  private sort(names: string | string[]) {
+    const pluginNames = _.castArray(names);
+    if (pluginNames.length === 1) {
+      return pluginNames;
+    }
+    const sorter = new Topo.Sorter<string>();
+    for (const pluginName of pluginNames) {
+      const plugin = this.get(pluginName);
+      const peerDependencies = Object.keys(plugin.options?.packageJson?.peerDependencies || {});
+      sorter.add(pluginName, { after: peerDependencies, group: plugin.options?.packageName || pluginName });
+    }
+    return sorter.nodes;
+  }
+
   async enable(name: string | string[]) {
-    const pluginNames = _.castArray(name);
+    let pluginNames = name;
+    if (name === '*') {
+      const items = await this.repository.find();
+      pluginNames = items.map((item: any) => item.name);
+    }
+    pluginNames = this.sort(pluginNames);
     this.app.log.debug(`enabling plugin ${pluginNames.join(',')}`);
     this.app.setMaintainingMessage(`enabling plugin ${pluginNames.join(',')}`);
     const toBeUpdated = [];
@@ -492,9 +515,17 @@ export class PluginManager {
         continue;
       }
       await this.app.emitAsync('beforeEnablePlugin', pluginName);
-      await plugin.beforeEnable();
-      plugin.enabled = true;
-      toBeUpdated.push(pluginName);
+      try {
+        await plugin.beforeEnable();
+        plugin.enabled = true;
+        toBeUpdated.push(pluginName);
+      } catch (error) {
+        if (name === '*') {
+          this.app.log.error(error.message);
+        } else {
+          throw error;
+        }
+      }
     }
     if (toBeUpdated.length === 0) {
       return;
@@ -509,10 +540,10 @@ export class PluginManager {
     });
     try {
       await this.app.reload();
-      this.app.log.debug(`syncing database in enable plugin ${pluginNames.join(',')}...`);
-      this.app.setMaintainingMessage(`syncing database in enable plugin ${pluginNames.join(',')}...`);
+      this.app.log.debug(`syncing database in enable plugin ${toBeUpdated.join(',')}...`);
+      this.app.setMaintainingMessage(`syncing database in enable plugin ${toBeUpdated.join(',')}...`);
       await this.app.db.sync();
-      for (const pluginName of pluginNames) {
+      for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         if (!plugin.installed) {
           this.app.log.debug(`installing plugin ${pluginName}...`);
@@ -529,7 +560,7 @@ export class PluginManager {
           installed: true,
         },
       });
-      for (const pluginName of pluginNames) {
+      for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         this.app.log.debug(`emit afterEnablePlugin event...`);
         await plugin.afterEnable();
@@ -884,7 +915,7 @@ export class PluginManager {
   async list(options: any = {}) {
     const { locale = 'en-US', isPreset = false } = options;
     return Promise.all(
-      [...this.getAliases()]
+      [...this.getPlugins().keys()]
         .map((name) => {
           const plugin = this.get(name);
           if (!isPreset && plugin.options.isPreset) {

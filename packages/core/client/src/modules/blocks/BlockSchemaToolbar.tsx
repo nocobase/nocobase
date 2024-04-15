@@ -9,7 +9,7 @@ import { useSchemaTemplate } from '../../schema-templates';
 export const BlockSchemaToolbar = (props) => {
   const { t } = useTranslation();
   const cm = useCollectionManager();
-  let { name: currentCollectionName, title: currentCollectionTitle } = useCollection();
+  let { name: currentCollectionName, title: currentCollectionTitle } = useCollection() || {};
   const template = useSchemaTemplate();
   const { association } = useDataBlockProps() || {};
   const compile = useCompile();
@@ -40,13 +40,13 @@ export const BlockSchemaToolbar = (props) => {
   return <SchemaToolbar title={toolbarTitle} {...props} />;
 };
 
-function getCollectionTitle(arg0: {
+export function getCollectionTitle(arg: {
   collectionTitle: string;
   collectionName: string;
   associationField: any;
   compile: any;
 }) {
-  const { collectionTitle, collectionName, associationField, compile } = arg0;
+  const { collectionTitle, collectionName, associationField, compile } = arg;
 
   if (associationField) {
     return `${compile(collectionTitle || collectionName)} > ${compile(
@@ -54,5 +54,5 @@ function getCollectionTitle(arg0: {
     )}`;
   }
 
-  return collectionTitle || collectionName;
+  return compile(collectionTitle || collectionName);
 }

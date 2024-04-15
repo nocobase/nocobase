@@ -24,7 +24,7 @@ test.describe('where single data details block can be added', () => {
     clearBlockTemplates,
   }) => {
     const nocoPage = await mockPage(T3848).waitForInit();
-    await mockRecord('example');
+    await mockRecord('example', 2);
     await nocoPage.goto();
 
     // 1.打开弹窗

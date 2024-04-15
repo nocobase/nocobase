@@ -206,11 +206,21 @@ interface ExtendUtils {
   mockCollection: (collectionSetting: CollectionSetting) => Promise<any>;
   /**
    * 自动生成一条对应 collection 的数据
-   * @param collectionName 数据表名称
-   * @param data 自定义的数据，缺失时会生成随机数据
    * @returns 返回一条生成的数据
    */
-  mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
+  mockRecord: {
+    /**
+     * @param collectionName 数据表名称
+     * @param data 自定义的数据，缺失时会生成随机数据
+     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     */
+    <T = any>(collectionName: string, data?: any, maxDepth?: number): Promise<T>;
+    /**
+     * @param collectionName 数据表名称
+     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     */
+    <T = any>(collectionName: string, maxDepth?: number): Promise<T>;
+  };
   /**
    * 自动生成多条对应 collection 的数据
    */
@@ -218,13 +228,15 @@ interface ExtendUtils {
     /**
      * @param collectionName - 数据表名称
      * @param count - 生成的数据条数
+     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
      */
-    <T = any>(collectionName: string, count?: number): Promise<T[]>;
+    <T = any>(collectionName: string, count?: number, maxDepth?: number): Promise<T[]>;
     /**
      * @param collectionName - 数据表名称
      * @param data - 指定生成的数据
+     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
      */
-    <T = any>(collectionName: string, data?: any[]): Promise<T[]>;
+    <T = any>(collectionName: string, data?: any[], maxDepth?: number): Promise<T[]>;
   };
   /**
    * 该方法已弃用，请使用 mockCollections
@@ -408,18 +420,28 @@ const _test = base.extend<ExtendUtils>({
   },
   mockRecords: async ({ page }, use) => {
     const mockRecords = async (collectionName: string, count: any = 3, data?: any) => {
+      let maxDepth: number;
+      if (_.isNumber(data)) {
+        maxDepth = data;
+        data = undefined;
+      }
       if (_.isArray(count)) {
         data = count;
         count = data.length;
       }
-      return createRandomData(collectionName, count, data);
+      return createRandomData(collectionName, count, data, maxDepth);
     };
 
     await use(mockRecords);
   },
   mockRecord: async ({ page }, use) => {
-    const mockRecord = async (collectionName: string, data?: any) => {
-      const result = await createRandomData(collectionName, 1, data);
+    const mockRecord = async (collectionName: string, data?: any, maxDepth?: any) => {
+      if (_.isNumber(data)) {
+        maxDepth = data;
+        data = undefined;
+      }
+
+      const result = await createRandomData(collectionName, 1, data, maxDepth);
       return result[0];
     };
 
@@ -861,7 +883,7 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
   return result;
 };
 
-const createRandomData = async (collectionName: string, count = 10, data?: any) => {
+const createRandomData = async (collectionName: string, count = 10, data?: any, maxDepth?: number) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
@@ -869,10 +891,13 @@ const createRandomData = async (collectionName: string, count = 10, data?: any) 
   const state = await api.storageState();
   const headers = getHeaders(state);
 
-  const result = await api.post(`/api/${collectionName}:mock?count=${count}`, {
-    headers,
-    data,
-  });
+  const result = await api.post(
+    `/api/${collectionName}:mock?count=${count}&maxDepth=${_.isNumber(maxDepth) ? maxDepth : 1}`,
+    {
+      headers,
+      data,
+    },
+  );
 
   if (!result.ok()) {
     throw new Error(await result.text());
@@ -992,4 +1017,14 @@ export const createBlockInPage = async (page: Page, name: string) => {
   }
 
   await page.mouse.move(300, 0);
+};
+
+export const mockUserRecordsWithoutDepartments = (mockRecords: ExtendUtils['mockRecords'], count: number) => {
+  return mockRecords(
+    'users',
+    Array.from({ length: count }).map(() => ({
+      departments: null,
+      mainDepartment: null,
+    })),
+  );
 };
