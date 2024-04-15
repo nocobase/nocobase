@@ -60,7 +60,7 @@ describe('createTableBLockSchemaV2', () => {
           },
         },
         "type": "void",
-        "x-acl-action": "users:list",
+        "x-acl-action": "users.roles:list",
         "x-component": "CardItem",
         "x-decorator": "TableBlockProvider",
         "x-decorator-props": {

@@ -57,6 +57,11 @@ export default class extends Trigger {
     const collection = context.app.dataSourceManager.dataSources
       .get(dataSourceHeader)
       .collectionManager.getCollection(resourceName);
+
+    if (!collection) {
+      return;
+    }
+
     const fullCollectionName = joinCollectionName(dataSourceHeader, collection.name);
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');

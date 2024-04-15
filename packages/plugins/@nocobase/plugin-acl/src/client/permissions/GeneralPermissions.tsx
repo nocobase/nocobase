@@ -1,4 +1,4 @@
-import { onFormValuesChange, createForm, Form } from '@formily/core';
+import { onFormValuesChange, createForm, Form, onFieldChange } from '@formily/core';
 import { connect } from '@formily/react';
 import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
 import { Checkbox, message } from 'antd';
@@ -67,7 +67,7 @@ export const GeneralPermissions: React.FC<{
   const update = useMemoizedFn(async (form: Form) => {
     await api.resource('roles').update({
       filterByTk: role.name,
-      values: form.values,
+      values: { snippets: form.values.snippets },
     });
     setRole({ ...role, ...form.values });
     message.success(t('Saved successfully'));
