@@ -4,7 +4,6 @@ import { omit } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
-import { useApp } from '../application';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
@@ -12,6 +11,8 @@ import { useResourceActionContext } from '../collection-manager/ResourceActionPr
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+
+import { useApp } from '../application';
 
 export const ACLContext = createContext<any>({});
 ACLContext.displayName = 'ACLContext';
