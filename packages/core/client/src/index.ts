@@ -59,3 +59,5 @@ export * from './modules/blocks/data-blocks/form';
 export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/useParentRecordCommon';
+
+export { DeclareVariable } from './modules/variable/DeclareVariable';
