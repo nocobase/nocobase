@@ -1,5 +1,5 @@
 import { createBlockInPage, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
-import { T3686 } from './templatesOfBug';
+import { T3686, T4005 } from './templatesOfBug';
 
 test.describe('where table block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -61,6 +61,39 @@ test.describe('where table block can be added', () => {
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Super Admin' })).toBeVisible();
+  });
+
+  test('verify assiciation block x-acl-action', async ({ page, mockPage, mockRecord }) => {
+    function findNodeWithAclAction(obj) {
+      if (obj && typeof obj === 'object') {
+        if (obj['x-component'] === 'CardItem') {
+          return obj['x-acl-action']; // 返回找到节点的 x-acl-action 值
+        } else {
+          for (const key in obj) {
+            const found = findNodeWithAclAction(obj[key]);
+            if (found) return found;
+          }
+        }
+      }
+      return null;
+    }
+    await mockPage(T4005).goto();
+    await mockRecord('general');
+    await page.getByLabel('block-item-CardItem-general-').click();
+    await page.getByLabel('action-Action.Link-View-view-').first().click();
+    //表格关系区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).click();
+    await page.getByText('Associated records').hover();
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('uiSchemas:insertAdjacent')),
+      page.getByRole('menuitem', { name: 'o2m' }).click(),
+    ]);
+    const postData = request.postDataJSON();
+    // 调用函数查找符合条件的节点
+    const aclValue = findNodeWithAclAction(postData);
+    // 断言找到的节点的 x-acl-action 是否为预期值
+    expect(aclValue).toBe('general.o2m:list');
   });
 });
 
