@@ -11,7 +11,7 @@ import { T2200, T2614, T2615, T2845, T2993 } from './templatesOfBug';
 test.describe('display association fields', () => {
   test('form: should display correctly', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneFormWithMultiLevelAssociationFields).waitForInit();
-    await mockRecord('general');
+    await mockRecord('general', 2);
     await nocoPage.goto();
 
     // 为关系字段选中一个值
@@ -30,7 +30,7 @@ test.describe('display association fields', () => {
 
   test('subform: should display correctly', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneSubformWithMultiLevelAssociationFields).waitForInit();
-    await mockRecord('general');
+    await mockRecord('general', 3);
     await nocoPage.goto();
 
     // 为子表单中的关系字段选中一个值
@@ -52,7 +52,7 @@ test.describe('display association fields', () => {
   // https://nocobase.height.app/T-2615
   test('should load association data', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2615).waitForInit();
-    await mockRecord('T2615');
+    await mockRecord('T2615', 2);
     await nocoPage.goto();
 
     // 1. 新增表单中应该显示关系字段的数据
@@ -91,7 +91,7 @@ test.describe('display association fields', () => {
   test('should load association data of subform', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2845).waitForInit();
     // 和 T2615 使用一样的数据表结构
-    const record = await mockRecord('T2615');
+    const record = await mockRecord('T2615', 3);
     await nocoPage.goto();
 
     // 1. 新增表单中应该显示关系字段的数据
@@ -139,7 +139,7 @@ test.describe('display association fields', () => {
   // https://nocobase.height.app/T-2614
   test('should load association data in subform', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2614).waitForInit();
-    await mockRecord('T2614');
+    await mockRecord('T2614', 2);
     await nocoPage.goto();
 
     // 查看详情
@@ -167,7 +167,7 @@ test.describe('display association fields', () => {
   // https://nocobase.height.app/T-2993
   test('should load association data of sub details', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2993).waitForInit();
-    const record = await mockRecord('T2993');
+    const record = await mockRecord('T2993', 3);
     await nocoPage.goto();
 
     await page.getByLabel('action-Action-Add new-create-').click();
@@ -186,7 +186,7 @@ test.describe('display association fields', () => {
 test.describe('association fields', () => {
   test('subform: load association fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableSubformWithMultiLevelAssociationFields).waitForInit();
-    const record = await mockRecord('general');
+    const record = await mockRecord('general', 4);
     await nocoPage.goto();
 
     // 查看详情
@@ -229,7 +229,7 @@ test.describe('association fields', () => {
 
   test('subtable: load association fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableSubtableWithMultiLevelAssociationFields).waitForInit();
-    const record = await mockRecord('general');
+    const record = await mockRecord('general', 2);
     await nocoPage.goto();
 
     // 查看详情
