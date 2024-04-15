@@ -485,17 +485,12 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}`,
+      name: `pm.data-source-manager`,
       actions: [
         'dataSources:*',
         'dataSources.collections:*',
         'dataSourcesCollections.fields:*',
         'roles.dataSourceResources',
-        'collections:*',
-        'collections.fields:*',
-        'dbViews:*',
-        'collectionCategories:*',
-        'sqlCollection:*',
       ],
     });
 
