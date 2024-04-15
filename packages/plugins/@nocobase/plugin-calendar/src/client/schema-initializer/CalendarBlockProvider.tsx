@@ -1,13 +1,6 @@
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import {
-  BlockProvider,
-  FixedBlockWrapper,
-  useBlockRequestContext,
-  useParsedFilter,
-  withDynamicSchemaProps,
-} from '@nocobase/client';
-import _ from 'lodash';
+import { BlockProvider, FixedBlockWrapper, useBlockRequestContext, withDynamicSchemaProps } from '@nocobase/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCalendarBlockParams } from '../hooks/useCalendarBlockParams';
 
@@ -18,14 +11,6 @@ const InternalCalendarBlockProvider = (props) => {
   const { fieldNames, showLunar } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  const { filter } = useParsedFilter({
-    filterOption: service?.params?.[0]?.filter,
-  });
-  useEffect(() => {
-    if (!_.isEmpty(filter)) {
-      service?.run({ ...service?.params?.[0], filter });
-    }
-  }, [JSON.stringify(filter)]);
 
   return (
     <FixedBlockWrapper>
