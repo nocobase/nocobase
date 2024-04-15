@@ -74,6 +74,7 @@ export const useCurrentUserVariable = ({
     collectionName: 'users',
     noDisabled,
     targetFieldSchema,
+    dataSource: DEFAULT_DATA_SOURCE_KEY,
   });
 
   return {

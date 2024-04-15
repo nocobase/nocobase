@@ -1,12 +1,13 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useMemo } from 'react';
-import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useBlockCollection } from './useBlockCollection';
 import { useDatetimeVariable } from './useDateVariable';
 import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
 import { useCurrentParentRecordVariable } from './useParentRecordVariable';
+import { usePopupVariable } from './usePopupVariable';
 import { useCurrentRecordVariable } from './useRecordVariable';
 import { useCurrentRoleVariable } from './useRoleVariable';
 import { useCurrentUserVariable } from './useUserVariable';
@@ -81,6 +82,12 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable({
+    schema: uiSchema,
+    collectionField,
+    noDisabled,
+    targetFieldSchema,
+  });
   const { currentParentRecordSettings, shouldDisplayCurrentParentRecord } = useCurrentParentRecordVariable({
     schema: uiSchema,
     collectionName: blockParentCollectionName,
@@ -98,6 +105,7 @@ export const useVariableOptions = ({
       shouldDisplayCurrentObject && currentObjectSettings,
       shouldDisplayCurrentRecord && currentRecordSettings,
       shouldDisplayCurrentParentRecord && currentParentRecordSettings,
+      shouldDisplayPopupRecord && popupRecordSettings,
     ].filter(Boolean);
   }, [
     currentUserSettings,
@@ -111,5 +119,7 @@ export const useVariableOptions = ({
     currentRecordSettings,
     shouldDisplayCurrentParentRecord,
     currentParentRecordSettings,
+    shouldDisplayPopupRecord,
+    popupRecordSettings,
   ]);
 };

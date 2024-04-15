@@ -28,6 +28,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
@@ -56,6 +57,7 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
 };
 
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
+  const { t } = useTranslation();
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -106,17 +108,24 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
             return (
-              <SubFormProvider value={{ value: record, collection }}>
-                <RecordIndexProvider index={record.__index || index}>
-                  <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
-                    <ColumnFieldProvider schema={s} basePath={basePath}>
-                      <span role="button" className={schemaToolbarBigger}>
-                        <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
-                      </span>
-                    </ColumnFieldProvider>
-                  </RecordProvider>
-                </RecordIndexProvider>
-              </SubFormProvider>
+              <DeclareVariable
+                name="$nPopupRecord"
+                title={t('Current popup record')}
+                value={record}
+                collection={collection}
+              >
+                <SubFormProvider value={{ value: record, collection }}>
+                  <RecordIndexProvider index={record.__index || index}>
+                    <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
+                      <ColumnFieldProvider schema={s} basePath={basePath}>
+                        <span role="button" className={schemaToolbarBigger}>
+                          <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
+                        </span>
+                      </ColumnFieldProvider>
+                    </RecordProvider>
+                  </RecordIndexProvider>
+                </SubFormProvider>
+              </DeclareVariable>
             );
           },
         } as TableColumnProps<any>;
