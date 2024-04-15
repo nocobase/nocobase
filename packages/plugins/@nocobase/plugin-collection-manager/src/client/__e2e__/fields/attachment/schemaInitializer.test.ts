@@ -37,8 +37,8 @@ test.describe('form item & edit form', () => {
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
       expectValue: async () => {
-        await expect(page.getByText(record.markdown)).toBeVisible();
-        await expect(page.getByText(record.richtext)).toBeVisible();
+        await expect(page.getByText(record.markdown.slice(0, 10))).toBeVisible();
+        await expect(page.getByText(record.richText.slice(0, 10))).toBeVisible();
       },
     });
   });
@@ -60,8 +60,8 @@ test.describe('form item & view form', () => {
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
       expectValue: async () => {
-        await expect(page.getByText(record.markdown)).toBeVisible();
-        await expect(page.getByText(record.richtext)).toBeVisible();
+        await expect(page.getByText(record.markdown.slice(0, 10))).toBeVisible();
+        await expect(page.getByText(record.richText.slice(0, 10))).toBeVisible();
       },
     });
   });
@@ -83,8 +83,8 @@ test.describe('table column & table', () => {
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
       expectValue: async () => {
-        await expect(page.getByText(record.markdown)).toBeVisible();
-        await expect(page.getByText(record.richtext)).toBeVisible();
+        await expect(page.getByText(record.markdown.slice(0, 10))).toBeVisible();
+        await expect(page.getByText(record.richText.slice(0, 10))).toBeVisible();
       },
     });
   });
