@@ -11,7 +11,7 @@ import {
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
-import { T3843, oneTableWithRoles } from './templatesOfBug';
+import { T3843, T4032, oneTableWithRoles } from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -191,6 +191,24 @@ test.describe('table block schema settings', () => {
       // 被筛选之后数据只有一条（有一行是空的）
       await expect(page.getByRole('row')).toHaveCount(2);
       await expect(page.getByRole('cell', { name: 'Super Admin', exact: true })).toBeVisible();
+    });
+
+    // https://nocobase.height.app/T-4032
+    test('parent record variable', async ({ page, mockPage }) => {
+      await mockPage(T4032).goto();
+
+      // 1. 打开弹窗，弹窗中的表格设置了数据范围：roles.name 包含当前用户的 roles.name
+      await page.getByLabel('action-Action.Link-View').click();
+      await page.waitForTimeout(1000);
+
+      // 2. 断言
+      // 不应该弹出错误提示
+      await expect(page.locator('.ant-notification-notice')).not.toBeVisible();
+
+      // 应该显示出三条数据：root，admin，member
+      await expect(page.getByLabel('block-item-CardItem-roles-').getByText('root')).toBeVisible();
+      await expect(page.getByLabel('block-item-CardItem-roles-').getByText('admin')).toBeVisible();
+      await expect(page.getByLabel('block-item-CardItem-roles-').getByText('member')).toBeVisible();
     });
   });
 
