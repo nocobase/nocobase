@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  mockUserRecordsWithoutDepartments,
   oneEmptyTableBlockWithActions,
   oneEmptyTableWithTreeCollection,
   oneTableBlockWithActionsAndFormBlocks,
@@ -232,7 +233,7 @@ test.describe('table block schema settings', () => {
   test.describe('connect data blocks', () => {
     test('connecting two blocks of the same collection', async ({ page, mockPage, mockRecords }) => {
       const nocoPage = await mockPage(twoTableWithSameCollection).waitForInit();
-      const records = await mockRecords('users', 3);
+      const records = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       // 将左边的 Table 连接到右边的 Table
@@ -257,7 +258,7 @@ test.describe('table block schema settings', () => {
 
     test('connecting two blocks connected by a relationship field', async ({ page, mockPage, mockRecords }) => {
       const nocoPage = await mockPage(twoTableWithAssociationFields).waitForInit();
-      await mockRecords('users', 3);
+      await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       // 将左边的 Table 连接到右边的 Table

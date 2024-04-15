@@ -1,8 +1,8 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
-import { useParentCollection } from '../../../data-source/collection/AssociationProvider';
 import { useCollectionRecord } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { useParentCollection } from '../../../data-source/collection/AssociationProvider';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -47,7 +47,7 @@ export const useParentRecordVariable = (props: Props) => {
 export const useCurrentParentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const record = useCollectionRecord();
-  const { name: parentCollectionName } = useParentCollection() || {};
+  const { name: parentCollectionName, dataSource } = useParentCollection() || {};
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const currentParentRecordSettings = useBaseVariable({
@@ -58,6 +58,7 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
     collectionName: parentCollectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
+    dataSource,
   });
 
   return {
@@ -65,5 +66,6 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
     currentParentRecordCtx: record?.parentRecord?.data,
     shouldDisplayCurrentParentRecord: !!record?.parentRecord?.data && !isInSubForm && !isInSubTable,
     collectionName: parentCollectionName,
+    dataSource,
   };
 };

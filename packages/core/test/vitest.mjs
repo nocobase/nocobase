@@ -222,7 +222,7 @@ export const getReportsDirectory = (isServer) => {
 
     return reportsDirectory;
   } else {
-    return basePath;
+    return `${basePath}${filterFileOrDir.replace('packages/', '').replace('src/', '')}`;
   }
 };
 

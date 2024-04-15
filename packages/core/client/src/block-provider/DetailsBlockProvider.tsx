@@ -1,17 +1,16 @@
 import { createForm } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
-import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
-import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
-import { RecordProvider } from '../record-provider';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { TemplateBlockProvider } from './TemplateBlockProvider';
-import { useParsedFilter } from './hooks';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCollectionRecordData } from '../data-source';
+import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
+import { useDetailsWithPaginationBlockParams } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationBlockParams';
+import { RecordProvider } from '../record-provider';
 import { useDesignable } from '../schema-component';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { TemplateBlockProvider } from './TemplateBlockProvider';
 
 /**
  * @internal
@@ -44,15 +43,6 @@ const InternalDetailsBlockProvider = (props) => {
     };
   }, [action, field, form, resource, service]);
 
-  const { filter } = useParsedFilter({
-    filterOption: service?.params?.[0]?.filter,
-  });
-  useEffect(() => {
-    if (!_.isEmpty(filter) && !service.loading) {
-      service?.run({ ...service?.params?.[0], filter });
-    }
-  }, [JSON.stringify(filter)]);
-
   if (service.loading && !field.loaded) {
     return <Spin />;
   }
@@ -69,7 +59,31 @@ const InternalDetailsBlockProvider = (props) => {
   );
 };
 
+/**
+ * @internal
+ * 用于兼容旧版本的 schema，当不需要兼容时可直接移除该方法
+ * @param props
+ * @returns
+ */
+const useCompatDetailsBlockParams = (props) => {
+  const fieldSchema = useFieldSchema();
+
+  let params;
+  // 1. 新版本的 schema 存在 x-use-decorator-props 属性
+  if (fieldSchema['x-use-decorator-props']) {
+    params = props?.params;
+  } else {
+    // 2. 旧版本的 schema 不存在 x-use-decorator-props 属性
+    // 因为 schema 中是否存在 x-use-decorator-props 是固定不变的，所以这里可以使用 hooks
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    params = useDetailsWithPaginationBlockParams(props);
+  }
+
+  return params;
+};
+
 export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
+  const params = useCompatDetailsBlockParams(props);
   const record = useCollectionRecordData();
   const { association, dataSource } = props;
   const { getCollection } = useCollectionManager_deprecated(dataSource);
@@ -87,7 +101,7 @@ export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
 
   return (
     <TemplateBlockProvider>
-      <BlockProvider name="details" {...props}>
+      <BlockProvider name="details" {...props} params={params}>
         <InternalDetailsBlockProvider {...props} />
       </BlockProvider>
     </TemplateBlockProvider>
