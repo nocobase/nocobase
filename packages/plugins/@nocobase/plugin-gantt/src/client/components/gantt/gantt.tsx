@@ -2,15 +2,17 @@ import { css, cx } from '@emotion/css';
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
+  DeclareVariable,
   RecordProvider,
   useAPIClient,
   useBlockRequestContext,
-  useCurrentAppInfo,
+  useCollection,
   useCollectionParentRecordData,
+  useCurrentAppInfo,
+  useProps,
   useTableBlockContext,
   useToken,
   withDynamicSchemaProps,
-  useProps,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { debounce } from 'lodash';
@@ -42,6 +44,8 @@ export const DeleteEventContext = React.createContext({
 });
 const GanttRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
+  const { t } = useTranslation();
+  const collection = useCollection();
   const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.properties.detail;
@@ -54,7 +58,14 @@ const GanttRecordViewer = (props) => {
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record} parent={parentRecordData}>
-            <RecursionField schema={eventSchema} name={eventSchema.name} />
+            <DeclareVariable
+              name="$nPopupRecord"
+              title={t('Current popup record')}
+              value={record}
+              collection={collection}
+            >
+              <RecursionField schema={eventSchema} name={eventSchema.name} />
+            </DeclareVariable>
           </RecordProvider>
         </ActionContextProvider>
       </DeleteEventContext.Provider>

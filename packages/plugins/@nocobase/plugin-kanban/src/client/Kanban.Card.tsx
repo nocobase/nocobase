@@ -1,10 +1,18 @@
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
-import { ActionContextProvider, DndContext, RecordProvider, useCollectionParentRecordData } from '@nocobase/client';
+import {
+  ActionContextProvider,
+  DeclareVariable,
+  DndContext,
+  RecordProvider,
+  useCollection,
+  useCollectionParentRecordData,
+} from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { KanbanCardContext } from './context';
+import { useKanbanTranslation } from './locale';
 
 const cardCss = css`
   .ant-card-body {
@@ -55,6 +63,8 @@ MemorizedRecursionField.displayName = 'MemorizedRecursionField';
 
 export const KanbanCard: any = observer(
   () => {
+    const { t } = useKanbanTranslation();
+    const collection = useCollection();
     const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
       useContext(KanbanCardContext);
     const parentRecordData = useCollectionParentRecordData();
@@ -114,7 +124,14 @@ export const KanbanCard: any = observer(
         {cardViewerSchema && (
           <ActionContextProvider value={actionContextValue}>
             <RecordProvider record={card} parent={parentRecordData}>
-              <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
+              <DeclareVariable
+                name="$nPopupRecord"
+                title={t('Current popup record')}
+                value={card}
+                collection={collection}
+              >
+                <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
+              </DeclareVariable>
             </RecordProvider>
           </ActionContextProvider>
         )}
