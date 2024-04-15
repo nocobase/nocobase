@@ -406,6 +406,17 @@ export class PluginDataSourceManagerServer extends Plugin {
         acl: dataSource.acl,
         transaction,
       });
+
+      await this.app.db.getRepository('roles').update({
+        filter: {
+          name: model.get('roleName'),
+        },
+        values: {
+          strategy: model.get('strategy'),
+        },
+        hooks: false,
+        transaction,
+      });
     });
 
     this.app.on('acl:writeResources', async ({ roleName, transaction }) => {
