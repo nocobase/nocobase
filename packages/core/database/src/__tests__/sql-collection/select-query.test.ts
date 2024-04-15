@@ -37,8 +37,10 @@ describe('select query', () => {
   });
 
   test('group', () => {
-    const query = queryGenerator.selectQuery('users', { group: 'id' }, model);
-    expect(query).toBe('SELECT * FROM (SELECT * FROM "users") AS "users" GROUP BY "id";');
+    const query1 = queryGenerator.selectQuery('users', { group: 'id' }, model);
+    expect(query1).toBe('SELECT * FROM (SELECT * FROM "users") AS "users" GROUP BY "id";');
+    const query2 = queryGenerator.selectQuery('users', { group: ['id', 'name'] }, model);
+    expect(query2).toBe('SELECT * FROM (SELECT * FROM "users") AS "users" GROUP BY "id", "name";');
   });
 
   test('order', () => {
