@@ -1,6 +1,7 @@
 import {
   expect,
   expectInitializerMenu,
+  mockUserRecordsWithoutDepartments,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   test,
 } from '@nocobase/test/e2e';
@@ -8,7 +9,7 @@ import {
 test.describe('form item & create form', () => {
   test('configure fields', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-    await mockRecords('users', 3);
+    await mockUserRecordsWithoutDepartments(mockRecords, 3);
     await nocoPage.goto();
 
     await expectInitializerMenu({
@@ -25,7 +26,7 @@ test.describe('form item & create form', () => {
 test.describe('form item & edit form', () => {
   test('configure fields', async ({ page, mockPage, mockRecords, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-    await mockRecords('users', 3);
+    await mockUserRecordsWithoutDepartments(mockRecords, 3);
     const record = await mockRecord('general');
     await nocoPage.goto();
 
