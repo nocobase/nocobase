@@ -3,8 +3,9 @@ import { Card, Skeleton } from 'antd';
 import React from 'react';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { BlockItem } from '../block-item';
-import useStyles from './style';
 import { useInView } from 'react-intersection-observer';
+import { BlockItemCard } from '../block-item/BlockItemCard';
+import { BlockItemError } from '../block-item/BlockItemError';
 
 interface Props {
   children?: React.ReactNode;
@@ -18,7 +19,6 @@ export const CardItem = (props: Props) => {
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const templateKey = fieldSchema?.['x-template-key'];
-  const { wrapSSR, componentCls, hashId } = useStyles();
   const { ref, inView } = useInView({
     threshold: 0,
     initialInView: true,
@@ -26,13 +26,14 @@ export const CardItem = (props: Props) => {
     skip: !!process.env.__E2E__,
   });
 
-  return wrapSSR(
-    templateKey && !template ? null : (
-      <BlockItem name={name} className={`${componentCls} ${hashId} noco-card-item`}>
-        <Card ref={ref} className="card" bordered={false} {...restProps}>
+  if (templateKey && !template) return null;
+  return (
+    <BlockItemError>
+      <BlockItem name={name}>
+        <BlockItemCard ref={ref} {...restProps}>
           {inView ? props.children : <Skeleton active paragraph={{ rows: 4 }} />}
-        </Card>
+        </BlockItemCard>
       </BlockItem>
-    ),
+    </BlockItemError>
   );
 };
