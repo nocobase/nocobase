@@ -334,10 +334,11 @@ export class ACL extends EventEmitter {
         resourceName = rawResourceName.split('.').pop();
       }
 
-      const currentRepository = ctx.getCurrentRepository();
-
-      if (currentRepository && currentRepository.targetCollection) {
-        resourceName = ctx.getCurrentRepository().targetCollection.name;
+      if (ctx.getCurrentRepository) {
+        const currentRepository = ctx.getCurrentRepository();
+        if (currentRepository && currentRepository.targetCollection) {
+          resourceName = ctx.getCurrentRepository().targetCollection.name;
+        }
       }
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
@@ -368,9 +369,11 @@ export class ACL extends EventEmitter {
       resourceName = rawResourceName.split('.').pop();
     }
 
-    const currentRepository = ctx.getCurrentRepository();
-    if (currentRepository && currentRepository.targetCollection) {
-      resourceName = ctx.getCurrentRepository().targetCollection.name;
+    if (ctx.getCurrentRepository) {
+      const currentRepository = ctx.getCurrentRepository();
+      if (currentRepository && currentRepository.targetCollection) {
+        resourceName = ctx.getCurrentRepository().targetCollection.name;
+      }
     }
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
