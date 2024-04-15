@@ -8,7 +8,8 @@ export class PluginGraphCollectionPlugin extends Plugin {
       Component: GraphCollectionPane,
       topLevelName: `data-source-manager/main`,
       pluginKey: NAMESPACE,
-      aclSnippet: 'pm.data-source-manager.graph',
+      skipAclConfigure: true,
+      aclSnippet: 'pm.data-source-manager.graph-collection-manager',
     });
   }
 }

@@ -219,7 +219,7 @@ describe('acl', () => {
         resource: 'posts.comments',
         action: 'list',
       }),
-    ).not.toBeNull();
+    ).toBeNull();
 
     expect(
       acl.can({

@@ -83,7 +83,6 @@ describe('snippet', () => {
     await app.db.getRepository('roles').create({
       values: {
         name: 'testRole',
-        strategy: {},
         snippets: ['pm.acl.roles'],
       },
     });
@@ -95,5 +94,21 @@ describe('snippet', () => {
     });
 
     expect(canRes).toBeTruthy();
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    const userAgent: any = app.agent().login(testUser);
+
+    const getResp = await userAgent.resource('roles.dataSourcesCollections', 'testRole').list({
+      filter: {
+        dataSourceKey: 'main',
+      },
+    });
+
+    expect(getResp.statusCode).toEqual(200);
   });
 });

@@ -60,6 +60,9 @@ export class PluginSettingsManager {
 
   getAclSnippet(name: string) {
     const setting = this.settings[name];
+    if (setting?.skipAclConfigure) {
+      return null;
+    }
     return setting?.aclSnippet ? setting.aclSnippet : `${SNIPPET_PREFIX}${name}`;
   }
 
@@ -155,6 +158,8 @@ export class PluginSettingsManager {
   }
 
   getAclSnippets() {
-    return Object.keys(this.settings).map((name) => this.getAclSnippet(name));
+    return Object.keys(this.settings)
+      .map((name) => this.getAclSnippet(name))
+      .filter(Boolean);
   }
 }
