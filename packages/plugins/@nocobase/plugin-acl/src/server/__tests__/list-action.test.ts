@@ -305,20 +305,39 @@ describe('list association action with acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users');
     const userAgent = app.agent().login(user).set('X-With-ACL-Meta', true);
 
-    await userAgent.resource('posts').create({
+    const createResp = await userAgent.resource('posts').create({
       values: {
         title: 'post1',
         comments: [{ content: 'comment1' }, { content: 'comment2' }],
       },
     });
 
-    const response = await userAgent.resource('posts').list({});
-    expect(response.statusCode).toEqual(200);
+    expect(createResp.statusCode).toBe(200);
+
+    const listPostsResp = await userAgent.resource('posts').list({});
+    expect(listPostsResp.statusCode).toEqual(200);
+
+    // list comments
+    const commentsResponse0 = await userAgent.resource('posts.comments', 1).list({});
+    expect(commentsResponse0.statusCode).toEqual(403);
+
+    await db.getRepository('roles.resources', 'newRole').create({
+      values: {
+        name: 'comments',
+        usingActionConfig: true,
+        actions: [
+          {
+            name: 'view',
+          },
+        ],
+      },
+    });
 
     const commentsResponse = await userAgent.resource('posts.comments', 1).list({});
+    expect(commentsResponse.statusCode).toEqual(200);
+
     const data = commentsResponse.body;
 
     /**

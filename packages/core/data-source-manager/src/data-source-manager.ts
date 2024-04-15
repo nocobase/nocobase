@@ -2,9 +2,13 @@ import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
 
+type DataSourceHook = (dataSource: DataSource) => void;
+
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;
   factory: DataSourceFactory = new DataSourceFactory();
+
+  onceHooks: Array<DataSourceHook> = [];
 
   protected middlewares = [];
 
@@ -16,6 +20,10 @@ export class DataSourceManager {
   async add(dataSource: DataSource, options: any = {}) {
     await dataSource.load(options);
     this.dataSources.set(dataSource.name, dataSource);
+
+    for (const hook of this.onceHooks) {
+      hook(dataSource);
+    }
   }
 
   use(fn: any, options?: ToposortOptions) {
@@ -35,5 +43,16 @@ export class DataSourceManager {
 
       return ds.middleware(this.middlewares)(ctx, next);
     };
+  }
+
+  afterAddDataSource(hook: DataSourceHook) {
+    this.addHookAndRun(hook);
+  }
+
+  private addHookAndRun(hook: DataSourceHook) {
+    this.onceHooks.push(hook);
+    for (const dataSource of this.dataSources.values()) {
+      hook(dataSource);
+    }
   }
 }

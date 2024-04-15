@@ -4,7 +4,7 @@ import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
 import merge from 'lodash/merge';
 import set from 'lodash/set';
-import React, { ComponentType, FC, ReactElement } from 'react';
+import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
@@ -167,8 +167,17 @@ export class Application {
     return this.options.publicPath || '/';
   }
 
+  getApiUrl(pathname = '') {
+    let baseURL = this.apiClient.axios['defaults']['baseURL'];
+    if (!baseURL.startsWith('http://') || !baseURL.startsWith('https://')) {
+      const { protocol, host } = window.location;
+      baseURL = `${protocol}//${host}/`;
+    }
+    return baseURL + pathname;
+  }
+
   getRouteUrl(pathname: string) {
-    return this.options.publicPath.replace(/\/$/g, '') + pathname;
+    return this.getPublicPath().replace(/\/$/g, '') + pathname;
   }
 
   getCollectionManager(dataSource?: string) {
@@ -279,8 +288,8 @@ export class Application {
     return;
   }
 
-  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T): ReactElement {
-    return React.createElement(this.getComponent(Component), props);
+  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T, children?: ReactNode): ReactElement {
+    return React.createElement(this.getComponent(Component), props, children);
   }
 
   /**
@@ -306,7 +315,9 @@ export class Application {
   }
 
   getRootComponent() {
-    const Root: FC = () => <AppComponent app={this} />;
+    const Root: FC<{ children?: React.ReactNode }> = ({ children }) => (
+      <AppComponent app={this}>{children}</AppComponent>
+    );
     return Root;
   }
 

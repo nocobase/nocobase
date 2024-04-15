@@ -2,6 +2,7 @@ import { useForm } from '@formily/react';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useActionContext, SchemaComponent } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
+import { SchemaInitializerItem } from './SchemaInitializerItem';
 
 export interface SchemaInitializerActionModalProps {
   title: string;
@@ -10,10 +11,24 @@ export interface SchemaInitializerActionModalProps {
   onSubmit?: (values: any) => void;
   buttonText?: any;
   component?: any;
+  isItem?: boolean;
 }
-export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps> = (props) => {
-  const { title, schema, buttonText, component, onCancel, onSubmit } = props;
 
+const SchemaInitializerActionModalItemComponent = React.forwardRef((props: any, ref) => {
+  const { onClick, title, ...others } = props;
+  return (
+    <SchemaInitializerItem
+      ref={ref}
+      {...others}
+      onClick={(e) => {
+        onClick?.(e.event);
+      }}
+    ></SchemaInitializerItem>
+  );
+});
+
+export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps> = (props) => {
+  const { title, schema, buttonText, isItem, component, onCancel, onSubmit } = props;
   const useCancelAction = useCallback(() => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const form = useForm();
@@ -53,15 +68,20 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
             ? {
                 component,
               }
-            : {
-                icon: 'PlusOutlined',
-                style: {
-                  borderColor: 'var(--colorSettings)',
-                  color: 'var(--colorSettings)',
+            : isItem
+              ? {
+                  title: buttonText,
+                  component: SchemaInitializerActionModalItemComponent,
+                }
+              : {
+                  icon: 'PlusOutlined',
+                  style: {
+                    borderColor: 'var(--colorSettings)',
+                    color: 'var(--colorSettings)',
+                  },
+                  title: buttonText,
+                  type: 'dashed',
                 },
-                title: buttonText,
-                type: 'dashed',
-              },
           properties: {
             drawer1: {
               'x-decorator': 'Form',

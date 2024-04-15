@@ -80,5 +80,12 @@
   "Time range": "Time range",
   "Edit field properties": "Edit field properties",
   "Select a source field to use metadata of the field": "Select a source field to use metadata of the field",
-  "Original field": "Original field"
+  "Original field": "Original field",
+  "Transformation": "Transformation",
+  "Add transformation": "Add transformation",
+  "Container": "Container",
+  "Show border": "Show border",
+  "Transformation tip": "Fields allow multiple transformations, applied sequentially. Pay attention to data type changes after each transformation. Drag-and-drop functionality enables adjustment of transformation order.",
+  "Type conversion": "Type conversion",
+  "Transformer": "Transformer"
 }

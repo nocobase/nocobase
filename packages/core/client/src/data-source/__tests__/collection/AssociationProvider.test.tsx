@@ -94,6 +94,9 @@ describe('AssociationProvider', () => {
     };
     renderApp(Demo, { name: 'users.not-exists' });
 
-    expect(document.body.innerHTML).toContain('ant-result');
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(
+      screen.getByText('The collection "users.not-exists" may have been deleted. Please remove this block.'),
+    ).toBeInTheDocument();
   });
 });

@@ -1,7 +1,6 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
-import { Slider } from 'antd';
 import _ from 'lodash';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +35,7 @@ export const gridCardBlockSettings = new SchemaSettings({
 
         const columnCountSchema = useMemo(() => {
           return {
-            'x-component': Slider,
+            'x-component': 'Slider',
             'x-decorator': 'FormItem',
             'x-component-props': {
               min: 1,

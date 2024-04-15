@@ -86,6 +86,7 @@ const defineCommonConfig = () => {
         provider: 'istanbul',
         include: ['packages/**/src/**/*.{ts,tsx}'],
         exclude: [
+          '**/requirejs.ts',
           '**/demos/**',
           '**/swagger/**',
           '**/.dumi/**',
@@ -94,6 +95,7 @@ const defineCommonConfig = () => {
           '**/lib/**',
           '**/__tests__/**',
           '**/e2e/**',
+          '**/__e2e__/**',
           '**/client.js',
           '**/server.js',
           '**/*.d.ts',
@@ -148,13 +150,36 @@ const defineClientConfig = () => {
 };
 
 export const getFilterInclude = (isServer, isCoverage) => {
-  let filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
-  if (!filterFileOrDir) return;
+  let argv = process.argv
+    .slice(2);
+
+  argv = argv
+    .filter((item, index) => {
+      if (!item.startsWith('-')) {
+        const pre = argv[index - 1];
+
+        if (pre && pre.startsWith('--') && !pre.includes('=')) {
+          return false;
+        }
+
+        return true;
+      }
+
+      return false;
+    });
+
+
+  let filterFileOrDir = argv[0];
+
+  if (!filterFileOrDir) return {};
   const absPath = path.join(process.cwd(), filterFileOrDir);
   const isDir = fs.existsSync(absPath) && fs.statSync(absPath).isDirectory();
   // 如果是文件，则只测试当前文件
   if (!isDir) {
-    return [filterFileOrDir];
+    return {
+      isFile: true,
+      include: [filterFileOrDir],
+    };
   }
 
   const suffix = isCoverage ? `**/*.{ts,tsx}` : `**/__tests__/**/*.{test,spec}.{ts,tsx}`;
@@ -162,25 +187,32 @@ export const getFilterInclude = (isServer, isCoverage) => {
   // 判断是否为包目录，如果不是包目录，则只测试当前目录
   const isPackage = fs.existsSync(path.join(absPath, 'package.json'));
   if (!isPackage) {
-    return [`${filterFileOrDir}/${suffix}`];
+    return {
+      include: [`${filterFileOrDir}/${suffix}`],
+    };
   }
 
   // 判断是否为 core 包目录，不分 client 和 server
   const isCore = absPath.includes('packages/core');
   if (isCore) {
-    return [`${filterFileOrDir}/src/${suffix}`];
+    return {
+      include: [`${filterFileOrDir}/src/${suffix}`],
+    };
   }
 
   // 插件目录，区分 client 和 server
-  return [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`];
+  return {
+    include: [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`],
+  };
 };
 
 export const getReportsDirectory = (isServer) => {
   let filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
   if (!filterFileOrDir) return;
+  const basePath = `./storage/coverage/`;
   const isPackage = fs.existsSync(path.join(process.cwd(), filterFileOrDir, 'package.json'));
   if (isPackage) {
-    let reportsDirectory = `./storage/coverage/${filterFileOrDir.replace('packages/', '')}`;
+    let reportsDirectory = `${basePath}${filterFileOrDir.replace('packages/', '')}`;
 
     const isCore = filterFileOrDir.includes('packages/core');
 
@@ -189,6 +221,8 @@ export const getReportsDirectory = (isServer) => {
     }
 
     return reportsDirectory;
+  } else {
+    return basePath;
   }
 };
 
@@ -198,21 +232,36 @@ export const defineConfig = () => {
     mergeConfig(defineCommonConfig(), isServer ? defineServerConfig() : defineClientConfig()),
   );
 
+  const { isFile, include: filterInclude } = getFilterInclude(isServer);
+
+  if (filterInclude) {
+    config.test.include = filterInclude;
+    if (isFile) {
+      // 减少收集的文件
+      config.test.exclude = [];
+
+      config.test.coverage = {
+        enabled: false,
+      };
+
+      return config;
+    }
+  }
+
   const isCoverage = process.argv.includes('--coverage');
   if (!isCoverage) {
     return config;
   }
 
-  const filterInclude = getFilterInclude(isServer);
-  if (filterInclude) {
-    config.test.include = getFilterInclude(isServer);
+  const { include: coverageInclude } = getFilterInclude(isServer, true);
+  if (coverageInclude) {
+    config.test.coverage.include = coverageInclude;
   }
-
-  config.test.coverage.include = getFilterInclude(isServer, true);
   const reportsDirectory = getReportsDirectory(isServer);
   if (reportsDirectory) {
     config.test.coverage.reportsDirectory = reportsDirectory;
   }
+
 
   return config;
 };
