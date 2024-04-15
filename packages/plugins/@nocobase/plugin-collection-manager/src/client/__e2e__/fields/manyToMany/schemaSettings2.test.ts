@@ -249,23 +249,15 @@ test.describe('form item & edit form', () => {
   });
 
   test('title field', async ({ page, mockPage, mockRecords }) => {
-    await (async (mockPage, mockRecords) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
-      const record = (await mockRecords('general', 1))[0];
-      await nocoPage.goto();
-
-      return { record, recordsOfUser };
-    })(mockPage, mockRecords);
-    await (async (page: Page) => {
-      await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-    })(page);
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToMany');
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    await mockUserRecordsWithoutDepartments(mockRecords, 3);
+    await mockRecords('general', 1);
+    await nocoPage.goto();
+    await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToMany-manyToMany`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToMany`)
+      .hover();
     await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
   });
 });
