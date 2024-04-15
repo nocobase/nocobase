@@ -986,11 +986,25 @@ export async function expectSettingsMenu({
  * 辅助断言 Initializer 的菜单项是否存在
  * @param param0
  */
-export async function expectInitializerMenu({ showMenu, supportedOptions, page }) {
+export async function expectInitializerMenu({
+  showMenu,
+  supportedOptions,
+  page,
+  expectValue,
+}: {
+  showMenu: () => Promise<void>;
+  supportedOptions: string[];
+  page: Page;
+  expectValue?: () => Promise<void>;
+}) {
   await showMenu();
   for (const option of supportedOptions) {
     // 使用 first 方法避免有重名的导致报错
     await expect(page.getByRole('menuitem', { name: option }).first()).toBeVisible();
+  }
+  await page.mouse.move(300, 0);
+  if (expectValue) {
+    await expectValue();
   }
 }
 
