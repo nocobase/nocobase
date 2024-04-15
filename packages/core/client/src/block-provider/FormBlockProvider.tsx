@@ -4,7 +4,12 @@ import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollection_deprecated } from '../collection-manager';
-import { CollectionRecord, useCollectionParentRecordData, useCollectionRecord } from '../data-source';
+import {
+  CollectionRecord,
+  useCollectionManager,
+  useCollectionParentRecordData,
+  useCollectionRecord,
+} from '../data-source';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -30,8 +35,9 @@ export const FormBlockContext = createContext<{
 FormBlockContext.displayName = 'FormBlockContext';
 
 const InternalFormBlockProvider = (props) => {
+  const cm = useCollectionManager();
   const ctx = useFormBlockContext();
-  const { action, readPretty, params, collection } = props;
+  const { action, readPretty, params, collection, association } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -56,10 +62,23 @@ const InternalFormBlockProvider = (props) => {
       resource,
       updateAssociationValues,
       formBlockRef,
-      collectionName: collection,
+      collectionName: collection || cm.getCollectionField(association)?.target,
       formRecord: record,
     };
-  }, [action, collection, ctx, field, form, params, record, resource, service, updateAssociationValues]);
+  }, [
+    action,
+    association,
+    cm,
+    collection,
+    ctx,
+    field,
+    form,
+    params,
+    record,
+    resource,
+    service,
+    updateAssociationValues,
+  ]);
 
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
