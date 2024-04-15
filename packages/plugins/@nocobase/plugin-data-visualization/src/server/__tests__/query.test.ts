@@ -1,7 +1,14 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { vi } from 'vitest';
-import { cacheMiddleware, parseBuilder, parseFieldAndAssociations } from '../actions/query';
+import {
+  cacheMiddleware,
+  parseBuilder,
+  parseFieldAndAssociations,
+  checkPermission,
+  postProcess,
+  parseVariables,
+} from '../actions/query';
 const formatter = await import('../actions/formatter');
 
 describe('query', () => {
@@ -14,7 +21,7 @@ describe('query', () => {
     let app: MockServer;
     beforeAll(async () => {
       app = await createMockServer({
-        plugins: ['data-source-manager'],
+        plugins: ['data-source-manager', 'users', 'acl'],
       });
       app.db.options.underscored = true;
       app.db.collection({
@@ -41,32 +48,32 @@ describe('query', () => {
           },
         ],
       });
-      app.db.collection({
-        name: 'users',
-        fields: [
-          {
-            name: 'id',
-            type: 'bigInt',
-          },
-          {
-            name: 'name',
-            type: 'string',
-          },
-        ],
-      });
       ctx = {
         app,
-        db: {
-          sequelize,
-          getRepository: (name: string) => app.db.getRepository(name),
-          getModel: (name: string) => app.db.getModel(name),
-          getCollection: (name: string) => app.db.getCollection(name),
-          options: {
-            underscored: true,
+        db: app.db,
+      };
+      ctx.db.sequelize = sequelize;
+    });
+
+    it('should check permissions', async () => {
+      const context = {
+        ...ctx,
+        state: {
+          currentRole: '',
+        },
+        action: {
+          params: {
+            values: {
+              collection: 'users',
+            },
           },
         },
+        throw: vi.fn(),
       };
+      await checkPermission(context, async () => {});
+      expect(context.throw).toBeCalledWith(403, 'No permissions');
     });
+
     it('should parse field and associations', async () => {
       const context = {
         ...ctx,
@@ -225,7 +232,65 @@ describe('query', () => {
       await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
       expect(context.action.params.values.queryParams.where.createdAt).toBeDefined();
     });
+
+    it('post process', async () => {
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: {
+              data: [{ key: '123' }],
+              fieldMap: {
+                key: { type: 'bigInt' },
+              },
+            },
+          },
+        },
+      };
+      await postProcess(context, async () => {});
+      expect(context.body).toEqual([{ key: 123 }]);
+    });
+
+    it('parse variables', async () => {
+      const context = {
+        ...ctx,
+        state: {
+          currentUser: {
+            id: 1,
+          },
+        },
+        get: (key: string) => {
+          return {
+            'x-timezone': '',
+          }[key];
+        },
+        action: {
+          params: {
+            values: {
+              filter: {
+                $and: [
+                  {
+                    createdAt: { $dateOn: '{{$nDate.now}}' },
+                  },
+                  {
+                    userId: { $eq: '{{$user.id}}' },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      };
+      await parseVariables(context, async () => {});
+      const { filter } = context.action.params.values;
+      const dateOn = filter.$and[0].createdAt.$dateOn;
+      console.log(dateOn);
+      expect(new Date(dateOn).getTime()).toBeLessThanOrEqual(new Date().getTime());
+      const userId = filter.$and[1].userId.$eq;
+      expect(userId).toBe(1);
+    });
   });
+
   describe('cacheMiddleware', () => {
     const key = 'test-key';
     const value = 'test-val';
