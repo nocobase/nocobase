@@ -21,30 +21,38 @@ export class PluginDataSourceManagerClient extends Plugin {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       icon: 'ClusterOutlined',
       showTabs: false,
-      aclSnippet: 'pm.data-source-manager',
+      aclSnippet: 'pm.data-source-manager*',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.list`, {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       Component: DatabaseConnectionManagerPane,
       sort: 1,
+      skipAclConfigure: true,
+      aclSnippet: 'pm.data-source-manager',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}/:name`, {
       title: <BreadcumbTitle />,
       icon: 'ClusterOutlined',
       isTopLevel: false,
       sort: 100,
+      skipAclConfigure: true,
+      aclSnippet: 'pm.data-source-manager',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}/main`, {
       title: <BreadcumbTitle />,
       icon: 'ClusterOutlined',
       isTopLevel: false,
       sort: 100,
+      skipAclConfigure: true,
+      aclSnippet: 'pm.data-source-manager.data-source-main',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}/main.collections`, {
       title: `{{t("Collections", { ns: "${NAMESPACE}" })}}`,
       Component: MainDataSourceManager,
       topLevelName: `${NAMESPACE}/main`,
       pluginKey: NAMESPACE,
+      skipAclConfigure: true,
+      aclSnippet: 'pm.data-source-manager.data-source-main',
     });
     // this.app.pluginSettingsManager.add(`${NAMESPACE}/main.permissions`, {
     //   title: `{{t("Permissions", { ns: "${NAMESPACE}" })}}`,
@@ -57,6 +65,8 @@ export class PluginDataSourceManagerClient extends Plugin {
       Component: CollectionManagerPage,
       topLevelName: `${NAMESPACE}/:name`,
       pluginKey: NAMESPACE,
+      skipAclConfigure: true,
+      aclSnippet: 'pm.data-source-manager.data-source-main',
     });
     // this.app.pluginSettingsManager.add(`${NAMESPACE}/:name.permissions`, {
     //   title: `{{t("Permissions", { ns: "${NAMESPACE}" })}}`,
