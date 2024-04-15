@@ -24,7 +24,7 @@ describe('association test', () => {
     acl = app.acl;
   });
 
-  it('should set association actions', async () => {
+  it('should access association actions by target permission', async () => {
     await db.getRepository('collections').create({
       values: {
         name: 'posts',
@@ -51,6 +51,7 @@ describe('association test', () => {
       context: {},
     });
 
+    // can view posts
     await db.getRepository('roles.resources', 'test-role').create({
       values: {
         name: 'posts',
@@ -76,6 +77,20 @@ describe('association test', () => {
       }),
     ).toBeFalsy();
 
+    // can view comments
+    await db.getRepository('roles.resources', 'test-role').create({
+      values: {
+        name: 'comments',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+          },
+        ],
+      },
+      context: {},
+    });
+
     const post = await db.getRepository('posts').create({
       values: {
         title: 'hello world',
@@ -92,11 +107,8 @@ describe('association test', () => {
 
     const userAgent = app.agent().login(user);
 
-    //@ts-ignore
-    const response = await userAgent.resource('posts').list({});
-    expect(response.statusCode).toEqual(200);
-    const post1 = response.body.data[0];
-    expect(post1.userComments).not.toBeDefined();
+    const postCommentsResp = await userAgent.resource('posts.userComments', post.get('id')).list({});
+    expect(postCommentsResp.statusCode).toEqual(200);
   });
 });
 

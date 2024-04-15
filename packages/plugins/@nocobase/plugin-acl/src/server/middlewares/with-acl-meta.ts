@@ -70,6 +70,7 @@ function createWithACLMetaMiddleware() {
             return db;
           },
         },
+        getCurrentRepository: ctx.getCurrentRepository,
         action: {
           actionName: action,
           name: action,

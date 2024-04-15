@@ -329,7 +329,16 @@ export class ACL extends EventEmitter {
       const roleName = ctx.state.currentRole || 'anonymous';
       const { resourceName: rawResourceName, actionName } = ctx.action;
 
-      const resourceName = rawResourceName.includes('.') ? rawResourceName.split('.').pop() : rawResourceName;
+      let resourceName = rawResourceName;
+      if (rawResourceName.includes('.')) {
+        resourceName = rawResourceName.split('.').pop();
+      }
+
+      const currentRepository = ctx.getCurrentRepository();
+
+      if (currentRepository && currentRepository.targetCollection) {
+        resourceName = ctx.getCurrentRepository().targetCollection.name;
+      }
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
         const canResult = acl.can({ role: roleName, ...options });
@@ -354,7 +363,15 @@ export class ACL extends EventEmitter {
     const roleName = ctx.state.currentRole || 'anonymous';
     const { resourceName: rawResourceName, actionName } = ctx.action;
 
-    const resourceName = rawResourceName.includes('.') ? rawResourceName.split('.').pop() : rawResourceName;
+    let resourceName = rawResourceName;
+    if (rawResourceName.includes('.')) {
+      resourceName = rawResourceName.split('.').pop();
+    }
+
+    const currentRepository = ctx.getCurrentRepository();
+    if (currentRepository && currentRepository.targetCollection) {
+      resourceName = ctx.getCurrentRepository().targetCollection.name;
+    }
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
       const can = this.can({ role: roleName, ...options });

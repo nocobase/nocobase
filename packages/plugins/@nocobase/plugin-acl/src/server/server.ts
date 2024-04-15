@@ -216,8 +216,6 @@ export class PluginACLServer extends Plugin {
       }
     });
 
-    // this.registerAssociationFieldsActions();
-
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
 
