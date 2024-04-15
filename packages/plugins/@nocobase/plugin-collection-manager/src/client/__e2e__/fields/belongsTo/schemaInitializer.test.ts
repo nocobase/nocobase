@@ -1,4 +1,5 @@
 import {
+  expect,
   expectInitializerMenu,
   mockUserRecordsWithoutDepartments,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
@@ -23,10 +24,10 @@ test.describe('form item & create form', () => {
 });
 
 test.describe('form item & edit form', () => {
-  test('configure fields', async ({ page, mockPage, mockRecords }) => {
+  test('configure fields', async ({ page, mockPage, mockRecords, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
     await mockUserRecordsWithoutDepartments(mockRecords, 3);
-    await mockRecords('general', 1);
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
@@ -36,14 +37,24 @@ test.describe('form item & edit form', () => {
         await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
       },
       supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
+      expectValue: async () => {
+        await expect(
+          page.getByRole('button', { name: record.oneToMany.map((item: any) => item.id).join(' ') }),
+        ).toBeVisible();
+        await expect(page.getByRole('button', { name: record.manyToOne.id })).toBeVisible();
+        await expect(
+          page.getByRole('button', { name: record.manyToMany.map((item: any) => item.id).join(' ') }),
+        ).toBeVisible();
+        await expect(page.getByRole('button', { name: record.oneToOneBelongsTo.id })).toBeVisible();
+      },
     });
   });
 });
 
 test.describe('form item & view form', () => {
-  test('configure fields', async ({ page, mockPage, mockRecords }) => {
+  test('configure fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-    await mockRecords('general', 1);
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
@@ -53,6 +64,12 @@ test.describe('form item & view form', () => {
         await page.getByLabel('schema-initializer-Grid-details:configureFields-general').hover();
       },
       supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
+      expectValue: async () => {
+        await expect(page.getByText(record.oneToMany.map((item: any) => item.id).join(','))).toBeVisible();
+        await expect(page.getByText(record.manyToOne.id)).toBeVisible();
+        await expect(page.getByText(record.manyToMany.map((item: any) => item.id).join(','))).toBeVisible();
+        await expect(page.getByText(record.oneToOneBelongsTo.id)).toBeVisible();
+      },
     });
   });
 });
@@ -60,15 +77,26 @@ test.describe('form item & view form', () => {
 test.describe('table column & table', () => {
   test('configure columns', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-    await mockRecord('general');
+    const record = await mockRecord('general');
     await nocoPage.goto();
 
     await expectInitializerMenu({
       page,
       showMenu: async () => {
         await page.getByLabel('schema-initializer-TableV2-').hover();
+        await page.getByRole('menuitem', { name: 'oneToMany' }).first().click();
+        await page.getByRole('menuitem', { name: 'manyToOne' }).first().click();
+        await page.getByRole('menuitem', { name: 'manyToMany' }).first().click();
+        await page.getByRole('menuitem', { name: 'oneToOneBelongsTo' }).first().click();
+        await page.getByRole('menuitem', { name: 'oneToOneHasOne' }).first().click();
       },
       supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
+      expectValue: async () => {
+        await expect(page.getByText(record.oneToMany.map((item: any) => item.id).join(','))).toBeVisible();
+        await expect(page.getByText(record.manyToOne.id)).toBeVisible();
+        await expect(page.getByText(record.manyToMany.map((item: any) => item.id).join(','))).toBeVisible();
+        await expect(page.getByText(record.oneToOneBelongsTo.id)).toBeVisible();
+      },
     });
   });
 });

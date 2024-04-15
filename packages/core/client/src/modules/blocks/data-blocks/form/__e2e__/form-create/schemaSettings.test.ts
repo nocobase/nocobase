@@ -1386,7 +1386,7 @@ test.describe('actions schema settings', () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
       },
-      supportedOptions: ['Edit button', 'Secondary confirmation', 'Bind workflows', 'Delete'],
+      supportedOptions: ['Edit button', 'Secondary confirmation', 'Delete'],
     });
   });
 
@@ -1404,7 +1404,6 @@ test.describe('actions schema settings', () => {
         'Assign field values',
         'Skip required validation',
         'After successful submission',
-        'Bind workflows',
         'Delete',
       ],
     });
