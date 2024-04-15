@@ -8,7 +8,7 @@
   "dependencies": {
     "bloom-filters": "^3.0.1",
     "cache-manager": "^5.2.4",
-    "cache-manager-redis-yet": "^4.1.2"
+    "cache-manager-redis-yet": "^5.0.0"
   },
   "devDependencies": {
     "redis": "^4.6.10"
