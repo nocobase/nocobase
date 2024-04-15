@@ -18,8 +18,16 @@ interface Props {
 const useLocalVariables = (props?: Props) => {
   const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariable();
   const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordVariable();
-  const { currentParentRecordCtx, collectionName: collectionNameOfParentRecord } = useCurrentParentRecordVariable();
-  const { popupRecordCtx, collectionName: collectionNameOfPopupRecord } = usePopupVariable();
+  const {
+    currentParentRecordCtx,
+    collectionName: collectionNameOfParentRecord,
+    dataSource: currentParentRecordDataSource,
+  } = useCurrentParentRecordVariable();
+  const {
+    popupRecordCtx,
+    collectionName: collectionNameOfPopupRecord,
+    dataSource: popupDataSource,
+  } = usePopupVariable();
   const { datetimeCtx } = useDatetimeVariable();
   const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection_deprecated();
@@ -68,11 +76,13 @@ const useLocalVariables = (props?: Props) => {
           name: '$nParentRecord',
           ctx: currentParentRecordCtx,
           collectionName: collectionNameOfParentRecord,
+          dataSource: currentParentRecordDataSource,
         },
         {
           name: '$nPopupRecord',
           ctx: popupRecordCtx,
           collectionName: collectionNameOfPopupRecord,
+          dataSource: popupDataSource,
         },
         {
           name: '$nForm',
@@ -105,6 +115,10 @@ const useLocalVariables = (props?: Props) => {
     currentFormCtx,
     currentParentRecordCtx,
     collectionNameOfParentRecord,
+    currentParentRecordDataSource,
+    popupRecordCtx,
+    collectionNameOfPopupRecord,
+    popupDataSource,
     datetimeCtx,
     shouldDisplayCurrentObject,
     currentObjectCtx,

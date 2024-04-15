@@ -28,5 +28,6 @@ export const usePopupVariable = (props: any = {}) => {
     shouldDisplayPopupRecord: !!value,
     /** 当前记录对应的 collection name */
     collectionName: collection?.name,
+    dataSource: collection?.dataSource,
   };
 };

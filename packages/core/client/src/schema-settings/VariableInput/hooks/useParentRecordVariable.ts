@@ -66,5 +66,6 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
     currentParentRecordCtx: record?.parentRecord?.data,
     shouldDisplayCurrentParentRecord: !!record?.parentRecord?.data && !isInSubForm && !isInSubTable,
     collectionName: parentCollectionName,
+    dataSource,
   };
 };
