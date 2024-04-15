@@ -21,7 +21,7 @@
     "lodash": "^4.17.21",
     "mathjs": "^10.6.1",
     "nanoid": "^3.3.6",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.3.2",
     "qs": "^6.11.2",
     "semver": "^7.3.7",
     "sequelize": "^6.26.0",
