@@ -1,11 +1,12 @@
 import { App, Button, Result, Typography } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CardItem, EllipsisWithTooltip, useCompile, useDesignable } from '../../schema-component';
+import { EllipsisWithTooltip, useCompile, useDesignable } from '../../schema-component';
 import { useDataSource } from '../data-source/DataSourceProvider';
 import { useDataSourceManager } from '../data-source';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCollection } from '../collection';
+import { BlockItemCard } from '../../schema-component/antd/block-item/BlockItemCard';
 
 export interface CollectionDeletedPlaceholderProps {
   type: 'Collection' | 'Field' | 'Data Source' | 'Block template';
@@ -74,7 +75,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
     }
 
     return (
-      <CardItem>
+      <BlockItemCard>
         <Result
           status="404"
           subTitle={messageValue}
@@ -96,7 +97,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
             </Button>
           }
         />
-      </CardItem>
+      </BlockItemCard>
     );
   }
 
