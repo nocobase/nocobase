@@ -177,6 +177,32 @@ describe('utils', () => {
       });
     });
 
+    it('decode associatedIndex', () => {
+      const params = parseRequest({
+        path: '/posts/a%2Fab/comments',
+        method: 'POST',
+      });
+      expect(params).toMatchObject({
+        resourceName: 'comments',
+        associatedName: 'posts',
+        associatedIndex: 'a/ab',
+        actionName: 'create',
+      });
+    });
+
+    it('decode path', () => {
+      const params = parseRequest({
+        path: '/posts/%25E7%259A%2584%25E6%25B3%2595%252F%25E5%259B%25BD%25E9%2598%259F/comments',
+        method: 'POST',
+      });
+      expect(params).toMatchObject({
+        resourceName: 'comments',
+        associatedName: 'posts',
+        associatedIndex: '的法/国队',
+        actionName: 'create',
+      });
+    });
+
     it('store action', () => {
       const params = parseRequest({
         path: '/posts/1/comments',
