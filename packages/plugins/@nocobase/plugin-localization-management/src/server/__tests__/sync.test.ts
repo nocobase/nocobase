@@ -79,6 +79,7 @@ describe('sync', () => {
   it('should get texts from db', async () => {
     await app.db.getRepository('collections').create({
       values: {
+        key: 'test-collection',
         name: 'sync.db.collection',
         title: 'sync.db.collection',
       },
@@ -86,6 +87,7 @@ describe('sync', () => {
     });
     await app.db.getRepository('fields').create({
       values: {
+        key: 'test-field',
         name: 'sync.db.field',
         title: 'sync.db.field',
         collectionNname: 'sync.db.collection',
