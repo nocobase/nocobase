@@ -11,8 +11,13 @@ import {
   useIsFieldReadPretty,
 } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
-import { useTableBlockContext } from '../../../../block-provider/TableBlockProvider';
+import {
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
+  useSortFields,
+} from '../../../../collection-manager';
+import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
+import { useAssociationName } from '../../../../data-source';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -93,11 +98,12 @@ const setDefaultSortingRules = {
   name: 'SetDefaultSortingRules',
   type: 'modal',
   useComponentProps() {
-    const { name } = useCollection_deprecated();
+    const { getCollectionJoinField } = useCollectionManager_deprecated();
     const field = useField();
     const fieldSchema = useFieldSchema();
-    const sortFields = useSortFields(name);
-    const { service } = useTableBlockContext();
+    const association = fieldSchema['x-collection-field'];
+    const { target } = getCollectionJoinField(association) || {};
+    const sortFields = useSortFields(target);
     const { t } = useTranslation();
     const { dn } = useDesignable();
     const defaultSort = field.componentProps.sortArr || [];
@@ -191,7 +197,6 @@ const setDefaultSortingRules = {
           return item.direction === 'desc' ? `-${item.field}` : item.field;
         });
         field.componentProps.sortArr = sortArr;
-        console.log(fieldSchema);
         fieldSchema['x-component-props'].sortArr = sortArr;
         dn.emit('patch', {
           schema: {
@@ -199,8 +204,6 @@ const setDefaultSortingRules = {
             'x-component-props': fieldSchema['x-component-props'],
           },
         });
-        // console.log(service,fieldSchema)
-        // service.run({ ...service.params?.[0], sort: sortArr });
       },
     };
   },
