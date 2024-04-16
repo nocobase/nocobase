@@ -2,11 +2,13 @@ import { createForm } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollectionManager_deprecated } from '../collection-manager';
-import { useCollectionRecordData } from '../data-source';
+import { useCollection, useCollectionRecordData } from '../data-source';
 import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
 import { useDetailsWithPaginationBlockParams } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationBlockParams';
+import { DeclareVariable } from '../modules/variable/DeclareVariable';
 import { RecordProvider } from '../record-provider';
 import { useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -20,6 +22,8 @@ DetailsBlockContext.displayName = 'DetailsBlockContext';
 
 const InternalDetailsBlockProvider = (props) => {
   const { action, readPretty } = props;
+  const { t } = useTranslation();
+  const collection = useCollection();
   const field = useField<any>();
   const form = useMemo(
     () =>
@@ -52,7 +56,14 @@ const InternalDetailsBlockProvider = (props) => {
     <DetailsBlockContext.Provider value={detailsBLockValue}>
       <div ref={formBlockRef}>
         <RecordProvider isNew={false} record={currentRecord} parent={parentRecord?.data}>
-          {props.children}
+          <DeclareVariable
+            name="$nPopupRecord"
+            title={t('Current popup record')}
+            value={currentRecord}
+            collection={collection}
+          >
+            {props.children}
+          </DeclareVariable>
         </RecordProvider>
       </div>
     </DetailsBlockContext.Provider>
