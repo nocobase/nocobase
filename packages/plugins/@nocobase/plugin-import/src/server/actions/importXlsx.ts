@@ -5,7 +5,7 @@ import xlsx from 'node-xlsx';
 import XLSX from 'xlsx';
 import { namespace } from '../../';
 
-const IMPORT_LIMIT_COUNT = 10000;
+const IMPORT_LIMIT_COUNT = 200;
 
 class Importer {
   repository: Repository;
@@ -26,6 +26,7 @@ class Importer {
   getRows() {
     const workbook = XLSX.read(this.context.file.buffer, {
       type: 'buffer',
+      sheetRows: IMPORT_LIMIT_COUNT,
       // cellDates: true,
       // raw: false,
     });

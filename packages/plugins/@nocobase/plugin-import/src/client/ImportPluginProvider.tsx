@@ -1,7 +1,7 @@
 import { SchemaComponentOptions } from '@nocobase/client';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ImportActionInitializer, ImportDesigner } from '.';
+import { ImportActionInitializer, ImportDesigner, ImportWarning } from '.';
 import { ImportContext } from './context';
 import { ImportModal, ImportStatus } from './ImportModal';
 import { useDownloadXlsxTemplateAction, useImportStartAction } from './useImportAction';
@@ -11,7 +11,7 @@ export const ImportPluginProvider = (props: any) => {
   const { uploadValidator, beforeUploadHandler, validateUpload } = useShared();
   return (
     <SchemaComponentOptions
-      components={{ ImportActionInitializer, ImportDesigner }}
+      components={{ ImportActionInitializer, ImportDesigner, ImportWarning }}
       scope={{
         uploadValidator,
         validateUpload,

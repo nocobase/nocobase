@@ -20,6 +20,7 @@ export async function exportXlsx(ctx: Context, next: Next) {
     appends,
     except,
     sort,
+    limit: 200,
     context: ctx,
   });
   const collectionFields = columns.map((col) => collection.fields.get(col.dataIndex[0]));
