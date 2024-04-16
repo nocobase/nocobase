@@ -86,6 +86,13 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [title, fieldSchema.title, t]);
 
     useEffect(() => {
+      if (field.stateOfLinkageRules && !linkageRules.filter((k) => !k.disabled).length) {
+        field.data = field.data || {};
+        field.display = 'visible';
+        field.disabled = false;
+        field.data.hidden = false;
+        field.componentProps['disabled'] = false;
+      }
       field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
