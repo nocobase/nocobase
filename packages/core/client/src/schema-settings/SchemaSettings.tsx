@@ -65,7 +65,6 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
-  useSchemaSettingsItem,
   useSortFields,
 } from '..';
 import {
@@ -947,6 +946,8 @@ export interface SchemaSettingsModalItemProps {
   asyncGetInitialValues?: () => Promise<any>;
   eventKey?: string;
   hide?: boolean;
+  /** 上下文中不需要当前记录 */
+  noRecord?: boolean;
 }
 export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props) => {
   const {
@@ -959,6 +960,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     asyncGetInitialValues,
     initialValues,
     width = 'fit-content',
+    noRecord = false,
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -1000,7 +1002,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                 value={popupRecordVariable.value}
                 collection={popupRecordVariable.collection}
               >
-                <CollectionRecordProvider record={record}>
+                <CollectionRecordProvider record={noRecord ? null : record}>
                   <FormBlockContext.Provider value={formCtx}>
                     <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
                       <FormActiveFieldsProvider

@@ -2,6 +2,7 @@ import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 import { useFormBlockContext } from '../../../../block-provider';
 import { useDetailsBlockContext } from '../../../../block-provider/DetailsBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
@@ -9,7 +10,6 @@ import { removeNullCondition, useDesignable } from '../../../../schema-component
 import { SchemaSettingsBlockTitleItem, SchemaSettingsTemplate } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
-import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
@@ -29,6 +29,7 @@ const commonItems: SchemaSettingsItemType[] = [
         collectionName: name,
         defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
         form,
+        noRecord: true,
         onSubmit: ({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
