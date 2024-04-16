@@ -51,19 +51,23 @@ export const FormBlockInitializer = ({
     },
     [createBlockSchema, createFormBlock],
   );
+  const doTemplateWrap = useCallback(
+    (templateSchema, options) => {
+      if (customizeTemplateWrap) {
+        return customizeTemplateWrap(templateSchema, options);
+      }
+
+      return templateWrap(templateSchema, options);
+    },
+    [customizeTemplateWrap, templateWrap],
+  );
 
   return (
     <DataBlockInitializer
       {...itemConfig}
       icon={<FormOutlined />}
       componentType={componentType}
-      templateWrap={(templateSchema, options) => {
-        if (customizeTemplateWrap) {
-          return customizeTemplateWrap(templateSchema, options);
-        }
-
-        return templateWrap(templateSchema, options);
-      }}
+      templateWrap={doTemplateWrap}
       onCreateBlockSchema={onCreateFormBlockSchema}
       filter={filterCollections}
       onlyCurrentDataSource={onlyCurrentDataSource}
@@ -80,28 +84,34 @@ export const useCreateFormBlock = () => {
   const itemConfig = useSchemaInitializerItem();
   const { isCusomeizeCreate: isCustomizeCreate } = itemConfig;
 
-  const createFormBlock = ({ item }) => {
-    insert(
-      createCreateFormBlockUISchema({
-        collectionName: item.collectionName || item.name,
-        dataSource: item.dataSource,
-        isCusomeizeCreate: isCustomizeCreate,
-      }),
-    );
-  };
+  const createFormBlock = useCallback(
+    ({ item }) => {
+      insert(
+        createCreateFormBlockUISchema({
+          collectionName: item.collectionName || item.name,
+          dataSource: item.dataSource,
+          isCusomeizeCreate: isCustomizeCreate,
+        }),
+      );
+    },
+    [insert, isCustomizeCreate],
+  );
 
-  const templateWrap = (templateSchema, { item }) => {
-    const schema = createCreateFormBlockUISchema({
-      isCusomeizeCreate: isCustomizeCreate,
-      dataSource: item.dataSource,
-      templateSchema: templateSchema,
-      collectionName: item.name,
-    });
-    if (item.template && item.mode === 'reference') {
-      schema['x-template-key'] = item.template.key;
-    }
-    return schema;
-  };
+  const templateWrap = useCallback(
+    (templateSchema, { item }) => {
+      const schema = createCreateFormBlockUISchema({
+        isCusomeizeCreate: isCustomizeCreate,
+        dataSource: item.dataSource,
+        templateSchema: templateSchema,
+        collectionName: item.name,
+      });
+      if (item.template && item.mode === 'reference') {
+        schema['x-template-key'] = item.template.key;
+      }
+      return schema;
+    },
+    [isCustomizeCreate],
+  );
 
   return {
     createFormBlock,

@@ -13,13 +13,13 @@ import {
   useDataSourceKey,
   useFormBlockContext,
 } from '../';
+import { useFormActiveFields } from '../block-provider/hooks/useFormActiveFields';
 import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
 import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { useFormActiveFields } from '../block-provider/hooks/useFormActiveFields';
 export const itemsMerge = (items1) => {
   return items1;
 };
@@ -842,6 +842,7 @@ export const useCollectionDataSourceItems = ({
   filterDataSource,
   dataBlockInitializerProps,
   hideOtherRecordsInPopup,
+  onClick,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
@@ -853,6 +854,7 @@ export const useCollectionDataSourceItems = ({
    * 隐藏弹窗中的 Other records 选项
    */
   hideOtherRecordsInPopup?: boolean;
+  onClick?: (options: any) => void;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -956,10 +958,12 @@ export const useCollectionDataSourceItems = ({
           onlyCurrentDataSource: false,
           hideChildrenIfSingleCollection: false,
           onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
-          fromOthersInPopup: true,
           componentType: componentTypeMap[componentName] || componentName,
           filter({ collection: c, associationField }) {
             return true;
+          },
+          onClick(options) {
+            onClick({ ...options, fromOthersInPopup: true });
           },
         },
       };
@@ -1008,6 +1012,7 @@ export const useCollectionDataSourceItems = ({
       dataBlockInitializerProps,
       hideOtherRecordsInPopup,
       noAssociationMenu,
+      onClick,
       t,
     ]);
   }
@@ -1608,7 +1613,6 @@ function useAssociationFields({
         };
       });
   }, [
-    cm,
     collection.fields,
     compile,
     componentName,

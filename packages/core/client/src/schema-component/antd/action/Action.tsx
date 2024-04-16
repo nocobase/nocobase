@@ -9,10 +9,16 @@ import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { useCollectionParentRecordData, useDataBlockRequest } from '../../../data-source';
+import {
+  useCollection,
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+  useDataBlockRequest,
+} from '../../../data-source';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
-import { RecordProvider, useRecord } from '../../../record-provider';
+import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
+import { RecordProvider } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -63,8 +69,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
-    const record = useRecord();
+    const recordData = useCollectionRecordData();
     const parentRecordData = useCollectionParentRecordData();
+    const collection = useCollection();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
@@ -76,7 +83,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
     const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values: record } as any });
+    const localVariables = useLocalVariables({ currentForm: { values: recordData } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const service = useDataBlockRequest();
 
@@ -196,7 +203,14 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        {!popover && props.children}
+        <DeclareVariable
+          name="$nPopupRecord"
+          title={t('Current popup record')}
+          value={recordData}
+          collection={collection}
+        >
+          {!popover && props.children}
+        </DeclareVariable>
         {element}
       </ActionContextProvider>
     );
@@ -206,7 +220,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       return wrapSSR(
         // fix https://nocobase.height.app/T-3966
         <RecordProvider record={null} parent={parentRecordData}>
-          <TreeRecordProvider parent={record}>{result}</TreeRecordProvider>
+          <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
         </RecordProvider>,
       );
     }
