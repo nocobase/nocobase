@@ -48,13 +48,14 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const collection = useCollection();
   const recordData = useCollectionRecordData();
-  const { formRecord } = useFormBlockContext();
+  const { formRecord, collectionName } = useFormBlockContext();
+  const realCollectionName = formRecord?.data ? collectionName : collection?.name;
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
-    collectionName: collection?.name,
+    collectionName: realCollectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
   });
@@ -67,6 +68,6 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 用于判断是否需要显示配置项 */
     shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
     /** 当前记录对应的 collection name */
-    collectionName: collection?.name,
+    collectionName: realCollectionName,
   };
 };
