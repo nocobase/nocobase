@@ -1,3 +1,4 @@
 {
-  "Export warning": "仅支持少量数据导出（最好1000行以内），大量数据会导致系统卡住。请通过 Action: Export records pro 插件实现大量数据导出。"
+  "Export warning": "仅支持少量数据导出（200行以内），一次导出大量数据可能会导致系统失去响应、重启。请通过 Action: Export records pro 插件实现大量数据导出。",
+  "Start export": "开始导出"
 }

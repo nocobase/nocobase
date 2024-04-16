@@ -10,6 +10,7 @@ import lodash from 'lodash';
 import { saveAs } from 'file-saver';
 import { App } from 'antd';
 import { useExportTranslation } from './locale';
+import React from 'react';
 
 export const useExportAction = () => {
   const { service, resource } = useBlockRequestContext();
@@ -24,7 +25,16 @@ export const useExportAction = () => {
     async onClick() {
       const confirmed = await modal.confirm({
         title: t('Export'),
-        content: t('Export warning'),
+        content: (
+          <>
+            {t('Export warning')}
+            <br />{' '}
+            <a href="https://docs-cn.nocobase.com/handbook/action-export-pro" target="_blank" rel="noreferrer">
+              Action: Export records pro
+            </a>
+          </>
+        ),
+        okText: t('Start export'),
       });
       if (!confirmed) {
         return;
