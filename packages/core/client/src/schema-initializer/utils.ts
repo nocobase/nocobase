@@ -1012,6 +1012,7 @@ export const useCollectionDataSourceItems = ({
       dataBlockInitializerProps,
       hideOtherRecordsInPopup,
       noAssociationMenu,
+      onClick,
       t,
     ]);
   }
