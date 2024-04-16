@@ -3,6 +3,7 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 import { authType } from '../../constants';
 import { OIDCAuth } from '../oidc-auth';
+import { AppSupervisor } from '@nocobase/server';
 
 describe('oidc', () => {
   let app: MockServer;
@@ -187,9 +188,39 @@ describe('oidc', () => {
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.id).toBe(user.id);
   });
+
+  it('oidc:redirect', async () => {
+    vi.spyOn(OIDCAuth.prototype, 'signIn').mockResolvedValue({
+      user: {} as any,
+      token: 'test-token',
+    });
+    const res = await agent.get(`/oidc:redirect?state=${encodeURIComponent('name=oidc-auth&app=main')}`);
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(`/admin?authenticator=oidc-auth&token=test-token`);
+  });
+
+  it('oidc:redirect, sub app', async () => {
+    vi.spyOn(OIDCAuth.prototype, 'signIn').mockResolvedValue({
+      user: {} as any,
+      token: 'test-token',
+    });
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+    const res = await agent.get(`/oidc:redirect?state=${encodeURIComponent('name=oidc-auth&app=sub')}`);
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(`/apps/sub/admin?authenticator=oidc-auth&token=test-token`);
+  });
+
+  it('oidc:redirect, error', async () => {
+    vi.spyOn(OIDCAuth.prototype, 'signIn').mockRejectedValue(new Error('test error'));
+    const res = await agent.get(`/oidc:redirect?state=${encodeURIComponent('name=oidc-auth&app=main')}`);
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(`/signin?redirect=/admin&authenticator=oidc-auth&error=test%20error`);
+  });
 });
 
-it('field mapping', () => {
+test('field mapping', () => {
   const auth = new OIDCAuth({
     authenticator: null,
     ctx: {
@@ -216,5 +247,37 @@ it('field mapping', () => {
     sub: 1,
     username: 'user1',
     nickname: 'user1',
+  });
+});
+
+test('getExchangeBody', () => {
+  const auth = new OIDCAuth({
+    ctx: {
+      db: {
+        getCollection: () => ({}),
+      },
+    },
+    options: {
+      oidc: {
+        clientId: 'test_client_id',
+        clientSecret: 'test_client_secret',
+        exchangeBodyKeys: [
+          {
+            paramName: 'client_id',
+            optionsKey: 'clientId',
+            enabled: true,
+          },
+          {
+            paramName: 'client_secret',
+            optionsKey: 'clientSecret',
+            enabled: false,
+          },
+        ],
+      },
+    },
+  } as any);
+  const body = auth.getExchangeBody();
+  expect(body).toMatchObject({
+    client_id: 'test_client_id',
   });
 });

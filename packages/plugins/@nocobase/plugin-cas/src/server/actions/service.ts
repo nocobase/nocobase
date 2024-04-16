@@ -23,7 +23,9 @@ export const service = async (ctx: Context, next: Next) => {
     const { token } = await auth.signIn();
     ctx.redirect(`${prefix}${redirect || '/admin'}?authenticator=${authenticator}&token=${token}`);
   } catch (error) {
-    ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&error=${error.message}&redirect=${redirect}`);
+    ctx.redirect(
+      `${prefix}/signin?authenticator=${authenticator}&error=${error.message}&redirect=${redirect || '/admin'}`,
+    );
   }
   return next();
 };

@@ -42,6 +42,21 @@ describe('infer fields', () => {
     await db.close();
   });
 
+  it('should infer for select *', async () => {
+    const model = class extends SQLModel {};
+    model.init(null, {
+      modelName: 'users',
+      tableName: 'users',
+      sequelize: db.sequelize,
+    });
+    model.database = db;
+    model.sql = `select * from users`;
+    expect(model.inferFields()).toMatchObject({
+      id: { type: 'bigInt', source: 'users.id' },
+      nickname: { type: 'string', source: 'users.nickname' },
+    });
+  });
+
   it('should infer fields', async () => {
     const model = class extends SQLModel {};
     model.init(null, {
@@ -53,6 +68,25 @@ describe('infer fields', () => {
     model.sql = `select u.id as uid, u.nickname, r.title, r.name
 from users u left join roles_users ru on ru.user_id = u.id
 left join roles r on ru.role_name=r.name`;
+    expect(model.inferFields()).toMatchObject({
+      uid: { type: 'bigInt', source: 'users.id' },
+      nickname: { type: 'string', source: 'users.nickname' },
+      title: { type: 'string', source: 'roles.title' },
+      name: { type: 'string', source: 'roles.name' },
+    });
+  });
+
+  it('should infer fields for with statement', async () => {
+    const model = class extends SQLModel {};
+    model.init(null, {
+      modelName: 'test',
+      tableName: 'test',
+      sequelize: db.sequelize,
+    });
+    model.database = db;
+    model.sql = `with u as (select id, nickname from users),
+    r as (select id, title, name from roles)
+    select u.id as uid, u.nickname, r.title, r.name`;
     expect(model.inferFields()).toMatchObject({
       uid: { type: 'bigInt', source: 'users.id' },
       nickname: { type: 'string', source: 'users.nickname' },

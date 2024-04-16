@@ -151,7 +151,7 @@ const Sync = () => {
           setLoading(true);
           await api.resource('localization').sync({
             values: {
-              type: checkedList,
+              types: checkedList,
             },
           });
           setLoading(false);

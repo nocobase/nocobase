@@ -1,3 +1,4 @@
+/* istanbul ignore file -- @preserve */
 import { RedisStore } from 'cache-manager-redis-yet';
 import { BloomFilter } from '.';
 import { Cache } from '../cache';

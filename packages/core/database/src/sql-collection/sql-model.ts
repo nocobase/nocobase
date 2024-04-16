@@ -36,26 +36,38 @@ export class SQLModel extends Model {
     if (Array.isArray(ast)) {
       ast = ast[0];
     }
+    ast.from = ast.from || [];
+    ast.columns = ast.columns || [];
     if (ast.with) {
+      ast.with.forEach((withItem: any) => {
+        const as = withItem.name;
+        const withAst = withItem.stmt.ast;
+        ast.from.push(...withAst.from.map((f: any) => ({ ...f, as })));
+        ast.columns.push(
+          ...withAst.columns.map((c: any) => ({
+            ...c,
+            expr: {
+              ...c.expr,
+              table: as,
+            },
+          })),
+        );
+      });
+    }
+    if (ast.columns === '*') {
       const tables = new Set<string>();
-      // parse sql includes with clause is not accurate
-      // the parsed columns seems to be always '*'
-      // it is supposed to be improved in the future
-      ast.with.forEach((withItem: { tableList: string[] }) => {
-        const tableList = withItem.tableList;
-        tableList.forEach((table) => {
-          const name = table.split('::')[2]; // "select::null::users"
-          tables.add(name);
-        });
+      ast.from.forEach((fromItem: { table: string; as: string }) => {
+        tables.add(fromItem.table);
       });
       return Array.from(tables).map((table) => ({ table, columns: '*' }));
     }
-    if (ast.columns === '*') {
-      return ast.from.map((fromItem: { table: string; as: string }) => ({
-        table: fromItem.table,
-        columns: '*',
-      }));
-    }
+    const tableAliases = {};
+    ast.from.forEach((fromItem: { table: string; as: string }) => {
+      if (!fromItem.as) {
+        return;
+      }
+      tableAliases[fromItem.as] = fromItem.table;
+    });
     const columns: string[] = ast.columns.reduce(
       (
         tableMp: { [table: string]: { name: string; as: string }[] },
@@ -72,22 +84,17 @@ export class SQLModel extends Model {
           return tableMp;
         }
         const table = column.expr.table;
+        const name = tableAliases[table] || table;
         const columnAttr = { name: column.expr.column, as: column.as };
-        if (!tableMp[table]) {
-          tableMp[table] = [columnAttr];
+        if (!tableMp[name]) {
+          tableMp[name] = [columnAttr];
         } else {
-          tableMp[table].push(columnAttr);
+          tableMp[name].push(columnAttr);
         }
         return tableMp;
       },
       {},
     );
-    ast.from.forEach((fromItem: { table: string; as: string }) => {
-      if (columns[fromItem.as]) {
-        columns[fromItem.table] = columns[fromItem.as];
-        columns[fromItem.as] = undefined;
-      }
-    });
     return Object.entries(columns)
       .filter(([_, columns]) => columns)
       .map(([table, columns]) => ({ table, columns }));

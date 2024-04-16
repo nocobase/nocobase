@@ -12,12 +12,10 @@ export class BasicAuth extends BaseAuth {
   async validate() {
     const ctx = this.ctx;
     const {
-      values: {
-        account, // Username or email
-        email, // Old parameter, compatible with old api
-        password,
-      },
-    } = ctx.action.params;
+      account, // Username or email
+      email, // Old parameter, compatible with old api
+      password,
+    } = ctx.action.params.values || {};
 
     if (!account && !email) {
       ctx.throw(400, ctx.t('Please enter your username or email', { ns: namespace }));
@@ -55,6 +53,9 @@ export class BasicAuth extends BaseAuth {
     if (!/^[^@.<>"'/]{2,16}$/.test(username)) {
       ctx.throw(400, ctx.t('Please enter a valid username', { ns: namespace }));
     }
+    if (!password) {
+      ctx.throw(400, ctx.t('Please enter a password', { ns: namespace }));
+    }
     if (password !== confirm_password) {
       ctx.throw(400, ctx.t('The password is inconsistent, please re-enter', { ns: namespace }));
     }
@@ -62,6 +63,7 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
+  /* istanbul ignore next -- @preserve */
   async lostPassword() {
     const ctx = this.ctx;
     const {
@@ -83,6 +85,7 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
+  /* istanbul ignore next -- @preserve */
   async resetPassword() {
     const ctx = this.ctx;
     const {
@@ -104,6 +107,7 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
+  /* istanbul ignore next -- @preserve */
   async getUserByResetToken() {
     const ctx = this.ctx;
     const { token } = ctx.action.params;
@@ -121,8 +125,11 @@ export class BasicAuth extends BaseAuth {
   async changePassword() {
     const ctx = this.ctx;
     const {
-      values: { oldPassword, newPassword },
+      values: { oldPassword, newPassword, confirmPassword },
     } = ctx.action.params;
+    if (newPassword !== confirmPassword) {
+      ctx.throw(400, ctx.t('The password is inconsistent, please re-enter', { ns: namespace }));
+    }
     const currentUser = ctx.auth.user;
     if (!currentUser) {
       ctx.throw(401);
