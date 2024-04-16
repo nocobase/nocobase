@@ -5,16 +5,11 @@ import classnames from 'classnames';
 import React from 'react';
 import { useDesignable } from '../../hooks';
 
-import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
-import { useCollection } from '../../../data-source/collection/CollectionProvider';
-import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
 import { RecordProvider } from '../../../record-provider';
 
 export const ListItem = withDynamicSchemaProps((props) => {
-  const { t } = useTranslation();
-  const collection = useCollection();
   const field = useField<ObjectField>();
   const { designable } = useDesignable();
   const parentRecordData = useCollectionParentRecordData();
@@ -31,14 +26,7 @@ export const ListItem = withDynamicSchemaProps((props) => {
       ])}
     >
       <RecordProvider record={field.value} parent={parentRecordData}>
-        <DeclareVariable
-          name="$nPopupRecord"
-          title={t('Current popup record')}
-          value={field.value}
-          collection={collection}
-        >
-          {props.children}
-        </DeclareVariable>
+        {props.children}
       </RecordProvider>
     </div>
   );
