@@ -1,4 +1,4 @@
 {
-  "Export warning": "Only a small amount of data can be exported (within 200 rows). Exporting a large amount of data at once may cause the system to become unresponsive and restart. Please use the Action: Export records pro plugin for exporting large data.",
+  "Export warning": "You can export up to 200 rows of data at a time, any excess will be ignored. If you need to export a large amount of data at once, please use the Action: Export records pro plugin.",
   "Start export": "Start export"
 }
