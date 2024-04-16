@@ -34,6 +34,7 @@ export class PluginOIDCServer extends Plugin {
 
     this.app.acl.allow('oidc', '*', 'public');
 
+    /* istanbul ignore next -- @preserve */
     Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {
       const { req } = ctx;
       const url = new URL(req.url, `http://${req.headers.host}`);

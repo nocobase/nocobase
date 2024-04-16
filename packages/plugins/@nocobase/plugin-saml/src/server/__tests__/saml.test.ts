@@ -3,6 +3,8 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import { SAML } from '@node-saml/node-saml';
 import { vi } from 'vitest';
 import { authType } from '../../constants';
+import { SAMLAuth } from '../saml-auth';
+import { AppSupervisor } from '@nocobase/server';
 
 describe('saml', () => {
   let app: MockServer;
@@ -203,5 +205,35 @@ describe('saml', () => {
 
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.id).toBe(user.id);
+  });
+
+  it('saml:redirect', async () => {
+    vi.spyOn(SAMLAuth.prototype, 'signIn').mockResolvedValue({
+      user: {} as any,
+      token: 'test-token',
+    });
+    const res = await agent.get('/saml:redirect?authenticator=saml-auth&__appName=main');
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(`/admin?authenticator=saml-auth&token=test-token`);
+  });
+
+  it('saml:redirect, sub app', async () => {
+    vi.spyOn(SAMLAuth.prototype, 'signIn').mockResolvedValue({
+      user: {} as any,
+      token: 'test-token',
+    });
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+    const res = await agent.get('/saml:redirect?authenticator=saml-auth&__appName=sub');
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(`/apps/sub/admin?authenticator=saml-auth&token=test-token`);
+  });
+
+  it('saml:redirect, error', async () => {
+    vi.spyOn(SAMLAuth.prototype, 'signIn').mockRejectedValue(new Error('test error'));
+    const res = await agent.get('/saml:redirect?authenticator=saml-auth&__appName=main');
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(`/signin?authenticator=saml-auth&error=test%20error&redirect=/admin`);
   });
 });
