@@ -1,6 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useCollection, useCollectionRecordData } from '../../../data-source';
 import { useBaseVariable } from './useBaseVariable';
@@ -47,6 +48,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const collection = useCollection();
   const recordData = useCollectionRecordData();
+  const { formRecord } = useFormBlockContext();
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
@@ -61,9 +63,9 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 变量配置 */
     currentRecordSettings,
     /** 变量值 */
-    currentRecordCtx: recordData,
+    currentRecordCtx: formRecord?.data || recordData,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])),
+    shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
     /** 当前记录对应的 collection name */
     collectionName: collection?.name,
   };

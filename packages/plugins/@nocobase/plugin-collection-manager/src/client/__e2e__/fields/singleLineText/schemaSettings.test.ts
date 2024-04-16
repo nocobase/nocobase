@@ -415,7 +415,7 @@ test.describe('table column & sub-table in edit form', () => {
         'Current role',
         'Current form',
         'Current object',
-        // 'Current record',
+        'Current record',
       ],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
