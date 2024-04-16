@@ -257,11 +257,26 @@ export class EagerLoadingTree {
         const association = node.association;
         const associationType = association.associationType;
 
+        let params = {};
+
+        const otherFindOptions = lodash.pick(node.includeOption, ['sort']) || {};
+
+        const collection = this.db.modelCollection.get(node.model);
+
+        if (collection && !lodash.isEmpty(otherFindOptions)) {
+          const parser = new OptionsParser(otherFindOptions, {
+            collection,
+          });
+
+          params = parser.toSequelizeParams();
+        }
+
         if (associationType == 'HasOne' || associationType == 'HasMany') {
           const foreignKey = association.foreignKey;
           const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
           let where: any = { [foreignKey]: foreignKeyValues };
+
           if (node.where) {
             where = {
               [Op.and]: [where, node.where],
@@ -271,7 +286,7 @@ export class EagerLoadingTree {
           const findOptions = {
             where,
             attributes: node.attributes,
-            order: orderOption(association),
+            order: params.order || orderOption(association),
             transaction,
           };
 
@@ -358,7 +373,7 @@ export class EagerLoadingTree {
                 },
               },
             ],
-            order: orderOption(association),
+            order: params.order || orderOption(association),
           });
         }
       }
