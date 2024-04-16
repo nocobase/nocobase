@@ -28,7 +28,6 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
-import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
@@ -57,7 +56,6 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
 };
 
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
-  const { t } = useTranslation();
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -108,24 +106,17 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
             return (
-              <DeclareVariable
-                name="$nPopupRecord"
-                title={t('Current popup record')}
-                value={record}
-                collection={collection}
-              >
-                <SubFormProvider value={{ value: record, collection }}>
-                  <RecordIndexProvider index={record.__index || index}>
-                    <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
-                      <ColumnFieldProvider schema={s} basePath={basePath}>
-                        <span role="button" className={schemaToolbarBigger}>
-                          <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
-                        </span>
-                      </ColumnFieldProvider>
-                    </RecordProvider>
-                  </RecordIndexProvider>
-                </SubFormProvider>
-              </DeclareVariable>
+              <SubFormProvider value={{ value: record, collection }}>
+                <RecordIndexProvider index={record.__index || index}>
+                  <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
+                    <ColumnFieldProvider schema={s} basePath={basePath}>
+                      <span role="button" className={schemaToolbarBigger}>
+                        <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
+                      </span>
+                    </ColumnFieldProvider>
+                  </RecordProvider>
+                </RecordIndexProvider>
+              </SubFormProvider>
             );
           },
         } as TableColumnProps<any>;
@@ -133,15 +124,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
-    [
-      hasChangedColumns,
-      schema,
-      field,
-      parentRecordData,
-      schemaInWhitelist,
-      token.paddingContentVerticalLG,
-      token.marginSM,
-    ],
+    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
   );
 
   const tableColumns = useMemo(() => {

@@ -281,13 +281,10 @@ export interface DataBlockInitializerProps {
   hideChildrenIfSingleCollection?: boolean;
   items?: ReturnType<typeof useCollectionDataSourceItems>[];
   /**
-   * 是否是点击弹窗中的 Others 选项进入的
-   */
-  fromOthersInPopup?: boolean;
-  /**
    * 隐藏弹窗中的 Other records 选项
    */
   hideOtherRecordsInPopup?: boolean;
+  onClick?: (args: any) => void;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -305,14 +302,20 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     hideChildrenIfSingleCollection,
     filterDataSource,
     items: itemsFromProps,
-    fromOthersInPopup,
     hideOtherRecordsInPopup,
+    onClick: propsOnClick,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const onClick = useCallback(
-    async ({ item }) => {
+    async (options) => {
+      const { item, fromOthersInPopup } = options;
+
+      if (propsOnClick) {
+        return propsOnClick(options);
+      }
+
       if (item.template) {
         const s = await getTemplateSchemaByMode(item);
         templateWrap ? insert(templateWrap(s, { item, fromOthersInPopup })) : insert(s);
@@ -323,7 +326,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
       }
       setVisible(false);
     },
-    [fromOthersInPopup, getTemplateSchemaByMode, insert, onCreateBlockSchema, setVisible, templateWrap],
+    [getTemplateSchemaByMode, insert, onCreateBlockSchema, propsOnClick, setVisible, templateWrap],
   );
   const items =
     itemsFromProps ||
@@ -336,6 +339,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
       showAssociationFields,
       dataBlockInitializerProps: props,
       hideOtherRecordsInPopup,
+      onClick,
     });
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {
