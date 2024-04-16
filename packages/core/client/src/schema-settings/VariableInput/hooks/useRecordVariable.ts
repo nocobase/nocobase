@@ -1,9 +1,7 @@
 import { Schema } from '@formily/json-schema';
-import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
-import { useCollectionRecordData } from '../../../data-source';
+import { useCollection, useCollectionRecordData } from '../../../data-source';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
@@ -46,14 +44,14 @@ export const useRecordVariable = (props: Props) => {
  */
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
-  const { formRecord, collectionName } = useFormBlockContext();
+  const collection = useCollection();
   const recordData = useCollectionRecordData();
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
-    collectionName: collectionName,
+    collectionName: collection.name,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
   });
@@ -62,10 +60,10 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 变量配置 */
     currentRecordSettings,
     /** 变量值 */
-    currentRecordCtx: formRecord?.data || recordData,
+    currentRecordCtx: recordData,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord: formRecord ? !formRecord?.isNew && !_.isEmpty(formRecord?.data) : !!recordData,
+    shouldDisplayCurrentRecord: !!recordData,
     /** 当前记录对应的 collection name */
-    collectionName,
+    collectionName: collection.name,
   };
 };
