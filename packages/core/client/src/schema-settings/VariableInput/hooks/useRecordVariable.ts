@@ -51,7 +51,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
-    collectionName: collection.name,
+    collectionName: collection?.name,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
   });
@@ -64,6 +64,6 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 用于判断是否需要显示配置项 */
     shouldDisplayCurrentRecord: !!recordData,
     /** 当前记录对应的 collection name */
-    collectionName: collection.name,
+    collectionName: collection?.name,
   };
 };
