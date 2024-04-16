@@ -1,5 +1,6 @@
 export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
 
+/* istanbul ignore next -- @preserve */
 export const getTextsFromUISchema = (schema: any) => {
   const texts = [];
   const title = compile(schema.title);

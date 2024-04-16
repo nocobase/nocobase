@@ -3,7 +3,7 @@ import { Database, Model, Op } from '@nocobase/database';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 import LocalizationManagementPlugin from '../plugin';
-import { getTextsFromDBRecord, getTextsFromUISchema } from '../utils';
+import { getTextsFromDBRecord } from '../utils';
 
 const getResourcesInstance = async (ctx: Context) => {
   const plugin = ctx.app.getPlugin('localization-management') as LocalizationManagementPlugin;
@@ -58,16 +58,6 @@ export const getUISchemas = async (db: Database) => {
   return uiSchemas;
 };
 
-const getTextsFromUISchemas = async (db: Database) => {
-  const result = {};
-  const schemas = await getUISchemas(db);
-  schemas.forEach((schema: Model) => {
-    const texts = getTextsFromUISchema(schema.schema);
-    texts.forEach((text) => (result[text] = ''));
-  });
-  return result;
-};
-
 export const getTextsFromDB = async (db: Database) => {
   const result = {};
   const collections = Array.from(db.collections.values());
@@ -88,7 +78,7 @@ export const getTextsFromDB = async (db: Database) => {
   return result;
 };
 
-const getSchemaUid = async (db: Database, migrate = false) => {
+export const getSchemaUid = async (db: Database, migrate = false) => {
   if (migrate) {
     const systemSettings = await db.getRepository('systemSettings').findOne();
     const options = systemSettings?.options || {};
@@ -135,22 +125,22 @@ const sync = async (ctx: Context, next: Next) => {
   ctx.logger.info('Start sync localization resources');
   const resourcesInstance = await getResourcesInstance(ctx);
   const locale = ctx.get('X-Locale') || 'en-US';
-  const { type = [] } = ctx.action.params.values || {};
-  if (!type.length) {
+  const { types = [] } = ctx.action.params.values || {};
+  if (!types.length) {
     ctx.throw(400, ctx.t('Please provide synchronization source.'));
   }
 
   let resources: { [module: string]: any } = { client: {} };
-  if (type.includes('local')) {
+  if (types.includes('local')) {
     resources = await getResources(ctx);
   }
-  if (type.includes('menu')) {
+  if (types.includes('menu')) {
     const menuTexts = await getTextsFromMenu(ctx.db);
     resources[NAMESPACE_MENUS] = {
       ...menuTexts,
     };
   }
-  if (type.includes('db')) {
+  if (types.includes('db')) {
     const dbTexts = await getTextsFromDB(ctx.db);
     resources[NAMESPACE_COLLECTIONS] = {
       ...dbTexts,
