@@ -257,7 +257,7 @@ export class EagerLoadingTree {
         const association = node.association;
         const associationType = association.associationType;
 
-        let params = {};
+        let params: any = {};
 
         const otherFindOptions = lodash.pick(node.includeOption, ['sort']) || {};
 
