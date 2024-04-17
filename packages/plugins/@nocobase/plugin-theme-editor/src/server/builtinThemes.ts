@@ -28,6 +28,9 @@ export const compact: Omit<ThemeItem, 'id'> = {
     name: 'Compact',
     // @ts-ignore
     algorithm: 'compactAlgorithm',
+    token: {
+      fontSize: 16,
+    },
   },
   optional: true,
   isBuiltIn: true,
