@@ -219,7 +219,7 @@ jobs:
         run: yarn --prefer-offline
       - name: Test with MariaDB
         run: |
-          yarn test packages/core/utils/src/__tests__/parse-filter.test.ts
+          yarn test packages/core/utils/src/__tests__/parse-filter.test.ts --allowOnly
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mariadb
