@@ -1,13 +1,13 @@
 import React, { FC, createContext, useContext, useMemo } from 'react';
 
-import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { CollectionRecordProvider, CollectionRecord } from '../collection-record';
-import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
-import { useDataBlockResource } from './DataBlockResourceProvider';
-import { useDataSourceHeaders } from '../utils';
 import _ from 'lodash';
+import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useSourceKey } from '../../modules/blocks/useSourceKey';
+import { CollectionRecord, CollectionRecordProvider } from '../collection-record';
+import { useDataSourceHeaders } from '../utils';
+import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
+import { useDataBlockResource } from './DataBlockResourceProvider';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
@@ -43,6 +43,31 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   return request;
 }
 
+export async function requestParentRecordData({
+  sourceId,
+  association,
+  parentRecord,
+  api,
+  headers,
+  sourceKey,
+}: {
+  sourceId?: number;
+  association?: string;
+  parentRecord?: any;
+  api?: any;
+  headers?: any;
+  sourceKey?: string;
+}) {
+  if (parentRecord) return Promise.resolve({ data: parentRecord });
+  if (!association || !sourceKey || !sourceId) return Promise.resolve({ data: undefined });
+  // "association": "Collection.Field"
+  const arr = association.split('.');
+  // <collection>:get?filter[filterKey]=sourceId
+  const url = `${arr[0]}:get?filter[${sourceKey}]=${sourceId}`;
+  const res = await api.request({ url, headers });
+  return res.data;
+}
+
 function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const { sourceId, association, parentRecord } = options;
   const api = useAPIClient();
@@ -50,15 +75,8 @@ function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   const sourceKey = useSourceKey(association);
   return useRequest<T>(
-    async () => {
-      if (parentRecord) return Promise.resolve({ data: parentRecord });
-      if (!association || !sourceKey) return Promise.resolve({ data: undefined });
-      // "association": "Collection.Field"
-      const arr = association.split('.');
-      // <collection>:get?filter[filterKey]=sourceId
-      const url = `${arr[0]}:get?filter[${sourceKey}]=${sourceId}`;
-      const res = await api.request({ url, headers });
-      return res.data;
+    () => {
+      return requestParentRecordData({ sourceId, association, parentRecord, api, headers, sourceKey });
     },
     {
       refreshDeps: [association, parentRecord, sourceId],
