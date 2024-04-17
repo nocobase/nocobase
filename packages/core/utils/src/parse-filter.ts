@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import set from 'lodash/set';
+import moment from 'moment';
 import { offsetFromString } from './date';
 import { dayjs } from './dayjs';
 import { getValuesByPath } from './getValuesByPath';
@@ -212,14 +213,14 @@ export function getDayRange(options: GetDayRangeOptions) {
   ];
 }
 
-function toMoment(value) {
+function toMoment(value, useMoment = false) {
   if (!value) {
-    return dayjs();
+    return (useMoment ? moment() : dayjs()) as dayjs.Dayjs;
   }
   if (dayjs.isDayjs(value)) {
     return value;
   }
-  return dayjs(value);
+  return (useMoment ? moment(value) : dayjs(value)) as dayjs.Dayjs;
 }
 
 export type Utc2unitOptions = {
@@ -231,26 +232,13 @@ export type Utc2unitOptions = {
 
 export function utc2unit(options: Utc2unitOptions) {
   const { now, unit, timezone = '+00:00', offset } = options;
-  let m = toMoment(now);
-  console.log(now, m.toISOString());
+  let m = toMoment(now, unit === 'isoWeek');
   m = m.utcOffset(offsetFromString(timezone));
-  console.log(now, m.toISOString());
   m = m.startOf(unit);
-  console.log(now, m.toISOString());
   if (offset > 0) {
-    if (unit === 'isoWeek') {
-      m = m.add(offset, 'week');
-      console.log(now, m.toISOString());
-    } else {
-      m = m.add(offset, unit);
-    }
+    m = m.add(offset, unit);
   } else if (offset < 0) {
-    if (unit === 'isoWeek') {
-      m = m.subtract(-1 * offset, 'week');
-      console.log(now, m.toISOString());
-    } else {
-      m = m.subtract(-1 * offset, unit);
-    }
+    m = m.subtract(-1 * offset, unit);
   }
   const fn = {
     year: () => m.format('YYYY'),

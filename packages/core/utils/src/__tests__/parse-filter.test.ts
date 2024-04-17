@@ -80,7 +80,7 @@ describe('utc to unit', () => {
       unit: 'week',
     }).toBe('2023w01+00:00');
   });
-  it.only('should be iso week', async () => {
+  it('should be iso week', async () => {
     expectUtc2unit({
       now: '2023-01-08T00:00:00.000Z',
       timezone: '+00:00',
