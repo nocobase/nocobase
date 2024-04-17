@@ -6,10 +6,11 @@ import {
   useBlockRequestContext,
   useCollection_deprecated,
   useCompile,
+  useDataSourceKey,
   useRecord,
 } from '@nocobase/client';
-import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
+import { App } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 export const useCustomizeRequestActionProps = () => {
@@ -25,6 +26,7 @@ export const useCustomizeRequestActionProps = () => {
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
+  const dataSourceKey = useDataSourceKey();
   return {
     async onClick(e?, callBack?) {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
@@ -48,6 +50,7 @@ export const useCustomizeRequestActionProps = () => {
             currentRecord: {
               id: record[getPrimaryKey()],
               appends: service.params[0]?.appends,
+              dataSourceKey,
               data: formValues,
             },
           },

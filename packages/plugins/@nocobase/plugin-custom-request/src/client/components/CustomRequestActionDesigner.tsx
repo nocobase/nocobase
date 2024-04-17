@@ -6,6 +6,7 @@ import {
   SchemaSettingsActionModalItem,
   actionSettingsItems,
   useCollection_deprecated,
+  useDataSourceKey,
   useRequest,
 } from '@nocobase/client';
 import { App } from 'antd';
@@ -19,6 +20,7 @@ import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '
 export function CustomRequestSettingsItem() {
   const { t } = useTranslation();
   const { name } = useCollection_deprecated();
+  const dataSourceKey = useDataSourceKey();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
   const { message } = App.useApp();
@@ -45,6 +47,7 @@ export function CustomRequestSettingsItem() {
               options: {
                 ...requestSettings,
                 collectionName: name,
+                dataSourceKey,
               },
             },
             filterKeys: ['key'],
