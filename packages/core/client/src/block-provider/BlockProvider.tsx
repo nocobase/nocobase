@@ -195,7 +195,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 /**
  * @internal
  */
-const BlockContext = createContext<{
+export const BlockContext = createContext<{
   /** 用以区分区块的标识 */
   name: string;
 }>(null);

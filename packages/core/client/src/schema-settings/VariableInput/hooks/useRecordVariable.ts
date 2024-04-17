@@ -1,6 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { useBlockContext } from '../../../block-provider/BlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useCollection, useCollectionRecordData } from '../../../data-source';
@@ -46,6 +47,7 @@ export const useRecordVariable = (props: Props) => {
  */
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
+  const { name: blockType } = useBlockContext() || {};
   const collection = useCollection();
   const recordData = useCollectionRecordData();
   const { formRecord, collectionName } = useFormBlockContext();
@@ -66,7 +68,11 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 变量值 */
     currentRecordCtx: formRecord?.data || recordData,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
+    shouldDisplayCurrentRecord:
+      // form 区块不显示当前记录配置项
+      blockType === 'form'
+        ? false
+        : !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
     /** 当前记录对应的 collection name */
     collectionName: realCollectionName,
   };
