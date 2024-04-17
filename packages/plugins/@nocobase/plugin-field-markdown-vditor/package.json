@@ -1,0 +1,27 @@
+{
+  "name": "@nocobase/plugin-field-markdown-vditor",
+  "displayName": "Collection field: Vditor",
+  "displayName.zh-CN": "数据表字段：Vditor",
+  "description": "Used for storing Markdown and rendering with Vditor editor.",
+  "description.zh-CN": "用于存储Markdown，并使用 Vditor编辑器 渲染",
+  "version": "0.21.0-alpha.5",
+  "license": "AGPL-3.0",
+  "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/field-vditor",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/field-vditor",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "devDependencies": {
+    "vditor": "^3.10.3",
+    "@ant-design/icons": "5.x",
+    "antd": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x"
+  }
+}
