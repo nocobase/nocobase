@@ -232,17 +232,22 @@ export type Utc2unitOptions = {
 export function utc2unit(options: Utc2unitOptions) {
   const { now, unit, timezone = '+00:00', offset } = options;
   let m = toMoment(now);
+  console.log(now, m.toISOString());
   m = m.utcOffset(offsetFromString(timezone));
+  console.log(now, m.toISOString());
   m = m.startOf(unit);
+  console.log(now, m.toISOString());
   if (offset > 0) {
     if (unit === 'isoWeek') {
       m = m.add(offset, 'week');
+      console.log(now, m.toISOString());
     } else {
       m = m.add(offset, unit);
     }
   } else if (offset < 0) {
     if (unit === 'isoWeek') {
       m = m.subtract(-1 * offset, 'week');
+      console.log(now, m.toISOString());
     } else {
       m = m.subtract(-1 * offset, unit);
     }

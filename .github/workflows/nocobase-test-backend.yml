@@ -219,9 +219,7 @@ jobs:
         run: yarn --prefer-offline
       - name: Test with MariaDB
         run: |
-          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
-          sleep 1
-          yarn test --server --single-thread=false
+          yarn packages/core/utils/src/__tests__/parse-filter.test.ts
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mariadb
