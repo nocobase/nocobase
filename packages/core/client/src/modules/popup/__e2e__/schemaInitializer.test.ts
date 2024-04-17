@@ -173,9 +173,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
     await page.mouse.move(300, 0);
 
-    await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
-    await expect(page.getByText('GeneralConfigure fieldsConfigure actions')).toBeVisible();
-    await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-details')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-Markdown.Void-')).toBeVisible();
 
     // add relationship blocks
     // 下拉列表中，可选择以下区块进行创建
