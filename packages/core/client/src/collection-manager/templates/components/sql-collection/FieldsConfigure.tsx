@@ -89,12 +89,12 @@ export const FieldsConfigure = observer(
       () =>
         options
           .filter((v) => !['relation'].includes(v.key))
-          .map((options, index) => ({
-            ...options,
-            key: index,
+          .map((options, index1) => ({
+            key: index1,
             label: compile(options.label),
-            options: options.children.map((option) => ({
-              ...option,
+            options: options.children.map((option, index2) => ({
+              value: option.name,
+              key: `${index1}-${index2}`,
               label: compile(option.label),
             })),
           })),
