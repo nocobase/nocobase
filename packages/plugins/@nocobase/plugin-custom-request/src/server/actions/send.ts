@@ -2,6 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { parse } from '@nocobase/utils';
 
 import { appendArrayColumn } from '@nocobase/evaluators';
+import Application from '@nocobase/server';
 import axios from 'axios';
 import CustomRequestPlugin from '../plugin';
 
@@ -46,7 +47,8 @@ const getCurrentUserAppends = (str: string, user) => {
 };
 
 export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) {
-  const { filterByTk, resourceName, values = {} } = ctx.action.params;
+  const resourceName = ctx.action.resourceName;
+  const { filterByTk, values = {} } = ctx.action.params;
   const {
     currentRecord = {
       id: 0,
@@ -70,7 +72,6 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
       }
     }
   }
-
   const repo = ctx.db.getRepository(resourceName);
   const requestConfig = await repo.findOne({
     filter: {
@@ -84,13 +85,23 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   ctx.withoutDataWrapping = true;
 
-  const { collectionName, url, headers = [], params = [], data = {}, ...options } = requestConfig.options || {};
+  const {
+    dataSourceKey,
+    collectionName,
+    url,
+    headers = [],
+    params = [],
+    data = {},
+    ...options
+  } = requestConfig.options || {};
   if (!url) {
     return ctx.throw(400, ctx.t('Please configure the request settings first', { ns: 'custom-request' }));
   }
   let currentRecordValues = {};
   if (collectionName && typeof currentRecord.id !== 'undefined') {
-    const recordRepo = ctx.db.getRepository(collectionName);
+    const app = ctx.app as Application;
+    const dataSource = app.dataSourceManager.get(dataSourceKey || currentRecord.dataSourceKey || 'main');
+    const recordRepo = dataSource.collectionManager.getRepository(collectionName);
     currentRecordValues =
       (
         await recordRepo.findOne({
