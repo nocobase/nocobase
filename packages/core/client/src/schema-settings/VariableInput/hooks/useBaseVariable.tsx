@@ -29,6 +29,10 @@ interface GetOptionsParams {
   compile: (value: string) => any;
   isDisabled?: (params: IsDisabledParams) => boolean;
   getCollectionField?: (name: string) => CollectionFieldOptions_deprecated;
+  /**
+   * 如果为 true 则表示该变量已被弃用
+   */
+  deprecated?: boolean;
 }
 
 interface BaseProps {
@@ -60,6 +64,10 @@ interface BaseProps {
    */
   returnFields?(fields: FieldOption[], option: Option): FieldOption[];
   dataSource?: string;
+  /**
+   * 如果为 true 则表示该变量已被弃用
+   */
+  deprecated?: boolean;
 }
 
 interface BaseVariableProviderProps {
@@ -89,6 +97,7 @@ const getChildren = (
     isDisabled,
     targetFieldSchema,
     getCollectionField,
+    deprecated,
   }: GetOptionsParams,
 ): Option[] => {
   const result = options
@@ -98,9 +107,11 @@ const getChildren = (
           key: option.name,
           value: option.name,
           label: compile(option.title),
-          disabled: noDisabled
-            ? false
-            : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField }),
+          disabled:
+            deprecated ||
+            (noDisabled
+              ? false
+              : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField })),
           isLeaf: true,
           depth,
         };
@@ -117,9 +128,11 @@ const getChildren = (
         isLeaf: false,
         field: option,
         depth,
-        disabled: noDisabled
-          ? false
-          : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField }),
+        disabled:
+          deprecated ||
+          (noDisabled
+            ? false
+            : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField })),
         loadChildren,
       };
     })
@@ -141,6 +154,7 @@ export const useBaseVariable = ({
   noDisabled = true,
   dataSource,
   returnFields = (fields) => fields,
+  deprecated,
 }: BaseProps) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
@@ -167,6 +181,7 @@ export const useBaseVariable = ({
             compile,
             isDisabled: isDisabled || isDisabledDefault,
             getCollectionField,
+            deprecated,
           }) || []
         )
           // 将叶子节点排列在上面，方便用户选择
@@ -216,6 +231,7 @@ export const useBaseVariable = ({
       depth: 0,
       loadChildren,
       children: [],
+      disabled: !!deprecated,
     } as Option;
   }, [uiSchema?.['x-component']]);
 
