@@ -25,8 +25,8 @@ test.describe('tabs schema settings', () => {
     await showSettings(page);
     await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('block-item-Input-general-Tab name').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-general-Tab name').getByRole('textbox').fill('Add new with new name');
+    await page.getByLabel('block-item-Input-general-').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-general-').getByRole('textbox').fill('Add new with new name');
     await page.getByRole('button', { name: 'Select icon' }).click();
     await page.getByLabel('account-book').locator('svg').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
