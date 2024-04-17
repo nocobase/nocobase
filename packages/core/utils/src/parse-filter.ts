@@ -235,9 +235,17 @@ export function utc2unit(options: Utc2unitOptions) {
   m = m.utcOffset(offsetFromString(timezone));
   m = m.startOf(unit);
   if (offset > 0) {
-    m = m.add(offset, unit);
+    if (unit === 'isoWeek') {
+      m = m.add(offset, 'week');
+    } else {
+      m = m.add(offset, unit);
+    }
   } else if (offset < 0) {
-    m = m.subtract(-1 * offset, unit);
+    if (unit === 'isoWeek') {
+      m = m.subtract(-1 * offset, 'week');
+    } else {
+      m = m.subtract(-1 * offset, unit);
+    }
   }
   const fn = {
     year: () => m.format('YYYY'),
@@ -251,7 +259,7 @@ export function utc2unit(options: Utc2unitOptions) {
   return timezone ? r + timezone : r;
 }
 
-const toUnit = (unit, offset?: number) => {
+export const toUnit = (unit, offset?: number) => {
   return ({ now, timezone, field }) => {
     if (field?.timezone) {
       timezone = field?.timezone;

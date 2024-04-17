@@ -96,6 +96,16 @@ describe('utc to unit', () => {
       now: '2023-01-01T00:00:00.000Z',
       unit: 'isoWeek',
     }).toBe('2022W52+00:00');
+    expectUtc2unit({
+      now: '2024-04-17T03:06:46.754Z',
+      unit: 'isoWeek',
+      offset: 1,
+    }).toBe('2024W17+00:00');
+    expectUtc2unit({
+      now: '2024-04-17T03:06:46.754Z',
+      unit: 'isoWeek',
+      offset: -1,
+    }).toBe('2024W15+00:00');
   });
   it('should be day', async () => {
     expectUtc2unit({

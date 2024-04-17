@@ -42,14 +42,14 @@ function parseWeek(value) {
     // 参见：https://github.com/iamkun/dayjs/issues/784
     return {
       unit: 'isoWeek',
-      start: dayjs(arr[0], 'YYYY').add(Number(arr[1]), 'weeks').format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(arr[0], 'YYYY').isoWeek(Number(arr[1])).startOf('isoWeek').format('YYYY-MM-DD HH:mm:ss'),
     };
   }
   if (/^\d\d\d\d[w]\d\d$/.test(value)) {
     const arr = value.split('w');
     return {
       unit: 'week',
-      start: dayjs(arr[0], 'YYYY').week(Number(arr[1])).format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(arr[0], 'YYYY').week(Number(arr[1])).startOf('week').format('YYYY-MM-DD HH:mm:ss'),
     };
   }
 }
