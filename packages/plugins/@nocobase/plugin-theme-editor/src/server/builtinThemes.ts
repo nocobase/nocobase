@@ -44,6 +44,9 @@ export const compactDark: Omit<ThemeItem, 'id'> = {
     name: 'Compact dark',
     // @ts-ignore
     algorithm: ['compactAlgorithm', 'darkAlgorithm'],
+    token: {
+      fontSize: 16,
+    },
   },
   optional: true,
   isBuiltIn: true,
