@@ -11,6 +11,7 @@ import {
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useCollectionField } from '../../../../data-source';
 import { useFormBlockType } from '../../../../block-provider';
+import { setDefaultSortingRules } from '../SubTable/subTablePopoverComponentFieldSettings';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -131,5 +132,6 @@ export const subformComponentFieldSettings = new SchemaSettings({
         };
       },
     },
+    setDefaultSortingRules,
   ],
 });

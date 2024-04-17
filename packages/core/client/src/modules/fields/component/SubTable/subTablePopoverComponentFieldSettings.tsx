@@ -11,13 +11,7 @@ import {
   useIsFieldReadPretty,
 } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import {
-  useCollectionManager_deprecated,
-  useCollection_deprecated,
-  useSortFields,
-} from '../../../../collection-manager';
-import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
-import { useAssociationName } from '../../../../data-source';
+import { useCollectionManager_deprecated, useSortFields } from '../../../../collection-manager';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -94,7 +88,7 @@ const allowSelectExistingRecord = {
   },
 };
 
-const setDefaultSortingRules = {
+export const setDefaultSortingRules = {
   name: 'SetDefaultSortingRules',
   type: 'modal',
   useComponentProps() {
@@ -208,8 +202,12 @@ const setDefaultSortingRules = {
     };
   },
   useVisible() {
+    const { getCollectionJoinField } = useCollectionManager_deprecated();
+    const fieldSchema = useFieldSchema();
+    const association = fieldSchema['x-collection-field'];
+    const { interface: targetInterface } = getCollectionJoinField(association) || {};
     const readPretty = useIsFieldReadPretty();
-    return readPretty;
+    return readPretty && ['m2m', 'o2m'].includes(targetInterface);
   },
 };
 export const subTablePopoverComponentFieldSettings = new SchemaSettings({
