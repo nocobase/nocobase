@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useFieldSchema, useField, useForm } from '@formily/react';
 import Vditor from 'vditor';
 import { useCollection_deprecated, useCollectionDataSource, useCollectionManager_deprecated } from '@nocobase/client';
@@ -26,10 +26,14 @@ export function Edit(props) {
   const vdRef = useRef<Vditor>();
   const containerRef = useRef<HTMLDivElement>();
 
+  const value = useMemo(() => {
+    return props.value ?? field.value;
+  }, [props.value, field.value]);
+
   useEffect(() => {
-    if (!uiSchema || vdRef.current || !form || !field) return;
+    if (!uiSchema || vdRef.current) return;
     const vditor = new Vditor(containerRef.current, {
-      value: props.value ?? field.value,
+      value,
       lang: localStorage.getItem('NOCOBASE_LOCALE').replaceAll('-', '_') as any,
       cache: {
         enable: false,
@@ -47,9 +51,6 @@ export function Edit(props) {
       },
       input(value) {
         onChange(value);
-        field.setValue(value);
-        field.value = value;
-        form.setValuesIn(field.address.toString(), value);
       },
       upload: {
         url: `/api/${uiSchema['x-component-props']['fileCollection']}:create`,
@@ -85,6 +86,13 @@ export function Edit(props) {
       vdRef.current = undefined;
     };
   }, [uiSchema, form, field, vdRef]);
+
+  useEffect(() => {
+    if (!value) {
+      vdRef.current?.setValue('');
+      vdRef.current?.focus();
+    }
+  }, [value]);
 
   useEffect(() => {
     if (disabled) {
