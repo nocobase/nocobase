@@ -100,7 +100,7 @@ export default class PluginUsersServer extends Plugin {
           targetKey: 'id',
           uiSchema: {
             type: 'object',
-            title: '{{t("Created by")}}',
+            title: '{{t("Last updated by")}}',
             'x-component': 'AssociationField',
             'x-component-props': {
               fieldNames: {

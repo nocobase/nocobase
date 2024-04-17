@@ -118,7 +118,7 @@ export default defineCollection({
           dateFormat: 'YYYY-MM-DD',
         },
         type: 'datetime',
-        title: '{{t("Updated at")}}',
+        title: '{{t("Last updated at")}}',
         'x-component': 'DatePicker',
         'x-read-pretty': true,
       },
