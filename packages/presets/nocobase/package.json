@@ -61,6 +61,7 @@
     "@nocobase/plugin-workflow-request": "0.21.0-alpha.10",
     "@nocobase/plugin-workflow-sql": "0.21.0-alpha.10",
     "@nocobase/server": "0.21.0-alpha.10",
+    "@nocobase/plugin-field-markdown-field": "0.21.0-alpha.5",
     "cronstrue": "^2.11.0"
   },
   "repository": {
