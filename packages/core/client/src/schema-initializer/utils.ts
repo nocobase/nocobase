@@ -489,7 +489,7 @@ const getItem = (
 
     return {
       type: 'subMenu',
-      name: field.uiSchema?.title,
+      name: schemaName,
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
