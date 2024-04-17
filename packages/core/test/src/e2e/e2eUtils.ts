@@ -170,6 +170,8 @@ export interface PageConfig {
    * @default undefined
    */
   pageSchema?: any;
+  /** 如果为 true 则表示不会更改 PageSchema 的 uid */
+  keepUid?: boolean;
 }
 
 interface CreatePageOptions {
@@ -177,6 +179,8 @@ interface CreatePageOptions {
   url?: PageConfig['url'];
   name?: string;
   pageSchema?: any;
+  /** 如果为 true 则表示不会更改 PageSchema 的 uid */
+  keepUid?: boolean;
 }
 
 interface ExtendUtils {
@@ -303,6 +307,7 @@ export class NocoPage {
       name: this.options?.name,
       pageSchema: this.options?.pageSchema,
       url: this.options?.url,
+      keepUid: this.options?.keepUid,
     });
     this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
   }
@@ -550,7 +555,7 @@ const updateUidOfPageSchema = (uiSchema: any) => {
  * 在 NocoBase 中创建一个页面
  */
 const createPage = async (options?: CreatePageOptions) => {
-  const { type = 'page', url, name, pageSchema } = options || {};
+  const { type = 'page', url, name, pageSchema, keepUid } = options || {};
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
@@ -590,7 +595,7 @@ const createPage = async (options?: CreatePageOptions) => {
           { type: 'onSelfSave', method: 'extractTextToLocale' },
         ],
         properties: {
-          page: updateUidOfPageSchema(pageSchema) || {
+          page: (keepUid ? pageSchema : updateUidOfPageSchema(pageSchema)) || {
             _isJSONSchemaObject: true,
             version: '2.0',
             type: 'void',
