@@ -28,7 +28,7 @@ import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
-import { linkageAction } from './utils';
+import { linkageAction, setInitialActionState } from './utils';
 
 export const Action: ComposedAction = withDynamicSchemaProps(
   observer((props: any) => {
@@ -86,12 +86,8 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [title, fieldSchema.title, t]);
 
     useEffect(() => {
-      if (field.stateOfLinkageRules && !linkageRules.filter((k) => !k.disabled).length) {
-        field.data = field.data || {};
-        field.display = 'visible';
-        field.disabled = false;
-        field.data.hidden = false;
-        field.componentProps['disabled'] = false;
+      if (field.stateOfLinkageRules) {
+        setInitialActionState(field);
       }
       field.stateOfLinkageRules = {};
       linkageRules
