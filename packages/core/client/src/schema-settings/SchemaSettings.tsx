@@ -179,7 +179,13 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
             overflow-y: auto;
           }
         `}
-        menu={{ items, style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' } }}
+        menu={
+          {
+            items,
+            'data-testid': 'schema-settings-menu',
+            style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' },
+          } as any
+        }
       >
         <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
