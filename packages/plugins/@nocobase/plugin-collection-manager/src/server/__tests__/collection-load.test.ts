@@ -32,7 +32,10 @@ describe('load collections', function () {
     await collectionRepository.create({
       values: {
         name: 'groups',
-        fields: [{ name: 'name', type: 'string' }],
+        fields: [
+          { name: 'id', type: 'bigInt', primaryKey: true, autoIncrement: true },
+          { name: 'name', type: 'string' },
+        ],
       },
       context: {},
     });
@@ -95,7 +98,13 @@ describe('load collections', function () {
     db = app.db;
 
     const User = db.getCollection('users');
-    expect(User.getField('groupAlias')).toBeTruthy();
+
+    expect(User.model.associations.groupAlias).toBeTruthy();
+    const users = await db.getRepository('users').find({
+      appends: ['groupAlias'],
+    });
+
+    expect(users[0].groupAlias.name).toBe('技术部');
   });
 
   it('should load collections has many to view collection', async () => {
