@@ -54,7 +54,6 @@ import {
   createDesignable,
   findFormBlock,
   useAPIClient,
-  useBlockRequestContext,
   useCollectionManager_deprecated,
   useCollectionRecord,
   useCollection_deprecated,
@@ -67,19 +66,14 @@ import {
   useRecord,
   useSortFields,
 } from '..';
-import {
-  BlockRequestContext_deprecated,
-  FormBlockContext,
-  useFormBlockContext,
-  useFormBlockType,
-  useTableBlockContext,
-} from '../block-provider';
+import { FormBlockContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,
   findFilterTargets,
   updateFilterTargets,
   useFormActiveFields,
 } from '../block-provider/hooks';
+import { useBlockRequestContext, BlockRequestContext_deprecated } from '../block-provider/BlockProvider';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
 import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';

@@ -3,7 +3,15 @@ import MockAdapter from 'axios-mock-adapter';
 import { AxiosInstance } from 'axios';
 
 // @ts-ignore
-import { Application, ApplicationOptions, DataBlockProvider, LocalDataSource, SchemaComponent } from '@nocobase/client';
+import {
+  AntdSchemaComponentPlugin,
+  Application,
+  ApplicationOptions,
+  DataBlockProvider,
+  LocalDataSource,
+  SchemaComponent,
+  SchemaSettings,
+} from '@nocobase/client';
 
 import dataSourceMainCollections from './dataSourceMainCollections.json';
 import dataSource2 from './dataSource2.json';
@@ -37,19 +45,43 @@ export interface GetAppOptions {
   appOptions?: AppOrOptions;
   providers?: (ComponentType | [ComponentType, any])[];
   apis?: MockApis;
+  designable?: boolean;
+  schemaSettings?: SchemaSettings;
   enableUserListDataBlock?: boolean;
   enableMultipleDataSource?: boolean;
 }
 
+const defaultApis = {
+  'uiSchemas:patch': { data: { result: 'ok' } },
+};
+
 export const getApp = (options: GetAppOptions) => {
-  const { appOptions, enableUserListDataBlock, providers, apis, enableMultipleDataSource } = options;
-  const app = appOptions instanceof Application ? appOptions : new Application(appOptions);
+  const {
+    appOptions = {},
+    schemaSettings,
+    enableUserListDataBlock,
+    providers,
+    apis: optionsApis = {},
+    enableMultipleDataSource,
+    designable,
+  } = options;
+  const app =
+    appOptions instanceof Application
+      ? appOptions
+      : new Application({ ...appOptions, designable: appOptions.designable || designable });
   if (providers) {
     app.addProviders(providers);
   }
 
+  if (schemaSettings) {
+    app.schemaSettingsManager.add(schemaSettings);
+  }
+
+  app.pluginManager.add(AntdSchemaComponentPlugin);
+
   app.getCollectionManager().addCollections(dataSourceMainCollections as any);
 
+  const apis = Object.assign({}, defaultApis, optionsApis);
   if (enableUserListDataBlock && !apis['users:list']) {
     apis['users:list'] = usersListData;
   }
@@ -67,29 +99,24 @@ export const getApp = (options: GetAppOptions) => {
   };
 };
 
-export interface GetAppComponentOptions<V = any, Props = {}> {
+export interface GetAppComponentOptions<V = any, Props = {}> extends GetAppOptions {
   schema?: any;
-  appOptions?: AppOrOptions;
-  apis?: MockApis;
   Component?: ComponentType<Props>;
   value?: V;
   props?: Props;
-  onChange?: (value: V) => void;
   enableUserListDataBlock?: boolean;
-  enableMultipleDataSource?: boolean;
+  onChange?: (value: V) => void;
 }
 
 export const getAppComponent = (options: GetAppComponentOptions) => {
   const {
+    schema: optionsSchema = {},
     Component,
-    enableUserListDataBlock,
-    enableMultipleDataSource,
     value,
     props,
-    appOptions,
-    apis,
     onChange,
-    schema: optionsSchema = {},
+    enableUserListDataBlock,
+    ...otherOptions
   } = options;
   const schema = {
     type: 'object',
@@ -123,10 +150,8 @@ export const getAppComponent = (options: GetAppComponentOptions) => {
   };
 
   const { App } = getApp({
-    appOptions,
-    apis,
+    ...otherOptions,
     providers: [TestDemo],
-    enableMultipleDataSource,
     enableUserListDataBlock,
   });
 

@@ -16,6 +16,7 @@ export const useGetAriaLabelOfAction = (title: string) => {
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const component = fieldSchema['x-component'];
+  const componentName = typeof component === 'string' ? component : component?.displayName || component?.name;
   let recordName = record?.name || record?.title || (recordIndex != null ? String(recordIndex) : '');
   let action = fieldSchema['x-action'];
   let { name: collectionName } = useCollection_deprecated();
@@ -29,9 +30,9 @@ export const useGetAriaLabelOfAction = (title: string) => {
   const getAriaLabel = useCallback(
     (postfix?: string) => {
       postfix = postfix ? `-${postfix}` : '';
-      return `action-${component}-${actionTitle}${action}${collectionName}${blockName}${recordName}${postfix}`;
+      return `action-${componentName}-${actionTitle}${action}${collectionName}${blockName}${recordName}${postfix}`;
     },
-    [action, actionTitle, blockName, collectionName, component, recordName],
+    [action, actionTitle, blockName, collectionName, componentName, recordName],
   );
 
   return {
