@@ -1,14 +1,5 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import {
-  TableFieldResource,
-  useAPIClient,
-  useActionContext,
-  useBlockRequestContext,
-  useCollection_deprecated,
-  useCompile,
-  useDataSourceKey,
-  useRecord,
-} from '@nocobase/client';
+import { useAPIClient, useActionContext, useCompile, useDataSourceKey, useRecord } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -19,8 +10,7 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { getPrimaryKey } = useCollection_deprecated();
-  const { resource, __parent, service } = useBlockRequestContext();
+  // const { getPrimaryKey } = useCollection_deprecated();
   const record = useRecord();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
@@ -35,7 +25,7 @@ export const useCustomizeRequestActionProps = () => {
         await form.submit();
       }
 
-      let formValues = {};
+      let formValues = { ...record };
       if (xAction === 'customize:form:request') {
         formValues = form.values;
       }
@@ -48,17 +38,14 @@ export const useCustomizeRequestActionProps = () => {
           method: 'POST',
           data: {
             currentRecord: {
-              id: record[getPrimaryKey()],
-              appends: service.params[0]?.appends,
+              // id: record[getPrimaryKey()],
+              // appends: result.params[0]?.appends,
               dataSourceKey,
               data: formValues,
             },
           },
         });
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.service?.refresh?.();
-        }
         // service?.refresh?.();
         if (callBack) {
           callBack?.();
