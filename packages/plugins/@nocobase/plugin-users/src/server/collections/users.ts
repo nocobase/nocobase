@@ -97,5 +97,35 @@ export default defineCollection({
       name: 'systemSettings',
       defaultValue: {},
     },
+    {
+      uiSchema: {
+        'x-component-props': {
+          dateFormat: 'YYYY-MM-DD',
+        },
+        type: 'datetime',
+        title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+        'x-read-pretty': true,
+      },
+      name: 'createdAt',
+      type: 'date',
+      field: 'createdAt',
+      interface: 'createdAt',
+    },
+    {
+      uiSchema: {
+        'x-component-props': {
+          dateFormat: 'YYYY-MM-DD',
+        },
+        type: 'datetime',
+        title: '{{t("Updated at")}}',
+        'x-component': 'DatePicker',
+        'x-read-pretty': true,
+      },
+      name: 'updatedAt',
+      type: 'date',
+      field: 'updatedAt',
+      interface: 'updatedAt',
+    },
   ],
 });
