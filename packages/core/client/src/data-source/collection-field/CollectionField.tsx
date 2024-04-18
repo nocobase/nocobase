@@ -71,14 +71,18 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     setRequired();
     // @ts-ignore
     field.dataSource = uiSchema.enum;
-    const originalProps = compile(uiSchema['x-component-props']) || {};
-    const componentProps = merge(originalProps, field.componentProps || {});
+    // const originalProps = compile(uiSchema['x-component-props']) || {};
+    // const componentProps = merge(originalProps, field.componentProps || {});
     // field.component = [Component, componentProps];
   }, [uiSchema]);
+  const componentProps = useMemo(() => {
+    const originalProps = compile(uiSchema['x-component-props']) || {};
+    return merge(originalProps, props || {});
+  }, [compile, uiSchema, props]);
   if (!uiSchema) {
     return null;
   }
-  return <Component {...props} />;
+  return <Component {...componentProps} />;
 };
 
 export const CollectionField = connect((props) => {
