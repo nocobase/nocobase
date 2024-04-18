@@ -1,6 +1,5 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { CollectionFieldContext } from '../collection-field/CollectionFieldProvider';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
 import type { Collection, CollectionOptions, GetCollectionFieldPredicate } from './Collection';
 import { useCollectionManager } from './CollectionManagerProvider';
@@ -25,9 +24,9 @@ export const CollectionProvider: FC<CollectionProviderProps> = (props) => {
 
 export const SanitizedCollectionProvider: FC<CollectionProviderProps> = (props) => {
   return (
-    <CollectionFieldContext.Provider value={null}>
-      <CollectionProvider {...props} />
-    </CollectionFieldContext.Provider>
+    // <CollectionFieldContext.Provider value={null}>
+    <CollectionProvider {...props} />
+    // </CollectionFieldContext.Provider>
   );
 };
 
