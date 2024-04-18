@@ -16,6 +16,7 @@ import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './ho
 import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchemaV2 } from './util';
+import { CollectionFieldProvider } from '../../../data-source';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -149,7 +150,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
 
     return (
       <div>
-        <BlockAssociationContext.Provider value={`${collectionField?.collectionName}.${collectionField?.name}`}>
+        <CollectionFieldProvider>
           <CollectionProvider_deprecated name={collectionField?.target ?? collectionField?.targetCollection}>
             {btnElement}
             <ActionContextProvider
@@ -164,7 +165,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               {renderRecordProvider()}
             </ActionContextProvider>
           </CollectionProvider_deprecated>
-        </BlockAssociationContext.Provider>
+        </CollectionFieldProvider>
       </div>
     );
   },
