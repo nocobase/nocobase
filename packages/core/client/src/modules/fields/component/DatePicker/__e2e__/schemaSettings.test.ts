@@ -1,6 +1,6 @@
 import { expect, expectSettingsMenu, test } from '@nocobase/test/e2e';
 import dayjs from 'dayjs';
-import { oneTableBlockWithDatetimeFields, oneFormBlockWithDatetimeFields } from './utils';
+import { oneFormBlockWithDatetimeFields, oneTableBlockWithDatetimeFields } from './utils';
 
 test('Date display format in form', async ({ page, mockPage }) => {
   await mockPage(oneFormBlockWithDatetimeFields).goto();
@@ -27,7 +27,7 @@ test('Date display format in form', async ({ page, mockPage }) => {
   await page.getByText('Date display format').click();
   await page.getByLabel('Show time').check();
   await page.getByRole('button', { name: 'HH:mm:ss', exact: true }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
   await page.getByPlaceholder('Select date').click();
   await page.getByText('Now').click();
   const value = await page.getByPlaceholder('Select date').inputValue();
@@ -49,6 +49,6 @@ test('Date display format in table', async ({ page, mockPage, mockRecord }) => {
   await page.getByText('Date display format').click();
   await page.getByLabel('Show time').check();
   await page.getByRole('button', { name: 'hh:mm:ss a' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
   await expect(page.getByRole('button', { name: dayjs(date).format('YYYY-MM-DD hh:mm:ss a') })).toBeVisible();
 });
