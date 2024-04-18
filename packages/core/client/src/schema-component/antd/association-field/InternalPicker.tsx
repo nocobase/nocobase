@@ -208,14 +208,16 @@ export const InternalPicker = observer(
                       useTableSelectorProps,
                     }}
                   >
-                    <RecursionField
-                      onlyRenderProperties
-                      basePath={field.address}
-                      schema={fieldSchema}
-                      filterProperties={(s) => {
-                        return s['x-component'] === 'AssociationField.Selector';
-                      }}
-                    />
+                    <ClearCollectionFieldContext>
+                      <RecursionField
+                        onlyRenderProperties
+                        basePath={field.address}
+                        schema={fieldSchema}
+                        filterProperties={(s) => {
+                          return s['x-component'] === 'AssociationField.Selector';
+                        }}
+                      />
+                    </ClearCollectionFieldContext>
                   </SchemaComponentOptions>
                 </TableSelectorParamsProvider>
               </FormProvider>
