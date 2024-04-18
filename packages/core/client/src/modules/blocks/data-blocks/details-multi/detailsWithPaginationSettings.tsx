@@ -25,6 +25,8 @@ const commonItems: SchemaSettingsItemType[] = [
       const { form } = useFormBlockContext();
       const field = useField();
       const { dn } = useDesignable();
+      const { service } = useDetailsBlockContext();
+
       return {
         collectionName: name,
         defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
@@ -43,6 +45,7 @@ const commonItems: SchemaSettingsItemType[] = [
               'x-decorator-props': fieldSchema['x-decorator-props'],
             },
           });
+          service.params[0].page = 1;
         },
       };
     },
