@@ -3,13 +3,13 @@ import {
   SchemaInitializerItem,
   createCreateFormBlockUISchema,
   useCollection_deprecated,
+  usePopupAssociation,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaTemplateManager,
 } from '@nocobase/client';
 import React from 'react';
-import { usePopupAssociation } from '../../../../schema-component/antd/action/PopupAssociationProvider';
 import { createBulkEditBlockUISchema } from './createBulkEditBlockUISchema';
 
 export const CreateFormBulkEditBlockInitializer = () => {
