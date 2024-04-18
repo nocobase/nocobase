@@ -160,7 +160,7 @@ const transformers: {
           { label: '1.000', value: 3 },
         ],
       },
-      fn: (val: number, precision: number) => val.toFixed(precision),
+      fn: (val: number, precision: number) => Number(val.toFixed(precision)),
     },
     Separator: {
       schema: {
