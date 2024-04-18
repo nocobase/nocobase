@@ -1,4 +1,6 @@
 import { list } from '../default-actions/list';
+import { vi } from 'vitest';
+import { move } from '../default-actions/move';
 
 describe('action test', () => {
   describe('list action', async () => {
@@ -83,6 +85,38 @@ describe('action test', () => {
         { id: 1, name: 'test' },
         { id: 2, name: 'test2' },
       ]);
+    });
+  });
+
+  describe('move action', async () => {
+    it('should move when repository can move', async () => {
+      const moveAction = move;
+
+      const ctx: any = {
+        getCurrentRepository() {
+          return {};
+        },
+        action: {
+          params: {
+            filterByTk: 1,
+            targetCollection: 'test',
+          },
+        },
+      };
+
+      const moveFn = vi.fn();
+
+      vi.spyOn(ctx, 'getCurrentRepository').mockImplementation(() => {
+        return {
+          move: async () => {
+            moveFn();
+          },
+        };
+      });
+
+      await moveAction(ctx, () => {});
+
+      expect(moveFn).toHaveBeenCalled();
     });
   });
 });

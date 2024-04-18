@@ -1,11 +1,9 @@
 import actions, { Context } from '@nocobase/actions';
 
-import { getRepositoryFromParams } from './utils';
-
 const databaseMoveAction = actions.move;
 
 export async function move(ctx: Context, next) {
-  const repository = getRepositoryFromParams(ctx);
+  const repository = ctx.getCurrentRepository();
 
   if (repository.move) {
     ctx.body = await repository.move(ctx.action.params);

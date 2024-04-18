@@ -52,12 +52,13 @@ export abstract class DataSource extends EventEmitter {
     }
 
     return async (ctx, next) => {
+      ctx.dataSource = dataSource;
+
       ctx.getCurrentRepository = () => {
         const { resourceName, resourceOf } = ctx.action;
+
         return this.collectionManager.getRepository(resourceName, resourceOf);
       };
-
-      ctx.dataSource = dataSource;
 
       return compose([this.collectionToResourceMiddleware(), this.resourceManager.middleware()])(ctx, next);
     };
