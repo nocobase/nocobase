@@ -3,10 +3,10 @@ import React from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { usePopupAssociation } from '../../../../schema-component/antd/action/PopupAssociationProvider';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { createCreateFormBlockUISchema } from './createCreateFormBlockUISchema';
-import { useAssociationName } from '../../../../data-source';
 
 // TODO: `SchemaInitializerItem` items
 export const CreateFormBlockInitializer = () => {
@@ -14,7 +14,7 @@ export const CreateFormBlockInitializer = () => {
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { insert } = useSchemaInitializer();
-  const association = useAssociationName();
+  const association = usePopupAssociation();
   const collection = useCollection_deprecated();
   return (
     <SchemaInitializerItem

@@ -1,17 +1,17 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
-import {
-  useCollection_deprecated,
-  useSchemaTemplateManager,
-  useRecordCollectionDataSourceItems,
-  useBlockRequestContext,
-  useSchemaInitializer,
-  SchemaInitializerItem,
-  useSchemaInitializerItem,
-  useAssociationName,
-} from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  SchemaInitializerItem,
+  useBlockRequestContext,
+  useCollection_deprecated,
+  usePopupAssociation,
+  useRecordCollectionDataSourceItems,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+  useSchemaTemplateManager,
+} from '@nocobase/client';
+import React from 'react';
 
 export const createSnapshotBlockSchema = (options) => {
   const {
@@ -73,7 +73,7 @@ export const SnapshotBlockInitializersDetailItem = () => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collection = targetCollection || useCollection_deprecated();
-  const association = useAssociationName();
+  const association = usePopupAssociation();
   const { block } = useBlockRequestContext();
   const actionInitializers =
     block !== 'TableField' ? itemConfig.actionInitializers || 'details:configureActions' : null;

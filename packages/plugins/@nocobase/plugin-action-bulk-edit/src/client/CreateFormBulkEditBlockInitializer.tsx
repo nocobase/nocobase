@@ -7,9 +7,9 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaTemplateManager,
-  useAssociationName,
 } from '@nocobase/client';
 import React from 'react';
+import { usePopupAssociation } from '../../../../schema-component/antd/action/PopupAssociationProvider';
 import { createBulkEditBlockUISchema } from './createBulkEditBlockUISchema';
 
 export const CreateFormBulkEditBlockInitializer = () => {
@@ -17,7 +17,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const association = useAssociationName();
+  const association = usePopupAssociation();
   const collection = useCollection_deprecated();
   return (
     <SchemaInitializerItem

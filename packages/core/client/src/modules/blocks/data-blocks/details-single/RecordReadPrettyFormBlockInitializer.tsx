@@ -2,10 +2,10 @@ import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { usePopupAssociation } from '../../../../schema-component/antd/action/PopupAssociationProvider';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { createDetailsUISchema } from './createDetailsUISchema';
-import { useAssociationName } from '../../../../data-source';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -27,7 +27,7 @@ export const RecordReadPrettyFormBlockInitializer = () => {
 export function useCreateSingleDetailsSchema() {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const association = useAssociationName();
+  const association = usePopupAssociation();
 
   const templateWrap = useCallback(
     (templateSchema, options) => {

@@ -4,6 +4,7 @@ import { ACLCollectionProvider } from '../../acl/ACLProvider';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { withDynamicSchemaProps } from '../../application/hoc';
 import { Designable, useDesignable } from '../../schema-component';
+import { PopupAssociationProvider } from '../../schema-component/antd/action/PopupAssociationProvider';
 import { AssociationProvider, CollectionManagerProvider, CollectionOptions, CollectionProvider } from '../collection';
 import { CollectionRecord } from '../collection-record';
 import { BlockRequestProvider } from './DataBlockRequestProvider';
@@ -149,7 +150,9 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
           <AssociationOrCollectionProvider collection={collection} association={association}>
             <ACLCollectionProvider>
               <DataBlockResourceProvider>
-                <BlockRequestProvider>{children}</BlockRequestProvider>
+                <PopupAssociationProvider association={association}>
+                  <BlockRequestProvider>{children}</BlockRequestProvider>
+                </PopupAssociationProvider>
               </DataBlockResourceProvider>
             </ACLCollectionProvider>
           </AssociationOrCollectionProvider>
