@@ -1,4 +1,4 @@
-import { screen, checkSettings, renderSingleSettings, checkDialogSetting } from '@nocobase/test/client';
+import { screen, checkSettings, renderSingleSettings, checkModalSetting } from '@nocobase/test/client';
 import { ButtonEditor } from '../Action.Designer';
 
 describe('Action.Designer', () => {
@@ -16,9 +16,9 @@ describe('Action.Designer', () => {
       },
     });
 
-    await checkDialogSetting({
+    await checkModalSetting({
       title: 'Edit button',
-      dialogChecker: {
+      modalChecker: {
         formItems: [
           {
             type: 'input',

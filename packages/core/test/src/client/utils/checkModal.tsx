@@ -2,18 +2,20 @@ import { expect } from 'vitest';
 import { waitFor, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormItemCheckOptions, checkFormItems } from '../formItemChecker';
+import { sleep } from './utils';
 
-export interface CheckDialogOptions {
+export interface CheckModalOptions {
   triggerText?: string;
   modalTitle?: string;
   confirmTitle?: string;
   submitText?: string;
   contentText?: string;
+  beforeCheck?: () => Promise<void> | void;
   formItems?: FormItemCheckOptions[];
   afterSubmit?: () => Promise<void> | void;
 }
 
-export async function checkDialog(options: CheckDialogOptions) {
+export async function checkModal(options: CheckModalOptions) {
   const { triggerText, modalTitle, confirmTitle, submitText = 'OK', formItems = [] } = options;
 
   await waitFor(() => {
@@ -40,6 +42,10 @@ export async function checkDialog(options: CheckDialogOptions) {
     expect(dialog).toHaveTextContent(options.contentText);
   }
 
+  if (options.beforeCheck) {
+    await options.beforeCheck();
+  }
+
   await checkFormItems(formItems);
 
   await userEvent.click(screen.getByText(submitText));
@@ -49,6 +55,7 @@ export async function checkDialog(options: CheckDialogOptions) {
   });
 
   if (options.afterSubmit) {
+    await sleep(100);
     await options.afterSubmit();
   }
 }

@@ -7,7 +7,7 @@ import { waitFor } from '@testing-library/react';
 export type RadioCheckOptions = CommonFormItemCheckerOptions;
 
 export async function radioChecker(options: CommonFormItemCheckerOptions) {
-  const formItem = getFormItemElement({ ...options, Component: 'Radio.Group' });
+  const formItem = getFormItemElement({ Component: 'Radio.Group', ...options });
 
   const radioGroup = formItem.querySelector('.ant-radio-group');
 

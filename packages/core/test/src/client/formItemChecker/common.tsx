@@ -1,18 +1,21 @@
 export interface CommonFormItemCheckerOptions {
-  label: string;
+  label?: string;
   container?: HTMLElement;
-  newValue?: string;
-  oldValue?: string;
+  newValue?: any;
+  oldValue?: any;
+  Component?: string;
 }
 
 export interface GetFormItemElementOptions {
   container?: HTMLElement;
   Component: string;
-  label: string;
+  label?: string;
 }
 
 export function getFormItemElement({ container = document.body, Component, label }: GetFormItemElementOptions) {
-  const formItem = container.querySelector(`div[aria-label="block-item-${Component}-${label}"]`);
+  const preSelector = `div[aria-label^="block-item-${Component}-"]`;
+  const selector = label ? `${preSelector}[aria-label$="${label}"]` : preSelector;
+  const formItem = container.querySelector(selector);
   expect(formItem).toBeInTheDocument();
 
   return formItem;

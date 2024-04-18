@@ -26,7 +26,7 @@
       "request": "launch",
       "name": "Debug Tests",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": ["run", "test", "${file}"],
+      "runtimeArgs": ["run", "test", "-w", "${file}"],
       "skipFiles": ["<node_internals>/**", "**/node_modules/**", "**/dist/**", "**/lib/**", "**/es/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",

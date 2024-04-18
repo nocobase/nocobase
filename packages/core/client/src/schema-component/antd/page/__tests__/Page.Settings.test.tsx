@@ -1,4 +1,4 @@
-import { screen, checkSettings, renderSettings, checkDialog } from '@nocobase/test/client';
+import { screen, checkSettings, renderSettings, checkModal } from '@nocobase/test/client';
 import { Page } from '../Page';
 import { pageSettings } from '../Page.Settings';
 
@@ -13,6 +13,9 @@ describe('Page.Settings', () => {
       schemaSettings: pageSettings,
       appOptions: {
         designable: true,
+      },
+      apis: {
+        '/uiSchemas:insertAdjacent/test?position=beforeEnd': { data: { result: 'ok' } },
       },
     });
 
@@ -51,8 +54,8 @@ describe('Page.Settings', () => {
       },
       {
         title: 'Edit page title',
-        type: 'dialog',
-        dialogChecker: {
+        type: 'modal',
+        modalChecker: {
           modalTitle: 'Edit page title',
           formItems: [
             {
@@ -73,7 +76,7 @@ describe('Page.Settings', () => {
           expect(screen.queryByText('Add tab')).not.toBeInTheDocument();
         },
         async afterFirstClick() {
-          await checkDialog({
+          await checkModal({
             triggerText: 'Add tab',
             modalTitle: 'Add tab',
             formItems: [

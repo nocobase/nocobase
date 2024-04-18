@@ -1,23 +1,33 @@
+import { screen } from '@testing-library/react';
+
 import { CheckDeleteSettingOptions, checkDeleteSetting } from './delete';
-import { CheckDialogSettingOptions, checkDialogSetting } from './dialog';
+import { CheckModalSettingOptions, checkModalSetting } from './modal';
 import { CheckSwitchSettingOptions, checkSwitchSetting } from './switch';
+import { SelectSettingOptions, checkSelectSetting } from './select';
 
 export * from './delete';
-export * from './dialog';
+export * from './modal';
 export * from './switch';
+export * from './select';
 
 type CheckSettingsOptions =
   | ({ type: 'switch' } & CheckSwitchSettingOptions)
-  | ({ type: 'dialog' } & CheckDialogSettingOptions)
+  | ({ type: 'modal' } & CheckModalSettingOptions)
+  | ({ type: 'select' } & SelectSettingOptions)
   | ({ type: 'delete' } & CheckDeleteSettingOptions);
 
 const types = {
   switch: checkSwitchSetting,
-  dialog: checkDialogSetting,
+  modal: checkModalSetting,
   delete: checkDeleteSetting,
+  select: checkSelectSetting,
 };
 
-export async function checkSettings(list: CheckSettingsOptions[]) {
+export async function checkSettings(list: CheckSettingsOptions[], checkLength = false) {
+  if (checkLength) {
+    const menuList = screen.getByTestId('schema-settings-menu');
+    expect(menuList.querySelectorAll('li[role="menuitem"]')).toHaveLength(list.length);
+  }
   for (const item of list) {
     const type = item.type;
     const checker = types[type];

@@ -1,21 +1,24 @@
 import React, { ComponentType } from 'react';
 import MockAdapter from 'axios-mock-adapter';
 import { AxiosInstance } from 'axios';
+import { set, get } from 'lodash';
 
 // @ts-ignore
 import {
   AntdSchemaComponentPlugin,
   Application,
   ApplicationOptions,
+  CollectionPlugin,
   DataBlockProvider,
   LocalDataSource,
   SchemaComponent,
   SchemaSettings,
+  SchemaSettingsPlugin,
 } from '@nocobase/client';
 
 import dataSourceMainCollections from './dataSourceMainCollections.json';
 import dataSource2 from './dataSource2.json';
-import usersListData from './usersListData.json';
+import dataSourceMainData from './dataSourceMainData.json';
 
 type URL = string;
 type ResponseData = any;
@@ -47,19 +50,18 @@ export interface GetAppOptions {
   apis?: MockApis;
   designable?: boolean;
   schemaSettings?: SchemaSettings;
-  enableUserListDataBlock?: boolean;
   enableMultipleDataSource?: boolean;
 }
 
 const defaultApis = {
   'uiSchemas:patch': { data: { result: 'ok' } },
+  ...dataSourceMainData,
 };
 
 export const getApp = (options: GetAppOptions) => {
   const {
     appOptions = {},
     schemaSettings,
-    enableUserListDataBlock,
     providers,
     apis: optionsApis = {},
     enableMultipleDataSource,
@@ -78,13 +80,12 @@ export const getApp = (options: GetAppOptions) => {
   }
 
   app.pluginManager.add(AntdSchemaComponentPlugin);
-
-  app.getCollectionManager().addCollections(dataSourceMainCollections as any);
+  app.pluginManager.add(SchemaSettingsPlugin);
+  app.pluginManager.add(CollectionPlugin, { config: { enableRemoteDataSource: false } });
 
   const apis = Object.assign({}, defaultApis, optionsApis);
-  if (enableUserListDataBlock && !apis['users:list']) {
-    apis['users:list'] = usersListData;
-  }
+
+  app.getCollectionManager().addCollections(dataSourceMainCollections as any);
 
   if (enableMultipleDataSource) {
     app.dataSourceManager.addDataSource(LocalDataSource, dataSource2 as any);
@@ -93,6 +94,7 @@ export const getApp = (options: GetAppOptions) => {
   mockAppApi(app, apis);
 
   const App = app.getRootComponent();
+
   return {
     App,
     app,
@@ -134,6 +136,10 @@ export const getAppComponent = (options: GetAppComponentOptions) => {
     schema.name = 'test';
   }
 
+  if (!schema['x-uid']) {
+    schema['x-uid'] = 'test';
+  }
+
   if (!schema.type) {
     schema.type = 'void';
   }
@@ -152,7 +158,6 @@ export const getAppComponent = (options: GetAppComponentOptions) => {
   const { App } = getApp({
     ...otherOptions,
     providers: [TestDemo],
-    enableUserListDataBlock,
   });
 
   return App;
@@ -160,4 +165,61 @@ export const getAppComponent = (options: GetAppComponentOptions) => {
 
 export const getReadPrettyAppComponent = (options: GetAppComponentOptions) => {
   return getAppComponent({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
+};
+
+interface GetAppComponentWithSchemaSettingsOptions extends GetAppComponentOptions {
+  settingPath?: string;
+}
+
+export function setSchemaWithSettings(options: GetAppComponentWithSchemaSettingsOptions) {
+  const { Component, settingPath } = options;
+  const SINGLE_SETTINGS_NAME = 'testSettings';
+  const testSettings = new SchemaSettings({
+    name: SINGLE_SETTINGS_NAME,
+    items: [
+      {
+        name: 'test',
+        Component,
+      },
+    ],
+  });
+
+  if (!options.schema) {
+    options.schema = {};
+  }
+
+  if (settingPath) {
+    const schema = get(options.schema, settingPath);
+    schema['x-settings'] = SINGLE_SETTINGS_NAME;
+  } else {
+    options.schema['x-settings'] = SINGLE_SETTINGS_NAME;
+  }
+
+  if (!options.appOptions) {
+    options.appOptions = {};
+  }
+
+  if (options.appOptions instanceof Application) {
+    options.appOptions.schemaSettingsManager.add(testSettings);
+  } else {
+    if (!options.appOptions.schemaSettings) {
+      options.appOptions.schemaSettings = [];
+    }
+    options.appOptions.schemaSettings.push(testSettings);
+  }
+}
+
+export const getAppComponentWithSchemaSettings = (options: GetAppComponentWithSchemaSettingsOptions) => {
+  setSchemaWithSettings(options);
+  const App = getAppComponent(options);
+  return App;
+};
+
+export const getReadPrettyAppComponentWithSchemaSettings = (options: GetAppComponentWithSchemaSettingsOptions) => {
+  setSchemaWithSettings(options);
+
+  set(options.schema, 'x-read-pretty', true);
+
+  const App = getAppComponent(options);
+  return App;
 };

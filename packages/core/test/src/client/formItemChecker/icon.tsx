@@ -7,7 +7,7 @@ import { waitFor, screen } from '@testing-library/react';
 export type IconCheckOptions = CommonFormItemCheckerOptions;
 
 export async function iconChecker(options: IconCheckOptions) {
-  const formItem = getFormItemElement({ ...options, Component: 'IconPicker' });
+  const formItem = getFormItemElement({ Component: 'IconPicker', ...options });
 
   if (options.oldValue) {
     expect(formItem.querySelector('span[role=img]')).toHaveAttribute('aria-label', options.oldValue);

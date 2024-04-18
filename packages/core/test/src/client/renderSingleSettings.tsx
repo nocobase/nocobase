@@ -1,20 +1,20 @@
-import { SchemaSettings } from '@nocobase/client';
 import { RenderSettingsOptions, renderSettings } from './renderSettings';
+import { setSchemaWithSettings } from '../web';
 
-type RenderSingleSettingsOptions = Omit<RenderSettingsOptions, 'schemaSettings'>;
+interface RenderSingleSettingsOptions extends Omit<RenderSettingsOptions, 'schemaSettings'> {
+  settingPath?: string;
+}
 
-export const renderSingleSettings = ({ Component, schema, ...options }: RenderSingleSettingsOptions) => {
-  const testSettings = new SchemaSettings({
-    name: 'testSettings',
-    items: [
-      {
-        name: 'test',
-        Component,
-      },
-    ],
-  });
+export const renderSingleSettings = (options: RenderSingleSettingsOptions) => {
+  setSchemaWithSettings(options);
 
-  schema = Object.assign({}, schema, { 'x-settings': 'testSettings' });
+  return renderSettings(options);
+};
 
-  return renderSettings({ ...options, schemaSettings: testSettings, schema });
+export const renderReadPrettySingleSettings = (options: RenderSingleSettingsOptions) => {
+  setSchemaWithSettings(options);
+
+  options.schema['x-read-pretty'] = true;
+
+  return renderSettings(options);
 };

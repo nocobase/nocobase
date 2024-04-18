@@ -25,8 +25,8 @@ describe('PageTab.Settings', () => {
     await checkSettings([
       {
         title: 'Edit',
-        type: 'dialog',
-        dialogChecker: {
+        type: 'modal',
+        modalChecker: {
           modalTitle: 'Edit tab',
           formItems: [
             {
@@ -44,7 +44,7 @@ describe('PageTab.Settings', () => {
       {
         title: 'Delete',
         type: 'delete',
-        dialogChecker: {
+        modalChecker: {
           confirmTitle: 'Delete block',
         },
         deletedText: 'new tab1 title',

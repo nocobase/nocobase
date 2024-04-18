@@ -3,10 +3,10 @@ import userEvent from '@testing-library/user-event';
 
 import { CommonFormItemCheckerOptions, getFormItemElement } from './common';
 
-export type InputCheckOptions = CommonFormItemCheckerOptions;
+export type NumberCheckOptions = CommonFormItemCheckerOptions;
 
-export async function inputChecker(options: InputCheckOptions) {
-  const formItem = getFormItemElement({ Component: 'Input', ...options });
+export async function numberChecker(options: NumberCheckOptions) {
+  const formItem = getFormItemElement({ Component: 'InputNumber', ...options });
 
   const input = formItem.querySelector('input');
 
@@ -16,6 +16,6 @@ export async function inputChecker(options: InputCheckOptions) {
 
   if (options.newValue) {
     await userEvent.clear(input);
-    await userEvent.type(input, options.newValue);
+    await userEvent.type(input, String(options.newValue));
   }
 }

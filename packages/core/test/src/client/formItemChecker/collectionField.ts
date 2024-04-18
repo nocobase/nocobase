@@ -3,10 +3,12 @@ import userEvent from '@testing-library/user-event';
 
 import { CommonFormItemCheckerOptions, getFormItemElement } from './common';
 
-export type InputCheckOptions = CommonFormItemCheckerOptions;
+export interface CollectionFieldCheckOptions extends CommonFormItemCheckerOptions {
+  field: string;
+}
 
-export async function inputChecker(options: InputCheckOptions) {
-  const formItem = getFormItemElement({ Component: 'Input', ...options });
+export async function collectionFieldChecker(options: CollectionFieldCheckOptions) {
+  const formItem = getFormItemElement({ Component: 'CollectionField', label: options.field, ...options });
 
   const input = formItem.querySelector('input');
 

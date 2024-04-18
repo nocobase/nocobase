@@ -60,7 +60,6 @@ import {
   useCompile,
   useDataBlockProps,
   useDesignable,
-  useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
@@ -85,6 +84,7 @@ import {
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
+import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { DeclareVariable } from '../modules/variable/DeclareVariable';
