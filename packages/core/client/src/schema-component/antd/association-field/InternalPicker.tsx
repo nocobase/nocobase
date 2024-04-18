@@ -9,7 +9,13 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
-import { CollectionProvider_deprecated, RecordProvider, useFormBlockContext, useCollectionRecordData } from '../../../';
+import {
+  ClearCollectionFieldContext,
+  CollectionProvider_deprecated,
+  RecordProvider,
+  useCollectionRecordData,
+  useFormBlockContext,
+} from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -171,14 +177,16 @@ export const InternalPicker = observer(
           </div>
           {isAllowAddNew && (
             <RecordProvider isNew record={null} parent={recordData}>
-              <RecursionField
-                onlyRenderProperties
-                basePath={field.address}
-                schema={fieldSchema}
-                filterProperties={(s) => {
-                  return s['x-component'] === 'Action';
-                }}
-              />
+              <ClearCollectionFieldContext>
+                <RecursionField
+                  onlyRenderProperties
+                  basePath={field.address}
+                  schema={fieldSchema}
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'Action';
+                  }}
+                />
+              </ClearCollectionFieldContext>
             </RecordProvider>
           )}
         </Input.Group>

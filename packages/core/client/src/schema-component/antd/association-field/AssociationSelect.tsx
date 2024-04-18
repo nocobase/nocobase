@@ -6,7 +6,7 @@ import { Space, message } from 'antd';
 import { isFunction } from 'mathjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RecordProvider, useAPIClient, useCollectionRecordData } from '../../../';
+import { ClearCollectionFieldContext, RecordProvider, useAPIClient, useCollectionRecordData } from '../../../';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -135,14 +135,16 @@ const InternalAssociationSelect = observer(
 
           {(addMode === 'modalAdd' || isAllowAddNew) && (
             <RecordProvider isNew={true} record={null} parent={recordData}>
-              <RecursionField
-                onlyRenderProperties
-                basePath={field.address}
-                schema={fieldSchema}
-                filterProperties={(s) => {
-                  return s['x-component'] === 'Action';
-                }}
-              />
+              <ClearCollectionFieldContext>
+                <RecursionField
+                  onlyRenderProperties
+                  basePath={field.address}
+                  schema={fieldSchema}
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'Action';
+                  }}
+                />
+              </ClearCollectionFieldContext>
             </RecordProvider>
           )}
         </Space.Compact>
