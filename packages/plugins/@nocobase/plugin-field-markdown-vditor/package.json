@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据表字段：Vditor",
   "description": "Used for storing Markdown and rendering with Vditor editor.",
   "description.zh-CN": "用于存储Markdown，并使用 Vditor编辑器 渲染",
-  "version": "0.21.0-alpha.5",
+  "version": "0.21.0-alpha.11",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/field-vditor",
