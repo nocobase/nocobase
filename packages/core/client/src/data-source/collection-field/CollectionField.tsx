@@ -76,7 +76,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     // field.component = [Component, componentProps];
   }, [uiSchema]);
   const componentProps = useMemo(() => {
-    const originalProps = compile(uiSchema['x-component-props']) || {};
+    const originalProps = compile(uiSchema?.['x-component-props']) || {};
     return merge(originalProps, props || {});
   }, [compile, uiSchema, props]);
   if (!uiSchema) {
