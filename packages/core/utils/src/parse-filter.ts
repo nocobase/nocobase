@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import set from 'lodash/set';
+import moment from 'moment';
 import { offsetFromString } from './date';
 import { dayjs } from './dayjs';
 import { getValuesByPath } from './getValuesByPath';
@@ -212,14 +213,14 @@ export function getDayRange(options: GetDayRangeOptions) {
   ];
 }
 
-function toMoment(value) {
+function toMoment(value, useMoment = false) {
   if (!value) {
-    return dayjs();
+    return (useMoment ? moment() : dayjs()) as dayjs.Dayjs;
   }
   if (dayjs.isDayjs(value)) {
     return value;
   }
-  return dayjs(value);
+  return (useMoment ? moment(value) : dayjs(value)) as dayjs.Dayjs;
 }
 
 export type Utc2unitOptions = {
@@ -231,7 +232,7 @@ export type Utc2unitOptions = {
 
 export function utc2unit(options: Utc2unitOptions) {
   const { now, unit, timezone = '+00:00', offset } = options;
-  let m = toMoment(now);
+  let m = toMoment(now, unit === 'isoWeek');
   m = m.utcOffset(offsetFromString(timezone));
   m = m.startOf(unit);
   if (offset > 0) {
@@ -251,7 +252,7 @@ export function utc2unit(options: Utc2unitOptions) {
   return timezone ? r + timezone : r;
 }
 
-const toUnit = (unit, offset?: number) => {
+export const toUnit = (unit, offset?: number) => {
   return ({ now, timezone, field }) => {
     if (field?.timezone) {
       timezone = field?.timezone;
