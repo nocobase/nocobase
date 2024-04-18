@@ -60,6 +60,7 @@
     "@nocobase/plugin-workflow-parallel": "0.21.0-alpha.11",
     "@nocobase/plugin-workflow-request": "0.21.0-alpha.11",
     "@nocobase/plugin-workflow-sql": "0.21.0-alpha.11",
+    "@nocobase/plugin-field-markdown-vditor": "0.21.0-alpha.11",
     "@nocobase/server": "0.21.0-alpha.11",
     "cronstrue": "^2.11.0"
   },
