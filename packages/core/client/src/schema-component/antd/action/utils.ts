@@ -135,3 +135,11 @@ export const linkageAction = async ({
       return null;
   }
 };
+
+export const setInitialActionState = (field) => {
+  field.data = field.data || {};
+  field.display = 'visible';
+  field.disabled = false;
+  field.data.hidden = false;
+  field.componentProps['disabled'] = false;
+};

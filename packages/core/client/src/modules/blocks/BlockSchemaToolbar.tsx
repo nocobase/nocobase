@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager, useDataBlockProps } from '../../data-source';
+import { Collection, useCollectionManager, useDataBlockProps } from '../../data-source';
 import { useCollection } from '../../data-source/collection/CollectionProvider';
 import { useCompile } from '../../schema-component';
 import { SchemaToolbar } from '../../schema-settings/GeneralSchemaDesigner';
@@ -22,6 +22,7 @@ export const BlockSchemaToolbar = (props) => {
   }
 
   const associationField = cm.getCollectionField(association);
+  const associationCollection = cm.getCollection(associationField?.target);
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`
     : template?.name;
@@ -31,11 +32,12 @@ export const BlockSchemaToolbar = (props) => {
         collectionTitle: currentCollectionTitle,
         collectionName: currentCollectionName,
         associationField,
+        associationCollection,
         compile,
       }),
       templateName,
     ].filter(Boolean);
-  }, [compile, currentCollectionTitle, currentCollectionName, associationField, templateName]);
+  }, [currentCollectionTitle, currentCollectionName, associationField, associationCollection, compile, templateName]);
 
   return <SchemaToolbar title={toolbarTitle} {...props} />;
 };
@@ -44,14 +46,15 @@ export function getCollectionTitle(arg: {
   collectionTitle: string;
   collectionName: string;
   associationField: any;
+  associationCollection?: Collection;
   compile: any;
 }) {
-  const { collectionTitle, collectionName, associationField, compile } = arg;
+  const { collectionTitle, collectionName, associationField, compile, associationCollection } = arg;
 
   if (associationField) {
     return `${compile(collectionTitle || collectionName)} > ${compile(
       associationField.uiSchema?.title || associationField.name,
-    )}`;
+    )} (${compile(associationCollection?.title || associationCollection?.name)})`;
   }
 
   return compile(collectionTitle || collectionName);

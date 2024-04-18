@@ -1,3 +1,4 @@
+import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 
 export const CustomRequestACLSchema = {
@@ -14,6 +15,7 @@ export const CustomRequestACLSchema = {
       'x-component-props': {
         multiple: true,
         objectValue: true,
+        dataSource: DEFAULT_DATA_SOURCE_KEY,
         service: {
           resource: 'roles',
         },
