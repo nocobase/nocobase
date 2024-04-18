@@ -110,7 +110,15 @@ export class CollectionRepository extends Repository {
       const skipField = (() => {
         const fields = nameMap[viewCollectionName].get('fields');
 
-        return fields.filter((field) => field.options?.source).map((field) => field.get('name'));
+        return fields
+          .filter((field) => {
+            if (field.options?.source && (field['type'] === 'belongsTo' || field['type'] === 'belongsToMany')) {
+              return true;
+            }
+
+            return false;
+          })
+          .map((field) => field.get('name'));
       })();
 
       this.app.setMaintainingMessage(`load ${viewCollectionName} collection fields`);

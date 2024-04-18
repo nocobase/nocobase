@@ -1,3 +1,4 @@
+import { Collection } from '../../../data-source/collection/Collection';
 import { getCollectionTitle } from '../BlockSchemaToolbar';
 
 describe('getCollectionTitle', () => {
@@ -25,14 +26,21 @@ describe('getCollectionTitle', () => {
         },
         name: 'Association Field Name',
       },
+      associationCollection: {
+        title: 'Association Collection Title',
+        name: 'Association Collection Name',
+      } as Collection,
       compile: vi.fn((value) => `Compiled: ${value}`),
     };
 
     const result = getCollectionTitle(arg);
 
-    expect(result).toBe('Compiled: Collection Title > Compiled: Association Field Title');
-    expect(arg.compile).toHaveBeenCalledTimes(2);
+    expect(result).toBe(
+      'Compiled: Collection Title > Compiled: Association Field Title (Compiled: Association Collection Title)',
+    );
+    expect(arg.compile).toHaveBeenCalledTimes(3);
     expect(arg.compile).toHaveBeenCalledWith('Collection Title');
     expect(arg.compile).toHaveBeenCalledWith('Association Field Title');
+    expect(arg.compile).toHaveBeenCalledWith('Association Collection Title');
   });
 });

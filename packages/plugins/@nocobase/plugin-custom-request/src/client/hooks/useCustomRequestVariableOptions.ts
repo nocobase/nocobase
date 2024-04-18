@@ -1,4 +1,9 @@
-import { useCollection_deprecated, useCollectionFilterOptions, useCompile } from '@nocobase/client';
+import {
+  DEFAULT_DATA_SOURCE_KEY,
+  useCollection_deprecated,
+  useCollectionFilterOptions,
+  useCompile,
+} from '@nocobase/client';
 import { useMemo } from 'react';
 import { useTranslation } from '../locale';
 
@@ -6,7 +11,7 @@ export const useCustomRequestVariableOptions = () => {
   const collection = useCollection_deprecated();
   const { t } = useTranslation();
   const fieldsOptions = useCollectionFilterOptions(collection);
-  const userFieldOptions = useCollectionFilterOptions('users');
+  const userFieldOptions = useCollectionFilterOptions('users', DEFAULT_DATA_SOURCE_KEY);
   const compile = useCompile();
 
   const [fields, userFields] = useMemo(() => {

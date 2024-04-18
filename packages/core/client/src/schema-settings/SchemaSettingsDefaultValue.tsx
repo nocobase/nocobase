@@ -203,7 +203,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
         field.value = null;
       }
       if (!isVariable(v.default)) {
-        field.setInitialValue(v.default);
+        field.setInitialValue?.(v.default);
       }
       schema.default = v.default;
       dn.emit('patch', {
