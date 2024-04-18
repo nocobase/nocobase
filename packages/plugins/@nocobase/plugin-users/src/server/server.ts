@@ -110,7 +110,7 @@ export default class PluginUsersServer extends Plugin {
             },
             'x-read-pretty': true,
           },
-          interface: 'createdBy',
+          interface: 'updatedBy',
         });
       }
     });
