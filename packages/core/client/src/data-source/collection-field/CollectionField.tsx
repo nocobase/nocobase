@@ -73,7 +73,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
-    field.component = [Component, componentProps];
+    // field.component = [Component, componentProps];
   }, [uiSchema]);
   if (!uiSchema) {
     return null;
