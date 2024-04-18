@@ -3,6 +3,7 @@ import { useFieldSchema, useField, useForm } from '@formily/react';
 import Vditor from 'vditor';
 import { useCollection_deprecated, useCollectionDataSource, useCollectionManager_deprecated } from '@nocobase/client';
 import { Field } from '@formily/core';
+import useStyle from './style';
 
 function useTargetCollectionField() {
   const fieldSchema = useFieldSchema();
@@ -30,6 +31,8 @@ export function Edit(props) {
     return props.value ?? field.value;
   }, [props.value, field.value]);
 
+  const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
+
   useEffect(() => {
     if (!uiSchema || vdRef.current) return;
     const vditor = new Vditor(containerRef.current, {
@@ -48,6 +51,11 @@ export function Edit(props) {
       minHeight: 200,
       after: () => {
         vdRef.current = vditor;
+        if (disabled) {
+          vditor.disabled();
+        } else {
+          vditor.enable();
+        }
       },
       input(value) {
         onChange(value);
@@ -102,5 +110,9 @@ export function Edit(props) {
     }
   }, [disabled]);
 
-  return <div ref={containerRef} />;
+  return wrapSSR(
+    <div className={`${hashId} ${containerClassName}`}>
+      <div ref={containerRef}></div>
+    </div>,
+  );
 }
