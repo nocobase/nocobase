@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import Application from '../application';
 import createMigration from './create-migration';
 import dbAuth from './db-auth';
@@ -12,6 +14,7 @@ import start from './start';
 import stop from './stop';
 import upgrade from './upgrade';
 import consoleCommand from './console';
+
 export function registerCli(app: Application) {
   consoleCommand(app);
   dbAuth(app);
