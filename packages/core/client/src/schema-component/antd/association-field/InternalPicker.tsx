@@ -177,6 +177,7 @@ export const InternalPicker = observer(
           </div>
           {isAllowAddNew && (
             <RecordProvider isNew record={null} parent={recordData}>
+              {/* 快捷添加按钮添加的添加的是一个普通的 form 区块（非关系区块），不应该与任何字段有关联，所以在这里把字段相关的上下文给清除掉 */}
               <ClearCollectionFieldContext>
                 <RecursionField
                   onlyRenderProperties
@@ -208,16 +209,14 @@ export const InternalPicker = observer(
                       useTableSelectorProps,
                     }}
                   >
-                    <ClearCollectionFieldContext>
-                      <RecursionField
-                        onlyRenderProperties
-                        basePath={field.address}
-                        schema={fieldSchema}
-                        filterProperties={(s) => {
-                          return s['x-component'] === 'AssociationField.Selector';
-                        }}
-                      />
-                    </ClearCollectionFieldContext>
+                    <RecursionField
+                      onlyRenderProperties
+                      basePath={field.address}
+                      schema={fieldSchema}
+                      filterProperties={(s) => {
+                        return s['x-component'] === 'AssociationField.Selector';
+                      }}
+                    />
                   </SchemaComponentOptions>
                 </TableSelectorParamsProvider>
               </FormProvider>

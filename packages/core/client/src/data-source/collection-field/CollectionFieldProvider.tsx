@@ -52,5 +52,5 @@ export const useCollectionField = () => {
 };
 
 export const ClearCollectionFieldContext: FC = (props) => {
-  return <>{props.children}</>;
+  return <CollectionFieldContext.Provider value={null}>{props.children}</CollectionFieldContext.Provider>;
 };

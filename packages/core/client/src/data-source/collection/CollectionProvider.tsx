@@ -1,5 +1,6 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
+import { CollectionFieldContext } from '../collection-field/CollectionFieldProvider';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
 import type { Collection, CollectionOptions, GetCollectionFieldPredicate } from './Collection';
 import { useCollectionManager } from './CollectionManagerProvider';
@@ -22,11 +23,16 @@ export const CollectionProvider: FC<CollectionProviderProps> = (props) => {
   return <CollectionContext.Provider value={collection}>{children}</CollectionContext.Provider>;
 };
 
+/**
+ * 用来消除普通区块（非关系区块）中可能存在的 CollectionField 上下文，因为普通区块就是一个区块，不应该和任何字段有关联
+ * @param props
+ * @returns
+ */
 export const SanitizedCollectionProvider: FC<CollectionProviderProps> = (props) => {
   return (
-    // <CollectionFieldContext.Provider value={null}>
-    <CollectionProvider {...props} />
-    // </CollectionFieldContext.Provider>
+    <CollectionFieldContext.Provider value={null}>
+      <CollectionProvider {...props} />
+    </CollectionFieldContext.Provider>
   );
 };
 
