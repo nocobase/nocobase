@@ -346,6 +346,9 @@ test.describe('Configuration page copy to new version', () => {
     const timeWithoutTimeZonea = now.toLocaleString('en-US', { timeZone: timeZone, hour12: false });
     // 将 MM/DD/YYYY, HH:mm:ss 格式的字符串转换为 YYYY-MM-DD HH:mm:ss 格式
     const parts = timeWithoutTimeZonea.split(/[\s,/:]+/);
+    if (parts[3] === '24') {
+      parts[3] = '00';
+    }
     const formattedTimeWithTimeZone = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')} ${
       parts[3]
     }:${parts[4]}:${parts[5]}`;
