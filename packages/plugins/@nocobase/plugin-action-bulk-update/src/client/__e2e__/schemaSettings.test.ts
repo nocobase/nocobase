@@ -34,12 +34,12 @@ test.describe('data will be updated && Assign field values && after successful s
     await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').click();
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:update')),
-      page.getByRole('button', { name: 'OK' }).click(),
+      page.getByRole('button', { name: 'OK', exact: true }).click(),
     ]);
     const postData = request.postDataJSON();
     //更新的数据符合预期
     expect(postData.singleSelect).toEqual('option3');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     //成功后跳转路由
     expect(page.url()).toContain('/admin/pm/list/local/');
   });

@@ -32,15 +32,29 @@ export class Pie extends G2PlotChart {
   };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps) {
-    const angleFieldProps = fieldProps[general.angleField];
+    const angleField = general.angleField;
+    const angleFieldProps: any = fieldProps[angleField] || {};
+    const hasMinus = data.some((item: any) => item[angleField] < 0);
+    if (hasMinus) {
+      const min = Math.min(...data.map((item: any) => item[angleField]));
+      data = data.map((item: any) => ({
+        ...item,
+        [angleField]: item[angleField] - min,
+      }));
+      const transformer = angleFieldProps.transformer;
+      angleFieldProps.transformer = (value: number) => {
+        const v = value + min;
+        return transformer ? transformer(v) : v;
+      };
+    }
     const props = super.getProps({ data, general, advanced, fieldProps });
     return {
       ...props,
       tooltip: {
         items: [
           (data: any) => {
-            const { [general.colorField]: color, [general.angleField]: angle } = data;
-            const name = color || angleFieldProps?.label || general.angleField;
+            const { [general.colorField]: color, [angleField]: angle } = data;
+            const name = color || angleFieldProps?.label || angleField;
             const transformer = angleFieldProps?.transformer;
             return { name, value: transformer ? transformer(angle) : angle };
           },

@@ -189,6 +189,10 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
     }
   }
 
+  if (params.associatedIndex) {
+    params.associatedIndex = decodeURIComponent(params.associatedIndex);
+  }
+
   return params;
 }
 

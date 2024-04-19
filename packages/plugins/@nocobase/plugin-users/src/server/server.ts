@@ -3,8 +3,8 @@ import { Plugin } from '@nocobase/server';
 import { parse } from '@nocobase/utils';
 import { resolve } from 'path';
 
-import * as actions from './actions/users';
 import { Cache } from '@nocobase/cache';
+import * as actions from './actions/users';
 import { UserModel } from './models/UserModel';
 
 export default class PluginUsersServer extends Plugin {
@@ -70,6 +70,19 @@ export default class PluginUsersServer extends Plugin {
           target: 'users',
           foreignKey: 'createdById',
           targetKey: 'id',
+          uiSchema: {
+            type: 'object',
+            title: '{{t("Created by")}}',
+            'x-component': 'AssociationField',
+            'x-component-props': {
+              fieldNames: {
+                value: 'id',
+                label: 'nickname',
+              },
+            },
+            'x-read-pretty': true,
+          },
+          interface: 'createdBy',
         });
       }
       if (updatedBy === true) {
@@ -85,6 +98,19 @@ export default class PluginUsersServer extends Plugin {
           target: 'users',
           foreignKey: 'updatedById',
           targetKey: 'id',
+          uiSchema: {
+            type: 'object',
+            title: '{{t("Last updated by")}}',
+            'x-component': 'AssociationField',
+            'x-component-props': {
+              fieldNames: {
+                value: 'id',
+                label: 'nickname',
+              },
+            },
+            'x-read-pretty': true,
+          },
+          interface: 'updatedBy',
         });
       }
     });

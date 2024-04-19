@@ -1352,7 +1352,12 @@ export const useAssociationNames = (dataSource?: string) => {
           appends.add(path);
           appends.add(`${path}.parent` + '(recursively=true)');
         } else {
-          appends.add(path);
+          if (s['x-component-props']?.sortArr) {
+            const sort = s['x-component-props']?.sortArr;
+            appends.add(`${path}(sort=${sort})`);
+          } else {
+            appends.add(path);
+          }
         }
         if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);

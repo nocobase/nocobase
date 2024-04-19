@@ -81,7 +81,7 @@ test.describe('creation form block schema settings', () => {
       await page.getByRole('option', { name: 'Disabled' }).click();
 
       // 保存规则
-      await page.getByRole('button', { name: 'OK' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       // 验证第一组规则 --------------------------------------------------------------------------
       // 初始状态下，longText 字段是可编辑的
@@ -117,7 +117,7 @@ test.describe('creation form block schema settings', () => {
       await page.getByLabel('variable-button').click();
       await page.getByRole('menuitemcheckbox', { name: 'Current form' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'longText' }).click();
-      await page.getByRole('button', { name: 'OK' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       // singleLineText 字段和 longText 字段都为空的情况下，longText 字段应该是可编辑的
       await expect(

@@ -20,7 +20,6 @@ export const useFieldSelectProps = (fields: FieldOption[]) =>
         if (!value) {
           typeField.setState({
             value: null,
-            disabled: true,
           });
         }
         const fieldProps = selectedFields.find((field) => field.value === value);
@@ -41,13 +40,11 @@ export const useFieldSelectProps = (fields: FieldOption[]) =>
         if (supports.includes(key)) {
           typeField.setState({
             value: key,
-            disabled: true,
           });
           return;
         }
         typeField.setState({
           value: null,
-          disabled: false,
         });
       },
     };
