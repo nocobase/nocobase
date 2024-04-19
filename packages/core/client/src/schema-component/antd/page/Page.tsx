@@ -24,6 +24,7 @@ import { ErrorFallback } from '../error-fallback';
 import FixedBlock from './FixedBlock';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { useStyles } from './style';
+import { useRequest } from '../../../api-client';
 
 export const Page = (props) => {
   const { children, ...others } = props;
@@ -62,11 +63,24 @@ export const Page = (props) => {
   const { wrapSSR, hashId, componentCls } = useStyles();
   const aclStyles = useAClStyles();
 
+  const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
+
+  useRequest(
+    {
+      url: `/uiSchemas:getParentJsonSchema/${fieldSchema['x-uid']}`,
+    },
+    {
+      ready: !hidePageTitle && !pageHeaderTitle,
+      onSuccess(data) {
+        setTitle(data.data.title);
+      },
+    },
+  );
+
   const handleErrors = (error) => {
     console.error(error);
   };
 
-  const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
   return wrapSSR(
     <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
       <PageDesigner title={fieldSchema.title || title} />

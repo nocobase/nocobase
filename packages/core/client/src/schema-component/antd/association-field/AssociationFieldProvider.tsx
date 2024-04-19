@@ -1,10 +1,10 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { AssociationFieldContext } from './context';
-import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useCollection, useCollectionManager } from '../../../data-source/collection';
+import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useSchemaComponentContext } from '../../hooks';
+import { AssociationFieldContext } from './context';
 
 export const AssociationFieldProvider = observer(
   (props) => {
@@ -40,10 +40,6 @@ export const AssociationFieldProvider = observer(
     const [loading, setLoading] = useState(!field.readPretty);
 
     useEffect(() => {
-      if (field.readPretty) {
-        return;
-      }
-
       setLoading(true);
       if (!collectionField) {
         setLoading(false);

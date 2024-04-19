@@ -9,6 +9,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
+import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
 import { T2165, T2174, T3251, T3806, T3815, T3871 } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {
@@ -721,6 +722,20 @@ test.describe('creation form block schema settings', () => {
           .getByRole('textbox'),
       ).toHaveValue('test default value');
 
+      // https://nocobase.height.app/T-4028/description
+      // 刷新页面后，默认值应该依然存在
+      await page.reload();
+      await page.getByRole('button', { name: 'Add new' }).click();
+      await page
+        .getByTestId('drawer-Action.Container-general-Add record')
+        .getByRole('button', { name: 'Add new' })
+        .click();
+      await expect(
+        page
+          .getByRole('cell', { name: 'block-item-CollectionField-users-form-users.nickname-Nickname' })
+          .getByRole('textbox'),
+      ).toHaveValue('test default value');
+
       // 为 username 设置一个变量默认值: {{ currentObject.nickname }}
       await page.getByRole('button', { name: 'Username', exact: true }).hover();
       await page
@@ -781,6 +796,93 @@ test.describe('creation form block schema settings', () => {
 
       // 2. 设置的 ‘abcd’ 应该立即显示在 Nickname 字段的输入框中
       await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abcd');
+    });
+
+    test('Current popup record', async ({ page, mockPage }) => {
+      await mockPage(oneEmptyTableWithUsers).goto();
+
+      // 1. 表单字段默认值中使用 `Current popup record`
+      await page.getByLabel('action-Action.Link-View').click();
+      await page.getByLabel('schema-initializer-Grid-popup').hover();
+      await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+      await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+      await page.getByRole('menuitem', { name: 'Users' }).click();
+      await page.mouse.move(300, 0);
+      await page.getByLabel('schema-initializer-Grid-form:').hover();
+      await page.getByRole('menuitem', { name: 'Nickname' }).click();
+      await page.getByLabel('block-item-CollectionField-').hover();
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+      await page.getByRole('menuitem', { name: 'Set default value' }).click();
+      await page.getByLabel('variable-button').click();
+      await page.getByRole('menuitemcheckbox', { name: 'Current popup record right' }).click();
+      await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+
+      // 2. 表单联动规则中使用 `Current popup record`
+      // 创建 Username 字段
+      await page.getByLabel('schema-initializer-Grid-form:').hover();
+      await page.getByRole('menuitem', { name: 'Username' }).click();
+      // 设置联动规则
+      await page.getByLabel('block-item-CardItem-users-form').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
+      await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+      await page.mouse.move(300, 0);
+      await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
+      await page.getByText('Add property').click();
+      await page.getByTestId('select-linkage-property-field').click();
+      await page.getByTitle('Username').click();
+      await page.getByTestId('select-linkage-action-field').click();
+      await page.getByRole('option', { name: 'Value', exact: true }).click();
+      await page.getByTestId('select-linkage-value-type').click();
+      await page.getByTitle('Expression').click();
+      await page.getByLabel('variable-button').click();
+      await page.getByRole('menuitemcheckbox', { name: 'Current popup record right' }).click();
+      await page.getByRole('menuitemcheckbox', { name: 'Username' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+      // 需正确显示变量的值
+      await expect(
+        page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+      ).toHaveValue('nocobase');
+
+      // 3. Table 数据选择器中使用 `Current popup record`
+      // 创建 Table 区块
+      await page.getByLabel('schema-initializer-Grid-popup').hover();
+      await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+      await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+      await page.getByRole('menuitem', { name: 'Users' }).click();
+      await page.mouse.move(300, 0);
+      // 显示 Nickname 字段
+      await page
+        .getByTestId('drawer-Action.Container-users-View record')
+        .getByLabel('schema-initializer-TableV2-')
+        .hover();
+      await page.getByRole('menuitem', { name: 'Nickname' }).click();
+      await page.mouse.move(300, 0);
+      // 设置数据范围（使用 `Current popup record` 变量）
+      await page
+        .getByTestId('drawer-Action.Container-users-View record')
+        .getByLabel('block-item-CardItem-users-table')
+        .hover();
+      await page
+        .getByTestId('drawer-Action.Container-users-View record')
+        .getByLabel('designer-schema-settings-CardItem-blockSettings:table-users')
+        .hover();
+      await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+      await page.getByText('Add condition', { exact: true }).click();
+      await page.getByTestId('select-filter-field').click();
+      await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+      await page.getByLabel('variable-button').click();
+      await page.getByRole('menuitemcheckbox', { name: 'Current popup record right' }).click();
+      await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+      // 数据需显示正确
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-users-View record')
+          .getByLabel('block-item-CardItem-users-table')
+          .getByRole('button', { name: 'Super Admin' }),
+      ).toBeVisible();
     });
   });
 
@@ -1298,7 +1400,7 @@ test.describe('actions schema settings', () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
       },
-      supportedOptions: ['Edit button', 'Secondary confirmation', 'Bind workflows', 'Delete'],
+      supportedOptions: ['Edit button', 'Secondary confirmation', 'Delete'],
     });
   });
 
@@ -1316,7 +1418,6 @@ test.describe('actions schema settings', () => {
         'Assign field values',
         'Skip required validation',
         'After successful submission',
-        'Bind workflows',
         'Delete',
       ],
     });

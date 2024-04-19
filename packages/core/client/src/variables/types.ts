@@ -77,4 +77,6 @@ export interface VariableOption {
   };
   /** 变量所对应的数据表的名称 */
   collectionName?: string;
+  /** 数据表所对应的数据源 */
+  dataSource?: string;
 }

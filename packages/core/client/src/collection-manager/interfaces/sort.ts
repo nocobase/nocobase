@@ -22,14 +22,14 @@ export class SortFieldInterface extends CollectionFieldInterface {
       'x-validator': 'integer',
     },
   };
-  availableTypes = ['bigInt', 'integer', 'sort'];
-  hasDefaultValue = true;
+  availableTypes = ['sort'];
+  hasDefaultValue = false;
   properties = {
     ...defaultProps,
     scopeKey: {
       type: 'string',
       title: '{{t("Grouped sorting")}}',
-      'x-disabled': '{{ !createOnly }}',
+      'x-disabled': '{{ !editMainOnly}}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       enum: '{{scopeKeyOptions}}',

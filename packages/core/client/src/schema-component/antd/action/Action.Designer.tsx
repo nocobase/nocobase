@@ -435,7 +435,7 @@ export function WorkflowConfig() {
       ns: 'workflow',
     }),
     'customize:triggerWorkflows': t(
-      'Workflow will be triggered directly once the button clicked, without data saving.',
+      'Workflow will be triggered directly once the button clicked, without data saving. Only supports "Post-action event" for now.',
       { ns: 'workflow' },
     ),
     destroy: t('Workflow will be triggered before deleting succeeded.', { ns: 'workflow' }),

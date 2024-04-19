@@ -828,4 +828,66 @@ describe('dumper', () => {
 
     expect(dumpableCollections.custom).toBeDefined();
   });
+
+  it('should dump and restore with table named by camel case', async () => {
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'Resumes-Table',
+        fields: [
+          {
+            name: 'stringField',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await app.db.getRepository('Resumes-Table').create({
+      values: [
+        {
+          stringField: 'test',
+        },
+        {
+          stringField: 'test2',
+        },
+      ],
+    });
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'Photos',
+        fields: [
+          {
+            name: 'stringField',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await app.db.getRepository('Photos').create({
+      values: [
+        {
+          stringField: 'test',
+        },
+        {
+          stringField: 'test2',
+        },
+      ],
+    });
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      groups: new Set(['required', 'custom']),
+    });
+  });
 });

@@ -79,10 +79,9 @@ export function useCreateAssociationFormBlock() {
 
   const templateWrap = useCallback(
     (templateSchema, { item }) => {
-      const field = item.associationField;
-      const collection = getCollection(field.target);
-
-      if (item.template.componentName === 'FormItem') {
+      if (item.template.componentName === 'FormItem' && item.associationField) {
+        const field = item.associationField;
+        const collection = getCollection(field.target);
         const blockSchema = createCreateFormBlockUISchema({
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,

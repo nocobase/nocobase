@@ -5,7 +5,7 @@ const useStyles = createStyles(({ token, css }) => {
     scrollWrapper: css`
       overflow: auto;
       position: absolute;
-      bottom: -4px;
+      bottom: -8px;
       max-width: 100%;
       scrollbarWidth: thin;
       height: 1.2rem;

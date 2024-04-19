@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 const typeInterfaceMap = {
   array: '',
   belongsTo: '',

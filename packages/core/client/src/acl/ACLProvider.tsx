@@ -1,17 +1,18 @@
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
+import { omit } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { omit } from 'lodash';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+
 import { useApp } from '../application';
-import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 
 export const ACLContext = createContext<any>({});
 ACLContext.displayName = 'ACLContext';
@@ -151,7 +152,12 @@ const useAllowedActions = () => {
 const useResourceName = () => {
   const service = useResourceActionContext();
   const result = useBlockRequestContext() || { service };
-  return result?.props?.resource || result?.props?.collection || result?.service?.defaultRequest?.resource;
+  return (
+    result?.props?.resource ||
+    result?.props?.association ||
+    result?.props?.collection ||
+    result?.service?.defaultRequest?.resource
+  );
 };
 
 export function useACLRoleContext() {
@@ -196,7 +202,12 @@ export const ACLCollectionProvider = (props) => {
   if (allowAll) {
     return props.children;
   }
-  const actionPath = schema?.['x-acl-action'] || props.actionPath;
+  let actionPath = schema?.['x-acl-action'] || props.actionPath;
+  const resoureName = schema?.['x-decorator-props']?.['association'] || schema?.['x-decorator-props']?.['collection'];
+  // 兼容 undefined 的情况
+  if (actionPath === 'undefined:list' && resoureName && resoureName !== 'undefined') {
+    actionPath = `${resoureName}:list`;
+  }
   if (!actionPath) {
     return props.children;
   }
@@ -235,6 +246,9 @@ export const ACLActionProvider = (props) => {
     actionPath = `${resource}:${actionPath}`;
   }
   if (!actionPath) {
+    return <>{props.children}</>;
+  }
+  if (!resource) {
     return <>{props.children}</>;
   }
   const params = parseAction(actionPath, { schema, recordPkValue });

@@ -35,7 +35,7 @@ export class GrantHelper {
   constructor() {}
 }
 
-export class PluginACL extends Plugin {
+export class PluginACLServer extends Plugin {
   // association field actions config
 
   associationFieldsActions: AssociationFieldsActions = {};
@@ -180,6 +180,10 @@ export class PluginACL extends Plugin {
         'uiSchemas:getProperties',
         'roles.menuUiSchemas:*',
         'roles.users:*',
+        'dataSources.roles:*',
+        'dataSources:list',
+        'roles.dataSourcesCollections:*',
+        'roles.dataSourceResources:*',
       ],
     });
 
@@ -211,8 +215,6 @@ export class PluginACL extends Plugin {
         };
       }
     });
-
-    this.registerAssociationFieldsActions();
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
@@ -606,48 +608,6 @@ export class PluginACL extends Plugin {
       }
     });
 
-    this.app.acl.use(
-      async (ctx: Context, next) => {
-        const { actionName, resourceName, resourceOf } = ctx.action;
-        // is association request
-        if (resourceName.includes('.') && resourceOf) {
-          if (!ctx?.permission?.can?.params) {
-            return next();
-          }
-          // 关联数据去掉 filter
-          delete ctx.permission.can.params.filter;
-          // 关联数据能不能处理取决于 source 是否有权限
-          const [collectionName] = resourceName.split('.');
-          const action = ctx.can({ resource: collectionName, action: actionName });
-
-          const availableAction = this.app.acl.getAvailableAction(actionName);
-          if (availableAction?.options?.onNewRecord) {
-            if (action) {
-              ctx.permission.skip = true;
-            } else {
-              ctx.permission.can = false;
-            }
-          } else {
-            const filteredParams = this.app.acl.filterParams(ctx, collectionName, action?.params || {});
-            const params = await parseJsonTemplate(filteredParams, ctx);
-
-            const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
-              filterByTk: resourceOf,
-              filter: params.filter || {},
-            });
-
-            if (!sourceInstance) {
-              ctx.permission.can = false;
-            }
-          }
-        }
-        await next();
-      },
-      {
-        before: 'core',
-      },
-    );
-
     // throw error when user has no fixed params permissions
     this.app.acl.use(
       async (ctx: any, next) => {
@@ -715,4 +675,4 @@ export class PluginACL extends Plugin {
   }
 }
 
-export default PluginACL;
+export default PluginACLServer;

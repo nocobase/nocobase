@@ -1,7 +1,8 @@
 import { FieldOptions, IField } from './types';
 
 export class CollectionField implements IField {
-  options;
+  options: FieldOptions;
+
   constructor(options: FieldOptions) {
     this.updateOptions(options);
   }

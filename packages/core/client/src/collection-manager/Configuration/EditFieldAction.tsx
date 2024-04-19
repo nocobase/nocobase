@@ -175,12 +175,13 @@ export const EditFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const { isDialect } = useDialect();
+
   const scopeKeyOptions = useMemo(() => {
     return (
       record?.fields ||
       getCollection(record.collectionName)
         .options.fields.filter((v) => {
-          return v.interface === 'select';
+          return ['string', 'bigInt', 'integer'].includes(v.type);
         })
         .map((k) => {
           return {

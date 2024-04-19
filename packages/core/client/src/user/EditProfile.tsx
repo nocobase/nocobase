@@ -91,7 +91,6 @@ const schema: ISchema = {
           title: '{{t("Phone")}}',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          'x-validator': 'phone',
         },
         footer: {
           'x-component': 'Action.Drawer.Footer',

@@ -3,8 +3,7 @@ import { Op, Sequelize } from 'sequelize';
 import { isMySQL, isPg } from './utils';
 
 const getFieldName = (ctx) => {
-  const fieldName = ctx.fieldName;
-  return fieldName;
+  return ctx.model.rawAttributes[ctx.fieldName]?.field || ctx.fieldName;
 };
 
 const escape = (value, ctx) => {
@@ -43,11 +42,14 @@ const emptyQuery = (ctx, operator: '=' | '>') => {
     funcName = 'json_length';
   }
 
-  return `(select ${ifNull}(${funcName}(${fieldName}), 0) ${operator} 0)`;
+  const queryInterface = getQueryInterface(ctx);
+
+  return `(select ${ifNull}(${funcName}(${queryInterface.quoteIdentifier(fieldName)}), 0) ${operator} 0)`;
 };
 
 export default {
   $match(value, ctx) {
+    const queryInterface = getQueryInterface(ctx);
     const fieldName = getFieldName(ctx);
 
     if (isPg(ctx)) {

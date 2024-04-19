@@ -46,6 +46,17 @@ export default (app: Application) => {
       }
     });
 
+  pm.command('enable-all')
+    .ipc()
+    .preload()
+    .action(async () => {
+      try {
+        await app.pm.enable('*');
+      } catch (error) {
+        throw new PluginCommandError(`Failed to enable plugin`, { cause: error });
+      }
+    });
+
   pm.command('enable')
     .ipc()
     .preload()

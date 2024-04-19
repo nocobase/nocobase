@@ -21,6 +21,7 @@ const typeComponentMap: Record<string, string> = {
   item: 'SchemaInitializerItemInternal',
   itemGroup: 'SchemaInitializerItemGroupInternal',
   divider: 'SchemaInitializerDivider',
+  switch: 'SchemaInitializerSwitchInternal',
   subMenu: 'SchemaInitializerSubMenuInternal',
   actionModal: 'SchemaInitializerActionModalInternal',
 };
@@ -70,7 +71,7 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = memo((props
   if (!C) {
     return null;
   }
-  if (hideIfNoChildren && Array.isArray(componentChildren) && componentChildren.length === 0) {
+  if (hideIfNoChildren && !componentChildren) {
     return null;
   }
 

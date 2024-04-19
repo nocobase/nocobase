@@ -383,14 +383,20 @@ describe('acl', () => {
     vi.spyOn(acl, 'can').mockReturnValue({
       role: 'root',
       resource: 'Test',
-      action: 'test',
+      action: {
+        resourceName: 'test',
+        actionName: 'create',
+      },
       params: {
         fields: [],
       },
     });
     const newConext = () => ({
       state: {},
-      action: {},
+      action: {
+        resourceName: 'test',
+        actionName: 'create',
+      },
       throw: () => {},
     });
     const ctx1 = newConext() as Context;

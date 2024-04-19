@@ -139,6 +139,10 @@ export class FieldModel extends MagicAttributeModel {
       return;
     }
 
+    if (collection.isView()) {
+      return;
+    }
+
     const field = collection.getField(this.get('name'));
 
     // overriding field should not sync default value

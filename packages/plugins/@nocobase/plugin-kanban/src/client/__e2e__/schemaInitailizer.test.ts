@@ -87,21 +87,24 @@ test.describe('configure actions', () => {
   test('add new action in kanban', async ({ page, mockPage }) => {
     const nocoPage = await mockPage(oneEmptyKanbanBlock).waitForInit();
     await nocoPage.goto();
-    await page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general').click();
+    await page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
     //按钮正常显示
     await expect(page.getByLabel('action-Action-Add ')).toBeVisible();
     //添加数据
     await page.getByLabel('action-Action-Add new-create-general-kanban').click();
-    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').click();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').click();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'Single Select' }).click();
+    await page.mouse.move(300, 0);
     await page.getByLabel('block-item-CollectionField-').locator('.ant-select').click();
     await page.getByRole('option', { name: 'option1' }).click();
+    await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
+    await page.mouse.move(300, 0);
     await page.getByLabel('action-Action-Submit-submit-general-form').click();
     await page.getByLabel('block-item-Kanban.Card-general-kanban').hover();
     await page.getByLabel('designer-schema-initializer-Kanban.Card-Kanban.Card.Designer-general').hover();

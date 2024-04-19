@@ -32,7 +32,8 @@ export class SchemaSettings<T = {}> {
       if (!parentItem.children) {
         parentItem.children = [];
       }
-      const index = parentItem.children.findIndex((item: any) => item.name === name);
+      const childrenName = name.replace(`${parentItem.name}.`, '');
+      const index = parentItem.children.findIndex((item: any) => item.name === childrenName);
       if (index === -1) {
         parentItem.children.push(data);
       } else {
@@ -42,6 +43,7 @@ export class SchemaSettings<T = {}> {
   }
 
   get(nestedName: string): SchemaSettingsItemType | undefined {
+    if (!nestedName) return undefined;
     const arr = nestedName.split('.');
     let current: any = this.items;
 
@@ -58,8 +60,6 @@ export class SchemaSettings<T = {}> {
         return undefined;
       }
     }
-
-    return current;
   }
 
   remove(nestedName: string) {

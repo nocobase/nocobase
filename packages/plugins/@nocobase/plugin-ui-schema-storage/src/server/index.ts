@@ -1,5 +1,5 @@
-import { UiSchemaStoragePlugin } from './server';
+import { PluginUISchemaStorageServer } from './server';
 export * from './repository';
 export * from './server';
 
-export default UiSchemaStoragePlugin;
+export default PluginUISchemaStorageServer;

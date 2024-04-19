@@ -15,7 +15,7 @@ export const MarkdownFormItemInitializer = () => {
           'x-editable': false,
           'x-decorator': 'FormItem',
           // 'x-designer': 'Markdown.Void.Designer',
-          'x-toolbar': 'BlockSchemaToolbar',
+          'x-toolbar': 'FormItemSchemaToolbar',
           'x-settings': 'blockSettings:markdown',
           'x-component': 'Markdown.Void',
           'x-component-props': {

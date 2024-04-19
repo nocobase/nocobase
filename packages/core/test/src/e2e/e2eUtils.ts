@@ -170,6 +170,8 @@ export interface PageConfig {
    * @default undefined
    */
   pageSchema?: any;
+  /** 如果为 true 则表示不会更改 PageSchema 的 uid */
+  keepUid?: boolean;
 }
 
 interface CreatePageOptions {
@@ -177,6 +179,8 @@ interface CreatePageOptions {
   url?: PageConfig['url'];
   name?: string;
   pageSchema?: any;
+  /** 如果为 true 则表示不会更改 PageSchema 的 uid */
+  keepUid?: boolean;
 }
 
 interface ExtendUtils {
@@ -206,11 +210,21 @@ interface ExtendUtils {
   mockCollection: (collectionSetting: CollectionSetting) => Promise<any>;
   /**
    * 自动生成一条对应 collection 的数据
-   * @param collectionName 数据表名称
-   * @param data 自定义的数据，缺失时会生成随机数据
    * @returns 返回一条生成的数据
    */
-  mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
+  mockRecord: {
+    /**
+     * @param collectionName 数据表名称
+     * @param data 自定义的数据，缺失时会生成随机数据
+     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     */
+    <T = any>(collectionName: string, data?: any, maxDepth?: number): Promise<T>;
+    /**
+     * @param collectionName 数据表名称
+     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     */
+    <T = any>(collectionName: string, maxDepth?: number): Promise<T>;
+  };
   /**
    * 自动生成多条对应 collection 的数据
    */
@@ -218,13 +232,15 @@ interface ExtendUtils {
     /**
      * @param collectionName - 数据表名称
      * @param count - 生成的数据条数
+     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
      */
-    <T = any>(collectionName: string, count?: number): Promise<T[]>;
+    <T = any>(collectionName: string, count?: number, maxDepth?: number): Promise<T[]>;
     /**
      * @param collectionName - 数据表名称
      * @param data - 指定生成的数据
+     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
      */
-    <T = any>(collectionName: string, data?: any[]): Promise<T[]>;
+    <T = any>(collectionName: string, data?: any[], maxDepth?: number): Promise<T[]>;
   };
   /**
    * 该方法已弃用，请使用 mockCollections
@@ -291,6 +307,7 @@ export class NocoPage {
       name: this.options?.name,
       pageSchema: this.options?.pageSchema,
       url: this.options?.url,
+      keepUid: this.options?.keepUid,
     });
     this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
   }
@@ -344,6 +361,8 @@ const _test = base.extend<ExtendUtils>({
       await nocoPage.destroy();
       await setDefaultRole('root');
     }
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    await removeRedundantUserAndRoles();
   },
   mockManualDestroyPage: async ({ browser }, use) => {
     const mockManualDestroyPage = (config?: PageConfig) => {
@@ -406,36 +425,32 @@ const _test = base.extend<ExtendUtils>({
   },
   mockRecords: async ({ page }, use) => {
     const mockRecords = async (collectionName: string, count: any = 3, data?: any) => {
+      let maxDepth: number;
+      if (_.isNumber(data)) {
+        maxDepth = data;
+        data = undefined;
+      }
       if (_.isArray(count)) {
         data = count;
         count = data.length;
       }
-      return createRandomData(collectionName, count, data);
+      return createRandomData(collectionName, count, data, maxDepth);
     };
 
     await use(mockRecords);
-
-    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
-    const deletePromises = [
-      deleteRecords('users', { id: { $ne: 1 } }),
-      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
-    ];
-    await Promise.all(deletePromises);
   },
   mockRecord: async ({ page }, use) => {
-    const mockRecord = async (collectionName: string, data?: any) => {
-      const result = await createRandomData(collectionName, 1, data);
+    const mockRecord = async (collectionName: string, data?: any, maxDepth?: any) => {
+      if (_.isNumber(data)) {
+        maxDepth = data;
+        data = undefined;
+      }
+
+      const result = await createRandomData(collectionName, 1, data, maxDepth);
       return result[0];
     };
 
     await use(mockRecord);
-
-    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
-    const deletePromises = [
-      deleteRecords('users', { id: { $ne: 1 } }),
-      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
-    ];
-    await Promise.all(deletePromises);
   },
   deletePage: async ({ page }, use) => {
     const deletePage = async (pageName: string) => {
@@ -446,13 +461,6 @@ const _test = base.extend<ExtendUtils>({
     };
 
     await use(deletePage);
-
-    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
-    const deletePromises = [
-      deleteRecords('users', { id: { $ne: 1 } }),
-      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
-    ];
-    await Promise.all(deletePromises);
   },
   mockRole: async ({ page }, use) => {
     const mockRole = async (roleSetting: AclRoleSetting) => {
@@ -547,7 +555,7 @@ const updateUidOfPageSchema = (uiSchema: any) => {
  * 在 NocoBase 中创建一个页面
  */
 const createPage = async (options?: CreatePageOptions) => {
-  const { type = 'page', url, name, pageSchema } = options || {};
+  const { type = 'page', url, name, pageSchema, keepUid } = options || {};
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
@@ -587,7 +595,7 @@ const createPage = async (options?: CreatePageOptions) => {
           { type: 'onSelfSave', method: 'extractTextToLocale' },
         ],
         properties: {
-          page: updateUidOfPageSchema(pageSchema) || {
+          page: (keepUid ? pageSchema : updateUidOfPageSchema(pageSchema)) || {
             _isJSONSchemaObject: true,
             version: '2.0',
             type: 'void',
@@ -668,7 +676,7 @@ const deleteCollections = async (collectionNames: string[]) => {
  * @param collectionName
  * @param records
  */
-const deleteRecords = async (collectionName: string, filter: any) => {
+export const deleteRecords = async (collectionName: string, filter: any) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
@@ -880,7 +888,7 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
   return result;
 };
 
-const createRandomData = async (collectionName: string, count = 10, data?: any) => {
+const createRandomData = async (collectionName: string, count = 10, data?: any, maxDepth?: number) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
@@ -888,10 +896,13 @@ const createRandomData = async (collectionName: string, count = 10, data?: any) 
   const state = await api.storageState();
   const headers = getHeaders(state);
 
-  const result = await api.post(`/api/${collectionName}:mock?count=${count}`, {
-    headers,
-    data,
-  });
+  const result = await api.post(
+    `/api/${collectionName}:mock?count=${count}&maxDepth=${_.isNumber(maxDepth) ? maxDepth : 1}`,
+    {
+      headers,
+      data,
+    },
+  );
 
   if (!result.ok()) {
     throw new Error(await result.text());
@@ -899,6 +910,15 @@ const createRandomData = async (collectionName: string, count = 10, data?: any) 
 
   return (await result.json()).data;
 };
+
+// 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+async function removeRedundantUserAndRoles() {
+  const deletePromises = [
+    deleteRecords('users', { id: { $ne: 1 } }),
+    deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
+  ];
+  await Promise.all(deletePromises);
+}
 
 function getHeaders(storageState: any) {
   const headers: any = {};
@@ -971,11 +991,25 @@ export async function expectSettingsMenu({
  * 辅助断言 Initializer 的菜单项是否存在
  * @param param0
  */
-export async function expectInitializerMenu({ showMenu, supportedOptions, page }) {
+export async function expectInitializerMenu({
+  showMenu,
+  supportedOptions,
+  page,
+  expectValue,
+}: {
+  showMenu: () => Promise<void>;
+  supportedOptions: string[];
+  page: Page;
+  expectValue?: () => Promise<void>;
+}) {
   await showMenu();
   for (const option of supportedOptions) {
     // 使用 first 方法避免有重名的导致报错
     await expect(page.getByRole('menuitem', { name: option }).first()).toBeVisible();
+  }
+  await page.mouse.move(300, 0);
+  if (expectValue) {
+    await expectValue();
   }
 }
 
@@ -1002,4 +1036,14 @@ export const createBlockInPage = async (page: Page, name: string) => {
   }
 
   await page.mouse.move(300, 0);
+};
+
+export const mockUserRecordsWithoutDepartments = (mockRecords: ExtendUtils['mockRecords'], count: number) => {
+  return mockRecords(
+    'users',
+    Array.from({ length: count }).map(() => ({
+      departments: null,
+      mainDepartment: null,
+    })),
+  );
 };

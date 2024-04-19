@@ -4,6 +4,7 @@ import { useBulkDestroyActionProps, useDestroyActionProps, useUpdateActionProps 
 import { uiSchemaTemplatesCollection } from '../collections/uiSchemaTemplates';
 import { CollectionTitle } from './CollectionTitle';
 import { useBlockRequestContext } from '../../block-provider';
+import { useSchemaTemplateManager } from '../SchemaTemplateManagerProvider';
 
 const useUpdateSchemaTemplateActionProps = () => {
   const props = useUpdateActionProps();
@@ -18,11 +19,13 @@ const useUpdateSchemaTemplateActionProps = () => {
 
 const useBulkDestroyTemplateProps = () => {
   const props = useBulkDestroyActionProps();
+  const bm = useSchemaTemplateManager();
   const { service } = useBlockRequestContext();
 
   return {
     async onClick() {
       await props.onClick();
+      await bm.refresh();
       service?.refresh?.();
     },
   };
@@ -31,9 +34,11 @@ const useBulkDestroyTemplateProps = () => {
 const useDestroyTemplateProps = () => {
   const props = useDestroyActionProps();
   const { service } = useBlockRequestContext();
+  const bm = useSchemaTemplateManager();
   return {
     async onClick() {
       await props.onClick();
+      await bm.refresh();
       service?.refresh?.();
     },
   };

@@ -20,7 +20,7 @@ import collectionActions from './resourcers/collections';
 import sqlResourcer from './resourcers/sql';
 import viewResourcer from './resourcers/views';
 
-export class CollectionManagerPlugin extends Plugin {
+export class PluginCollectionManagerServer extends Plugin {
   public schema: string;
 
   private loadFilter: Filter = {};
@@ -274,6 +274,21 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
     this.app.acl.allow('collectionCategories', 'list', 'loggedIn');
+
+    this.app.acl.registerSnippet({
+      name: `pm.data-source-manager.data-source-main`,
+      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*'],
+    });
+
+    this.app.acl.registerSnippet({
+      name: `pm.data-source-manager.collection-view `,
+      actions: ['dbViews:*'],
+    });
+
+    this.app.acl.registerSnippet({
+      name: `pm.data-source-manager.collection-sql `,
+      actions: ['sqlCollection:*'],
+    });
   }
 
   async load() {
@@ -365,6 +380,7 @@ export class CollectionManagerPlugin extends Plugin {
       origin: this.options.packageName,
     });
   }
+
   async install() {
     const dataSourcesCollection = this.app.db.getCollection('dataSources');
 
@@ -383,4 +399,4 @@ export class CollectionManagerPlugin extends Plugin {
   }
 }
 
-export default CollectionManagerPlugin;
+export default PluginCollectionManagerServer;

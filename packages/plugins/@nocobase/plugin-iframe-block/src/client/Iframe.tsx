@@ -26,9 +26,7 @@ export const Iframe: any = observer(
 
     const src = React.useMemo(() => {
       if (mode === 'html') {
-        const options = app.getOptions();
-        const apiBaseURL: string = options?.apiClient?.['baseURL'];
-        return `${apiBaseURL}iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`;
+        return app.getApiUrl(`iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`);
       }
       return url;
     }, [app, url, mode, htmlId, field.data?.v]);

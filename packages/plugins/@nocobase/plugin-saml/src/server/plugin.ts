@@ -1,12 +1,11 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { getAuthUrl } from './actions/getAuthUrl';
-import { metadata } from './actions/metadata';
 import { redirect } from './actions/redirect';
 import { SAMLAuth } from './saml-auth';
 import { authType } from '../constants';
 import { resolve } from 'path';
 
-export class SAMLPlugin extends Plugin {
+export class PluginSAMLServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -29,7 +28,6 @@ export class SAMLPlugin extends Plugin {
       name: 'saml',
       actions: {
         redirect,
-        metadata,
         getAuthUrl,
       },
     });
@@ -47,4 +45,4 @@ export class SAMLPlugin extends Plugin {
   async remove() {}
 }
 
-export default SAMLPlugin;
+export default PluginSAMLServer;

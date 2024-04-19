@@ -130,6 +130,10 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         const items = lodash.get(ctx, dataPath);
 
+        if (!Array.isArray(items)) {
+          return;
+        }
+
         lodash.set(
           ctx,
           dataPath,
@@ -402,6 +406,17 @@ export class PluginDataSourceManagerServer extends Plugin {
         acl: dataSource.acl,
         transaction,
       });
+
+      await this.app.db.getRepository('roles').update({
+        filter: {
+          name: model.get('roleName'),
+        },
+        values: {
+          strategy: model.get('strategy'),
+        },
+        hooks: false,
+        transaction,
+      });
     });
 
     this.app.on('acl:writeResources', async ({ roleName, transaction }) => {
@@ -470,15 +485,12 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}`,
+      name: `pm.data-source-manager`,
       actions: [
         'dataSources:*',
+        'dataSources.collections:*',
+        'dataSourcesCollections.fields:*',
         'roles.dataSourceResources',
-        'collections:*',
-        'collections.fields:*',
-        'dbViews:*',
-        'collectionCategories:*',
-        'sqlCollection:*',
       ],
     });
 

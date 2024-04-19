@@ -1,11 +1,12 @@
 import { Plugin } from '@nocobase/server';
-import path from 'path';
 
-export class GraphCollectionManagerPlugin extends Plugin {
+export class PluginGraphCollectionManagerServer extends Plugin {
   async load() {
-    await this.importCollections(path.resolve(__dirname, 'collections'));
-    this.app.acl.allow('graphPositions', '*');
+    this.app.acl.registerSnippet({
+      name: 'pm.data-source-manager.graph-collection-manager',
+      actions: ['graphPositions:*'],
+    });
   }
 }
 
-export default GraphCollectionManagerPlugin;
+export default PluginGraphCollectionManagerServer;

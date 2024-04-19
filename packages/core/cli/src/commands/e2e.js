@@ -85,6 +85,7 @@ async function appReady() {
 async function runApp(options = {}) {
   console.log('installing...');
   await run('nocobase', ['install', '-f']);
+  await run('nocobase', ['pm', 'enable-all']);
   if (await isPortReachable(process.env.APP_PORT)) {
     console.log('app started');
     return;
@@ -232,6 +233,7 @@ module.exports = (cli) => {
 
   e2e.command('reinstall-app').action(async (options) => {
     await run('nocobase', ['install', '-f'], options);
+    await run('nocobase', ['pm2', 'enable-all']);
   });
 
   e2e.command('install-deps').action(async () => {

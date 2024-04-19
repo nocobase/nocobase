@@ -10,10 +10,16 @@ import { useSchemaInitializerStyles } from './style';
 export interface SchemaInitializerItemGroupProps {
   title: string;
   children?: SchemaInitializerOptions['items'];
+  items?: SchemaInitializerOptions['items'];
   divider?: boolean;
 }
 
-export const SchemaInitializerItemGroup: FC<SchemaInitializerItemGroupProps> = ({ children, title, divider }) => {
+export const SchemaInitializerItemGroup: FC<SchemaInitializerItemGroupProps> = ({
+  children,
+  items,
+  title,
+  divider,
+}) => {
   const compile = useCompile();
   const { componentCls } = useSchemaInitializerStyles();
   const { token } = theme.useToken();
@@ -21,11 +27,14 @@ export const SchemaInitializerItemGroup: FC<SchemaInitializerItemGroupProps> = (
     <div style={{ marginInline: token.marginXXS }}>
       {divider && <SchemaInitializerDivider />}
       <div className={`${componentCls}-group-title`}>{compile(title)}</div>
-      <SchemaInitializerChildren>{children}</SchemaInitializerChildren>
+      <SchemaInitializerChildren>{items || children}</SchemaInitializerChildren>
     </div>
   );
 };
 
+/**
+ * @internal
+ */
 export const SchemaInitializerItemGroupInternal = () => {
   const itemConfig = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
   return <SchemaInitializerItemGroup {...itemConfig} />;

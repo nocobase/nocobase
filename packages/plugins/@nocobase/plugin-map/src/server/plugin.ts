@@ -4,7 +4,7 @@ import { getConfiguration, setConfiguration } from './actions';
 import { CircleField, LineStringField, PointField, PolygonField } from './fields';
 import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
 
-export class MapPlugin extends Plugin {
+export class PluginMapServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {
@@ -52,4 +52,4 @@ export class MapPlugin extends Plugin {
   async remove() {}
 }
 
-export default MapPlugin;
+export default PluginMapServer;

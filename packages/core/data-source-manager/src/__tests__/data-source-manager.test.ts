@@ -1,5 +1,7 @@
 import { createMockServer, mockDatabase, supertest } from '@nocobase/test';
 import { SequelizeDataSource } from '../sequelize-data-source';
+import { vi } from 'vitest';
+import { DataSourceManager } from '@nocobase/data-source-manager';
 
 describe('example', () => {
   test.skip('case1', async () => {
@@ -152,5 +154,70 @@ describe('example', () => {
     expect(res.status).toBe(500);
 
     await app.destroy();
+  });
+
+  it('should register every datasource instance', async () => {
+    const hook = vi.fn();
+
+    const app = await createMockServer({
+      acl: false,
+      resourcer: {
+        prefix: '/api/',
+      },
+      name: 'update-filter',
+    });
+
+    app.dataSourceManager.afterAddDataSource(hook);
+    // it should be called on main datasource
+    expect(hook).toBeCalledTimes(1);
+
+    const database = mockDatabase({
+      tablePrefix: 'ds1_',
+    });
+
+    // it should be called when adding a new datasource
+    const ds1 = new SequelizeDataSource({
+      name: 'ds1',
+      resourceManager: {},
+      collectionManager: {
+        database,
+      },
+    });
+
+    ds1.collectionManager.defineCollection({
+      name: 'test1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await ds1.collectionManager.sync();
+
+    ds1.acl.allow('test1', 'update', 'public');
+
+    await app.dataSourceManager.add(ds1);
+
+    expect(hook).toBeCalledTimes(2);
+
+    await app.destroy();
+  });
+
+  it('should throw error when request datasource not exists', async () => {
+    const dataSourceManager = new DataSourceManager();
+    const middleware = dataSourceManager.middleware();
+
+    const ctx = {
+      get: () => 'main',
+      throw: (message) => {
+        throw new Error(message);
+      },
+    };
+
+    let err;
+    try {
+      await middleware(ctx, () => {});
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err.message).toBe('data source main does not exist');
   });
 });

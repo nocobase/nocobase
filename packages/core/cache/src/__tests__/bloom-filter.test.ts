@@ -21,4 +21,14 @@ describe('bloomFilter', () => {
     expect(await bloomFilter.exists('bloom-test', 'hello')).toBeTruthy();
     expect(await bloomFilter.exists('bloom-test', 'world')).toBeFalsy();
   });
+
+  it('should mAdd and check', async () => {
+    await bloomFilter.mAdd('bloom-test', ['hello', 'world']);
+    expect(await bloomFilter.exists('bloom-test', 'hello')).toBeTruthy();
+    expect(await bloomFilter.exists('bloom-test', 'world')).toBeTruthy();
+  });
+
+  it('should return false if not reserved', async () => {
+    expect(await bloomFilter.exists('not-reserved', 'hello')).toBeFalsy();
+  });
 });

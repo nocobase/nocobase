@@ -12,5 +12,7 @@ export function generateNTemplate(key: string) {
 }
 
 export function useTranslation() {
-  return useT(NAMESPACE);
+  return useT([NAMESPACE, 'client'], {
+    nsMode: 'fallback',
+  });
 }

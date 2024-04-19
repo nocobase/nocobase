@@ -31,6 +31,7 @@ export class JwtService {
     return this.options.secret;
   }
 
+  /* istanbul ignore next -- @preserve */
   sign(payload: SignPayload, options?: SignOptions) {
     const opt = { expiresIn: this.expiresIn(), ...options };
     if (opt.expiresIn === 'never') {
@@ -39,6 +40,7 @@ export class JwtService {
     return jwt.sign(payload, this.secret(), opt);
   }
 
+  /* istanbul ignore next -- @preserve */
   decode(token: string): Promise<any> {
     return new Promise((resolve, reject) => {
       jwt.verify(token, this.secret(), (err: any, decoded: any) => {

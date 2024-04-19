@@ -12,7 +12,7 @@ import {
 import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartConfigContext } from '../configure';
-import formatters from '../block/formatters';
+import formatters from '../configure/formatters';
 import { useChartsTranslation } from '../locale';
 import { ChartRendererContext } from '../renderer';
 import { getField, getSelectedFields, parseField, processData } from '../utils';

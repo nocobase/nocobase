@@ -5,6 +5,7 @@ import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'r
 import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { useCollectionManager_deprecated } from '../collection-manager';
+import { getDataSourceHeaders } from '../data-source/utils';
 import { useCompile } from '../schema-component';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
@@ -18,17 +19,25 @@ import { uniq } from './utils/uniq';
 export const VariablesContext = createContext<VariablesContextType>(null);
 VariablesContext.displayName = 'VariablesContext';
 
-const variableToCollectionName = {};
+const variableToCollectionName: {
+  collectionName?: string;
+  dataSource?: string;
+} = {};
 
 const getFieldPath = (variablePath: string, variableToCollectionName: Record<string, any>) => {
+  let dataSource;
   const list = variablePath.split('.');
   const result = list.map((item) => {
     if (variableToCollectionName[item]) {
-      return variableToCollectionName[item];
+      dataSource = variableToCollectionName[item].dataSource;
+      return variableToCollectionName[item].collectionName;
     }
     return item;
   });
-  return result.join('.');
+  return {
+    fieldPath: result.join('.'),
+    dataSource,
+  };
 };
 
 const VariablesProvider = ({ children }) => {
@@ -67,7 +76,8 @@ const VariablesProvider = ({ children }) => {
         localVariables,
       );
       let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables);
-      let collectionName = getFieldPath(variableName, _variableToCollectionName);
+      const { fieldPath, dataSource } = getFieldPath(variableName, _variableToCollectionName);
+      let collectionName = fieldPath;
 
       if (!(variableName in current)) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
@@ -79,9 +89,8 @@ const VariablesProvider = ({ children }) => {
         }
 
         const key = list[index];
-        const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(
-          getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName),
-        );
+        const { fieldPath } = getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName);
+        const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(fieldPath, dataSource);
         if (Array.isArray(current)) {
           const result = current.map((item) => {
             if (shouldToRequest(item?.[key]) && item?.id != null) {
@@ -92,6 +101,7 @@ const VariablesProvider = ({ children }) => {
                 }
                 const result = api
                   .request({
+                    headers: getDataSourceHeaders(dataSource),
                     url,
                     params: {
                       appends: options?.appends,
@@ -116,6 +126,7 @@ const VariablesProvider = ({ children }) => {
             data = await getRequested(url);
           } else {
             const waitForData = api.request({
+              headers: getDataSourceHeaders(dataSource),
               url,
               params: {
                 appends: options?.appends,
@@ -163,7 +174,10 @@ const VariablesProvider = ({ children }) => {
         };
       });
       if (variableOption.collectionName) {
-        variableToCollectionName[variableOption.name] = variableOption.collectionName;
+        variableToCollectionName[variableOption.name] = {
+          collectionName: variableOption.collectionName,
+          dataSource: variableOption.dataSource,
+        };
       }
     },
     [setCtx],
@@ -174,10 +188,13 @@ const VariablesProvider = ({ children }) => {
       return null;
     }
 
+    const { collectionName, dataSource } = variableToCollectionName[variableName] || {};
+
     return {
       name: variableName,
       ctx: ctxRef.current[variableName],
-      collectionName: variableToCollectionName[variableName],
+      collectionName,
+      dataSource,
     };
   }, []);
 
@@ -235,17 +252,16 @@ const VariablesProvider = ({ children }) => {
       }
 
       const path = getPath(variableString);
-      let result = getCollectionJoinField(
-        getFieldPath(
-          path,
-          mergeVariableToCollectionNameWithLocalVariables(variableToCollectionName, localVariables as VariableOption[]),
-        ),
+      const { fieldPath, dataSource } = getFieldPath(
+        path,
+        mergeVariableToCollectionNameWithLocalVariables(variableToCollectionName, localVariables as VariableOption[]),
       );
+      let result = getCollectionJoinField(fieldPath, dataSource);
 
       // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
       if (!result && !path.includes('.')) {
         result = {
-          target: variableToCollectionName[path],
+          target: variableToCollectionName[path]?.collectionName,
         };
       }
 
@@ -317,7 +333,10 @@ function mergeVariableToCollectionNameWithLocalVariables(
 
   localVariables?.forEach((item) => {
     if (item.collectionName) {
-      variableToCollectionName[item.name] = item.collectionName;
+      variableToCollectionName[item.name] = {
+        collectionName: item.collectionName,
+        dataSource: item.dataSource,
+      };
     }
   });
 

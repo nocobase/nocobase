@@ -29,7 +29,6 @@ export * from './data-source';
 export * from './document-title';
 export * from './filter-provider';
 export * from './flag-provider';
-export * from './formula';
 export * from './global-theme';
 export * from './hooks';
 export * from './i18n';
@@ -60,3 +59,5 @@ export * from './modules/blocks/data-blocks/form';
 export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/useParentRecordCommon';
+
+export { DeclareVariable } from './modules/variable/DeclareVariable';

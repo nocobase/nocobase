@@ -21,7 +21,7 @@ function createWithACLMetaMiddleware() {
       return;
     }
 
-    const { resourceName, actionName } = ctx.action;
+    const { resourceName, actionName } = ctx.permission;
 
     if (!['list', 'get'].includes(actionName)) {
       return;
@@ -71,6 +71,7 @@ function createWithACLMetaMiddleware() {
             return db;
           },
         },
+        getCurrentRepository: ctx.getCurrentRepository,
         action: {
           actionName: action,
           name: action,

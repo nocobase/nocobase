@@ -4,25 +4,26 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../../application/schema-settings';
+import { SchemaSettings, SchemaSettingsItemType } from '../../../application/schema-settings';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   Collection_deprecated,
-  useCollection_deprecated,
   useCollectionField_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
 } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
+import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
-import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
-import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
-import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
-import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
-import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
+import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
+import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { isSubMode } from '../association-field/util';
@@ -30,7 +31,67 @@ import { removeNullCondition } from '../filter';
 import { DynamicComponentProps } from '../filter/DynamicComponent';
 import { getTempFieldState } from '../form-v2/utils';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
-import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
+
+export const allowAddNew: SchemaSettingsItemType = {
+  name: 'allowAddNew',
+  type: 'switch',
+  useVisible() {
+    const readPretty = useIsFieldReadPretty();
+    const isAssociationField = useIsAssociationField();
+    const fieldMode = useFieldMode();
+    return !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn, refresh, insertAdjacent } = useDesignable();
+    return {
+      title: t('Allow add new data'),
+      checked: fieldSchema['x-add-new'] as boolean,
+      onChange(allowAddNew) {
+        const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {
+          if (schema['x-component'] === 'Action') {
+            return schema;
+          }
+          return buf;
+        }, null);
+
+        if (!hasAddNew) {
+          const addNewActionSchema = {
+            'x-action': 'create',
+            'x-acl-action': 'create',
+            title: "{{t('Add new')}}",
+            // 'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-toolbar-props': {
+              draggable: false,
+            },
+            'x-settings': 'actionSettings:addNew',
+            'x-component': 'Action',
+            'x-decorator': 'ACLActionProvider',
+            'x-component-props': {
+              openMode: 'drawer',
+              type: 'default',
+              component: 'CreateRecordAction',
+            },
+          };
+          insertAdjacent('afterBegin', addNewActionSchema);
+        }
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        field['x-add-new'] = allowAddNew;
+        fieldSchema['x-add-new'] = allowAddNew;
+        schema['x-add-new'] = allowAddNew;
+        dn.emit('patch', {
+          schema,
+        });
+        refresh();
+      },
+    };
+  },
+};
 
 /**
  * @deprecated
@@ -456,63 +517,7 @@ export const formItemSettings = new SchemaSettings({
         return showModeSelect;
       },
     },
-    {
-      name: 'allowAddNew',
-      type: 'switch',
-      useVisible() {
-        const readPretty = useIsFieldReadPretty();
-        const isAssociationField = useIsAssociationField();
-        const fieldMode = useFieldMode();
-        return !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
-      },
-      useComponentProps() {
-        const { t } = useTranslation();
-        const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
-        const { dn, refresh, insertAdjacent } = useDesignable();
-        return {
-          title: t('Allow add new data'),
-          checked: fieldSchema['x-add-new'] as boolean,
-          onChange(allowAddNew) {
-            const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {
-              if (schema['x-component'] === 'Action') {
-                return schema;
-              }
-              return buf;
-            }, null);
-
-            if (!hasAddNew) {
-              const addNewActionschema = {
-                'x-action': 'create',
-                'x-acl-action': 'create',
-                title: "{{t('Add new')}}",
-                // 'x-designer': 'Action.Designer',
-                'x-toolbar': 'ActionSchemaToolbar',
-                'x-settings': 'actonSettings:addNew',
-                'x-component': 'Action',
-                'x-decorator': 'ACLActionProvider',
-                'x-component-props': {
-                  openMode: 'drawer',
-                  type: 'default',
-                  component: 'CreateRecordAction',
-                },
-              };
-              insertAdjacent('afterBegin', addNewActionschema);
-            }
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            field['x-add-new'] = allowAddNew;
-            fieldSchema['x-add-new'] = allowAddNew;
-            schema['x-add-new'] = allowAddNew;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          },
-        };
-      },
-    },
+    allowAddNew,
     {
       name: 'addMode',
       type: 'select',
@@ -551,7 +556,7 @@ export const formItemSettings = new SchemaSettings({
                   title: "{{t('Add new')}}",
                   // 'x-designer': 'Action.Designer',
                   'x-toolbar': 'ActionSchemaToolbar',
-                  'x-settings': 'actonSettings:addNew',
+                  'x-settings': 'actionSettings:addNew',
                   'x-component': 'Action',
                   'x-decorator': 'ACLActionProvider',
                   'x-component-props': {
@@ -955,8 +960,11 @@ function useFormItemCollectionField() {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getField } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const { collectionField: columnCollectionField } = useColumnSchema();
+  const collectionField = fieldSchema
+    ? getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field'])
+    : null;
+  if (!fieldSchema) return null;
   return collectionField || columnCollectionField;
 }
 

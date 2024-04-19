@@ -330,12 +330,7 @@ const Usage = observer(
     const app = useApp();
 
     const url = useMemo(() => {
-      const options = app.getOptions();
-      const apiBaseURL: string = options?.apiClient?.['baseURL'];
-      const { protocol, host } = window.location;
-      return apiBaseURL.startsWith('http')
-        ? `${apiBaseURL}oidc:redirect`
-        : `${protocol}//${host}${apiBaseURL}oidc:redirect`;
+      return app.getApiUrl('oidc:redirect');
     }, [app]);
 
     const copy = (text: string) => {

@@ -90,6 +90,9 @@ export function useNodeContext() {
   return useContext(NodeContext);
 }
 
+/**
+ * @experimental
+ */
 export function useAvailableUpstreams(node, filter?) {
   const stack: any[] = [];
   if (!node) {
@@ -104,6 +107,9 @@ export function useAvailableUpstreams(node, filter?) {
   return stack;
 }
 
+/**
+ * @experimental
+ */
 export function useUpstreamScopes(node) {
   const stack: any[] = [];
   if (!node) {

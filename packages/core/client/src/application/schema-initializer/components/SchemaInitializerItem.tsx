@@ -76,6 +76,9 @@ export const SchemaInitializerItem = memo(
 );
 SchemaInitializerItem.displayName = 'SchemaInitializerItem';
 
+/**
+ * @internal
+ */
 export const SchemaInitializerItemInternal = () => {
   const itemConfig = useSchemaInitializerItem();
   return <SchemaInitializerItem {...itemConfig} />;

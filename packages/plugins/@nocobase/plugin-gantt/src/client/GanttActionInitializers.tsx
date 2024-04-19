@@ -78,7 +78,7 @@ export const GanttActionInitializers_deprecated = new CompatibleSchemaInitialize
             const schema = useFieldSchema();
             const collection = useCollection_deprecated();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
-            return collection.tree && treeTable !== false;
+            return collection.tree && treeTable;
           },
         },
       ],
@@ -193,7 +193,7 @@ export const ganttActionInitializers = new CompatibleSchemaInitializer(
               const schema = useFieldSchema();
               const collection = useCollection_deprecated();
               const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
-              return collection.tree && treeTable !== false;
+              return collection.tree && treeTable;
             },
           },
         ],
