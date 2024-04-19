@@ -121,7 +121,6 @@ const WithForm = (props: WithFormProps) => {
     form.addEffects(id, () => {
       linkageRules.forEach((rule) => {
         rule.actions?.forEach((action) => {
-          console.log(rule);
           if (action.targetFields?.length) {
             const fields = action.targetFields.join(',');
 
