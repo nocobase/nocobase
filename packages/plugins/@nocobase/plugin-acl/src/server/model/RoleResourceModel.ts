@@ -1,37 +1,15 @@
 import { ACL, ACLResource, ACLRole } from '@nocobase/acl';
 import { Model } from '@nocobase/database';
-import { AssociationFieldsActions, GrantHelper } from '../server';
 import { RoleResourceActionModel } from './RoleResourceActionModel';
 
 export class RoleResourceModel extends Model {
-  async revoke(options: { role: ACLRole; resourceName: string; grantHelper: GrantHelper }) {
-    const { role, resourceName, grantHelper } = options;
+  async revoke(options: { role: ACLRole; resourceName: string }) {
+    const { role, resourceName } = options;
     role.revokeResource(resourceName);
-
-    const targetActions = grantHelper.resourceTargetActionMap.get(`${role.name}.${resourceName}`) || [];
-
-    for (const targetAction of targetActions) {
-      const targetActionResource = (grantHelper.targetActionResourceMap.get(targetAction) || []).filter(
-        (item) => `${role.name}.${resourceName}` !== item,
-      );
-
-      grantHelper.targetActionResourceMap.set(targetAction, targetActionResource);
-
-      if (targetActionResource.length == 0) {
-        role.revokeAction(targetAction);
-      }
-    }
-
-    grantHelper.resourceTargetActionMap.set(`${role.name}.${resourceName}`, []);
   }
 
-  async writeToACL(options: {
-    acl: ACL;
-    associationFieldsActions: AssociationFieldsActions;
-    grantHelper: GrantHelper;
-    transaction: any;
-  }) {
-    const { acl, associationFieldsActions, grantHelper } = options;
+  async writeToACL(options: { acl: ACL; transaction: any }) {
+    const { acl } = options;
     const resourceName = this.get('name') as string;
     const roleName = this.get('roleName') as string;
     const role = acl.getRole(roleName);
@@ -42,7 +20,7 @@ export class RoleResourceModel extends Model {
     }
 
     // revoke resource of role
-    await this.revoke({ role, resourceName, grantHelper });
+    await this.revoke({ role, resourceName });
 
     // @ts-ignore
     if (this.usingActionsConfig === false) {
@@ -66,8 +44,6 @@ export class RoleResourceModel extends Model {
         acl,
         role,
         resourceName,
-        associationFieldsActions,
-        grantHelper: options.grantHelper,
       });
     }
   }
