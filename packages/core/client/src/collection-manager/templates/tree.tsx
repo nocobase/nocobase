@@ -67,7 +67,9 @@ export class TreeCollectionTemplate extends CollectionTemplate {
     beforeSubmit(values) {
       if (Array.isArray(values?.fields)) {
         values?.fields.map((f) => {
-          f.target = values.name;
+          if (!f.target) {
+            f.target = values.name;
+          }
         });
       }
     },
