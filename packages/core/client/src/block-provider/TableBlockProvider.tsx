@@ -5,7 +5,7 @@ import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProp
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table';
 import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 /**
  * @internal
@@ -39,6 +39,7 @@ interface Props {
    * Table 区块的 collection name
    */
   collection?: string;
+  children?: any;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
@@ -81,7 +82,7 @@ const InternalTableBlockProvider = (props: Props) => {
           setExpandFlag: setExpandFlagValue,
         }}
       >
-        <RenderChildrenWithAssociationFilter {...props} />
+        {props.children}
       </TableBlockContext.Provider>
     </FixedBlockWrapper>
   );
