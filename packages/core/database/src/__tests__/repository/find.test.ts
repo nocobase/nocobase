@@ -1,6 +1,7 @@
 import { mockDatabase } from '../index';
 import Database from '@nocobase/database';
 import { Collection } from '../../collection';
+import qs from 'qs';
 
 describe('find with associations', () => {
   let db: Database;
@@ -411,6 +412,64 @@ describe('find with associations', () => {
     });
 
     expect(findResult[0].get('name')).toEqual('u1');
+  });
+
+  it('should find with associations with sort params', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'posts',
+        },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'belongsTo', name: 'user' },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          posts: [
+            {
+              title: 'u1p1',
+            },
+            {
+              title: 'u1p2',
+            },
+          ],
+        },
+        {
+          name: 'u2',
+          posts: [
+            {
+              title: 'u2p1',
+            },
+            {
+              title: 'u2p2',
+            },
+          ],
+        },
+      ],
+    });
+
+    const appendArgs = [`posts(${qs.stringify({ sort: ['-id'] })})`];
+    const users = await User.repository.find({
+      appends: appendArgs,
+    });
+
+    expect(users[0].get('name')).toEqual('u1');
+    expect(users[0].get('posts')[0].get('title')).toEqual('u1p2');
   });
 });
 
