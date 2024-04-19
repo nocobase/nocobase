@@ -1,5 +1,5 @@
 import { createForm } from '@formily/core';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { Schema, useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
@@ -88,7 +88,7 @@ const InternalFormBlockProvider = (props) => {
     <FormBlockContext.Provider value={formBlockValue}>
       <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
         <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form} />
+          <RenderChildrenWithDataTemplates form={form}>{props.children}</RenderChildrenWithDataTemplates>
         </div>
       </RecordProvider>
     </FormBlockContext.Provider>
@@ -189,16 +189,12 @@ export const useFormBlockProps = () => {
   };
 };
 
-const RenderChildrenWithDataTemplates = ({ form }) => {
-  const FieldSchema = useFieldSchema();
-  const { findComponent } = useDesignable();
-  const field = useField();
-  const Component = findComponent(field.component?.[0]) || React.Fragment;
+const RenderChildrenWithDataTemplates = ({ form, children }) => {
   return (
-    <Component {...field.componentProps}>
+    <>
       <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
-      <RecursionField schema={FieldSchema} onlyRenderProperties />
-    </Component>
+      {children}
+    </>
   );
 };
 
