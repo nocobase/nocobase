@@ -1,8 +1,9 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { useCollectionManager } from './CollectionManagerProvider';
+import { CollectionFieldContext } from '../collection-field/CollectionFieldProvider';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
-import type { CollectionOptions, Collection, GetCollectionFieldPredicate } from './Collection';
+import type { Collection, CollectionOptions, GetCollectionFieldPredicate } from './Collection';
+import { useCollectionManager } from './CollectionManagerProvider';
 
 export const CollectionContext = createContext<Collection>(null);
 CollectionContext.displayName = 'CollectionContext';
@@ -20,6 +21,14 @@ export const CollectionProvider: FC<CollectionProviderProps> = (props) => {
   if (!collection && allowNull) return <>{props.children}</>;
   if (!collection && !allowNull) return <CollectionDeletedPlaceholder type="Collection" name={name as string} />;
   return <CollectionContext.Provider value={collection}>{children}</CollectionContext.Provider>;
+};
+
+export const SanitizedCollectionProvider: FC<CollectionProviderProps> = (props) => {
+  return (
+    <CollectionFieldContext.Provider value={null}>
+      <CollectionProvider {...props} />
+    </CollectionFieldContext.Provider>
+  );
 };
 
 export function useCollection<Mixins = {}>(): (Mixins & Collection) | undefined {
