@@ -112,6 +112,8 @@ export const Edit = withDynamicSchemaProps((props) => {
       resetValue = resetValue.slice(resetStartTagIndex + resetStartTag.length);
       vdRef.current?.setValue(resetValue);
       vdRef.current?.focus();
+      field.setValue(resetValue);
+      onChange?.(resetValue);
     }
   }, [value]);
 
