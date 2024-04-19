@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useIsFileField } from '../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useCollectionField } from '../data-source';
+import { useCollectionField } from '../data-source/collection-field/CollectionFieldProvider';
 
 export function useFieldComponentName(): string {
   const { fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
