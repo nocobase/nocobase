@@ -2,11 +2,11 @@ import { observer } from '@formily/react';
 import React from 'react';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { FileManageReadPretty } from './FileManager';
-import { useAssociationFieldContext } from './hooks';
 import { InternalNester } from './InternalNester';
 import { InternalSubTable } from './InternalSubTable';
 import { ReadPrettyInternalTag } from './InternalTag';
 import { ReadPrettyInternalViewer } from './InternalViewer';
+import { useAssociationFieldContext } from './hooks';
 
 const ReadPrettyAssociationField = observer(
   (props: any) => {
