@@ -35,6 +35,14 @@ export function Edit(props) {
 
   useEffect(() => {
     if (!uiSchema || vdRef.current) return;
+    const uploadFileCollection = uiSchema['x-component-props']?.['fileCollection'];
+    const toolbarConfig = uiSchema?.['x-component-props']?.['toolbar'];
+    if (!uploadFileCollection && toolbarConfig) {
+      const uploadToolbarIndex = toolbarConfig?.findIndex((_) => _ === 'upload');
+      if (uploadToolbarIndex) {
+        toolbarConfig.splice(uploadToolbarIndex, 1);
+      }
+    }
     const vditor = new Vditor(containerRef.current, {
       value,
       lang: localStorage.getItem('NOCOBASE_LOCALE').replaceAll('-', '_') as any,
@@ -47,7 +55,7 @@ export function Edit(props) {
           engine: 'KaTeX',
         },
       },
-      toolbar: uiSchema?.['x-component-props']?.['toolbar'],
+      toolbar: toolbarConfig,
       minHeight: 200,
       after: () => {
         vdRef.current = vditor;
@@ -61,13 +69,13 @@ export function Edit(props) {
         onChange(value);
       },
       upload: {
-        url: `/api/${uiSchema['x-component-props']['fileCollection']}:create`,
+        url: `/api/${uploadFileCollection}:create`,
         headers: {
           Authorization: `Bearer ${localStorage.getItem('NOCOBASE_TOKEN')}`,
-          'X-Authenticator': localStorage.getItem('NOCOBASE_AUTH'),
-          'X-Hostname': location.hostname,
-          'X-Locale': localStorage.getItem('NOCOBASE_LOCALE'),
-          'X-Role': localStorage.getItem('NOCOBASE_ROLE'),
+          'X-Authenticator': 'basic',
+          'X-Hostname': 'localhost',
+          'X-Locale': 'en-US',
+          'X-Role': 'root',
           'X-Timezone': '+08:00',
           'X-With-ACL-Meta': 'true',
         },
