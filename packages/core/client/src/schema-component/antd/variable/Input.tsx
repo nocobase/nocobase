@@ -228,12 +228,13 @@ export function Input(props) {
 
       for (let i = 0; i < variable.length; i++) {
         const key = variable[i];
+        const nextOneValue = variable[i + 1];
         try {
           if (i === 0) {
             prevOption = options.find((item) => item[names.value] === key);
           } else {
             if (prevOption.loadChildren && !prevOption.children?.length) {
-              await prevOption.loadChildren(prevOption);
+              await prevOption.loadChildren(prevOption, nextOneValue);
             }
             prevOption = prevOption.children.find((item) => item[names.value] === key);
           }

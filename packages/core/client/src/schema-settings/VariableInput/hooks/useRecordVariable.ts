@@ -60,6 +60,8 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     collectionName: realCollectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
+    deprecated: blockType === 'form',
+    tooltip: blockType === 'form' ? '该变量已被弃用，请使用 “当前表单” 替代' : '',
   });
 
   return {
@@ -68,11 +70,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 变量值 */
     currentRecordCtx: formRecord?.data || recordData,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord:
-      // form 区块不显示当前记录配置项
-      blockType === 'form'
-        ? false
-        : !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
+    shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
     /** 当前记录对应的 collection name */
     collectionName: realCollectionName,
   };
