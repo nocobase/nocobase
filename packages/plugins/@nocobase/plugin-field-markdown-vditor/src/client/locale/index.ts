@@ -1,16 +1,7 @@
-import { i18n } from '@nocobase/client';
-import { useTranslation } from 'react-i18next';
+import { tval } from '@nocobase/client';
 
-export const NAMESPACE = 'vditor-field';
-
-export function lang(key: string, options = {}) {
-  return i18n.t(key, { ...options, ns: NAMESPACE });
-}
-
-export function usePluginTranslation() {
-  return useTranslation(NAMESPACE);
-}
+const NAMESPACE = 'field-markdown-vditor';
 
 export function generateNTemplate(key: string) {
-  return `{{t('${key}', { ns: '${NAMESPACE}' })}}`;
+  return tval(key, { ns: NAMESPACE })
 }

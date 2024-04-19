@@ -7,7 +7,7 @@ const { defaultProps, operators } = interfacesProperties;
 export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
   name = 'vditor';
   type = 'object';
-  group = 'advanced';
+  group = 'media';
   order = 1;
   title = generateNTemplate('Vditor');
   sortable = true;
