@@ -22,7 +22,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
     ...defaultProps,
     'uiSchema.x-component-props.fileCollection': {
       type: 'string',
-      title: generateNTemplate('File Collection'),
+      title: generateNTemplate('File collection'),
       'x-component': 'CollectionSelect',
       'x-component-props': { filter: (collection) => collection?.options?.template === 'file' },
       'x-decorator': 'FormItem',
