@@ -12,6 +12,7 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../../../collection-manager';
+import { useFlag } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
@@ -36,10 +37,11 @@ export const allowAddNew: SchemaSettingsItemType = {
   name: 'allowAddNew',
   type: 'switch',
   useVisible() {
+    const flag = useFlag();
     const readPretty = useIsFieldReadPretty();
     const isAssociationField = useIsAssociationField();
     const fieldMode = useFieldMode();
-    return !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
+    return !flag?.isInSubTable && !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
   },
   useComponentProps() {
     const { t } = useTranslation();

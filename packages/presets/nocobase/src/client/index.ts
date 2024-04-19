@@ -1,9 +1,19 @@
 import { Application, NocoBaseBuildInPlugin, Plugin } from '@nocobase/client';
 
+function offsetToTimeZone(offset) {
+  const hours = Math.floor(Math.abs(offset));
+  const minutes = Math.abs((offset % 1) * 60);
+
+  const formattedHours = (hours < 10 ? '0' : '') + hours;
+  const formattedMinutes = (minutes < 10 ? '0' : '') + minutes;
+
+  const sign = offset >= 0 ? '+' : '-';
+  return sign + formattedHours + ':' + formattedMinutes;
+}
+
 const getCurrentTimezone = () => {
   const timezoneOffset = new Date().getTimezoneOffset() / -60;
-  const timezone = String(Math.abs(timezoneOffset)).padStart(2, '0') + ':00';
-  return (timezoneOffset > 0 ? '+' : '-') + timezone;
+  return offsetToTimeZone(timezoneOffset);
 };
 
 function getBasename(app: Application) {
