@@ -1,4 +1,5 @@
 import { ISchema, Schema } from '@formily/json-schema';
+import { Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
@@ -68,6 +69,7 @@ interface BaseProps {
    * 如果为 true 则表示该变量已被弃用
    */
   deprecated?: boolean;
+  tooltip?: string;
 }
 
 interface BaseVariableProviderProps {
@@ -155,6 +157,7 @@ export const useBaseVariable = ({
   dataSource,
   returnFields = (fields) => fields,
   deprecated,
+  tooltip,
 }: BaseProps) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
@@ -221,7 +224,25 @@ export const useBaseVariable = ({
 
   const result = useMemo(() => {
     return {
-      label: title,
+      label: tooltip ? (
+        <Tooltip placement="left" title={tooltip} zIndex={9999}>
+          <span
+            style={{
+              position: 'relative',
+              display: 'inline-block',
+              marginLeft: -14,
+              paddingLeft: 14,
+              marginRight: -100,
+              paddingRight: 100,
+              zIndex: 1,
+            }}
+          >
+            {title}
+          </span>
+        </Tooltip>
+      ) : (
+        title
+      ),
       value: name,
       key: name,
       isLeaf: noChildren,
