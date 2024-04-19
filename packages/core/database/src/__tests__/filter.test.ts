@@ -14,6 +14,27 @@ describe('filter', () => {
     await db.close();
   });
 
+  it('should filter by field in camel case', async () => {
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [{ type: 'array', name: 'referralSource' }],
+    });
+
+    await db.sync();
+
+    await UserCollection.repository.create({
+      values: {
+        referralSource: ['a', 'b'],
+      },
+    });
+
+    const usersCount = await UserCollection.repository.count({
+      filter: { $and: [{ referralSource: { $notEmpty: true } }] },
+    });
+
+    expect(usersCount).toBe(1);
+  });
+
   it('should filter by belongs to many association', async () => {
     const A = db.collection({
       name: 'a',

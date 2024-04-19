@@ -103,6 +103,9 @@ const EditOperator = () => {
   if (!operatorList.length) {
     const names = fieldName.split('.');
     const name = names.pop();
+    if (names.length < 2) {
+      return null;
+    }
     props = cm.getCollectionField(names.join('.'));
     if (!props) {
       return null;

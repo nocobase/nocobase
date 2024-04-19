@@ -4,7 +4,7 @@ import { authType } from '../constants';
 import { SAMLButton } from './SAMLButton';
 import { Options } from './Options';
 
-export class SamlPlugin extends Plugin {
+export class PluginSAMLClient extends Plugin {
   async load() {
     const auth = this.app.pm.get(AuthPlugin);
     auth.registerType(authType, {
@@ -16,4 +16,4 @@ export class SamlPlugin extends Plugin {
   }
 }
 
-export default SamlPlugin;
+export default PluginSAMLClient;

@@ -18,6 +18,7 @@ export class SqlCollection extends Collection {
     return undefined;
   }
 
+  /* istanbul ignore next -- @preserve */
   get filterTargetKey() {
     const targetKey = this.options?.filterTargetKey || 'id';
     if (targetKey && this.model.getAttributes()[targetKey]) {

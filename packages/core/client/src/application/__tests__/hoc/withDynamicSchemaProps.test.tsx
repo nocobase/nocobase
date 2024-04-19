@@ -1,6 +1,6 @@
+import { render } from '@nocobase/test/client';
 import React from 'react';
 import { SchemaComponent, SchemaComponentProvider } from '../../../schema-component';
-import { render } from '@nocobase/test/client';
 import { withDynamicSchemaProps } from '../../hoc';
 
 const HelloComponent = withDynamicSchemaProps((props: any) => (
@@ -212,5 +212,42 @@ describe('withDynamicSchemaProps', () => {
     const Demo = withTestDemo(schema, scopes);
     const { getByTestId } = render(<Demo />);
     expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ b: 'b' }));
+  });
+
+  test('override scope', () => {
+    function useDecoratorProps() {
+      return {
+        b: 'b',
+      };
+    }
+    function useDecoratorProps2() {
+      return {
+        c: 'c',
+      };
+    }
+    const schema = {
+      'x-use-decorator-props': 'cm.useDecoratorProps',
+    };
+    const scopes = { cm: { useDecoratorProps } };
+    const Demo = function () {
+      return (
+        <SchemaComponentProvider components={{ HelloComponent, HelloDecorator }} scope={scopes}>
+          <SchemaComponent
+            scope={{
+              cm: { useDecoratorProps: useDecoratorProps2 },
+            }}
+            schema={{
+              type: 'void',
+              name: 'hello',
+              'x-component': 'HelloComponent',
+              'x-decorator': 'HelloDecorator',
+              ...schema,
+            }}
+          />
+        </SchemaComponentProvider>
+      );
+    };
+    const { getByTestId } = render(<Demo />);
+    expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ c: 'c' }));
   });
 });

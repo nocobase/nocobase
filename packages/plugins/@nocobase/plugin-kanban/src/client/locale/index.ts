@@ -15,7 +15,7 @@ export function generateNTemplate(key: string) {
 }
 
 export function useKanbanTranslation() {
-  return useTranslation(NAMESPACE, {
+  return useTranslation([NAMESPACE, 'client'], {
     nsMode: 'fallback',
   });
 }

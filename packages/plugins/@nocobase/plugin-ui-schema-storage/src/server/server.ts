@@ -8,7 +8,7 @@ import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
 import { ServerHookModel } from './server-hooks/model';
 
-export class UiSchemaStoragePlugin extends Plugin {
+export class PluginUISchemaStorageServer extends Plugin {
   serverHooks: ServerHooks;
 
   registerRepository() {
@@ -33,20 +33,7 @@ export class UiSchemaStoragePlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: 'ui.uiSchemas',
-      actions: [
-        'uiSchemas:insert',
-        'uiSchemas:insertNewSchema',
-        'uiSchemas:remove',
-        'uiSchemas:patch',
-        'uiSchemas:batchPatch',
-        'uiSchemas:clearAncestor',
-        'uiSchemas:insertBeforeBegin',
-        'uiSchemas:insertAfterBegin',
-        'uiSchemas:insertBeforeEnd',
-        'uiSchemas:insertAfterEnd',
-        'uiSchemas:insertAdjacent',
-        'uiSchemas:saveAsTemplate',
-      ],
+      actions: ['uiSchemas:*'],
     });
 
     db.on('uiSchemas.beforeCreate', function setUid(model) {
@@ -101,4 +88,4 @@ export class UiSchemaStoragePlugin extends Plugin {
   }
 }
 
-export default UiSchemaStoragePlugin;
+export default PluginUISchemaStorageServer;

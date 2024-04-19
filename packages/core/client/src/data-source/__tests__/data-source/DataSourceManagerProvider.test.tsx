@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import { DataSourceManagerProvider, useDataSourceManager } from '@nocobase/client';
+import { Application, DataSourceManagerProvider, useDataSourceManager } from '@nocobase/client';
 
 describe('DataSourceManagerProvider', () => {
   test('should render children', () => {

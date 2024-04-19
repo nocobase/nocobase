@@ -65,7 +65,6 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
-  useSchemaSettingsItem,
   useSortFields,
 } from '..';
 import {
@@ -94,6 +93,8 @@ import {
 } from '../filter-provider/utils';
 import { FlagProvider } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
+import { DeclareVariable } from '../modules/variable/DeclareVariable';
+import { useVariable } from '../modules/variable/useVariable';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -460,7 +461,6 @@ export const SchemaSettingsItem: FC<SchemaSettingsItemProps> = (props) => {
   const { pushMenuItem } = useCollectMenuItems();
   const { collectMenuItem } = useCollectMenuItem();
   const { eventKey, title } = props;
-  const { name } = useSchemaSettingsItem();
 
   if (process.env.NODE_ENV !== 'production' && !title) {
     throw new Error('SchemaSettingsItem must have a title');
@@ -553,6 +553,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
   const form = useForm();
   const { modal } = App.useApp();
   const { removeActiveFieldName } = useFormActiveFields() || {};
+  const { removeDataBlock } = useFilterBlock();
 
   return (
     <SchemaSettingsItem
@@ -580,10 +581,11 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
             await confirm?.onOk?.();
             delete form.values[fieldSchema.name];
             removeActiveFieldName?.(fieldSchema.name as string);
-            if (field?.setInitialValue && field?.reset) {
-              field.setInitialValue(null);
-              field.reset();
-            }
+            form?.query(new RegExp(`${fieldSchema.parent.name}.${fieldSchema.name}$`)).forEach((field: Field) => {
+              // 如果字段被删掉，那么在提交的时候不应该提交这个字段
+              field.setValue?.(undefined);
+            });
+            removeDataBlock(fieldSchema['x-uid']);
           },
         });
       }}
@@ -944,6 +946,8 @@ export interface SchemaSettingsModalItemProps {
   asyncGetInitialValues?: () => Promise<any>;
   eventKey?: string;
   hide?: boolean;
+  /** 上下文中不需要当前记录 */
+  noRecord?: boolean;
 }
 export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props) => {
   const {
@@ -956,6 +960,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     asyncGetInitialValues,
     initialValues,
     width = 'fit-content',
+    noRecord = false,
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -974,6 +979,9 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
 
+  // 解决变量`$nPopupRecord`值在弹窗中丢失的问题
+  const popupRecordVariable = useVariable('$nPopupRecord');
+
   if (hidden) {
     return null;
   }
@@ -988,51 +996,58 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           { title: schema.title || title, width },
           () => {
             return (
-              <CollectionRecordProvider record={record}>
-                <FormBlockContext.Provider value={formCtx}>
-                  <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
-                    <FormActiveFieldsProvider
-                      name="form"
-                      getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
-                    >
-                      <Router location={location} navigator={null}>
-                        <BlockRequestContext_deprecated.Provider value={ctx}>
-                          <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
-                            <AssociationOrCollectionProvider
-                              allowNull
-                              collection={collection.name}
-                              association={association}
-                            >
-                              <SchemaComponentOptions scope={options.scope} components={options.components}>
-                                <FormLayout
-                                  layout={'vertical'}
-                                  className={css`
-                                    // screen > 576px
-                                    @media (min-width: 576px) {
-                                      min-width: 520px;
-                                    }
+              <DeclareVariable
+                name="$nPopupRecord"
+                title={popupRecordVariable.title}
+                value={popupRecordVariable.value}
+                collection={popupRecordVariable.collection}
+              >
+                <CollectionRecordProvider record={noRecord ? null : record}>
+                  <FormBlockContext.Provider value={formCtx}>
+                    <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
+                      <FormActiveFieldsProvider
+                        name="form"
+                        getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
+                      >
+                        <Router location={location} navigator={null}>
+                          <BlockRequestContext_deprecated.Provider value={ctx}>
+                            <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                              <AssociationOrCollectionProvider
+                                allowNull
+                                collection={collection.name}
+                                association={association}
+                              >
+                                <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                  <FormLayout
+                                    layout={'vertical'}
+                                    className={css`
+                                      // screen > 576px
+                                      @media (min-width: 576px) {
+                                        min-width: 520px;
+                                      }
 
-                                    // screen <= 576px
-                                    @media (max-width: 576px) {
-                                      min-width: 320px;
-                                    }
-                                  `}
-                                >
-                                  <APIClientProvider apiClient={apiClient}>
-                                    <ConfigProvider locale={locale}>
-                                      <SchemaComponent components={components} scope={scope} schema={schema} />
-                                    </ConfigProvider>
-                                  </APIClientProvider>
-                                </FormLayout>
-                              </SchemaComponentOptions>
-                            </AssociationOrCollectionProvider>
-                          </DataSourceApplicationProvider>
-                        </BlockRequestContext_deprecated.Provider>
-                      </Router>
-                    </FormActiveFieldsProvider>
-                  </SubFormProvider>
-                </FormBlockContext.Provider>
-              </CollectionRecordProvider>
+                                      // screen <= 576px
+                                      @media (max-width: 576px) {
+                                        min-width: 320px;
+                                      }
+                                    `}
+                                  >
+                                    <APIClientProvider apiClient={apiClient}>
+                                      <ConfigProvider locale={locale}>
+                                        <SchemaComponent components={components} scope={scope} schema={schema} />
+                                      </ConfigProvider>
+                                    </APIClientProvider>
+                                  </FormLayout>
+                                </SchemaComponentOptions>
+                              </AssociationOrCollectionProvider>
+                            </DataSourceApplicationProvider>
+                          </BlockRequestContext_deprecated.Provider>
+                        </Router>
+                      </FormActiveFieldsProvider>
+                    </SubFormProvider>
+                  </FormBlockContext.Provider>
+                </CollectionRecordProvider>
+              </DeclareVariable>
             );
           },
           theme,
@@ -1475,14 +1490,18 @@ export const SchemaSettingsSortField = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const compile = useCompile();
-  const { service } = useTableBlockContext();
-
+  const { service, association } = useTableBlockContext();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const collectionField = getCollectionJoinField(association);
   const options = fields
     .filter((field) => !field?.target && field.interface === 'sort')
-    .map((field) => ({
-      value: field?.name,
-      label: compile(field?.uiSchema?.title) || field?.name,
-    }));
+    .map((field) => {
+      return {
+        value: field?.name,
+        label: compile(field?.uiSchema?.title) || field?.name,
+        disabled: field?.scopeKey && collectionField?.foreignKey !== field.scopeKey,
+      };
+    });
 
   return (
     <SchemaSettingsSelectItem

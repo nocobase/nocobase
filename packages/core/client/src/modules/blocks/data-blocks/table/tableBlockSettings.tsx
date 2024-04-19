@@ -50,7 +50,7 @@ export const tableBlockSettings = new SchemaSettings({
         return {
           title: t('Tree table'),
           defaultChecked: true,
-          checked: treeCollection ? field.decoratorProps.treeTable !== false : false,
+          checked: treeCollection ? field.decoratorProps.treeTable : false,
           onChange: (flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;

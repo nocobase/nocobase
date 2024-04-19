@@ -12,6 +12,8 @@ import {
 import React from 'react';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
+import { Alert } from 'antd';
+import { useImportTranslation } from './locale';
 
 const findSchema = (schema: Schema, key: string, action: string) => {
   return schema.reduceProperties((buf, s) => {
@@ -44,6 +46,25 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
 const initImportSettings = (fields) => {
   const importColumns = fields?.filter((f) => !f.children).map((f) => ({ dataIndex: [f.name] }));
   return { importColumns, explain: '' };
+};
+
+export const ImportWarning = () => {
+  const { t } = useImportTranslation();
+  return (
+    <Alert
+      type="warning"
+      style={{ marginBottom: '10px' }}
+      message={
+        <>
+          {t('Import warning')}
+          <br />
+          <a href="https://docs-cn.nocobase.com/handbook/action-import-pro" target="_blank" rel="noreferrer">
+            Action: Import records pro
+          </a>
+        </>
+      }
+    />
+  );
 };
 
 export const ImportActionInitializer = () => {
@@ -85,6 +106,10 @@ export const ImportActionInitializer = () => {
             type: 'void',
             'x-component': 'FormLayout',
             properties: {
+              warning: {
+                type: 'void',
+                'x-component': 'ImportWarning',
+              },
               download: {
                 type: 'void',
                 title: `{{ t("Step 1: Download template", {ns: "${NAMESPACE}" }) }}`,

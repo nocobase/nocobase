@@ -1,6 +1,7 @@
 import lodash from 'lodash';
-import { NoPermissionError } from '@nocobase/acl';
 import { snakeCase } from '@nocobase/database';
+
+class NoPermissionError extends Error {}
 
 function createWithACLMetaMiddleware() {
   return async (ctx: any, next) => {
@@ -20,7 +21,7 @@ function createWithACLMetaMiddleware() {
       return;
     }
 
-    const { resourceName, actionName } = ctx.action;
+    const { resourceName, actionName } = ctx.permission;
 
     if (!['list', 'get'].includes(actionName)) {
       return;
@@ -70,6 +71,7 @@ function createWithACLMetaMiddleware() {
             return db;
           },
         },
+        getCurrentRepository: ctx.getCurrentRepository,
         action: {
           actionName: action,
           name: action,

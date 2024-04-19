@@ -4,7 +4,7 @@ import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { findByUid } from '.';
-import { createDesignable } from '../..';
+import { createDesignable, useCompile } from '../..';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -208,6 +208,8 @@ export const MenuDesigner = () => {
   const { dn, refresh } = useDesignable();
   const { t } = useTranslation();
   const menuSchema = findMenuSchema(fieldSchema);
+  const compile = useCompile();
+  const onSelect = compile(menuSchema?.['x-component-props']?.['onSelect']);
   const items = toItems(menuSchema?.properties);
   const effects = (form) => {
     onFieldChange('target', (field: Field) => {
@@ -286,6 +288,7 @@ export const MenuDesigner = () => {
           fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
           fieldSchema['x-component-props']['icon'] = icon;
           fieldSchema['x-component-props']['href'] = href;
+          onSelect?.({ item: { props: { schema: fieldSchema } } });
           dn.emit('patch', {
             schema,
           });

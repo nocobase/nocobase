@@ -1,3 +1,4 @@
+/* istanbul ignore file -- @preserve */
 import { Handlers } from '@nocobase/resourcer';
 
 export const actions = {

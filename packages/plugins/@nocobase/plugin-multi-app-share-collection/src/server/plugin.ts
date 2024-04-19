@@ -2,7 +2,6 @@ import Database from '@nocobase/database';
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
-import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 const unSyncPlugins = ['localization-management'];
@@ -235,13 +234,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       return;
     }
 
-    await this.importCollections(resolve(__dirname, 'collections'));
-
-    // this.db.addMigrations({
-    //   namespace: 'multi-app-share-collection',
-    //   directory: resolve(__dirname, './migrations'),
-    // });
-
     this.app.resourcer.registerActionHandlers({
       'applications:shareCollections': async (ctx, next) => {
         const { filterByTk, values } = ctx.action.params;
@@ -262,9 +254,13 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         schema: appName,
       };
 
-      const plugins = [...mainApp.pm.getAliases()].filter(
-        (name) => name !== 'multi-app-manager' && name !== 'multi-app-share-collection',
-      );
+      const plugins = [...mainApp.pm.getPlugins().values()]
+        .filter(
+          (plugin) =>
+            plugin?.options?.packageName !== '@nocobase/plugin-multi-app-manager' &&
+            plugin?.options?.packageName !== '@nocobase/plugin-multi-app-share-collection',
+        )
+        .map((plugin) => plugin.name);
 
       return {
         database: lodash.merge(databaseOptions, {

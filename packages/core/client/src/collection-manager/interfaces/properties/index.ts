@@ -85,6 +85,7 @@ export const autoFill = {
   'x-content': '{{t("Automatically generate default values")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
+  default: true,
 };
 
 export const relationshipType: ISchema = {
@@ -294,7 +295,7 @@ export const dataSource: ISchema = {
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             'x-reactions': (field: Field) => {
-              if (!field.initialValue) {
+              if (!field.initialValue && !field.initialized) {
                 field.initialValue = uid();
                 field.setValue(uid());
               }

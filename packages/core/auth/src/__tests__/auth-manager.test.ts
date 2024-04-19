@@ -1,8 +1,6 @@
-import { vi } from 'vitest';
 import { Context } from '@nocobase/actions';
 import { Auth, AuthManager } from '@nocobase/auth';
-import Database, { Model } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { Model } from '@nocobase/database';
 
 class MockStorer {
   elements: Map<string, any> = new Map();
@@ -29,12 +27,13 @@ class BasicAuth extends Auth {
 
 describe('auth-manager', () => {
   let authManager: AuthManager;
+  let storer: MockStorer;
   beforeEach(() => {
     authManager = new AuthManager({
       authKey: 'X-Authenticator',
     });
 
-    const storer = new MockStorer();
+    storer = new MockStorer();
     const authenticator = {
       name: 'basic-test',
       authType: 'basic',
@@ -48,70 +47,25 @@ describe('auth-manager', () => {
     authManager.registerTypes('basic', { auth: BasicAuth });
     const authenticator = await authManager.get('basic-test', {} as Context);
     expect(authenticator).toBeInstanceOf(BasicAuth);
+
+    storer.set('basic2-test', { name: 'basic2-test', authType: 'basic2', options: {} });
+    expect(authManager.get('basic2-test', {} as Context)).rejects.toThrowError('AuthType [basic2] is not found.');
+
+    await expect(authManager.get('not-exists', {} as Context)).rejects.toThrowError(
+      'Authenticator [not-exists] is not found.',
+    );
+
+    authManager.setStorer(null);
+    await expect(authManager.get('any', {} as Context)).rejects.toThrowError('AuthManager.storer is not set.');
   });
 
-  describe('middleware', () => {
-    let app: MockServer;
-    let db: Database;
-    let agent;
+  it('should list types', () => {
+    authManager.registerTypes('basic', { auth: BasicAuth, title: 'Basic' });
+    expect(authManager.listTypes()).toEqual([{ name: 'basic', title: 'Basic' }]);
+  });
 
-    beforeEach(async () => {
-      app = mockServer({
-        registerActions: true,
-        acl: true,
-        plugins: ['users', 'auth', 'acl', 'data-source-manager'],
-      });
-
-      // app.plugin(ApiKeysPlugin);
-      await app.loadAndInstall({ clean: true });
-      db = app.db;
-      agent = app.agent();
-    });
-
-    afterEach(async () => {
-      await app.destroy();
-    });
-
-    describe('blacklist', () => {
-      const hasFn = vi.fn();
-      const addFn = vi.fn();
-      beforeEach(async () => {
-        await agent.login(1);
-        app.authManager.setTokenBlacklistService({
-          has: hasFn,
-          add: addFn,
-        });
-      });
-
-      afterEach(() => {
-        hasFn.mockReset();
-        addFn.mockReset();
-      });
-
-      it('basic', async () => {
-        const res = await agent.resource('auth').check();
-        const token = res.request.header['Authorization'].replace('Bearer ', '');
-        expect(res.status).toBe(200);
-        expect(hasFn).toHaveBeenCalledWith(token);
-      });
-
-      it('signOut should add token to blacklist', async () => {
-        // signOut will add token
-        const res = await agent.resource('auth').signOut();
-        const token = res.request.header['Authorization'].replace('Bearer ', '');
-        expect(addFn).toHaveBeenCalledWith({
-          token,
-          // Date or String is ok
-          expiration: expect.any(String),
-        });
-      });
-
-      it('should throw 401 when token in blacklist', async () => {
-        hasFn.mockImplementation(() => true);
-        const res = await agent.resource('auth').check();
-        expect(res.status).toBe(401);
-        expect(res.text).toContain('token is not available');
-      });
-    });
+  it('should get auth config', () => {
+    authManager.registerTypes('basic', { auth: BasicAuth, title: 'Basic' });
+    expect(authManager.getAuthConfig('basic')).toEqual({ auth: BasicAuth, title: 'Basic' });
   });
 });

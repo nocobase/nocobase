@@ -124,15 +124,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
-    [
-      hasChangedColumns,
-      schema,
-      field,
-      parentRecordData,
-      schemaInWhitelist,
-      token.paddingContentVerticalLG,
-      token.marginSM,
-    ],
+    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
   );
 
   const tableColumns = useMemo(() => {

@@ -25,11 +25,35 @@ export default class Processor {
   };
 
   logger: Logger;
+
+  /**
+   * @experimental
+   */
   transaction: Transaction;
+
+  /**
+   * @experimental
+   */
   nodes: FlowNodeModel[] = [];
+
+  /**
+   * @experimental
+   */
   nodesMap = new Map<number, FlowNodeModel>();
+
+  /**
+   * @experimental
+   */
   jobsMap = new Map<number, JobModel>();
+
+  /**
+   * @experimental
+   */
   jobsMapByNodeKey: { [key: string]: any } = {};
+
+  /**
+   * @experimental
+   */
   lastSavedJob: JobModel | null = null;
 
   constructor(
@@ -194,7 +218,7 @@ export default class Processor {
     return this.exit(job.status);
   }
 
-  async recall(node, job) {
+  private async recall(node, job) {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
     if (typeof instruction.resume !== 'function') {
@@ -206,7 +230,7 @@ export default class Processor {
     return this.exec(instruction.resume.bind(instruction), node, job);
   }
 
-  async exit(s?: number) {
+  public async exit(s?: number) {
     if (typeof s === 'number') {
       const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
       await this.execution.update({ status }, { transaction: this.transaction });
@@ -216,6 +240,11 @@ export default class Processor {
   }
 
   // TODO(optimize)
+  /**
+   * @experimental
+   * @param {JobModel | Record<string, any>} payload
+   * @returns {JobModel}
+   */
   async saveJob(payload) {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
     const { transaction } = this;
@@ -243,13 +272,19 @@ export default class Processor {
     return job;
   }
 
+  /**
+   * @experimental
+   */
   getBranches(node: FlowNodeModel): FlowNodeModel[] {
     return this.nodes
       .filter((item) => item.upstream === node && item.branchIndex !== null)
       .sort((a, b) => Number(a.branchIndex) - Number(b.branchIndex));
   }
 
-  // find the first node in current branch
+  /**
+   * @experimental
+   * find the first node in current branch
+   */
   findBranchStartNode(node: FlowNodeModel, parent?: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.upstream) {
       if (!parent) {
@@ -265,7 +300,10 @@ export default class Processor {
     return null;
   }
 
-  // find the node start current branch
+  /**
+   * @experimental
+   * find the node start current branch
+   */
   findBranchParentNode(node: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.upstream) {
       if (n.branchIndex !== null) {
@@ -275,6 +313,9 @@ export default class Processor {
     return null;
   }
 
+  /**
+   * @experimental
+   */
   findBranchEndNode(node: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.downstream) {
       if (!n.downstream) {
@@ -284,6 +325,9 @@ export default class Processor {
     return null;
   }
 
+  /**
+   * @experimental
+   */
   findBranchParentJob(job: JobModel, node: FlowNodeModel): JobModel | null {
     for (let j: JobModel | undefined = job; j; j = this.jobsMap.get(j.upstreamId)) {
       if (j.nodeId === node.id) {
@@ -293,6 +337,9 @@ export default class Processor {
     return null;
   }
 
+  /**
+   * @experimental
+   */
   findBranchLastJob(node: FlowNodeModel, job: JobModel): JobModel | null {
     const allJobs = Array.from(this.jobsMap.values());
     const branchJobs = [];
@@ -310,6 +357,9 @@ export default class Processor {
     return null;
   }
 
+  /**
+   * @experimental
+   */
   public getScope(sourceNodeId: number) {
     const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
@@ -337,6 +387,9 @@ export default class Processor {
     };
   }
 
+  /**
+   * @experimental
+   */
   public getParsedValue(value, sourceNodeId: number, additionalScope?: object) {
     const template = parse(value);
     const scope = Object.assign(this.getScope(sourceNodeId), additionalScope);

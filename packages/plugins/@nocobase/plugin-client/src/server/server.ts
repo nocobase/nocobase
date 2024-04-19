@@ -19,7 +19,7 @@ async function getLang(ctx) {
   return lang;
 }
 
-export class ClientPlugin extends Plugin {
+export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
   async install() {
@@ -54,7 +54,6 @@ export class ClientPlugin extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
-    this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
       actions: ['app:restart', 'app:clearCache'],
@@ -106,4 +105,4 @@ export class ClientPlugin extends Plugin {
   }
 }
 
-export default ClientPlugin;
+export default PluginClientServer;

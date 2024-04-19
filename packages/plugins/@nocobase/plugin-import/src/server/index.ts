@@ -4,25 +4,32 @@ import { downloadXlsxTemplate, importXlsx } from './actions';
 import { enUS, zhCN } from './locale';
 import { importMiddleware } from './middleware';
 
-export class ImportPlugin extends Plugin {
+export class PluginImportServer extends Plugin {
   beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
   }
 
   async load() {
-    this.app.resourcer.use(importMiddleware);
-    this.app.resourcer.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
-    this.app.resourcer.registerActionHandler('importXlsx', importXlsx);
+    this.app.dataSourceManager.afterAddDataSource((dataSource) => {
+      // @ts-ignore
+      if (!dataSource.collectionManager?.db) {
+        return;
+      }
 
-    this.app.acl.setAvailableAction('importXlsx', {
-      displayName: '{{t("Import")}}',
-      allowConfigureFields: true,
-      type: 'new-data',
-      onNewRecord: true,
+      dataSource.resourceManager.use(importMiddleware);
+      dataSource.resourceManager.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
+      dataSource.resourceManager.registerActionHandler('importXlsx', importXlsx);
+
+      dataSource.acl.setAvailableAction('importXlsx', {
+        displayName: '{{t("Import")}}',
+        allowConfigureFields: true,
+        type: 'new-data',
+        onNewRecord: true,
+      });
+
+      dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
     });
-
-    this.app.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
   }
 
   async install(options: InstallOptions) {
@@ -30,4 +37,4 @@ export class ImportPlugin extends Plugin {
   }
 }
 
-export default ImportPlugin;
+export default PluginImportServer;

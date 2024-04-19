@@ -3,7 +3,7 @@ import { expect, formBlockDefaultValueTemplate, test } from '@nocobase/test/e2e'
 test.describe('variables with default value', () => {
   test('current form', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(formBlockDefaultValueTemplate).waitForInit();
-    await mockRecord('general');
+    await mockRecord('general', 2);
     await nocoPage.goto();
 
     await page.getByRole('button', { name: 'Add new' }).click();

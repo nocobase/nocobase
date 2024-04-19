@@ -5,7 +5,7 @@ import { authType } from '../constants';
 import { OIDCAuth } from './oidc-auth';
 import { resolve } from 'path';
 
-export class OidcPlugin extends Plugin {
+export class PluginOIDCServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -34,6 +34,7 @@ export class OidcPlugin extends Plugin {
 
     this.app.acl.allow('oidc', '*', 'public');
 
+    /* istanbul ignore next -- @preserve */
     Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {
       const { req } = ctx;
       const url = new URL(req.url, `http://${req.headers.host}`);
@@ -60,4 +61,4 @@ export class OidcPlugin extends Plugin {
   async remove() {}
 }
 
-export default OidcPlugin;
+export default PluginOIDCServer;

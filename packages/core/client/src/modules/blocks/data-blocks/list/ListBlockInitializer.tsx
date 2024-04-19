@@ -2,9 +2,9 @@ import { OrderedListOutlined } from '@ant-design/icons';
 import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
-import { createListBlockSchema } from './createListBlockSchema';
-import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
+import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
+import { createListBlockUISchema } from './createListBlockUISchema';
 
 export const ListBlockInitializer = ({
   filterCollections,
@@ -33,26 +33,19 @@ export const ListBlockInitializer = ({
   ) => any;
   showAssociationFields?: boolean;
 }) => {
-  const { getCollection } = useCollectionManager_deprecated();
-  const { insert } = useSchemaInitializer();
   const itemConfig = useSchemaInitializerItem();
+  const { createListBlock } = useCreateListBlock();
+
   return (
     <DataBlockInitializer
       {...itemConfig}
       icon={<OrderedListOutlined />}
       componentType={'List'}
-      onCreateBlockSchema={async ({ item }) => {
+      onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
-          return createBlockSchema({ item });
+          return createBlockSchema(options);
         }
-
-        const collection = getCollection(item.name, item.dataSource);
-        const schema = createListBlockSchema({
-          collectionName: item.name,
-          dataSource: item.dataSource,
-          rowKey: collection.filterTargetKey || 'id',
-        });
-        insert(schema);
+        createListBlock(options);
       }}
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
@@ -60,4 +53,21 @@ export const ListBlockInitializer = ({
       showAssociationFields={showAssociationFields}
     />
   );
+};
+
+export const useCreateListBlock = () => {
+  const { getCollection } = useCollectionManager_deprecated();
+  const { insert } = useSchemaInitializer();
+
+  const createListBlock = ({ item }) => {
+    const collection = getCollection(item.name, item.dataSource);
+    const schema = createListBlockUISchema({
+      collectionName: item.name,
+      dataSource: item.dataSource,
+      rowKey: collection.filterTargetKey || 'id',
+    });
+    insert(schema);
+  };
+
+  return { createListBlock };
 };

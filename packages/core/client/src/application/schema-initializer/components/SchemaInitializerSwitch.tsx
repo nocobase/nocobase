@@ -21,6 +21,9 @@ export const SchemaInitializerSwitch: FC<SchemaInitializerSwitchItemProps> = (pr
   );
 };
 
+/**
+ * @internal
+ */
 export const SchemaInitializerSwitchInternal = () => {
   const itemConfig = useSchemaInitializerItem<SchemaInitializerSwitchItemProps>();
   return <SchemaInitializerSwitch {...itemConfig} />;

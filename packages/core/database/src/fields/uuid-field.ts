@@ -21,14 +21,13 @@ export class UuidField extends Field {
 
   bind() {
     super.bind();
-    this.on('beforeCreate', this.listener);
-    this.on('beforeUpdate', this.listener);
+    // https://sequelize.org/docs/v6/other-topics/hooks/
+    this.on('beforeValidate', this.listener);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeCreate', this.listener);
-    this.off('beforeUpdate', this.listener);
+    this.off('beforeValidate', this.listener);
   }
 }
 

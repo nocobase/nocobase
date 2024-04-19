@@ -5,6 +5,7 @@
   "Clear executions will not reset executed count, and started executions will not be deleted, are you sure you want to delete them all?":
     "清空执行记录不会重置执行次数，且执行中的也不会被删除，确定要删除所有执行记录吗？",
   "Executed": "已执行",
+  "Sync": "同步",
   "Sync enabled status of all workflows from database": "从数据库同步所有工作流的启用状态",
   "Trigger type": "触发方式",
   "Status": "状态",
@@ -37,7 +38,7 @@
 
   "Bind workflows": "绑定工作流",
   "Workflow will be triggered before or after submitting succeeded based on workflow type.": "工作流会基于其类型在提交成功之前或之后触发。",
-  "Workflow will be triggered directly once the button clicked, without data saving.": "按钮点击后直接触发工作流，但不会保存数据。",
+  "Workflow will be triggered directly once the button clicked, without data saving. Only supports \"Post-action event\" for now.": "按钮点击后直接触发工作流，但不会保存数据。目前仅支持“操作后事件”。",
   "Workflow will be triggered before deleting succeeded.": "删除成功之前触发工作流。",
   "Submit to workflow": "提交至工作流",
   "Add workflow": "添加工作流",

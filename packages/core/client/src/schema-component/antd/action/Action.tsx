@@ -3,13 +3,22 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import {
+  useCollection,
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+  useDataBlockRequest,
+} from '../../../data-source';
 import { Icon } from '../../../icon';
-import { RecordProvider, useRecord } from '../../../record-provider';
+import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
+import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
+import { RecordProvider } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -25,9 +34,7 @@ import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
-import { linkageAction } from './utils';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { useDataBlockRequest } from '../../../data-source';
+import { linkageAction, setInitialActionState } from './utils';
 
 export const Action: ComposedAction = withDynamicSchemaProps(
   observer((props: any) => {
@@ -62,7 +69,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
-    const record = useRecord();
+    const recordData = useCollectionRecordData();
+    const parentRecordData = useCollectionParentRecordData();
+    const collection = useCollection();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
@@ -74,15 +83,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
     const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values: record } as any });
+    const localVariables = useLocalVariables({ currentForm: { values: recordData } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-    const [btnHover, setBtnHover] = useState(popover);
     const service = useDataBlockRequest();
-    useEffect(() => {
-      if (popover) {
-        setBtnHover(true);
-      }
-    }, [popover]);
 
     const actionTitle = useMemo(() => {
       const res = title || compile(fieldSchema.title);
@@ -90,7 +93,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [title, fieldSchema.title, t]);
 
     useEffect(() => {
-      if (!btnHover) return;
+      if (field.stateOfLinkageRules) {
+        setInitialActionState(field);
+      }
       field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
@@ -105,15 +110,13 @@ export const Action: ComposedAction = withDynamicSchemaProps(
             });
           });
         });
-    }, [btnHover, field, linkageRules, localVariables, record, variables]);
+    }, [field, linkageRules, localVariables, variables]);
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
         if (isPortalInBody(e.target as Element)) {
           return;
         }
-        setBtnHover(true);
-
         e.preventDefault();
         e.stopPropagation();
 
@@ -153,7 +156,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
 
     const handleMouseEnter = useCallback(
       (e) => {
-        setBtnHover(true);
         onMouseEnter?.(e);
       },
       [onMouseEnter],
@@ -204,7 +206,14 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        {!popover && props.children}
+        <DeclareVariable
+          name="$nPopupRecord"
+          title={t('Current popup record')}
+          value={recordData}
+          collection={collection}
+        >
+          {!popover && props.children}
+        </DeclareVariable>
         {element}
       </ActionContextProvider>
     );
@@ -212,8 +221,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     // fix https://nocobase.height.app/T-3235/description
     if (addChild) {
       return wrapSSR(
-        <RecordProvider record={null} parent={record}>
-          {result}
+        // fix https://nocobase.height.app/T-3966
+        <RecordProvider record={null} parent={parentRecordData}>
+          <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
         </RecordProvider>,
       );
     }

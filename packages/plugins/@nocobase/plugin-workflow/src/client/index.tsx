@@ -58,8 +58,20 @@ export default class PluginWorkflowClient extends Plugin {
   }
 
   async load() {
-    this.addRoutes();
-    this.addComponents();
+    this.app.router.add('admin.workflow.workflows.id', {
+      path: getWorkflowDetailPath(':id'),
+      element: <WorkflowPage />,
+    });
+
+    this.app.router.add('admin.workflow.executions.id', {
+      path: getWorkflowExecutionsPath(':id'),
+      element: <ExecutionPage />,
+    });
+
+    this.app.addComponents({
+      WorkflowPage,
+      ExecutionPage,
+    });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
@@ -81,24 +93,6 @@ export default class PluginWorkflowClient extends Plugin {
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('update', UpdateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
-  }
-
-  addComponents() {
-    this.app.addComponents({
-      WorkflowPage,
-      ExecutionPage,
-    });
-  }
-
-  addRoutes() {
-    this.app.router.add('admin.workflow.workflows.id', {
-      path: getWorkflowDetailPath(':id'),
-      element: <WorkflowPage />,
-    });
-    this.app.router.add('admin.workflow.executions.id', {
-      path: getWorkflowExecutionsPath(':id'),
-      element: <ExecutionPage />,
-    });
   }
 }
 

@@ -46,7 +46,6 @@ export class CollectionTemplateManager {
         if (item.notSupportDataSourceType) {
           return !item.notSupportDataSourceType?.includes(dataSourceType);
         }
-        return true;
       })
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }

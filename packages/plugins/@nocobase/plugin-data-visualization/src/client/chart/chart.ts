@@ -4,7 +4,7 @@ import { QueryProps } from '../renderer';
 import { parseField } from '../utils';
 import { ISchema } from '@formily/react';
 import configs, { AnySchemaProperties, Config } from './configs';
-import { Transformer } from '../block/transformers';
+import { Transformer } from '../transformers';
 
 export type RenderProps = {
   data: Record<string, any>[];

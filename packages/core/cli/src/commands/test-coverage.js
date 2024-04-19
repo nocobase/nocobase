@@ -24,7 +24,7 @@ module.exports = (cli) => {
     const packageRoots = getPackagesDir(false);
     for (const dir of packageRoots) {
       try {
-        await run('yarn', ['test:server', '--coverage', dir]);
+        await run('yarn', ['test:server', dir, '--coverage']);
       } catch (e) {
         continue;
       }
@@ -35,7 +35,7 @@ module.exports = (cli) => {
     const packageRoots = getPackagesDir(true);
     for (const dir of packageRoots) {
       try {
-        await run('yarn', ['test:client', '--coverage', dir]);
+        await run('yarn', ['test:client', dir, '--coverage']);
       } catch (e) {
         continue;
       }

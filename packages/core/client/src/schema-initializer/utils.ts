@@ -11,16 +11,15 @@ import {
   useCollection,
   useCollectionManager,
   useDataSourceKey,
-  useFormActiveFields,
   useFormBlockContext,
 } from '../';
+import { useFormActiveFields } from '../block-provider/hooks/useFormActiveFields';
 import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
 import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-
 export const itemsMerge = (items1) => {
   return items1;
 };
@@ -490,7 +489,7 @@ const getItem = (
 
     return {
       type: 'subMenu',
-      name: field.uiSchema?.title,
+      name: schemaName,
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
@@ -750,9 +749,9 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     exists: !!schema,
     remove() {
       removeActiveFieldName?.(schema.name);
-      form?.query(schema.name).forEach((field: Field) => {
-        field.setInitialValue?.(null);
-        field.reset?.();
+      form?.query(new RegExp(`${schema.parent.name}.${schema.name}$`)).forEach((field: Field) => {
+        // 如果字段被删掉，那么在提交的时候不应该提交这个字段
+        field.setValue?.(undefined);
       });
       schema && rm(schema, remove);
     },
@@ -842,6 +841,8 @@ export const useCollectionDataSourceItems = ({
   showAssociationFields,
   filterDataSource,
   dataBlockInitializerProps,
+  hideOtherRecordsInPopup,
+  onClick,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
@@ -849,6 +850,11 @@ export const useCollectionDataSourceItems = ({
   showAssociationFields?: boolean;
   filterDataSource?: (dataSource?: DataSource) => boolean;
   dataBlockInitializerProps?: any;
+  /**
+   * 隐藏弹窗中的 Other records 选项
+   */
+  hideOtherRecordsInPopup?: boolean;
+  onClick?: (options: any) => void;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -936,19 +942,58 @@ export const useCollectionDataSourceItems = ({
           ],
         },
       };
+      const componentTypeMap = {
+        ReadPrettyFormItem: 'Details',
+      };
+      const otherRecords = {
+        name: 'otherRecords',
+        Component: DataBlockInitializer,
+        // 目的是使点击无效
+        onClick() {},
+        componentProps: {
+          icon: null,
+          title: t('Other records'),
+          name: 'otherRecords',
+          showAssociationFields: false,
+          onlyCurrentDataSource: false,
+          hideChildrenIfSingleCollection: false,
+          onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
+          componentType: componentTypeMap[componentName] || componentName,
+          filter({ collection: c, associationField }) {
+            return true;
+          },
+          onClick(options) {
+            onClick({ ...options, fromOthersInPopup: true });
+          },
+        },
+      };
+
       let children;
 
+      const _associationRecords = associationFields.length ? associationRecords : null;
       if (noAssociationMenu[0].children.length && associationFields.length) {
-        children = [currentRecord, associationRecords];
-      } else if (noAssociationMenu[0].children.length) {
-        // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
-        if (noAssociationMenu[0].children.length <= 1) {
-          noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
-          return noAssociationMenu;
+        if (hideOtherRecordsInPopup) {
+          children = [currentRecord, _associationRecords];
+        } else {
+          children = [currentRecord, _associationRecords, otherRecords];
         }
-        children = [currentRecord];
+      } else if (noAssociationMenu[0].children.length) {
+        if (hideOtherRecordsInPopup) {
+          // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
+          if (noAssociationMenu[0].children.length <= 1) {
+            noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
+            return noAssociationMenu;
+          }
+          children = [currentRecord];
+        } else {
+          children = [currentRecord, otherRecords];
+        }
       } else {
-        children = [associationRecords];
+        if (hideOtherRecordsInPopup) {
+          children = [_associationRecords];
+        } else {
+          children = [_associationRecords, otherRecords];
+        }
       }
 
       return [
@@ -956,10 +1001,20 @@ export const useCollectionDataSourceItems = ({
           name: 'records',
           label: t('Records'),
           type: 'subMenu',
-          children,
+          children: children.filter(Boolean),
         },
       ];
-    }, [associationFields, collection.dataSource, collection.name, dataBlockInitializerProps, noAssociationMenu, t]);
+    }, [
+      associationFields,
+      collection.dataSource,
+      collection.name,
+      componentName,
+      dataBlockInitializerProps,
+      hideOtherRecordsInPopup,
+      noAssociationMenu,
+      onClick,
+      t,
+    ]);
   }
 
   return noAssociationMenu;
@@ -1558,7 +1613,6 @@ function useAssociationFields({
         };
       });
   }, [
-    cm,
     collection.fields,
     compile,
     componentName,

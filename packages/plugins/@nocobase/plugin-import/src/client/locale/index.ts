@@ -1,2 +1,7 @@
-// export { default as enUS } from './en-US';
-// export { default as zhCN } from './zh-CN';
+import { useTranslation } from 'react-i18next';
+
+export const NAMESPACE = 'import';
+
+export function useImportTranslation() {
+  return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });
+}

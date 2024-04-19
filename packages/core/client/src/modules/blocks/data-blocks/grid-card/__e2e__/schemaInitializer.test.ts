@@ -1,4 +1,5 @@
 import { createBlockInPage, expect, oneEmptyGridCardBlock, test } from '@nocobase/test/e2e';
+import { oneEmptyTableWithUsers } from '../../details-multi/__e2e__/templatesOfBug';
 
 test.describe('where grid card block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -7,6 +8,37 @@ test.describe('where grid card block can be added', () => {
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Grid Card');
     await expect(page.getByLabel('block-item-BlockItem-users-grid-card')).toBeVisible();
+  });
+
+  test('popup', async ({ page, mockPage }) => {
+    await mockPage(oneEmptyTableWithUsers).goto();
+
+    // 1. 打开弹窗，通过 Associated records 创建一个列表区块
+    await page.getByLabel('action-Action.Link-View').click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'ordered-list Grid Card right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Roles' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-').nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Role name' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByText('Root')).toBeVisible();
+    await expect(page.getByText('Admin')).toBeVisible();
+    await expect(page.getByText('Member')).toBeVisible();
+
+    // 2. 通过 Other records 创建一个列表区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'ordered-list Grid Card right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-users').hover();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-grid-card-users.nickname-Nickname').getByText('Super Admin'),
+    ).toBeVisible();
   });
 
   test('data selector popup', async ({ page, mockPage }) => {});

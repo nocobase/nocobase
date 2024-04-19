@@ -29,4 +29,6 @@ export interface DataScopeProps {
    * 当前表单区块中的表单实例
    */
   form: Form;
+  /** 上下文中不需要当前记录 */
+  noRecord?: boolean;
 }

@@ -3,9 +3,9 @@ import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
+import { createListBlockUISchema } from '../../modules/blocks/data-blocks/list/createListBlockUISchema';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../utils';
-import { createListBlockSchema } from '../../modules/blocks/data-blocks/list/createListBlockSchema';
 
 export const RecordAssociationListBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -27,7 +27,7 @@ export const RecordAssociationListBlockInitializer = () => {
           insert(s);
         } else {
           insert(
-            createListBlockSchema({
+            createListBlockUISchema({
               rowKey: collection.filterTargetKey,
               dataSource: collection.dataSource,
               association: resource,
@@ -50,7 +50,7 @@ export function useCreateAssociationListBlock() {
       const collection = getCollection(field.target);
 
       insert(
-        createListBlockSchema({
+        createListBlockUISchema({
           rowKey: collection.filterTargetKey,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,

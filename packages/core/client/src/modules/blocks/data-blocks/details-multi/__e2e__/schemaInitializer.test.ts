@@ -1,4 +1,5 @@
 import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase/test/e2e';
+import { oneEmptyTableWithUsers } from './templatesOfBug';
 
 test.describe('where multi data details block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -6,6 +7,35 @@ test.describe('where multi data details block can be added', () => {
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Details');
     await expect(page.getByLabel('block-item-CardItem-users-details')).toBeVisible();
+  });
+
+  test('popup', async ({ page, mockPage }) => {
+    await mockPage(oneEmptyTableWithUsers).goto();
+
+    // 1. 打开弹窗，通过 Associated records 添加一个详情区块
+    await page.getByLabel('action-Action.Link-View').click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Roles' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
+    await page.getByRole('menuitem', { name: 'Role UID' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CollectionField-').getByText('admin')).toBeVisible();
+
+    // 2. 打开弹窗，通过 Other records 添加一个详情区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-users').click();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-details-users.nickname-Nickname').getByText('Super Admin'),
+    ).toBeVisible();
   });
 });
 
@@ -62,8 +92,9 @@ test.describe('configure fields', () => {
 
 test.describe('configure actions', () => {
   test('edit & delete & duplicate', async ({ page, mockPage, mockRecord }) => {
-    await mockPage(oneEmptyDetailsBlock).goto();
+    const nocoPage = await mockPage(oneEmptyDetailsBlock).waitForInit();
     await mockRecord('general');
+    await nocoPage.goto();
 
     await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();

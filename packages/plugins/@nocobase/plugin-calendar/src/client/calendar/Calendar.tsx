@@ -2,7 +2,9 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
+  DeclareVariable,
   RecordProvider,
+  useCollection,
   useCollectionParentRecordData,
   useProps,
   withDynamicSchemaProps,
@@ -147,6 +149,8 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
 
 const CalendarRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
+  const { t } = useTranslation();
+  const collection = useCollection();
   const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = useMemo(
@@ -169,7 +173,14 @@ const CalendarRecordViewer = (props) => {
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record} parent={parentRecordData}>
-            <RecursionField schema={eventSchema} name={eventSchema.name} />
+            <DeclareVariable
+              name="$nPopupRecord"
+              title={t('Current popup record')}
+              value={record}
+              collection={collection}
+            >
+              <RecursionField schema={eventSchema} name={eventSchema.name} />
+            </DeclareVariable>
           </RecordProvider>
         </ActionContextProvider>
       </DeleteEventContext.Provider>

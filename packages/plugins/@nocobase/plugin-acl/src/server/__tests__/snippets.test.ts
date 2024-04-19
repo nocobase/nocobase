@@ -54,4 +54,61 @@ describe('snippet', () => {
 
     expect(listResp.statusCode).toEqual(200);
   });
+
+  it('should allow to get roles ', async () => {
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        strategy: { actions: ['view'] },
+        snippets: ['pm.acl.roles'],
+      },
+    });
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    const userAgent: any = app.agent().login(testUser);
+
+    const getResp = await userAgent.resource('dataSources.roles', 'main').get({
+      filterByTk: 'testRole',
+    });
+
+    expect(getResp.statusCode).toEqual(200);
+  });
+
+  it('should allow to get roles dataSourceCollections', async () => {
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        snippets: ['pm.acl.roles'],
+      },
+    });
+
+    const canRes = app.acl.can({
+      role: 'testRole',
+      action: 'list',
+      resource: 'roles.dataSourcesCollections',
+    });
+
+    expect(canRes).toBeTruthy();
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    const userAgent: any = app.agent().login(testUser);
+
+    const getResp = await userAgent.resource('roles.dataSourcesCollections', 'testRole').list({
+      filter: {
+        dataSourceKey: 'main',
+      },
+    });
+
+    expect(getResp.statusCode).toEqual(200);
+  });
 });

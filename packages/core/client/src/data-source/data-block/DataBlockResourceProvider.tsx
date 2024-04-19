@@ -23,7 +23,7 @@ export const DataBlockResourceProvider: FC<{ children?: ReactNode }> = ({ childr
       return sourceId;
     }
     if (association && parentRecord) {
-      const sourceKey = cm.getSourceKeyByAssocation(association);
+      const sourceKey = cm.getSourceKeyByAssociation(association);
       const parentRecordData = parentRecord instanceof CollectionRecord ? parentRecord.data : parentRecord;
       return parentRecordData[sourceKey];
     }

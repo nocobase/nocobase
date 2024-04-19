@@ -6,8 +6,9 @@ import {
   BlockProvider,
   useBlockRequestContext,
   TableBlockProvider,
+  useTableBlockContext,
 } from '@nocobase/client';
-
+import _ from 'lodash';
 export const GanttBlockContext = createContext<any>({});
 GanttBlockContext.displayName = 'GanttBlockContext';
 
@@ -36,7 +37,7 @@ const formatData = (
         color: item.color,
         isDisabled: disable,
       });
-      formatData(item.children, fieldNames, tasks, item.id + '', hideChildren, checkPermassion);
+      formatData(item.children, fieldNames, tasks, item.id + '', hideChildren, checkPermassion, primaryKey);
     } else {
       tasks.push({
         start: item[fieldNames.start] ? new Date(item[fieldNames.start]) : undefined,
@@ -76,12 +77,13 @@ const InternalGanttBlockProvider = (props) => {
 };
 
 export const GanttBlockProvider = (props) => {
-  const params = { filter: props.params.filter, paginate: false, sort: props.fieldNames.start };
+  const params = { filter: props.params.filter, paginate: false, sort: ['id'] };
   const collection = useCollection_deprecated();
 
   if (collection?.tree) {
     params['tree'] = true;
   }
+
   return (
     <div aria-label="block-item-gantt" role="button">
       <BlockProvider name="gantt" {...props} params={params}>
@@ -102,6 +104,8 @@ export const useGanttBlockProps = () => {
   const [tasks, setTasks] = useState<any>([]);
   const { getPrimaryKey, name, template, writableView } = useCollection_deprecated();
   const { parseAction } = useACLRoleContext();
+  const ctxBlock = useTableBlockContext();
+
   const primaryKey = getPrimaryKey();
   const checkPermission = (record) => {
     const actionPath = `${name}:update`;
@@ -135,6 +139,9 @@ export const useGanttBlockProps = () => {
       );
       setTasks(data);
       ctx.field.data = data;
+      if (tasks.length > 0) {
+        ctxBlock.setExpandFlag(true);
+      }
     }
   }, [ctx?.service?.loading]);
   return {
