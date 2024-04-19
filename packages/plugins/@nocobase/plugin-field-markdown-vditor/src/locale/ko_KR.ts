@@ -28,6 +28,6 @@ export default {
   "EditMode": "편집모드",
   "Both": "에디터 & 미리보기",
   "Preview": "미리보기",
-  "FullScreen": "전체화면",
+  "Fullscreen": "전체화면",
   "Outline": "개요"
 }

@@ -71,7 +71,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
         { value: 'edit-mode', label: generateNTemplate('EditMode') },
         { value: 'both', label: generateNTemplate('Both') },
         { value: 'preview', label: generateNTemplate('Preview') },
-        { value: 'fullscreen', label: generateNTemplate('Fullscreen') },
+        // { value: 'fullscreen', label: generateNTemplate('Fullscreen') },
         { value: 'outline', label: generateNTemplate('Outline') },
       ],
     },

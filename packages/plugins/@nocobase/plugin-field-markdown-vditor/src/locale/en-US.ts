@@ -28,6 +28,6 @@ export default {
   "EditMode": "Edit Mode",
   "Both": "Editor & Preview",
   "Preview": "Preview",
-  "FullScreen": "Toggle Fullscreen",
+  "Fullscreen": "Toggle Fullscreen",
   "Outline": "Outline"
 }

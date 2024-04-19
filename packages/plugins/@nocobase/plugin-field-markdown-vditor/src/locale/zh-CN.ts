@@ -28,6 +28,6 @@ export default {
   "EditMode": "切换编辑模式",
   "Both": "编辑 & 预览",
   "Preview": "预览",
-  "FullScreen": "全屏切换",
+  "Fullscreen": "全屏切换",
   "Outline": "大纲"
 }
