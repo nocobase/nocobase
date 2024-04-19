@@ -1,5 +1,5 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Input, Select } from 'antd';
+import { Input, Select, Space } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
 import {
@@ -139,7 +139,7 @@ export const InternalPicker = observer(
     };
     return (
       <>
-        <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
+        <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
           <div style={{ width: '100%' }}>
             <Select
               role="button"
@@ -190,7 +190,7 @@ export const InternalPicker = observer(
               </ClearCollectionFieldContext>
             </RecordProvider>
           )}
-        </Input.Group>
+        </Space.Compact>
         <ActionContextProvider
           value={{
             openSize: fieldSchema['x-component-props']?.['openSize'] || openSize,
