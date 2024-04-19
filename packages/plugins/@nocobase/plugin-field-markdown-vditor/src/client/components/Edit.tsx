@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { useFieldSchema, useField, useForm } from '@formily/react';
 import Vditor from 'vditor';
-import { useCollection_deprecated, useCollectionDataSource, useCollectionManager_deprecated } from '@nocobase/client';
+import { useCollection_deprecated, useCollectionManager_deprecated, withDynamicSchemaProps } from '@nocobase/client';
 import { Field } from '@formily/core';
 import useStyle from './style';
 
@@ -18,7 +18,7 @@ function useTargetCollectionField() {
   return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
 }
 
-export function Edit(props) {
+export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange } = props;
   const { uiSchema } = useTargetCollectionField();
   const field = useField<Field>();
@@ -104,8 +104,13 @@ export function Edit(props) {
   }, [uiSchema, form, field, vdRef]);
 
   useEffect(() => {
-    if (!value) {
-      vdRef.current?.setValue('');
+    // 必须要这样，如果setValue会导致编辑器失去焦点，而focus方法只能让焦点到最开始
+    const resetStartTag = `reset-${field.address}:`;
+    if (!value || value.startsWith(resetStartTag)) {
+      let resetValue = value ?? '';
+      const resetStartTagIndex = resetValue?.indexOf(resetStartTag);
+      resetValue = resetValue.slice(resetStartTagIndex + resetStartTag.length);
+      vdRef.current?.setValue(resetValue);
       vdRef.current?.focus();
     }
   }, [value]);
@@ -123,4 +128,4 @@ export function Edit(props) {
       <div ref={containerRef}></div>
     </div>,
   );
-}
+});

@@ -3,6 +3,7 @@ import { useField } from '@formily/react';
 import React, { useRef, useEffect, useMemo, useState, CSSProperties, useCallback } from 'react';
 import Vditor from 'vditor';
 import { Popover } from 'antd';
+import { withDynamicSchemaProps } from '@nocobase/client';
 
 function convertToText(markdownText: string) {
   const content = markdownText;
@@ -33,7 +34,7 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
   return <div ref={containerRef} style={{ border: 'none', ...(props?.style ?? {}) }} />;
 }
 
-export function Display(props) {
+export const Display = withDynamicSchemaProps((props) => {
   const field = useField<Field>();
   const value = props.value ?? field.value;
 
@@ -99,4 +100,4 @@ export function Display(props) {
   }
 
   return <DisplayInner value={value} />;
-}
+});
