@@ -13,6 +13,7 @@ import {
   useTableBlockContext,
   useToken,
   withDynamicSchemaProps,
+  useDesignable,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { debounce } from 'lodash';
@@ -99,12 +100,9 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
   const { styles } = useStyles();
   const { token } = useToken();
   const api = useAPIClient();
-  const currentTheme = api.auth.getOption('theme');
-  const tableRowHeight = currentTheme === 'compact' ? 45 : 55.56;
+  const currentTheme = JSON.parse(api.auth.getOption('theme'))?.uid;
   const {
-    headerHeight = document.querySelector('.ant-table-thead')?.clientHeight || 0, // 与 antd 表格头部高度一致
     listCellWidth = '155px',
-    rowHeight = tableRowHeight,
     ganttHeight = 0,
     preStepsCount = 1,
     barFill = 60,
@@ -137,6 +135,9 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     expandAndCollapseAll,
     fieldNames,
   } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+  const { designable } = useDesignable();
+  const headerHeight = currentTheme.includes('compact') ? 45 : designable ? 65 : 55;
+  const rowHeight = currentTheme.includes('compact') ? 45 : 65;
   const ctx = useGanttBlockContext();
   const appInfo = useCurrentAppInfo();
   const { t } = useTranslation();
@@ -520,7 +521,10 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
           box-shadow: none !important;
         }
         .ant-table-row {
-          height: ${tableRowHeight}px;
+          height: ${rowHeight}px;
+        }
+        .ant-table-thead {
+          height: ${headerHeight}px;
         }
       `)}
     >

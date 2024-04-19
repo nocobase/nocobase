@@ -81,7 +81,7 @@ test.describe('creation form block schema settings', () => {
       await page.getByRole('option', { name: 'Disabled' }).click();
 
       // 保存规则
-      await page.getByRole('button', { name: 'OK' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       // 验证第一组规则 --------------------------------------------------------------------------
       // 初始状态下，longText 字段是可编辑的
@@ -117,7 +117,7 @@ test.describe('creation form block schema settings', () => {
       await page.getByLabel('variable-button').click();
       await page.getByRole('menuitemcheckbox', { name: 'Current form' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'longText' }).click();
-      await page.getByRole('button', { name: 'OK' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       // singleLineText 字段和 longText 字段都为空的情况下，longText 字段应该是可编辑的
       await expect(
@@ -712,6 +712,20 @@ test.describe('creation form block schema settings', () => {
       await page.mouse.move(300, 0);
 
       // 当新增一行时，应该显示默认值
+      await page
+        .getByTestId('drawer-Action.Container-general-Add record')
+        .getByRole('button', { name: 'Add new' })
+        .click();
+      await expect(
+        page
+          .getByRole('cell', { name: 'block-item-CollectionField-users-form-users.nickname-Nickname' })
+          .getByRole('textbox'),
+      ).toHaveValue('test default value');
+
+      // https://nocobase.height.app/T-4028/description
+      // 刷新页面后，默认值应该依然存在
+      await page.reload();
+      await page.getByRole('button', { name: 'Add new' }).click();
       await page
         .getByTestId('drawer-Action.Container-general-Add record')
         .getByRole('button', { name: 'Add new' })

@@ -146,7 +146,6 @@ export const tableBlockSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            const filters = service.params?.[1]?.filters || {};
 
             dn.emit('patch', {
               schema: {
@@ -154,6 +153,7 @@ export const tableBlockSettings = new SchemaSettings({
                 'x-decorator-props': fieldSchema['x-decorator-props'],
               },
             });
+            service.params[0].page = 1;
           },
           [dn, field.decoratorProps, fieldSchema, service],
         );
