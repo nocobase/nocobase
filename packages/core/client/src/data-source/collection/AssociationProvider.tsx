@@ -1,5 +1,5 @@
 import React, { FC, ReactNode, createContext, useContext } from 'react';
-import { CollectionFieldProvider, useCollectionField } from '../collection-field';
+import { CollectionFieldProvider, useCollectionField } from '../collection-field/CollectionFieldProvider';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
 import { Collection } from './Collection';
 import { useCollectionManager } from './CollectionManagerProvider';
