@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
+import { CollectionFieldContext, CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 type Props = {
   component: any;
@@ -22,7 +22,8 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const compile = useCompile();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
+  const collectionField = useCollectionField();
+  const { uiSchema: uiSchemaOrigin, defaultValue } = collectionField;
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
@@ -73,12 +74,17 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
-    field.component = [Component, componentProps];
+    field.component = [
+      (props) => (
+        <CollectionFieldContext.Provider value={collectionField}>
+          <Component {...props} />
+        </CollectionFieldContext.Provider>
+      ),
+      componentProps,
+    ];
   }, [uiSchema]);
-  if (!uiSchema) {
-    return null;
-  }
-  return <Component {...props} />;
+
+  return null;
 };
 
 export const CollectionField = connect((props) => {
