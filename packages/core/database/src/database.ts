@@ -315,6 +315,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this._instanceId;
   }
 
+  /**
+   * @internal
+   */
   createMigrator({ migrations }) {
     const migratorOptions: any = this.options.migrator || {};
     const context = {
@@ -336,10 +339,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
   }
 
+  /**
+   * @internal
+   */
   setContext(context: any) {
     this.context = context;
   }
 
+  /**
+   * @internal
+   */
   sequelizeOptions(options) {
     if (options.dialect === 'postgres') {
       if (!options.hooks) {
@@ -358,6 +367,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return options;
   }
 
+  /**
+   * @internal
+   */
   initListener() {
     this.on('afterConnect', async (client) => {
       if (this.inDialect('postgres')) {
@@ -605,6 +617,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.getCollection(name)?.repository;
   }
 
+  /**
+   * @internal
+   */
   addPendingField(field: RelationField) {
     const associating = this.pendingFields;
     const items = this.pendingFields.get(field.target) || [];
@@ -612,6 +627,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     associating.set(field.target, items);
   }
 
+  /**
+   * @internal
+   */
   removePendingField(field: RelationField) {
     const items = this.pendingFields.get(field.target) || [];
     const index = items.indexOf(field);
@@ -654,6 +672,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   initOperators() {
     const operators = new Map();
 
@@ -678,6 +699,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   buildField(options, context: FieldContext) {
     const { type } = options;
 
@@ -755,7 +779,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return await this.queryInterface.collectionTableExists(collection, options);
   }
 
-  public isSqliteMemory() {
+  isSqliteMemory() {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
   }
 
@@ -795,10 +819,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   async checkVersion() {
     return await checkDatabaseVersion(this);
   }
 
+  /**
+   * @internal
+   */
   async prepare() {
     if (this.isMySQLCompatibleDialect()) {
       const result = await this.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
