@@ -1,17 +1,7 @@
 import { Display } from './Display';
 import { Edit } from './Edit';
-import { connect, mapProps, mapReadPretty, observer } from '@formily/react';
-import React from 'react';
+import { connect, mapReadPretty } from '@formily/react';
 
-export const MarkdownVditor = connect(
-  Edit,
-  mapProps((props: any, field) => {
-    return {
-      ...props,
-      ...field,
-    };
-  }),
-  mapReadPretty(Display),
-);
+export const MarkdownVditor = connect(Edit, mapReadPretty(Display));
 
 export default MarkdownVditor;

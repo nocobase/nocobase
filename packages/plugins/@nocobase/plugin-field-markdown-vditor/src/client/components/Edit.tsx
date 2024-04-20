@@ -1,7 +1,12 @@
 import React, { useRef, useEffect, useMemo, useLayoutEffect } from 'react';
 import { useFieldSchema, useField, useForm } from '@formily/react';
 import Vditor from 'vditor';
-import { useCollection_deprecated, useCollectionManager_deprecated, withDynamicSchemaProps } from '@nocobase/client';
+import {
+  useAPIClient,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
+  withDynamicSchemaProps,
+} from '@nocobase/client';
 import { Field } from '@formily/core';
 import useStyle from './style';
 
@@ -19,18 +24,16 @@ function useTargetCollectionField() {
 }
 
 export const Edit = withDynamicSchemaProps((props) => {
-  const { disabled, onChange } = props;
+  const { disabled, onChange, value } = props;
   const { uiSchema } = useTargetCollectionField();
-  const field = useField<Field>();
   const form = useForm();
+  const field = useField<Field>();
 
   const vdRef = useRef<Vditor>();
   const containerRef = useRef<HTMLDivElement>();
   const containerParentRef = useRef<HTMLDivElement>();
 
-  const value = useMemo(() => {
-    return props.value ?? field.value;
-  }, [props.value, field.value]);
+  const apiClient = useAPIClient();
 
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
 
@@ -46,15 +49,9 @@ export const Edit = withDynamicSchemaProps((props) => {
       'inline-code',
       'upload',
     ];
-    if (!uploadFileCollection && toolbarConfig) {
-      const uploadToolbarIndex = toolbarConfig?.findIndex((_) => _ === 'upload');
-      if (uploadToolbarIndex) {
-        toolbarConfig.splice(uploadToolbarIndex, 1);
-      }
-    }
     const vditor = new Vditor(containerRef.current, {
       value,
-      lang: localStorage.getItem('NOCOBASE_LOCALE').replaceAll('-', '_') as any,
+      lang: apiClient.auth.locale.replaceAll('-', '_') as any,
       cache: {
         enable: false,
       },
@@ -81,15 +78,11 @@ export const Edit = withDynamicSchemaProps((props) => {
         onChange(value);
       },
       upload: {
-        url: `/api/${uploadFileCollection}:create`,
+        url: `/api/${uploadFileCollection ?? 'attachments'}:create`,
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('NOCOBASE_TOKEN')}`,
-          'X-Authenticator': 'basic',
-          'X-Hostname': 'localhost',
-          'X-Locale': 'en-US',
-          'X-Role': 'root',
-          'X-Timezone': '+08:00',
-          'X-With-ACL-Meta': 'true',
+          Authorization: `Bearer ${apiClient.auth.token}`,
+          'X-Authenticator': apiClient.auth.authenticator,
+          'X-Hostname': location.host,
         },
         multiple: false,
         fieldName: 'file',
@@ -113,7 +106,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [uiSchema, form, field, vdRef]);
+  }, [uiSchema, form, vdRef]);
 
   useEffect(() => {
     // 必须要这样，如果setValue会导致编辑器失去焦点，而focus方法只能让焦点到最开始

@@ -1,14 +1,9 @@
 import { Plugin } from '@nocobase/server';
-import { MarkdownVditorField } from './markdown-vditor-field';
 
 export class PluginFieldMarkdownVditorServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {
-    this.db.registerFieldTypes({
-      vditor: MarkdownVditorField,
-    });
-  }
+  async beforeLoad() {}
 
   async load() {}
 

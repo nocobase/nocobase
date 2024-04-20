@@ -26,7 +26,6 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
       'x-component': 'CollectionSelect',
       'x-component-props': { filter: (collection) => collection?.options?.template === 'file' },
       'x-decorator': 'FormItem',
-      required: true,
       default: '',
       'x-reactions': {
         fulfill: {
