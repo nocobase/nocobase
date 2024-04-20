@@ -2,91 +2,154 @@
   "users:list": {
     "data": [
       {
-        "f_o3y6p9gf1gx": null,
-        "createdAt": "2023-03-30T07:53:10.941Z",
-        "updatedAt": "2024-04-12T03:27:45.748Z",
-        "appLang": "zh-CN",
+        "createdAt": "2024-04-07T06:50:37.797Z",
+        "updatedAt": "2024-04-07T06:50:37.797Z",
+        "appLang": null,
         "createdById": null,
         "email": "admin@nocobase.com",
-        "f_2ytvt3phlp2": null,
-        "f_3jl554hv7lt": null,
-        "f_51qityssoq1": null,
-        "f_dybwctlb233": null,
-        "f_hbegrnglpv2": null,
-        "f_ndkyrfvh9il": null,
-        "f_o33xmbd62fj": null,
-        "f_t52vqdtfv4h": null,
-        "f_vak0o8efq4v": [],
+        "f_1gx8uyn3wva": 1,
         "id": 1,
         "nickname": "Super Admin",
         "phone": null,
-        "systemSettings": {
-          "theme": "compact",
-          "themeId": 1
-        },
-        "updatedById": 1,
-        "username": "nocobase"
+        "systemSettings": {},
+        "updatedById": null,
+        "username": "nocobase",
+        "roles": [
+          {
+            "createdAt": "2024-04-07T06:50:37.700Z",
+            "updatedAt": "2024-04-07T06:50:37.700Z",
+            "allowConfigure": null,
+            "allowNewMenu": true,
+            "default": true,
+            "description": null,
+            "hidden": false,
+            "name": "member",
+            "snippets": ["!pm", "!pm.*", "!ui.*"],
+            "strategy": {
+              "actions": ["view", "update:own", "destroy:own", "create"]
+            },
+            "title": "{{t(\"Member\")}}",
+            "rolesUsers": {
+              "createdAt": "2024-04-07T06:50:37.854Z",
+              "updatedAt": "2024-04-07T06:50:37.854Z",
+              "default": null,
+              "roleName": "member",
+              "userId": 1
+            }
+          },
+          {
+            "createdAt": "2024-04-07T06:50:37.622Z",
+            "updatedAt": "2024-04-07T06:50:37.622Z",
+            "allowConfigure": null,
+            "allowNewMenu": null,
+            "default": false,
+            "description": null,
+            "hidden": true,
+            "name": "root",
+            "snippets": ["pm", "pm.*", "ui.*"],
+            "strategy": null,
+            "title": "{{t(\"Root\")}}",
+            "rolesUsers": {
+              "createdAt": "2024-04-07T06:50:38.152Z",
+              "updatedAt": "2024-04-07T06:50:38.186Z",
+              "default": true,
+              "roleName": "root",
+              "userId": 1
+            }
+          },
+          {
+            "createdAt": "2024-04-07T06:50:37.657Z",
+            "updatedAt": "2024-04-07T06:50:37.657Z",
+            "allowConfigure": true,
+            "allowNewMenu": true,
+            "default": false,
+            "description": null,
+            "hidden": false,
+            "name": "admin",
+            "snippets": ["pm", "pm.*", "ui.*"],
+            "strategy": {
+              "actions": ["create", "view", "update", "destroy"]
+            },
+            "title": "{{t(\"Admin\")}}",
+            "rolesUsers": {
+              "createdAt": "2024-04-07T06:50:38.152Z",
+              "updatedAt": "2024-04-07T06:50:38.152Z",
+              "default": null,
+              "roleName": "admin",
+              "userId": 1
+            }
+          }
+        ]
       }
-    ]
+    ],
+    "meta": {
+      "count": 1,
+      "page": 1,
+      "pageSize": 20,
+      "totalPage": 1,
+      "allowedActions": {
+        "view": [1],
+        "update": [1],
+        "destroy": []
+      }
+    }
   },
   "roles:list": {
     "data": [
       {
-        "createdAt": "2023-08-28T07:45:40.912Z",
-        "updatedAt": "2024-03-21T12:35:33.196Z",
+        "createdAt": "2024-04-07T06:50:37.622Z",
+        "updatedAt": "2024-04-07T06:50:37.622Z",
         "allowConfigure": null,
         "allowNewMenu": null,
-        "default": true,
+        "default": false,
         "description": null,
-        "f_8k82tacviz6": null,
-        "f_dbwa05h0xe4": null,
-        "f_eextl2qekkv": [],
-        "f_fe1anqxqp8k": null,
-        "f_wdlrc4cj67x": null,
-        "hidden": false,
-        "name": "test",
-        "snippets": ["!app", "!pm", "!pm.*", "ui.*"],
+        "hidden": true,
+        "name": "root",
+        "snippets": ["pm", "pm.*", "ui.*"],
         "strategy": null,
-        "title": "测试角色"
+        "title": "{{t(\"Root\")}}"
       },
       {
-        "createdAt": "2023-03-30T07:53:10.920Z",
-        "updatedAt": "2024-03-11T06:09:28.859Z",
-        "allowConfigure": false,
+        "createdAt": "2024-04-07T06:50:37.657Z",
+        "updatedAt": "2024-04-07T06:50:37.657Z",
+        "allowConfigure": true,
         "allowNewMenu": true,
         "default": false,
-        "description": "admin description",
-        "f_8k82tacviz6": null,
-        "f_dbwa05h0xe4": null,
-        "f_eextl2qekkv": [],
-        "f_fe1anqxqp8k": null,
-        "f_wdlrc4cj67x": null,
+        "description": null,
         "hidden": false,
         "name": "admin",
-        "snippets": ["!pm.collection-manager.collections", "!pm.roles", "app", "pm", "pm.*", "ui.*"],
+        "snippets": ["pm", "pm.*", "ui.*"],
         "strategy": {
           "actions": ["create", "view", "update", "destroy"]
         },
         "title": "{{t(\"Admin\")}}"
       },
       {
-        "createdAt": "2023-03-30T07:53:10.914Z",
-        "updatedAt": "2023-04-06T08:28:39.668Z",
-        "allowConfigure": false,
-        "allowNewMenu": null,
-        "default": false,
+        "createdAt": "2024-04-07T06:50:37.700Z",
+        "updatedAt": "2024-04-07T06:50:37.700Z",
+        "allowConfigure": null,
+        "allowNewMenu": true,
+        "default": true,
         "description": null,
-        "f_8k82tacviz6": null,
-        "f_dbwa05h0xe4": null,
-        "f_eextl2qekkv": [],
-        "f_fe1anqxqp8k": null,
-        "f_wdlrc4cj67x": null,
-        "hidden": true,
-        "name": "root",
-        "snippets": ["pm", "pm.*", "ui.*"],
-        "strategy": null,
-        "title": "{{t(\"Root\")}}"
+        "hidden": false,
+        "name": "member",
+        "snippets": ["!pm", "!pm.*", "!ui.*"],
+        "strategy": {
+          "actions": ["view", "update:own", "destroy:own", "create"]
+        },
+        "title": "{{t(\"Member\")}}"
       }
-    ]
+    ],
+    "meta": {
+      "count": 3,
+      "page": 1,
+      "pageSize": 20,
+      "totalPage": 1,
+      "allowedActions": {
+        "view": ["root", "admin", "member"],
+        "update": ["root", "admin", "member"],
+        "destroy": []
+      }
+    }
   }
 }

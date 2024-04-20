@@ -21,7 +21,8 @@ export async function checkSelectSetting(options: SelectSettingOptions) {
 
   if (options.options) {
     // 打开下拉框
-    await userEvent.click(formItem.querySelector('.ant-select-selection-item'));
+    expect(formItem.querySelector('.ant-select-selector')).toBeInTheDocument();
+    await userEvent.click(formItem.querySelector('.ant-select-selector'));
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).toBeInTheDocument();
     });

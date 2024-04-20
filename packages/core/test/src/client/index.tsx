@@ -22,3 +22,4 @@ export * from './renderHookWithApp';
 export * from './renderSettings';
 export * from './renderSingleSettings';
 export * from './settingsChecker';
+export * from './commonSettingsChecker';

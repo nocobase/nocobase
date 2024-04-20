@@ -480,7 +480,7 @@ describe('SchemaSettingOptions', () => {
             await userEvent.click(document.querySelector('.ant-select-selector'));
 
             await waitFor(() => {
-              expect(screen.queryByText('test')).toBeInTheDocument();
+              expect(screen.queryByText('admin')).toBeInTheDocument();
             });
           },
           options: [
@@ -491,7 +491,7 @@ describe('SchemaSettingOptions', () => {
                 await userEvent.click(document.querySelector('.ant-select-selector'));
 
                 await waitFor(() => {
-                  expect(screen.queryByText('测试角色')).toBeInTheDocument();
+                  expect(screen.queryByText('Admin')).toBeInTheDocument();
                 });
               },
             },

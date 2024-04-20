@@ -7,6 +7,7 @@ export interface CheckSwitchSettingOptions {
   beforeClick?: () => Promise<void> | void;
   afterFirstClick?: () => Promise<void> | void;
   afterSecondClick?: () => Promise<void> | void;
+  afterThirdClick?: () => Promise<void> | void;
 }
 
 export async function checkSwitchSetting(options: CheckSwitchSettingOptions) {
@@ -44,5 +45,17 @@ export async function checkSwitchSetting(options: CheckSwitchSettingOptions) {
     });
 
     await options.afterSecondClick();
+  }
+
+  // 第三次点击
+  if (options.afterThirdClick) {
+    await userEvent.click(screen.getByText(options.title));
+    await waitFor(() => {
+      const switchElement = formItem.querySelector('button[role=switch]');
+      const newChecked = switchElement.getAttribute('aria-checked');
+      expect(newChecked).not.toBe(oldChecked);
+    });
+
+    await options.afterThirdClick();
   }
 }

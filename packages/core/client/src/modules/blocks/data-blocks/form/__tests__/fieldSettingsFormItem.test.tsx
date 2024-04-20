@@ -7,6 +7,7 @@ import {
   renderReadPrettySingleSettings,
   renderSettings,
   renderReadPrettySettings,
+  checkFieldTitle,
 } from '@nocobase/test/client';
 import { FilterFormBlockProvider, FormBlockProvider, FormItem, fieldSettingsFormItem } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
@@ -297,31 +298,8 @@ describe('FieldSettingsFormItem', () => {
 
   describe('menu items', () => {
     test('Edit field title', async () => {
-      const oldValue = 'Nickname';
-      const newValue = 'new test';
       await renderSettings(commonFieldOptions());
-      await checkSettings([
-        {
-          type: 'modal',
-          title: 'Edit field title',
-          modalChecker: {
-            modalTitle: 'Edit field title',
-            formItems: [
-              {
-                type: 'input',
-                label: 'Field title',
-                oldValue,
-                newValue,
-              },
-            ],
-            async afterSubmit() {
-              await waitFor(() => {
-                expect(screen.queryByText(newValue)).toBeInTheDocument();
-              });
-            },
-          },
-        },
-      ]);
+      await checkFieldTitle('Nickname');
     });
 
     test('Display title', async () => {
@@ -555,13 +533,13 @@ describe('FieldSettingsFormItem', () => {
         {
           type: 'select',
           title: 'Title field',
-          oldValue: 'Role name',
+          // oldValue: 'Role name',
           async beforeSelect() {
             expect(screen.queryByTestId('select-object-multiple')).toBeInTheDocument();
             await userEvent.click(document.querySelector('.ant-select-selector'));
 
             await waitFor(() => {
-              expect(screen.queryByText('测试角色')).toBeInTheDocument();
+              expect(screen.queryByText('Admin')).toBeInTheDocument();
             });
           },
           options: [
@@ -572,7 +550,7 @@ describe('FieldSettingsFormItem', () => {
                 await userEvent.click(document.querySelector('.ant-select-selector'));
 
                 await waitFor(() => {
-                  expect(screen.queryByText('test')).toBeInTheDocument();
+                  expect(screen.queryByText('admin')).toBeInTheDocument();
                 });
               },
             },

@@ -1,7 +1,8 @@
 import React, { ComponentType } from 'react';
 import MockAdapter from 'axios-mock-adapter';
-import { AxiosInstance } from 'axios';
-import { set, get } from 'lodash';
+import { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { set, get, pick } from 'lodash';
+import { useFieldSchema, observer } from '@formily/react';
 
 // @ts-ignore
 import {
@@ -20,21 +21,41 @@ import dataSourceMainCollections from './dataSourceMainCollections.json';
 import dataSource2 from './dataSource2.json';
 import dataSourceMainData from './dataSourceMainData.json';
 
+const defaultApis = {
+  'uiSchemas:patch': { data: { result: 'ok' } },
+  'uiSchemas:saveAsTemplate': { data: { result: 'ok' } },
+  ...dataSourceMainData,
+};
+
 type URL = string;
 type ResponseData = any;
 
 type MockApis = Record<URL, ResponseData>;
 type AppOrOptions = Application | ApplicationOptions;
 
+function getProcessMockData(apis: Record<string, any>, key: string) {
+  return (config: AxiosRequestConfig) => {
+    if (!apis[key]) return [404, { data: { message: 'mock data not found' } }];
+    if (config?.params?.pageSize || config?.params?.page) {
+      const { data, meta } = apis[key];
+
+      const pageSize = config.params.pageSize || meta?.pageSize;
+      const page = config.params.page || meta?.page;
+      return [200, { data: data.slice(pageSize * (page - 1), pageSize), meta: { ...meta, page, pageSize } }];
+    }
+    return [200, apis[key]];
+  };
+}
+
 export const mockApi = (axiosInstance: AxiosInstance, apis: MockApis = {}) => {
   const mock = new MockAdapter(axiosInstance);
   Object.keys(apis).forEach((key) => {
-    mock.onAny(key).reply(200, apis[key]);
+    mock.onAny(key).reply(getProcessMockData(apis, key));
   });
 
   return (apis: MockApis = {}) => {
     Object.keys(apis).forEach((key) => {
-      mock.onAny(key).reply(200, apis[key]);
+      mock.onAny(key).reply(getProcessMockData(apis, key));
     });
   };
 };
@@ -52,11 +73,6 @@ export interface GetAppOptions {
   schemaSettings?: SchemaSettings;
   enableMultipleDataSource?: boolean;
 }
-
-const defaultApis = {
-  'uiSchemas:patch': { data: { result: 'ok' } },
-  ...dataSourceMainData,
-};
 
 export const getApp = (options: GetAppOptions) => {
   const {
@@ -223,3 +239,22 @@ export const getReadPrettyAppComponentWithSchemaSettings = (options: GetAppCompo
   const App = getAppComponent(options);
   return App;
 };
+
+export function withSchema(Component: ComponentType) {
+  return observer((props) => {
+    const schema = useFieldSchema();
+    const schemaValue = pick(schema.toJSON(), [
+      'title',
+      'description',
+      'enum',
+      'x-component-props',
+      'x-decorator-props',
+    ]);
+    return (
+      <>
+        <pre data-testid={`test-schema`}>{JSON.stringify(schemaValue, undefined, 2)}</pre>
+        <Component {...props} />
+      </>
+    );
+  });
+}

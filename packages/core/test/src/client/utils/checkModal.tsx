@@ -11,6 +11,7 @@ export interface CheckModalOptions {
   submitText?: string;
   contentText?: string;
   beforeCheck?: () => Promise<void> | void;
+  customCheck?: () => Promise<void> | void;
   formItems?: FormItemCheckOptions[];
   afterSubmit?: () => Promise<void> | void;
 }
@@ -44,6 +45,10 @@ export async function checkModal(options: CheckModalOptions) {
 
   if (options.beforeCheck) {
     await options.beforeCheck();
+  }
+
+  if (options.customCheck) {
+    await options.customCheck();
   }
 
   await checkFormItems(formItems);
