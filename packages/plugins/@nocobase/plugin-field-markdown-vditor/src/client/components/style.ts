@@ -1,6 +1,6 @@
 import { genStyleHook } from '@nocobase/client';
 
-export default genStyleHook('nb-calendar', (token) => {
+export default genStyleHook('nb-field-markdown-vditor', (token) => {
   const { componentCls } = token;
 
   return {
