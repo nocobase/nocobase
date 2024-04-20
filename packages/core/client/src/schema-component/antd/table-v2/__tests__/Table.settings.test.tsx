@@ -4,53 +4,22 @@ import {
   TableBlockProvider,
   useTableBlockDecoratorProps,
 } from '@nocobase/client';
-import { checkSettings, renderSettings, checkSchema, screen, userEvent, waitFor } from '@nocobase/test/client';
+import {
+  checkSettings,
+  renderSettings,
+  checkSchema,
+  screen,
+  userEvent,
+  waitFor,
+  CheckSettingsOptions,
+} from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
 
 describe('Table.settings', () => {
   const TableBlockProviderWithSchema = withSchema(TableBlockProvider);
-  beforeAll(async () => {
-    await renderSettings({
-      designable: true,
-      enableUserListDataBlock: true,
-      schema: {
-        type: 'void',
-        'x-component': 'FixedBlock',
-        properties: {
-          table: {
-            type: 'void',
-            'x-decorator': 'TableBlockProviderWithSchema',
-            'x-use-decorator-props': 'useTableBlockDecoratorProps',
-            'x-decorator-props': {
-              collection: 'users',
-              dataSource: 'main',
-              action: 'list',
-              rowKey: 'id',
-              showIndex: true,
-              dragSort: false,
-            },
-            'x-toolbar': 'BlockSchemaToolbar',
-            'x-settings': 'blockSettings:table',
-            'x-component': 'CardItem',
-            'x-index': 1,
-          },
-        },
-      },
-      appOptions: {
-        components: {
-          TableBlockProviderWithSchema,
-          FixedBlock,
-        },
-        plugins: [BlockSchemaComponentPlugin],
-        scopes: {
-          useTableBlockDecoratorProps,
-        },
-      },
-    });
-  });
 
-  test('menu list', async () => {
-    await checkSettings(
+  const checkTableSettings = (more: CheckSettingsOptions[] = []) => {
+    return checkSettings(
       [
         {
           title: 'Edit block title',
@@ -245,8 +214,94 @@ describe('Table.settings', () => {
           title: 'Delete',
           type: 'delete',
         },
+        ...more,
       ],
       true,
     );
+  };
+
+  const getRenderSettingsOptions = (isOld?: boolean, collection = 'users') => {
+    const toolbarSchema = isOld
+      ? {
+          'x-designer': 'TableBlockDesigner',
+        }
+      : {
+          'x-toolbar': 'BlockSchemaToolbar',
+          'x-settings': 'blockSettings:table',
+        };
+
+    return {
+      designable: true,
+      enableUserListDataBlock: true,
+      schema: {
+        type: 'void',
+        'x-component': 'FixedBlock',
+        properties: {
+          table: {
+            type: 'void',
+            'x-decorator': 'TableBlockProviderWithSchema',
+            'x-use-decorator-props': 'useTableBlockDecoratorProps',
+            'x-decorator-props': {
+              collection: collection,
+              dataSource: 'main',
+              action: 'list',
+              rowKey: 'id',
+              showIndex: true,
+              dragSort: false,
+              params: {
+                pageSize: 20,
+              },
+            },
+            ...toolbarSchema,
+            'x-component': 'CardItem',
+            'x-index': 1,
+          },
+        },
+      },
+      appOptions: {
+        components: {
+          TableBlockProviderWithSchema,
+          FixedBlock,
+        },
+        plugins: [BlockSchemaComponentPlugin],
+        scopes: {
+          useTableBlockDecoratorProps,
+        },
+      },
+    };
+  };
+
+  test('menu list', async () => {
+    await renderSettings(getRenderSettingsOptions());
+    await checkTableSettings();
+  });
+
+  test('old schema', async () => {
+    await renderSettings(getRenderSettingsOptions(true));
+    await checkTableSettings();
+  });
+
+  test('tree collection', async () => {
+    await renderSettings(getRenderSettingsOptions(false, 'tree'));
+    await checkSettings([
+      {
+        title: 'Tree table',
+        type: 'switch',
+        async afterFirstClick() {
+          await checkSchema({
+            'x-decorator-props': {
+              treeTable: true,
+            },
+          });
+        },
+        async afterSecondClick() {
+          await checkSchema({
+            'x-decorator-props': {
+              treeTable: false,
+            },
+          });
+        },
+      },
+    ]);
   });
 });

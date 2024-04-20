@@ -151,5 +151,9 @@
         "destroy": []
       }
     }
+  },
+  "tree:list": {
+    "data": [],
+    "meta": {}
   }
 }

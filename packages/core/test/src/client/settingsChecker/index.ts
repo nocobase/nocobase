@@ -10,7 +10,7 @@ export * from './modal';
 export * from './switch';
 export * from './select';
 
-type CheckSettingsOptions =
+export type CheckSettingsOptions =
   | ({ type: 'switch' } & CheckSwitchSettingOptions)
   | ({ type: 'modal' } & CheckModalSettingOptions)
   | ({ type: 'select' } & SelectSettingOptions)

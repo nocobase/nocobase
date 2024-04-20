@@ -491,8 +491,8 @@
   },
   {
     "key": "24gntrrr5a6",
-    "name": "t_4uamm7v51dj",
-    "title": "TreeCollection ",
+    "name": "tree",
+    "title": "TreeCollection",
     "inherit": false,
     "hidden": false,
     "description": null,
