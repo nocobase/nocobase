@@ -5,7 +5,10 @@ export default genStyleHook('nb-field-markdown-vditor', (token) => {
 
   return {
     [componentCls]: {
-      '.vditor .vditor-toolbar': { paddingLeft: ' 16px !important' },
+      overflowX: 'hidden',
+      '.vditor': { borderRadius: 8, minWidth: 660 },
+      '.vditor .vditor-content': { borderRadius: '0 0 8px 8px', overflow: 'hidden' },
+      '.vditor .vditor-toolbar': { paddingLeft: ' 16px !important', borderRadius: '8px 8px 0 0' },
       '.vditor .vditor-content .vditor-ir .vditor-reset': { paddingLeft: ' 16px !important' },
     },
   };

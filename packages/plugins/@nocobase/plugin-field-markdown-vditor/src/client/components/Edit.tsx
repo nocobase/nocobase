@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useLayoutEffect } from 'react';
 import { useFieldSchema, useField, useForm } from '@formily/react';
 import Vditor from 'vditor';
 import { useCollection_deprecated, useCollectionManager_deprecated, withDynamicSchemaProps } from '@nocobase/client';
@@ -26,6 +26,7 @@ export const Edit = withDynamicSchemaProps((props) => {
 
   const vdRef = useRef<Vditor>();
   const containerRef = useRef<HTMLDivElement>();
+  const containerParentRef = useRef<HTMLDivElement>();
 
   const value = useMemo(() => {
     return props.value ?? field.value;
@@ -64,6 +65,9 @@ export const Edit = withDynamicSchemaProps((props) => {
         },
       },
       toolbar: toolbarConfig,
+      fullscreen: {
+        index: 120,
+      },
       minHeight: 200,
       after: () => {
         vdRef.current = vditor;
@@ -133,9 +137,28 @@ export const Edit = withDynamicSchemaProps((props) => {
     }
   }, [disabled]);
 
+  useLayoutEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const target = entry.target;
+        if (target.className.includes('vditor--fullscreen')) {
+          document.body.appendChild(target);
+        } else {
+          containerParentRef.current?.appendChild(target);
+        }
+      }
+    });
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      observer.unobserve(containerRef.current);
+    };
+  }, []);
+
   return wrapSSR(
-    <div className={`${hashId} ${containerClassName}`}>
-      <div ref={containerRef}></div>
+    <div ref={containerParentRef} className={`${hashId} ${containerClassName}`}>
+      <div id={hashId} ref={containerRef}></div>
     </div>,
   );
 });
