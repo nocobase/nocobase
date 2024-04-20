@@ -13,6 +13,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
   sortable = true;
   default = {
     type: 'text',
+    length: 'long',
     uiSchema: {
       type: 'string',
       'x-component': 'MarkdownVditor',

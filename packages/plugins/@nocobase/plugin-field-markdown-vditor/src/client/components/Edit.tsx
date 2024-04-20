@@ -1,32 +1,26 @@
-import React, { useRef, useEffect, useMemo, useLayoutEffect } from 'react';
-import { useFieldSchema, useField, useForm } from '@formily/react';
+import React, { useRef, useEffect, useLayoutEffect } from 'react';
+import { useFieldSchema, useField } from '@formily/react';
 import Vditor from 'vditor';
-import {
-  useAPIClient,
-  useCollectionManager_deprecated,
-  useCollection_deprecated,
-  withDynamicSchemaProps,
-} from '@nocobase/client';
+import { useAPIClient, useCollection, useCollectionManager, withDynamicSchemaProps } from '@nocobase/client';
 import { Field } from '@formily/core';
 import useStyle from './style';
 
 function useTargetCollectionField() {
   const fieldSchema = useFieldSchema();
-  const providedCollection = useCollection_deprecated();
-  const { getCollection, getCollectionField } = useCollectionManager_deprecated();
+  const providedCollection = useCollection();
+  const collectionManager = useCollectionManager();
   const paths = (fieldSchema.name as string).split('.');
   let collection: any = providedCollection;
   for (let i = 0; i < paths.length - 1; i++) {
     const field = collection.getField(paths[i]);
-    collection = getCollection(field.target);
+    collection = collectionManager.getCollection(field.target);
   }
-  return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
+  return collectionManager.getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
 }
 
 export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange, value } = props;
   const { uiSchema } = useTargetCollectionField();
-  const form = useForm();
   const field = useField<Field>();
 
   const vdRef = useRef<Vditor>();
@@ -106,7 +100,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [uiSchema, form, vdRef]);
+  }, [uiSchema, vdRef]);
 
   useEffect(() => {
     // 必须要这样，如果setValue会导致编辑器失去焦点，而focus方法只能让焦点到最开始
