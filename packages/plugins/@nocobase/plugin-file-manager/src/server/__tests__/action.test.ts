@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { getApp } from '.';
-import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
+import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../../constants';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
 
@@ -13,17 +13,16 @@ describe('action', () => {
   let db;
   let StorageRepo;
   let AttachmentRepo;
+  let local1;
 
   beforeEach(async () => {
-    app = await getApp({
-      database: {},
-    });
+    app = await getApp();
     agent = app.agent();
     db = app.db;
 
     AttachmentRepo = db.getCollection('attachments').repository;
     StorageRepo = db.getCollection('storages').repository;
-    await StorageRepo.create({
+    local1 = await StorageRepo.create({
       values: {
         name: 'local1',
         type: STORAGE_TYPE_LOCAL,
@@ -327,6 +326,39 @@ describe('action', () => {
 
       const attachmentExists = await AttachmentRepo.findById(attachment.id);
       expect(attachmentExists).toBeNull();
+    });
+  });
+
+  describe('storage actions', () => {
+    describe('getRules', () => {
+      it('get rules without key as default storage', async () => {
+        const { body, status } = await agent.resource('storages').getRules();
+        expect(status).toBe(200);
+        expect(body.data).toEqual({});
+      });
+
+      it('get rules by storage id as empty rules', async () => {
+        const { body, status } = await agent.resource('storages').getRules({ filterByTk: 1 });
+        expect(status).toBe(200);
+        expect(body.data).toEqual({});
+      });
+
+      it('get rules by unexisted id as 404', async () => {
+        const { body, status } = await agent.resource('storages').getRules({ filterByTk: -1 });
+        expect(status).toBe(404);
+      });
+
+      it('get rules by storage id', async () => {
+        const { body, status } = await agent.resource('storages').getRules({ filterByTk: local1.id });
+        expect(status).toBe(200);
+        expect(body.data).toMatchObject({ size: 1024 });
+      });
+
+      it('get rules by storage name', async () => {
+        const { body, status } = await agent.resource('storages').getRules({ filterByTk: local1.name });
+        expect(status).toBe(200);
+        expect(body.data).toMatchObject({ size: 1024 });
+      });
     });
   });
 });

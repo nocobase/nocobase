@@ -1,26 +1,13 @@
 import { NAMESPACE } from '../../locale';
+import common from './common';
 
 export default {
   title: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`,
   name: 'ali-oss',
   properties: {
-    title: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-    },
-    name: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-disabled': '{{ !createOnly }}',
-      required: true,
-      default: '{{ useNewId("s_") }}',
-      description:
-        '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
-    },
-    baseUrl: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-    },
+    title: common.title,
+    name: common.name,
+    baseUrl: common.baseUrl,
     options: {
       type: 'object',
       'x-component': 'div',
@@ -66,19 +53,9 @@ export default {
         },
       },
     },
-    path: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-    },
-    default: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-content': `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
-    },
-    paranoid: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
-    },
+    path: common.path,
+    rules: common.rules,
+    default: common.default,
+    paranoid: common.paranoid,
   },
 };

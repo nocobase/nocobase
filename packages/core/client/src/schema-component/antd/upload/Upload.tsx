@@ -1,18 +1,31 @@
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { Upload as AntdUpload, Button, Modal, Progress, Space, UploadFile } from 'antd';
+import { Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip, UploadFile } from 'antd';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
-import React, { useEffect, useRef, useState } from 'react';
+import { filesize } from 'filesize';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import { ReadPretty } from './ReadPretty';
-import { isImage, isPdf, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
+import {
+  DEFAULT_MAX_FILE_SIZE,
+  isImage,
+  isPdf,
+  normalizeFile,
+  toArr,
+  toFileList,
+  toValueItem,
+  useStorageValidator,
+  useUploadProps,
+} from './shared';
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
+import { useCollection_deprecated } from '../../../collection-manager';
+import { useCollectionField } from '../../../data-source';
 
 export const Upload: ComposedUpload = connect(
   (props: UploadProps) => {
@@ -24,174 +37,222 @@ export const Upload: ComposedUpload = connect(
   mapReadPretty(ReadPretty.Upload),
 );
 
+function useSizeHint(size: number = DEFAULT_MAX_FILE_SIZE) {
+  const { t, i18n } = useTranslation();
+  const sizeString = filesize(size, { base: 2, standard: 'jedec', locale: i18n.language });
+  return size !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
+}
+
+function FileListItem(props) {
+  const { file, disabled, onPreview, onDelete: propsOnDelete } = props;
+  const { componentCls: prefixCls } = useStyles();
+  const { t } = useTranslation();
+  const handleClick = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onPreview?.(file);
+    },
+    [file, onPreview],
+  );
+  const onDelete = useCallback(() => {
+    propsOnDelete?.(file);
+  }, [file, propsOnDelete]);
+
+  const item = [
+    <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
+      {file.imageUrl && <img src={file.imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />}
+    </span>,
+    <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
+      {file.status === 'uploading' ? t('Uploading') : file.title}
+    </span>,
+  ];
+  const wrappedItem = file.id ? (
+    <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
+      {item}
+    </a>
+  ) : (
+    <span className={`${prefixCls}-span`}>{item}</span>
+  );
+
+  const content = (
+    <div
+      className={cls(
+        `${prefixCls}-list-item`,
+        `${prefixCls}-list-item-${file.status ?? 'done'}`,
+        `${prefixCls}-list-item-list-type-picture-card`,
+      )}
+    >
+      <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
+      <span className={`${prefixCls}-list-item-actions`}>
+        <Space size={3}>
+          {file.id && (
+            <Button
+              size={'small'}
+              type={'text'}
+              icon={<DownloadOutlined />}
+              onClick={() => {
+                saveAs(file.url, `${file.title}${file.extname}`);
+              }}
+            />
+          )}
+          {!disabled && <Button size={'small'} type={'text'} icon={<DeleteOutlined />} onClick={onDelete} />}
+        </Space>
+      </span>
+      {file.status === 'uploading' && (
+        <div className={`${prefixCls}-list-item-progress`}>
+          <Progress strokeWidth={2} type={'line'} showInfo={false} percent={file.percent} />
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}>
+      {file.status === 'error' ? (
+        <Tooltip title={file.response} getPopupContainer={(node) => node.parentNode as HTMLElement}>
+          {content}
+        </Tooltip>
+      ) : (
+        content
+      )}
+    </div>
+  );
+}
+
 Upload.Attachment = connect((props: UploadProps) => {
   const { disabled, multiple, value, onChange } = props;
   const [fileList, setFileList] = useState<any[]>([]);
-  const [sync, setSync] = useState(true);
-  const images = fileList;
+  const [pendingList, setPendingList] = useState<any[]>([]);
   const [fileIndex, setFileIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { t } = useTranslation();
   const uploadProps = useUploadProps({ ...props });
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
-  const internalFileList = useRef([]);
+  const field = useCollectionField();
 
   function closeIFrameModal() {
     setVisible(false);
   }
   useEffect(() => {
-    if (sync) {
-      const fileList = toFileList(value);
-      setFileList(fileList);
-      internalFileList.current = fileList;
-    }
-  }, [value, sync]);
+    const fileList = toFileList(value);
+    setFileList(fileList);
+  }, [value, pendingList]);
+
+  const onUploadChange = useCallback(
+    (info) => {
+      if (multiple) {
+        const uploadedList = info.fileList.filter((file) => file.status === 'done');
+        if (uploadedList.length) {
+          const valueList = [...(value ?? []), ...uploadedList.map(toValueItem)];
+          onChange?.(valueList);
+        }
+        setPendingList(info.fileList.filter((file) => file.status !== 'done').map(normalizeFile));
+      } else {
+        // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
+        const file = info.fileList.find((f) => f.uid === info.file.uid);
+        if (file.status === 'done') {
+          onChange?.(toValueItem(file));
+          setPendingList([]);
+        } else {
+          setPendingList([normalizeFile(file)]);
+        }
+      }
+    },
+    [value, multiple, onChange],
+  );
+
+  const onPreview = useCallback(
+    (file) => {
+      const index = file.id ? fileList.findIndex((item) => item.id === file.id) : pendingList.indexOf(file);
+      if (isImage(file)) {
+        setFileType('image');
+        setVisible(true);
+        setFileIndex(index);
+      } else if (isPdf(file)) {
+        setVisible(true);
+        setFileIndex(index);
+        setFileType('pdf');
+      } else {
+        if (file.id) {
+          saveAs(file.url, `${file.title}${file.extname}`);
+        }
+      }
+    },
+    [fileList, pendingList],
+  );
+
+  const onDelete = useCallback(
+    (file) => {
+      if (file.id) {
+        if (multiple) {
+          onChange(value.filter((item) => item.id !== file.id));
+        } else {
+          onChange(null);
+        }
+      } else {
+        setPendingList((prevPendingList) => {
+          const index = prevPendingList.indexOf(file);
+          prevPendingList.splice(index, 1);
+          return [...prevPendingList];
+        });
+      }
+    },
+    [multiple, onChange, value],
+  );
+
+  const { rules, validator: beforeUpload } = useStorageValidator(field['storage'] ?? '');
+
+  const { mimetype: accept, size = DEFAULT_MAX_FILE_SIZE } = rules ?? {};
+  const sizeHint = useSizeHint(size);
 
   return wrapSSR(
     <div>
       <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
         <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-          {fileList.map((file) => {
-            const handleClick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const index = fileList.indexOf(file);
-              if (isImage(file.extname)) {
-                setFileType('image');
-                setVisible(true);
-                setFileIndex(index);
-              } else if (isPdf(file.extname)) {
-                setVisible(true);
-                setFileIndex(index);
-                setFileType('pdf');
-              } else {
-                saveAs(file.url, `${file.title}${file.extname}`);
-              }
-            };
-            return (
-              <div
-                key={file.uid || file.id}
-                className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}
-              >
-                <div
-                  className={cls(
-                    `${prefixCls}-list-item`,
-                    `${prefixCls}-list-item-done`,
-                    `${prefixCls}-list-item-list-type-picture-card`,
-                  )}
-                >
-                  <div className={`${prefixCls}-list-item-info`}>
-                    <span className={`${prefixCls}-span`}>
-                      <a
-                        className={`${prefixCls}-list-item-thumbnail`}
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={handleClick}
-                      >
-                        {file.imageUrl && (
-                          <img src={file.imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />
-                        )}
-                      </a>
-                      <a
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`${prefixCls}-list-item-name`}
-                        title={file.title}
-                        href={file.url}
-                        onClick={handleClick}
-                      >
-                        {file.status === 'uploading' ? t('Uploading') : file.title}
-                      </a>
-                    </span>
-                  </div>
-                  <span className={`${prefixCls}-list-item-actions`}>
-                    <Space size={3}>
-                      <Button
-                        size={'small'}
-                        type={'text'}
-                        icon={<DownloadOutlined />}
-                        onClick={() => {
-                          saveAs(file.url, `${file.title}${file.extname}`);
-                        }}
-                      />
-                      {!disabled && (
-                        <Button
-                          size={'small'}
-                          type={'text'}
-                          icon={<DeleteOutlined />}
-                          onClick={() => {
-                            setSync(false);
-                            setFileList((prevFileList) => {
-                              if (!multiple) {
-                                onChange?.(null as any);
-                                setSync(true);
-                                return [];
-                              }
-                              const index = prevFileList.indexOf(file);
-                              prevFileList.splice(index, 1);
-                              internalFileList.current = internalFileList.current.filter(
-                                (item) => item.uid !== file.uid,
-                              );
-                              onChange?.(toValue([...prevFileList]));
-                              return [...prevFileList];
-                            });
-                          }}
-                        />
-                      )}
-                    </Space>
-                  </span>
-                  {file.status === 'uploading' && (
-                    <div className={`${prefixCls}-list-item-progress`}>
-                      <Progress strokeWidth={2} type={'line'} showInfo={false} percent={file.percent} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {fileList.map((file, index) => (
+            <FileListItem
+              key={file.id}
+              file={file}
+              index={index}
+              disabled={disabled}
+              onPreview={onPreview}
+              onDelete={onDelete}
+            />
+          ))}
+          {pendingList.map((file, index) => (
+            <FileListItem
+              key={file.uid}
+              file={file}
+              index={index}
+              disabled={disabled}
+              onPreview={onPreview}
+              onDelete={onDelete}
+            />
+          ))}
           {!disabled && (multiple || toArr(value).length < 1) && (
             <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
-              <AntdUpload
-                {...uploadProps}
-                disabled={disabled}
-                multiple={multiple}
-                listType={'picture-card'}
-                fileList={fileList}
-                onChange={(info) => {
-                  // info.fileList 有 BUG，会导致上传状态一直是 uploading
-                  // 所以这里仿照 antd 源码，自己维护一个 fileList
-                  const list = updateFileList(info.file, internalFileList.current);
-                  internalFileList.current = list;
-
-                  setSync(false);
-                  if (multiple) {
-                    if (info.file.status === 'done') {
-                      onChange?.(toValue(list));
-                    }
-                    onChange?.(toValue(list));
-                    setFileList(list.map(toItem));
-                    setSync(true);
-                  } else {
-                    if (info.file.status === 'done') {
-                      // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
-                      onChange?.(null as any);
-                      onChange?.(info.file?.response?.data);
-                    }
-                    setFileList([toItem(info.file)]);
-                    setSync(true);
-                  }
-                }}
-                showUploadList={false}
-              >
-                {!disabled && (multiple || toArr(value).length < 1) && (
-                  <span>
-                    <PlusOutlined />
-                    <br /> {t('Upload')}
-                  </span>
-                )}
-              </AntdUpload>
+              <Tooltip title={sizeHint}>
+                <AntdUpload
+                  {...uploadProps}
+                  accept={accept}
+                  disabled={disabled}
+                  multiple={multiple}
+                  listType={'picture-card'}
+                  fileList={pendingList}
+                  beforeUpload={beforeUpload}
+                  onChange={onUploadChange}
+                  showUploadList={false}
+                >
+                  {!disabled && (multiple || (toArr(value).length < 1 && pendingList.length < 1)) && (
+                    <span>
+                      <PlusOutlined />
+                      <br /> {t('Upload')}
+                    </span>
+                  )}
+                </AntdUpload>
+              </Tooltip>
             </div>
           )}
         </div>
@@ -200,13 +261,13 @@ Upload.Attachment = connect((props: UploadProps) => {
       {visible && fileType === 'image' && (
         <LightBox
           // discourageDownloads={true}
-          mainSrc={images[fileIndex]?.imageUrl}
-          nextSrc={images[(fileIndex + 1) % images.length]?.imageUrl}
-          prevSrc={images[(fileIndex + images.length - 1) % images.length]?.imageUrl}
+          mainSrc={fileList[fileIndex]?.imageUrl}
+          nextSrc={fileList[(fileIndex + 1) % fileList.length]?.imageUrl}
+          prevSrc={fileList[(fileIndex + fileList.length - 1) % fileList.length]?.imageUrl}
           onCloseRequest={() => setVisible(false)}
-          onMovePrevRequest={() => setFileIndex((fileIndex + images.length - 1) % images.length)}
-          onMoveNextRequest={() => setFileIndex((fileIndex + 1) % images.length)}
-          imageTitle={images[fileIndex]?.title}
+          onMovePrevRequest={() => setFileIndex((fileIndex + fileList.length - 1) % fileList.length)}
+          onMoveNextRequest={() => setFileIndex((fileIndex + 1) % fileList.length)}
+          imageTitle={fileList[fileIndex]?.title}
           toolbarButtons={[
             <button
               key={'preview-img'}
@@ -217,7 +278,7 @@ Upload.Attachment = connect((props: UploadProps) => {
               className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
               onClick={(e) => {
                 e.preventDefault();
-                const file = images[fileIndex];
+                const file = fileList[fileIndex];
                 saveAs(file.url, `${file.title}${file.extname}`);
               }}
             >
@@ -230,7 +291,7 @@ Upload.Attachment = connect((props: UploadProps) => {
       {visible && fileType === 'pdf' && (
         <Modal
           open={visible}
-          title={'PDF - ' + images[fileIndex].title}
+          title={'PDF - ' + fileList[fileIndex].title}
           onCancel={closeIFrameModal}
           footer={[
             <Button
@@ -241,7 +302,7 @@ Upload.Attachment = connect((props: UploadProps) => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const file = images[fileIndex];
+                const file = fileList[fileIndex];
                 saveAs(file.url, `${file.title}${file.extname}`);
               }}
             >
@@ -269,7 +330,7 @@ Upload.Attachment = connect((props: UploadProps) => {
             }}
           >
             <iframe
-              src={images[fileIndex].url}
+              src={fileList[fileIndex].url}
               style={{
                 width: '100%',
                 maxHeight: '90vh',
@@ -306,34 +367,45 @@ Upload.DraggerV2 = withDynamicSchemaProps(
     (props: DraggerV2Props) => {
       const { t } = useTranslation();
       const defaultTitle = t('Click or drag file to this area to upload');
-      const defaultSubTitle = t('Support for a single or bulk upload, file size should not exceed') + ` 10MB`;
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { title = defaultTitle, subTitle = defaultSubTitle, ...extraProps } = useProps(props);
+      const { title = defaultTitle, ...extraProps } = useProps(props);
 
       const [loading, setLoading] = useState(false);
       const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
-      const handleChange = (fileList: any[] = []) => {
-        const { onChange } = extraProps;
-        onChange?.(fileList);
+      const collection = useCollection_deprecated();
+      const { rules, validator: beforeUpload } = useStorageValidator(collection['storage'] ?? '');
+      const { size, mimetype: accept } = rules ?? {};
+      const sizeHint = useSizeHint(size);
+      const handleChange = useCallback(
+        (fileList: any[] = []) => {
+          const { onChange } = extraProps;
+          onChange?.(fileList);
 
-        if (fileList.some((file) => file.status === 'uploading')) {
-          setLoading(true);
-        } else {
-          setLoading(false);
-        }
-      };
+          if (fileList.some((file) => file.status === 'uploading')) {
+            setLoading(true);
+          } else {
+            setLoading(false);
+          }
+        },
+        [extraProps],
+      );
 
       return wrapSSR(
         <div className={cls(`${prefixCls}-dragger`, hashId)}>
           {/* @ts-ignore */}
-          <AntdUpload.Dragger {...useUploadProps({ ...props, ...extraProps, onChange: handleChange })}>
+          <AntdUpload.Dragger
+            {...useUploadProps({ ...props, ...extraProps, accept, onChange: handleChange, beforeUpload })}
+          >
             <p className={`${prefixCls}-drag-icon`}>
               {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
             </p>
             <p className={`${prefixCls}-text`}>{title}</p>
-            <p className={`${prefixCls}-hint`}>{subTitle}</p>
+            <ul>
+              <li className={`${prefixCls}-hint`}>{t('Support for a single or bulk upload.')}</li>
+              <li className={`${prefixCls}-hint`}>{sizeHint}</li>
+            </ul>
           </AntdUpload.Dragger>
         </div>,
       );
@@ -346,14 +418,3 @@ Upload.DraggerV2 = withDynamicSchemaProps(
 );
 
 export default Upload;
-
-function updateFileList(file: UploadFile, fileList: (UploadFile | Readonly<UploadFile>)[]) {
-  const nextFileList = [...fileList];
-  const fileIndex = nextFileList.findIndex(({ uid }) => uid === file.uid);
-  if (fileIndex === -1) {
-    nextFileList.push(file);
-  } else {
-    nextFileList[fileIndex] = file;
-  }
-  return nextFileList;
-}

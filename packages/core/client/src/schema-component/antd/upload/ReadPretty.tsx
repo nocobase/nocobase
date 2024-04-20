@@ -54,13 +54,13 @@ ReadPretty.File = function File(props: UploadProps) {
           {images.map((file) => {
             const handleClick = (e) => {
               const index = images.indexOf(file);
-              if (isImage(file.extname)) {
+              if (isImage(file)) {
                 e.preventDefault();
                 e.stopPropagation();
                 setVisible(true);
                 setFileIndex(index);
                 setFileType('image');
-              } else if (isPdf(file.extname)) {
+              } else if (isPdf(file)) {
                 e.preventDefault();
                 e.stopPropagation();
                 setVisible(true);

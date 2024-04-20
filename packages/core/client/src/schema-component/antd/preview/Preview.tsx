@@ -65,7 +65,7 @@ export const FileSelector = (props: Props) => {
               e.preventDefault();
               e.stopPropagation();
               const index = fileList.indexOf(file);
-              if (isImage(file.extname)) {
+              if (isImage(file)) {
                 setVisible(true);
                 setPhotoIndex(index);
               } else {

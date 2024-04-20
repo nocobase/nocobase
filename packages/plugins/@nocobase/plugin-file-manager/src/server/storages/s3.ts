@@ -1,9 +1,9 @@
-import { AttachmentModel } from '.';
-import { STORAGE_TYPE_S3 } from '../constants';
+import { AttachmentModel, StorageType } from '.';
+import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter } from '../utils';
 
-export default {
-  filenameKey: 'key',
+export default class extends StorageType {
+  filenameKey = 'key';
   make(storage) {
     const { S3Client } = require('@aws-sdk/client-s3');
     const multerS3 = require('multer-s3');
@@ -30,7 +30,7 @@ export default {
       },
       key: cloudFilenameGetter(storage),
     });
-  },
+  }
   defaults() {
     return {
       title: 'AWS S3',
@@ -44,7 +44,7 @@ export default {
         bucket: process.env.AWS_S3_BUCKET,
       },
     };
-  },
+  }
   async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { DeleteObjectsCommand } = require('@aws-sdk/client-s3');
     const { s3 } = this.make(storage);
@@ -61,5 +61,5 @@ export default {
       Deleted.length,
       records.filter((record) => !Deleted.find((item) => item.Key === `${record.path}/${record.filename}`)),
     ];
-  },
-};
+  }
+}

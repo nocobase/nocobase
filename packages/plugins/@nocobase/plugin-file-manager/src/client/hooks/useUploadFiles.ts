@@ -9,7 +9,7 @@ import { notification } from 'antd';
 import { useContext, useMemo } from 'react';
 import { useFmTranslation } from '../locale';
 
-// 限制上传文件大小为 10M
+// 限制上传文件大小为 1G
 export const FILE_LIMIT_SIZE = 1024 * 1024 * 1024;
 
 export const useUploadFiles = () => {

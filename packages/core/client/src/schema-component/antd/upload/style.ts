@@ -73,6 +73,29 @@ export const useStyles = genStyleHook('upload', (token) => {
           marginBlock: '0 28px !important',
         },
       },
+
+      [`${componentCls}-list-item-error`]: {
+        [`${componentCls}-list-item-info img`]: {
+          opacity: 0.6,
+        },
+      },
+
+      [`${componentCls}-drag`]: {
+        [`${componentCls}-drag-container`]: {
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%',
+
+          ul: {
+            color: token.colorTextSecondary,
+            [`${componentCls}-hint`]: {
+              textAlign: 'left',
+            },
+          },
+        },
+      },
     },
   } as any;
 });
