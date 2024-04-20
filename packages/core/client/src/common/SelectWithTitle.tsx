@@ -28,10 +28,12 @@ export function SelectWithTitle({ title, defaultValue, onChange, options, fieldN
       {title}
       <Select
         open={open}
+        data-testid={`select-${title}`}
         popupMatchSelectWidth={false}
         bordered={false}
         defaultValue={defaultValue}
         onChange={onChange}
+        popupClassName={`select-popup-${title.replaceAll(' ', '-')}`}
         fieldNames={fieldNames}
         options={options}
         style={{ textAlign: 'right', minWidth: 100 }}

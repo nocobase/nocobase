@@ -20,15 +20,17 @@ export async function checkSelectSetting(options: SelectSettingOptions) {
   }
 
   if (options.options) {
+    const getListbox = () => document.querySelector(`.select-popup-${options.title.replaceAll(' ', '-')}`);
+
     // 打开下拉框
     expect(formItem.querySelector('.ant-select-selector')).toBeInTheDocument();
     await userEvent.click(formItem.querySelector('.ant-select-selector'));
     await waitFor(() => {
-      expect(screen.queryByRole('listbox')).toBeInTheDocument();
+      expect(getListbox()).toBeInTheDocument();
     });
 
     for (const option of options.options) {
-      const listbox = screen.getByRole('listbox');
+      const listbox = getListbox();
       expect(listbox).toHaveTextContent(option.label);
 
       if (option.checker) {
@@ -47,7 +49,7 @@ export async function checkSelectSetting(options: SelectSettingOptions) {
         // 重新打开下拉框
         await userEvent.click(screen.getByTitle(options.title).querySelector('.ant-select-selection-item'));
         await waitFor(() => {
-          expect(screen.queryByRole('listbox')).toBeInTheDocument();
+          expect(getListbox()).toBeInTheDocument();
         });
       }
     }

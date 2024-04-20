@@ -1,6 +1,7 @@
 import { expect } from 'vitest';
 import { waitFor, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { showSettingsMenu } from '../renderSettings';
 
 export interface CheckSwitchSettingOptions {
   title: string;
@@ -19,17 +20,24 @@ export async function checkSwitchSetting(options: CheckSwitchSettingOptions) {
   const formItem = screen.getByTitle(options.title);
   const switchElement = formItem.querySelector('button[role=switch]');
   let oldChecked = switchElement.getAttribute('aria-checked');
-
-  // 第一次点击
-  if (options.afterFirstClick) {
-    await userEvent.click(screen.getByText(options.title));
-
-    // 点击后，检查 checked 状态是否改变
-    await waitFor(() => {
+  const afterClick = async () => {
+    const formItem = screen.queryByTitle(options.title);
+    if (formItem) {
       const switchElement = formItem.querySelector('button[role=switch]');
       const newChecked = switchElement.getAttribute('aria-checked');
       expect(newChecked).not.toBe(oldChecked);
       oldChecked = newChecked;
+    } else {
+      // 重新打开设置菜单
+      await showSettingsMenu();
+    }
+  };
+
+  // 第一次点击
+  if (options.afterFirstClick) {
+    await userEvent.click(formItem.querySelector('button[role=switch]'));
+    await waitFor(async () => {
+      await afterClick();
     });
 
     await options.afterFirstClick();
@@ -38,22 +46,17 @@ export async function checkSwitchSetting(options: CheckSwitchSettingOptions) {
   // 第二次点击
   if (options.afterSecondClick) {
     await userEvent.click(screen.getByText(options.title));
-    await waitFor(() => {
-      const switchElement = formItem.querySelector('button[role=switch]');
-      const newChecked = switchElement.getAttribute('aria-checked');
-      expect(newChecked).not.toBe(oldChecked);
+    await waitFor(async () => {
+      await afterClick();
     });
-
     await options.afterSecondClick();
   }
 
   // 第三次点击
   if (options.afterThirdClick) {
     await userEvent.click(screen.getByText(options.title));
-    await waitFor(() => {
-      const switchElement = formItem.querySelector('button[role=switch]');
-      const newChecked = switchElement.getAttribute('aria-checked');
-      expect(newChecked).not.toBe(oldChecked);
+    await waitFor(async () => {
+      await afterClick();
     });
 
     await options.afterThirdClick();

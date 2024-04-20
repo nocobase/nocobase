@@ -478,6 +478,23 @@
         "parentKey": null,
         "reverseKey": null,
         "hidden": true
+      },
+      {
+        "key": "iz5s22dinui",
+        "name": "color",
+        "type": "string",
+        "interface": "color",
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "defaultValue": "#1677FF",
+        "uiSchema": {
+          "type": "string",
+          "x-component": "ColorPicker",
+          "default": "#1677FF",
+          "title": "color"
+        }
       }
     ],
     "category": [],

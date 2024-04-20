@@ -4,7 +4,7 @@ import { GetAppComponentOptions } from '../web';
 import userEvent from '@testing-library/user-event';
 import { renderApp, renderReadPrettyApp } from './renderApp';
 
-async function showSettingsMenu(container: HTMLElement | Document) {
+export async function showSettingsMenu(container: HTMLElement | Document = document) {
   await waitFor(() => {
     expect(container.querySelector('[aria-label^="designer-schema-settings-"]')).toBeInTheDocument();
   });

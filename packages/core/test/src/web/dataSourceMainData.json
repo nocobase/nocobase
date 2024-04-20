@@ -23,6 +23,7 @@
             "default": true,
             "description": null,
             "hidden": false,
+            "color": "#1677FF",
             "name": "member",
             "snippets": ["!pm", "!pm.*", "!ui.*"],
             "strategy": {
@@ -45,6 +46,7 @@
             "default": false,
             "description": null,
             "hidden": true,
+            "color": "#1677FF",
             "name": "root",
             "snippets": ["pm", "pm.*", "ui.*"],
             "strategy": null,
@@ -66,6 +68,7 @@
             "description": null,
             "hidden": false,
             "name": "admin",
+            "color": "#1677FF",
             "snippets": ["pm", "pm.*", "ui.*"],
             "strategy": {
               "actions": ["create", "view", "update", "destroy"]
@@ -105,6 +108,7 @@
         "description": null,
         "hidden": true,
         "name": "root",
+        "color": "#1677FF",
         "snippets": ["pm", "pm.*", "ui.*"],
         "strategy": null,
         "title": "{{t(\"Root\")}}"
@@ -117,6 +121,7 @@
         "default": false,
         "description": null,
         "hidden": false,
+        "color": "#1677FF",
         "name": "admin",
         "snippets": ["pm", "pm.*", "ui.*"],
         "strategy": {
@@ -131,6 +136,7 @@
         "allowNewMenu": true,
         "default": true,
         "description": null,
+        "color": "#1677FF",
         "hidden": false,
         "name": "member",
         "snippets": ["!pm", "!pm.*", "!ui.*"],
@@ -153,7 +159,28 @@
     }
   },
   "tree:list": {
-    "data": [],
-    "meta": {}
+    "data": [
+      {
+        "id": 1,
+        "parentId": null,
+        "f_y99u3pyj0bt": "1"
+      },
+      {
+        "id": 2,
+        "parentId": 1,
+        "f_y99u3pyj0bt": "2"
+      }
+    ],
+    "meta": {
+      "count": 2,
+      "page": 1,
+      "pageSize": 20,
+      "totalPage": 1,
+      "allowedActions": {
+        "view": [1, 2],
+        "update": [1, 2],
+        "destroy": [1, 2]
+      }
+    }
   }
 }
