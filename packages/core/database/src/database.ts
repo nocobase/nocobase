@@ -147,34 +147,6 @@ export const DialectVersionAccessors = {
   },
 };
 
-class DatabaseVersion {
-  db: Database;
-
-  constructor(db: Database) {
-    this.db = db;
-  }
-
-  async satisfies(versions) {
-    const accessors = DialectVersionAccessors;
-    for (const dialect of Object.keys(accessors)) {
-      if (this.db.inDialect(dialect)) {
-        if (!versions?.[dialect]) {
-          return false;
-        }
-        const [result] = (await this.db.sequelize.query(accessors[dialect].sql)) as any;
-        const versionResult = accessors[dialect].get(result?.[0]?.version);
-
-        if (lodash.isPlainObject(versionResult) && versionResult.dialect) {
-          return semver.satisfies(versionResult.version, versions[versionResult.dialect]);
-        }
-
-        return semver.satisfies(versionResult, versions[dialect]);
-      }
-    }
-    return false;
-  }
-}
-
 export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   migrator: Umzug;
@@ -196,7 +168,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
   inheritanceMap = new InheritanceMap();
   importedFrom = new Map<string, Set<string>>();
   modelHook: ModelHook;
-  version: DatabaseVersion;
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
   logger: Logger;
   collectionGroupManager = new CollectionGroupManager(this);
@@ -206,8 +177,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   constructor(options: DatabaseOptions) {
     super();
-
-    this.version = new DatabaseVersion(this);
 
     const opts = {
       sync: {
@@ -790,6 +759,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
   }
 
+  /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
     const startingDelay = 50;
