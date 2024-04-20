@@ -10,10 +10,8 @@ import bodyParser from 'koa-bodyparser';
 import { resolve } from 'path';
 import { createHistogram, RecordableHistogram } from 'perf_hooks';
 import Application, { ApplicationOptions } from './application';
-import { parseVariables } from './middlewares';
-import { dateTemplate } from './middlewares/data-template';
 import { dataWrapping } from './middlewares/data-wrapping';
-import { db2resource } from './middlewares/db2resource';
+
 import { i18n } from './middlewares/i18n';
 
 export function createI18n(options: ApplicationOptions) {
