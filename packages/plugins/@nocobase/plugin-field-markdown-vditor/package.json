@@ -16,12 +16,13 @@
     "@nocobase/test": "0.x"
   },
   "devDependencies": {
-    "vditor": "^3.10.3",
     "@ant-design/icons": "5.x",
-    "antd": "5.x",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
-    "@formily/shared": "2.x"
+    "@formily/shared": "2.x",
+    "antd": "5.x",
+    "katex": "^0.16.10",
+    "vditor": "^3.10.3"
   }
 }
