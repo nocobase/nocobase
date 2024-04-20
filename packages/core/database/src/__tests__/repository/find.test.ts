@@ -243,6 +243,69 @@ describe('find with associations', () => {
     expect(results[0].get('name')).toEqual('u1');
   });
 
+  it('should filter by array not empty', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'hasMany',
+          name: 'posts',
+        },
+        {
+          type: 'array',
+          name: 'tags',
+        },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'array',
+          name: 'tags',
+        },
+        {
+          type: 'string',
+          name: 'title',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          tags: ['u1-tag', 'u2-tag'],
+          posts: [
+            {
+              tags: ['t1'],
+              title: 'u1p1',
+            },
+          ],
+        },
+      ],
+    });
+
+    const posts = await User.repository.find({
+      filter: {
+        'posts.tags': {
+          $noneOf: ['t2'],
+        },
+      },
+    });
+
+    expect(posts.length).toEqual(1);
+
+    expect(posts[0].get('name')).toEqual('u1');
+  });
+
   it('should filter with append', async () => {
     const Post = db.collection({
       name: 'posts',
