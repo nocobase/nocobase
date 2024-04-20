@@ -21,6 +21,16 @@ describe('nocobase-admin-menu', () => {
       values: {
         autoGenId: true,
         sortable: true,
+        name: 'bar',
+        template: 'general',
+        view: false,
+      },
+      context: {},
+    });
+    await app.db.getRepository('collections').create({
+      values: {
+        autoGenId: true,
+        sortable: true,
         name: 'foo',
         template: 'general',
         view: false,
@@ -37,7 +47,7 @@ describe('nocobase-admin-menu', () => {
           {
             type: 'sort',
             name: 'sort3',
-            interface: 'sort3',
+            interface: 'sort',
             uiSchema: {
               type: 'number',
               title: 'Sort 3',
@@ -46,10 +56,18 @@ describe('nocobase-admin-menu', () => {
               'x-validator': 'integer',
             },
           },
+          {
+            type: 'hasMany',
+            name: 'bar',
+            target: 'bar',
+            foreignKey: 'fooId',
+            sortable: true,
+          },
         ],
       },
       context: {},
     });
+
     const migration = new Migration({
       db: app.db,
       // @ts-ignore
@@ -79,6 +97,15 @@ describe('nocobase-admin-menu', () => {
         name: 'sort3',
       },
     });
+    expect(sort3.interface).toBe('sort');
     expect(sort3.get('uiSchema.title')).toBe('Sort 3');
+    const sort4 = await app.db.getRepository('fields').findOne({
+      filter: {
+        collectionName: 'bar',
+        name: 'fooIdSort',
+      },
+    });
+    expect(sort4.interface).toBe('sort');
+    expect(sort4.get('uiSchema.title')).toBe('fooIdSort');
   });
 });
