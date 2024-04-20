@@ -36,7 +36,15 @@ export const Edit = withDynamicSchemaProps((props) => {
   useEffect(() => {
     if (!uiSchema || vdRef.current) return;
     const uploadFileCollection = uiSchema['x-component-props']?.['fileCollection'];
-    const toolbarConfig = uiSchema?.['x-component-props']?.['toolbar'];
+    const toolbarConfig = uiSchema?.['x-component-props']?.['toolbar'] ?? [
+      'headings',
+      'bold',
+      'list',
+      'ordered-list',
+      'code',
+      'inline-code',
+      'upload',
+    ];
     if (!uploadFileCollection && toolbarConfig) {
       const uploadToolbarIndex = toolbarConfig?.findIndex((_) => _ === 'upload');
       if (uploadToolbarIndex) {
