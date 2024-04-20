@@ -1,5 +1,5 @@
 export default {
-  "Vditor": "Vditor",
+  "Vditor": "Markdown(Vditor)",
   "File collection": "파일 데이터 테이블",
   "Used to store files uploaded in the Markdown editor": "Markdown 편집기에 업로드된 파일을 저장하는 데 사용됩니다",
   "Toolbar": "편집기 도구 모음 구성",

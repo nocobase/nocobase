@@ -2,6 +2,6 @@ import { DataTypes, Field } from '@nocobase/database';
 
 export class MarkdownVditorField extends Field {
   get dataType() {
-    return DataTypes.STRING;
+    return DataTypes.TEXT('long');
   }
 }

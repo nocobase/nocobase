@@ -1,5 +1,5 @@
 export default {
-  "Vditor": "Vditor",
+  "Vditor": "Markdown(Vditor)",
   "File collection": "File collection",
   "Used to store files uploaded in the Markdown editor": "Used to store files uploaded in the Markdown editor",
   "Toolbar": "Editor toolbar configuration",

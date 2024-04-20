@@ -1,5 +1,5 @@
 export default {
-  "Vditor": "Vditor",
+  "Vditor": "Markdown(Vditor)",
   "File collection": "文件数据表",
   "Used to store files uploaded in the Markdown editor": "用于存储在Markdown编辑器中上传的文件",
   "Toolbar": "编辑器工具栏配置",
