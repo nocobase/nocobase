@@ -57,11 +57,11 @@ export interface IRepository {
 
   findAndCount(options?: any): Promise<[IModel[], Number]>;
 
-  create(options: any): void;
+  create(options: any): any;
 
-  update(options: any): void;
+  update(options: any): any;
 
-  destroy(options: any): void;
+  destroy(options: any): any;
 
   [key: string]: any;
 }
