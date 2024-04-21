@@ -14,6 +14,7 @@ import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
@@ -494,13 +495,25 @@ export const Table: any = withDynamicSchemaProps(
       };
     }, [onRowDragEnd, field]);
 
-    const BodyCellComponent = useCallback((props) => {
-      return (
-        <td {...props} className={classNames(props.className, cellClass)}>
-          {props.children}
-        </td>
-      );
-    }, []);
+    const BodyCellComponent = useCallback(
+      (props) => {
+        const isIndex = props.className?.includes('selection-column');
+
+        const { ref, inView } = useInView({
+          threshold: 0,
+          triggerOnce: true,
+          initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
+          skip: isIndex || !!process.env.__E2E__,
+        });
+
+        return (
+          <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
+            {inView || isIndex ? props.children : null}
+          </td>
+        );
+      },
+      [dataSource.length],
+    );
 
     const components = useMemo(() => {
       return {
