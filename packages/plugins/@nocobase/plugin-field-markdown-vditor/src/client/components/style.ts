@@ -5,7 +5,6 @@ export default genStyleHook('nb-field-markdown-vditor', (token) => {
 
   return {
     [componentCls]: {
-      overflowX: 'hidden',
       '.vditor-reset': { fontSize: `${token.fontSize}px !important` },
       '.vditor': { borderRadius: 8 },
       '.vditor .vditor-content': { borderRadius: '0 0 8px 8px', overflow: 'hidden' },
