@@ -443,7 +443,7 @@ async function preloadOptions(scope, value: string) {
   let options = [...(scope ?? [])];
 
   options = options.filter((item) => {
-    return !item.deprecated || value.includes(item.value);
+    return !item.deprecated || value?.includes(item.value);
   });
 
   // 重置正则的匹配位置

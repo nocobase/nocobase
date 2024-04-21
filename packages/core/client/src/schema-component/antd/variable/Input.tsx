@@ -188,12 +188,10 @@ export function Input(props) {
     }, [type, useTypedConstant]);
 
   useEffect(() => {
-    let options = [compile(constantOption), ...(scope ? [...scope] : [])];
-    if (variable) {
-      options = options.filter((item) => {
-        return !item.deprecated || variable[0] === item[names.value];
-      });
-    }
+    const options = [compile(constantOption), ...(scope ? [...scope] : [])].filter((item) => {
+      return !item.deprecated || variable?.[0] === item[names.value];
+    });
+
     setOptions(options);
   }, [scope, variable]);
 
