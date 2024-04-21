@@ -24,6 +24,7 @@ export const Edit = withDynamicSchemaProps((props) => {
   const field = useField<Field>();
 
   const vdRef = useRef<Vditor>();
+  const vdFullscreen = useRef(false);
   const containerRef = useRef<HTMLDivElement>();
   const containerParentRef = useRef<HTMLDivElement>();
 
@@ -57,7 +58,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       },
       toolbar: toolbarConfig,
       fullscreen: {
-        index: 120,
+        index: 1200,
       },
       minHeight: 200,
       after: () => {
@@ -130,8 +131,10 @@ export const Edit = withDynamicSchemaProps((props) => {
         const target = entry.target;
         if (target.className.includes('vditor--fullscreen')) {
           document.body.appendChild(target);
-        } else {
+          vdFullscreen.current = true;
+        } else if (vdFullscreen.current) {
           containerParentRef.current?.appendChild(target);
+          vdFullscreen.current = false;
         }
       }
     });
