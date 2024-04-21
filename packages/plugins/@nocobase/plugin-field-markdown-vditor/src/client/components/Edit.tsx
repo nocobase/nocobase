@@ -4,6 +4,7 @@ import Vditor from 'vditor';
 import { useAPIClient, useCollection, useCollectionManager, withDynamicSchemaProps } from '@nocobase/client';
 import { Field } from '@formily/core';
 import useStyle from './style';
+import { defaultToolbar } from '../interfaces/markdown-vditor';
 
 function useTargetCollectionField() {
   const fieldSchema = useFieldSchema();
@@ -35,15 +36,7 @@ export const Edit = withDynamicSchemaProps((props) => {
   useEffect(() => {
     if (!uiSchema || vdRef.current) return;
     const uploadFileCollection = uiSchema['x-component-props']?.['fileCollection'];
-    const toolbarConfig = uiSchema?.['x-component-props']?.['toolbar'] ?? [
-      'headings',
-      'bold',
-      'list',
-      'ordered-list',
-      'code',
-      'inline-code',
-      'upload',
-    ];
+    const toolbarConfig = uiSchema?.['x-component-props']?.['toolbar'] ?? defaultToolbar;
     const vditor = new Vditor(containerRef.current, {
       value,
       lang: apiClient.auth.locale.replaceAll('-', '_') as any,

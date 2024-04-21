@@ -4,6 +4,23 @@ import { ISchema } from '@formily/react';
 
 const { defaultProps, operators } = interfacesProperties;
 
+export const defaultToolbar = [
+  'headings',
+  'bold',
+  'italic',
+  'strike',
+  'link',
+  'list',
+  'ordered-list',
+  'check',
+  'quote',
+  'line',
+  'code',
+  'inline-code',
+  'upload',
+  'fullscreen',
+];
+
 export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
   name = 'vditor';
   type = 'object';
@@ -44,7 +61,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
         mode: 'multiple',
       },
       'x-decorator': 'FormItem',
-      default: ['headings', 'bold', 'list', 'ordered-list', 'code', 'inline-code', 'upload'],
+      default: defaultToolbar,
       enum: [
         { value: 'emoji', label: generateNTemplate('Emoji') },
         { value: 'headings', label: generateNTemplate('Headings') },
