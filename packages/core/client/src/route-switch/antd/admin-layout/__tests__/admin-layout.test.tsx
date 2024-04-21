@@ -4,7 +4,7 @@ import React from 'react';
 
 describe('AdminLayout', () => {
   it('should render correctly', async () => {
-    const { container } = await renderApp({
+    await renderApp({
       designable: true,
       noWrapperSchema: true,
       appOptions: {

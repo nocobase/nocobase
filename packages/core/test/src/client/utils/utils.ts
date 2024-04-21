@@ -12,4 +12,14 @@ export const WaitApp = async () => {
     // @ts-ignore
     expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
   });
+
+  const loadError = screen.queryByText('Load Plugin Error');
+  if (loadError) {
+    expect(screen.queryByText('Load Plugin Error')).not.toBeInTheDocument();
+  }
+
+  const renderError = screen.queryByText('Render Failed');
+  if (renderError) {
+    expect(screen.queryByText('Render Failed')).not.toBeInTheDocument();
+  }
 };
