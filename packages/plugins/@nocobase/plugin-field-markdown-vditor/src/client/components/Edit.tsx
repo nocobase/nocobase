@@ -55,9 +55,6 @@ export const Edit = withDynamicSchemaProps((props) => {
         math: {
           engine: 'KaTeX',
         },
-        theme: {
-          current: 'ant-design',
-        },
       },
       toolbar: toolbarConfig,
       fullscreen: {
