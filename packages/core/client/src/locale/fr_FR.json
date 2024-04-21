@@ -775,5 +775,6 @@
   "Allow selection of existing records":"Permet de sélectionner des données existantes",
   "Home page": "Page d'accueil",
   "Handbook": "Manuel de l'utilisateur",
-  "License": "Licence"
+  "License": "Licence",
+  "The variable has been deprecated; \"Current form\" can be used as a substitute": "La variable a été obsolète ; \"Formulaire actuel\" peut être utilisé comme substitut"
 }

@@ -34,10 +34,6 @@ interface GetOptionsParams {
    * 如果为 true 则表示该变量已被弃用
    */
   deprecated?: boolean;
-  /**
-   * 当前 children 中选中的值
-   */
-  activeValue?: any;
 }
 
 interface BaseProps {
@@ -104,7 +100,6 @@ const getChildren = (
     targetFieldSchema,
     getCollectionField,
     deprecated,
-    activeValue,
   }: GetOptionsParams,
 ): Option[] => {
   const result = options
@@ -169,7 +164,7 @@ export const useBaseVariable = ({
   const { isDisabled } = useContext(BaseVariableContext) || {};
   const { getCollectionField } = useCollectionManager_deprecated(dataSource);
 
-  const loadChildren = (option: Option, activeValue?: any): Promise<void> => {
+  const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
       return Promise.resolve(void 0);
     }
@@ -190,7 +185,6 @@ export const useBaseVariable = ({
             isDisabled: isDisabled || isDisabledDefault,
             getCollectionField,
             deprecated,
-            activeValue,
           }) || []
         )
           // 将叶子节点排列在上面，方便用户选择
@@ -238,8 +232,8 @@ export const useBaseVariable = ({
               display: 'inline-block',
               marginLeft: -14,
               paddingLeft: 14,
-              marginRight: -50,
-              paddingRight: 50,
+              marginRight: -80,
+              paddingRight: 80,
               zIndex: 1,
             }}
           >
@@ -258,6 +252,8 @@ export const useBaseVariable = ({
       depth: 0,
       loadChildren,
       children: [],
+      disabled: !!deprecated,
+      deprecated,
     } as Option;
   }, [uiSchema?.['x-component']]);
 

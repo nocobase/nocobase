@@ -864,5 +864,6 @@
   "Allow selection of existing records":"允許選擇已有資料",
   "Home page": "主頁",
   "Handbook": "使用手冊",
-  "License": "許可證"
+  "License": "許可證",
+  "The variable has been deprecated; \"Current form\" can be used as a substitute": "該變數已被棄用，可以使用“當前表單”作為替代"
 }

@@ -61,7 +61,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
     deprecated: blockType === 'form',
-    tooltip: blockType === 'form' ? '该变量已被弃用，请使用 “当前表单” 替代' : '',
+    tooltip: blockType === 'form' ? '该变量已被弃用，可以使用 “当前表单” 替代' : '',
   });
 
   return {

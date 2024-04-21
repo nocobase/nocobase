@@ -188,8 +188,15 @@ export function Input(props) {
     }, [type, useTypedConstant]);
 
   useEffect(() => {
-    setOptions([compile(constantOption), ...(scope ? [...scope] : [])]);
-  }, [scope]);
+    let options = [compile(constantOption), ...(scope ? [...scope] : [])];
+    if (variable) {
+      options = options.filter((item) => {
+        console.log('item', item);
+        return !item.deprecated || variable[0] === item[names.value];
+      });
+    }
+    setOptions(options);
+  }, [scope, variable]);
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
@@ -228,13 +235,12 @@ export function Input(props) {
 
       for (let i = 0; i < variable.length; i++) {
         const key = variable[i];
-        const nextOneValue = variable[i + 1];
         try {
           if (i === 0) {
             prevOption = options.find((item) => item[names.value] === key);
           } else {
             if (prevOption.loadChildren && !prevOption.children?.length) {
-              await prevOption.loadChildren(prevOption, nextOneValue);
+              await prevOption.loadChildren(prevOption);
             }
             prevOption = prevOption.children.find((item) => item[names.value] === key);
           }
@@ -296,6 +302,7 @@ export function Input(props) {
           <div
             role="button"
             aria-label="variable-tag"
+            style={{ overflow: 'hidden' }}
             onInput={(e) => e.preventDefault()}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') {

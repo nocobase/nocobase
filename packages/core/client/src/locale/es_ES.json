@@ -755,5 +755,6 @@
   "DataSource": "Fuente de datos",
   "Home page": "Página de inicio",
   "Handbook": "Manual de usuario",
-  "License": "Licencia"
+  "License": "Licencia",
+  "The variable has been deprecated; \"Current form\" can be used as a substitute": "La variable ha sido obsoleta; \"Formulario actual\" puede ser utilizada como sustituto"
 }
