@@ -9,7 +9,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, TableColumnProps } from 'antd';
+import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -508,7 +508,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : null}
+            {inView || isIndex ? props.children : <Skeleton.Button />}
           </td>
         );
       },
