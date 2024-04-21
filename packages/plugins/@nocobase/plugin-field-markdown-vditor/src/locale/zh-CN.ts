@@ -6,7 +6,7 @@ export default {
   "Emoji": "表情",
   "Headings": "标题",
   "Bold": "粗体",
-  "Italic": "粗体",
+  "Italic": "斜体",
   "Strike": "删除线",
   "Record": "开始录音/结束录音",
   "Line": "分割线",
