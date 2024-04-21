@@ -11,7 +11,7 @@ import {
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
-import { T3843, T4032, oneTableWithRoles } from './templatesOfBug';
+import { T3843, T4032, oneTableWithRoles, twoTableWithAuthorAndBooks } from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -305,7 +305,29 @@ test.describe('table block schema settings', () => {
       await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
     });
 
-    test('connecting two blocks connected by a foreign key', async ({ page, mockPage, mockRecords }) => {});
+    test('connecting two blocks connected by a foreign key', async ({ page, mockPage, mockRecords }) => {
+      const nocoPage = await mockPage(twoTableWithAuthorAndBooks).waitForInit();
+      const authors = await mockRecords('author', 3);
+      await nocoPage.goto();
+
+      // 1. 将 author 表通过外键连接到 books 表
+      await page.getByLabel('block-item-CardItem-author-').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-author').hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
+      await page.getByRole('menuitem', { name: 'books ' }).click();
+      await page.getByRole('option', { name: 'authorId [Foreign key]' }).click();
+
+      // 2. 点击 author 表的某一行，books 表的数据会被筛选为当前点中行的数据
+      await page.getByLabel('block-item-CardItem-author-').getByText(authors[0].name).click();
+
+      for (const book of authors[0].books) {
+        await expect(page.getByLabel('block-item-CardItem-books-').getByText(book.name)).toBeVisible();
+      }
+
+      for (const book of authors[1].books) {
+        await expect(page.getByLabel('block-item-CardItem-books-').getByText(book.name)).not.toBeVisible();
+      }
+    });
 
     test('should immediately show in the drop-down menu of Connect data blocks when adding a block for the first time', async ({
       page,
