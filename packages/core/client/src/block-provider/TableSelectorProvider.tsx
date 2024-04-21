@@ -10,7 +10,7 @@ import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
 type Params = {
@@ -76,7 +76,7 @@ const InternalTableSelectorProvider = (props) => {
           },
         }}
       >
-        <RenderChildrenWithAssociationFilter {...props} />
+        {props.children}
       </TableSelectorContext.Provider>
     </RecordProvider>
   );

@@ -22,7 +22,8 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const compile = useCompile();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
+  const collectionField = useCollectionField();
+  const { uiSchema: uiSchemaOrigin, defaultValue } = collectionField;
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
@@ -72,12 +73,11 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
-    const componentProps = merge(originalProps, field.componentProps || {});
-    field.component = [Component, componentProps];
+    field.componentProps = merge(originalProps, field.componentProps || {});
   }, [uiSchema]);
-  if (!uiSchema) {
-    return null;
-  }
+
+  if (!uiSchema) return null;
+
   return <Component {...props} />;
 };
 
