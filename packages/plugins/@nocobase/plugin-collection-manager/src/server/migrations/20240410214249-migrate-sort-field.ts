@@ -1,8 +1,15 @@
+/* istanbul ignore file -- @preserve */
+
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<0.21.0-alpha.7';
+
+  async up() {
+    await this.syncCollectionsSortField();
+    await this.syncAssociationSortField();
+  }
 
   private async syncCollectionsSortField() {
     const collections = await this.db.getRepository('collections').find();
@@ -81,10 +88,5 @@ export default class extends Migration {
         });
       }
     }
-  }
-
-  async up() {
-    await this.syncCollectionsSortField();
-    await this.syncAssociationSortField();
   }
 }
