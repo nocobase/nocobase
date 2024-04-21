@@ -62,7 +62,9 @@ export const Display = withDynamicSchemaProps((props) => {
         })
         .catch(() => setText(''));
     } else {
-      Vditor.preview(containerRef.current, props.value ?? field.value, { mode: 'light' });
+      Vditor.preview(containerRef.current, props.value ?? field.value, {
+        mode: 'light',
+      });
     }
   }, [props.value, props.ellipsis, field.value]);
 
