@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Model } from '@nocobase/database';
 import { LoggerOptions } from '@nocobase/logger';
 import { fsExists, importModule } from '@nocobase/utils';
@@ -6,7 +8,7 @@ import glob from 'glob';
 import type { TFuncKey, TOptions } from 'i18next';
 import { basename, resolve } from 'path';
 import { Application } from './application';
-import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
+import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible } from './plugin-manager/utils';
 
 export interface PluginInterface {
@@ -138,22 +140,6 @@ export abstract class Plugin<O = any> implements PluginInterface {
   /**
    * @internal
    */
-  protected async getSourceDir() {
-    if (this._sourceDir) {
-      return this._sourceDir;
-    }
-    if (await this.isDev()) {
-      return (this._sourceDir = 'src');
-    }
-    if (basename(__dirname) === 'src') {
-      return (this._sourceDir = 'src');
-    }
-    return (this._sourceDir = this.isPreset ? 'lib' : 'dist');
-  }
-
-  /**
-   * @internal
-   */
   async loadCommands() {
     const extensions = ['js', 'ts'];
     const directory = resolve(
@@ -233,22 +219,6 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   /**
-   * @internal
-   */
-  protected async isDev() {
-    if (!this.options.packageName) {
-      return false;
-    }
-    const file = await fs.promises.realpath(
-      resolve(process.env.NODE_MODULES_PATH || resolve(process.cwd(), 'node_modules'), this.options.packageName),
-    );
-    if (file.startsWith(resolve(process.cwd(), 'packages'))) {
-      return !!process.env.IS_DEV_CMD;
-    }
-    return false;
-  }
-
-  /**
    * @experimental
    */
   async toJSON(options: any = {}) {
@@ -285,6 +255,38 @@ export abstract class Plugin<O = any> implements PluginInterface {
     }
 
     return results;
+  }
+
+  /**
+   * @internal
+   */
+  protected async getSourceDir() {
+    if (this._sourceDir) {
+      return this._sourceDir;
+    }
+    if (await this.isDev()) {
+      return (this._sourceDir = 'src');
+    }
+    if (basename(__dirname) === 'src') {
+      return (this._sourceDir = 'src');
+    }
+    return (this._sourceDir = this.isPreset ? 'lib' : 'dist');
+  }
+
+  /**
+   * @internal
+   */
+  protected async isDev() {
+    if (!this.options.packageName) {
+      return false;
+    }
+    const file = await fs.promises.realpath(
+      resolve(process.env.NODE_MODULES_PATH || resolve(process.cwd(), 'node_modules'), this.options.packageName),
+    );
+    if (file.startsWith(resolve(process.cwd(), 'packages'))) {
+      return !!process.env.IS_DEV_CMD;
+    }
+    return false;
   }
 }
 

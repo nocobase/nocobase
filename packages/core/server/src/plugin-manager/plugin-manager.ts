@@ -693,27 +693,6 @@ export class PluginManager {
   }
 
   /**
-   * @deprecated
-   */
-  async loadOne(plugin: Plugin) {
-    this.app.setMaintainingMessage(`loading plugin ${plugin.name}...`);
-    if (plugin.state.loaded || !plugin.enabled) {
-      return;
-    }
-    const name = plugin.getName();
-    await plugin.beforeLoad();
-
-    await this.app.emitAsync('beforeLoadPlugin', plugin, {});
-    this.app.logger.debug(`loading plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
-    await plugin.load();
-    plugin.state.loaded = true;
-    await this.app.emitAsync('afterLoadPlugin', plugin, {});
-    this.app.logger.debug(`after load plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
-
-    this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
-  }
-
-  /**
    * @internal
    */
   async addViaCLI(urlOrName: string, options?: PluginData) {

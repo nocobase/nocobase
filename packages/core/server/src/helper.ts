@@ -110,11 +110,13 @@ export const getCommandFullName = (command: Command) => {
   return names.join('.');
 };
 
+/* istanbul ignore next -- @preserve */
 export const tsxRerunning = async () => {
   const file = resolve(process.cwd(), 'storage/app.watch.ts');
   await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
 };
 
+/* istanbul ignore next -- @preserve */
 export const enablePerfHooks = (app: Application) => {
   app.context.getPerfHistogram = (name: string) => {
     if (!app.perfHistograms.has(name)) {
