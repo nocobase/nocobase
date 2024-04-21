@@ -1,9 +1,9 @@
 import React from 'react';
 import { FieldOption } from '../hooks';
-import { QueryProps } from '../renderer';
+import { DimensionProps, MeasureProps, QueryProps } from '../renderer';
 import { parseField } from '../utils';
 import { ISchema } from '@formily/react';
-import configs, { AnySchemaProperties, Config } from './configs';
+import configs, { AnySchemaProperties, Config, FieldConfigProps } from './configs';
 import { Transformer } from '../transformers';
 
 export type RenderProps = {
@@ -27,8 +27,8 @@ export interface ChartType {
   init?: (
     fields: FieldOption[],
     query: {
-      measures?: QueryProps['measures'];
-      dimensions?: QueryProps['dimensions'];
+      measures?: MeasureProps[];
+      dimensions?: DimensionProps[];
     },
   ) => {
     general?: any;
@@ -102,7 +102,7 @@ export class Chart implements ChartType {
     };
   }
 
-  addConfigs(configs: { [key: string]: Function }) {
+  addConfigs(configs: { [key: string]: (props: FieldConfigProps) => AnySchemaProperties }) {
     Object.entries(configs).forEach(([key, func]) => {
       this.configs.set(key, func);
     });
@@ -114,8 +114,8 @@ export class Chart implements ChartType {
       measures,
       dimensions,
     }: {
-      measures?: QueryProps['measures'];
-      dimensions?: QueryProps['dimensions'];
+      measures?: MeasureProps[];
+      dimensions?: DimensionProps[];
     },
   ) {
     let xField: FieldOption;

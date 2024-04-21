@@ -206,7 +206,16 @@ const transformers: {
       },
     },
     Exponential: (val: number | string) => (+val)?.toExponential(),
-    Abbreviation: (val: number, locale = 'en-US') => new Intl.NumberFormat(locale, { notation: 'compact' }).format(val),
+    Abbreviation: {
+      schema: {
+        'x-component': 'Select',
+        enum: [
+          { label: 'en-US', value: 'en-US' },
+          { label: 'zh-CN', value: 'zh-CN' },
+        ],
+      },
+      fn: (val: number, locale = 'en-US') => new Intl.NumberFormat(locale, { notation: 'compact' }).format(val),
+    },
   },
   string: {
     'Type conversion': {
