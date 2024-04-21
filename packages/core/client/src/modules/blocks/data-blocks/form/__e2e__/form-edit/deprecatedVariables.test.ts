@@ -1,5 +1,5 @@
 import { expect, test } from '@nocobase/test/e2e';
-import { oneTableWithUsersForDeprecatedVariables } from './templatesOfBug';
+import { oneTableWithUsersForDeprecatedVariables } from '../form-create/templatesOfBug';
 
 test.describe('deprecated variables', () => {
   test('current record', async ({ page, mockPage, mockRecord }) => {
