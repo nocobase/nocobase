@@ -4,6 +4,7 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
+import db2resource from './db2resource';
 
 interface ActionParams {
   fields?: string[];
@@ -79,6 +80,7 @@ export class MockServer extends Koa {
       await next();
     });
     this.use(bodyParser());
+    this.use(db2resource);
     this.use(
       this.resourcer.restApiMiddleware({
         prefix: '/api',
