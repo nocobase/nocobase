@@ -1,5 +1,5 @@
 import { createForm } from '@formily/core';
-import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   BlockRequestContext_deprecated,
   CollectionManagerProvider,
@@ -31,7 +31,6 @@ export function FormBlockProvider(props) {
   const values = userJob?.result?.[formKey];
 
   const { findComponent } = useDesignable();
-  const Component = findComponent(field.component?.[0]) || React.Fragment;
 
   const form = useMemo(
     () =>
@@ -81,12 +80,8 @@ export function FormBlockProvider(props) {
               value={{ block: 'form', props, field, service, resource, __parent }}
             >
               <FormBlockContext.Provider value={formBlockValue}>
-                <Component {...field.componentProps}>
-                  <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
-                  <div ref={formBlockRef}>
-                    <RecursionField schema={fieldSchema} onlyRenderProperties />
-                  </div>
-                </Component>
+                <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
+                <div ref={formBlockRef}>{props.children}</div>
               </FormBlockContext.Provider>
             </BlockRequestContext_deprecated.Provider>
           </FormActiveFieldsProvider>

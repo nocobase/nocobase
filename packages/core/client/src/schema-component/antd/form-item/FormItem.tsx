@@ -16,7 +16,7 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-import { CollectionFieldProvider } from '../../../data-source';
+import { CollectionFieldProvider } from '../../../data-source/collection-field/CollectionFieldProvider';
 
 Item.displayName = 'FormilyFormItem';
 

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/preset-nocobase",
-  "version": "0.21.0-alpha.11",
+  "version": "0.21.0-alpha.12",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "dependencies": {
@@ -26,6 +26,7 @@
     "@nocobase/plugin-data-visualization": "0.21.0-alpha.11",
     "@nocobase/plugin-error-handler": "0.21.0-alpha.11",
     "@nocobase/plugin-export": "0.21.0-alpha.11",
+    "@nocobase/plugin-field-markdown-vditor": "0.21.0-alpha.11",
     "@nocobase/plugin-file-manager": "0.21.0-alpha.11",
     "@nocobase/plugin-formula-field": "0.21.0-alpha.11",
     "@nocobase/plugin-gantt": "0.21.0-alpha.11",
@@ -60,7 +61,6 @@
     "@nocobase/plugin-workflow-parallel": "0.21.0-alpha.11",
     "@nocobase/plugin-workflow-request": "0.21.0-alpha.11",
     "@nocobase/plugin-workflow-sql": "0.21.0-alpha.11",
-    "@nocobase/plugin-field-markdown-vditor": "0.21.0-alpha.11",
     "@nocobase/server": "0.21.0-alpha.11",
     "cronstrue": "^2.11.0"
   },
