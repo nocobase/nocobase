@@ -34,7 +34,7 @@ export abstract class DataSource extends EventEmitter {
     });
 
     this.collectionManager = this.createCollectionManager(options);
-    this.resourceManager.registerActionHandlers(loadDefaultActions(this));
+    this.resourceManager.registerActionHandlers(loadDefaultActions());
 
     if (options.acl !== false) {
       this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });

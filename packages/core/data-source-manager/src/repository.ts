@@ -13,7 +13,11 @@ export class Repository implements IRepository {
   }
 
   async findOne(options?: any): Promise<IModel> {
-    return {};
+    return {
+      toJSON() {
+        return {};
+      },
+    };
   }
 
   async destroy(options) {}
