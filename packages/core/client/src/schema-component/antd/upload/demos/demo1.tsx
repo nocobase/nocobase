@@ -2,7 +2,13 @@
  * title: Upload
  */
 import { FormItem } from '@formily/antd-v5';
-import { APIClientProvider, SchemaComponent, SchemaComponentProvider, Upload } from '@nocobase/client';
+import {
+  APIClientProvider,
+  CollectionProvider_deprecated,
+  SchemaComponent,
+  SchemaComponentProvider,
+  Upload,
+} from '@nocobase/client';
 import React from 'react';
 import apiClient from './apiClient';
 
@@ -40,12 +46,28 @@ const schema = {
   },
 };
 
+const collection = {
+  name: 'posts',
+  fields: [
+    {
+      name: 'input',
+      type: 'attachment',
+    },
+    {
+      name: 'read',
+      type: 'attachment',
+    },
+  ],
+};
+
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider components={{ Upload, FormItem }}>
-        <SchemaComponent schema={schema} />
-      </SchemaComponentProvider>
+      <CollectionProvider_deprecated collection={collection}>
+        <SchemaComponentProvider components={{ Upload, FormItem }}>
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
+      </CollectionProvider_deprecated>
     </APIClientProvider>
   );
 };

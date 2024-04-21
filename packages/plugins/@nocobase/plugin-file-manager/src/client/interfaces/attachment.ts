@@ -22,14 +22,14 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['belongsToMany'];
   schemaInitialize(schema: ISchema, { block, field }) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['size'] = 'small';
-    }
-
     if (!schema['x-component-props']) {
       schema['x-component-props'] = {};
     }
+
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props']['size'] = 'small';
+    }
+
     schema['x-component-props']['action'] = `${field.target}:create${
       field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
     }`;
