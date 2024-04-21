@@ -20,6 +20,7 @@ import {
 import dataSourceMainCollections from './dataSourceMainCollections.json';
 import dataSource2 from './dataSource2.json';
 import dataSourceMainData from './dataSourceMainData.json';
+import _ from 'lodash';
 
 const defaultApis = {
   'uiSchemas:patch': { data: { result: 'ok' } },
@@ -71,6 +72,7 @@ export interface GetAppOptions {
   apis?: MockApis;
   designable?: boolean;
   schemaSettings?: SchemaSettings;
+  disableAcl?: boolean;
   enableMultipleDataSource?: boolean;
 }
 
@@ -79,6 +81,7 @@ export const getApp = (options: GetAppOptions) => {
     appOptions = {},
     schemaSettings,
     providers,
+    disableAcl = true,
     apis: optionsApis = {},
     enableMultipleDataSource,
     designable,
@@ -86,7 +89,11 @@ export const getApp = (options: GetAppOptions) => {
   const app =
     appOptions instanceof Application
       ? appOptions
-      : new Application({ ...appOptions, designable: appOptions.designable || designable });
+      : new Application({
+          ...appOptions,
+          disableAcl: appOptions.disableAcl || disableAcl,
+          designable: appOptions.designable || designable,
+        });
   if (providers) {
     app.addProviders(providers);
   }
@@ -122,6 +129,7 @@ export interface GetAppComponentOptions<V = any, Props = {}> extends GetAppOptio
   Component?: ComponentType<Props>;
   value?: V;
   props?: Props;
+  noWrapperSchema?: boolean;
   enableUserListDataBlock?: boolean;
   onChange?: (value: V) => void;
 }
@@ -133,9 +141,16 @@ export const getAppComponent = (options: GetAppComponentOptions) => {
     value,
     props,
     onChange,
+    noWrapperSchema,
     enableUserListDataBlock,
     ...otherOptions
   } = options;
+
+  if (noWrapperSchema) {
+    const { App } = getApp(options);
+    return App;
+  }
+
   const schema = {
     type: 'object',
     name: 'test',
@@ -179,8 +194,22 @@ export const getAppComponent = (options: GetAppComponentOptions) => {
   return App;
 };
 
+export function addXReadPrettyToEachLayer(obj: Record<string, any> = {}) {
+  // 为当前层添加 'x-read-pretty' 属性
+  obj['x-read-pretty'] = true;
+
+  // 递归遍历对象的每个属性
+  _.forOwn(obj, (value, key) => {
+    if (_.isObject(value)) {
+      addXReadPrettyToEachLayer(value);
+    }
+  });
+
+  return obj;
+}
+
 export const getReadPrettyAppComponent = (options: GetAppComponentOptions) => {
-  return getAppComponent({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
+  return getAppComponent({ ...options, schema: addXReadPrettyToEachLayer(options.schema) });
 };
 
 interface GetAppComponentWithSchemaSettingsOptions extends GetAppComponentOptions {

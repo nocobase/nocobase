@@ -87,6 +87,7 @@ const defineCommonConfig = () => {
         include: ['packages/**/src/**/*.{ts,tsx}'],
         exclude: [
           '**/requirejs.ts',
+          '**/markdown-it-plugins/mermaidPlugin.ts',
           '**/demos/**',
           '**/swagger/**',
           '**/.dumi/**',
