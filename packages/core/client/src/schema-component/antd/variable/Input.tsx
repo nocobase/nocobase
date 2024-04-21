@@ -191,7 +191,6 @@ export function Input(props) {
     let options = [compile(constantOption), ...(scope ? [...scope] : [])];
     if (variable) {
       options = options.filter((item) => {
-        console.log('item', item);
         return !item.deprecated || variable[0] === item[names.value];
       });
     }

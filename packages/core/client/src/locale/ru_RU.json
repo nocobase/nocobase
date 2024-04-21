@@ -570,5 +570,5 @@
   "Home page": "Домашняя страница",
   "Handbook": "Руководство пользователя",
   "License": "Лицензия",
-  "The variable has been deprecated; \"Current form\" can be used as a substitute": "Переменная устарела; \"Текущая форма\" может быть использована в качестве замены"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Переменная устарела; \"Текущая форма\" может быть использована в качестве замены"
 }

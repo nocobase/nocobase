@@ -823,5 +823,5 @@
   "Plugin settings": "Plugin settings",
   "Menu": "Menu",
   "Drag and drop sorting field": "Drag and drop sorting field",
-  "The variable has been deprecated; \"Current form\" can be used as a substitute": "The variable has been deprecated; \"Current form\" can be used as a substitute"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "This variable has been deprecated and can be replaced with \"Current form\""
 }

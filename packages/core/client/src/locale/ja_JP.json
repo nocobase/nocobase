@@ -695,5 +695,5 @@
   "Home page": "ホームページ",
   "Handbook": "ユーザーマニュアル",
   "License": "ライセンス",
-  "The variable has been deprecated; \"Current form\" can be used as a substitute": "この変数は非推奨です。代わりに「現在のフォーム」を使用してください"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "この変数は非推奨です。代わりに「現在のフォーム」を使用してください"
 }

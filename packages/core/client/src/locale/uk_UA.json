@@ -776,5 +776,5 @@
   "Home page": "Домашня сторінка",
   "Handbook": "Посібник користувача",
   "License": "Ліцензія",
-  "The variable has been deprecated; \"Current form\" can be used as a substitute": "Змінна була застарілою; \"Поточна форма\" може бути використана як заміна"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Змінна була застарілою; \"Поточна форма\" може бути використана як заміна"
 }

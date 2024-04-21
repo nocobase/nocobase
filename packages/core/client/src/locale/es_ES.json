@@ -756,5 +756,5 @@
   "Home page": "Página de inicio",
   "Handbook": "Manual de usuario",
   "License": "Licencia",
-  "The variable has been deprecated; \"Current form\" can be used as a substitute": "La variable ha sido obsoleta; \"Formulario actual\" puede ser utilizada como sustituto"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "La variable ha sido obsoleta; \"Formulario actual\" puede ser utilizada como sustituto"
 }

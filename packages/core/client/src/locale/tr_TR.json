@@ -568,5 +568,5 @@
   "Home page": "Anasayfa",
   "Handbook": "Kullanıcı kılavuzu",
   "License": "Lisans",
-  "The variable has been deprecated; \"Current form\" can be used as a substitute": "Değişken kullanımdan kaldırıldı; \"Geçerli form\" yerine kullanılabilir"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Değişken kullanımdan kaldırıldı; \"Geçerli form\" yerine kullanılabilir"
 }

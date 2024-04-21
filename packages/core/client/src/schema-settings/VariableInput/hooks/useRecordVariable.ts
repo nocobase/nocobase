@@ -61,8 +61,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
     deprecated: blockType === 'form',
-    tooltip:
-      blockType === 'form' ? t('The variable has been deprecated; "Current form" can be used as a substitute') : '',
+    tooltip: blockType === 'form' ? t('This variable has been deprecated and can be replaced with "Current form"') : '',
   });
 
   return {
