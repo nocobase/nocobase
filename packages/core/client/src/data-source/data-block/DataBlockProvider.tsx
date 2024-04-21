@@ -4,7 +4,12 @@ import { ACLCollectionProvider } from '../../acl/ACLProvider';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { withDynamicSchemaProps } from '../../application/hoc';
 import { Designable, useDesignable } from '../../schema-component';
-import { AssociationProvider, CollectionManagerProvider, CollectionOptions, CollectionProvider } from '../collection';
+import {
+  AssociationProvider,
+  CollectionManagerProvider,
+  CollectionOptions,
+  SanitizedCollectionProvider,
+} from '../collection';
 import { CollectionRecord } from '../collection-record';
 import { BlockRequestProvider } from './DataBlockRequestProvider';
 import { DataBlockResourceProvider } from './DataBlockResourceProvider';
@@ -121,7 +126,7 @@ export const AssociationOrCollectionProvider = (props: {
       };
     }
     return {
-      Component: CollectionProvider,
+      Component: SanitizedCollectionProvider,
       name: collection,
     };
   }, [collection, association]);

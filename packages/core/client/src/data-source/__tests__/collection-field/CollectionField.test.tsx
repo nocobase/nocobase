@@ -1,18 +1,19 @@
-import React from 'react';
-import { render, screen } from '@nocobase/test/client';
 import {
+  Application,
   CollectionField,
   CollectionProvider,
-  Application,
+  DataSourceApplicationProvider,
   FormItem,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  DataSourceApplicationProvider,
+  useCollectionField,
 } from '@nocobase/client';
+import { render, screen } from '@nocobase/test/client';
+import React from 'react';
 import collections from '../collections.json';
 
-function renderApp(fieldName: string) {
+function renderApp(fieldName: string, components = {}) {
   const noUiSchema = {
     key: 'no-ui-schema',
     name: 'no-ui-schema',
@@ -49,7 +50,10 @@ function renderApp(fieldName: string) {
       <SchemaComponentProvider designable={true}>
         <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
           <CollectionProvider name="users">
-            <SchemaComponent schema={schema} components={{ CollectionField: CollectionField, FormItem, Input }} />
+            <SchemaComponent
+              schema={schema}
+              components={{ CollectionField: CollectionField, FormItem, Input, ...components }}
+            />
           </CollectionProvider>
         </DataSourceApplicationProvider>
       </SchemaComponentProvider>
@@ -62,6 +66,15 @@ describe('CollectionField', () => {
     renderApp('nickname');
     expect(screen.getByText('Nickname')).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toHaveClass('ant-input');
+  });
+
+  it('context', () => {
+    const Input = () => {
+      const field = useCollectionField();
+      return <div className={'input-test-1'}>{field?.name}</div>;
+    };
+    renderApp('nickname', { Input });
+    expect(document.querySelector('.input-test-1')).toHaveTextContent('nickname');
   });
 
   it('no schema', () => {
