@@ -9,9 +9,8 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    this.initKatexDependency();
     this.app.addComponents({ MarkdownVditor });
-
+    this.initKatexDependency();
     this.app.dataSourceManager.addFieldInterfaces([MarkdownVditorFieldInterface]);
   }
 
