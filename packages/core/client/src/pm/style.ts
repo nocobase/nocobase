@@ -21,6 +21,7 @@ export const useStyles = createStyles(({ token }) => {
     },
     pageContent: {
       margin: token.marginLG,
+      fontSize: 0, // 防止幽灵节点影响间距
     },
     // pageContent: {
     //   marginTop: token.margin,
