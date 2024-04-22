@@ -50,15 +50,15 @@ export class DataSourceManager {
     };
   }
 
-  registerDataSourceClass(type: string, DataSourceClass: typeof DataSource) {
+  registerDataSourceType(type: string, DataSourceClass: typeof DataSource) {
     this.factory.register(type, DataSourceClass);
   }
 
-  getDataSourceClass(type: string): typeof DataSource | undefined {
+  getDataSourceType(type: string): typeof DataSource | undefined {
     return this.factory.getClass(type);
   }
 
-  createDataSourceInstance(type: string, options: any = {}): DataSource {
+  buildDataSourceByType(type: string, options: any = {}): DataSource {
     return this.factory.create(type, options);
   }
 

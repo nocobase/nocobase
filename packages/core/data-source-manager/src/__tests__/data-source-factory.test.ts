@@ -18,11 +18,11 @@ describe('data source factory', () => {
       name: 'test-app-0',
     });
 
-    app.dataSourceManager.registerDataSourceClass('mock', MockDataSource);
+    app.dataSourceManager.registerDataSourceType('mock', MockDataSource);
 
-    expect(app.dataSourceManager.getDataSourceClass('mock')).toBe(MockDataSource);
+    expect(app.dataSourceManager.getDataSourceType('mock')).toBe(MockDataSource);
 
-    const ds = app.dataSourceManager.createDataSourceInstance('mock');
+    const ds = app.dataSourceManager.buildDataSourceByType('mock');
 
     expect(ds).toBeInstanceOf(MockDataSource);
   });
