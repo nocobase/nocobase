@@ -1,9 +1,9 @@
 import { BlockSchemaComponentPlugin, FormBlockProvider, VariablesProvider } from '@nocobase/client';
-import { checkSchema, checkSettings, renderApp, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { checkSettings, renderApp } from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
 
 describe('form.settings', () => {
-  test.only('new schema version', async () => {
+  test('new schema version', async () => {
     const FormBlockProviderWithSchema = withSchema(FormBlockProvider);
     await renderApp({
       designable: true,
@@ -215,5 +215,5 @@ describe('form.settings', () => {
     ]);
   });
 
-  test('old schema version', async () => {});
+  // test('old schema version', async () => {});
 });
