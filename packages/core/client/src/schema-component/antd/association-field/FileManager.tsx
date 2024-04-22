@@ -6,6 +6,7 @@ import {
   RecordPickerContext,
   RecordPickerProvider,
   SchemaComponentOptions,
+  Upload,
   useActionContext,
 } from '../..';
 import {
@@ -20,11 +21,10 @@ import {
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { EllipsisWithTooltip } from '../input';
-import { FileSelector, Preview } from '../preview';
-import { ReadPrettyInternalViewer } from './InternalViewer';
+import { Preview } from '../preview';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
-import { flatData, getLabelFormatValue, isShowFilePicker, useLabelUiSchema } from './util';
+import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -78,12 +78,6 @@ const InternalFileManager = (props) => {
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
   const { modalProps } = useActionContext();
-  const getFilter = () => {
-    const targetKey = collectionField?.targetKey || 'id';
-    const list = options.map((option) => option[targetKey]).filter(Boolean);
-    const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
-    return filter;
-  };
   const handleSelect = () => {
     insertSelector(schema.Selector);
     setVisibleSelector(true);
@@ -142,24 +136,15 @@ const InternalFileManager = (props) => {
   };
   return (
     <div style={{ width: '100%', overflow: 'auto' }}>
-      <FileSelector
-        value={options}
+      <Upload.Attachment
+        value={multiple ? options : options?.[0]}
         multiple={multiple}
         quickUpload={fieldSchema['x-component-props']?.quickUpload !== false}
         selectFile={fieldSchema['x-component-props']?.selectFile !== false}
         action={`${collectionField?.target}:create`}
         onSelect={handleSelect}
         onRemove={handleRemove}
-        onChange={(changed) => {
-          if (changed.every((file) => file.status !== 'uploading')) {
-            changed = changed.filter((file) => file.status === 'done').map((file) => file.response.data);
-            if (multiple) {
-              onChange([...options, ...changed]);
-            } else {
-              onChange(changed[0]);
-            }
-          }
-        }}
+        onChange={onChange}
       />
       <ActionContextProvider
         value={{
@@ -175,7 +160,7 @@ const InternalFileManager = (props) => {
         <RecordPickerProvider {...pickerProps}>
           <CollectionProvider_deprecated name={collectionField?.target}>
             <FormProvider>
-              <TableSelectorParamsProvider params={{ filter: getFilter() }}>
+              <TableSelectorParamsProvider params={{}}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
                   <RecursionField
                     onlyRenderProperties

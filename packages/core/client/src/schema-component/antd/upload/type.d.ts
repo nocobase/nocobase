@@ -7,6 +7,9 @@ export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   serviceErrorMessage?: string;
   value?: any;
   size?: string;
+  quickUpload?: boolean;
+  selectFile?: boolean;
+  onSelect?: () => void;
 };
 
 export type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {

@@ -11,9 +11,9 @@ import { CollectionProvider_deprecated, useCollection_deprecated } from '../../.
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
-import { FileSelector } from '../preview';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { Upload } from '../upload';
 
 export const RecordPickerContext = createContext(null);
 RecordPickerContext.displayName = 'RecordPickerContext';
@@ -155,7 +155,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
   return (
     <div>
       {showFilePicker ? (
-        <FileSelector
+        <Upload.Attachment
           value={options}
           multiple={multiple}
           quickUpload={quickUpload}

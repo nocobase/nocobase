@@ -174,9 +174,6 @@ export const useUploadValidator = (serviceErrorMessage = 'Upload Service Error')
 
 export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceErrorMessage, ...props }: T) {
   useUploadValidator(serviceErrorMessage);
-  const onChange = (param: { fileList: any[] }) => {
-    props.onChange?.(normalizeFileList([...param.fileList]));
-  };
 
   const api = useAPIClient();
 
@@ -214,7 +211,6 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         },
       };
     },
-    onChange,
   };
 }
 
