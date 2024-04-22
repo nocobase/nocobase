@@ -216,23 +216,20 @@ describe('load collections', function () {
     });
 
     await fieldsRepository.create({
-      values: { type: 'string', name: 'code', collectionName: 'users' },
+      values: { type: 'string', name: 'userCode', collectionName: 'users' },
       context: {},
     });
 
     await fieldsRepository.create({
-      values: { type: 'hasOne', name: 'profile', foreignKey: 'userCode', sourceKey: 'code', collectionName: 'users' },
-      context: {},
-    });
-
-    await fieldsRepository.update({
       values: {
-        target: 'users',
-      },
-      filter: {
+        type: 'hasOne',
         name: 'profile',
+        foreignKey: 'userCode',
+        sourceKey: 'userCode',
         collectionName: 'users',
+        target: 'profiles',
       },
+      context: {},
     });
 
     await app.runCommand('restart');
