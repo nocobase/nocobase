@@ -4,7 +4,6 @@ import { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { set, get, pick } from 'lodash';
 import { useFieldSchema, observer } from '@formily/react';
 
-// @ts-ignore
 import {
   AntdSchemaComponentPlugin,
   Application,
@@ -15,6 +14,7 @@ import {
   SchemaComponent,
   SchemaSettings,
   SchemaSettingsPlugin,
+  // @ts-ignore
 } from '@nocobase/client';
 
 import dataSourceMainCollections from './dataSourceMainCollections.json';
