@@ -18,7 +18,7 @@ describe('data source factory', () => {
       name: 'test-app-0',
     });
 
-    app.dataSourceManager.registerDataSourceType('mock', MockDataSource);
+    app.dataSourceManager.registerDataSourceClass('mock', MockDataSource);
 
     expect(app.dataSourceManager.getDataSourceClass('mock')).toBe(MockDataSource);
 
