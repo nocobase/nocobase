@@ -3,6 +3,30 @@ import { DataSource } from '../data-source';
 import { ICollectionManager } from '../types';
 
 describe('data source factory', () => {
+  it('should register data source type from dataSourceManager', async () => {
+    class MockDataSource extends DataSource {
+      createCollectionManager(options?: any): ICollectionManager {
+        return undefined;
+      }
+    }
+
+    const app = await createMockServer({
+      acl: false,
+      resourcer: {
+        prefix: '/api/',
+      },
+      name: 'test-app-0',
+    });
+
+    app.dataSourceManager.registerDataSourceType('mock', MockDataSource);
+
+    expect(app.dataSourceManager.getDataSourceClass('mock')).toBe(MockDataSource);
+
+    const ds = app.dataSourceManager.createDataSourceInstance('mock');
+
+    expect(ds).toBeInstanceOf(MockDataSource);
+  });
+
   it('should register data source type', async () => {
     class MockDataSource extends DataSource {
       createCollectionManager(options?: any): ICollectionManager {

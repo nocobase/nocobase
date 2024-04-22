@@ -6,11 +6,12 @@ type DataSourceHook = (dataSource: DataSource) => void;
 
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;
+  /**
+   * @internal
+   */
   factory: DataSourceFactory = new DataSourceFactory();
-
-  onceHooks: Array<DataSourceHook> = [];
-
   protected middlewares = [];
+  private onceHooks: Array<DataSourceHook> = [];
 
   constructor(public options = {}) {
     this.dataSources = new Map();
@@ -47,6 +48,18 @@ export class DataSourceManager {
 
       return ds.middleware(this.middlewares)(ctx, next);
     };
+  }
+
+  registerDataSourceType(type: string, DataSourceClass: any) {
+    this.factory.register(type, DataSourceClass);
+  }
+
+  getDataSourceClass(type: string) {
+    return this.factory.getClass(type);
+  }
+
+  createDataSourceInstance(type: string, options: any = {}): DataSource {
+    return this.factory.create(type, options);
   }
 
   afterAddDataSource(hook: DataSourceHook) {
