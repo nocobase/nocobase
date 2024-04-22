@@ -1,6 +1,5 @@
-import { expect } from 'vitest';
 import { screen } from '@testing-library/react';
-import { CheckModalOptions, checkModal } from '../utils';
+import { CheckModalOptions, checkModal, expectNoTsError } from '../utils';
 
 export interface CheckDeleteSettingOptions {
   title: string;
@@ -20,7 +19,7 @@ export async function checkDeleteSetting(options: CheckDeleteSettingOptions) {
           await options.modalChecker.afterSubmit();
         }
         if (options.deletedText) {
-          expect(screen.queryByText(options.deletedText)).not.toBeInTheDocument();
+          expectNoTsError(screen.queryByText(options.deletedText)).not.toBeInTheDocument();
         }
       },
     });

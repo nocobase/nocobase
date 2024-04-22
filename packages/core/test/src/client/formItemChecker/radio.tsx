@@ -1,8 +1,8 @@
-import { expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 
 import { CommonFormItemCheckerOptions, getFormItemElement } from './common';
 import { waitFor } from '@testing-library/react';
+import { expectNoTsError } from '../utils';
 
 export type RadioCheckOptions = CommonFormItemCheckerOptions;
 
@@ -12,18 +12,18 @@ export async function radioChecker(options: CommonFormItemCheckerOptions) {
   const radioGroup = formItem.querySelector('.ant-radio-group');
 
   if (options.oldValue) {
-    expect(radioGroup.querySelector('.ant-radio-wrapper-checked')).toHaveTextContent(options.oldValue);
+    expectNoTsError(radioGroup.querySelector('.ant-radio-wrapper-checked')).toHaveTextContent(options.oldValue);
   }
 
   if (options.newValue) {
     const el = [...radioGroup.querySelectorAll('.ant-radio-wrapper')].find((el) => el.textContent === options.newValue);
 
-    expect(el).toBeInTheDocument();
+    expectNoTsError(el).toBeInTheDocument();
 
     await userEvent.click(el);
 
     await waitFor(() => {
-      expect(radioGroup.querySelector('.ant-radio-wrapper-checked')).toHaveTextContent(options.newValue);
+      expectNoTsError(radioGroup.querySelector('.ant-radio-wrapper-checked')).toHaveTextContent(options.newValue);
     });
   }
 }

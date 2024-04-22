@@ -1,18 +1,18 @@
-import { expect } from 'vitest';
 import { waitFor, screen } from '@testing-library/react';
 import { GetAppComponentOptions } from '../web';
 import userEvent from '@testing-library/user-event';
 import { renderApp, renderReadPrettyApp } from './renderApp';
+import { expectNoTsError } from './utils';
 
 export async function showSettingsMenu(container: HTMLElement | Document = document) {
   await waitFor(() => {
-    expect(container.querySelector('[aria-label^="designer-schema-settings-"]')).toBeInTheDocument();
+    expectNoTsError(container.querySelector('[aria-label^="designer-schema-settings-"]')).toBeInTheDocument();
   });
 
   await userEvent.hover(container.querySelector('[aria-label^="designer-schema-settings-"]'));
 
   await waitFor(() => {
-    expect(screen.queryByTestId('schema-settings-menu')).toBeInTheDocument();
+    expectNoTsError(screen.queryByTestId('schema-settings-menu')).toBeInTheDocument();
   });
 }
 

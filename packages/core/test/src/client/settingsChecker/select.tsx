@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect } from 'vitest';
+import { expectNoTsError } from '../utils';
 
 export interface SelectSettingOptions {
   title: string;
@@ -17,22 +17,22 @@ export async function checkSelectSetting(options: SelectSettingOptions) {
   const formItem = screen.getByTitle(options.title);
 
   if (options.oldValue) {
-    expect(formItem).toHaveTextContent(options.oldValue);
+    expectNoTsError(formItem).toHaveTextContent(options.oldValue);
   }
 
   if (options.options) {
     const getListbox = () => document.querySelector(`.select-popup-${options.title.replaceAll(' ', '-')}`);
 
     // 打开下拉框
-    expect(formItem.querySelector('.ant-select-selector')).toBeInTheDocument();
+    expectNoTsError(formItem.querySelector('.ant-select-selector')).toBeInTheDocument();
     await userEvent.click(formItem.querySelector('.ant-select-selector'));
     await waitFor(() => {
-      expect(getListbox()).toBeInTheDocument();
+      expectNoTsError(getListbox()).toBeInTheDocument();
     });
 
     for (const option of options.options) {
       const listbox = getListbox();
-      expect(listbox).toHaveTextContent(option.label);
+      expectNoTsError(listbox).toHaveTextContent(option.label);
 
       if (option.checker) {
         const item = [...listbox.querySelectorAll('.ant-select-item-option-content')].find(
@@ -42,7 +42,7 @@ export async function checkSelectSetting(options: SelectSettingOptions) {
 
         // 等到下拉框关闭，并且值更新
         await waitFor(() => {
-          expect(screen.getByTitle(options.title)).toHaveTextContent(option.label);
+          expectNoTsError(screen.getByTitle(options.title)).toHaveTextContent(option.label);
         });
 
         await option.checker();
@@ -50,7 +50,7 @@ export async function checkSelectSetting(options: SelectSettingOptions) {
         // 重新打开下拉框
         await userEvent.click(screen.getByTitle(options.title).querySelector('.ant-select-selection-item'));
         await waitFor(() => {
-          expect(getListbox()).toBeInTheDocument();
+          expectNoTsError(getListbox()).toBeInTheDocument();
         });
       }
     }

@@ -1,8 +1,7 @@
-import { expect } from 'vitest';
 import { waitFor, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormItemCheckOptions, checkFormItems } from '../formItemChecker';
-import { sleep } from './utils';
+import { expectNoTsError, sleep } from './utils';
 
 export interface CheckModalOptions {
   triggerText?: string;
@@ -20,27 +19,27 @@ export async function checkModal(options: CheckModalOptions) {
   const { triggerText, modalTitle, confirmTitle, submitText = 'OK', formItems = [] } = options;
 
   await waitFor(() => {
-    expect(screen.queryByText(triggerText)).toBeInTheDocument();
+    expectNoTsError(screen.queryByText(triggerText)).toBeInTheDocument();
   });
 
   await userEvent.click(screen.getByText(triggerText));
 
   await waitFor(() => {
-    expect(screen.queryByRole('dialog')).toBeInTheDocument();
+    expectNoTsError(screen.queryByRole('dialog')).toBeInTheDocument();
   });
 
   const dialog = screen.getByRole('dialog');
 
   if (modalTitle) {
-    expect(dialog.querySelector('.ant-modal-title')).toHaveTextContent(modalTitle);
+    expectNoTsError(dialog.querySelector('.ant-modal-title')).toHaveTextContent(modalTitle);
   }
 
   if (confirmTitle) {
-    expect(dialog.querySelector('.ant-modal-confirm-title')).toHaveTextContent(confirmTitle);
+    expectNoTsError(dialog.querySelector('.ant-modal-confirm-title')).toHaveTextContent(confirmTitle);
   }
 
   if (options.contentText) {
-    expect(dialog).toHaveTextContent(options.contentText);
+    expectNoTsError(dialog).toHaveTextContent(options.contentText);
   }
 
   if (options.beforeCheck) {
@@ -56,7 +55,7 @@ export async function checkModal(options: CheckModalOptions) {
   await userEvent.click(screen.getByText(submitText));
 
   await waitFor(() => {
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expectNoTsError(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   if (options.afterSubmit) {

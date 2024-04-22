@@ -1,7 +1,7 @@
-import { expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 
 import { CommonFormItemCheckerOptions, getFormItemElement } from './common';
+import { expectNoTsError } from '../utils';
 
 export type InputCheckOptions = CommonFormItemCheckerOptions;
 
@@ -11,7 +11,7 @@ export async function inputChecker(options: InputCheckOptions) {
   const input = formItem.querySelector('input');
 
   if (options.oldValue) {
-    expect(input).toHaveValue(options.oldValue);
+    expectNoTsError(input).toHaveValue(options.oldValue);
   }
 
   if (options.newValue) {

@@ -1,6 +1,6 @@
 import { waitFor, screen } from '@testing-library/react';
 import { checkSettings } from '../settingsChecker';
-import { expect } from 'vitest';
+import { expectNoTsError } from '../utils';
 
 export async function checkFieldTitle(oldValue?: string) {
   const newValue = 'new test';
@@ -20,7 +20,7 @@ export async function checkFieldTitle(oldValue?: string) {
         ],
         async afterSubmit() {
           await waitFor(() => {
-            expect(screen.queryByText(newValue)).toBeInTheDocument();
+            expectNoTsError(screen.queryByText(newValue)).toBeInTheDocument();
           });
         },
       },
