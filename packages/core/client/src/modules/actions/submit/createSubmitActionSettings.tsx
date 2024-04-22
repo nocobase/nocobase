@@ -1,19 +1,19 @@
-import { useFieldSchema, useField, connect, mapProps, ISchema } from '@formily/react';
+import { ISchema, connect, mapProps, useField, useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
-import React, { useEffect, useState } from 'react';
 import { Tree as AntdTree } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useCollection_deprecated } from '../../../collection-manager';
+import { useDesignable } from '../../../schema-component';
 import {
   ButtonEditor,
   RemoveButton,
   SecondConFirm,
   WorkflowConfig,
 } from '../../../schema-component/antd/action/Action.Designer';
-import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../../../schema-component';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
-import { useCollection_deprecated } from '../../../collection-manager';
 import { SchemaSettingsModalItem } from '../../../schema-settings/SchemaSettings';
 
 const Tree = connect(
@@ -80,7 +80,7 @@ export function SaveMode() {
                 defaultCheckedKeys: field.componentProps.filterKeys,
                 rootStyle: {
                   padding: '8px 0',
-                  border: '1px solid #d9d9d9',
+                  border: '1px solid rgba(0, 0, 0, 0.1)',
                   borderRadius: '2px',
                   maxHeight: '30vh',
                   overflow: 'auto',

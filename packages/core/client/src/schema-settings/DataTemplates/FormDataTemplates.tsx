@@ -5,6 +5,7 @@ import { Tree as AntdTree } from 'antd';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { mergeFilter } from '../../filter-provider/utils';
 import { SchemaComponent, SchemaComponentContext, removeNullCondition, useProps } from '../../schema-component';
@@ -15,7 +16,6 @@ import { ArrayCollapse } from './components/DataTemplateTitle';
 import { getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 import { useSyncFromForm } from './utils';
-import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 
 const Tree = connect(
   AntdTree,
@@ -203,7 +203,7 @@ export const FormDataTemplates = withDynamicSchemaProps(
                         onCheck: '{{ getOnCheck($self) }}',
                         rootStyle: {
                           padding: '8px 0',
-                          border: '1px solid #d9d9d9',
+                          border: '1px solid rgba(0, 0, 0, 0.1)',
                           borderRadius: '2px',
                           maxHeight: '30vh',
                           overflow: 'auto',
