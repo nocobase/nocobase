@@ -112,6 +112,16 @@ export class CollectionModel extends MagicAttributeModel {
     // @ts-ignore
     const instances: FieldModel[] = fields;
 
+    instances.sort((a, b) => {
+      if (a.isAssociationField() && !b.isAssociationField()) {
+        return 1;
+      }
+      if (!a.isAssociationField() && b.isAssociationField()) {
+        return -1;
+      }
+      return 0;
+    });
+
     for (const instance of instances) {
       await instance.load(options);
     }

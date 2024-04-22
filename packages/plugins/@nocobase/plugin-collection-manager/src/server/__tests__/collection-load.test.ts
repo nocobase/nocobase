@@ -189,4 +189,56 @@ describe('load collections', function () {
 
     expect(groups[0].users.length).toBe(1);
   });
+
+  it('should load has one association', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'profiles',
+        fields: [{ name: 'id', type: 'bigInt', primaryKey: true, autoIncrement: true }],
+      },
+      context: {},
+    });
+
+    await fieldsRepository.create({
+      values: { type: 'string', name: 'userCode', collectionName: 'profiles' },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'users',
+        fields: [
+          { name: 'id', type: 'bigInt', primaryKey: true, autoIncrement: true },
+          { name: 'name', type: 'string' },
+        ],
+      },
+      context: {},
+    });
+
+    await fieldsRepository.create({
+      values: { type: 'string', name: 'code', collectionName: 'users' },
+      context: {},
+    });
+
+    await fieldsRepository.create({
+      values: { type: 'hasOne', name: 'profile', foreignKey: 'userCode', sourceKey: 'code', collectionName: 'users' },
+      context: {},
+    });
+
+    await fieldsRepository.update({
+      values: {
+        target: 'users',
+      },
+      filter: {
+        name: 'profile',
+        collectionName: 'users',
+      },
+    });
+
+    await app.runCommand('restart');
+    db = app.db;
+
+    const User = db.getCollection('users');
+    expect(User.model.associations['profile']).toBeTruthy();
+  });
 });
