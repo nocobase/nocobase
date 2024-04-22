@@ -11,7 +11,7 @@ test.describe('deprecated variables', () => {
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:editForm-users').hover();
     await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await expect(page.getByLabel('variable-tag').getByText('Current record / Nickname')).toBeVisible();
-    await expect(page.getByLabel('textbox').getByText('Current record / Username')).toBeVisible();
+    await expect(page.getByText('Current record / Username')).toBeVisible();
 
     // 2. 但是变量列表中是禁用状态
     await page.locator('button').filter({ hasText: /^x$/ }).click();
