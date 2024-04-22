@@ -1,5 +1,6 @@
 import { waitFor, screen } from '@testing-library/react';
 import { checkSettings } from '../settingsChecker';
+import { expect } from 'vitest';
 
 export async function checkBlockTitle(oldValue?: string) {
   const newValue = 'new test';

@@ -1,3 +1,5 @@
+import { expect } from 'vitest';
+
 export interface CommonFormItemCheckerOptions {
   label?: string;
   container?: HTMLElement;

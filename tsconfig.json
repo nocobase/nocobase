@@ -15,6 +15,7 @@
     "inlineSources": true,
     "resolveJsonModule": true,
     "declaration": true,
+    "types": ["node", "@testing-library/jest-dom"],
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "baseUrl": "."

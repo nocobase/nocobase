@@ -1,9 +1,11 @@
+import { expect } from 'vitest';
 import { screen } from '@testing-library/react';
 
 import { CheckDeleteSettingOptions, checkDeleteSetting } from './delete';
 import { CheckModalSettingOptions, checkModalSetting } from './modal';
 import { CheckSwitchSettingOptions, checkSwitchSetting } from './switch';
 import { SelectSettingOptions, checkSelectSetting } from './select';
+import { showSettingsMenu } from '../renderSettings';
 
 export * from './delete';
 export * from './modal';
@@ -29,6 +31,9 @@ export async function checkSettings(list: CheckSettingsOptions[], checkLength = 
     expect(menuList.querySelectorAll('li[role="menuitem"]')).toHaveLength(list.length);
   }
   for (const item of list) {
+    if (!screen.queryByTestId('schema-settings-menu')) {
+      await showSettingsMenu();
+    }
     const type = item.type;
     const checker = types[type];
     await checker(item as any);

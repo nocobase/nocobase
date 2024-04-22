@@ -102,6 +102,8 @@ export const getApp = (options: GetAppOptions) => {
     app.schemaSettingsManager.add(schemaSettings);
   }
 
+  app.addComponents({ CommonSchemaComponent });
+
   app.pluginManager.add(AntdSchemaComponentPlugin);
   app.pluginManager.add(SchemaSettingsPlugin);
   app.pluginManager.add(CollectionPlugin, { config: { enableRemoteDataSource: false } });
@@ -269,8 +271,8 @@ export const getReadPrettyAppComponentWithSchemaSettings = (options: GetAppCompo
   return App;
 };
 
-export function withSchema(Component: ComponentType) {
-  return observer((props) => {
+export function withSchema(Component: ComponentType, name?: string) {
+  const ComponentValue = observer((props) => {
     const schema = useFieldSchema();
     const schemaValue = pick(schema.toJSON(), [
       'title',
@@ -278,12 +280,23 @@ export function withSchema(Component: ComponentType) {
       'enum',
       'x-component-props',
       'x-decorator-props',
+      'x-linkage-rules',
     ]);
     return (
       <>
-        <pre data-testid={`test-schema`}>{JSON.stringify(schemaValue, undefined, 2)}</pre>
+        <pre data-testid={name ? `test-schema-${name}` : `test-schema`}>
+          {JSON.stringify(schemaValue, undefined, 2)}
+        </pre>
         <Component {...props} />
       </>
     );
   });
+
+  ComponentValue.displayName = `withSchema(${Component.displayName || Component.name})`;
+
+  return ComponentValue;
 }
+
+export const CommonSchemaComponent = withSchema(function CommonSchemaComponent(props: any) {
+  return <>{props.children}</>;
+});

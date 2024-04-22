@@ -1,3 +1,4 @@
+import { expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import { CheckModalOptions, checkModal } from '../utils';
 
