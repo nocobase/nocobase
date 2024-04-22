@@ -16,6 +16,7 @@ test.describe('deprecated variables', () => {
     // 2. 但是变量列表中是禁用状态
     await page.locator('button').filter({ hasText: /^x$/ }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Current record right' }).hover();
+    await page.waitForTimeout(500);
     await expect(page.getByRole('tooltip', { name: 'This variable has been deprecated' })).toBeVisible();
     await expect(page.getByRole('menuitemcheckbox', { name: 'Current record right' })).toHaveClass(
       new RegExp('ant-cascader-menu-item-disabled'),
@@ -27,6 +28,7 @@ test.describe('deprecated variables', () => {
     // 表达式输入框也是一样
     await page.getByText('xSelect a variable').click();
     await page.getByRole('menuitemcheckbox', { name: 'Current record right' }).hover();
+    await page.waitForTimeout(500);
     await expect(page.getByRole('tooltip', { name: 'This variable has been deprecated' })).toBeVisible();
     await expect(page.getByRole('menuitemcheckbox', { name: 'Current record right' })).toHaveClass(
       new RegExp('ant-cascader-menu-item-disabled'),
