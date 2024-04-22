@@ -50,11 +50,11 @@ export class DataSourceManager {
     };
   }
 
-  registerDataSourceType(type: string, DataSourceClass: any) {
+  registerDataSourceType(type: string, DataSourceClass: typeof DataSource) {
     this.factory.register(type, DataSourceClass);
   }
 
-  getDataSourceClass(type: string) {
+  getDataSourceClass(type: string): typeof DataSource | undefined {
     return this.factory.getClass(type);
   }
 
