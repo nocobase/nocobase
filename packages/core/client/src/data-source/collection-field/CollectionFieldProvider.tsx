@@ -42,6 +42,10 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
   return <CollectionFieldContext.Provider value={value}>{children}</CollectionFieldContext.Provider>;
 };
 
+export const ClearCollectionFieldContext: FC = (props) => {
+  return <CollectionFieldContext.Provider value={null}>{props.children}</CollectionFieldContext.Provider>;
+};
+
 export const useCollectionField = () => {
   const context = useContext(CollectionFieldContext);
   // if (!context) {

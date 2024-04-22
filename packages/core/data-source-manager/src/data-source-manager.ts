@@ -17,6 +17,10 @@ export class DataSourceManager {
     this.middlewares = [];
   }
 
+  get(dataSourceKey: string) {
+    return this.dataSources.get(dataSourceKey);
+  }
+
   async add(dataSource: DataSource, options: any = {}) {
     await dataSource.load(options);
     this.dataSources.set(dataSource.name, dataSource);

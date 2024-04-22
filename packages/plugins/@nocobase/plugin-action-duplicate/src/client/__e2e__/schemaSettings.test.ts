@@ -67,7 +67,7 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     ];
     //选中的字段符合预期
     expect(expectedArray).toEqual(expect.arrayContaining(defaultCheckedNodesText));
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click();
     await expect(

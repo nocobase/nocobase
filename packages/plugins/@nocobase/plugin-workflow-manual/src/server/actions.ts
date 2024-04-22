@@ -50,7 +50,10 @@ export async function submit(context: Context, next) {
   await processor.prepare();
 
   // NOTE: validate assignee
-  const assignees = processor.getParsedValue(userJob.node.config.assignees ?? [], userJob.nodeId);
+  const assignees = processor
+    .getParsedValue(userJob.node.config.assignees ?? [], userJob.nodeId)
+    .flat()
+    .filter(Boolean);
   if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
     return context.throw(403);
   }

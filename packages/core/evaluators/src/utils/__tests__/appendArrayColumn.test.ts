@@ -28,4 +28,14 @@ describe('evaluators > appendArrayColumn()', () => {
     expect(get(scope, 'a.b')).toEqual(a_b);
     expect(get(scope, 'a.b.c')).toEqual([1, 2, 3, 4]);
   });
+
+  it('nested object array', () => {
+    const scope = {
+      a: {
+        b: { c: [{ d: 1 }, { d: 2 }] },
+      },
+    };
+    appendArrayColumn(scope, 'a.b.c.d');
+    expect(get(scope, 'a.b.c.d')).toEqual([1, 2]);
+  });
 });

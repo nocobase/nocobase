@@ -255,6 +255,24 @@ test.describe('form item & create form', () => {
         .getByLabel('schema-initializer-AssociationField.SubTable-table:configureColumns-users'),
     ).toBeVisible();
 
+    // https://nocobase.height.app/T-4025/description -------------------------------
+    // 1. 把 roles 字段在子表格中显示出来
+    await page.getByLabel('schema-initializer-AssociationField.SubTable-table:configureColumns-users').hover();
+    await page.getByRole('menuitem', { name: 'Roles' }).click();
+    await page.mouse.move(300, 0);
+
+    // 2. 将其 field component 设置为 Record picker
+    await page.getByRole('button', { name: 'Roles' }).hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users').hover();
+    await page.getByRole('menuitem', { name: 'Field component Select' }).click();
+    await page.getByRole('option', { name: 'Record picker' }).click();
+
+    // 3. 此时 settings 列表中不应该显示 Allow add new data 选项
+    await expect(page.getByRole('menuitem', { name: 'Allow add new data' })).toBeHidden();
+    await page.mouse.move(300, 0);
+
+    // -------------------------------------------------------------------------------
+
     // 选择 Sub-form
     await page.getByLabel(`block-item-CollectionField-general-form-general.manyToMany-manyToMany`).hover();
     await page

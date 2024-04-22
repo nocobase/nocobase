@@ -10,7 +10,7 @@ import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
 type Params = {
@@ -76,7 +76,7 @@ const InternalTableSelectorProvider = (props) => {
           },
         }}
       >
-        <RenderChildrenWithAssociationFilter {...props} />
+        {props.children}
       </TableSelectorContext.Provider>
     </RecordProvider>
   );
@@ -309,13 +309,7 @@ export const useTableSelectorProps = () => {
     showIndex: false,
     dragSort: false,
     rowKey: ctx.rowKey || 'id',
-    pagination:
-      ctx?.params?.paginate !== false
-        ? {
-            defaultCurrent: ctx?.params?.page || 1,
-            defaultPageSize: ctx?.params?.pageSize,
-          }
-        : false,
+    pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;

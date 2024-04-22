@@ -271,8 +271,15 @@ export interface DataBlockInitializerProps {
   icon?: string | React.ReactNode;
   name: string;
   title: string;
+  /**
+   * 用来筛选弹窗中的 “Current record” 和 “Associated records” 选项中的数据表
+   */
   filter?: (options: { collection: Collection; associationField: CollectionFieldOptions }) => boolean;
   filterDataSource?: (dataSource: DataSource) => boolean;
+  /**
+   * 用来筛选弹窗中的 “Other records” 选项中的数据表
+   */
+  filterOtherRecordsCollection?: (collection: Collection) => boolean;
   componentType: string;
   onlyCurrentDataSource?: boolean;
   hideSearch?: boolean;
@@ -304,6 +311,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     items: itemsFromProps,
     hideOtherRecordsInPopup,
     onClick: propsOnClick,
+    filterOtherRecordsCollection,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -335,6 +343,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
       componentName: componentType,
       filter,
       filterDataSource,
+      filterOtherRecordsCollection,
       onlyCurrentDataSource,
       showAssociationFields,
       dataBlockInitializerProps: props,

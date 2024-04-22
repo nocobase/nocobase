@@ -160,7 +160,7 @@ const transformers: {
           { label: '1.000', value: 3 },
         ],
       },
-      fn: (val: number, precision: number) => val.toFixed(precision),
+      fn: (val: number, precision: number) => Number(val.toFixed(precision)),
     },
     Separator: {
       schema: {
@@ -174,11 +174,11 @@ const transformers: {
       fn: (val: number, separator: string) => {
         switch (separator) {
           case 'en-US':
-            return val.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            return val.toLocaleString('en-US', { minimumFractionDigits: 2 });
           case 'de-DE':
-            return val.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+            return val.toLocaleString('de-DE', { minimumFractionDigits: 2 });
           case 'ru-RU':
-            return val.toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+            return val.toLocaleString('ru-RU', { minimumFractionDigits: 2 });
           default:
             return val;
         }
@@ -206,7 +206,16 @@ const transformers: {
       },
     },
     Exponential: (val: number | string) => (+val)?.toExponential(),
-    Abbreviation: (val: number, locale = 'en-US') => new Intl.NumberFormat(locale, { notation: 'compact' }).format(val),
+    Abbreviation: {
+      schema: {
+        'x-component': 'Select',
+        enum: [
+          { label: 'en-US', value: 'en-US' },
+          { label: 'zh-CN', value: 'zh-CN' },
+        ],
+      },
+      fn: (val: number, locale = 'en-US') => new Intl.NumberFormat(locale, { notation: 'compact' }).format(val),
+    },
   },
   string: {
     'Type conversion': {
