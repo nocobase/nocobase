@@ -9,11 +9,11 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
       '&.reset': {
         '&.nb-action-popup': {
           '.ant-drawer-header': { display: 'none' },
-          '.ant-drawer-body': { paddingTop: token.paddingContentVerticalLG, backgroundColor: token.colorBgElevated },
+          '.ant-drawer-body': { paddingTop: token.paddingContentVerticalLG, backgroundColor: 'var(--colorBgDrawer)' },
         },
         '&.nb-record-picker-selector': {
           '.ant-drawer-wrapper-body': {
-            backgroundColor: token.colorBgElevated,
+            backgroundColor: 'var(--colorBgDrawer)',
           },
           '.nb-block-item': {
             marginBottom: token.marginLG,

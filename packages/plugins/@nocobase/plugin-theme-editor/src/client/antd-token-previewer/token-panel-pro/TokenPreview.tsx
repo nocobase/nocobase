@@ -193,7 +193,7 @@ const TokenPreview: FC<TokenPreviewProps> = ({ theme, tokenName, type }) => {
             height: '50%',
             borderRadius: 6,
             background: '#fff',
-            border: '1px solid rgba(0, 0, 0, 0.1)',
+            border: '1px solid #d9d9d9',
             boxShadow: (getDesignToken(theme) as any)[tokenName],
           }}
         />

@@ -3,16 +3,16 @@ import { ISchema, connect, mapProps, useField, useFieldSchema, useForm } from '@
 import {
   ActionDesigner,
   SchemaSettingOpenModeSchemaItems,
-  SchemaSettings,
+  useCollection_deprecated,
+  useRecord,
+  SchemaSettingsModalItem,
   SchemaSettingsItemType,
   SchemaSettingsLinkageRules,
-  SchemaSettingsModalItem,
   useCollectionState,
-  useCollection_deprecated,
   useDesignable,
-  useRecord,
   useSchemaToolbar,
   useSyncFromForm,
+  SchemaSettings,
 } from '@nocobase/client';
 import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -261,7 +261,7 @@ function DuplicationMode() {
                 onCheck: '{{ getOnCheck($self) }}',
                 rootStyle: {
                   padding: '8px 0',
-                  border: '1px solid rgba(0, 0, 0, 0.1)',
+                  border: '1px solid #d9d9d9',
                   borderRadius: '2px',
                   maxHeight: '30vh',
                   overflow: 'auto',

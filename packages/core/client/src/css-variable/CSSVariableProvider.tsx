@@ -1,5 +1,5 @@
 import { TinyColor } from '@ctrl/tinycolor';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { defaultTheme } from '../global-theme';
 import { useToken } from '../style';
 
@@ -13,6 +13,11 @@ export const CSSVariableProvider = ({ children }) => {
     .onBackground(token.colorFill)
     .onBackground(token.colorFill)
     .toHexShortString();
+
+  const colorBgDrawer = useMemo(() => {
+    const colorBgElevated = new TinyColor(token.colorBgElevated);
+    return colorBgElevated.isDark() ? token.colorBgElevated : colorBgElevated.darken(4).toHexString();
+  }, [token.colorBgElevated]);
 
   useEffect(() => {
     document.body.style.setProperty('--nb-spacing', `${token.marginLG}px`);
@@ -35,6 +40,7 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorBgScrollBar', colorBgScrollBar);
     document.body.style.setProperty('--colorBgScrollBarHover', colorBgScrollBarHover);
     document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
+    document.body.style.setProperty('--colorBgDrawer', colorBgDrawer);
     document.body.style.setProperty('--colorSettings', token.colorSettings || defaultTheme.token.colorSettings);
     document.body.style.setProperty('--colorBgSettingsHover', token.colorBgSettingsHover);
     document.body.style.setProperty('--colorBorderSettingsHover', token.colorBorderSettingsHover);
@@ -61,14 +67,13 @@ export const CSSVariableProvider = ({ children }) => {
     colorBgScrollBar,
     colorBgScrollBarHover,
     colorBgScrollBarActive,
+    colorBgDrawer,
     token.colorPrimaryText,
     token.colorPrimaryTextActive,
     token.colorPrimaryTextHover,
     token.colorSettings,
     token.colorBgSettingsHover,
     token.colorBorderSettingsHover,
-    token.colorWarningBg,
-    token.colorWarningBorder,
   ]);
 
   return children;
