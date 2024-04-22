@@ -508,7 +508,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Button active />}
+            {inView || isIndex ? props.children : <Skeleton.Button />}
           </td>
         );
       },
@@ -527,7 +527,7 @@ export const Table: any = withDynamicSchemaProps(
           cell: BodyCellComponent,
         },
       };
-    }, [bodyWrapperComponent]);
+    }, [BodyCellComponent, bodyWrapperComponent]);
 
     const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
 
