@@ -9,7 +9,7 @@ import {
   useProps,
   withDynamicSchemaProps,
 } from '@nocobase/client';
-import { Spin, Tag, Card, Skeleton } from 'antd';
+import { Card, Skeleton, Spin, Tag } from 'antd';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { Board } from './board';
@@ -155,7 +155,7 @@ export const Kanban: any = withDynamicSchemaProps(
                         <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
                       ) : (
                         <Card bordered={false}>
-                          <Skeleton active paragraph={{ rows: 4 }} />
+                          <Skeleton paragraph={{ rows: 4 }} />
                         </Card>
                       )}
                     </div>
