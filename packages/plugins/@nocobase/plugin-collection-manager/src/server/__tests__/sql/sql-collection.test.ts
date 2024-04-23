@@ -54,7 +54,7 @@ describe('sql collection', () => {
     });
     const res = await agent.resource('sqlCollection').execute({
       values: {
-        sql: 'select * from "testSqlCollection"',
+        sql: `select * from ${db.queryInterface.quoteIdentifier('testSqlCollection')}`,
       },
     });
     expect(res.status).toBe(200);
