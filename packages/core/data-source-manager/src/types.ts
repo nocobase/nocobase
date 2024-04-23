@@ -29,7 +29,7 @@ export interface IField {
 export interface ICollection {
   repository: IRepository;
 
-  updateOptions(options: any): void;
+  updateOptions(options: CollectionOptions, mergeOptions?: MergeOptions): void;
 
   setField(name: string, options: any): IField;
 

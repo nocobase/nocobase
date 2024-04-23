@@ -21,6 +21,34 @@ describe('Collection Manager', () => {
     expect(collectionManager.hasCollection('users')).toBeTruthy();
   });
 
+  it('should extend collection', async () => {
+    const collectionManager = new CollectionManager();
+
+    collectionManager.defineCollection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    const UsersCollection = collectionManager.getCollection('users');
+
+    collectionManager.extendCollection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'age',
+        },
+      ],
+    });
+
+    expect(UsersCollection.getField('age')).toBeTruthy();
+  });
+
   it('should register repository', async () => {
     class MockRepository extends Repository {
       async find() {
