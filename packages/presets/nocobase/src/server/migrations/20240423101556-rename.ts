@@ -14,6 +14,7 @@ export default class extends Migration {
           packageName: original,
         },
         values: {
+          name: names[original].replace('@nocobase/plugin-', ''),
           packageName: names[original],
         },
       });

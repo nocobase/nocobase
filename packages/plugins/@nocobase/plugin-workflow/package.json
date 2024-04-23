@@ -36,7 +36,7 @@
     "@nocobase/database": "0.x",
     "@nocobase/evaluators": "0.x",
     "@nocobase/logger": "0.x",
-    "@nocobase/plugin-collection-manager": "0.x",
+    "@nocobase/plugin-data-source-main": "0.x",
     "@nocobase/plugin-error-handler": "0.x",
     "@nocobase/plugin-users": "0.x",
     "@nocobase/resourcer": "0.x",

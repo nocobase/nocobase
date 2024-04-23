@@ -20,7 +20,7 @@ class SubAppPlugin extends Plugin {
     }
 
     subApp.on('beforeLoadPlugin', (plugin) => {
-      if (plugin.name === 'collection-manager') {
+      if (plugin.name === 'data-source-main') {
         plugin.setLoadFilter({
           'name.$ne': 'roles',
         });

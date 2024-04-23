@@ -1,8 +1,8 @@
-import { Model, Repository } from '@nocobase/database';
+import { Repository } from '@nocobase/database';
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { getSchemaUid, getTextsFromDB, getTextsFromMenu } from '../actions/localization';
 import { getMenuSchema, getMobileMenuSchema } from './utils';
-import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 describe('sync', () => {
   let app: MockServer;
@@ -13,7 +13,7 @@ describe('sync', () => {
     app = await createMockServer({
       plugins: [
         // 'data-source-manager',
-        'collection-manager',
+        'data-source-main',
         'localization-management',
         'ui-schema-storage',
         'client',
