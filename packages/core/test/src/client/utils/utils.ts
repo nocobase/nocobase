@@ -4,12 +4,6 @@ import { waitFor, screen } from '@testing-library/react';
 // @ts-ignore
 export const expectNoTsError: any = expect;
 
-export const sleep = async (timeout = 0) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, timeout);
-  });
-};
-
 export const WaitApp = async () => {
   await waitFor(() => {
     expectNoTsError(screen.queryByText('Loading...')).not.toBeInTheDocument();

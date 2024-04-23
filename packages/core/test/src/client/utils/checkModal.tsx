@@ -1,7 +1,8 @@
 import { waitFor, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormItemCheckOptions, checkFormItems } from '../formItemChecker';
-import { expectNoTsError, sleep } from './utils';
+import { expectNoTsError } from './utils';
+import { sleep } from '../../web';
 
 export interface CheckModalOptions {
   triggerText?: string;

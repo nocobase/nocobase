@@ -28,6 +28,8 @@ const defaultApis = {
   ...dataSourceMainData,
 };
 
+export * from './utils';
+
 type URL = string;
 type ResponseData = any;
 

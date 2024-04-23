@@ -1,5 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react';
+import { sleep } from '../web';
 
 export * from './utils';
 export { renderHook } from '@testing-library/react-hooks';
@@ -15,7 +16,7 @@ function customRender(ui: React.ReactElement, options = {}) {
 export * from '@testing-library/react';
 export { default as userEvent } from '@testing-library/user-event';
 // override render export
-export { customRender as render };
+export { customRender as render, sleep };
 
 export * from './renderApp';
 export * from './renderHookWithApp';
