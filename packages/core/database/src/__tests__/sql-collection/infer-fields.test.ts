@@ -28,7 +28,7 @@ describe('infer fields', () => {
     });
     db.collection({
       name: 'roles_users',
-      schema: db.inDialect('postgres') ? 'public' : undefined,
+      schema: db.inDialect('postgres') ? process.env.DB_SCHEMA : undefined,
       fields: [
         { name: 'id', type: 'bigInt', interface: 'id' },
         { name: 'userId', type: 'bigInt', interface: 'id' },
