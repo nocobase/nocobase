@@ -52,9 +52,10 @@ describe('sql collection', () => {
         testField: 'test',
       },
     });
+    const schema = process.env.DB_SCHEMA ? `${process.env.DB_SCHEMA}.` : ``;
     const res = await agent.resource('sqlCollection').execute({
       values: {
-        sql: `select * from ${db.queryInterface.quoteIdentifier('testSqlCollection')}`,
+        sql: `select * from ${schema}${db.queryInterface.quoteIdentifier('testSqlCollection')}`,
       },
     });
     expect(res.status).toBe(200);
