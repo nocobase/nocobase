@@ -5,6 +5,7 @@ import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
+import { useCollectionFieldStorageRules, useFileCollectionStorageRules } from './hooks';
 
 export class PluginFileManagerClient extends Plugin {
   storageTypes = new Map();
@@ -39,6 +40,11 @@ export class PluginFileManagerClient extends Plugin {
         const collection = useCollection_deprecated();
         return collection.template === 'file';
       },
+    });
+
+    this.app.addScopes({
+      useCollectionFieldStorageRules,
+      useFileCollectionStorageRules,
     });
   }
 

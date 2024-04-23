@@ -112,6 +112,7 @@ export const getErrorMessage = (target: any) => {
     target?.errMsg ||
     target?.errorMsg ||
     target?.message ||
+    target?.data?.data?.errors?.map?.((item) => item.message).join(', ') ||
     typeof target?.error === 'string'
     ? target.error
     : '';
@@ -172,8 +173,8 @@ export const useUploadValidator = (serviceErrorMessage = 'Upload Service Error')
   });
 };
 
-export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceErrorMessage, ...props }: T) {
-  useUploadValidator(serviceErrorMessage);
+export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
+  // useUploadValidator(serviceErrorMessage);
 
   const api = useAPIClient();
 
@@ -263,7 +264,10 @@ const Rules: Record<string, RuleFunction> = {
 
 type RuleFunction = (file: UploadFile, options: any) => string | null;
 
-function validate(file, rules: Record<string, any> = {}) {
+function validate(file, rules: Record<string, any>) {
+  if (!rules) {
+    return null;
+  }
   const ruleKeys = Object.keys(rules);
   if (!ruleKeys.length) {
     return null;
@@ -277,25 +281,12 @@ function validate(file, rules: Record<string, any> = {}) {
   return null;
 }
 
-export function useStorageRules(name) {
-  const { loading, data } = useRequest<any>(
-    {
-      url: `storages:getRules/${name}`,
-    },
-    {
-      refreshDeps: [name],
-    },
-  );
-  return (!loading && data?.data) || null;
-}
-
-export function useStorageValidator(name) {
-  const rules = useStorageRules(name);
+export function useBeforeUpload(rules) {
   const { t } = useTranslation();
 
-  const validator = useCallback(
+  return useCallback(
     (file) => {
-      const error = !rules ? null : validate(file, rules);
+      const error = validate(file, rules);
 
       if (error) {
         file.status = 'error';
@@ -310,9 +301,4 @@ export function useStorageValidator(name) {
     },
     [rules],
   );
-
-  return {
-    rules,
-    validator,
-  };
 }

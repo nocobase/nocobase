@@ -17,7 +17,9 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
       type: 'array',
       // title,
       'x-component': 'Upload.Attachment',
-      'x-component-props': {},
+      'x-component-props': {
+        useRules: '{{useCollectionFieldStorageRules}}',
+      },
     },
   };
   availableTypes = ['belongsToMany'];
@@ -53,14 +55,16 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
   }
   properties = {
     ...interfacesProperties.defaultProps,
-    // 'uiSchema.x-component-props.accept': {
-    //   type: 'string',
-    //   title: `{{t("MIME type", { ns: "${NAMESPACE}" })}}`,
-    //   'x-component': 'Input',
-    //   'x-decorator': 'FormItem',
-    //   description: 'Example: image/png',
-    //   default: 'image/*',
-    // },
+    'uiSchema.x-component-props.accept': {
+      type: 'string',
+      title: `{{t("MIME type", { ns: "${NAMESPACE}" })}}`,
+      'x-component': 'Input',
+      'x-component-props': {
+        placeholder: 'image/*',
+      },
+      'x-decorator': 'FormItem',
+      description: 'Example: image/png',
+    },
     'uiSchema.x-component-props.multiple': {
       type: 'boolean',
       'x-content': `{{t('Allow uploading multiple files', { ns: "${NAMESPACE}" })}}`,

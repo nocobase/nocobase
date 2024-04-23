@@ -5,16 +5,11 @@ import {
   useCollection,
   useSourceIdFromParentRecord,
 } from '@nocobase/client';
-import { notification } from 'antd';
 import { useContext, useMemo } from 'react';
-import { useFmTranslation } from '../locale';
-
-// 限制上传文件大小为 1G
-export const FILE_LIMIT_SIZE = 1024 * 1024 * 1024;
+import { useFileCollectionStorageRules } from './useStorageRules';
 
 export const useUploadFiles = () => {
   const { service } = useBlockRequestContext();
-  const { t } = useFmTranslation();
   const { setVisible } = useActionContext();
   const { props: blockProps } = useBlockRequestContext();
   const collection = useCollection();
@@ -34,19 +29,6 @@ export const useUploadFiles = () => {
 
   return {
     action,
-    /**
-     * 返回 false 会阻止上传，返回 true 会继续上传
-     */
-    beforeUpload(file) {
-      if (file.size > FILE_LIMIT_SIZE) {
-        notification.error({
-          message: `${t('File size cannot exceed')} ${FILE_LIMIT_SIZE / 1024 / 1024}M`,
-        });
-        file.status = 'error';
-        return false;
-      }
-      return true;
-    },
     onChange(fileList) {
       fileList.forEach((file) => {
         if (file.status === 'uploading' && !uploadingFiles[file.uid]) {
@@ -69,5 +51,6 @@ export const useUploadFiles = () => {
         setVisible(false);
       }
     },
+    useRules: useFileCollectionStorageRules,
   };
 };

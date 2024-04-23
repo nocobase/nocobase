@@ -8,6 +8,7 @@ import {
   SchemaComponentOptions,
   Upload,
   useActionContext,
+  useSchemaOptionsContext,
 } from '../..';
 import {
   TableSelectorParamsProvider,
@@ -83,6 +84,7 @@ const InternalFileManager = (props) => {
     setVisibleSelector(true);
     setSelectedRows([]);
   };
+  const { scope } = useSchemaOptionsContext();
 
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
@@ -99,14 +101,14 @@ const InternalFileManager = (props) => {
     }
   }, [value, fieldNames?.label]);
 
-  const handleRemove = (file) => {
-    const newOptions = options.filter((option) => option.id !== file.id);
-    setOptions(newOptions);
-    if (newOptions.length === 0) {
-      return onChange(null);
-    }
-    onChange(newOptions);
-  };
+  // const handleRemove = (file) => {
+  //   const newOptions = options.filter((option) => option.id !== file.id);
+  //   setOptions(newOptions);
+  //   if (newOptions.length === 0) {
+  //     return onChange(null);
+  //   }
+  //   onChange(newOptions);
+  // };
   const pickerProps = {
     size: 'small',
     fieldNames,
@@ -143,8 +145,9 @@ const InternalFileManager = (props) => {
         selectFile={fieldSchema['x-component-props']?.selectFile !== false}
         action={`${collectionField?.target}:create`}
         onSelect={handleSelect}
-        onRemove={handleRemove}
+        // onRemove={handleRemove}
         onChange={onChange}
+        useRules={scope.useFileCollectionStorageRules}
       />
       <ActionContextProvider
         value={{

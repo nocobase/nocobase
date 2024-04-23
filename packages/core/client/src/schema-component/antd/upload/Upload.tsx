@@ -4,12 +4,10 @@ import { Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'a
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import { filesize } from 'filesize';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
-import { useCollection_deprecated } from '../../../collection-manager';
-import { useCollectionField, useCollectionManager } from '../../../data-source';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import { ReadPretty } from './ReadPretty';
@@ -20,7 +18,7 @@ import {
   normalizeFile,
   toFileList,
   toValueItem,
-  useStorageValidator,
+  useBeforeUpload,
   useUploadProps,
 } from './shared';
 import { useStyles } from './style';
@@ -107,7 +105,7 @@ function FileListItem(props) {
       </span>
       {file.status === 'uploading' && (
         <div className={`${prefixCls}-list-item-progress`}>
-          <Progress strokeWidth={2} type={'line'} showInfo={false} percent={file.percent} />
+          <Progress size={2} type={'line'} showInfo={false} percent={file.percent} />
         </div>
       )}
     </div>
@@ -237,174 +235,191 @@ function Previewer({ index, onSwitchIndex, list }) {
   return <Component index={index} list={list} onSwitchIndex={onSwitchIndex} />;
 }
 
-Upload.Attachment = connect(({ quickUpload = true, selectFile, onRemove, onSelect, ...props }: UploadProps) => {
-  const { disabled, multiple, value, onChange } = props;
-  const [fileList, setFileList] = useState<any[]>([]);
-  const [pendingList, setPendingList] = useState<any[]>([]);
-  const [preview, setPreview] = useState<number>(null);
-  const { t } = useTranslation();
-  const uploadProps = useUploadProps({ ...props });
-  const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
-  const field = useCollectionField();
+function useDefaultRules(props) {
+  return props.rules;
+}
 
-  useEffect(() => {
-    const list = toFileList(value);
-    setFileList(list);
-  }, [value, pendingList]);
+Upload.Attachment = connect(
+  ({
+    useRules = useDefaultRules,
+    rules: propsRules,
+    quickUpload = true,
+    selectFile,
+    onSelect,
+    ...props
+  }: UploadProps) => {
+    const { disabled, multiple, value, onChange } = props;
+    const [fileList, setFileList] = useState<any[]>([]);
+    const [pendingList, setPendingList] = useState<any[]>([]);
+    const [preview, setPreview] = useState<number>(null);
+    const { t } = useTranslation();
 
-  const onUploadChange = useCallback(
-    (info) => {
-      if (multiple) {
-        const uploadedList = info.fileList.filter((file) => file.status === 'done');
-        if (uploadedList.length) {
-          const valueList = [...(value ?? []), ...uploadedList.map(toValueItem)];
-          onChange?.(valueList);
-          setFileList(toFileList(valueList));
-        }
-        setPendingList(info.fileList.filter((file) => file.status !== 'done').map(normalizeFile));
-      } else {
-        // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
-        const file = info.fileList.find((f) => f.uid === info.file.uid);
-        if (file.status === 'done') {
-          onChange?.(toValueItem(file));
-          setFileList(toFileList([file]));
-          setPendingList([]);
-        } else {
-          setPendingList([normalizeFile(file)]);
-        }
-      }
-    },
-    [value, multiple, onChange],
-  );
+    const uploadProps = useUploadProps(props);
 
-  const onPreview = useCallback(
-    (file) => {
-      const index = file.id ? fileList.findIndex((item) => item.id === file.id) : pendingList.indexOf(file);
-      const previewType = PreviewerTypes.find((type) => type.matcher(file));
-      if (previewType) {
-        setPreview(index);
-      } else {
-        if (file.id) {
-          saveAs(file.url, `${file.title}${file.extname}`);
-        }
-      }
-    },
-    [fileList, pendingList],
-  );
+    const rules = useRules({ rules: propsRules, ...props });
+    const beforeUpload = useBeforeUpload(rules);
 
-  const onDelete = useCallback(
-    (file) => {
-      if (file.id) {
+    const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+
+    useEffect(() => {
+      const list = toFileList(value);
+      setFileList(list);
+    }, [value]);
+
+    const onUploadChange = useCallback(
+      (info) => {
         if (multiple) {
-          onChange(value.filter((item) => item.id !== file.id));
+          const uploadedList = info.fileList.filter((file) => file.status === 'done');
+          if (uploadedList.length) {
+            const valueList = [...(value ?? []), ...uploadedList.map(toValueItem)];
+            onChange?.(valueList);
+            // NOTE: to avoid the list blink, update the list before value changed once in advance
+            setFileList(toFileList(valueList));
+          }
+          setPendingList(info.fileList.filter((file) => file.status !== 'done').map(normalizeFile));
         } else {
-          onChange(null);
+          // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
+          const file = info.fileList.find((f) => f.uid === info.file.uid);
+          if (file.status === 'done') {
+            onChange?.(toValueItem(file));
+            // NOTE: to avoid the list blink, update the list before value changed once in advance
+            setFileList(toFileList([file]));
+            setPendingList([]);
+          } else {
+            setPendingList([normalizeFile(file)]);
+          }
         }
-      } else {
-        setPendingList((prevPendingList) => {
-          const index = prevPendingList.indexOf(file);
-          prevPendingList.splice(index, 1);
-          return [...prevPendingList];
-        });
-      }
-    },
-    [multiple, onChange, value],
-  );
+      },
+      [value, multiple, onChange],
+    );
 
-  // const onSelectorRemove = (file) => {
-  //   onRemove?.(file);
-  //   return true;
-  // };
-  const onSelectorAdd = useCallback(
-    (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onSelect?.();
-    },
-    [onSelect],
-  );
+    const onPreview = useCallback(
+      (file) => {
+        const index = file.id ? fileList.findIndex((item) => item.id === file.id) : pendingList.indexOf(file);
+        const previewType = PreviewerTypes.find((type) => type.matcher(file));
+        if (previewType) {
+          setPreview(index);
+        } else {
+          if (file.id) {
+            saveAs(file.url, `${file.title}${file.extname}`);
+          }
+        }
+      },
+      [fileList, pendingList],
+    );
 
-  const collectionManager = useCollectionManager();
-  const collection = collectionManager.getCollection(field?.target);
-  const storage = field.interface === 'attachment' ? field['storage'] : collection.getOption('storage');
-  const { rules, validator: beforeUpload } = useStorageValidator(storage || '');
+    const onDelete = useCallback(
+      (file) => {
+        if (file.id) {
+          if (multiple) {
+            onChange(value.filter((item) => item.id !== file.id));
+          } else {
+            onChange(null);
+          }
+        } else {
+          setPendingList((prevPendingList) => {
+            const index = prevPendingList.indexOf(file);
+            prevPendingList.splice(index, 1);
+            return [...prevPendingList];
+          });
+        }
+      },
+      [multiple, onChange, value],
+    );
 
-  const { mimetype: accept, size = DEFAULT_MAX_FILE_SIZE } = rules ?? {};
-  const sizeHint = useSizeHint(size);
-  const showSelectButton = typeof selectFile === 'undefined' && typeof quickUpload === 'undefined';
-  const selectable = !disabled && (multiple || (!value && pendingList.length < 1));
+    // const onSelectorRemove = (file) => {
+    //   onRemove?.(file);
+    //   return true;
+    // };
+    const onSelectorAdd = useCallback(
+      (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect?.();
+      },
+      [onSelect],
+    );
 
-  return wrapSSR(
-    <div>
-      <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
-        <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-          {fileList.map((file, index) => (
-            <FileListItem
-              key={file.id}
-              file={file}
-              index={index}
-              disabled={disabled}
-              onPreview={onPreview}
-              onDelete={onDelete}
-            />
-          ))}
-          {pendingList.map((file, index) => (
-            <FileListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDelete} />
-          ))}
-          {selectable && quickUpload ? (
-            <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
-              <Tooltip title={sizeHint}>
+    const { mimetype: accept, size } = rules ?? {};
+    const sizeHint = useSizeHint(size);
+    const selectable = !disabled && (multiple || !(value || pendingList.length));
+    const showSelectButton = typeof selectFile === 'undefined' && typeof quickUpload === 'undefined';
+
+    return wrapSSR(
+      <div>
+        <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
+          <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
+            {fileList.map((file, index) => (
+              <FileListItem
+                key={file.id}
+                file={file}
+                index={index}
+                disabled={disabled}
+                onPreview={onPreview}
+                onDelete={onDelete}
+              />
+            ))}
+            {pendingList.map((file, index) => (
+              <FileListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDelete} />
+            ))}
+            {quickUpload ? (
+              <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
+                <Tooltip title={sizeHint}>
+                  <AntdUpload
+                    accept={accept}
+                    {...uploadProps}
+                    disabled={disabled}
+                    multiple={multiple}
+                    listType={'picture-card'}
+                    fileList={pendingList}
+                    beforeUpload={beforeUpload}
+                    onChange={onUploadChange}
+                    showUploadList={false}
+                  >
+                    {selectable ? (
+                      <span>
+                        <PlusOutlined />
+                        <br /> {t('Upload')}
+                      </span>
+                    ) : null}
+                  </AntdUpload>
+                </Tooltip>
+              </div>
+            ) : null}
+            {selectable && (showSelectButton || selectFile) ? (
+              <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
                 <AntdUpload
-                  {...uploadProps}
-                  accept={accept}
                   disabled={disabled}
                   multiple={multiple}
                   listType={'picture-card'}
-                  fileList={pendingList}
-                  beforeUpload={beforeUpload}
-                  onChange={onUploadChange}
                   showUploadList={false}
+                  // onRemove={onSelectorRemove}
                 >
-                  <span>
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    onClick={onSelectorAdd}
+                  >
                     <PlusOutlined />
-                    <br /> {t('Upload')}
-                  </span>
+                    {t('Select')}
+                  </div>
                 </AntdUpload>
-              </Tooltip>
-            </div>
-          ) : null}
-          {selectable && (showSelectButton || selectFile) ? (
-            <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
-              <AntdUpload
-                disabled={disabled}
-                multiple={multiple}
-                listType={'picture-card'}
-                showUploadList={false}
-                // onRemove={onSelectorRemove}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  onClick={onSelectorAdd}
-                >
-                  <PlusOutlined />
-                  {t('Select')}
-                </div>
-              </AntdUpload>
-            </div>
-          ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
-      <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
-    </div>,
-  );
-}, mapReadPretty(ReadPretty.File));
+        <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
+      </div>,
+    );
+  },
+  mapReadPretty(ReadPretty.File),
+);
 
 Upload.Dragger = connect(
   (props: DraggerProps) => {
@@ -418,7 +433,7 @@ Upload.Dragger = connect(
     );
     return wrapSSR(
       <div className={cls(`${prefixCls}-dragger`, hashId)}>
-        <AntdUpload.Dragger {...useUploadProps(rest)}>
+        <AntdUpload.Dragger {...useUploadProps(rest)} onChange={onFileChange}>
           {tipContent}
           {props.children}
         </AntdUpload.Dragger>
@@ -432,7 +447,7 @@ Upload.Dragger = connect(
 
 Upload.DraggerV2 = withDynamicSchemaProps(
   connect(
-    (props: DraggerV2Props) => {
+    ({ rules: propsRules, useRules = useDefaultRules, ...props }: DraggerV2Props) => {
       const { t } = useTranslation();
       const defaultTitle = t('Click or drag file to this area to upload');
 
@@ -442,8 +457,8 @@ Upload.DraggerV2 = withDynamicSchemaProps(
       const [loading, setLoading] = useState(false);
       const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
-      const collection = useCollection_deprecated();
-      const { rules, validator: beforeUpload } = useStorageValidator(collection['storage'] ?? '');
+      const rules = useRules({ rules: propsRules });
+      const beforeUpload = useBeforeUpload(rules);
       const { size, mimetype: accept } = rules ?? {};
       const sizeHint = useSizeHint(size);
       const handleChange = useCallback(
