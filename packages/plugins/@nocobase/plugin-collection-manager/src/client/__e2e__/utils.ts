@@ -289,7 +289,7 @@ export class CollectionSettings {
   }
 
   private async ['SQL'](value: string) {
-    await this.page.getByLabel('block-item-collections-SQL').getByRole('textbox').fill(value);
+    await this.page.getByLabel('block-item-SQLInput-collections-SQL').getByRole('textbox').fill(value);
     await this.page.getByRole('button', { name: 'edit Confirm' }).click();
   }
 

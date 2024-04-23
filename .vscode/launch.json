@@ -50,6 +50,19 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Debug E2E Tests UI",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["e2e", "test", "${file}", "--ui"],
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**", "**/dist/**", "**/lib/**", "**/es/**"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "windows": {
+        "runtimeArgs": ["e2e", "test", "${fileBasename}", "--ui"]
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Debug E2E Tests",
       "runtimeExecutable": "yarn",
       "runtimeArgs": ["e2e", "test", "${file}"],
