@@ -569,5 +569,6 @@
   "DataSource": "Источник данных",
   "Home page": "Домашняя страница",
   "Handbook": "Руководство пользователя",
-  "License": "Лицензия"
+  "License": "Лицензия",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Переменная устарела; \"Текущая форма\" может быть использована в качестве замены"
 }

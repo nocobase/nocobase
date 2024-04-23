@@ -12,7 +12,7 @@ test.describe('z-index of dialog', () => {
     await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
 
-    await expect(page.getByLabel('block-item-Input-users-Block')).toBeVisible();
+    await expect(page.getByLabel('block-item-Input-users-form-')).toBeVisible();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('block-item-Input-users-Block')).not.toBeVisible();
   });
