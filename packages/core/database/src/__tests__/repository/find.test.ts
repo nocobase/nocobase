@@ -181,6 +181,10 @@ describe('find with associations', () => {
           type: 'hasMany',
           name: 'posts',
         },
+        {
+          type: 'array',
+          name: 'tagFields',
+        },
       ],
     });
 
@@ -189,7 +193,7 @@ describe('find with associations', () => {
       fields: [
         {
           type: 'array',
-          name: 'tags',
+          name: 'tagFields',
         },
         {
           type: 'string',
@@ -206,7 +210,7 @@ describe('find with associations', () => {
           name: 'u1',
           posts: [
             {
-              tags: ['t1'],
+              tagFields: ['t1'],
               title: 'u1p1',
             },
           ],
@@ -216,7 +220,7 @@ describe('find with associations', () => {
 
     const posts = await Post.repository.find({
       filter: {
-        tags: {
+        tagFields: {
           $match: ['t1'],
         },
       },
@@ -228,7 +232,7 @@ describe('find with associations', () => {
       $and: [
         {
           posts: {
-            tags: {
+            tagFields: {
               $match: ['t1'],
             },
           },

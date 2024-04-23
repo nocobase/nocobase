@@ -61,7 +61,7 @@ export default {
     value = escape(JSON.stringify(value.sort()), ctx);
 
     if (isMySQL(ctx)) {
-      const name = queryInterface.quoteIdentifiers(ctx.fullName);
+      const name = queryInterface.quoteIdentifiers(fieldName);
       return Sequelize.literal(`JSON_CONTAINS(${name}, ${value}) AND JSON_CONTAINS(${value}, ${name})`);
     }
 
