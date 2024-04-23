@@ -178,5 +178,17 @@ export const CustomRequestConfigurationFieldsSchema = {
         defaultValue: 5000,
       },
     },
+    responseType: {
+      type: 'string',
+      title: generateNTemplate('Response type'),
+      'x-decorator': 'FormItem',
+      'x-decorator-props': {},
+      'x-component': 'Select',
+      default: 'json',
+      enum: [
+        { value: 'json', label: 'JSON' },
+        { value: 'stream', label: 'Stream' },
+      ],
+    },
   },
 };
