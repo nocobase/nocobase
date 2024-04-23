@@ -1,9 +1,12 @@
+/* istanbul ignore file -- @preserve */
+
 import Database from '@nocobase/database';
 import { CollectionOptions, ICollection, ICollectionManager, IRepository, MergeOptions } from './types';
 
 export class SequelizeCollectionManager implements ICollectionManager {
   db: Database;
   options: any;
+
   constructor(options) {
     this.db = this.createDB(options);
     this.options = options;

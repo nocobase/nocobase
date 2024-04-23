@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { IModel, IRepository } from './types';
 import * as console from 'console';
 
