@@ -76,7 +76,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.marginSM}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.margin}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM]);
