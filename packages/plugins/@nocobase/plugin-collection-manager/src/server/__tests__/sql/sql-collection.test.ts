@@ -37,6 +37,7 @@ describe('sql collection', () => {
   it('sqlCollection:execute', async () => {
     await agent.resource('collections').create({
       values: {
+        schema: process.env.DB_SCHEMA,
         name: 'testSqlCollection',
         fields: [
           {

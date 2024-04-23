@@ -102,7 +102,8 @@ export class SQLModel extends Model {
 
   private static getTableNameWithSchema(table: string) {
     if (this.database.inDialect('postgres') && !table.includes('.')) {
-      return `public.${table}`;
+      const schema = process.env.DB_SCHEMA || 'public';
+      return `${schema}.${table}`;
     }
     return table;
   }
@@ -116,9 +117,11 @@ export class SQLModel extends Model {
     };
   } {
     const tables = this.parseTablesAndColumns();
+    console.log(tables);
     const fields = tables.reduce((fields, { table, columns }) => {
       const tableName = this.getTableNameWithSchema(table);
       const collection = this.database.tableNameCollectionMap.get(tableName);
+      console.log(tableName, collection);
       if (!collection) {
         return fields;
       }
