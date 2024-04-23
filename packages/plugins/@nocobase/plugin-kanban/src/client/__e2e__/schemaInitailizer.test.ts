@@ -3,7 +3,7 @@ import { generalWithSingleSelect, oneEmptyKanbanBlock } from './utils';
 
 //在页面中可以创建看板区块
 test.describe('blockInitializers should add kanban block', () => {
-  test.only('create kanban blocks in the page', async ({ page, mockPage, mockCollections, mockRecord }) => {
+  test('create kanban blocks in the page', async ({ page, mockPage, mockCollections, mockRecord }) => {
     await mockCollections(generalWithSingleSelect);
     await mockRecord('general');
     await mockPage().goto();
