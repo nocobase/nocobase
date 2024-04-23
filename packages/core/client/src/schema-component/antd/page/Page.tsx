@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
 import { useStyles as useAClStyles } from '../../../acl/style';
+import { useRequest } from '../../../api-client';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
@@ -24,7 +25,6 @@ import { ErrorFallback } from '../error-fallback';
 import FixedBlock from './FixedBlock';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { useStyles } from './style';
-import { useRequest } from '../../../api-client';
 
 export const Page = (props) => {
   const { children, ...others } = props;
@@ -219,7 +219,7 @@ function PageContent(
       if (schema.name !== activeKey) return null;
 
       return (
-        <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
+        <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
           <SchemaComponent
             distributed
             schema={
@@ -234,7 +234,7 @@ function PageContent(
       );
     })
   ) : (
-    <FixedBlock height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
+    <FixedBlock height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
       <div className={`pageWithFixedBlockCss nb-page-content`}>
         <SchemaComponent schema={fieldSchema} distributed />
       </div>

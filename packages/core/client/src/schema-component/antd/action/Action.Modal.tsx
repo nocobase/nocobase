@@ -4,6 +4,7 @@ import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { OpenSize, useActionContext } from '.';
+import { useToken } from '../../../style';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ComposedActionDrawer } from './types';
 
@@ -19,6 +20,7 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
     const actualWidth = width ?? openSizeWidthMap.get(openSize);
     const schema = useFieldSchema();
     const field = useField();
+    const { token } = useToken();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -54,7 +56,13 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
 
               .ant-modal-content {
                 background: var(--nb-box-bg);
+                border: 1px solid rgba(255, 255, 255, 0.1);
               }
+
+              .ant-tabs-content-holder {
+                padding: ${token.paddingPopupVertical}px ${token.paddingPopupHorizontal}px;
+                margin: -${token.paddingPopupVertical}px -${token.paddingPopupHorizontal}px;
+              },
             }
           `,
         )}

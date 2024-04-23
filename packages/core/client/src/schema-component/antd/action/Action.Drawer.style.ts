@@ -9,14 +9,14 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
       '&.reset': {
         '&.nb-action-popup': {
           '.ant-drawer-header': { display: 'none' },
-          '.ant-drawer-body': { paddingTop: token.paddingContentVerticalLG, backgroundColor: 'var(--colorBgDrawer)' },
+          '.ant-drawer-body': { paddingTop: token.paddingContentVerticalLG, backgroundColor: token.colorBgLayout },
         },
         '&.nb-record-picker-selector': {
           '.ant-drawer-wrapper-body': {
-            backgroundColor: 'var(--colorBgDrawer)',
+            backgroundColor: token.colorBgLayout,
           },
           '.nb-block-item': {
-            marginBottom: token.marginLG,
+            marginBottom: token.marginBlock,
             '.general-schema-designer': {
               top: -token.sizeXS,
               bottom: -token.sizeXS,
@@ -35,7 +35,12 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
       },
 
       '.ant-drawer-content-wrapper': {
-        borderLeft: `1px solid ${token.colorBorder}`,
+        borderLeft: `1px solid rgba(255, 255, 255, 0.1)`,
+      },
+
+      '.ant-tabs-content-holder': {
+        padding: `${token.paddingPopupVertical}px ${token.paddingPopupHorizontal}px`,
+        margin: `-${token.size}px -${token.paddingLG}px`,
       },
     },
   };
