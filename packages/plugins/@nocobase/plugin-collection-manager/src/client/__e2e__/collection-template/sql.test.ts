@@ -3,7 +3,7 @@ import { uid } from '@nocobase/utils';
 import { CollectionManagerPage } from '../utils';
 
 test.describe('create collection', () => {
-  test.only('basic', async ({ page }) => {
+  test('basic', async ({ page }) => {
     const collectionDisplayName = uid();
     // 避免以数字开头，会报错
     const collectionName = `t_${uid()}`;
