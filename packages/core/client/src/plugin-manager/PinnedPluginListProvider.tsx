@@ -36,6 +36,10 @@ export const PinnedPluginList = () => {
             background: rgba(255, 255, 255, 0.1) !important;
           }
         }
+
+        .ant-btn-default {
+          box-shadow: none;
+        }
       `}
       style={{ display: 'inline-block' }}
     >

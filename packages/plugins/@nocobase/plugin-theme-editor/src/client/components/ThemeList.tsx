@@ -26,7 +26,7 @@ const ThemeList = () => {
   }
 
   return (
-    <Space size={token.sizeLG} wrap>
+    <Space size={token.marginLG} wrap>
       {data?.map((item) => {
         return <ThemeCard item={item} key={item.id} onChange={handleChange} />;
       })}

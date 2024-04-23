@@ -12,12 +12,12 @@ describe('Pagination', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1mw46su ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         >
           <div>
             <ul
-              class="ant-pagination css-dev-only-do-not-override-1mw46su"
+              class="ant-pagination css-dev-only-do-not-override-wwtqkl"
             >
               <li
                 aria-disabled="true"
@@ -122,7 +122,7 @@ describe('Pagination', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1mw46su ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         />
       </div>
