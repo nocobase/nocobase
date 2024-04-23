@@ -62,6 +62,7 @@ export const Page = (props) => {
   const [height, setHeight] = useState(0);
   const { wrapSSR, hashId, componentCls } = useStyles();
   const aclStyles = useAClStyles();
+  const { token } = useToken();
 
   const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
 
@@ -103,6 +104,13 @@ export const Page = (props) => {
                     size={'small'}
                     animated={hasMounted}
                     activeKey={activeKey}
+                    // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
+                    tabBarStyle={{
+                      paddingLeft: token.paddingLG - token.paddingPageHorizontal,
+                      paddingRight: token.paddingLG - token.paddingPageHorizontal,
+                      marginLeft: token.paddingPageHorizontal - token.paddingLG,
+                      marginRight: token.paddingPageHorizontal - token.paddingLG,
+                    }}
                     onTabClick={(activeKey) => {
                       setLoading(true);
                       setSearchParams([['tab', activeKey]]);
