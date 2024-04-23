@@ -55,7 +55,7 @@ test.describe('form item & create form', () => {
       },
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       inputConstantValue: async () => {
-        await page.getByLabel('block-item-CollectionField-general-general.richText').locator('.ql-editor').click();
+        await page.getByLabel('block-item-VariableInput-').locator('.ql-editor').click();
         await page.keyboard.type('test rich text');
       },
       expectConstantValue: async () => {

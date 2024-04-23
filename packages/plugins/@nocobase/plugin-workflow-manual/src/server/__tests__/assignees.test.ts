@@ -50,6 +50,32 @@ describe('workflow > instructions > manual > assignees', () => {
 
   afterEach(() => app.destroy());
 
+  describe('no', () => {
+    it('empty assignees', async () => {
+      const n1 = await workflow.createNode({
+        type: 'manual',
+        config: {
+          assignees: [],
+          forms: {
+            f1: {
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({
+        values: { title: 't1', category: { title: 'c1' } },
+        context: { state: { currentUser: users[0] } },
+      });
+
+      await sleep(500);
+
+      const [pending] = await workflow.getExecutions();
+      expect(pending.status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
   describe('multiple', () => {
     it('assignees from nested array', async () => {
       const n1 = await workflow.createNode({

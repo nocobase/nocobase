@@ -96,12 +96,16 @@ export default class extends Instruction {
     const assignees = [...new Set(processor.getParsedValue(config.assignees, node.id).flat().filter(Boolean))];
 
     const job = await processor.saveJob({
-      status: JOB_STATUS.PENDING,
+      status: assignees.length ? JOB_STATUS.PENDING : JOB_STATUS.RESOLVED,
       result: mode ? [] : null,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
+
+    if (!assignees.length) {
+      return job;
+    }
 
     // NOTE: batch create users jobs
     const UserJobModel = this.workflow.app.db.getModel('users_jobs');

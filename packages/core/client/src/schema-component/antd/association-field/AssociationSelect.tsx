@@ -13,6 +13,7 @@ import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
+  addMode?: 'quickAdd' | 'modalAdd';
   action?: string;
   multiple?: boolean;
 };
@@ -42,7 +43,7 @@ export const filterAnalyses = (filters): any[] => {
 
 const InternalAssociationSelect = observer(
   (props: AssociationSelectProps) => {
-    const { objectValue = true } = props;
+    const { objectValue = true, addMode: propsAddMode, ...rest } = props;
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const service = useServiceOptions(props);
@@ -120,7 +121,7 @@ const InternalAssociationSelect = observer(
         <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
           <RemoteSelect
             style={{ width: '100%' }}
-            {...props}
+            {...rest}
             size={'middle'}
             objectValue={objectValue}
             value={value || innerValue}

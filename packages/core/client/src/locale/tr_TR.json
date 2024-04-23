@@ -567,5 +567,6 @@
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" silinmiş olabilir. Lütfen bu {{blockType}}'yi kaldırın.",
   "Home page": "Anasayfa",
   "Handbook": "Kullanıcı kılavuzu",
-  "License": "Lisans"
+  "License": "Lisans",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Değişken kullanımdan kaldırıldı; \"Geçerli form\" yerine kullanılabilir"
 }
