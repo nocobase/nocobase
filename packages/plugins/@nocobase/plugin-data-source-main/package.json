@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-collection-manager",
+  "name": "@nocobase/plugin-data-source-main",
   "displayName": "Data source: Main",
   "displayName.zh-CN": "数据源：主数据库",
   "description": "NocoBase main database, supports relational databases such as MySQL, PostgreSQL, SQLite and so on.",
