@@ -1,9 +1,13 @@
 import { list } from '../default-actions/list';
 import { vi } from 'vitest';
-import { move } from '../default-actions/move';
+import { createMoveAction } from '../default-actions/move';
 
 describe('action test', () => {
   describe('list action', async () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it('should list with paginate', async () => {
       const listAction = list;
 
@@ -89,8 +93,31 @@ describe('action test', () => {
   });
 
   describe('move action', async () => {
+    it('should call database move action', async () => {
+      const dbMove = vi.fn();
+      const moveAction = createMoveAction(dbMove);
+
+      const ctx: any = {
+        getCurrentRepository() {
+          return {
+            database: {},
+          };
+        },
+        action: {
+          params: {
+            filterByTk: 1,
+            targetCollection: 'test',
+          },
+        },
+      };
+
+      await moveAction(ctx, () => {});
+
+      expect(dbMove).toHaveBeenCalled();
+    });
+
     it('should move when repository can move', async () => {
-      const moveAction = move;
+      const moveAction = createMoveAction(() => {});
 
       const ctx: any = {
         getCurrentRepository() {

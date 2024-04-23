@@ -1,6 +1,7 @@
 import { list } from './default-actions/list';
-import { move } from './default-actions/move';
+import { createMoveAction } from './default-actions/move';
 import { proxyToRepository } from './default-actions/proxy-to-repository';
+import globalActions from '@nocobase/actions';
 
 type Actions = { [key: string]: { params: Array<string> | ((ctx: any) => Array<string>); method: string } };
 
@@ -71,6 +72,6 @@ export function loadDefaultActions() {
       return carry;
     }, {}),
     list,
-    move,
+    move: createMoveAction(globalActions.move),
   };
 }
