@@ -1,5 +1,7 @@
 import { Migration, PluginManager } from '@nocobase/server';
 import { getAutoDeletePluginsWarning, getNotExistsEnabledPluginsError } from '../wording';
+import { fsExists } from '@nocobase/utils/plugin-symlink';
+import { resolve } from 'path';
 
 export default class extends Migration {
   on = 'beforeLoad'; // 'beforeLoad' or 'afterLoad'
@@ -20,6 +22,19 @@ export default class extends Migration {
     '@nocobase/plugin-auth-saml',
   ];
 
+  async getPackageName(name: string) {
+    const prefixes = PluginManager.getPluginPkgPrefix();
+    for (const prefix of prefixes) {
+      const pkgName = name.startsWith(prefix) ? name : `${prefix}${name}`;
+      const pkg = resolve(process.env.NODE_MODULES_PATH, pkgName, 'package.json');
+      const exists = await fsExists(pkg);
+      if (exists) {
+        return pkgName;
+      }
+    }
+    throw new Error(`${name} plugin does not exist`);
+  }
+
   async processRemovedPlugins() {
     const repository = this.pm.repository;
     const plugins = await repository.find();
@@ -30,7 +45,7 @@ export default class extends Migration {
     const notExistsEnabledPlugins = new Map();
     for (const plugin of plugins) {
       try {
-        await PluginManager.getPackageName(plugin.name);
+        await this.getPackageName(plugin.name);
       } catch (error) {
         if (!plugin.enabled) {
           pluginsToBeDeleted.set(plugin.name, plugin.packageName);
@@ -54,9 +69,10 @@ export default class extends Migration {
     }
     const proPlugins = Array.from(notExistsEnabledPlugins.keys()).filter((name) => this.proPlugins.includes(name));
     const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, proPlugins);
-    const error = new Error(errMsg);
+    const error = new Error(errMsg) as any;
     error.stack = undefined;
     error.cause = undefined;
+    error.onlyLogCause = true;
     throw error;
   }
 

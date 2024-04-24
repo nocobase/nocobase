@@ -52,17 +52,19 @@ class SystemLoggerTransport extends Transport {
     const { level, message, reqId, app, stack, cause, [SPLAT]: args } = info;
     const logger = level === 'error' && this.errorLogger ? this.errorLogger : this.logger;
     const { module, submodule, method, ...meta } = args?.[0] || {};
-    logger.log({
-      level,
-      message,
-      stack,
-      meta,
-      module: module || info['module'] || '',
-      submodule: submodule || info['submodule'] || '',
-      method: method || '',
-      app,
-      reqId,
-    });
+    if (!cause?.onlyLogCause) {
+      logger.log({
+        level,
+        message,
+        stack,
+        meta,
+        module: module || info['module'] || '',
+        submodule: submodule || info['submodule'] || '',
+        method: method || '',
+        app,
+        reqId,
+      });
+    }
     if (cause) {
       logger.log({
         level,
