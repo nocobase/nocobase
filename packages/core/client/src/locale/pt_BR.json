@@ -733,5 +733,6 @@
   "Allow selection of existing records":"Permitir a selecção dos registos existentes",
   "Home page": "Página inicial",
   "Handbook": "Manual do usuário",
-  "License": "Licença"
+  "License": "Licença",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "A variável foi descontinuada; \"Formulário atual\" pode ser usada como substituto"
 }

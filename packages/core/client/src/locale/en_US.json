@@ -822,5 +822,6 @@
   "Owners": "Owners",
   "Plugin settings": "Plugin settings",
   "Menu": "Menu",
-  "Drag and drop sorting field": "Drag and drop sorting field"
+  "Drag and drop sorting field": "Drag and drop sorting field",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "This variable has been deprecated and can be replaced with \"Current form\""
 }

@@ -9,8 +9,12 @@ function notify(type, messages, instance) {
     return;
   }
   instance[type]({
-    message: messages.map?.((item: any) => {
-      return React.createElement('div', {}, typeof item === 'string' ? item : item.message);
+    message: messages.map?.((item: any, index) => {
+      return React.createElement(
+        'div',
+        { key: `${index}_${item.message}` },
+        typeof item === 'string' ? item : item.message,
+      );
     }),
   });
 }

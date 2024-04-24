@@ -7,7 +7,6 @@ import useAntdInputStyle from 'antd/es/input/style';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
@@ -151,7 +150,7 @@ export function Input(props) {
   const { t } = useTranslation();
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
-  const [variableText, setVariableText] = React.useState('');
+  const [variableText, setVariableText] = React.useState([]);
 
   const parsed = useMemo(() => parseValue(value), [value]);
   const isConstant = typeof parsed === 'string';
@@ -189,8 +188,12 @@ export function Input(props) {
     }, [type, useTypedConstant]);
 
   useEffect(() => {
-    setOptions([compile(constantOption), ...(scope ? cloneDeep(scope) : [])]);
-  }, [scope]);
+    const options = [compile(constantOption), ...(scope ? [...scope] : [])].filter((item) => {
+      return !item.deprecated || variable?.[0] === item[names.value];
+    });
+
+    setOptions(options);
+  }, [scope, variable]);
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
@@ -251,7 +254,7 @@ export function Input(props) {
         }
       }
       setOptions([...options]);
-      setVariableText(labels.join(' / '));
+      setVariableText([...labels]);
     };
 
     run();
@@ -296,6 +299,7 @@ export function Input(props) {
           <div
             role="button"
             aria-label="variable-tag"
+            style={{ overflow: 'hidden' }}
             onInput={(e) => e.preventDefault()}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') {
@@ -309,7 +313,14 @@ export function Input(props) {
             suppressContentEditableWarning
           >
             <Tag contentEditable={false} color="blue">
-              {variableText}
+              {variableText.map((item, index) => {
+                return (
+                  <>
+                    {index ? ' / ' : ''}
+                    {item}
+                  </>
+                );
+              })}
             </Tag>
           </div>
           {!disabled ? (
