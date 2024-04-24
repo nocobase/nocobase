@@ -7,8 +7,8 @@
   "version": "0.21.0-alpha.14",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/handbook/field-vditor",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/field-vditor",
+  "homepage": "https://docs.nocobase.com/handbook/field-markdown-vditor",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/field-markdown-vditor",
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
