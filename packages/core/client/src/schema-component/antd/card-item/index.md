@@ -6,8 +6,27 @@ group:
 
 # CardItem
 
-卡片装饰器。除此之外，也继承了 BlockItem 的功能。
+卡片装饰器。主要功能为：
 
-## Example
+- 拖拽和 [SchemaToolbar](/core/ui-schema/schema-toolbar) 和 [SchemaSettings](/core/ui-schema/schema-settings) 的渲染，继承自[BlockItem](/components/block-item)
+- 懒渲染
 
-<code src="./demos/demo1.tsx" ></code>
+```ts
+interface CardItemProps extends CardProps {
+  name?: string;
+  children?: React.ReactNode;
+  /**
+   * lazy render options
+   * @see https://github.com/thebuilder/react-intersection-observer
+   */
+  lazyRender?: IntersectionOptions;
+}
+```
+
+## 基础用法
+
+<code src="./demos/new-demos/basic.tsx" ></code>
+
+## 自定义懒渲染参数
+
+<code src="./demos/new-demos/lazy-render.tsx" ></code>
