@@ -4609,20 +4609,20 @@
   dependencies:
     eslint-scope "5.1.1"
 
-"@nocobase/plugin-cas@0.21.0-alpha.14":
-  version "0.21.0-alpha.14"
-  resolved "https://registry.npmmirror.com/@nocobase/plugin-cas/-/plugin-cas-0.21.0-alpha.14.tgz#3116b3b88a39e1ebe208464e6a11a365239eaf8a"
-  integrity sha512-/K2z+Z+yS3ueiePexuurDhYgvodQ1doVKl08b9dCa81sBgGBpRhnpHQD7d2lB3gm+fJrPEUiA6tc09UzVjJoSA==
+"@nocobase/plugin-cas@0.21.0-alpha.15":
+  version "0.21.0-alpha.15"
+  resolved "https://registry.npmmirror.com/@nocobase/plugin-cas/-/plugin-cas-0.21.0-alpha.15.tgz#85f403298f0b9573e84f6ec2b3d4589147ada1c9"
+  integrity sha512-mqubAkl9MmDv0YGNtS0zjq59khcLBUL28x/pWazn7nnLgYEUwVHpLp8fcrCnV012njMph3bGGBBrOvfeRYHcew==
 
-"@nocobase/plugin-oidc@0.21.0-alpha.14":
-  version "0.21.0-alpha.14"
-  resolved "https://registry.npmmirror.com/@nocobase/plugin-oidc/-/plugin-oidc-0.21.0-alpha.14.tgz#df54d35766480e55e9fd51733ba658658b083028"
-  integrity sha512-uHFYXfVD1aNy4u5NJKrIC0dHLTZwXusPUnGsm79uxtcGKjQ40o6t/w06R3HWsKCiOJv8GSk12gmtKZRnFB0RfQ==
+"@nocobase/plugin-oidc@0.21.0-alpha.15":
+  version "0.21.0-alpha.15"
+  resolved "https://registry.npmmirror.com/@nocobase/plugin-oidc/-/plugin-oidc-0.21.0-alpha.15.tgz#918886fdf9692a077787232602c41244b02b56eb"
+  integrity sha512-SNPmRNdupNIdU53JPwEriLdWlEHEWEI5w5uWNXHD4umVh//ChHltGJ1zRztjXHku8LQHsJFcHDJWllBSNtOCpQ==
 
-"@nocobase/plugin-saml@0.21.0-alpha.14":
-  version "0.21.0-alpha.14"
-  resolved "https://registry.npmmirror.com/@nocobase/plugin-saml/-/plugin-saml-0.21.0-alpha.14.tgz#61cc44b7a47d7089e999ce442adbeb62bd57a6a3"
-  integrity sha512-/Hk9mQX0Q0smAsRDi+I3dwlT38OU9chICtiN1Yaz6b/ymSv3u2JAl56CSwTahndkDeZG7/Bz+raIxPZsExCxfw==
+"@nocobase/plugin-saml@0.21.0-alpha.15":
+  version "0.21.0-alpha.15"
+  resolved "https://registry.npmmirror.com/@nocobase/plugin-saml/-/plugin-saml-0.21.0-alpha.15.tgz#2db2eb27656ec683986a9311e9473432a75e3ff2"
+  integrity sha512-hYM2YygRTlwHeO3keve7WDpnDBMdcNn/Nrc3g8KLkuLdZGyc7TVvDJ61QNAM0Aa7CGAeWvDUyf8sPH28XoBU8A==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
