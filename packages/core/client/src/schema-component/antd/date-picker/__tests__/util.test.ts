@@ -1,6 +1,6 @@
-import { str2moment } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
-import { moment2str } from '../util';
+import { str2moment } from '@nocobase/utils/client';
+import { getDateRanges, moment2str } from '../util';
 
 describe('str2moment', () => {
   describe('string value', () => {
@@ -136,5 +136,154 @@ describe('moment2str', () => {
   test('value is null', async () => {
     const m = moment2str(null);
     expect(m).toBeNull();
+  });
+});
+
+// CI 环境会报错，可能因为时区问题
+describe.skip('getDateRanges', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-03-15T10:10:10.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test('now', () => {
+    const now = getDateRanges().now();
+    expect(now.valueOf()).toMatchInlineSnapshot(`"2024-03-15T10:10:10.000Z"`);
+  });
+
+  test('today', () => {
+    const [start, end] = getDateRanges().today();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1710432000000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1710518399999`);
+  });
+
+  test('lastWeek', () => {
+    const [start, end] = getDateRanges().lastWeek();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1709481600000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1710086399999`);
+  });
+
+  test('thisWeek', () => {
+    const [start, end] = getDateRanges().thisWeek();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1710086400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1710691199999`);
+  });
+
+  test('nextWeek', () => {
+    const [start, end] = getDateRanges().nextWeek();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1710691200000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1711295999999`);
+  });
+
+  test('thisIsoWeek', () => {
+    const [start, end] = getDateRanges().thisIsoWeek();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1710086400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1710691199999`);
+  });
+
+  test('lastIsoWeek', () => {
+    const [start, end] = getDateRanges().lastIsoWeek();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1709481600000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1710086399999`);
+  });
+
+  test('nextIsoWeek', () => {
+    const [start, end] = getDateRanges().nextIsoWeek();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1710691200000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1711295999999`);
+  });
+
+  test('lastMonth', () => {
+    const [start, end] = getDateRanges().lastMonth();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1706716800000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1709222399999`);
+  });
+
+  test('thisMonth', () => {
+    const [start, end] = getDateRanges().thisMonth();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1709222400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1711900799999`);
+  });
+
+  test('nextMonth', () => {
+    const [start, end] = getDateRanges().nextMonth();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1711900800000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1714492799999`);
+  });
+
+  test('lastQuarter', () => {
+    const [start, end] = getDateRanges().lastQuarter();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1696089600000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1704038399999`);
+  });
+
+  test('thisQuarter', () => {
+    const [start, end] = getDateRanges().thisQuarter();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1704038400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1711900799999`);
+  });
+
+  test('nextQuarter', () => {
+    const [start, end] = getDateRanges().nextQuarter();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1711900800000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1719763199999`);
+  });
+
+  test('lastYear', () => {
+    const [start, end] = getDateRanges().lastYear();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1672502400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1704038399999`);
+  });
+
+  test('thisYear', () => {
+    const [start, end] = getDateRanges().thisYear();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1704038400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1735660799999`);
+  });
+
+  test('nextYear', () => {
+    const [start, end] = getDateRanges().nextYear();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1735660800000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1767196799999`);
+  });
+
+  test('last7Days', () => {
+    const [start, end] = getDateRanges().last7Days();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1709913600000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1710518399999`);
+  });
+
+  test('next7Days', () => {
+    const [start, end] = getDateRanges().next7Days();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1710518400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1711123199999`);
+  });
+
+  test('last30Days', () => {
+    const [start, end] = getDateRanges().last30Days();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1707926400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1710518399999`);
+  });
+
+  test('next30Days', () => {
+    const [start, end] = getDateRanges().next30Days();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1710518400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1713110399999`);
+  });
+
+  test('last90Days', () => {
+    const [start, end] = getDateRanges().last90Days();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1702742400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1710518399999`);
+  });
+
+  test('next90Days', () => {
+    const [start, end] = getDateRanges().next90Days();
+    expect(start.valueOf()).toMatchInlineSnapshot(`1710518400000`);
+    expect(end.valueOf()).toMatchInlineSnapshot(`1718294399999`);
   });
 });

@@ -105,16 +105,11 @@ function useDataSourceOptions({ filter }: DataSourceSelectProps) {
   const dataSourceManager = useDataSourceManager();
   const dataSources = dataSourceManager.getDataSources();
   return useMemo(
-    () => [
-      {
-        label: compile('Main'),
-        value: 'main',
-      },
-      ...(typeof filter === 'function' ? dataSources.filter(filter) : dataSources).map((item) => ({
-        label: item.displayName,
+    () =>
+      (typeof filter === 'function' ? dataSources.filter(filter) : dataSources).map((item) => ({
+        label: compile(item.displayName),
         value: item.key,
       })),
-    ],
     [dataSources, filter],
   );
 }
