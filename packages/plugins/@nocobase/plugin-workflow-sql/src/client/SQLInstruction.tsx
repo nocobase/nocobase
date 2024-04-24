@@ -1,4 +1,4 @@
-import { css } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_KEY, css } from '@nocobase/client';
 
 import { Instruction, WorkflowVariableRawTextArea, defaultFieldNames } from '@nocobase/plugin-workflow/client';
 
@@ -22,7 +22,7 @@ export default class extends Instruction {
       'x-component-props': {
         className: 'auto-width',
         filter(item) {
-          return item.options.isDBInstance;
+          return item.options.isDBInstance || item.key === DEFAULT_DATA_SOURCE_KEY;
         },
       },
       default: 'main',

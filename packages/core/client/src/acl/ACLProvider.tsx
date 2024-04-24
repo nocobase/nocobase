@@ -198,8 +198,9 @@ export function useACLRoleContext() {
 
 export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
+  const app = useApp();
   const schema = useFieldSchema();
-  if (allowAll) {
+  if (allowAll || app.disableAcl) {
     return props.children;
   }
   let actionPath = schema?.['x-acl-action'] || props.actionPath;

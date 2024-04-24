@@ -4,7 +4,7 @@ group:
   order: 3
 ---
 
-# RecordPicker <Badge>待定</Badge>
+# RecordPicker
 
 ## JSON Schema
 

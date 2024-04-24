@@ -6,5 +6,3 @@ group:
 # CollectionSelect
 
 ## Example
-
-<code src="./demos/demo1.tsx"></code>
