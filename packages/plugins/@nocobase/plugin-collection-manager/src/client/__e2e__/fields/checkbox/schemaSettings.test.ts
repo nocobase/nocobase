@@ -38,28 +38,25 @@ test.describe('form item & create form', () => {
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
-      gotoPage: () =>
-        (async (mockPage) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndChoicesFields).waitForInit();
-          await nocoPage.goto();
-        })(mockPage),
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByRole('button', { name: 'Add new' }).click();
-        })(page),
+      gotoPage: async () => {
+        await mockPage(oneTableBlockWithAddNewAndViewAndEditAndChoicesFields).goto();
+      },
+      openDialog: async () => {
+        await page.getByRole('button', { name: 'Add new' }).click();
+      },
       closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page
-            .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, { exact: true })
-            .hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`, {
-              exact: true,
-            })
-            .hover();
-        })(page, 'checkbox'),
-      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      showMenu: async () => {
+        await page
+          .getByLabel(`block-item-CollectionField-general-form-general.checkbox-checkbox`, { exact: true })
+          .hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.checkbox`, {
+            exact: true,
+          })
+          .hover();
+      },
+      supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
+      unsupportedVariables: ['Current popup record'],
       inputConstantValue: async () => {
         // 默认应该是没有被选中的，点击后应该被选中
         await page.getByLabel('block-item-VariableInput-').getByRole('checkbox').click();

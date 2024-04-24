@@ -54,7 +54,8 @@ export async function testDefaultValue({
   closeDialog,
   gotoPage,
   showMenu,
-  supportVariables,
+  supportedVariables,
+  unsupportedVariables,
   constantValue,
   variableValue,
   inputConstantValue,
@@ -67,7 +68,9 @@ export async function testDefaultValue({
   gotoPage: () => Promise<void>;
   showMenu: () => Promise<void>;
   /** 支持的变量列表，如：['Current user', 'Date variables', 'Current form'] */
-  supportVariables: string[];
+  supportedVariables: string[];
+  /** 不应该显示出来的变量列表 */
+  unsupportedVariables?: string[];
   /** 常量默认值 */
   constantValue?: string | number;
   /** 变量默认值 */
@@ -82,16 +85,24 @@ export async function testDefaultValue({
   await gotoPage();
   await openDialog();
   await showMenu();
+  await page.getByRole('menuitem', { name: 'Set default value' }).click();
 
+  // 设置一个常量作为默认值
   if (constantValue || inputConstantValue) {
-    // 设置一个常量作为默认值
-    await page.getByRole('menuitem', { name: 'Set default value' }).click();
     if (inputConstantValue) {
       await inputConstantValue();
     } else {
       await page.getByLabel('block-item-VariableInput-').getByRole('textbox').click();
       await page.getByLabel('block-item-VariableInput-').getByRole('textbox').fill(String(constantValue));
     }
+
+    if (supportedVariables || unsupportedVariables) {
+      await page.getByLabel('variable-button').click();
+      await testSupportedAndUnsupportedVariables(page, supportedVariables, unsupportedVariables);
+      // 关闭变量列表
+      await page.getByLabel('variable-button').click();
+    }
+
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 关闭弹窗，然后再次打开后，应该显示刚才设置的默认值
@@ -100,14 +111,10 @@ export async function testDefaultValue({
     await expectConstantValue?.();
   }
 
+  // 设置一个变量作为默认值
   if (variableValue) {
-    // 设置一个变量作为默认值
-    await showMenu();
-    await page.getByRole('menuitem', { name: 'Set default value' }).click();
     await page.getByLabel('variable-button').click();
-    for (const value of supportVariables) {
-      await expect(page.getByRole('menuitemcheckbox', { name: value })).toBeVisible();
-    }
+    await testSupportedAndUnsupportedVariables(page, supportedVariables, unsupportedVariables);
     for (const value of variableValue) {
       await page.getByRole('menuitemcheckbox', { name: value }).click();
     }
@@ -116,6 +123,19 @@ export async function testDefaultValue({
     await closeDialog();
     await openDialog();
     await expectVariableValue?.();
+  }
+}
+
+async function testSupportedAndUnsupportedVariables(
+  page: Page,
+  supportedVariables: string[],
+  unsupportedVariables: string[],
+) {
+  for (const value of supportedVariables) {
+    await expect(page.getByRole('menuitemcheckbox', { name: value })).toBeVisible();
+  }
+  for (const value of unsupportedVariables || []) {
+    await expect(page.getByRole('menuitemcheckbox', { name: value })).not.toBeVisible();
   }
 }
 

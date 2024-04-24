@@ -4,6 +4,7 @@ import {
   expectSettingsMenu,
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable,
+  oneTableBlockWithEditAndSubForm,
   test,
 } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern, testSetValidationRules } from '../../utils';
@@ -52,7 +53,8 @@ test.describe('form item & create form', () => {
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.singleLineText`)
           .hover();
       },
-      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
+      unsupportedVariables: ['Current popup record'],
       constantValue: 'test single line text',
       variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
       expectConstantValue: async () => {
@@ -254,6 +256,55 @@ test.describe('form item & edit form', () => {
   });
 });
 
+test.describe('form item & sub form', () => {
+  test('set default value', async ({ page, mockPage, mockRecord }) => {
+    let record;
+    await testDefaultValue({
+      page,
+      async gotoPage() {
+        const nocoPage = await mockPage(oneTableBlockWithEditAndSubForm).waitForInit();
+        record = await mockRecord('subform');
+        await nocoPage.goto();
+      },
+      async openDialog() {
+        await page.getByLabel('action-Action.Link-Edit record-update-subform-table-0').click();
+      },
+      async closeDialog() {
+        await page.getByLabel('drawer-Action.Container-subform-Edit record-mask').click();
+      },
+      async showMenu() {
+        await page.getByLabel('block-item-CollectionField-').nth(1).hover();
+        await page
+          .getByRole('button', {
+            name: 'designer-schema-settings-CollectionField-fieldSettings:FormItem-general-general',
+          })
+          .hover();
+      },
+      supportedVariables: [
+        'Constant',
+        'Current user',
+        'Current role',
+        'Date variables',
+        'Current form',
+        'Current object',
+        'Current popup record',
+      ],
+      variableValue: ['Current user', 'Nickname'],
+      expectVariableValue: async () => {
+        await page
+          .getByLabel('block-item-CollectionField-subform-form-subform.manyToMany-manyToMany')
+          .getByRole('img', { name: 'plus' })
+          .first()
+          .click();
+
+        await expect(page.getByLabel('block-item-CollectionField-').nth(1).getByRole('textbox')).toHaveValue(
+          'Super Admin',
+        );
+      },
+    });
+  });
+});
+
 test.describe('form item & view form', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
@@ -409,13 +460,13 @@ test.describe('table column & sub-table in edit form', () => {
         await page.getByRole('button', { name: 'singleLineText', exact: true }).hover();
         await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.Column.Designer-general').hover();
       },
-      supportVariables: [
+      supportedVariables: [
         'Constant',
         'Current user',
         'Current role',
         'Current form',
         'Current object',
-        // 'Current record',
+        'Current popup record',
       ],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
