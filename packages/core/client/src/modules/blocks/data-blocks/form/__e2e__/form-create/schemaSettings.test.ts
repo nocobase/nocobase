@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  expectSupportedVariables,
   oneEmptyForm,
   oneEmptyFormWithActions,
   oneTableBlockWithActionsAndFormBlocks,
@@ -115,6 +116,13 @@ test.describe('creation form block schema settings', () => {
       // 当 singleLineText 字段的值包含 longText 字段的值时，禁用 longText 字段
       await openLinkageRules();
       await page.getByLabel('variable-button').click();
+      await expectSupportedVariables(page, [
+        'Constant',
+        'Current user',
+        'Current role',
+        'Date variables',
+        'Current form',
+      ]);
       await page.getByRole('menuitemcheckbox', { name: 'Current form' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'longText' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -187,6 +195,7 @@ test.describe('creation form block schema settings', () => {
       await page.getByText('Expression').click();
 
       await page.getByText('xSelect a variable').click();
+      await expectSupportedVariables(page, ['Current user', 'Current role', 'Date variables', 'Current form']);
       await page.getByRole('menuitemcheckbox', { name: 'Current form right' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'number' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
