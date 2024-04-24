@@ -48,7 +48,8 @@ const getQueryInterface = (ctx) => {
 
 const sqliteExistQuery = (value, ctx) => {
   const fieldName = getFieldName(ctx);
-  const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+  const queryInterface = getQueryInterface(ctx);
+  const name = queryInterface.quoteIdentifiers(fieldName);
 
   const sqlArray = `(${value.map((v) => `'${v}'`).join(', ')})`;
 
