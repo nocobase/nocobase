@@ -49,6 +49,7 @@ const getQueryInterface = (ctx) => {
 const sqliteExistQuery = (value, ctx) => {
   const fieldName = getFieldName(ctx);
   const queryInterface = getQueryInterface(ctx);
+
   const name = queryInterface.quoteIdentifiers(fieldName);
 
   const sqlArray = `(${value.map((v) => `'${v}'`).join(', ')})`;
@@ -75,7 +76,7 @@ const emptyQuery = (ctx, operator: '=' | '>') => {
 
   const queryInterface = getQueryInterface(ctx);
 
-  return `(select ${ifNull}(${funcName}(${queryInterface.quoteIdentifier(fieldName)}), 0) ${operator} 0)`;
+  return `(select ${ifNull}(${funcName}(${queryInterface.quoteIdentifiers(fieldName)}), 0) ${operator} 0)`;
 };
 
 export default {
