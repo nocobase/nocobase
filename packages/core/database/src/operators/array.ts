@@ -3,7 +3,37 @@ import { Op, Sequelize } from 'sequelize';
 import { isMySQL, isPg } from './utils';
 
 const getFieldName = (ctx) => {
-  return ctx.model.rawAttributes[ctx.fieldName]?.field || ctx.fieldName;
+  const fullNameSplit = ctx.fullName.split('.');
+  const fieldName = ctx.fieldName;
+  let columnName = fieldName;
+  const associationPath = [];
+  if (fullNameSplit.length > 1) {
+    for (let i = 0; i < fullNameSplit.length - 1; i++) {
+      associationPath.push(fullNameSplit[i]);
+    }
+  }
+
+  const getModelFromAssociationPath = () => {
+    let model = ctx.model;
+    for (const association of associationPath) {
+      model = model.associations[association].target;
+    }
+
+    return model;
+  };
+
+  const model = getModelFromAssociationPath();
+
+  if (model.rawAttributes[fieldName]) {
+    columnName = model.rawAttributes[fieldName].field || fieldName;
+  }
+
+  if (associationPath.length > 0) {
+    const association = associationPath.join('->');
+    columnName = `${association}.${columnName}`;
+  }
+
+  return columnName;
 };
 
 const escape = (value, ctx) => {
@@ -18,7 +48,9 @@ const getQueryInterface = (ctx) => {
 
 const sqliteExistQuery = (value, ctx) => {
   const fieldName = getFieldName(ctx);
-  const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+  const queryInterface = getQueryInterface(ctx);
+
+  const name = queryInterface.quoteIdentifiers(fieldName);
 
   const sqlArray = `(${value.map((v) => `'${v}'`).join(', ')})`;
 
@@ -44,7 +76,7 @@ const emptyQuery = (ctx, operator: '=' | '>') => {
 
   const queryInterface = getQueryInterface(ctx);
 
-  return `(select ${ifNull}(${funcName}(${queryInterface.quoteIdentifier(fieldName)}), 0) ${operator} 0)`;
+  return `(select ${ifNull}(${funcName}(${queryInterface.quoteIdentifiers(fieldName)}), 0) ${operator} 0)`;
 };
 
 export default {
@@ -53,7 +85,7 @@ export default {
     const fieldName = getFieldName(ctx);
 
     if (isPg(ctx)) {
-      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+      const name = queryInterface.quoteIdentifiers(fieldName);
       const queryValue = escape(JSON.stringify(value), ctx);
       return Sequelize.literal(`${name} @> ${queryValue}::JSONB AND ${name} <@ ${queryValue}::JSONB`);
     }
@@ -61,7 +93,7 @@ export default {
     value = escape(JSON.stringify(value.sort()), ctx);
 
     if (isMySQL(ctx)) {
-      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      const name = queryInterface.quoteIdentifiers(fieldName);
       return Sequelize.literal(`JSON_CONTAINS(${name}, ${value}) AND JSON_CONTAINS(${value}, ${name})`);
     }
 
@@ -71,16 +103,16 @@ export default {
   },
 
   $notMatch(value, ctx) {
-    const fieldName = getFieldName(ctx);
+    const queryInterface = getQueryInterface(ctx);
     value = escape(JSON.stringify(value), ctx);
 
     if (isPg(ctx)) {
-      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+      const name = queryInterface.quoteIdentifiers(getFieldName(ctx));
       return Sequelize.literal(`not (${name} <@ ${value}::JSONB and ${name} @> ${value}::JSONB)`);
     }
 
     if (isMySQL(ctx)) {
-      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      const name = queryInterface.quoteIdentifiers(getFieldName(ctx));
       return Sequelize.literal(`not (JSON_CONTAINS(${name}, ${value}) AND JSON_CONTAINS(${value}, ${name}))`);
     }
     return {
@@ -91,9 +123,10 @@ export default {
   $anyOf(value, ctx) {
     const fieldName = getFieldName(ctx);
     value = _.castArray(value);
+    const queryInterface = getQueryInterface(ctx);
 
     if (isPg(ctx)) {
-      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+      const name = queryInterface.quoteIdentifiers(getFieldName(ctx));
       return Sequelize.literal(
         `${name} ?| ${escape(
           value.map((i) => `${i}`),
@@ -104,7 +137,7 @@ export default {
 
     if (isMySQL(ctx)) {
       value = escape(JSON.stringify(value), ctx);
-      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      const name = queryInterface.quoteIdentifiers(getFieldName(ctx));
       return Sequelize.literal(`JSON_OVERLAPS(${name}, ${value})`);
     }
 
@@ -117,9 +150,10 @@ export default {
     let where;
     value = _.castArray(value);
 
+    const queryInterface = getQueryInterface(ctx);
+
     if (isPg(ctx)) {
-      const fieldName = getFieldName(ctx);
-      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+      const name = queryInterface.quoteIdentifiers(getFieldName(ctx));
       // pg single quote
       where = Sequelize.literal(
         `not (${name} ?| ${escape(
@@ -130,7 +164,7 @@ export default {
     } else if (isMySQL(ctx)) {
       const fieldName = getFieldName(ctx);
       value = escape(JSON.stringify(value), ctx);
-      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      const name = queryInterface.quoteIdentifiers(getFieldName(ctx));
       where = Sequelize.literal(`NOT JSON_OVERLAPS(${name}, ${value})`);
     } else {
       const subQuery = sqliteExistQuery(value, ctx);
