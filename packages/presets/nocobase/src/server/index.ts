@@ -174,30 +174,28 @@ export class PresetNocoBase extends Plugin {
     if (!plugins.length) {
       return;
     }
-    const pluginNamesToBeDeleted = [];
-    const pluginPackageNamesToBeDeleted = [];
+    const pluginsToBeDeleted = new Map();
     const notExistsEnabledPlugins = new Map();
     for (const plugin of plugins) {
       try {
         await PluginManager.getPackageName(plugin.name);
       } catch (error) {
         if (!plugin.enabled) {
-          pluginNamesToBeDeleted.push(plugin.name);
-          pluginPackageNamesToBeDeleted.push(plugin.packageName);
+          pluginsToBeDeleted.set(plugin.name, plugin.packageName);
           continue;
         }
         notExistsEnabledPlugins.set(plugin.name, plugin.packageName);
       }
     }
-    if (pluginNamesToBeDeleted.length) {
+    if (pluginsToBeDeleted.size) {
       await repository.destroy({
         filter: {
           name: {
-            $in: pluginNamesToBeDeleted,
+            $in: Array.from(pluginsToBeDeleted.keys()),
           },
         },
       });
-      this.log.warn(getAutoDeletePluginsWarning(pluginNamesToBeDeleted));
+      this.log.warn(getAutoDeletePluginsWarning(pluginsToBeDeleted));
     }
     if (!notExistsEnabledPlugins.size) {
       return;
