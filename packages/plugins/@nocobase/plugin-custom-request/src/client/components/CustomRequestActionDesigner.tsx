@@ -7,6 +7,7 @@ import {
   actionSettingsItems,
   useCollection_deprecated,
   useDataSourceKey,
+  useDesignable,
   useRequest,
 } from '@nocobase/client';
 import { App } from 'antd';
@@ -25,7 +26,7 @@ export function CustomRequestSettingsItem() {
   const customRequestsResource = useCustomRequestsResource();
   const { message } = App.useApp();
   const { data, refresh } = useGetCustomRequest();
-
+  const { dn } = useDesignable();
   return (
     <>
       <SchemaSettingsActionModalItem
@@ -41,6 +42,7 @@ export function CustomRequestSettingsItem() {
         }}
         onSubmit={async (config) => {
           const { ...requestSettings } = config;
+          fieldSchema['x-response-type'] = requestSettings.responseType;
           await customRequestsResource.updateOrCreate({
             values: {
               key: fieldSchema['x-uid'],
@@ -51,6 +53,12 @@ export function CustomRequestSettingsItem() {
               },
             },
             filterKeys: ['key'],
+          });
+          dn.emit('patch', {
+            schema: {
+              'x-response-type': requestSettings.responseType,
+              'x-uid': fieldSchema['x-uid'],
+            },
           });
           refresh();
           return message.success(t('Saved successfully'));
