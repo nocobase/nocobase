@@ -68,7 +68,7 @@ export default class extends Migration {
       return;
     }
     const proPlugins = Array.from(notExistsEnabledPlugins.keys()).filter((name) => this.proPlugins.includes(name));
-    const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, proPlugins);
+    const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, proPlugins, this.app.name);
     const error = new Error(errMsg) as any;
     error.stack = undefined;
     error.cause = undefined;

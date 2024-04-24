@@ -24,6 +24,7 @@ import {
   removeTmpDir,
   updatePluginByCompressedFileUrl,
 } from './utils';
+import { AppSupervisor } from '../app-supervisor';
 
 export const sleep = async (timeout = 0) => {
   return new Promise((resolve) => {
@@ -639,7 +640,7 @@ export class PluginManager {
     }
   }
 
-  async remove(name: string | string[], options?: { removeDir?: boolean; force?: boolean }) {
+  async remove(name: string | string[], options?: { removeDir?: boolean; force?: boolean; app?: string }) {
     const pluginNames = _.castArray(name);
     const records = pluginNames.map((name) => {
       return {
@@ -662,14 +663,28 @@ export class PluginManager {
       );
       await execa('yarn', ['nocobase', 'postinstall']);
     };
-    if (options?.force) {
+    if (options?.force && !options?.app) {
       await this.repository.destroy({
         filter: {
           name: pluginNames,
         },
       });
+      this.app.log.warn(`force remove plugins ${pluginNames.join(',')}`);
     } else {
       await this.app.load();
+      if (options.app && options.app !== 'main') {
+        const args = [];
+        if (options.force) {
+          args.push('--force');
+        }
+        if (options.removeDir) {
+          args.push('--remove-dir');
+        }
+        const subApp = await AppSupervisor.getInstance().getApp(options.app, { upgrading: true });
+        subApp.runAsCLI(['pm', 'remove', ...pluginNames, ...args], { from: 'user' });
+        return;
+      }
+
       for (const pluginName of pluginNames) {
         const plugin = this.get(pluginName);
         if (!plugin) {

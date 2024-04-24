@@ -88,6 +88,7 @@ export default (app: Application) => {
     .arguments('<plugins...>')
     .option('--force')
     .option('--remove-dir')
+    .option('--app [app]')
     .action(async (plugins, options) => {
       await app.pm.remove(plugins, options);
     });

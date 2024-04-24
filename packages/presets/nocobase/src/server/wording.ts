@@ -5,10 +5,11 @@ export const getAutoDeletePluginsWarning = (plugins: Map<string, string>) => {
   )}. You can reinstall it using the plugin package at any time.`;
 };
 
-export const getNotExistsEnabledPluginsError = (plugins: Map<string, string>, proPlugins: string[]) => {
+export const getNotExistsEnabledPluginsError = (plugins: Map<string, string>, proPlugins: string[], app: string) => {
   const pluginNames = Array.from(plugins.keys()).map((name) => plugins.get(name) || name);
+  const appOption = app === 'main' ? '' : ` --app ${app}`;
   const removeCmds = Array.from(plugins.keys())
-    .map((name) => `yarn pm remove ${name} --force`)
+    .map((name) => `yarn pm remove ${name} --force${appOption}`)
     .join('\n');
   let errMsg = `
 The following plugins are enbaled but the plugin package does not exist: ${pluginNames.join(', ')}.
