@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  expectSupportedVariables,
   mockUserRecordsWithoutDepartments,
   oneEmptyTableBlockWithActions,
   oneEmptyTableWithTreeCollection,
@@ -184,6 +185,7 @@ test.describe('table block schema settings', () => {
       await page.getByTestId('select-filter-field').click();
       await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
       await page.getByLabel('variable-button').click();
+      await expectSupportedVariables(page, ['Constant', 'Current user', 'Current role', 'Date variables']);
       await page.getByRole('menuitemcheckbox', { name: 'Current user' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -789,6 +791,296 @@ test.describe('actions schema settings', () => {
           'Delete',
         ],
       });
+    });
+
+    test('Assign field values', async ({ page, mockPage, mockRecord }) => {
+      const nocoPage = await mockPage({
+        collections: [
+          {
+            name: 'users2',
+            fields: [
+              {
+                name: 'nickname',
+                interface: 'input',
+              },
+            ],
+          },
+        ],
+        pageSchema: {
+          _isJSONSchemaObject: true,
+          version: '2.0',
+          type: 'void',
+          'x-component': 'Page',
+          'x-index': 1,
+          properties: {
+            r9qrai28a9x: {
+              _isJSONSchemaObject: true,
+              version: '2.0',
+              type: 'void',
+              'x-component': 'Grid',
+              'x-initializer': 'page:addBlock',
+              'x-index': 1,
+              properties: {
+                x83br30jhba: {
+                  _isJSONSchemaObject: true,
+                  version: '2.0',
+                  type: 'void',
+                  'x-component': 'Grid.Row',
+                  'x-app-version': '0.21.0-alpha.15',
+                  'x-index': 1,
+                  properties: {
+                    abm6suh07io: {
+                      _isJSONSchemaObject: true,
+                      version: '2.0',
+                      type: 'void',
+                      'x-component': 'Grid.Col',
+                      'x-app-version': '0.21.0-alpha.15',
+                      'x-index': 1,
+                      properties: {
+                        ik81gciqx99: {
+                          _isJSONSchemaObject: true,
+                          version: '2.0',
+                          type: 'void',
+                          'x-decorator': 'TableBlockProvider',
+                          'x-acl-action': 'users2:list',
+                          'x-use-decorator-props': 'useTableBlockDecoratorProps',
+                          'x-decorator-props': {
+                            collection: 'users2',
+                            dataSource: 'main',
+                            action: 'list',
+                            params: {
+                              pageSize: 20,
+                            },
+                            rowKey: 'id',
+                            showIndex: true,
+                            dragSort: false,
+                          },
+                          'x-toolbar': 'BlockSchemaToolbar',
+                          'x-settings': 'blockSettings:table',
+                          'x-component': 'CardItem',
+                          'x-filter-targets': [],
+                          'x-app-version': '0.21.0-alpha.15',
+                          'x-index': 1,
+                          properties: {
+                            actions: {
+                              _isJSONSchemaObject: true,
+                              version: '2.0',
+                              type: 'void',
+                              'x-initializer': 'table:configureActions',
+                              'x-component': 'ActionBar',
+                              'x-component-props': {
+                                style: {
+                                  marginBottom: 'var(--nb-spacing)',
+                                },
+                              },
+                              'x-app-version': '0.21.0-alpha.15',
+                              'x-index': 1,
+                              properties: {
+                                e6p6pc4i7ru: {
+                                  _isJSONSchemaObject: true,
+                                  version: '2.0',
+                                  title: '{{ t("Refresh") }}',
+                                  'x-action': 'refresh',
+                                  'x-component': 'Action',
+                                  'x-use-component-props': 'useRefreshActionProps',
+                                  'x-toolbar': 'ActionSchemaToolbar',
+                                  'x-settings': 'actionSettings:refresh',
+                                  'x-component-props': {
+                                    icon: 'ReloadOutlined',
+                                  },
+                                  'x-align': 'right',
+                                  type: 'void',
+                                  'x-app-version': '0.21.0-alpha.15',
+                                  'x-index': 1,
+                                  'x-uid': 'ce25qoagz0x',
+                                  'x-async': false,
+                                },
+                              },
+                              'x-uid': 'fi6qvszn7bk',
+                              'x-async': false,
+                            },
+                            w3g2bnojflu: {
+                              _isJSONSchemaObject: true,
+                              version: '2.0',
+                              type: 'array',
+                              'x-initializer': 'table:configureColumns',
+                              'x-component': 'TableV2',
+                              'x-use-component-props': 'useTableBlockProps',
+                              'x-component-props': {
+                                rowKey: 'id',
+                                rowSelection: {
+                                  type: 'checkbox',
+                                },
+                              },
+                              'x-app-version': '0.21.0-alpha.15',
+                              'x-index': 2,
+                              properties: {
+                                actions: {
+                                  _isJSONSchemaObject: true,
+                                  version: '2.0',
+                                  type: 'void',
+                                  title: '{{ t("Actions") }}',
+                                  'x-action-column': 'actions',
+                                  'x-decorator': 'TableV2.Column.ActionBar',
+                                  'x-component': 'TableV2.Column',
+                                  'x-designer': 'TableV2.ActionColumnDesigner',
+                                  'x-initializer': 'table:configureItemActions',
+                                  'x-app-version': '0.21.0-alpha.15',
+                                  'x-index': 1,
+                                  properties: {
+                                    '6v6dk8utqur': {
+                                      _isJSONSchemaObject: true,
+                                      version: '2.0',
+                                      type: 'void',
+                                      'x-decorator': 'DndContext',
+                                      'x-component': 'Space',
+                                      'x-component-props': {
+                                        split: '|',
+                                      },
+                                      'x-app-version': '0.21.0-alpha.15',
+                                      'x-index': 1,
+                                      properties: {
+                                        '3yfwi1wovwi': {
+                                          'x-uid': '4y8he8d6isy',
+                                          _isJSONSchemaObject: true,
+                                          version: '2.0',
+                                          title: '{{ t("Update record") }}',
+                                          'x-component': 'Action.Link',
+                                          'x-use-component-props': 'useCustomizeUpdateActionProps',
+                                          'x-action': 'customize:update',
+                                          'x-decorator': 'ACLActionProvider',
+                                          'x-acl-action': 'update',
+                                          'x-toolbar': 'ActionSchemaToolbar',
+                                          'x-settings': 'actionSettings:updateRecord',
+                                          'x-action-settings': {
+                                            assignedValues: {},
+                                            onSuccess: {
+                                              manualClose: true,
+                                              redirecting: false,
+                                              successMessage: '{{t("Updated successfully")}}',
+                                            },
+                                            triggerWorkflows: [],
+                                            schemaUid: 'yv8h3bsw6xv',
+                                          },
+                                          'x-designer-props': {
+                                            linkageAction: true,
+                                          },
+                                          type: 'void',
+                                          'x-index': 1,
+                                          'x-async': false,
+                                        },
+                                      },
+                                      'x-uid': '6gjtgo8dm0v',
+                                      'x-async': false,
+                                    },
+                                  },
+                                  'x-uid': '2mn3u0brbcf',
+                                  'x-async': false,
+                                },
+                                '3k0ukmw2anz': {
+                                  _isJSONSchemaObject: true,
+                                  version: '2.0',
+                                  type: 'void',
+                                  'x-decorator': 'TableV2.Column.Decorator',
+                                  'x-toolbar': 'TableColumnSchemaToolbar',
+                                  'x-settings': 'fieldSettings:TableColumn',
+                                  'x-component': 'TableV2.Column',
+                                  'x-app-version': '0.21.0-alpha.15',
+                                  'x-index': 2,
+                                  properties: {
+                                    nickname: {
+                                      _isJSONSchemaObject: true,
+                                      version: '2.0',
+                                      'x-collection-field': 'users2.nickname',
+                                      'x-component': 'CollectionField',
+                                      'x-component-props': {
+                                        ellipsis: true,
+                                      },
+                                      'x-read-pretty': true,
+                                      'x-decorator': null,
+                                      'x-decorator-props': {
+                                        labelStyle: {
+                                          display: 'none',
+                                        },
+                                      },
+                                      'x-app-version': '0.21.0-alpha.15',
+                                      'x-index': 1,
+                                      'x-uid': 'xjdg4sv806s',
+                                      'x-async': false,
+                                    },
+                                  },
+                                  'x-uid': 'b5yinuax6bq',
+                                  'x-async': false,
+                                },
+                              },
+                              'x-uid': '2qm5ks1yxwj',
+                              'x-async': false,
+                            },
+                          },
+                          'x-uid': 'xiv7b69adnd',
+                          'x-async': false,
+                        },
+                      },
+                      'x-uid': 'd0aia7cgl33',
+                      'x-async': false,
+                    },
+                  },
+                  'x-uid': 'y7dvfeymvab',
+                  'x-async': false,
+                },
+              },
+              'x-uid': 'xhpv473gpl5',
+              'x-async': false,
+            },
+          },
+          'x-uid': 'ab9zi5t7jx2',
+          'x-async': true,
+        },
+      }).waitForInit();
+      await mockRecord('users2');
+      await nocoPage.goto();
+
+      const openPopup = async () => {
+        await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').hover();
+        await page
+          .getByLabel('designer-schema-settings-Action.Link-actionSettings:updateRecord-users2')
+          .first()
+          .hover();
+        await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+      };
+
+      const expectNewValue = async (value: string) => {
+        await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').click();
+        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await page.getByLabel('action-Action-Refresh-refresh').click();
+        await expect(page.getByLabel('block-item-CardItem-users2-').getByText(value)).toBeVisible();
+      };
+
+      // 1. 打开 Assign field values 配置弹窗
+      await openPopup();
+
+      // 2. 将 Nickname 字段的值设置为 `123456`
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').fill('123456');
+      await page.getByRole('button', { name: 'Submit' }).click();
+
+      // 3. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “123456” 的记录
+      await expectNewValue('123456');
+
+      // 4. 再次打开 Assign field values 配置弹窗，这次为 Nickname 设置一个变量值（Current role）
+      await openPopup();
+      await page.getByLabel('variable-button').click();
+      await expectSupportedVariables(page, [
+        'Constant',
+        'Current user',
+        'Current role',
+        'Date variables',
+        'Current record',
+      ]);
+      await page.getByRole('menuitemcheckbox', { name: 'Current role' }).click();
+      await page.getByRole('button', { name: 'Submit' }).click();
+
+      // 5. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “root” 的记录
+      await expectNewValue('root');
     });
   });
 

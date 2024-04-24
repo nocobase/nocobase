@@ -4,7 +4,7 @@ group:
   order: 3
 ---
 
-# Action <Badge>待定</Badge>
+# Action
 
 ## Nodes
 

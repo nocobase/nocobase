@@ -57,7 +57,8 @@ test.describe('form item & create form', () => {
             })
             .hover();
         })(page, 'radioGroup'),
-      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
+      unsupportedVariables: ['Current popup record'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByLabel('Option2').click();
       },

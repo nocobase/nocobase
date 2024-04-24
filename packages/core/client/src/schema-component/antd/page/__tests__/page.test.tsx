@@ -94,6 +94,9 @@ describe('Page', () => {
             },
           },
         },
+        apis: {
+          '/uiSchemas:insertAdjacent/test': { data: { result: 'ok' } },
+        },
       });
 
       expect(screen.getByRole('tablist')).toBeInTheDocument();
@@ -125,6 +128,9 @@ describe('Page', () => {
             IconPicker,
             Grid,
           },
+        },
+        apis: {
+          '/uiSchemas:insertAdjacent/test?position=beforeEnd': { data: { result: 'ok' } },
         },
       });
 
