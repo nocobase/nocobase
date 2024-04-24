@@ -13,7 +13,7 @@ export const useGetAriaLabelOfBlockItem = (name?: string) => {
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const component = fieldSchema['x-component'];
-  const componentName = typeof component === 'string' ? component : component?.displayName || component?.name;
+  const componentName = typeof component === 'string' ? component : component?.displayName;
   const collectionField = compile(fieldSchema['x-collection-field']);
   let { name: blockName } = useBlockContext() || {};
   // eslint-disable-next-line prefer-const
