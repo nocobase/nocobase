@@ -8,7 +8,7 @@ export const getAutoDeletePluginsWarning = (plugins: Map<string, string>) => {
 export const getNotExistsEnabledPluginsError = (plugins: Map<string, string>, proPlugins: string[]) => {
   const pluginNames = Array.from(plugins.keys()).map((name) => plugins.get(name) || name);
   const removeCmds = Array.from(plugins.keys())
-    .map((name) => `yarn nocobase pm disable ${name}\nyarn nocobase pm remove ${name}`)
+    .map((name) => `yarn pm remove ${name} --force`)
     .join('\n');
   let errMsg = `
 The following plugins are enbaled but the plugin package does not exist: ${pluginNames.join(', ')}.

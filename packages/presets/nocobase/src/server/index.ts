@@ -60,8 +60,6 @@ export class PresetNocoBase extends Plugin {
     'sms-auth>=0.10.0-alpha.2',
   ];
 
-  proPlugins = ['oidc', 'auth-oidc', 'cas', 'auth-cas', 'saml', 'auth-saml'];
-
   splitNames(name: string) {
     return (name || '').split(',').filter(Boolean);
   }
@@ -166,49 +164,6 @@ export class PresetNocoBase extends Plugin {
     const existPluginNames = existPlugins.map((item) => item.name);
     const plugins = (await this.allPlugins()).filter((item) => !existPluginNames.includes(item.name));
     await repository.create({ values: plugins });
-  }
-
-  async processRemovedPlugins() {
-    const repository = this.pm.repository;
-    const plugins = await repository.find();
-    if (!plugins.length) {
-      return;
-    }
-    const pluginsToBeDeleted = new Map();
-    const notExistsEnabledPlugins = new Map();
-    for (const plugin of plugins) {
-      try {
-        await PluginManager.getPackageName(plugin.name);
-      } catch (error) {
-        if (!plugin.enabled) {
-          pluginsToBeDeleted.set(plugin.name, plugin.packageName);
-          continue;
-        }
-        notExistsEnabledPlugins.set(plugin.name, plugin.packageName);
-      }
-    }
-    if (pluginsToBeDeleted.size) {
-      await repository.destroy({
-        filter: {
-          name: {
-            $in: Array.from(pluginsToBeDeleted.keys()),
-          },
-        },
-      });
-      this.log.warn(getAutoDeletePluginsWarning(pluginsToBeDeleted));
-    }
-    if (!notExistsEnabledPlugins.size) {
-      return;
-    }
-    const proPlugins = Array.from(notExistsEnabledPlugins.keys()).filter((name) => this.proPlugins.includes(name));
-    const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, proPlugins);
-    const error = new Error(errMsg);
-    error.stack = undefined;
-    throw error;
-  }
-
-  async beforeLoad() {
-    await this.processRemovedPlugins();
   }
 
   async install() {
