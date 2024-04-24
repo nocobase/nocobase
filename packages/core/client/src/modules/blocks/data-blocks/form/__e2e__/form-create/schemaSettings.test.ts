@@ -309,13 +309,13 @@ test.describe('creation form block schema settings', () => {
 
       // 编辑表单中获取到接口数据后再触发联动规则
       await page.getByLabel('action-Action.Link-Edit-').click();
-      await expect(await page.getByRole('spinbutton').inputValue()).toBe('66');
+      await expect(page.getByRole('spinbutton')).toHaveValue('66');
       await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
 
       //新建表单中的赋默认值后的联动规则
-      await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+      await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
       await page.getByLabel('action-Action-Add new-create-').click();
-      await expect(await page.getByRole('spinbutton').inputValue()).toBe('88');
+      await expect(page.getByRole('spinbutton')).toHaveValue('88');
     });
   });
 
