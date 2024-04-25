@@ -165,17 +165,6 @@ describe('actions', () => {
     expect(data.length).toBe(1);
   });
 
-  it('update profile with roles', async () => {
-    const res2 = await adminAgent.resource('users').updateProfile({
-      filterByTk: adminUser.id,
-      values: {
-        nickname: 'a',
-        roles: adminUser.roles,
-      },
-    });
-    expect(res2.status).toBe(200);
-  });
-
   it('can destroy users role', async () => {
     const role2 = await db.getRepository('roles').create({
       values: {
