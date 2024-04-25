@@ -8,7 +8,7 @@ export class PluginLocalizationClient extends Plugin {
       title: `{{t("Localization", { ns: "${NAMESPACE}" })}}`,
       icon: 'GlobalOutlined',
       Component: Localization,
-      aclSnippet: 'pm.localization-management.localization',
+      aclSnippet: 'pm.localization.localization',
     });
   }
 }

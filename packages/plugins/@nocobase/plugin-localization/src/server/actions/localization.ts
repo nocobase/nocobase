@@ -6,7 +6,7 @@ import LocalizationManagementPlugin from '../plugin';
 import { getTextsFromDBRecord } from '../utils';
 
 const getResourcesInstance = async (ctx: Context) => {
-  const plugin = ctx.app.getPlugin('localization-management') as LocalizationManagementPlugin;
+  const plugin = ctx.app.getPlugin('localization') as LocalizationManagementPlugin;
   return plugin.resources;
 };
 

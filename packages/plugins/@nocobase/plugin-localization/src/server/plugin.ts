@@ -49,14 +49,6 @@ export class PluginLocalizationServer extends Plugin {
   async load() {
     await this.importCollections(resolve(__dirname, 'collections'));
 
-    this.db.addMigrations({
-      namespace: 'localization-management',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-
     this.app.resource({
       name: 'localizationTexts',
       actions: localizationTexts,
