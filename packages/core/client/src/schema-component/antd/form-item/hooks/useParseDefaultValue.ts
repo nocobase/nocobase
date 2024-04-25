@@ -24,7 +24,7 @@ const useParseDefaultValue = () => {
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const recordV2 = useCollectionRecord();
+  const record = useCollectionRecord();
   const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable, isInSubForm } =
     useFlag() || {};
   const { getField } = useCollection_deprecated();
@@ -51,7 +51,7 @@ const useParseDefaultValue = () => {
       isInSetDefaultValueDialog ||
       isInFormDataTemplate ||
       isSubMode(fieldSchema) ||
-      (!recordV2?.isNew && !isInAssignFieldValues)
+      (!record?.isNew && !isInAssignFieldValues)
     ) {
       return;
     }

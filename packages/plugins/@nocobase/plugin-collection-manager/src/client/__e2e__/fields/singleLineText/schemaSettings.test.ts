@@ -257,8 +257,7 @@ test.describe('form item & edit form', () => {
 });
 
 test.describe('form item & sub form', () => {
-  // TODO: 等 https://nocobase.height.app/T-4132 和 https://nocobase.height.app/T-4133 修复后再开启
-  test.skip('set default value', async ({ page, mockPage, mockRecord }) => {
+  test('set default value', async ({ page, mockPage, mockRecord }) => {
     let record;
     await testDefaultValue({
       page,
@@ -298,7 +297,8 @@ test.describe('form item & sub form', () => {
           .first()
           .click();
 
-        await expect(page.getByLabel('block-item-CollectionField-').nth(1).getByRole('textbox')).toHaveValue(
+        // 在第一条数据下面增加一条数据
+        await expect(page.getByLabel('block-item-CollectionField-').nth(2).getByRole('textbox')).toHaveValue(
           'Super Admin',
         );
       },
