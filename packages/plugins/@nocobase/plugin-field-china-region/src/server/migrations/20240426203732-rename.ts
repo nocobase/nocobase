@@ -7,7 +7,7 @@ export default class extends Migration {
   async up() {
     await this.pm.repository.update({
       filter: {
-        packageName: '@nocobase/plugin-china-region',
+        name: 'china-region',
       },
       values: {
         packageName: '@nocobase/plugin-field-china-region',
