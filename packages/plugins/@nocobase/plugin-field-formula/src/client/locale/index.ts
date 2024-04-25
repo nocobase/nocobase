@@ -1,7 +1,7 @@
 import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = 'formula-field';
+export const NAMESPACE = 'field-formula';
 
 export function lang(key: string, options = {}) {
   return i18n.t(key, { ...options, ns: NAMESPACE });
