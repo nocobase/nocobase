@@ -27,6 +27,8 @@ export function afterCreateForForeignKeyField(db: Database) {
       type = 'integer';
     } else if (attribute.type.constructor.name === 'STRING') {
       type = 'string';
+    } else if (attribute.type.constructor.name === 'UUID') {
+      type = 'uuid';
     }
 
     const name = attribute.fieldName;
@@ -45,6 +47,16 @@ export function afterCreateForForeignKeyField(db: Database) {
 
     if (type === 'string') {
       data['interface'] = 'input';
+      data['uiSchema'] = {
+        type: 'string',
+        title: name,
+        'x-component': 'Input',
+        'x-read-pretty': true,
+      };
+    }
+
+    if (type === 'uuid') {
+      data['interface'] = 'uuid';
       data['uiSchema'] = {
         type: 'string',
         title: name,
@@ -126,6 +138,7 @@ export function afterCreateForForeignKeyField(db: Database) {
     // foreign key in target collection
     if (['oho', 'o2m'].includes(interfaceType)) {
       const values = generateFkOptions(target, foreignKey);
+
       await createFieldIfNotExists({
         values: {
           collectionName: target,
@@ -138,6 +151,7 @@ export function afterCreateForForeignKeyField(db: Database) {
     // foreign key in source collection
     else if (['obo', 'm2o'].includes(interfaceType)) {
       const values = generateFkOptions(collectionName, foreignKey);
+
       await createFieldIfNotExists({
         values: { collectionName, ...values },
         transaction,

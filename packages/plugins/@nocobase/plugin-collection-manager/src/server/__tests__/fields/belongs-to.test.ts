@@ -158,7 +158,8 @@ describe('belongsTo', () => {
         onDelete: 'SET NULL',
         target: 'posts',
         targetKey: 'uuid',
-        foreignKey: 'postUUID',
+        foreignKey: 'postUuid',
+        interface: 'm2o',
       },
       context: {},
     });
@@ -168,6 +169,15 @@ describe('belongsTo', () => {
     db = app.db;
 
     const Comments = db.getCollection('comments');
+    const foreignKeyField = Comments.getField('postUuid');
+    expect(foreignKeyField).toBeTruthy();
+
     expect(Comments.model.associations['post']).toBeTruthy();
+
+    await db.getRepository('posts').create({
+      values: {
+        comments: [{}],
+      },
+    });
   });
 });
