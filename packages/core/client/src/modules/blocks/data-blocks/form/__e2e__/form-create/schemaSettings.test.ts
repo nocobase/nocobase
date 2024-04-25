@@ -1437,9 +1437,20 @@ test.describe('actions schema settings', () => {
       await mockPage(oneFormAndOneTableWithUsers).goto();
 
       const openPopup = async () => {
+        if (!(await page.getByLabel('action-Action-Save record-').isVisible())) {
+          await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-users').hover();
+          await page.getByRole('menuitem', { name: 'Customize right' }).hover();
+          await page.getByRole('menuitem', { name: 'Save record' }).click();
+        }
+
         await page.getByLabel('action-Action-Save record-').hover();
         await page.getByLabel('designer-schema-settings-Action-actionSettings:saveRecord-users').hover();
         await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+
+        if (!(await page.getByLabel('block-item-AssignedField-').getByRole('textbox').isVisible())) {
+          await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-users').hover();
+          await page.getByRole('menuitem', { name: 'Nickname' }).click();
+        }
       };
 
       const expectNewValue = async (value: string) => {
@@ -1453,6 +1464,7 @@ test.describe('actions schema settings', () => {
       await openPopup();
 
       // 2. 将 Nickname 字段的值设置为 `123456`
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').click();
       await page.getByLabel('block-item-AssignedField-').getByRole('textbox').fill('123456');
       await page.getByRole('button', { name: 'Submit' }).click();
 

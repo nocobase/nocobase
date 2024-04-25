@@ -805,12 +805,24 @@ test.describe('actions schema settings', () => {
       await nocoPage.goto();
 
       const openPopup = async () => {
+        if (!(await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').isVisible())) {
+          await page.getByRole('button', { name: 'Actions', exact: true }).hover();
+          await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users2').hover();
+          await page.getByRole('menuitem', { name: 'Customize right' }).hover();
+          await page.getByRole('menuitem', { name: 'Update record' }).click();
+        }
+
         await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').hover();
         await page
           .getByLabel('designer-schema-settings-Action.Link-actionSettings:updateRecord-users2')
           .first()
           .hover();
         await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+
+        if (!(await page.getByLabel('block-item-AssignedField-').getByRole('textbox').isVisible())) {
+          await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-users').hover();
+          await page.getByRole('menuitem', { name: 'Nickname' }).click();
+        }
       };
 
       const expectNewValue = async (value: string) => {
@@ -824,6 +836,7 @@ test.describe('actions schema settings', () => {
       await openPopup();
 
       // 2. 将 Nickname 字段的值设置为 `123456`
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').click();
       await page.getByLabel('block-item-AssignedField-').getByRole('textbox').fill('123456');
       await page.getByRole('button', { name: 'Submit' }).click();
 

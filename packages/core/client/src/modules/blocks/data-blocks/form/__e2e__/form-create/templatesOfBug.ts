@@ -8888,6 +8888,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
     type: 'void',
     'x-component': 'Page',
     'x-app-version': '0.21.0-alpha.13',
+    'x-index': 1,
     properties: {
       a5je3qsyedz: {
         _isJSONSchemaObject: true,
@@ -8896,6 +8897,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
         'x-component': 'Grid',
         'x-initializer': 'page:addBlock',
         'x-app-version': '0.21.0-alpha.13',
+        'x-index': 1,
         properties: {
           i19i3rr6vf1: {
             _isJSONSchemaObject: true,
@@ -8903,6 +8905,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
             type: 'void',
             'x-component': 'Grid.Row',
             'x-app-version': '0.21.0-alpha.15',
+            'x-index': 1,
             properties: {
               hfwcy6caqnk: {
                 _isJSONSchemaObject: true,
@@ -8910,6 +8913,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                 type: 'void',
                 'x-component': 'Grid.Col',
                 'x-app-version': '0.21.0-alpha.15',
+                'x-index': 1,
                 properties: {
                   tldnr8czm49: {
                     _isJSONSchemaObject: true,
@@ -8929,6 +8933,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                     'x-settings': 'blockSettings:createForm',
                     'x-component': 'CardItem',
                     'x-app-version': '0.21.0-alpha.15',
+                    'x-index': 1,
                     properties: {
                       '277vnh3hhj8': {
                         _isJSONSchemaObject: true,
@@ -8937,6 +8942,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                         'x-component': 'FormV2',
                         'x-use-component-props': 'useCreateFormBlockProps',
                         'x-app-version': '0.21.0-alpha.15',
+                        'x-index': 1,
                         properties: {
                           grid: {
                             _isJSONSchemaObject: true,
@@ -8945,9 +8951,9 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                             'x-component': 'Grid',
                             'x-initializer': 'form:configureFields',
                             'x-app-version': '0.21.0-alpha.15',
-                            'x-uid': 'i09r5gi24nq',
-                            'x-async': false,
                             'x-index': 1,
+                            'x-uid': 'ld0indfray1',
+                            'x-async': false,
                           },
                           d9cn1kgxckc: {
                             _isJSONSchemaObject: true,
@@ -8962,61 +8968,25 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                               },
                             },
                             'x-app-version': '0.21.0-alpha.15',
-                            properties: {
-                              qlz0bw66ui9: {
-                                'x-uid': 'qg3atx2zfbo',
-                                _isJSONSchemaObject: true,
-                                version: '2.0',
-                                title: '{{ t("Save record") }}',
-                                'x-action': 'customize:save',
-                                'x-component': 'Action',
-                                'x-use-component-props': 'useCreateActionProps',
-                                'x-toolbar': 'ActionSchemaToolbar',
-                                'x-settings': 'actionSettings:saveRecord',
-                                'x-designer-props': {
-                                  modalTip:
-                                    '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
-                                },
-                                'x-action-settings': {
-                                  assignedValues: {},
-                                  skipValidator: false,
-                                  onSuccess: {
-                                    manualClose: true,
-                                    redirecting: false,
-                                    successMessage: '{{t("Submitted successfully")}}',
-                                  },
-                                  triggerWorkflows: [],
-                                  schemaUid: '7d1kpz8lumc',
-                                },
-                                type: 'void',
-                                'x-app-version': '0.21.0-alpha.15',
-                                'x-async': false,
-                                'x-index': 1,
-                              },
-                            },
-                            'x-uid': 'v3lj60va9rh',
-                            'x-async': false,
                             'x-index': 2,
+                            'x-uid': 'k6zuwp7u9w6',
+                            'x-async': false,
                           },
                         },
-                        'x-uid': 'i7akuspqjij',
+                        'x-uid': 'j8aw9rko2z3',
                         'x-async': false,
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'nnyas01cj99',
+                    'x-uid': 'kgbqy1na2no',
                     'x-async': false,
-                    'x-index': 1,
                   },
                 },
-                'x-uid': '8xfuswov8hu',
+                'x-uid': 'wjnnhu9acbp',
                 'x-async': false,
-                'x-index': 1,
               },
             },
-            'x-uid': 'levn6t43pjz',
+            'x-uid': '8g3dnjl6gg1',
             'x-async': false,
-            'x-index': 1,
           },
           rwialdftgzc: {
             _isJSONSchemaObject: true,
@@ -9024,6 +8994,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
             type: 'void',
             'x-component': 'Grid.Row',
             'x-app-version': '0.21.0-alpha.15',
+            'x-index': 2,
             properties: {
               kwnyh28foid: {
                 _isJSONSchemaObject: true,
@@ -9031,6 +9002,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                 type: 'void',
                 'x-component': 'Grid.Col',
                 'x-app-version': '0.21.0-alpha.15',
+                'x-index': 1,
                 properties: {
                   luega8f3t66: {
                     _isJSONSchemaObject: true,
@@ -9055,6 +9027,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                     'x-component': 'CardItem',
                     'x-filter-targets': [],
                     'x-app-version': '0.21.0-alpha.15',
+                    'x-index': 1,
                     properties: {
                       actions: {
                         _isJSONSchemaObject: true,
@@ -9068,6 +9041,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                           },
                         },
                         'x-app-version': '0.21.0-alpha.15',
+                        'x-index': 1,
                         properties: {
                           plqyq56bd1s: {
                             _isJSONSchemaObject: true,
@@ -9084,14 +9058,13 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                             'x-align': 'right',
                             type: 'void',
                             'x-app-version': '0.21.0-alpha.15',
-                            'x-uid': 'lk7krpra7v8',
-                            'x-async': false,
                             'x-index': 1,
+                            'x-uid': 'tekvxezs7fq',
+                            'x-async': false,
                           },
                         },
-                        'x-uid': 'b4ydqbu9tpr',
+                        'x-uid': 'pbiwv4v13ny',
                         'x-async': false,
-                        'x-index': 1,
                       },
                       '2bpww4bg6gl': {
                         _isJSONSchemaObject: true,
@@ -9107,6 +9080,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                           },
                         },
                         'x-app-version': '0.21.0-alpha.15',
+                        'x-index': 2,
                         properties: {
                           actions: {
                             _isJSONSchemaObject: true,
@@ -9119,6 +9093,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-initializer': 'table:configureItemActions',
                             'x-app-version': '0.21.0-alpha.15',
+                            'x-index': 1,
                             properties: {
                               dp022t8opyt: {
                                 _isJSONSchemaObject: true,
@@ -9130,14 +9105,13 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                                   split: '|',
                                 },
                                 'x-app-version': '0.21.0-alpha.15',
-                                'x-uid': 'uv7wxaqopr8',
-                                'x-async': false,
                                 'x-index': 1,
+                                'x-uid': 'weeiqquu365',
+                                'x-async': false,
                               },
                             },
-                            'x-uid': 'kekov1wu2k3',
+                            'x-uid': 'mrbnwas3bjj',
                             'x-async': false,
-                            'x-index': 1,
                           },
                           o86r52gopar: {
                             _isJSONSchemaObject: true,
@@ -9148,6 +9122,7 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                             'x-settings': 'fieldSettings:TableColumn',
                             'x-component': 'TableV2.Column',
                             'x-app-version': '0.21.0-alpha.15',
+                            'x-index': 2,
                             properties: {
                               nickname: {
                                 _isJSONSchemaObject: true,
@@ -9165,43 +9140,36 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
                                   },
                                 },
                                 'x-app-version': '0.21.0-alpha.15',
-                                'x-uid': 't64onrmt21b',
-                                'x-async': false,
                                 'x-index': 1,
+                                'x-uid': 'zhpnmk0jtlm',
+                                'x-async': false,
                               },
                             },
-                            'x-uid': 'wbmsy2astkd',
+                            'x-uid': 'qo0ipkzabor',
                             'x-async': false,
-                            'x-index': 2,
                           },
                         },
-                        'x-uid': 'fwh0otmfys1',
+                        'x-uid': 'j24y8acxaih',
                         'x-async': false,
-                        'x-index': 2,
                       },
                     },
-                    'x-uid': '7f86cn5jwr0',
+                    'x-uid': '9ypn04atyla',
                     'x-async': false,
-                    'x-index': 1,
                   },
                 },
-                'x-uid': 'ujz0q6xuxi4',
+                'x-uid': 'cpb2pi4emkx',
                 'x-async': false,
-                'x-index': 1,
               },
             },
-            'x-uid': 'sbe0fmiggxm',
+            'x-uid': 'sqzgc43tio1',
             'x-async': false,
-            'x-index': 2,
           },
         },
-        'x-uid': 'denu9cvypww',
+        'x-uid': '2lsyffpy9uo',
         'x-async': false,
-        'x-index': 1,
       },
     },
-    'x-uid': 'uq88ysvai8i',
+    'x-uid': 'u7zfdj6rpa5',
     'x-async': true,
-    'x-index': 1,
   },
 };
