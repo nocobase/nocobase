@@ -7,7 +7,7 @@ const useStyles = genStyleHook('nb-grid', (token) => {
     [componentCls]: {
       '.ColDivider': {
         flexShrink: 0,
-        width: token.marginLG,
+        width: token.marginBlock,
 
         '.DraggableNode': {
           '&::before': {
@@ -20,7 +20,7 @@ const useStyles = genStyleHook('nb-grid', (token) => {
           '&:hover': {
             '&::before': { background: 'var(--colorBgSettingsHover) !important' },
           },
-          width: token.marginLG,
+          width: token.marginBlock,
           height: '100%',
           position: 'absolute',
           cursor: 'col-resize',
@@ -28,10 +28,10 @@ const useStyles = genStyleHook('nb-grid', (token) => {
       },
 
       '.RowDivider': {
-        height: token.marginLG,
+        height: token.marginBlock,
         width: '100%',
         position: 'absolute',
-        marginTop: `calc(-1 * ${token.marginLG}px)`,
+        marginTop: `calc(-1 * ${token.marginBlock}px)`,
       },
 
       '.CardRow': {
@@ -40,7 +40,7 @@ const useStyles = genStyleHook('nb-grid', (token) => {
       },
 
       '.showDivider': {
-        margin: `0 calc(-1 * ${token.marginLG}px)`,
+        margin: `0 calc(-1 * ${token.marginBlock}px)`,
       },
     },
   };

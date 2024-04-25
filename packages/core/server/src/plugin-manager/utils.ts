@@ -70,11 +70,11 @@ export function getNodeModulesPluginDir(packageName: string) {
 export function getAuthorizationHeaders(registry?: string, authToken?: string) {
   const headers = {};
   if (registry && !authToken) {
-    const npmrcPath = path.join(process.cwd(), '.npmrc');
+    const npmrcPath = path.join(os.homedir(), '.npmrc');
     const url = new URL(registry);
     let envConfig: Record<string, string> = process.env;
     if (fs.existsSync(npmrcPath)) {
-      const content = fs.readFileSync(path.join(process.cwd(), '.npmrc'), 'utf-8');
+      const content = fs.readFileSync(npmrcPath, 'utf-8');
       envConfig = {
         ...envConfig,
         ...ini.parse(content),

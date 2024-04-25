@@ -694,5 +694,6 @@
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" は削除されている可能性があります。この {{blockType}} を削除してください。",
   "Home page": "ホームページ",
   "Handbook": "ユーザーマニュアル",
-  "License": "ライセンス"
+  "License": "ライセンス",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "この変数は非推奨です。代わりに「現在のフォーム」を使用してください"
 }

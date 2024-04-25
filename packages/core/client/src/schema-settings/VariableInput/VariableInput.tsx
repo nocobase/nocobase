@@ -248,7 +248,7 @@ export function useCompatOldVariables(props: {
         return variables;
       }
 
-      variables = _.cloneDeep(variables);
+      variables = [...variables];
 
       const systemVariable: Option = {
         value: '$system',

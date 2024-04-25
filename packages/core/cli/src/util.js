@@ -217,6 +217,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     if (packageJsonName === '@nocobase/test') {
       paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
+      paths[`${packageJsonName}/web`] = [`${relativePath}/src/web`];
     }
     if (packageJsonName === '@nocobase/plugin-workflow-test') {
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];

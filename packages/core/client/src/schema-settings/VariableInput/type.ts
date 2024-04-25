@@ -14,6 +14,7 @@ export interface Option extends DefaultOptionType {
   loadChildren?(option: Option): Promise<void>;
   field?: FieldOption;
   depth?: number;
+  deprecated?: boolean;
 }
 
 export interface FieldOption {

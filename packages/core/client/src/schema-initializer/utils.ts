@@ -843,6 +843,7 @@ export const useCollectionDataSourceItems = ({
   dataBlockInitializerProps,
   hideOtherRecordsInPopup,
   onClick,
+  filterOtherRecordsCollection,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
@@ -855,6 +856,10 @@ export const useCollectionDataSourceItems = ({
    */
   hideOtherRecordsInPopup?: boolean;
   onClick?: (options: any) => void;
+  /**
+   * 用来筛选弹窗中的 “Other records” 选项中的数据表
+   */
+  filterOtherRecordsCollection?: (collection: Collection) => boolean;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -959,7 +964,10 @@ export const useCollectionDataSourceItems = ({
           hideChildrenIfSingleCollection: false,
           onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
           componentType: componentTypeMap[componentName] || componentName,
-          filter({ collection: c, associationField }) {
+          filter({ collection, associationField }) {
+            if (filterOtherRecordsCollection) {
+              return filterOtherRecordsCollection(collection);
+            }
             return true;
           },
           onClick(options) {
@@ -1348,9 +1356,7 @@ export const createTableBlockSchema = (options) => {
                 type: 'void',
                 'x-decorator': 'DndContext',
                 'x-component': 'Space',
-                'x-component-props': {
-                  split: '|',
-                },
+                'x-component-props': {},
                 properties: {},
               },
             },

@@ -2,6 +2,7 @@ import { ConfigProvider, theme as antdTheme } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useCallback, useMemo, useRef } from 'react';
 import compatOldTheme from './compatOldTheme';
+import { addCustomAlgorithmToTheme } from './customAlgorithm';
 import defaultTheme from './defaultTheme';
 import { ThemeConfig } from './type';
 
@@ -62,7 +63,7 @@ export const GlobalThemeProvider = ({ children, theme: themeFromProps }) => {
 
   const value = useMemo(() => {
     return {
-      theme,
+      theme: addCustomAlgorithmToTheme(theme),
       setTheme,
       setCurrentSettingTheme,
       getCurrentSettingTheme,
@@ -81,7 +82,7 @@ export const GlobalThemeProvider = ({ children, theme: themeFromProps }) => {
 
   return (
     <GlobalThemeContext.Provider value={value}>
-      <ConfigProvider theme={compatOldTheme(theme)}>{children}</ConfigProvider>
+      <ConfigProvider theme={compatOldTheme(value.theme)}>{children}</ConfigProvider>
     </GlobalThemeContext.Provider>
   );
 };

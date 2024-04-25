@@ -1,9 +1,9 @@
 import { useFieldSchema } from '@formily/react';
 import { Skeleton } from 'antd';
 import React from 'react';
+import { useInView } from 'react-intersection-observer';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { BlockItem } from '../block-item';
-import { useInView } from 'react-intersection-observer';
 import { BlockItemCard } from '../block-item/BlockItemCard';
 import { BlockItemError } from '../block-item/BlockItemError';
 import useStyles from './style';
@@ -33,7 +33,7 @@ export const CardItem = (props: Props) => {
     <BlockItemError>
       <BlockItem name={name} className={`${componentCls} ${hashId} noco-card-item`}>
         <BlockItemCard ref={ref} {...restProps}>
-          {inView ? props.children : <Skeleton active paragraph={{ rows: 4 }} />}
+          {inView ? props.children : <Skeleton paragraph={{ rows: 4 }} />}
         </BlockItemCard>
       </BlockItem>
     </BlockItemError>,
