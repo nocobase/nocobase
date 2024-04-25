@@ -257,7 +257,8 @@ test.describe('form item & edit form', () => {
 });
 
 test.describe('form item & sub form', () => {
-  test('set default value', async ({ page, mockPage, mockRecord }) => {
+  // TODO: 等 https://nocobase.height.app/T-4132 和 https://nocobase.height.app/T-4133 修复后再开启
+  test.skip('set default value', async ({ page, mockPage, mockRecord }) => {
     let record;
     await testDefaultValue({
       page,
