@@ -194,8 +194,8 @@ export const PresetFields = observer(
           type: 'checkbox',
           selectedRowKeys,
           getCheckboxProps: (record) => ({
-            disabled: form.values.template === 'file', // Column configuration not to be checked
             name: record.name,
+            disabled: props?.disabled,
           }),
           onChange: (_, selectedRows) => {
             const fields = getDefaultCollectionFields(selectedRows, form.values);
