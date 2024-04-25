@@ -148,10 +148,9 @@ export class UpdateGuard {
           return value;
         }
 
-        const associationKeyName =
-          associationObj.associationType == 'BelongsTo' || associationObj.associationType == 'HasOne'
-            ? (<any>associationObj).targetKey
-            : associationObj.target.primaryKeyAttribute;
+        const associationKeyName = (<any>associationObj).targetKey
+          ? (<any>associationObj).targetKey
+          : associationObj.target.primaryKeyAttribute;
 
         if (value[associationKeyName]) {
           return lodash.pick(value, [associationKeyName, ...Object.keys(associationObj.target.associations)]);

@@ -442,7 +442,11 @@ export async function updateMultipleAssociation(
       const targetKey = (association as any).targetKey || 'id';
 
       if (item[targetKey]) {
-        setItems.push(item[targetKey]);
+        const attributes = {
+          [targetKey]: item[targetKey],
+        };
+        const instance = association.target.build(attributes, { isNewRecord: false });
+        setItems.push(instance);
       }
 
       objectItems.push(item);
@@ -511,7 +515,7 @@ export async function updateMultipleAssociation(
       }
       const addAccessor = association.accessors.add;
 
-      await model[addAccessor](instance[association.target.primaryKeyAttribute], accessorOptions);
+      await model[addAccessor](instance, accessorOptions);
 
       if (!recursive) {
         continue;

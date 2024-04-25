@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
 import { useStyles as useAClStyles } from '../../../acl/style';
+import { useRequest } from '../../../api-client';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
@@ -24,7 +25,6 @@ import { ErrorFallback } from '../error-fallback';
 import FixedBlock from './FixedBlock';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { useStyles } from './style';
-import { useRequest } from '../../../api-client';
 
 export const Page = (props) => {
   const { children, ...others } = props;
@@ -62,6 +62,7 @@ export const Page = (props) => {
   const [height, setHeight] = useState(0);
   const { wrapSSR, hashId, componentCls } = useStyles();
   const aclStyles = useAClStyles();
+  const { token } = useToken();
 
   const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
 
@@ -103,6 +104,13 @@ export const Page = (props) => {
                     size={'small'}
                     animated={hasMounted}
                     activeKey={activeKey}
+                    // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
+                    tabBarStyle={{
+                      paddingLeft: token.paddingLG - token.paddingPageHorizontal,
+                      paddingRight: token.paddingLG - token.paddingPageHorizontal,
+                      marginLeft: token.paddingPageHorizontal - token.paddingLG,
+                      marginRight: token.paddingPageHorizontal - token.paddingLG,
+                    }}
                     onTabClick={(activeKey) => {
                       setLoading(true);
                       setSearchParams([['tab', activeKey]]);
@@ -219,7 +227,7 @@ function PageContent(
       if (schema.name !== activeKey) return null;
 
       return (
-        <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
+        <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
           <SchemaComponent
             distributed
             schema={
@@ -234,7 +242,7 @@ function PageContent(
       );
     })
   ) : (
-    <FixedBlock height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
+    <FixedBlock height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
       <div className={`pageWithFixedBlockCss nb-page-content`}>
         <SchemaComponent schema={fieldSchema} distributed />
       </div>

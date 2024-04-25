@@ -65,6 +65,9 @@ export function withInitializer<T>(C: ComponentType<T>) {
             .ant-menu-submenu-title {
               margin-block: 0;
             }
+            .ant-popover-inner-content {
+              padding: 0;
+            }
           }
         `;
       }, [token.paddingXXS]);

@@ -9,7 +9,7 @@ import { Button, Card, Divider, Tooltip } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormActiveFieldsProvider } from '../../../block-provider';
+import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
 import {
   useCollectionRecord,
   useCollectionRecordData,

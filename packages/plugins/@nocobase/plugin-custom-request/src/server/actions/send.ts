@@ -157,6 +157,8 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     data: getParsedValue(data),
   };
 
+  console.log(axiosRequestConfig);
+
   const requestUrl = axios.getUri(axiosRequestConfig);
   this.logger.info(`custom-request:send:${filterByTk} request url ${requestUrl}`);
   this.logger.info(
@@ -170,10 +172,12 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   );
 
   try {
-    ctx.body = await axios(axiosRequestConfig).then((res) => {
-      this.logger.info(`custom-request:send:${filterByTk} success`);
-      return res.data;
-    });
+    const res = await axios(axiosRequestConfig);
+    this.logger.info(`custom-request:send:${filterByTk} success`);
+    ctx.body = res.data;
+    if (res.headers['content-disposition']) {
+      ctx.set('Content-Disposition', res.headers['content-disposition']);
+    }
   } catch (err) {
     if (axios.isAxiosError(err)) {
       ctx.status = err.response?.status || 500;

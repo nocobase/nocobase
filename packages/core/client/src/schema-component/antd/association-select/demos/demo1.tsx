@@ -1,7 +1,7 @@
 import { APIClientProvider, AssociationSelect, FormProvider, SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { mockAPIClient } from '../../../../testUtils';
-import { sleep } from '@nocobase/test/client';
+import { sleep } from '@nocobase/test/web';
 
 const { apiClient, mockRequest } = mockAPIClient();
 mockRequest.onGet('/posts:list').reply(async () => {

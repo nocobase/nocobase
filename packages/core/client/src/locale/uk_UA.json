@@ -775,5 +775,6 @@
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" може бути видалено. Будь ласка, видаліть цей {{blockType}}.",
   "Home page": "Домашня сторінка",
   "Handbook": "Посібник користувача",
-  "License": "Ліцензія"
+  "License": "Ліцензія",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Змінна була застарілою; \"Поточна форма\" може бути використана як заміна"
 }

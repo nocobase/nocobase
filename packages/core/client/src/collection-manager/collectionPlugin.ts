@@ -82,7 +82,11 @@ export class CollectionPlugin extends Plugin {
     this.addCollectionTemplates();
     this.addFieldInterfaces();
     this.addFieldInterfaceGroups();
+    this.addMainDataSource();
+  }
 
+  addMainDataSource() {
+    if (this.options?.config?.enableRemoteDataSource === false) return;
     this.dataSourceManager.addDataSource(MainDataSource, {
       key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,

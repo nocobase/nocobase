@@ -10,6 +10,7 @@ import { useCompile } from '../../../hooks';
 export const useGetAriaLabelOfModal = () => {
   const fieldSchema = useFieldSchema();
   const component = fieldSchema['x-component'];
+  const componentName = typeof component === 'string' ? component : component?.displayName || component?.name;
   const compile = useCompile();
   let { name: collectionName } = useCollection_deprecated();
   let title = compile(fieldSchema.title);
@@ -19,9 +20,9 @@ export const useGetAriaLabelOfModal = () => {
   const getAriaLabel = useCallback(
     (postfix?: string) => {
       postfix = postfix ? `-${postfix}` : '';
-      return `modal-${component}${collectionName}${title}${postfix}`;
+      return `modal-${componentName}${collectionName}${title}${postfix}`;
     },
-    [collectionName, component, title],
+    [collectionName, componentName, title],
   );
 
   return { getAriaLabel };

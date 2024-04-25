@@ -192,7 +192,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   context: any = {};
   queryInterface: QueryInterface;
   utils = new DatabaseUtils(this);
-  referenceMap = new ReferencesMap();
+  referenceMap = new ReferencesMap(this);
   inheritanceMap = new InheritanceMap();
   importedFrom = new Map<string, Set<string>>();
   modelHook: ModelHook;
