@@ -45,6 +45,7 @@
     "markdown-it-highlightjs": "3.3.1",
     "mathjs": "^10.6.0",
     "mermaid": "9.4.3",
+    "cytoscape": "3.28.0",
     "react-beautiful-dnd": "^13.1.0",
     "react-drag-listview": "^0.1.9",
     "react-error-boundary": "^4.0.10",
