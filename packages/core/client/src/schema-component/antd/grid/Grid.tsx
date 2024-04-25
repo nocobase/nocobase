@@ -439,16 +439,7 @@ Grid.Row = observer(
           {cols.map((schema, index) => {
             return (
               <React.Fragment key={index}>
-                <MemorizedRecursionField
-                  name={schema.name}
-                  schema={schema}
-                  mapProperties={(schema) => {
-                    if (type === 'update') {
-                      schema.default = null;
-                    }
-                    return schema;
-                  }}
-                />
+                <MemorizedRecursionField name={schema.name} schema={schema} />
                 {showDivider && (
                   <ColDivider
                     cols={cols}

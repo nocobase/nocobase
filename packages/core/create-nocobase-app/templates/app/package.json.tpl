@@ -22,6 +22,7 @@
     "lint": "eslint ."
   },
   "resolutions": {
+    "cytoscape": "3.28.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0"
   },
