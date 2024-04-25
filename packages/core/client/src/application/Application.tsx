@@ -168,20 +168,24 @@ export class Application {
   }
 
   getPublicPath() {
-    return this.options.publicPath || '/';
+    let publicPath = this.options.publicPath || '/';
+    if (!publicPath.endsWith('/')) {
+      publicPath += '/';
+    }
+    return publicPath;
   }
 
   getApiUrl(pathname = '') {
     let baseURL = this.apiClient.axios['defaults']['baseURL'];
-    if (!baseURL.startsWith('http://') || !baseURL.startsWith('https://')) {
+    if (!baseURL.startsWith('http://') && !baseURL.startsWith('https://')) {
       const { protocol, host } = window.location;
-      baseURL = `${protocol}//${host}/`;
+      baseURL = `${protocol}//${host}${baseURL}`;
     }
-    return baseURL + pathname;
+    return baseURL.replace(/\/$/g, '') + '/' + pathname.replace(/^\//g, '');
   }
 
   getRouteUrl(pathname: string) {
-    return this.getPublicPath().replace(/\/$/g, '') + pathname;
+    return this.getPublicPath() + pathname.replace(/^\//g, '');
   }
 
   getCollectionManager(dataSource?: string) {
