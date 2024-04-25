@@ -70,7 +70,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     return buf;
   }, []);
 
-  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
+  // const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`

@@ -23,10 +23,10 @@ interface CardItemProps extends CardProps {
 }
 ```
 
-## 基础用法
+## Basic
 
 <code src="./demos/new-demos/basic.tsx" ></code>
 
-## 自定义懒渲染参数
+## Custom lazy render
 
 <code src="./demos/new-demos/lazy-render.tsx" ></code>

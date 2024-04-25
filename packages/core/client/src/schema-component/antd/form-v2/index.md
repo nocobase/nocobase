@@ -16,13 +16,13 @@ interface FormProps extends IFormLayoutProps {
 }
 ```
 
-## 基础用法
+## Basic Usage
 
 <code src="./demos/new-demos/basic.tsx"></code>
 
 其中关于 Action 组件的的配置请参考 [Action](/components/action)。
 
-## 默认值
+## Default values
 
 我们可以使用 `x-use-component-props`，通过 `form.setInitialValues()` 来设置默认值，更多 form 的实例方法请参考 [Form](https://core.formilyjs.org/api/models/form)。
 
@@ -34,13 +34,13 @@ FormV2 内部封装了 FormLayout 组件，FormLayout 组件的 props 请参考 
 
 <code src="./demos/new-demos/form-layout.tsx"></code>
 
-## 结合 Grid 布局
+## Grid Layout
 
 其中关于 Grid 组件的配置请参考 [Grid](/components/grid)。
 
 <code src="./demos/new-demos/grid.tsx"></code>
 
-## 结合数据表使用
+## With Collection
 
 我们可以使用 `FormBlockProvider` 和 `CollectionField` 自动读取数据表的配置，并根据数据表配置渲染表单项。
 
@@ -52,7 +52,13 @@ FormV2 内部封装了 FormLayout 组件，FormLayout 组件的 props 请参考 
 
 <code src="./demos/new-demos/collection.tsx"></code>
 
-## 获取数据表数据
+## Extend Collection
+
+如果 Collection 不是通过数据源管理器创建，而是自定义扩展，可以查看 [ExtendCollectionsProvider](/core/data-source/extend-collections-provider)。
+
+<code src="./demos/new-demos/extend-collection.tsx"></code>
+
+## Get Collection Data
 
 当我们给 `FormBlockProvider` 传递 `action: 'get'` 且存在 `filterByTk` 属性时，`FormBlockProvider` 会自动根据 `filterByTk` 的值获取数据表数据。关于参数的说明请参考 [DataBlockProvider](/core/data-block/data-block-provider#属性详解)。
 
@@ -62,13 +68,13 @@ FormV2 内部封装了 FormLayout 组件，FormLayout 组件的 props 请参考 
 
 <code src="./demos/new-demos/collection-data.tsx"></code>
 
-## read pretty
+## Read Pretty
 
 只需要在 Schema 中添加 `x-read-pretty: true` 即可。
 
 <code src="./demos/new-demos/read-pretty.tsx"></code>
 
-## 联动规则
+## Linkage
 
 表单项之间可以通过 `x-linkage-rules` 属性进行联动。
 

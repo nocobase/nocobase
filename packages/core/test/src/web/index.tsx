@@ -25,6 +25,8 @@ import _ from 'lodash';
 const defaultApis = {
   'uiSchemas:patch': { data: { result: 'ok' } },
   'uiSchemas:saveAsTemplate': { data: { result: 'ok' } },
+  'users:update': { data: { result: 'ok' } },
+  'roles:update': { data: { result: 'ok' } },
   ...dataSourceMainData,
 };
 
@@ -44,14 +46,26 @@ function getProcessMockData(apis: Record<string, any>, key: string) {
 
       const pageSize = config.params.pageSize || meta?.pageSize;
       const page = config.params.page || meta?.page;
-      return [200, { data: data.slice(pageSize * (page - 1), pageSize), meta: { ...meta, page, pageSize } }];
+      return [
+        200,
+        {
+          data: data.slice(pageSize * (page - 1), pageSize * page),
+          meta: {
+            ...meta,
+            page,
+            pageSize,
+            count: data.length,
+            totalPage: Math.ceil(data.length / pageSize),
+          },
+        },
+      ];
     }
     return [200, apis[key]];
   };
 }
 
-export const mockApi = (axiosInstance: AxiosInstance, apis: MockApis = {}) => {
-  const mock = new MockAdapter(axiosInstance);
+export const mockApi = (axiosInstance: AxiosInstance, apis: MockApis = {}, delayResponse?: number) => {
+  const mock = new MockAdapter(axiosInstance, { delayResponse });
   Object.keys(apis).forEach((key) => {
     mock.onAny(key).reply(getProcessMockData(apis, key));
   });
@@ -63,8 +77,8 @@ export const mockApi = (axiosInstance: AxiosInstance, apis: MockApis = {}) => {
   };
 };
 
-export const mockAppApi = (app: Application, apis: MockApis = {}) => {
-  const mock = mockApi(app.apiClient.axios, apis);
+export const mockAppApi = (app: Application, apis: MockApis = {}, delayResponse?: number) => {
+  const mock = mockApi(app.apiClient.axios, apis, delayResponse);
   return mock;
 };
 
@@ -72,6 +86,7 @@ export interface GetAppOptions {
   appOptions?: AppOrOptions;
   providers?: (ComponentType | [ComponentType, any])[];
   apis?: MockApis;
+  delayResponse?: number;
   designable?: boolean;
   schemaSettings?: SchemaSettings;
   disableAcl?: boolean;
@@ -87,6 +102,7 @@ export const getApp = (options: GetAppOptions) => {
     apis: optionsApis = {},
     enableMultipleDataSource,
     designable,
+    delayResponse,
   } = options;
   const app =
     appOptions instanceof Application
@@ -118,7 +134,7 @@ export const getApp = (options: GetAppOptions) => {
     app.dataSourceManager.addDataSource(LocalDataSource, dataSource2 as any);
   }
 
-  mockAppApi(app, apis);
+  mockAppApi(app, apis, delayResponse);
 
   const App = app.getRootComponent();
 

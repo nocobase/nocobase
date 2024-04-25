@@ -52,26 +52,26 @@ export interface ActionProps extends ButtonProps {
 }
 ```
 
-### 基础用法
+### Basic Usage
 
 - `ButtonProp`
 - title
 
 <code src="./demos/new-demos/basic.tsx"></code>
 
-### 自定义组件
+### Custom Component
 
 - component
 
 <code src="./demos/new-demos/custom-component.tsx"></code>
 
-### 点击操作和 Hooks
+### Dynamic Props
 
 这里使用了 `x-use-component-props` 的能力，具体可以查看 [x-use-component-props](https://docs.nocobase.com/development/client/ui-schema/what-is-ui-schema#x-component-props-%E5%92%8C-x-use-component-props)。
 
-<code src="./demos/new-demos/onClick.tsx"></code>
+<code src="./demos/new-demos/dynamic-props.tsx"></code>
 
-### 确认
+### Confirm
 
 - confirm
 
@@ -83,7 +83,7 @@ export interface ActionProps extends ButtonProps {
 
 <code src="./demos/new-demos/action-link.tsx"></code>
 
-## Action.Drawer + Action.Drawer.Footer
+## Action.Drawer
 
 主要用于在右侧弹出一个抽屉。
 
@@ -91,7 +91,7 @@ export interface ActionProps extends ButtonProps {
 interface ActionDrawer extends DrawerProps {}
 ```
 
-### 基础用法
+### Basic Usage
 
 - `DrawerProps`
 
@@ -109,11 +109,11 @@ Footer 可以放一些按钮，比如取消或者提交等。
 
 <code src="./demos/new-demos/drawer-footer.tsx"></code>
 
-### 与 Form 结合
+### With Form
 
 <code src="./demos/new-demos/drawer-with-form.tsx"></code>
 
-## Action.Modal + Action.Modal.Footer
+## Action.Modal
 
 ```ts
 interface ActionModal extends ModalProps {}
@@ -129,11 +129,11 @@ interface ActionModal extends ModalProps {}
 
 <code src="./demos/new-demos/action-popover.tsx"></code>
 
-## Action.Page + Action.Page.Footer
+## Action.Page
 
 TODO
 
-## Action.Container + Action.Container.Footer
+## Action.Container
 
 当根据需要动态渲染内容时，可以使用 `Action.Container` + Action `openMode` 属性动态决定。
 
@@ -201,7 +201,7 @@ export interface ActionContextProps {
 
 ## ActionSchemaToolbar
 
-用于渲染  [SchemaToolbar](/core/ui-schema/schema-toolbar) 和 [SchemaSettings](/core/ui-schema/schema-settings)。
+用于单个按钮渲染 [SchemaToolbar](/core/ui-schema/schema-toolbar) 和 [SchemaSettings](/core/ui-schema/schema-settings)。
 
 <code src="./demos/new-demos/schema-toolbar.tsx"></code>
 
