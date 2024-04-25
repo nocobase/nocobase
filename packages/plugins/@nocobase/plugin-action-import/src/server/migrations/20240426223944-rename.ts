@@ -7,7 +7,7 @@ export default class extends Migration {
   async up() {
     await this.pm.repository.update({
       filter: {
-        packageName: '@nocobase/plugin-import',
+        name: 'import',
       },
       values: {
         packageName: '@nocobase/plugin-action-import',
