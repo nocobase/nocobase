@@ -117,4 +117,67 @@ describe('belongsTo', () => {
 
     expect(error).toBeUndefined();
   });
+
+  it('should create belongs to field with uuid target key', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'uuid',
+            primaryKey: true,
+            name: 'uuid',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await Collection.repository.create({
+      values: {
+        name: 'comments',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'uuid',
+            primaryKey: true,
+            name: 'uuid',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    // create a belongsTo field with uuid target key
+    await Field.repository.create({
+      values: {
+        collectionName: 'comments',
+        type: 'belongsTo',
+        name: 'post',
+        onDelete: 'SET NULL',
+        target: 'posts',
+        targetKey: 'uuid',
+        foreignKey: 'postUuid',
+        interface: 'm2o',
+      },
+      context: {},
+    });
+
+    await app.runCommand('restart');
+
+    db = app.db;
+
+    const Comments = db.getCollection('comments');
+    const foreignKeyField = Comments.getField('postUuid');
+    expect(foreignKeyField).toBeTruthy();
+
+    expect(Comments.model.associations['post']).toBeTruthy();
+
+    await db.getRepository('posts').create({
+      values: {
+        comments: [{}],
+      },
+    });
+  });
 });
