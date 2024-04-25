@@ -7,7 +7,7 @@ export default class extends Migration {
   async up() {
     await this.pm.repository.update({
       filter: {
-        packageName: '@nocobase/plugin-sms-auth',
+        name: 'sms-auth',
       },
       values: {
         packageName: '@nocobase/plugin-auth-sms',

@@ -8,17 +8,9 @@ export class PluginAuthSMSServer extends Plugin {
   afterAdd() {}
 
   async load() {
-    this.db.addMigrations({
-      namespace: 'sms-auth',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-
     const verificationPlugin: VerificationPlugin = this.app.getPlugin('verification');
     if (!verificationPlugin) {
-      this.app.logger.warn('sms-auth: @nocobase/plugin-verification is required');
+      this.app.logger.warn('auth-sms: @nocobase/plugin-verification is required');
       return;
     }
     verificationPlugin.interceptors.register('auth:signIn', {

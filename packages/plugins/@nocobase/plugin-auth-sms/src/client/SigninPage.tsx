@@ -42,7 +42,7 @@ const phoneForm: ISchema = {
     tip: {
       type: 'void',
       'x-component': 'div',
-      'x-content': '{{t("User will be registered automatically if not exists.", {ns: "sms-auth"})}}',
+      'x-content': '{{t("User will be registered automatically if not exists.", {ns: "auth-sms"})}}',
       'x-component-props': { style: { color: '#ccc' } },
       'x-visible': '{{ autoSignup }}',
     },

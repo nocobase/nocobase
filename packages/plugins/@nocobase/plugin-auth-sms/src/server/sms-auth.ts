@@ -17,7 +17,7 @@ export class SMSAuth extends BaseAuth {
     const ctx = this.ctx;
     const verificationPlugin: VerificationPlugin = ctx.app.getPlugin('verification');
     if (!verificationPlugin) {
-      throw new Error('sms-auth: @nocobase/plugin-verification is required');
+      throw new Error('auth-sms: @nocobase/plugin-verification is required');
     }
     let user: Model;
     await verificationPlugin.intercept(ctx, async () => {
