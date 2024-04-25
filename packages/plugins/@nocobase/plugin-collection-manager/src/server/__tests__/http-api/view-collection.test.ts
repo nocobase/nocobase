@@ -174,7 +174,7 @@ SELECT * FROM numbers;
     }
   });
 
-  it('should return possible types for json fields', async () => {
+  it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should return possible types for json fields', async () => {
     if (app.db.inDialect('mariadb')) {
       // can not get json type from mariadb
       return;
@@ -201,10 +201,7 @@ SELECT * FROM numbers;
     const data = response.body.data;
 
     const jsonField = data.fields.find((field) => field.name === 'json_field');
-    if (!app.db.inDialect('sqlite')) {
-      expect(jsonField.type).toBe('json');
-    }
-
+    expect(jsonField.type).toBe('json');
     expect(jsonField.possibleTypes).toBeTruthy();
   });
 
