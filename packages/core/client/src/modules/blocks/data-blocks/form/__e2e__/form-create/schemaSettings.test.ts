@@ -543,7 +543,7 @@ test.describe('creation form block schema settings', () => {
 
       // 隐藏模板选项
       await openDialog();
-      await page.getByLabel('Display data template selector').click();
+      await page.getByLabel('Enable form data template').click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       await expect(page.getByText('Data template:')).toBeHidden();
