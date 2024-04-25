@@ -1,1 +1,1 @@
-export const NAMESPACE = 'import';
+export const NAMESPACE = 'action-import';
