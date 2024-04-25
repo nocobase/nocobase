@@ -2,7 +2,7 @@ import path from 'path';
 
 import LRUCache from 'lru-cache';
 
-import { Op, Transactionable } from '@nocobase/database';
+import { Op, Transaction, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -29,7 +29,7 @@ type ID = number | string;
 
 type Pending = [ExecutionModel, JobModel?];
 
-type CachedEvent = [WorkflowModel, any, { context?: any }];
+type CachedEvent = [WorkflowModel, any, { context?: any } & Transactionable];
 
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
@@ -376,8 +376,16 @@ export default class PluginWorkflowServer extends Plugin {
     return new Processor(execution, { ...options, plugin: this });
   }
 
-  private async createExecution(workflow: WorkflowModel, context, options): Promise<ExecutionModel | null> {
-    const { transaction = await this.db.sequelize.transaction() } = options;
+  private async createExecution(
+    workflow: WorkflowModel,
+    context,
+    options?: Transactionable,
+  ): Promise<ExecutionModel | null> {
+    const {
+      transaction = await this.db.sequelize.transaction({
+        isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+      }),
+    } = options;
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
@@ -387,14 +395,22 @@ export default class PluginWorkflowServer extends Plugin {
       return null;
     }
 
-    const execution = await workflow.createExecution(
-      {
-        context,
-        key: workflow.key,
-        status: EXECUTION_STATUS.QUEUEING,
-      },
-      { transaction },
-    );
+    let execution;
+    try {
+      execution = await workflow.createExecution(
+        {
+          context,
+          key: workflow.key,
+          status: EXECUTION_STATUS.QUEUEING,
+        },
+        { transaction },
+      );
+    } catch (err) {
+      if (!options.transaction) {
+        await transaction.rollback();
+      }
+      throw err;
+    }
 
     this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 

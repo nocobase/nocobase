@@ -42,12 +42,13 @@ export default class ScheduleTrigger extends Trigger {
     if (!context.date) {
       return false;
     }
-    const existed = await workflow.countExecutions({
+    const existed = await workflow.getExecutions({
+      attributes: ['id'],
       where: {
         'context.date': context.date instanceof Date ? context.date.toISOString() : context.date,
       },
       transaction: options.transaction,
     });
-    return !existed;
+    return !existed.length;
   }
 }
