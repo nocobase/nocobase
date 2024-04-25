@@ -8,11 +8,11 @@ describe('middleware', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['localization-management', 'client', 'ui-schema-storage', 'system-settings'],
+      plugins: ['localization', 'client', 'ui-schema-storage', 'system-settings'],
     });
     await app.localeManager.load();
     agent = app.agent();
-    plugin = app.pm.get('localization-management') as PluginLocalizationServer;
+    plugin = app.pm.get('localization') as PluginLocalizationServer;
   });
 
   afterEach(async () => {

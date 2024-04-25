@@ -14,7 +14,7 @@ describe('sync', () => {
       plugins: [
         // 'data-source-manager',
         'data-source-main',
-        'localization-management',
+        'localization',
         'ui-schema-storage',
         'client',
         'mobile-client',

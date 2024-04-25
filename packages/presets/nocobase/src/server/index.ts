@@ -55,7 +55,7 @@ export class PresetNocoBase extends Plugin {
     'oidc>=0.9.2-alpha.1',
     'mobile-client>=0.10.0-alpha.2',
     'api-keys>=0.10.1-alpha.1',
-    'localization-management>=0.11.1-alpha.1',
+    'localization>=0.11.1-alpha.1',
     'theme-editor>=0.11.1-alpha.1',
     'api-doc>=0.13.0-alpha.1',
     'cas>=0.13.0-alpha.5',
