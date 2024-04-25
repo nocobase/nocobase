@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-sequence-field",
+  "name": "@nocobase/plugin-field-sequence",
   "displayName": "Collection field: Sequence",
   "displayName.zh-CN": "数据表字段：自动编码",
   "description": "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.",
