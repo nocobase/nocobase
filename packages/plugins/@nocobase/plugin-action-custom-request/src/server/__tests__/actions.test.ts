@@ -13,7 +13,7 @@ describe('actions', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'custom-request', 'data-source-manager'],
+      plugins: ['users', 'auth', 'acl', 'action-custom-request', 'data-source-manager'],
     });
     db = app.db;
     repo = db.getRepository('customRequests');
