@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useLayoutEffect } from 'react';
-import { useFieldSchema, useField } from '@formily/react';
-import Vditor from 'vditor';
-import { useAPIClient, useCollection, useCollectionManager, withDynamicSchemaProps } from '@nocobase/client';
 import { Field } from '@formily/core';
-import useStyle from './style';
+import { useField, useFieldSchema } from '@formily/react';
+import { useAPIClient, useApp, useCollection, useCollectionManager } from '@nocobase/client';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import Vditor from 'vditor';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
+import useStyle from './style';
 
 function useTargetCollectionField() {
   const fieldSchema = useFieldSchema();
@@ -19,24 +19,23 @@ function useTargetCollectionField() {
   return collectionManager.getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
 }
 
-export const Edit = withDynamicSchemaProps((props) => {
-  const { disabled, onChange, value } = props;
-  const { uiSchema } = useTargetCollectionField();
+export const Edit = (props) => {
+  const { fileCollection, toolbar, disabled, onChange, value } = props;
   const field = useField<Field>();
+  console.log(fileCollection, toolbar);
 
   const vdRef = useRef<Vditor>();
   const vdFullscreen = useRef(false);
   const containerRef = useRef<HTMLDivElement>();
   const containerParentRef = useRef<HTMLDivElement>();
-
+  const app = useApp();
   const apiClient = useAPIClient();
-
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
 
   useEffect(() => {
-    if (!uiSchema || vdRef.current) return;
-    const uploadFileCollection = uiSchema['x-component-props']?.['fileCollection'];
-    const toolbarConfig = uiSchema?.['x-component-props']?.['toolbar'] ?? defaultToolbar;
+    if (vdRef.current) return;
+    const uploadFileCollection = fileCollection ?? 'attachments';
+    const toolbarConfig = toolbar ?? defaultToolbar;
     const vditor = new Vditor(containerRef.current, {
       value,
       lang: apiClient.auth.locale.replaceAll('-', '_') as any,
@@ -66,12 +65,8 @@ export const Edit = withDynamicSchemaProps((props) => {
         onChange(value);
       },
       upload: {
-        url: `/api/${uploadFileCollection ?? 'attachments'}:create`,
-        headers: {
-          Authorization: `Bearer ${apiClient.auth.token}`,
-          'X-Authenticator': apiClient.auth.authenticator,
-          'X-Hostname': location.host,
-        },
+        url: app.getApiUrl(`${uploadFileCollection ?? 'attachments'}:create`),
+        headers: apiClient.getHeaders(),
         multiple: false,
         fieldName: 'file',
         format(files, responseText) {
@@ -94,7 +89,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [uiSchema, vdRef]);
+  }, [vdRef]);
 
   useEffect(() => {
     if (value === vdRef?.current?.getValue()) {
@@ -150,4 +145,4 @@ export const Edit = withDynamicSchemaProps((props) => {
       <div id={hashId} ref={containerRef}></div>
     </div>,
   );
-});
+};
