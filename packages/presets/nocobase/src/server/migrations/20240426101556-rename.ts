@@ -6,12 +6,12 @@ export default class extends Migration {
 
   async up() {
     const names = {
-      '@nocobase/plugin-collection-manager': '@nocobase/plugin-data-source-main',
+      'collection-manager': '@nocobase/plugin-data-source-main',
     };
     for (const original of Object.keys(names)) {
       await this.pm.repository.update({
         filter: {
-          packageName: original,
+          name: original,
         },
         values: {
           name: names[original].replace('@nocobase/plugin-', ''),
