@@ -6,7 +6,7 @@ export const useStyles = genStyleHook('upload', (token) => {
   return {
     [`${componentCls}-wrapper`]: {
       '&.nb-upload-small': {
-        [`${componentCls}-list-picture-card-container${componentCls}-list-picture-card-container`]: {
+        [`${componentCls}-list-picture-card-container`]: {
           margin: '0 3px 3px 0 !important',
           height: '32px !important',
           width: '32px !important',
@@ -21,7 +21,7 @@ export const useStyles = genStyleHook('upload', (token) => {
           },
       },
       '&.nb-upload-large': {
-        [`${componentCls}-list-picture-card-container${componentCls}-list-picture-card-container`]: {
+        [`${componentCls}-list-picture-card-container`]: {
           margin: '0 3px 3px 0 !important',
           height: '160px !important',
           width: '160px !important',
@@ -29,7 +29,7 @@ export const useStyles = genStyleHook('upload', (token) => {
         },
       },
       '&.nb-upload': {
-        [`${componentCls}-list-item${componentCls}-list-item-list-type-picture-card`]: {
+        [`${componentCls}-list-item, ${componentCls}-list-item-list-type-picture-card`]: {
           padding: '3px !important',
         },
         [`${componentCls}-list-item-thumbnail`]: {

@@ -11,9 +11,6 @@ export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   size?: string;
   rules?: PropsRules;
   useRules?(rules: PropsRules): PropsRules;
-  quickUpload?: boolean;
-  selectFile?: boolean;
-  onSelect?: () => void;
 };
 
 export type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {

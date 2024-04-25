@@ -1,12 +1,15 @@
 import { RecursionField, connect, useField, useFieldSchema } from '@formily/react';
 import { differenceBy, unionBy } from 'lodash';
+import cls from 'classnames';
 import React, { useContext, useEffect, useState } from 'react';
+import { Upload as AntdUpload } from 'antd';
 import {
+  AttachmentList,
   FormProvider,
   RecordPickerContext,
   RecordPickerProvider,
   SchemaComponentOptions,
-  Upload,
+  Uploader,
   useActionContext,
   useSchemaOptionsContext,
 } from '../..';
@@ -26,6 +29,9 @@ import { Preview } from '../preview';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { useTranslation } from 'react-i18next';
+import { PlusOutlined } from '@ant-design/icons';
+import { useStyles } from '../upload/style';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -65,6 +71,73 @@ const useTableSelectorProps = () => {
     },
   };
 };
+
+function FileSelector(props) {
+  const { disabled, multiple, value, onChange, onSelect, quickUpload, selectFile } = props;
+  const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+  const { scope } = useSchemaOptionsContext();
+  const { t } = useTranslation();
+  // 兼容旧版本
+  const showSelectButton = selectFile === undefined && quickUpload === undefined;
+
+  return wrapSSR(
+    <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
+      <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
+        <AttachmentList disabled={disabled} multiple={multiple} value={value} onChange={onChange} />
+        {showSelectButton ? (
+          <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
+            <AntdUpload disabled={disabled} multiple={multiple} listType={'picture-card'} showUploadList={false}>
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onClick={onSelect}
+              >
+                <PlusOutlined />
+                {t('Select')}
+              </div>
+            </AntdUpload>
+          </div>
+        ) : null}
+        {quickUpload ? (
+          <Uploader
+            value={value}
+            multiple={multiple}
+            // onRemove={handleRemove}
+            onChange={onChange}
+            useRules={scope.useFileCollectionStorageRules}
+          />
+        ) : null}
+        {selectFile && (multiple || !value) ? (
+          <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
+            <AntdUpload disabled={disabled} multiple={multiple} listType={'picture-card'} showUploadList={false}>
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onClick={onSelect}
+              >
+                <PlusOutlined />
+                {t('Select')}
+              </div>
+            </AntdUpload>
+          </div>
+        ) : null}
+      </div>
+    </div>,
+  );
+}
+
 const InternalFileManager = (props) => {
   const { value, multiple, onChange, ...others } = props;
   const fieldSchema = useFieldSchema();
@@ -79,12 +152,13 @@ const InternalFileManager = (props) => {
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
   const { modalProps } = useActionContext();
-  const handleSelect = () => {
+  const handleSelect = (ev) => {
+    ev.stopPropagation();
+    ev.preventDefault();
     insertSelector(schema.Selector);
     setVisibleSelector(true);
     setSelectedRows([]);
   };
-  const { scope } = useSchemaOptionsContext();
 
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
@@ -101,14 +175,6 @@ const InternalFileManager = (props) => {
     }
   }, [value, fieldNames?.label]);
 
-  // const handleRemove = (file) => {
-  //   const newOptions = options.filter((option) => option.id !== file.id);
-  //   setOptions(newOptions);
-  //   if (newOptions.length === 0) {
-  //     return onChange(null);
-  //   }
-  //   onChange(newOptions);
-  // };
   const pickerProps = {
     size: 'small',
     fieldNames,
@@ -138,16 +204,14 @@ const InternalFileManager = (props) => {
   };
   return (
     <div style={{ width: '100%', overflow: 'auto' }}>
-      <Upload.Attachment
+      <FileSelector
         value={multiple ? options : options?.[0]}
         multiple={multiple}
         quickUpload={fieldSchema['x-component-props']?.quickUpload !== false}
         selectFile={fieldSchema['x-component-props']?.selectFile !== false}
         action={`${collectionField?.target}:create`}
         onSelect={handleSelect}
-        // onRemove={handleRemove}
         onChange={onChange}
-        useRules={scope.useFileCollectionStorageRules}
       />
       <ActionContextProvider
         value={{

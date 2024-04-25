@@ -1,12 +1,9 @@
-import { Field } from '@formily/core';
-import { useField } from '@formily/react';
-import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
 import { useTranslation } from 'react-i18next';
 import match from 'mime-match';
-import { useEffect, useCallback } from 'react';
-import { useAPIClient, useRequest } from '../../../api-client';
+import { useCallback } from 'react';
+import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
@@ -107,31 +104,33 @@ export const getThumbURL = (target: any) => {
   return target?.['thumbUrl'] || target?.['url'] || target?.['downloadURL'] || target?.['imgURL'] || target?.['name'];
 };
 
-export const getErrorMessage = (target: any) => {
-  return target?.errorMessage ||
-    target?.errMsg ||
-    target?.errorMsg ||
-    target?.message ||
-    target?.data?.data?.errors?.map?.((item) => item.message).join(', ') ||
-    typeof target?.error === 'string'
-    ? target.error
-    : '';
-};
-
-export const getState = (target: any) => {
-  if (target?.success === false) return 'error';
-  if (target?.failed === true) return 'error';
-  if (target?.error) return 'error';
-  return target?.state || target?.status;
-};
+export function getResponseMessage({ error, response }: UploadFile<any>) {
+  if (error instanceof Error && 'isAxiosError' in error) {
+    // @ts-ignore
+    return error.response.data?.errors?.map?.((item) => item?.message).join(', ');
+  }
+  if (!response) {
+    return '';
+  }
+  if (typeof response === 'string') {
+    return response;
+  }
+  const { errors } = response.data ?? {};
+  if (!errors?.length) {
+    return '';
+  }
+  return errors.map((item) => item?.message).join(', ');
+}
 
 export function normalizeFile(file: UploadFile & Record<string, any>) {
   const imageUrl = isImage(file) ? URL.createObjectURL(file.originFileObj) : getImageByUrl(file.name);
+  const response = getResponseMessage(file);
   return {
     ...file,
     title: file.name,
     thumbUrl: imageUrl,
     imageUrl,
+    response,
   };
 }
 
@@ -142,40 +141,7 @@ export const normalizeFileList = (fileList: UploadFile[]) => {
   return [];
 };
 
-export const useValidator = (validator: (value: any) => string) => {
-  const field = useField<Field>();
-  useEffect(() => {
-    const dispose = reaction(
-      () => field.value,
-      (value) => {
-        const message = validator(value);
-        field.setFeedback({
-          type: 'error',
-          code: 'UploadError',
-          messages: message ? [message] : [],
-        });
-      },
-    );
-    return () => {
-      dispose();
-    };
-  }, []);
-};
-
-export const useUploadValidator = (serviceErrorMessage = 'Upload Service Error') => {
-  useValidator((value) => {
-    const list = toArr(value);
-    for (let i = 0; i < list.length; i++) {
-      if (list[i]?.status === 'error') {
-        return getErrorMessage(list[i]?.response) || getErrorMessage(list[i]) || serviceErrorMessage;
-      }
-    }
-  });
-};
-
 export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
-  // useUploadValidator(serviceErrorMessage);
-
   const api = useAPIClient();
 
   return {

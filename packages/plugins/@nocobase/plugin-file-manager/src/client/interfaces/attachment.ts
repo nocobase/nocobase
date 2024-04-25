@@ -32,9 +32,11 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
       schema['x-component-props']['size'] = 'small';
     }
 
-    schema['x-component-props']['action'] = `${field.target}:create${
+    schema['x-component-props'].action = `${field.target}:create${
       field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
     }`;
+
+    schema['x-component-props'].useRules = '{{useCollectionFieldStorageRules}}';
   }
   initialize(values: any) {
     if (!values.through) {
