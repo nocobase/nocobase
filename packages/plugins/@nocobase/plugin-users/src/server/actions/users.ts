@@ -1,7 +1,7 @@
 import { Context, DEFAULT_PAGE, DEFAULT_PER_PAGE, Next } from '@nocobase/actions';
 
 export async function updateProfile(ctx: Context, next: Next) {
-  const { values } = ctx.action.params;
+  const { nickname, username, email, phone, appLang, systemSettings } = ctx.action.params.values || {};
   const { currentUser } = ctx.state;
   if (!currentUser) {
     ctx.throw(401);
@@ -9,7 +9,14 @@ export async function updateProfile(ctx: Context, next: Next) {
   const UserRepo = ctx.db.getRepository('users');
   const result = await UserRepo.update({
     filterByTk: currentUser.id,
-    values,
+    values: {
+      nickname,
+      username,
+      email,
+      phone,
+      systemSettings,
+      appLang,
+    },
   });
   ctx.body = result;
   await next();
