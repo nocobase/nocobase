@@ -33,6 +33,37 @@ describe('Application', () => {
     expect(Object.keys(app.components).length).toBeGreaterThan(1);
   });
 
+  describe.only('getApiUrl', () => {
+    it('api path', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: '/api/',
+        },
+      });
+      const { protocol, host } = window.location;
+      const baseURL = `${protocol}//${host}/api/`;
+      expect(app.getApiUrl()).toBe(baseURL);
+    });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'http://localhost:13000/foo/api/',
+        },
+      });
+      expect(app.getApiUrl()).toBe('http://localhost:13000/foo/api/');
+    });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'https://123.1.2.3:13000/foo/api/',
+        },
+      });
+      expect(app.getApiUrl()).toBe('https://123.1.2.3:13000/foo/api/');
+    });
+  });
+
   describe('publicPath', () => {
     it('default', () => {
       const app = new Application({});

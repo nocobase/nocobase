@@ -173,9 +173,9 @@ export class Application {
 
   getApiUrl(pathname = '') {
     let baseURL = this.apiClient.axios['defaults']['baseURL'];
-    if (!baseURL.startsWith('http://') || !baseURL.startsWith('https://')) {
+    if (!baseURL.startsWith('http://') && !baseURL.startsWith('https://')) {
       const { protocol, host } = window.location;
-      baseURL = `${protocol}//${host}/`;
+      baseURL = `${protocol}//${host}${baseURL}`;
     }
     return baseURL + pathname;
   }
