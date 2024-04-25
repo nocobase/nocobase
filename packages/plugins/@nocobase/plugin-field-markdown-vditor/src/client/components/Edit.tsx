@@ -1,28 +1,11 @@
-import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
-import { useAPIClient, useApp, useCollection, useCollectionManager } from '@nocobase/client';
-import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useRef, useEffect, useLayoutEffect } from 'react';
 import Vditor from 'vditor';
-import { defaultToolbar } from '../interfaces/markdown-vditor';
+import { useAPIClient, withDynamicSchemaProps, useApp } from '@nocobase/client';
 import useStyle from './style';
+import { defaultToolbar } from '../interfaces/markdown-vditor';
 
-function useTargetCollectionField() {
-  const fieldSchema = useFieldSchema();
-  const providedCollection = useCollection();
-  const collectionManager = useCollectionManager();
-  const paths = (fieldSchema.name as string).split('.');
-  let collection: any = providedCollection;
-  for (let i = 0; i < paths.length - 1; i++) {
-    const field = collection.getField(paths[i]);
-    collection = collectionManager.getCollection(field.target);
-  }
-  return collectionManager.getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
-}
-
-export const Edit = (props) => {
-  const { fileCollection, toolbar, disabled, onChange, value } = props;
-  const field = useField<Field>();
-  console.log(fileCollection, toolbar);
+export const Edit = withDynamicSchemaProps((props) => {
+  const { disabled, onChange, value, fileCollection, toolbar } = props;
 
   const vdRef = useRef<Vditor>();
   const vdFullscreen = useRef(false);
@@ -33,7 +16,6 @@ export const Edit = (props) => {
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
 
   useEffect(() => {
-    if (vdRef.current) return;
     const uploadFileCollection = fileCollection ?? 'attachments';
     const toolbarConfig = toolbar ?? defaultToolbar;
     const vditor = new Vditor(containerRef.current, {
@@ -89,7 +71,7 @@ export const Edit = (props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [vdRef]);
+  }, [fileCollection, toolbar]);
 
   useEffect(() => {
     if (value === vdRef?.current?.getValue()) {
@@ -145,4 +127,4 @@ export const Edit = (props) => {
       <div id={hashId} ref={containerRef}></div>
     </div>,
   );
-};
+});
