@@ -7,7 +7,7 @@ export default class extends Migration {
   async up() {
     await this.pm.repository.update({
       filter: {
-        packageName: '@nocobase/plugin-iframe-block',
+        name: 'iframe-block',
       },
       values: {
         packageName: '@nocobase/plugin-block-iframe',
