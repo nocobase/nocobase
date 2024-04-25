@@ -18,7 +18,7 @@
     "@nocobase/plugin-calendar": "0.21.0-alpha.15",
     "@nocobase/plugin-cas": "0.21.0-alpha.15",
     "@nocobase/plugin-charts": "0.21.0-alpha.15",
-    "@nocobase/plugin-china-region": "0.21.0-alpha.15",
+    "@nocobase/plugin-field-china-region": "0.21.0-alpha.15",
     "@nocobase/plugin-client": "0.21.0-alpha.15",
     "@nocobase/plugin-custom-request": "0.21.0-alpha.15",
     "@nocobase/plugin-data-source-main": "0.21.0-alpha.15",
