@@ -57,7 +57,7 @@ export const FixedBlockWrapper: React.FC = (props) => {
   );
 };
 
-interface FixedBlockProps {
+export interface FixedBlockProps {
   height: number | string;
 }
 
@@ -81,7 +81,7 @@ const fixedBlockCss = css`
   }
 `;
 
-const FixedBlock: React.FC<FixedBlockProps> = (props) => {
+export const FixedBlock: React.FC<FixedBlockProps> = (props) => {
   const { height } = props;
   const [fixedBlockUID, _setFixedBlock] = useState<false | string>(false);
   const fixedBlockUIDRef = useRef(fixedBlockUID);

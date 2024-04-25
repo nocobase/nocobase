@@ -54,34 +54,30 @@ import {
   createDesignable,
   findFormBlock,
   useAPIClient,
-  useBlockRequestContext,
   useCollectionManager_deprecated,
   useCollectionRecord,
   useCollection_deprecated,
   useCompile,
   useDataBlockProps,
   useDesignable,
-  useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
   useSortFields,
 } from '..';
-import {
-  BlockContext,
-  BlockRequestContext_deprecated,
-  FormBlockContext,
-  useBlockContext,
-  useFormBlockContext,
-  useFormBlockType,
-  useTableBlockContext,
-} from '../block-provider';
+import { FormBlockContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,
   findFilterTargets,
   updateFilterTargets,
   useFormActiveFields,
 } from '../block-provider/hooks';
+import {
+  useBlockRequestContext,
+  BlockRequestContext_deprecated,
+  useBlockContext,
+  BlockContext,
+} from '../block-provider/BlockProvider';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
 import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
@@ -93,6 +89,7 @@ import {
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
+import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { DeclareVariable } from '../modules/variable/DeclareVariable';
@@ -187,7 +184,13 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
             overflow-y: auto;
           }
         `}
-        menu={{ items, style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' } }}
+        menu={
+          {
+            items,
+            'data-testid': 'schema-settings-menu',
+            style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' },
+          } as any
+        }
       >
         <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
