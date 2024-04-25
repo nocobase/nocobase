@@ -139,7 +139,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       },
     ],
   };
-  presetFieldsDisabled: true;
+  presetFieldsDisabled = true;
   configurableProperties = {
     ...getConfigurableProperties('title', 'name'),
     inherits: {
