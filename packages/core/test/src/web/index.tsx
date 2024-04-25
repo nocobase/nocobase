@@ -2,7 +2,7 @@ import React, { ComponentType } from 'react';
 import MockAdapter from 'axios-mock-adapter';
 import { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { set, get, pick } from 'lodash';
-import { useFieldSchema, observer } from '@formily/react';
+import { useFieldSchema, observer, useForm } from '@formily/react';
 
 import {
   AntdSchemaComponentPlugin,
@@ -82,6 +82,20 @@ export const mockAppApi = (app: Application, apis: MockApis = {}, delayResponse?
   return mock;
 };
 
+const ShowFormData = observer(({ children }) => {
+  const form = useForm();
+  return (
+    <>
+      {
+        <pre style={{ marginBottom: 20 }} data-testid="form-data">
+          {JSON.stringify(form.values, null, 2)}
+        </pre>
+      }
+      {children}
+    </>
+  );
+});
+
 export interface GetAppOptions {
   appOptions?: AppOrOptions;
   providers?: (ComponentType | [ComponentType, any])[];
@@ -120,7 +134,7 @@ export const getApp = (options: GetAppOptions) => {
     app.schemaSettingsManager.add(schemaSettings);
   }
 
-  app.addComponents({ CommonSchemaComponent });
+  app.addComponents({ CommonSchemaComponent, ShowFormData });
 
   app.pluginManager.add(AntdSchemaComponentPlugin);
   app.pluginManager.add(SchemaSettingsPlugin);

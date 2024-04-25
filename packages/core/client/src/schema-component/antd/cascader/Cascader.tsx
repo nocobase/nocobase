@@ -2,12 +2,13 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { toArr } from '@formily/shared';
-import { Cascader as AntdCascader, Space } from 'antd';
+import { Cascader as AntdCascader, Space, CascaderProps as AntdCascaderProps } from 'antd';
 import { isBoolean, omit } from 'lodash';
 import React from 'react';
-import { useRequest } from '../../../api-client';
+import { UseRequestResult, useRequest } from '../../../api-client';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames } from './defaultFieldNames';
+import { BaseOptionType } from 'antd/es/select';
 
 const useDefDataSource = (options) => {
   const field = useField<ArrayField>();
@@ -18,8 +19,23 @@ const useDefLoadData = (props: any) => {
   return props?.loadData;
 };
 
+export type CascaderProps<DataNodeType extends BaseOptionType = any> = AntdCascaderProps<DataNodeType> & {
+  useLoadData: (props: CascaderProps) => AntdCascaderProps['loadData'];
+  useDataSource?: (options: any) => UseRequestResult<unknown>;
+  /**
+   * Whether to wrap the label of option into the value
+   */
+  labelInValue?: boolean;
+  /**
+   * must select the last level
+   */
+  changeOnSelectLast?: boolean;
+  onChange?: (value: any) => void;
+  maxLevel?: number;
+};
+
 export const Cascader = connect(
-  (props: any) => {
+  (props: CascaderProps) => {
     const field = useField<ArrayField>();
     const {
       value,
@@ -81,7 +97,7 @@ export const Cascader = connect(
         fieldNames={fieldNames}
         displayRender={displayRender}
         onDropdownVisibleChange={handelDropDownVisible}
-        onChange={(value, selectedOptions) => {
+        onChange={(value, selectedOptions: any) => {
           if (value && labelInValue) {
             onChange(selectedOptions.map((option) => omit(option, [fieldNames.children])));
           } else {
