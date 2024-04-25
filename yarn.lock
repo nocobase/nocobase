@@ -4609,11 +4609,6 @@
   dependencies:
     eslint-scope "5.1.1"
 
-"@nocobase/plugin-china-region@0.21.0-alpha.15":
-  version "0.21.0-alpha.15"
-  resolved "https://registry.npmmirror.com/@nocobase/plugin-china-region/-/plugin-china-region-0.21.0-alpha.15.tgz#19ac3aae0f6c29527d82add6d81cceac2ff09c7e"
-  integrity sha512-r4abDv0aumRCm22hsD5uO42PNjZPCwquAiH/SQjo95B/kdgyavQpbU69eR1mpxgh2jF/5NuA7EOc+uER9u3xOQ==
-
 "@node-saml/node-saml@^4.0.2":
   version "4.0.5"
   resolved "https://registry.npmmirror.com/@node-saml/node-saml/-/node-saml-4.0.5.tgz#039e387095b54639b06df62b1b4a6d8941c6d907"
