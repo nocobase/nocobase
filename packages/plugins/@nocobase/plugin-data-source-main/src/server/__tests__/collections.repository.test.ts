@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection, CollectionGroupManager, HasManyRepository } from '@nocobase/database';
+import Database, { CollectionGroupManager, Collection as DBCollection, HasManyRepository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
 import CollectionManagerPlugin, { CollectionRepository } from '../index';
@@ -376,7 +376,7 @@ describe('collections repository', () => {
       return;
     }
 
-    const plugin = app.getPlugin<CollectionManagerPlugin>('collection-manager');
+    const plugin = app.getPlugin<CollectionManagerPlugin>('data-source-main');
     plugin.schema = 'testSchema';
 
     await Collection.repository.create({

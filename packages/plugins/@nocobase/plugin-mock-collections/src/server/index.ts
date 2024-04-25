@@ -1,5 +1,5 @@
 import Database, { Collection, Repository } from '@nocobase/database';
-import { CollectionRepository } from '@nocobase/plugin-collection-manager';
+import { CollectionRepository } from '@nocobase/plugin-data-source-main';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { merge, uid } from '@nocobase/utils';
 import { promises as fs } from 'fs';

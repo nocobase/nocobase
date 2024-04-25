@@ -7,7 +7,7 @@ describe('collections repository', () => {
         tablePrefix: 'through_',
       },
       acl: false,
-      plugins: ['error-handler', 'collection-manager'],
+      plugins: ['error-handler', 'data-source-main'],
     });
 
     await app1
@@ -112,7 +112,7 @@ describe('collections repository', () => {
     await app1.destroy();
 
     const app2 = await startMockServer({
-      plugins: ['error-handler', 'collection-manager'],
+      plugins: ['error-handler', 'data-source-main'],
       database: {
         tablePrefix: 'through_',
         database: app1.db.options.database,

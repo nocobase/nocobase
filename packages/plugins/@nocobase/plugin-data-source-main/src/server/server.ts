@@ -44,7 +44,7 @@ export class PluginCollectionManagerServer extends Plugin {
     });
 
     this.db.addMigrations({
-      namespace: 'collection-manager',
+      namespace: 'data-source-main',
       directory: path.resolve(__dirname, './migrations'),
       context: {
         plugin: this,
