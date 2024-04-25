@@ -105,6 +105,18 @@ export const Edit = withDynamicSchemaProps((props) => {
       resetValue = resetValue.slice(resetStartTagIndex + resetStartTag.length);
       vdRef.current?.setValue(resetValue);
       vdRef.current?.focus();
+      // 移动光标到末尾
+      const preArea = containerRef.current.querySelector('div.vditor-content > div.vditor-ir > pre') as HTMLPreElement;
+      if (preArea) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+        if (selection) {
+          range.selectNodeContents(preArea);
+          range.collapse(false); // 将光标移动到内容末尾
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
       field.setValue(resetValue);
       onChange?.(resetValue);
     }
