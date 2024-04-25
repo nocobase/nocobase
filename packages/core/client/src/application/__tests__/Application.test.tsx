@@ -33,7 +33,7 @@ describe('Application', () => {
     expect(Object.keys(app.components).length).toBeGreaterThan(1);
   });
 
-  describe.only('getApiUrl', () => {
+  describe('getApiUrl', () => {
     it('api path', () => {
       const app = new Application({
         apiClient: {
@@ -62,6 +62,16 @@ describe('Application', () => {
       });
       expect(app.getApiUrl()).toBe('https://123.1.2.3:13000/foo/api/');
     });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'https://123.1.2.3:13000/foo/api',
+        },
+      });
+      expect(app.getApiUrl('/test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
+      expect(app.getApiUrl('test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
+    });
   });
 
   describe('publicPath', () => {
@@ -73,14 +83,16 @@ describe('Application', () => {
 
     it('custom', () => {
       const app = new Application({ publicPath: '/admin' });
-      expect(app.getPublicPath()).toBe('/admin');
+      expect(app.getPublicPath()).toBe('/admin/');
       expect(app.getRouteUrl('/test')).toBe('/admin/test');
+      expect(app.getRouteUrl('test')).toBe('/admin/test');
     });
 
     it('custom end with /', () => {
       const app = new Application({ publicPath: '/admin/' });
       expect(app.getPublicPath()).toBe('/admin/');
-      expect(app.getRouteUrl('/test')).toBe('/admin/test');
+      expect(app.getRouteUrl('/test/foo')).toBe('/admin/test/foo');
+      expect(app.getRouteUrl('test/foo/')).toBe('/admin/test/foo/');
     });
   });
 
