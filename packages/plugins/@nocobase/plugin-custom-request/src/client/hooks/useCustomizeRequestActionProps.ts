@@ -2,6 +2,7 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useAPIClient, useActionContext, useCompile, useDataSourceKey, useRecord } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
+import { saveAs } from 'file-saver';
 import { useNavigate } from 'react-router-dom';
 
 export const useCustomizeRequestActionProps = () => {
@@ -33,7 +34,7 @@ export const useCustomizeRequestActionProps = () => {
       actionField.data ??= {};
       actionField.data.loading = true;
       try {
-        await apiClient.request({
+        const res = await apiClient.request({
           url: `/customRequests:send/${fieldSchema['x-uid']}`,
           method: 'POST',
           data: {
@@ -44,7 +45,15 @@ export const useCustomizeRequestActionProps = () => {
               data: formValues,
             },
           },
+          responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });
+        if (res.headers['content-disposition']) {
+          const regex = /attachment;\s*filename="([^"]+)"/;
+          const match = res.headers['content-disposition'].match(regex);
+          if (match[1]) {
+            saveAs(res.data, match[1]);
+          }
+        }
         actionField.data.loading = false;
         // service?.refresh?.();
         if (callBack) {

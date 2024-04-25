@@ -485,7 +485,7 @@ Grid.Col = observer(
       let width = '';
       if (cols?.length) {
         const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
-        width = `calc(${w}% - ${token.marginLG}px *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
+        width = `calc(${w}% - ${token.marginBlock}px *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
       }
       return { width };
     }, [cols?.length, schema?.['x-component-props']?.['width']]);

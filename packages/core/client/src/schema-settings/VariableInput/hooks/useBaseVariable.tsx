@@ -1,4 +1,5 @@
 import { ISchema, Schema } from '@formily/json-schema';
+import { Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
@@ -29,6 +30,10 @@ interface GetOptionsParams {
   compile: (value: string) => any;
   isDisabled?: (params: IsDisabledParams) => boolean;
   getCollectionField?: (name: string) => CollectionFieldOptions_deprecated;
+  /**
+   * 如果为 true 则表示该变量已被弃用
+   */
+  deprecated?: boolean;
 }
 
 interface BaseProps {
@@ -60,6 +65,11 @@ interface BaseProps {
    */
   returnFields?(fields: FieldOption[], option: Option): FieldOption[];
   dataSource?: string;
+  /**
+   * 如果为 true 则表示该变量已被弃用
+   */
+  deprecated?: boolean;
+  tooltip?: string;
 }
 
 interface BaseVariableProviderProps {
@@ -89,6 +99,7 @@ const getChildren = (
     isDisabled,
     targetFieldSchema,
     getCollectionField,
+    deprecated,
   }: GetOptionsParams,
 ): Option[] => {
   const result = options
@@ -98,9 +109,11 @@ const getChildren = (
           key: option.name,
           value: option.name,
           label: compile(option.title),
-          disabled: noDisabled
-            ? false
-            : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField }),
+          disabled:
+            deprecated ||
+            (noDisabled
+              ? false
+              : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField })),
           isLeaf: true,
           depth,
         };
@@ -117,9 +130,11 @@ const getChildren = (
         isLeaf: false,
         field: option,
         depth,
-        disabled: noDisabled
-          ? false
-          : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField }),
+        disabled:
+          deprecated ||
+          (noDisabled
+            ? false
+            : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField })),
         loadChildren,
       };
     })
@@ -141,6 +156,8 @@ export const useBaseVariable = ({
   noDisabled = true,
   dataSource,
   returnFields = (fields) => fields,
+  deprecated,
+  tooltip,
 }: BaseProps) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
@@ -167,6 +184,7 @@ export const useBaseVariable = ({
             compile,
             isDisabled: isDisabled || isDisabledDefault,
             getCollectionField,
+            deprecated,
           }) || []
         )
           // 将叶子节点排列在上面，方便用户选择
@@ -206,7 +224,25 @@ export const useBaseVariable = ({
 
   const result = useMemo(() => {
     return {
-      label: title,
+      label: tooltip ? (
+        <Tooltip placement="left" title={tooltip} zIndex={9999}>
+          <span
+            style={{
+              position: 'relative',
+              display: 'inline-block',
+              marginLeft: -14,
+              paddingLeft: 14,
+              marginRight: -80,
+              paddingRight: 80,
+              zIndex: 1,
+            }}
+          >
+            {title}
+          </span>
+        </Tooltip>
+      ) : (
+        title
+      ),
       value: name,
       key: name,
       isLeaf: noChildren,
@@ -216,6 +252,8 @@ export const useBaseVariable = ({
       depth: 0,
       loadChildren,
       children: [],
+      disabled: !!deprecated,
+      deprecated,
     } as Option;
   }, [uiSchema?.['x-component']]);
 

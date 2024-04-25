@@ -1,3 +1,6 @@
+import path from 'path';
+import glob from 'glob';
+import _ from 'lodash'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
 import { defineThemeConfig } from 'dumi-theme-nocobase';
@@ -7,6 +10,19 @@ process.env.DOC_LANG = process.env.DOC_LANG || 'zh-CN';
 const lang = process.env.DOC_LANG;
 
 console.log('process.env.DOC_LANG', lang);
+
+const componentsDir = 'src/schema-component/antd';
+
+function getComponentsMenu() {
+  const cwd = path.join(__dirname, componentsDir);
+  const ignores = ['table/index.md', 'form/index.md']; // 老版本，不需要展示
+  const files = glob.sync('*/index.md', { cwd, ignore: ignores });
+
+  return files.map((file) => ({
+    title: _.upperFirst(_.camelCase(file.replace('/index.md', ''))),
+    link: `/components/${file.replace('/index.md', '')}`,
+  }));
+}
 
 export default defineConfig({
   hash: true,
@@ -21,7 +37,10 @@ export default defineConfig({
   cacheDirectoryPath: `node_modules/.docs-client-${lang}-cache`,
   outputPath: `./dist/${lang}`,
   resolve: {
-    docDirs: [`./docs/${lang}`]
+    docDirs: [`./docs/${lang}`],
+    atomDirs: [
+      { type: 'component', dir: componentsDir },
+    ],
   },
   locales: [
     { id: 'en-US', name: 'English' },
@@ -38,6 +57,10 @@ export default defineConfig({
         title: 'API',
         link: '/core/application/application',
       },
+      {
+        title: 'Components',
+        link: '/components/action',
+      }
       // {
       //   title: 'UI Schema',
       //   link: '/ui-schema',
@@ -202,6 +225,7 @@ export default defineConfig({
           ]
         }
       ],
+      '/components': getComponentsMenu(),
       // '/ui-schema': [
       //   {
       //     title: 'Overview',

@@ -60,6 +60,7 @@ export interface ApplicationOptions {
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
   dataSourceManager?: DataSourceManagerOptions;
+  disableAcl?: boolean;
 }
 
 export class Application {
@@ -92,6 +93,9 @@ export class Application {
   error = null;
   get pm() {
     return this.pluginManager;
+  }
+  get disableAcl() {
+    return this.options.disableAcl;
   }
 
   constructor(protected options: ApplicationOptions = {}) {
