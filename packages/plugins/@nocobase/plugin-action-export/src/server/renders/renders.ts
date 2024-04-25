@@ -12,7 +12,10 @@ export async function _(field, row, ctx, column?: any) {
       } else {
         if (Array.isArray(result?.[col])) {
           const subResults = [];
-          for (const r of result?.[col]) {
+          if (!result?.[col]) {
+            return subResults;
+          }
+          for (const r of result[col]) {
             subResults.push(r);
           }
           return subResults;

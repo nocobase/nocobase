@@ -23,6 +23,7 @@ export const ExportDesigner = () => {
 
   useEffect(() => {
     setSchema(pageSchema);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [field.address, fieldSchema?.['x-action-settings']?.['exportSettings']]);
 
   return (
