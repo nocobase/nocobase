@@ -84,11 +84,11 @@ export async function testDefaultValue({
 }) {
   await gotoPage();
   await openDialog();
-  await showMenu();
-  await page.getByRole('menuitem', { name: 'Set default value' }).click();
 
   // 设置一个常量作为默认值
   if (constantValue || inputConstantValue) {
+    await showMenu();
+    await page.getByRole('menuitem', { name: 'Set default value' }).click();
     if (inputConstantValue) {
       await inputConstantValue();
     } else {
@@ -113,6 +113,8 @@ export async function testDefaultValue({
 
   // 设置一个变量作为默认值
   if (variableValue) {
+    await showMenu();
+    await page.getByRole('menuitem', { name: 'Set default value' }).click();
     await page.getByLabel('variable-button').click();
     await testSupportedAndUnsupportedVariables(page, supportedVariables, unsupportedVariables);
     for (const value of variableValue) {
