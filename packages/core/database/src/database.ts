@@ -537,6 +537,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       options.underscored = true;
     }
 
+    this.logger.debug(`beforeDefineCollection: ${JSON.stringify(options)}`);
+
     this.emit('beforeDefineCollection', options);
 
     const collection = this.collectionFactory.createCollection(options);
