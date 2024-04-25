@@ -56,6 +56,7 @@ export const defaultConfigurableProperties = {
     type: 'void',
     'x-decorator': 'FormItem',
     'x-visible': '{{ createOnly }}',
+    'x-disabled': '{{ presetFieldsDisabled }}',
     'x-decorator-props': {
       className: css`
         .ant-formily-item {
