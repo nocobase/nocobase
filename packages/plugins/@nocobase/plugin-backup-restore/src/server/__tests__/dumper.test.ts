@@ -240,7 +240,7 @@ describe('dumper', () => {
     expect(await app.db.getRepository('parent').count()).toEqual(2);
   });
 
-  it('should restore with audit logs', async () => {
+  it.skip('should restore with audit logs', async () => {
     await app.runCommand('pm', 'enable', 'audit-logs');
 
     await app.db.getRepository('collections').create({

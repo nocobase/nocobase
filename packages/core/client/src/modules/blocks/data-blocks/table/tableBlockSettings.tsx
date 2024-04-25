@@ -7,7 +7,7 @@ import {
   useCollection_deprecated,
   useSortFields,
 } from '../../../../collection-manager';
-import { FilterBlockType } from '../../../../filter-provider';
+import { FilterBlockType } from '../../../../filter-provider/utils';
 import { useDesignable, removeNullCondition } from '../../../../schema-component';
 import {
   SchemaSettingsBlockTitleItem,

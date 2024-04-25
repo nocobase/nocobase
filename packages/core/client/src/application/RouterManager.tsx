@@ -24,6 +24,7 @@ export interface MemoryRouterOptions extends Omit<MemoryRouterProps, 'children'>
 }
 export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRouterOptions) & {
   renderComponent?: RenderComponentType;
+  routes?: Record<string, RouteType>;
 };
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
@@ -39,6 +40,7 @@ export class RouterManager {
   constructor(options: RouterOptions = {}, app: Application) {
     this.options = options;
     this.app = app;
+    this.routes = options.routes || {};
   }
 
   /**

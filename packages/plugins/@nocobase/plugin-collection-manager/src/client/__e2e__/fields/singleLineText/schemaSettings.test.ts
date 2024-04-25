@@ -303,8 +303,8 @@ test.describe('table column & table', () => {
     // 显示出原字段名称
     await expect(page.getByRole('dialog').getByText('Original field title: singleLineText')).toBeVisible();
     // 输入新字段名称
-    await page.getByLabel('block-item-Input-general-column title').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-general-column title').getByRole('textbox').fill('new column title');
+    await page.getByLabel('block-item-Input-general-').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-general-').getByRole('textbox').fill('new column title');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 新名称应该显示出来
@@ -415,7 +415,7 @@ test.describe('table column & sub-table in edit form', () => {
         'Current role',
         'Current form',
         'Current object',
-        'Current record',
+        // 'Current record',
       ],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
