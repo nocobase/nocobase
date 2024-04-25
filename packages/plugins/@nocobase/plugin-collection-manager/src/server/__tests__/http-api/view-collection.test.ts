@@ -165,10 +165,12 @@ SELECT * FROM numbers;
     expect(response.status).toBe(200);
     const data = response.body.data;
 
+    const nField = data.fields.find((field) => field.name === 'n');
+
     if (app.db.inDialect('mysql')) {
-      expect(data.fields.n.type).toBe('bigInt');
+      expect(nField.type).toBe('bigInt');
     } else if (app.db.inDialect('postgres', 'mariadb')) {
-      expect(data.fields.n.type).toBe('integer');
+      expect(nField.type).toBe('integer');
     }
   });
 
@@ -198,11 +200,12 @@ SELECT * FROM numbers;
     expect(response.status).toBe(200);
     const data = response.body.data;
 
+    const jsonField = data.fields.find((field) => field.name === 'json_field');
     if (!app.db.inDialect('sqlite')) {
-      expect(data.fields.json_field.type).toBe('json');
+      expect(jsonField.type).toBe('json');
     }
 
-    expect(data.fields.json_field.possibleTypes).toBeTruthy();
+    expect(jsonField.possibleTypes).toBeTruthy();
   });
 
   it('should not throw error when source collection destroyed', async () => {
