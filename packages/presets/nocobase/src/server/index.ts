@@ -29,7 +29,7 @@ export class PresetNocoBase extends Plugin {
     'export',
     'import',
     'backup-restore',
-    'iframe-block',
+    'block-iframe',
     'formula-field',
     'data-visualization',
     'auth',
