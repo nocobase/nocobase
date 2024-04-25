@@ -4,7 +4,7 @@ import { SigninPage } from './SigninPage';
 import { Options } from './Options';
 import { authType } from '../constants';
 
-export class PluginSMSAuthClient extends Plugin {
+export class PluginAuthSMSClient extends Plugin {
   async load() {
     const auth = this.app.pm.get(AuthPlugin);
     auth.registerType(authType, {
@@ -16,4 +16,4 @@ export class PluginSMSAuthClient extends Plugin {
   }
 }
 
-export default PluginSMSAuthClient;
+export default PluginAuthSMSClient;

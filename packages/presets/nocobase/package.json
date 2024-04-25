@@ -43,7 +43,7 @@
     "@nocobase/plugin-oidc": "0.21.0-alpha.15",
     "@nocobase/plugin-saml": "0.21.0-alpha.15",
     "@nocobase/plugin-sequence-field": "0.21.0-alpha.15",
-    "@nocobase/plugin-sms-auth": "0.21.0-alpha.15",
+    "@nocobase/plugin-auth-sms": "0.21.0-alpha.15",
     "@nocobase/plugin-snapshot-field": "0.21.0-alpha.15",
     "@nocobase/plugin-system-settings": "0.21.0-alpha.15",
     "@nocobase/plugin-theme-editor": "0.21.0-alpha.15",
