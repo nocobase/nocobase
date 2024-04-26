@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/client';
 import { IframeBlockProvider } from './IframeBlockProvider';
 import { iframeBlockSchemaSettings, iframeBlockSchemaSettings_deprecated } from './schemaSettings';
 
-export class PluginIframeBlockClient extends Plugin {
+export class PluginBlockIframeClient extends Plugin {
   async load() {
     this.app.schemaSettingsManager.add(iframeBlockSchemaSettings_deprecated);
     this.app.schemaSettingsManager.add(iframeBlockSchemaSettings);
@@ -33,4 +33,4 @@ export class PluginIframeBlockClient extends Plugin {
   }
 }
 
-export default PluginIframeBlockClient;
+export default PluginBlockIframeClient;

@@ -2,7 +2,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import path from 'path';
 import { getHtml } from './actions';
 
-export class PluginIframeBlockServer extends Plugin {
+export class PluginBlockIframeServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -30,4 +30,4 @@ export class PluginIframeBlockServer extends Plugin {
   async remove() {}
 }
 
-export default PluginIframeBlockServer;
+export default PluginBlockIframeServer;

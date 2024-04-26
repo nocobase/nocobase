@@ -30,7 +30,7 @@
     "@nocobase/plugin-field-formula": "0.21.0-alpha.15",
     "@nocobase/plugin-gantt": "0.21.0-alpha.15",
     "@nocobase/plugin-graph-collection-manager": "0.21.0-alpha.15",
-    "@nocobase/plugin-iframe-block": "0.21.0-alpha.15",
+    "@nocobase/plugin-block-iframe": "0.21.0-alpha.15",
     "@nocobase/plugin-import": "0.21.0-alpha.15",
     "@nocobase/plugin-kanban": "0.21.0-alpha.15",
     "@nocobase/plugin-localization": "0.21.0-alpha.15",
