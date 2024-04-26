@@ -90,7 +90,8 @@ export class DataSourceModel extends Model {
 
     const dataSource = app.dataSourceManager.factory.create(type, {
       ...createOptions,
-      name: this.get('key'),
+      name: dataSourceKey,
+      logger: app.logger.child({ dataSourceKey }),
     });
 
     if (loadAtAfterStart) {
