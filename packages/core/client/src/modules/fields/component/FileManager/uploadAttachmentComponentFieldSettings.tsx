@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useDesignable } from '../../../../schema-component';
+import { useColumnSchema, useDesignable } from '../../../../schema-component';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 
 export const uploadAttachmentComponentFieldSettings = new SchemaSettings({
@@ -12,8 +12,10 @@ export const uploadAttachmentComponentFieldSettings = new SchemaSettings({
       name: 'size',
       type: 'select',
       useVisible() {
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
         const readPretty = useIsFieldReadPretty();
-        return readPretty;
+        const isInTable = tableColumnSchema?.parent?.['x-component'] === 'TableV2.Column';
+        return readPretty && !isInTable;
       },
       useComponentProps() {
         const { t } = useTranslation();

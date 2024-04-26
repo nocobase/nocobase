@@ -281,6 +281,7 @@ test.describe('table column & table', () => {
         await showSettingsMenu(page, 'attachment');
       },
       supportedOptions: ['Custom column title', 'Column width', 'Delete'],
+      unsupportedOptions: ['Size'],
     });
   });
 });
