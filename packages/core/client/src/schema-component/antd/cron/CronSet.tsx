@@ -6,7 +6,7 @@ import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from '../input';
 import Cron from './Cron';
 
-interface CronSetProps extends SelectProps {
+export interface CronSetProps extends SelectProps {
   onChange: (v: string) => void;
 }
 

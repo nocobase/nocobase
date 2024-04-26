@@ -52,5 +52,6 @@ export * from './upload';
 export * from './variable';
 export * from './unixTimestamp';
 export * from './nanoIDInput';
+export * from './error-fallback';
 
 import './index.less';

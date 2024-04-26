@@ -20,7 +20,13 @@ const useDefLoadData = (props: any) => {
 };
 
 export type CascaderProps<DataNodeType extends BaseOptionType = any> = AntdCascaderProps<DataNodeType> & {
+  /**
+   * @deprecated use `x-use-component-props` instead
+   */
   useLoadData: (props: CascaderProps) => AntdCascaderProps['loadData'];
+  /**
+   * @deprecated use `x-use-component-props` instead
+   */
   useDataSource?: (options: any) => UseRequestResult<unknown>;
   /**
    * Whether to wrap the label of option into the value

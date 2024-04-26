@@ -2,7 +2,10 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Checkbox as AntdCheckbox, Tag } from 'antd';
-import type { CheckboxGroupProps, CheckboxProps } from 'antd/es/checkbox';
+import type {
+  CheckboxGroupProps as AntdCheckboxGroupProps,
+  CheckboxProps as AntdCheckboxProps,
+} from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
 import React, { useMemo } from 'react';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
@@ -16,7 +19,11 @@ type ComposedCheckbox = React.ForwardRefExoticComponent<
   ReadPretty?: React.FC<CheckboxProps>;
 };
 
-const ReadPretty = (props) => {
+export interface CheckboxProps extends AntdCheckboxProps {
+  showUnchecked?: boolean;
+}
+
+const ReadPretty = (props: CheckboxProps) => {
   if (props.value) {
     return <CheckOutlined style={{ color: '#52c41a' }} />;
   }
@@ -24,7 +31,7 @@ const ReadPretty = (props) => {
 };
 
 export const Checkbox: ComposedCheckbox = connect(
-  (props: any) => {
+  (props: CheckboxProps) => {
     const changeHandler = (val) => {
       props?.onChange(val);
     };
@@ -43,12 +50,16 @@ Checkbox.ReadPretty.displayName = 'Checkbox.ReadPretty';
 
 Checkbox.__ANT_CHECKBOX = true;
 
+export interface CheckboxGroupProps extends AntdCheckboxGroupProps {
+  ellipsis?: boolean;
+}
+
 Checkbox.Group = connect(
   AntdCheckbox.Group,
   mapProps({
     dataSource: 'options',
   }),
-  mapReadPretty((props) => {
+  mapReadPretty((props: CheckboxGroupProps) => {
     if (!isValid(props.value)) {
       return null;
     }

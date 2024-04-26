@@ -15,6 +15,14 @@ group:
 
 [CardItem](/components/card-item) 和 [FormItem](/components/form-item) 组件都是基于 BlockItem 实现，也具备以上相同功能。
 
+```ts
+interface BlockItemProps {
+  name?: string;
+  className?: string;
+  children?: React.ReactNode;
+}
+```
+
 注意拖拽功能需要配置 `DndContext` 组件。
 
 <code src="./demos/new-demos/basic.tsx"></code>

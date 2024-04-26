@@ -6,46 +6,84 @@ group:
 
 # DatePicker
 
-## Examples
+表单项组件。
 
-### Basic
+级联选择器，其基于 ant-design [DatePicker](https://ant.design/components/date-picker/) 组件封装。
 
-<code src="./demos/demo1.tsx"></code>
+## DatePicker
 
-### DatePicker (GMT)
+```ts
+export interface Str2momentOptions {
+  picker?: 'year' | 'month' | 'week' | 'quarter';
+  utcOffset?: number;
+  gmt?: boolean;
+  utc?: boolean;
+}
 
-<code src="./demos/demo2.tsx"></code>
+type DatePickerProps = AntdDatePickerProps & Str2momentOptions
+```
 
-### DatePicker (showTime=false,gmt=true,utc=true)
+### Basic Usage
 
-<code src="./demos/demo7.tsx"></code>
+<code src="./demos/new-demos/date-basic.tsx"></code>
 
+### Format
 
-### DatePicker (showTime=false,gmt=false,utc=true)
+<code src="./demos/new-demos/date-format.tsx"></code>
 
-<code src="./demos/demo8.tsx"></code>
+### Show Time Picker
 
+<code src="./demos/new-demos/date-show-time.tsx"></code>
 
-### DatePicker (non-UTC)
+### Read Pretty
 
-<code src="./demos/demo3.tsx"></code>
+<code src="./demos/new-demos/date-read-pretty.tsx"></code>
 
-### RangePicker (GMT)
+### GMT
 
-<code src="./demos/demo4.tsx"></code>
+<code src="./demos/new-demos/date-gmt.tsx"></code>
 
-### RangePicker (non-GMT)
+### UTC
 
-<code src="./demos/demo5.tsx"></code>
+<code src="./demos/new-demos/date-utc.tsx"></code>
 
-### RangePicker (non-UTC)
+### GMT and UTC
 
-<code src="./demos/demo6.tsx"></code>
+<code src="./demos/new-demos/date-gmt-utc.tsx"></code>
 
+## RangePicker
 
-## API
+```ts
+export interface Str2momentOptions {
+  gmt?: boolean;
+  picker?: 'year' | 'month' | 'week' | 'quarter';
+  utcOffset?: any;
+  utc?: boolean;
+}
 
-基于 antd 的 [DatePicker](https://ant.design/components/date-picker/#API)，新增了以下扩展属性，用于支持 NocoBase 的日期字段设置。
+type DatePickerProps = AntdRangePickerProps & Str2momentOptions
+```
 
-- `dateFormat` 设置日期格式
-- `timeFormat` 设置时间格式
+### Basic Usage
+
+<code src="./demos/new-demos/range-basic.tsx"></code>
+
+### Format
+
+<code src="./demos/new-demos/range-format.tsx"></code>
+
+### Read Pretty
+
+<code src="./demos/new-demos/range-read-pretty.tsx"></code>
+
+### GMT
+
+<code src="./demos/new-demos/range-gmt.tsx"></code>
+
+### UTC
+
+<code src="./demos/new-demos/range-utc.tsx"></code>
+
+### GMT and UTC
+
+<code src="./demos/new-demos/range-gmt-utc.tsx"></code>

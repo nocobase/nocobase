@@ -11,10 +11,11 @@ group:
 - 拖拽和 [SchemaToolbar](/core/ui-schema/schema-toolbar) 和 [SchemaSettings](/core/ui-schema/schema-settings) 的渲染，继承自[BlockItem](/components/block-item)
 - 懒渲染
 
+其基于 ant-design [Card](https://ant.design/components/card-cn/) 组件进行封装，懒加载基于 [react-intersection-observer](https://github.com/thebuilder/react-intersection-observer) 实现。
+
 ```ts
 interface CardItemProps extends CardProps {
   name?: string;
-  children?: React.ReactNode;
   /**
    * lazy render options
    * @see https://github.com/thebuilder/react-intersection-observer

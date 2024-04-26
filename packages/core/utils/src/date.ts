@@ -4,7 +4,7 @@ import { dayjs } from './dayjs';
 export interface Str2momentOptions {
   gmt?: boolean;
   picker?: 'year' | 'month' | 'week' | 'quarter';
-  utcOffset?: any;
+  utcOffset?: number;
   utc?: boolean;
 }
 
@@ -69,14 +69,17 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
   return dayjs(val).utcOffset(offsetFromString(offset));
 };
 
-export const str2moment = (value?: string | string[], options: Str2momentOptions = {}): any => {
+export const str2moment = (
+  value?: string | string[] | dayjs.Dayjs | dayjs.Dayjs[],
+  options: Str2momentOptions = {},
+): any => {
   return Array.isArray(value)
     ? value.map((val) => {
         return toMoment(val, options);
       })
     : value
-    ? toMoment(value, options)
-    : value;
+      ? toMoment(value, options)
+      : value;
 };
 
 const toStringByPicker = (value, picker) => {

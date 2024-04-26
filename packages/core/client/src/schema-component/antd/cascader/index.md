@@ -8,7 +8,7 @@ group:
 
 表单项组件。
 
-对 Cascader 级联选择框的进一步封装。
+级联选择器，其基于 ant-design [Cascader](https://ant.design/components/cascader-cn/) 组件封装。
 
 ```ts
 type CascaderProps<DataNodeType extends BaseOptionType = any> = AntdCascaderProps<DataNodeType> & {

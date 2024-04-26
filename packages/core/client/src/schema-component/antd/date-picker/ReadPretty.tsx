@@ -1,6 +1,6 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { isArr } from '@formily/shared';
-import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
+import { Str2momentOptions, getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import type {
   DatePickerProps as AntdDatePickerProps,
   RangePickerProps as AntdRangePickerProps,
@@ -16,7 +16,9 @@ type Composed = {
 
 export const ReadPretty: Composed = () => null;
 
-ReadPretty.DatePicker = function DatePicker(props: any) {
+export type ReadPrettyDatePickerProps = AntdDatePickerProps & Str2momentOptions;
+
+ReadPretty.DatePicker = function DatePicker(props: ReadPrettyDatePickerProps) {
   const prefixCls = usePrefixCls('description-date-picker', props);
 
   if (!props.value) {
@@ -32,7 +34,9 @@ ReadPretty.DatePicker = function DatePicker(props: any) {
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;
 };
 
-ReadPretty.DateRangePicker = function DateRangePicker(props: any) {
+export type ReadPrettyDateRangePickerProps = AntdRangePickerProps & Str2momentOptions;
+
+ReadPretty.DateRangePicker = function DateRangePicker(props: ReadPrettyDateRangePickerProps) {
   const prefixCls = usePrefixCls('description-text', props);
   const format = getDefaultFormat(props);
   const getLabels = () => {
