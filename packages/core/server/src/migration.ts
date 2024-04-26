@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Migration as DbMigration } from '@nocobase/database';
 import Application from './application';
 import Plugin from './plugin';

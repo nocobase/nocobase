@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path, { resolve } from 'path';
 import { URL } from 'url';
-import { mergeConfig, defineConfig as vitestConfig } from 'vitest/config';
+import { defineConfig as vitestConfig, mergeConfig } from 'vitest/config';
 
 const CORE_CLIENT_PACKAGES = ['sdk', 'client'];
 
@@ -157,7 +157,7 @@ export const getFilterInclude = (isServer, isCoverage) => {
       if (!item.startsWith('-')) {
         const pre = argv[index - 1];
 
-        if (pre && pre.startsWith('--') && !pre.includes('=')) {
+        if (pre && pre.startsWith('--') && ['--reporter'].includes(pre)) {
           return false;
         }
 
@@ -173,6 +173,7 @@ export const getFilterInclude = (isServer, isCoverage) => {
   if (!filterFileOrDir) return {};
   const absPath = path.join(process.cwd(), filterFileOrDir);
   const isDir = fs.existsSync(absPath) && fs.statSync(absPath).isDirectory();
+
   // 如果是文件，则只测试当前文件
   if (!isDir) {
     return {
@@ -185,6 +186,7 @@ export const getFilterInclude = (isServer, isCoverage) => {
 
   // 判断是否为包目录，如果不是包目录，则只测试当前目录
   const isPackage = fs.existsSync(path.join(absPath, 'package.json'));
+
   if (!isPackage) {
     return {
       include: [`${filterFileOrDir}/${suffix}`],
@@ -235,6 +237,7 @@ export const defineConfig = () => {
 
   if (filterInclude) {
     config.test.include = filterInclude;
+
     if (isFile) {
       // 减少收集的文件
       config.test.exclude = [];
@@ -248,14 +251,17 @@ export const defineConfig = () => {
   }
 
   const isCoverage = process.argv.includes('--coverage');
+
   if (!isCoverage) {
     return config;
   }
 
   const { include: coverageInclude } = getFilterInclude(isServer, true);
+  
   if (coverageInclude) {
     config.test.coverage.include = coverageInclude;
   }
+
   const reportsDirectory = getReportsDirectory(isServer);
   if (reportsDirectory) {
     config.test.coverage.reportsDirectory = reportsDirectory;

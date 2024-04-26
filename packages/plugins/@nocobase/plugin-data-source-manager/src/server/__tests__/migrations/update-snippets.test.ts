@@ -1,5 +1,5 @@
 import { Database, MigrationContext } from '@nocobase/database';
-import updateSnippetName from '../migrations/20240414103927-update-snippet-name';
+import updateSnippetName from '../../migrations/20240414103927-update-snippet-name';
 
 import { createMockServer, MockServer } from '@nocobase/test';
 

@@ -1,6 +1,5 @@
 import { Model, Transaction } from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { LocalData } from '../services/database-introspector';
 import { setCurrentRole } from '@nocobase/plugin-acl';
 import { ACL, AvailableActionOptions } from '@nocobase/acl';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
@@ -51,11 +50,7 @@ export class DataSourceModel extends Model {
   async loadIntoACL(options: { app: Application; acl: ACL; transaction?: Transaction }) {
     const { app, acl } = options;
     const loadRoleIntoACL = async (model: DataSourcesRolesModel) => {
-      const pluginACL: any = app.pm.get('acl');
-
       await model.writeToAcl({
-        grantHelper: pluginACL.grantHelper,
-        associationFieldsActions: pluginACL.associationFieldsActions,
         acl,
       });
     };
@@ -136,7 +131,7 @@ export class DataSourceModel extends Model {
     pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loaded';
   }
 
-  private async loadLocalData(): Promise<LocalData> {
+  private async loadLocalData() {
     const dataSourceKey = this.get('key');
 
     const remoteCollections = await this.db.getRepository('dataSourcesCollections').find({

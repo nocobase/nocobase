@@ -30,15 +30,13 @@ export default {
   name: 'sqlCollection',
   actions: {
     execute: async (ctx: Context, next: Next) => {
-      let {
-        values: { sql },
-      } = ctx.action.params;
-      sql = sql.trim().split(';').shift();
+      let { sql } = ctx.action.params.values || {};
       if (!sql) {
-        ctx.throw(400, ctx.t('SQL is empty'));
+        ctx.throw(400, ctx.t('Please enter a SQL statement'));
       }
+      sql = sql.trim().split(';').shift();
       if (!/^select/i.test(sql) && !/^with([\s\S]+)select([\s\S]+)/i.test(sql)) {
-        ctx.throw(400, ctx.t('Only select query allowed'));
+        ctx.throw(400, ctx.t('Only supports SELECT statements or WITH clauses'));
       }
       const tmpCollection = new SqlCollection({ name: 'tmp', sql }, { database: ctx.db });
       const model = tmpCollection.model as typeof SQLModel;

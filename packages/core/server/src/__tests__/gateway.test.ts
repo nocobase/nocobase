@@ -5,6 +5,7 @@ import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { Gateway } from '../gateway';
 import { errors } from '../gateway/errors';
+
 describe('gateway', () => {
   let gateway: Gateway;
   beforeEach(() => {
@@ -14,6 +15,7 @@ describe('gateway', () => {
     await gateway.destroy();
     await AppSupervisor.getInstance().destroy();
   });
+
   describe('app selector', () => {
     it('should get app as default main app', async () => {
       expect(
@@ -45,6 +47,7 @@ describe('gateway', () => {
       expect(gateway.getAppSelectorMiddlewares().nodes.length).toBe(2);
     });
   });
+
   describe('http api', () => {
     it('should return error when app not found', async () => {
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
