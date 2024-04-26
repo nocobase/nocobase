@@ -1,8 +1,9 @@
 import { Repository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import Migration from '../../migrations/20240424125531-removed-plugins-detect';
+import Migration from '../../migrations/20240424125531-pro-plugins-detect';
+import { PluginManager } from '@nocobase/server';
 
-describe('removed plugin detect', () => {
+describe('pro plugins detect', () => {
   let app: MockServer;
   let repo: Repository;
 
@@ -20,7 +21,7 @@ describe('removed plugin detect', () => {
   });
 
   it('should delete removed but not enabled plugins', async () => {
-    vi.spyOn(Migration.prototype, 'getPackageName').mockRejectedValue(new Error('not found'));
+    vi.spyOn(PluginManager, 'getPackageName').mockRejectedValue(new Error('not found'));
     await repo.create({
       values: {
         name: 'saml',
@@ -44,7 +45,7 @@ describe('removed plugin detect', () => {
   });
 
   it('should throw error when enabled plugin not found', async () => {
-    vi.spyOn(Migration.prototype, 'getPackageName').mockRejectedValue(new Error('not found'));
+    vi.spyOn(PluginManager, 'getPackageName').mockRejectedValue(new Error('not found'));
     await repo.create({
       values: {
         name: 'saml',

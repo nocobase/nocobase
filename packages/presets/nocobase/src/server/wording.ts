@@ -1,6 +1,5 @@
-export const getAutoDeletePluginsWarning = (plugins: Map<string, string>) => {
-  const pluginNames = Array.from(plugins.keys()).map((name) => plugins.get(name) || name);
-  return `The following plugins have been automatically removed from the database as they no longer exist and are not enabled: ${pluginNames.join(
+export const getAutoDeletePluginsWarning = (plugins: string[]) => {
+  return `The following plugins have been automatically removed from the database as they no longer exist and are not enabled: ${plugins.join(
     ',',
   )}. You can reinstall it using the plugin package at any time.`;
 };
