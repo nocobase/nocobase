@@ -2,7 +2,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { FormulaField } from './formula-field';
 
-export class PluginFormulaFieldServer extends Plugin {
+export class PluginFieldFormulaServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {
@@ -30,4 +30,4 @@ export class PluginFormulaFieldServer extends Plugin {
   async remove() {}
 }
 
-export default PluginFormulaFieldServer;
+export default PluginFieldFormulaServer;

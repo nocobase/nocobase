@@ -4,7 +4,7 @@ import { renderExpressionDescription } from './scopes';
 import { FormulaFieldInterface } from './interfaces/formula';
 import { FormulaComponentFieldSettings } from './FormulaComponentFieldSettings';
 
-export class PluginFormulaFieldClient extends Plugin {
+export class PluginFieldFormulaClient extends Plugin {
   async load() {
     this.app.addComponents({
       Formula,
@@ -17,4 +17,4 @@ export class PluginFormulaFieldClient extends Plugin {
   }
 }
 
-export default PluginFormulaFieldClient;
+export default PluginFieldFormulaClient;
