@@ -6,7 +6,7 @@ describe('actions test', () => {
   let db: Database;
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['china-region'],
+      plugins: ['field-china-region'],
     });
 
     db = app.db;

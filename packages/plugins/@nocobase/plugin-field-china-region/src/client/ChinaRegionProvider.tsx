@@ -64,6 +64,9 @@ export const useChinaRegionLoadData = () => {
             return item;
           }) || [];
         field.dataSource = [...field.dataSource];
+      })
+      .catch((e) => {
+        console.error(e);
       });
   };
 };

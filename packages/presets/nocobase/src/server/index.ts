@@ -14,7 +14,7 @@ export class PresetNocoBase extends Plugin {
     'verification',
     'users',
     'acl',
-    'china-region',
+    'field-china-region',
     'workflow',
     'workflow-action-trigger',
     'workflow-aggregate',
