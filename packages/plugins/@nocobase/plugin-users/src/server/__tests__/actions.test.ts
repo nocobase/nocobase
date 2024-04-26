@@ -14,7 +14,7 @@ describe('actions', () => {
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
     app = await createMockServer({
-      plugins: ['auth', 'users'],
+      plugins: ['auth', 'users', 'acl', 'data-source-manager'],
     });
     db = app.db;
 
@@ -23,6 +23,7 @@ describe('actions', () => {
       filter: {
         email: process.env.INIT_ROOT_EMAIL,
       },
+      appends: ['roles'],
     });
 
     agent = app.agent();
@@ -49,5 +50,36 @@ describe('actions', () => {
       },
     });
     expect(res2.status).toBe(200);
+  });
+
+  it('update profile, but not roles', async () => {
+    expect(adminUser.roles.length).not.toBe(0);
+    const res2 = await adminAgent.resource('users').updateProfile({
+      filterByTk: adminUser.id,
+      values: {
+        nickname: 'a',
+        username: 'a',
+        email: 'test@nocobase.com',
+        phone: '12345678901',
+        systemSettings: {
+          ...adminUser.systemSettings,
+          themeId: 1,
+        },
+        appLang: 'zh-CN',
+        roles: [],
+      },
+    });
+    expect(res2.status).toBe(200);
+    const user = await db.getRepository('users').findOne({
+      filterByTk: adminUser.id,
+      appends: ['roles'],
+    });
+    expect(user.nickname).toBe('a');
+    expect(user.username).toBe('a');
+    expect(user.email).toBe('test@nocobase.com');
+    expect(user.phone).toBe('12345678901');
+    expect(user.systemSettings.themeId).toBe(1);
+    expect(user.appLang).toBe('zh-CN');
+    expect(user.roles.length).not.toBe(0);
   });
 });
