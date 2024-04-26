@@ -21,6 +21,127 @@ describe('workflow > actions > workflows', () => {
 
   afterEach(() => app.destroy());
 
+  describe('create', () => {
+    it('create in unexecuted workflow', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(status).toBe(200);
+      expect(data.type).toBe('echo');
+    });
+
+    it('create in executed workflow', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+        executed: 1,
+        allExecuted: 1,
+      });
+
+      const { status } = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create as head', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const res1 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(res1.status).toBe(200);
+      expect(res1.body.data.type).toBe('echo');
+      expect(res1.body.data.upstreamId).toBeUndefined();
+
+      const res2 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(res2.status).toBe(200);
+      expect(res2.body.data.type).toBe('echo');
+      expect(res2.body.data.upstreamId).toBeUndefined();
+      expect(res2.body.data.downstreamId).toBe(res1.body.data.id);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[0].upstreamId).toBe(nodes[1].id);
+      expect(nodes[1].downstreamId).toBe(nodes[0].id);
+    });
+
+    it('create after other node', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const res1 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+
+      const res2 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+          upstreamId: res1.body.data.id,
+        },
+      });
+      expect(res2.body.data.upstreamId).toBe(res1.body.data.id);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[0].downstreamId).toBe(nodes[1].id);
+      expect(nodes[1].upstreamId).toBe(nodes[0].id);
+    });
+
+    it('create as branch', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const res1 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+
+      const res2 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+          upstreamId: res1.body.data.id,
+          branchIndex: 0,
+        },
+      });
+      expect(res2.body.data.upstreamId).toBe(res1.body.data.id);
+      expect(res2.body.data.branchIndex).toBe(0);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[0].downstreamId).toBeNull();
+      expect(nodes[1].upstreamId).toBe(nodes[0].id);
+    });
+  });
+
   describe('destroy', () => {
     it('node in executed workflow could not be destroyed', async () => {
       const workflow = await WorkflowModel.create({
