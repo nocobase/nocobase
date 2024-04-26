@@ -17,8 +17,6 @@ const defaultValue = [
     mimetype: 'image/jpeg',
     path: '',
     meta: {},
-    status: 'uploading',
-    percent: 60,
     url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/cd48dc833ab01aa3959ac39309fc39de.jpg',
     created_at: '2021-08-13T15:00:17.423Z',
     updated_at: '2021-08-13T15:00:17.423Z',
