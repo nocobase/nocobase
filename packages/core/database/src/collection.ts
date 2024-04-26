@@ -320,7 +320,11 @@ export class Collection<
 
     const { database } = this.context;
 
-    database.logger.debug(`beforeSetField: ${this.name}, ${name}, ${safeJsonStringify(options)}`);
+    database.logger.debug(`beforeSetField: ${safeJsonStringify(options)}`, {
+      databaseInstanceId: database.instanceId,
+      collectionName: this.name,
+      fieldName: name,
+    });
 
     if (options.source) {
       const [sourceCollectionName, sourceFieldName] = options.source.split('.');
