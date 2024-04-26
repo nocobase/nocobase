@@ -167,6 +167,10 @@ export class Application {
     return this.options;
   }
 
+  getName() {
+    return getSubAppName(this.getPublicPath()) || null;
+  }
+
   getPublicPath() {
     let publicPath = this.options.publicPath || '/';
     if (!publicPath.endsWith('/')) {

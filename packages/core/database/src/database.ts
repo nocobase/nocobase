@@ -6,6 +6,7 @@ import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
+import safeJsonStringify from 'safe-json-stringify';
 import { nanoid } from 'nanoid';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
@@ -260,6 +261,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.options = opts;
+    this.logger.debug(`create database instance: ${safeJsonStringify(this.options)}`, {
+      databaseInstanceId: this.instanceId,
+    });
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
     this.sequelize = new Sequelize(sequelizeOptions);
@@ -536,6 +540,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (this.options.underscored) {
       options.underscored = true;
     }
+
+    this.logger.debug(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
+      databaseInstanceId: this.instanceId,
+    });
 
     this.emit('beforeDefineCollection', options);
 
