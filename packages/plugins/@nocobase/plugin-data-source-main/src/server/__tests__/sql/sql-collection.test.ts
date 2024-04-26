@@ -8,7 +8,7 @@ describe('sql collection', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['collection-manager', 'error-handler'],
+      plugins: ['data-source-main', 'error-handler'],
     });
     db = app.db;
     db.options.underscored = false;
