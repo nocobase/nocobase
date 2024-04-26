@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  expectSupportedVariables,
   oneEmptyForm,
   oneEmptyFormWithActions,
   oneTableBlockWithActionsAndFormBlocks,
@@ -10,7 +11,7 @@ import {
   test,
 } from '@nocobase/test/e2e';
 import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
-import { T2165, T2174, T3251, T3806, T3815, T3871 } from './templatesOfBug';
+import { T2165, T2174, T3251, T3806, T3815, T3871, oneFormAndOneTableWithUsers } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
@@ -115,6 +116,13 @@ test.describe('creation form block schema settings', () => {
       // 当 singleLineText 字段的值包含 longText 字段的值时，禁用 longText 字段
       await openLinkageRules();
       await page.getByLabel('variable-button').click();
+      await expectSupportedVariables(page, [
+        'Constant',
+        'Current user',
+        'Current role',
+        'Date variables',
+        'Current form',
+      ]);
       await page.getByRole('menuitemcheckbox', { name: 'Current form' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'longText' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -187,6 +195,7 @@ test.describe('creation form block schema settings', () => {
       await page.getByText('Expression').click();
 
       await page.getByText('xSelect a variable').click();
+      await expectSupportedVariables(page, ['Current user', 'Current role', 'Date variables', 'Current form']);
       await page.getByRole('menuitemcheckbox', { name: 'Current form right' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'number' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -309,13 +318,13 @@ test.describe('creation form block schema settings', () => {
 
       // 编辑表单中获取到接口数据后再触发联动规则
       await page.getByLabel('action-Action.Link-Edit-').click();
-      await expect(await page.getByRole('spinbutton').inputValue()).toBe('66');
+      await expect(page.getByRole('spinbutton')).toHaveValue('66');
       await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
 
       //新建表单中的赋默认值后的联动规则
-      await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+      await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
       await page.getByLabel('action-Action-Add new-create-').click();
-      await expect(await page.getByRole('spinbutton').inputValue()).toBe('88');
+      await expect(page.getByRole('spinbutton')).toHaveValue('88');
     });
   });
 
@@ -1404,22 +1413,79 @@ test.describe('actions schema settings', () => {
     });
   });
 
-  test('customize: save record', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyFormWithActions).goto();
+  test.describe('customize: save record', () => {
+    test('supported options', async ({ page, mockPage }) => {
+      await mockPage(oneEmptyFormWithActions).goto();
 
-    await expectSettingsMenu({
-      page,
-      showMenu: async () => {
-        await page.getByRole('button', { name: 'Save record' }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
-      },
-      supportedOptions: [
-        'Edit button',
-        'Assign field values',
-        'Skip required validation',
-        'After successful submission',
-        'Delete',
-      ],
+      await expectSettingsMenu({
+        page,
+        showMenu: async () => {
+          await page.getByRole('button', { name: 'Save record' }).hover();
+          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
+        },
+        supportedOptions: [
+          'Edit button',
+          'Assign field values',
+          'Skip required validation',
+          'After successful submission',
+          'Delete',
+        ],
+      });
+    });
+
+    test('Assign field values', async ({ page, mockPage }) => {
+      await mockPage(oneFormAndOneTableWithUsers).goto();
+
+      const openPopup = async () => {
+        if (!(await page.getByLabel('action-Action-Save record-').isVisible())) {
+          await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-users').hover();
+          await page.getByRole('menuitem', { name: 'Customize right' }).hover();
+          await page.getByRole('menuitem', { name: 'Save record' }).click();
+        }
+
+        await page.getByLabel('action-Action-Save record-').hover();
+        await page.getByLabel('designer-schema-settings-Action-actionSettings:saveRecord-users').hover();
+        await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+
+        if (!(await page.getByLabel('block-item-AssignedField-').getByRole('textbox').isVisible())) {
+          await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-users').hover();
+          await page.getByRole('menuitem', { name: 'Nickname' }).click();
+        }
+      };
+
+      const expectNewValue = async (value: string) => {
+        await page.getByLabel('action-Action-Save record-').click();
+        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await page.getByLabel('action-Action-Refresh-refresh').click();
+        await expect(page.getByLabel('block-item-CardItem-users-table').getByText(value)).toBeVisible();
+      };
+
+      // 1. 打开 Assign field values 配置弹窗
+      await openPopup();
+
+      // 2. 将 Nickname 字段的值设置为 `123456`
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').click();
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').fill('123456');
+      await page.getByRole('button', { name: 'Submit' }).click();
+
+      // 3. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “123456” 的记录
+      await expectNewValue('123456');
+
+      // 4. 再次打开 Assign field values 配置弹窗，这次为 Nickname 设置一个变量值（Current role）
+      await openPopup();
+      await page.getByLabel('variable-button').click();
+      await expectSupportedVariables(page, [
+        'Constant',
+        'Current user',
+        'Current role',
+        'Date variables',
+        'Current form',
+      ]);
+      await page.getByRole('menuitemcheckbox', { name: 'Current role' }).click();
+      await page.getByRole('button', { name: 'Submit' }).click();
+
+      // 5. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “root” 的记录
+      await expectNewValue('root');
     });
   });
 });

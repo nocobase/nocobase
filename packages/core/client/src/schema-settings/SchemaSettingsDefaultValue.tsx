@@ -199,9 +199,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
         ['x-uid']: fieldSchema['x-uid'],
       };
       fieldSchema.default = v.default;
-      if (!v.default && v.default !== 0) {
-        field.value = null;
-      }
       if (!isVariable(v.default)) {
         field.setInitialValue?.(v.default);
       }

@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  expectSupportedVariables,
   mockUserRecordsWithoutDepartments,
   oneFilterFormBlockWithAllAssociationFields,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
@@ -67,7 +68,8 @@ test.describe('form item & create form', () => {
             .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
             .hover();
         })(page, 'manyToOne'),
-      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
+      unsupportedVariables: ['Current popup record'],
       inputConstantValue: async () => {
         await page
           .getByLabel('block-item-VariableInput-')
@@ -144,37 +146,40 @@ test.describe('form item & create form', () => {
   });
 
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
-    const records = await (async (mockPage, mockRecords) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
-      await nocoPage.goto();
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    const records = await mockUserRecordsWithoutDepartments(mockRecords, 3);
+    await nocoPage.goto();
 
-      return recordsOfUser;
-    })(mockPage, mockRecords);
-    await (async (page: Page) => {
-      await page.getByRole('button', { name: 'Add new' }).click();
-    })(page);
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToOne');
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToOne-manyToOne`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToOne`)
+      .hover();
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();
     await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill(String(records[0].id));
+
+    // 测试下可选择的变量有哪些
+    await page.getByLabel('variable-button').click();
+    await expectSupportedVariables(page, [
+      'Constant',
+      'Current user',
+      'Current role',
+      'Date variables',
+      'Current form',
+    ]);
+    await page.getByLabel('variable-button').click();
+
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 再次打开弹窗，设置的值应该还在
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToOne');
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToOne-manyToOne`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToOne`)
+      .hover();
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await expect(page.getByTestId('select-filter-field')).toHaveText('ID');
     await expect(page.getByRole('spinbutton')).toHaveValue(String(records[0].id));
@@ -342,38 +347,41 @@ test.describe('form item & edit form', () => {
   });
 
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
-    const { recordsOfUser } = await (async (mockPage, mockRecords) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-      const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
-      const record = (await mockRecords('general', 1))[0];
-      await nocoPage.goto();
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    const recordsOfUser = await mockUserRecordsWithoutDepartments(mockRecords, 3);
+    await mockRecords('general', 1);
+    await nocoPage.goto();
 
-      return { record, recordsOfUser };
-    })(mockPage, mockRecords);
-    await (async (page: Page) => {
-      await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-    })(page);
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToOne');
+    await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToOne-manyToOne`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToOne`)
+      .hover();
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();
     await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill(String(recordsOfUser[0].id));
+
+    // 测试下可选择的变量有哪些
+    await page.getByLabel('variable-button').click();
+    await expectSupportedVariables(page, [
+      'Constant',
+      'Current user',
+      'Current role',
+      'Date variables',
+      'Current form',
+    ]);
+    await page.getByLabel('variable-button').click();
+
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 再次打开弹窗，设置的值应该还在
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToOne');
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToOne-manyToOne`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToOne`)
+      .hover();
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await expect(page.getByTestId('select-filter-field')).toHaveText('ID');
     await expect(page.getByRole('spinbutton')).toHaveValue(String(recordsOfUser[0].id));
