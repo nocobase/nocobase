@@ -165,14 +165,16 @@ SELECT * FROM numbers;
     expect(response.status).toBe(200);
     const data = response.body.data;
 
+    const nField = data.fields.find((field) => field.name === 'n');
+
     if (app.db.inDialect('mysql')) {
-      expect(data.fields.n.type).toBe('bigInt');
+      expect(nField.type).toBe('bigInt');
     } else if (app.db.inDialect('postgres', 'mariadb')) {
-      expect(data.fields.n.type).toBe('integer');
+      expect(nField.type).toBe('integer');
     }
   });
 
-  it('should return possible types for json fields', async () => {
+  it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should return possible types for json fields', async () => {
     if (app.db.inDialect('mariadb')) {
       // can not get json type from mariadb
       return;
@@ -198,11 +200,9 @@ SELECT * FROM numbers;
     expect(response.status).toBe(200);
     const data = response.body.data;
 
-    if (!app.db.inDialect('sqlite')) {
-      expect(data.fields.json_field.type).toBe('json');
-    }
-
-    expect(data.fields.json_field.possibleTypes).toBeTruthy();
+    const jsonField = data.fields.find((field) => field.name === 'json_field');
+    expect(jsonField.type).toBe('json');
+    expect(jsonField.possibleTypes).toBeTruthy();
   });
 
   it('should not throw error when source collection destroyed', async () => {

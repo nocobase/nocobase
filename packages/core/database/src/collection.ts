@@ -17,6 +17,7 @@ import { Model } from './model';
 import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import safeJsonStringify from 'safe-json-stringify';
 
 export type RepositoryType = typeof Repository;
 
@@ -275,6 +276,7 @@ export class Collection<
   getFields() {
     return [...this.fields.values()];
   }
+
   addField(name: string, options: FieldOptions): Field {
     return this.setField(name, options);
   }
@@ -317,6 +319,12 @@ export class Collection<
     this.checkFieldType(name, options);
 
     const { database } = this.context;
+
+    database.logger.debug(`beforeSetField: ${safeJsonStringify(options)}`, {
+      databaseInstanceId: database.instanceId,
+      collectionName: this.name,
+      fieldName: name,
+    });
 
     if (options.source) {
       const [sourceCollectionName, sourceFieldName] = options.source.split('.');

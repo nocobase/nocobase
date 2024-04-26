@@ -27,15 +27,15 @@ export class PresetNocoBase extends Plugin {
     'workflow-request',
     'workflow-sql',
     'client',
+    'action-import',
     'action-export',
-    'import',
     'backup-restore',
-    'iframe-block',
+    'block-iframe',
     'field-formula',
     'data-visualization',
     'auth',
     'logger',
-    'custom-request',
+    'action-custom-request',
     'calendar',
     'action-bulk-update',
     'action-bulk-edit',
@@ -57,7 +57,8 @@ export class PresetNocoBase extends Plugin {
     'localization>=0.11.1-alpha.1',
     'theme-editor>=0.11.1-alpha.1',
     'api-doc>=0.13.0-alpha.1',
-    'sms-auth>=0.10.0-alpha.2',
+    'auth-sms>=0.10.0-alpha.2',
+    'field-markdown-vditor>=0.21.0-alpha.11',
   ];
 
   splitNames(name: string) {
