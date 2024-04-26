@@ -25,9 +25,11 @@ export abstract class RelationRepository {
   sourceKeyValue: string | number;
   sourceInstance: Model;
   db: Database;
+  database: Database;
 
   constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number) {
     this.db = sourceCollection.context.database;
+    this.database = this.db;
 
     this.sourceCollection = sourceCollection;
     this.sourceKeyValue = sourceKeyValue;
@@ -62,10 +64,6 @@ export abstract class RelationRepository {
 
   targetKey() {
     return this.associationField.targetKey;
-  }
-
-  protected accessors() {
-    return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
   }
 
   @transaction()
@@ -109,6 +107,10 @@ export abstract class RelationRepository {
     }
 
     return this.sourceInstance;
+  }
+
+  protected accessors() {
+    return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
   }
 
   protected buildQueryOptions(options: FindOptions) {
