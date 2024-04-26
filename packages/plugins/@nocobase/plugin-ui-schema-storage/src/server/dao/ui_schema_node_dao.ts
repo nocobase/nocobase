@@ -2,6 +2,7 @@ export interface TargetPosition {
   type: 'before' | 'after';
   target: string;
 }
+
 export interface ChildOptions {
   parentUid: string;
   parentPath?: string[];
@@ -16,11 +17,4 @@ export interface SchemaNode {
   schema: object;
   'x-async'?: boolean;
   childOptions?: ChildOptions;
-}
-
-export class UiSchemaNodeDAO {
-  schemaNode: SchemaNode;
-  constructor(schemaNode: SchemaNode) {
-    this.schemaNode = schemaNode;
-  }
 }

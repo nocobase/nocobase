@@ -77,11 +77,6 @@ export class ACL extends EventEmitter {
    */
   actionAlias = new Map<string, string>();
 
-  /**
-   * @internal
-   */
-  configResources: string[] = [];
-
   protected availableActions = new Map<string, ACLAvailableAction>();
 
   protected fixedParamsManager = new FixedParamsManager();
@@ -145,27 +140,6 @@ export class ACL extends EventEmitter {
 
   removeRole(name: string) {
     return this.roles.delete(name);
-  }
-
-  /**
-   * @internal
-   */
-  registerConfigResources(names: string[]) {
-    names.forEach((name) => this.registerConfigResource(name));
-  }
-
-  /**
-   * @internal
-   */
-  registerConfigResource(name: string) {
-    this.configResources.push(name);
-  }
-
-  /**
-   * @internal
-   */
-  isConfigResource(name: string) {
-    return this.configResources.includes(name);
   }
 
   setAvailableAction(name: string, options: AvailableActionOptions = {}) {

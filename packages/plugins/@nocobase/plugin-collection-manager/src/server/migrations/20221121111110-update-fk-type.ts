@@ -1,8 +1,11 @@
+/* istanbul ignore file -- @preserve */
+
 import { DataTypes } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 
 export default class UpdateIdToBigIntMigrator extends Migration {
   appVersion = '<0.8.1-alpha.2';
+
   async up() {
     const result = await this.app.version.satisfies('<0.9.0-alpha.1');
     if (!result) {
@@ -36,7 +39,8 @@ export default class UpdateIdToBigIntMigrator extends Migration {
       const tableName = model.tableName;
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
         if (db.inDialect('postgres')) {
-          sql = `ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`;
+          sql = `ALTER TABLE "${tableName}"
+            ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`;
         } else if (db.inDialect('mysql', 'mariadb')) {
           const dataTypeOrOptions = model.rawAttributes[fieldName];
           const attributeName = fieldName;

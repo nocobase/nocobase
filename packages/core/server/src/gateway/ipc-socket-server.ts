@@ -99,7 +99,6 @@ export class IPCSocketServer {
 
       const mainApp = await AppSupervisor.getInstance().getApp('main');
       if (!mainApp.cli.hasCommand(argv[2])) {
-        // console.log('passCliArgv', argv[2]);
         await mainApp.pm.loadCommands();
       }
       const cli = mainApp.cli;

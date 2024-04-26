@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { fsExists } from '@nocobase/utils';
 import fs from 'fs';
 import { resolve } from 'path';
