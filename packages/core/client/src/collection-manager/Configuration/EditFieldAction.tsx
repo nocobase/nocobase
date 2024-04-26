@@ -175,6 +175,7 @@ export const EditFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const { isDialect } = useDialect();
+  const { template } = parentRecord || {};
 
   const scopeKeyOptions = useMemo(() => {
     return (
@@ -248,7 +249,7 @@ export const EditFieldAction = (props) => {
             isDialect,
             disabledJSONB: true,
             scopeKeyOptions,
-            createMainOnly: true,
+            createMainOnly: template !== 'foreign',
             ...scope,
           }}
         />

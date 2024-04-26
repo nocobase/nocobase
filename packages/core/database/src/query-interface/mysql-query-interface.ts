@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Transaction, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';

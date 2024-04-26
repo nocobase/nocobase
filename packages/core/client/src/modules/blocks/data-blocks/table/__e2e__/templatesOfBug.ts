@@ -2476,6 +2476,218 @@ export const twoTableWithAuthorAndBooks = {
     'x-async': true,
   },
 };
+export const oneTableWithUpdateRecord = {
+  collections: [
+    {
+      name: 'users2',
+      fields: [
+        {
+          name: 'nickname',
+          interface: 'input',
+        },
+      ],
+    },
+  ],
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    'x-index': 1,
+    properties: {
+      r9qrai28a9x: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        'x-index': 1,
+        properties: {
+          x83br30jhba: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            'x-app-version': '0.21.0-alpha.15',
+            'x-index': 1,
+            properties: {
+              abm6suh07io: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                'x-app-version': '0.21.0-alpha.15',
+                'x-index': 1,
+                properties: {
+                  ik81gciqx99: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-decorator': 'TableBlockProvider',
+                    'x-acl-action': 'users2:list',
+                    'x-use-decorator-props': 'useTableBlockDecoratorProps',
+                    'x-decorator-props': {
+                      collection: 'users2',
+                      dataSource: 'main',
+                      action: 'list',
+                      params: {
+                        pageSize: 20,
+                      },
+                      rowKey: 'id',
+                      showIndex: true,
+                      dragSort: false,
+                    },
+                    'x-toolbar': 'BlockSchemaToolbar',
+                    'x-settings': 'blockSettings:table',
+                    'x-component': 'CardItem',
+                    'x-filter-targets': [],
+                    'x-app-version': '0.21.0-alpha.15',
+                    'x-index': 1,
+                    properties: {
+                      actions: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-initializer': 'table:configureActions',
+                        'x-component': 'ActionBar',
+                        'x-component-props': {
+                          style: {
+                            marginBottom: 'var(--nb-spacing)',
+                          },
+                        },
+                        'x-app-version': '0.21.0-alpha.15',
+                        'x-index': 1,
+                        properties: {
+                          e6p6pc4i7ru: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            title: '{{ t("Refresh") }}',
+                            'x-action': 'refresh',
+                            'x-component': 'Action',
+                            'x-use-component-props': 'useRefreshActionProps',
+                            'x-toolbar': 'ActionSchemaToolbar',
+                            'x-settings': 'actionSettings:refresh',
+                            'x-component-props': {
+                              icon: 'ReloadOutlined',
+                            },
+                            'x-align': 'right',
+                            type: 'void',
+                            'x-app-version': '0.21.0-alpha.15',
+                            'x-index': 1,
+                            'x-uid': 'ganipmn6wdh',
+                            'x-async': false,
+                          },
+                        },
+                        'x-uid': 'su2i79kr385',
+                        'x-async': false,
+                      },
+                      w3g2bnojflu: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'array',
+                        'x-initializer': 'table:configureColumns',
+                        'x-component': 'TableV2',
+                        'x-use-component-props': 'useTableBlockProps',
+                        'x-component-props': {
+                          rowKey: 'id',
+                          rowSelection: {
+                            type: 'checkbox',
+                          },
+                        },
+                        'x-app-version': '0.21.0-alpha.15',
+                        'x-index': 2,
+                        properties: {
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{ t("Actions") }}',
+                            'x-action-column': 'actions',
+                            'x-decorator': 'TableV2.Column.ActionBar',
+                            'x-component': 'TableV2.Column',
+                            'x-designer': 'TableV2.ActionColumnDesigner',
+                            'x-initializer': 'table:configureItemActions',
+                            'x-app-version': '0.21.0-alpha.15',
+                            'x-index': 1,
+                            properties: {
+                              '6v6dk8utqur': {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'Space',
+                                'x-component-props': {
+                                  split: '|',
+                                },
+                                'x-app-version': '0.21.0-alpha.15',
+                                'x-index': 1,
+                                'x-uid': 'b25k9c1ur9n',
+                                'x-async': false,
+                              },
+                            },
+                            'x-uid': 'hso9ig0msah',
+                            'x-async': false,
+                          },
+                          '3k0ukmw2anz': {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-decorator': 'TableV2.Column.Decorator',
+                            'x-toolbar': 'TableColumnSchemaToolbar',
+                            'x-settings': 'fieldSettings:TableColumn',
+                            'x-component': 'TableV2.Column',
+                            'x-app-version': '0.21.0-alpha.15',
+                            'x-index': 2,
+                            properties: {
+                              nickname: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                'x-collection-field': 'users2.nickname',
+                                'x-component': 'CollectionField',
+                                'x-component-props': {
+                                  ellipsis: true,
+                                },
+                                'x-read-pretty': true,
+                                'x-decorator': null,
+                                'x-decorator-props': {
+                                  labelStyle: {
+                                    display: 'none',
+                                  },
+                                },
+                                'x-app-version': '0.21.0-alpha.15',
+                                'x-index': 1,
+                                'x-uid': 'roxn64e6vhx',
+                                'x-async': false,
+                              },
+                            },
+                            'x-uid': 'xx6danutdp0',
+                            'x-async': false,
+                          },
+                        },
+                        'x-uid': 'w3akwbj68s0',
+                        'x-async': false,
+                      },
+                    },
+                    'x-uid': '114glfljrp1',
+                    'x-async': false,
+                  },
+                },
+                'x-uid': 'w8l1aaizpwc',
+                'x-async': false,
+              },
+            },
+            'x-uid': 'ywpa5ajvacs',
+            'x-async': false,
+          },
+        },
+        'x-uid': 'x9mg721vhua',
+        'x-async': false,
+      },
+    },
+    'x-uid': 'tilp0ayvsr8',
+    'x-async': true,
+  },
+};
 export const oneTableWithInheritFields = {
   collections: [
     {

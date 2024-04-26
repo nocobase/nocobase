@@ -1,3 +1,5 @@
+/* istanbul ignore next -- @preserve */
+
 import { importModule, isURL } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
@@ -277,6 +279,7 @@ export function getServerPackages(packageDir: string) {
     const exts = ['.js', '.ts', '.jsx', '.tsx'];
     const importRegex = /import\s+.*?\s+from\s+['"]([^'"\s.].+?)['"];?/g;
     const requireRegex = /require\s*\(\s*[`'"]([^`'"\s.].+?)[`'"]\s*\)/g;
+
     function setPluginsFromContent(reg: RegExp, content: string) {
       let match: RegExpExecArray | null;
       while ((match = reg.exec(content))) {
@@ -428,6 +431,7 @@ async function getExternalVersionFromDistFile(packageName: string): Promise<fals
     return false;
   }
 }
+
 export function isNotBuiltinModule(packageName: string) {
   return !builtinModules.includes(packageName);
 }
@@ -503,6 +507,7 @@ export interface DepCompatible {
   versionRange: string;
   packageVersion: string;
 }
+
 export async function getCompatible(packageName: string) {
   let externalVersion: Record<string, string>;
   const hasSrc = fs.existsSync(path.join(getPackageDir(packageName), 'src'));

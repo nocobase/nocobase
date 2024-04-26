@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Application, AppSupervisor } from '@nocobase/server';
 import { Restorer } from '../restorer';
 import { DumpRulesGroupType } from '@nocobase/database';

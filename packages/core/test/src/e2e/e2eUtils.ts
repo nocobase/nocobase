@@ -1047,3 +1047,14 @@ export const mockUserRecordsWithoutDepartments = (mockRecords: ExtendUtils['mock
     })),
   );
 };
+
+/**
+ * 用来辅助断言是否支持某些变量
+ * @param page
+ * @param variables
+ */
+export async function expectSupportedVariables(page: Page, variables: string[]) {
+  for (const name of variables) {
+    await expect(page.getByRole('menuitemcheckbox', { name })).toBeVisible();
+  }
+}
