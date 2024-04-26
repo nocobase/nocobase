@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-sms-auth",
+  "name": "@nocobase/plugin-auth-sms",
   "displayName": "Auth: SMS",
   "displayName.zh-CN": "认证：短信",
   "description": "SMS authentication.",
