@@ -5,7 +5,7 @@ import { resolve } from 'path';
 
 export default class extends Migration {
   on = 'beforeLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<1.0.0-alpha.2';
+  appVersion = '<1.0.0-alpha.1';
 
   proPlugins = [
     'oidc',
@@ -33,6 +33,18 @@ export default class extends Migration {
       }
     }
     throw new Error(`${name} plugin does not exist`);
+  }
+
+  async getSystemLang() {
+    const repo = this.db.getRepository('systemSettings');
+    if (!repo) {
+      return 'en-US';
+    }
+    const systemSettings = await repo.findOne();
+    if (!systemSettings) {
+      return 'en-US';
+    }
+    return systemSettings.enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
   }
 
   async processRemovedPlugins() {
@@ -68,8 +80,9 @@ export default class extends Migration {
       return;
     }
     const proPlugins = Array.from(notExistsEnabledPlugins.keys()).filter((name) => this.proPlugins.includes(name));
+    const lang = await this.getSystemLang();
     const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, proPlugins, this.app.name);
-    const error = new Error(errMsg) as any;
+    const error = new Error(errMsg[lang]) as any;
     error.stack = undefined;
     error.cause = undefined;
     error.onlyLogCause = true;
