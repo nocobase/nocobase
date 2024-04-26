@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, message } from 'antd';
+import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tooltip, message } from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
@@ -155,7 +155,13 @@ export function WorkflowCanvas() {
           <Breadcrumb
             items={[
               { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
-              { title: <strong>{workflow.title}</strong> },
+              {
+                title: (
+                  <Tooltip title={`Key: ${workflow.key}`}>
+                    <strong>{workflow.title}</strong>
+                  </Tooltip>
+                ),
+              },
             ]}
           />
         </header>
