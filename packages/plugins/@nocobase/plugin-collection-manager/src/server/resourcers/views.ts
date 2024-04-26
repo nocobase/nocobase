@@ -7,14 +7,27 @@ export default {
       const { filterByTk, schema } = ctx.action.params;
       const db = ctx.app.db as Database;
 
-      const fields = await ViewFieldInference.inferFields({
+      const fields = [];
+
+      const unsupportedFields = [];
+
+      const inferFields = await ViewFieldInference.inferFields({
         db,
         viewName: filterByTk,
         viewSchema: schema,
       });
 
+      for (const [_name, field] of Object.entries(inferFields)) {
+        if (!field.type) {
+          unsupportedFields.push(field);
+        } else {
+          fields.push(field);
+        }
+      }
+
       ctx.body = {
         fields,
+        unsupportedFields,
         sources: [
           ...new Set(
             Object.values(fields)
@@ -62,9 +75,8 @@ export default {
       const limit = 1 * pageSize;
 
       const sql = `SELECT *
-                   FROM ${ctx.app.db.utils.quoteTable(
-                     ctx.app.db.utils.addSchema(filterByTk, schema),
-                   )} LIMIT ${limit} OFFSET ${offset}`;
+                   FROM ${ctx.app.db.utils.quoteTable(ctx.app.db.utils.addSchema(filterByTk, schema))} LIMIT ${limit}
+                   OFFSET ${offset}`;
 
       const rawValues = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
 
