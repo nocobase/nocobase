@@ -25,7 +25,7 @@
     "@nocobase/plugin-data-source-manager": "0.21.0-alpha.15",
     "@nocobase/plugin-data-visualization": "0.21.0-alpha.15",
     "@nocobase/plugin-error-handler": "0.21.0-alpha.15",
-    "@nocobase/plugin-export": "0.21.0-alpha.15",
+    "@nocobase/plugin-action-export": "0.21.0-alpha.15",
     "@nocobase/plugin-file-manager": "0.21.0-alpha.15",
     "@nocobase/plugin-formula-field": "0.21.0-alpha.15",
     "@nocobase/plugin-gantt": "0.21.0-alpha.15",

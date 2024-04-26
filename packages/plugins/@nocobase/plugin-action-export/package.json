@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-export",
+  "name": "@nocobase/plugin-action-export",
   "displayName": "Action: Export records",
   "displayName.zh-CN": "操作：导出记录",
   "description": "Export filtered records to excel, you can configure which fields to export.",

@@ -26,7 +26,7 @@ export class PresetNocoBase extends Plugin {
     'workflow-request',
     'workflow-sql',
     'client',
-    'export',
+    'action-export',
     'import',
     'backup-restore',
     'iframe-block',
