@@ -4,10 +4,30 @@ export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<1.0.0-alpha.1';
 
+  namesMp = {
+    'auth-cas': 'cas',
+    'auth-oidc': 'oidc',
+    'auth-saml': 'saml',
+    'field-china-region': 'china-region',
+    'action-custom-request': 'custom-request',
+    'action-export': 'export',
+    'field-formula': 'formula-field',
+    'block-iframe': 'iframe-block',
+    'action-import': 'import',
+    localization: 'localization-management',
+    'field-sequence': 'sequence-field',
+    'auth-sms': 'sms-auth',
+  };
+
   async up() {
     const resources = await this.app.localeManager.getCacheResources('en-US');
     const modules = Object.keys(resources);
-    console.log(resources, modules);
+    Object.entries(this.namesMp).forEach(([newName, oldName]) => {
+      if (!modules.includes(newName)) {
+        return;
+      }
+      modules.push(oldName, `${OFFICIAL_PLUGIN_PREFIX}${oldName}`);
+    });
     const toBeDeleted = [];
     modules.forEach((module) => {
       if (!module.startsWith(OFFICIAL_PLUGIN_PREFIX)) {

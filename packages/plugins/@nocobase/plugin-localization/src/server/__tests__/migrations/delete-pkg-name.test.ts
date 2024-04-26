@@ -37,6 +37,14 @@ describe('delete pkg name', () => {
           module: 'resources.@custom/plugin-for-test',
           text: 'test',
         },
+        {
+          module: 'resources.@nocobase/plugin-cas',
+          text: 'test',
+        },
+        {
+          module: 'resources.cas',
+          text: 'test',
+        },
       ],
     });
     const migration = new Migration({
@@ -49,17 +57,20 @@ describe('delete pkg name', () => {
             'for-test': {},
             '@nocobase/plugin-for-test2': {},
             '@custom/plugin-for-test': {},
+            'auth-cas': {},
+            '@nocobase/plugin-auth-cas': {},
           }),
         },
       },
     });
     await migration.up();
     const result = await repo.find();
-    expect(result.length).toBe(3);
+    expect(result.length).toBe(4);
     expect(result.map((item) => item.module)).toMatchObject([
       'resources.for-test',
       'resources.@nocobase/plugin-for-test2',
       'resources.@custom/plugin-for-test',
+      'resources.cas',
     ]);
   });
 });
