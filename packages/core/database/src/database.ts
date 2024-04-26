@@ -6,6 +6,7 @@ import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
+import safeJsonStringify from 'safe-json-stringify';
 import { nanoid } from 'nanoid';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
@@ -537,11 +538,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       options.underscored = true;
     }
 
-    try {
-      this.logger.debug(`beforeDefineCollection: ${JSON.stringify(options)}`);
-    } catch (e) {
-      this.logger.debug(`beforeDefineCollectionSafe: ${JSON.stringify(lodash.omit(options, ['model', 'repository']))}`);
-    }
+    this.logger.debug(`beforeDefineCollection: ${safeJsonStringify(options)}`);
 
     this.emit('beforeDefineCollection', options);
 
