@@ -9,7 +9,7 @@ describe('sequence field', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['sequence-field'],
+      plugins: ['field-sequence'],
     });
     db = app.db;
   });
