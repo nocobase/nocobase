@@ -1,9 +1,12 @@
+/* istanbul ignore file -- @preserve */
+
 import { Collection } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 import { FieldModel } from '../models';
 
 export default class extends Migration {
   appVersion = '<0.9.2-alpha.1';
+
   async up() {
     const result = await this.app.version.satisfies('<0.9.2-alpha.2');
 

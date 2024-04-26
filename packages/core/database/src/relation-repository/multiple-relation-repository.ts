@@ -8,8 +8,8 @@ import {
   Filter,
   FindOneOptions,
   FindOptions,
-  TK,
   TargetKey,
+  TK,
   UpdateOptions,
 } from '../repository';
 import { updateModelByValues } from '../update-associations';
@@ -23,10 +23,6 @@ export interface AssociatedOptions extends Transactionable {
 }
 
 export abstract class MultipleRelationRepository extends RelationRepository {
-  extendFindOptions(findOptions) {
-    return findOptions;
-  }
-
   async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
 

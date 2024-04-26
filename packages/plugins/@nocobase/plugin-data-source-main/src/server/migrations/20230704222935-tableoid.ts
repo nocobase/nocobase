@@ -1,8 +1,11 @@
+/* istanbul ignore file -- @preserve */
+
 import { Migration } from '@nocobase/server';
 import _ from 'lodash';
 
 export default class extends Migration {
   appVersion = '<0.10.1-alpha.1';
+
   async up() {
     if (!this.db.inDialect('postgres')) {
       return;

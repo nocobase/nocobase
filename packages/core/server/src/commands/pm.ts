@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import _ from 'lodash';
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';

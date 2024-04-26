@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
 import QueryInterface, { TableInfo } from './query-interface';

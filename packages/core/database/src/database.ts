@@ -148,34 +148,6 @@ export const DialectVersionAccessors = {
   },
 };
 
-class DatabaseVersion {
-  db: Database;
-
-  constructor(db: Database) {
-    this.db = db;
-  }
-
-  async satisfies(versions) {
-    const accessors = DialectVersionAccessors;
-    for (const dialect of Object.keys(accessors)) {
-      if (this.db.inDialect(dialect)) {
-        if (!versions?.[dialect]) {
-          return false;
-        }
-        const [result] = (await this.db.sequelize.query(accessors[dialect].sql)) as any;
-        const versionResult = accessors[dialect].get(result?.[0]?.version);
-
-        if (lodash.isPlainObject(versionResult) && versionResult.dialect) {
-          return semver.satisfies(versionResult.version, versions[versionResult.dialect]);
-        }
-
-        return semver.satisfies(versionResult, versions[dialect]);
-      }
-    }
-    return false;
-  }
-}
-
 export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   migrator: Umzug;
@@ -197,7 +169,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
   inheritanceMap = new InheritanceMap();
   importedFrom = new Map<string, Set<string>>();
   modelHook: ModelHook;
-  version: DatabaseVersion;
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
   logger: Logger;
   collectionGroupManager = new CollectionGroupManager(this);
@@ -207,8 +178,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   constructor(options: DatabaseOptions) {
     super();
-
-    this.version = new DatabaseVersion(this);
 
     const opts = {
       sync: {
@@ -350,6 +319,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this._instanceId;
   }
 
+  /**
+   * @internal
+   */
   createMigrator({ migrations }) {
     const migratorOptions: any = this.options.migrator || {};
     const context = {
@@ -371,10 +343,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
   }
 
+  /**
+   * @internal
+   */
   setContext(context: any) {
     this.context = context;
   }
 
+  /**
+   * @internal
+   */
   sequelizeOptions(options) {
     if (options.dialect === 'postgres') {
       if (!options.hooks) {
@@ -393,6 +371,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return options;
   }
 
+  /**
+   * @internal
+   */
   initListener() {
     this.on('afterConnect', async (client) => {
       if (this.inDialect('postgres')) {
@@ -644,6 +625,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.getCollection(name)?.repository;
   }
 
+  /**
+   * @internal
+   */
   addPendingField(field: RelationField) {
     const associating = this.pendingFields;
     const items = this.pendingFields.get(field.target) || [];
@@ -651,6 +635,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     associating.set(field.target, items);
   }
 
+  /**
+   * @internal
+   */
   removePendingField(field: RelationField) {
     const items = this.pendingFields.get(field.target) || [];
     const index = items.indexOf(field);
@@ -693,6 +680,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   initOperators() {
     const operators = new Map();
 
@@ -717,6 +707,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   buildField(options, context: FieldContext) {
     const { type } = options;
 
@@ -794,10 +787,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return await this.queryInterface.collectionTableExists(collection, options);
   }
 
-  public isSqliteMemory() {
+  isSqliteMemory() {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
   }
 
+  /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
     const startingDelay = 50;
@@ -833,10 +827,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   async checkVersion() {
     return await checkDatabaseVersion(this);
   }
 
+  /**
+   * @internal
+   */
   async prepare() {
     if (this.isMySQLCompatibleDialect()) {
       const result = await this.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });

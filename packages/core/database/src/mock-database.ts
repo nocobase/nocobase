@@ -1,3 +1,4 @@
+/* istanbul ignore file -- @preserve */
 import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
@@ -43,7 +44,7 @@ export function getConfigByEnv() {
 
 function customLogger(queryString, queryObject) {
   console.log(queryString); // outputs a string
-  if (queryObject.bind) {
+  if (queryObject?.bind) {
     console.log(queryObject.bind); // outputs an array
   }
 }

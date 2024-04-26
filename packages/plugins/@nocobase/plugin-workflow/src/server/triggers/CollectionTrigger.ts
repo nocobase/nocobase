@@ -2,7 +2,7 @@ import { Model, Transactionable } from '@nocobase/database';
 import Trigger from '.';
 import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
-import { parseCollectionName, ICollection } from '@nocobase/data-source-manager';
+import { ICollection, parseCollectionName } from '@nocobase/data-source-manager';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;
@@ -81,6 +81,8 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       set.add(field);
       return set;
     }, new Set());
+
+    // @ts-ignore
     result = await repository.findOne({
       filterByTk: data[filterTargetKey],
       appends: Array.from(includeFields),

@@ -310,4 +310,45 @@ describe('action test', () => {
 
     expect(response.statusCode).toEqual(200);
   });
+
+  test('save as template', async () => {
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
+        },
+      });
+
+    const response = await app
+      .agent()
+      .resource('uiSchemas')
+      .saveAsTemplate({
+        filterByTk: 'n1',
+        values: {
+          key: 'yiod22qkyhl',
+          dataSourceKey: 'main',
+          name: 'test',
+          uid: 'n1',
+        },
+      });
+
+    expect(response.statusCode).toEqual(200);
+
+    const template = await app.db.getRepository('uiSchemaTemplates').findOne({});
+    expect(template.uid).toEqual('n1');
+  });
 });

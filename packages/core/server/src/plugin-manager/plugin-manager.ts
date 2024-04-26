@@ -74,11 +74,6 @@ export class PluginManager {
   /**
    * @internal
    */
-  _repository: PluginManagerRepository;
-
-  /**
-   * @internal
-   */
   constructor(public options: PluginManagerOptions) {
     this.app = options.app;
     this.app.db.registerRepositories({
@@ -103,6 +98,11 @@ export class PluginManager {
 
     this.app.resourcer.use(uploadMiddleware);
   }
+
+  /**
+   * @internal
+   */
+  _repository: PluginManagerRepository;
 
   get repository() {
     return this.app.db.getRepository('applicationPlugins') as PluginManagerRepository;
@@ -234,6 +234,7 @@ export class PluginManager {
     }
   }
 
+  /* istanbul ignore next -- @preserve */
   async create(pluginName: string, options?: { forceRecreate?: boolean }) {
     const createPlugin = async (name) => {
       const pluginDir = resolve(process.cwd(), 'packages/plugins', name);
@@ -482,20 +483,6 @@ export class PluginManager {
     });
   }
 
-  private sort(names: string | string[]) {
-    const pluginNames = _.castArray(names);
-    if (pluginNames.length === 1) {
-      return pluginNames;
-    }
-    const sorter = new Topo.Sorter<string>();
-    for (const pluginName of pluginNames) {
-      const plugin = this.get(pluginName);
-      const peerDependencies = Object.keys(plugin.options?.packageJson?.peerDependencies || {});
-      sorter.add(pluginName, { after: peerDependencies, group: plugin.options?.packageName || pluginName });
-    }
-    return sorter.nodes;
-  }
-
   async enable(name: string | string[]) {
     let pluginNames = name;
     if (name === '*') {
@@ -704,27 +691,6 @@ export class PluginManager {
       await removeDir();
     }
     await execa('yarn', ['nocobase', 'refresh']);
-  }
-
-  /**
-   * @deprecated
-   */
-  async loadOne(plugin: Plugin) {
-    this.app.setMaintainingMessage(`loading plugin ${plugin.name}...`);
-    if (plugin.state.loaded || !plugin.enabled) {
-      return;
-    }
-    const name = plugin.getName();
-    await plugin.beforeLoad();
-
-    await this.app.emitAsync('beforeLoadPlugin', plugin, {});
-    this.app.logger.debug(`loading plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
-    await plugin.load();
-    plugin.state.loaded = true;
-    await this.app.emitAsync('afterLoadPlugin', plugin, {});
-    this.app.logger.debug(`after load plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
-
-    this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
   }
 
   /**
@@ -1086,6 +1052,20 @@ export class PluginManager {
       await this.add(p, { enabled: true, isPreset: true, ...opts });
     }
     this['_initPresetPlugins'] = true;
+  }
+
+  private sort(names: string | string[]) {
+    const pluginNames = _.castArray(names);
+    if (pluginNames.length === 1) {
+      return pluginNames;
+    }
+    const sorter = new Topo.Sorter<string>();
+    for (const pluginName of pluginNames) {
+      const plugin = this.get(pluginName);
+      const peerDependencies = Object.keys(plugin.options?.packageJson?.peerDependencies || {});
+      sorter.add(pluginName, { after: peerDependencies, group: plugin.options?.packageName || pluginName });
+    }
+    return sorter.nodes;
   }
 }
 

@@ -1,6 +1,6 @@
 import { Model } from '@nocobase/database';
 import PluginUISchemaStorageServer from '@nocobase/plugin-ui-schema-storage';
-import { InstallOptions, Plugin } from '@nocobase/server';
+import { InstallOptions, OFFICIAL_PLUGIN_PREFIX, Plugin } from '@nocobase/server';
 import deepmerge from 'deepmerge';
 import { resolve } from 'path';
 import localization from './actions/localization';
@@ -107,7 +107,7 @@ export class PluginLocalizationServer extends Plugin {
 
     this.registerUISchemahook();
 
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async (ctx, next) => {
       await next();
       const { resourceName, actionName } = ctx.action.params;
       if (resourceName === 'app' && actionName === 'getLang') {
@@ -119,6 +119,10 @@ export class PluginLocalizationServer extends Plugin {
           const resource = appLang.resources[module];
           const customResource = custom[key];
           resources[module] = resource ? deepmerge(resource, customResource) : customResource;
+          const pkgName = `${OFFICIAL_PLUGIN_PREFIX}${module}`;
+          if (appLang.resources[pkgName]) {
+            resources[pkgName] = { ...resources[module] };
+          }
         });
         ctx.body = {
           ...appLang,
