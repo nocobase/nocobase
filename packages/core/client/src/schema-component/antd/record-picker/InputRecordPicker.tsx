@@ -159,11 +159,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
         <Upload.Attachment
           value={options}
           multiple={multiple}
-          quickUpload={quickUpload}
-          selectFile={selectFile}
           action={`${collectionField?.target}:create`}
-          onSelect={handleSelect}
-          // onRemove={handleRemove}
           onChange={(files) => {
             let changed = toArr(files);
             if (changed.every((file) => file.status !== 'uploading')) {

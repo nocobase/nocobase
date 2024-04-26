@@ -22,15 +22,10 @@ import {
   useUploadProps,
 } from './shared';
 import { useStyles } from './style';
-import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
+import type { ComposedReadPretty, ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 import { Field } from '@formily/core';
 
-type Composed = React.FC<UploadProps> & {
-  Upload?: React.FC<UploadProps>;
-  File?: React.FC<UploadProps>;
-};
-
-export const ReadPretty: Composed = () => null;
+const ReadPretty: ComposedReadPretty = () => null;
 
 ReadPretty.File = function File({ value, onChange, disabled, multiple, size }: UploadProps) {
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
@@ -86,6 +81,8 @@ export const Upload: ComposedUpload = connect(
   }),
   mapReadPretty(ReadPretty.Upload),
 );
+
+Upload.ReadPretty = ReadPretty;
 
 function useSizeHint(size: number = DEFAULT_MAX_FILE_SIZE) {
   const { t, i18n } = useTranslation();
