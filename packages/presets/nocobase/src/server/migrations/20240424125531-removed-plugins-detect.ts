@@ -49,7 +49,13 @@ export default class extends Migration {
 
   async processRemovedPlugins() {
     const repository = this.pm.repository;
-    const plugins = await repository.find();
+    const plugins = await repository.find({
+      filter: {
+        name: {
+          $in: this.proPlugins,
+        },
+      },
+    });
     if (!plugins.length) {
       return;
     }
@@ -79,9 +85,8 @@ export default class extends Migration {
     if (!notExistsEnabledPlugins.size) {
       return;
     }
-    const proPlugins = Array.from(notExistsEnabledPlugins.keys()).filter((name) => this.proPlugins.includes(name));
     const lang = await this.getSystemLang();
-    const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, proPlugins, this.app.name);
+    const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, this.app.name);
     const error = new Error(errMsg[lang]) as any;
     error.stack = undefined;
     error.cause = undefined;
