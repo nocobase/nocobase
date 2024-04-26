@@ -39,6 +39,7 @@ import { markdownBlockSettings } from '../modules/blocks/other-blocks/markdown/m
 import { cascadeSelectComponentFieldSettings } from '../modules/fields/component/CascadeSelect/cascadeSelectComponentFieldSettings';
 import { datePickerComponentFieldSettings } from '../modules/fields/component/DatePicker/datePickerComponentFieldSettings';
 import { fileManagerComponentFieldSettings } from '../modules/fields/component/FileManager/fileManagerComponentFieldSettings';
+import { previewComponentFieldSettings } from '../modules/fields/component/FileManager/previewComponentFieldSettings';
 import { uploadAttachmentComponentFieldSettings } from '../modules/fields/component/FileManager/uploadAttachmentComponentFieldSettings';
 import { inputNumberComponentFieldSettings } from '../modules/fields/component/InputNumber/inputNumberComponentFieldSettings';
 import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
@@ -105,5 +106,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(tagComponentFieldSettings);
     this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);
     this.schemaSettingsManager.add(uploadAttachmentComponentFieldSettings);
+    this.schemaSettingsManager.add(previewComponentFieldSettings);
   }
 }
