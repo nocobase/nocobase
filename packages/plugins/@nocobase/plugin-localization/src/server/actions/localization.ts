@@ -4,6 +4,7 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 import LocalizationManagementPlugin from '../plugin';
 import { getTextsFromDBRecord } from '../utils';
+import { OFFICIAL_PLUGIN_PREFIX } from '@nocobase/server';
 
 const getResourcesInstance = async (ctx: Context) => {
   const plugin = ctx.app.getPlugin('localization') as LocalizationManagementPlugin;
@@ -12,7 +13,17 @@ const getResourcesInstance = async (ctx: Context) => {
 
 export const getResources = async (ctx: Context) => {
   const resources = await ctx.app.localeManager.getCacheResources(ctx.get('X-Locale') || 'en-US');
-  return { ...resources };
+  const result = {};
+  Object.entries(resources).forEach(([module, resource]) => {
+    if (module.startsWith(OFFICIAL_PLUGIN_PREFIX)) {
+      const name = module.replace(OFFICIAL_PLUGIN_PREFIX, '');
+      if (resources[name]) {
+        return;
+      }
+    }
+    result[module] = resource;
+  });
+  return result;
 };
 
 export const getUISchemas = async (db: Database) => {
