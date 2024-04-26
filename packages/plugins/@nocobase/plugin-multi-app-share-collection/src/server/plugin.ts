@@ -4,7 +4,7 @@ import { Application, AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
-const unSyncPlugins = ['localization-management'];
+const unSyncPlugins = ['localization'];
 
 class SubAppPlugin extends Plugin {
   beforeLoad() {
