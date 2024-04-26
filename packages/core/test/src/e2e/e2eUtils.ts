@@ -216,12 +216,12 @@ interface ExtendUtils {
     /**
      * @param collectionName 数据表名称
      * @param data 自定义的数据，缺失时会生成随机数据
-     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     * @param maxDepth - 生成的数据的最大深度，默认为 1，当想生成多层级数据时可以设置一个较高的值
      */
     <T = any>(collectionName: string, data?: any, maxDepth?: number): Promise<T>;
     /**
      * @param collectionName 数据表名称
-     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     * @param maxDepth - 生成的数据的最大深度，默认为 1，当想生成多层级数据时可以设置一个较高的值
      */
     <T = any>(collectionName: string, maxDepth?: number): Promise<T>;
   };
@@ -232,13 +232,13 @@ interface ExtendUtils {
     /**
      * @param collectionName - 数据表名称
      * @param count - 生成的数据条数
-     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     * @param maxDepth - 生成的数据的最大深度，默认为 1，当想生成多层级数据时可以设置一个较高的值
      */
     <T = any>(collectionName: string, count?: number, maxDepth?: number): Promise<T[]>;
     /**
      * @param collectionName - 数据表名称
      * @param data - 指定生成的数据
-     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     * @param maxDepth - 生成的数据的最大深度，默认为 1，当想生成多层级数据时可以设置一个较高的值
      */
     <T = any>(collectionName: string, data?: any[], maxDepth?: number): Promise<T[]>;
   };
