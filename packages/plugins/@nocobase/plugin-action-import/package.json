@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-import",
+  "name": "@nocobase/plugin-action-import",
   "displayName": "Action: Import records",
   "displayName.zh-CN": "操作：导入记录",
   "description": "Import records using excel templates. You can configure which fields to import and templates will be generated automatically.",
