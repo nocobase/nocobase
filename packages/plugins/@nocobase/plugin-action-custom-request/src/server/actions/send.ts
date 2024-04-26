@@ -95,7 +95,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     ...options
   } = requestConfig.options || {};
   if (!url) {
-    return ctx.throw(400, ctx.t('Please configure the request settings first', { ns: 'custom-request' }));
+    return ctx.throw(400, ctx.t('Please configure the request settings first', { ns: 'action-custom-request' }));
   }
   let currentRecordValues = {};
   if (collectionName && typeof currentRecord.id !== 'undefined') {

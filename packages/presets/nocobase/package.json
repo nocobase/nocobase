@@ -20,7 +20,7 @@
     "@nocobase/plugin-charts": "0.21.0-alpha.15",
     "@nocobase/plugin-field-china-region": "0.21.0-alpha.15",
     "@nocobase/plugin-client": "0.21.0-alpha.15",
-    "@nocobase/plugin-custom-request": "0.21.0-alpha.15",
+    "@nocobase/plugin-action-custom-request": "0.21.0-alpha.15",
     "@nocobase/plugin-data-source-main": "0.21.0-alpha.15",
     "@nocobase/plugin-data-source-manager": "0.21.0-alpha.15",
     "@nocobase/plugin-data-visualization": "0.21.0-alpha.15",

@@ -1,7 +1,7 @@
 import { i18n } from '@nocobase/client';
 import { useTranslation as useT } from 'react-i18next';
 
-export const NAMESPACE = 'custom-request';
+export const NAMESPACE = 'action-custom-request';
 
 export function lang(key: string) {
   return i18n.t(key, { ns: NAMESPACE });
