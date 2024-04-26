@@ -931,5 +931,7 @@
   "Automatically generate default values": "随机生成默认值",
   "Refresh data on close": "关闭后刷新数据",
   "Refresh data on action": "执行后刷新数据",
-  "This variable has been deprecated and can be replaced with \"Current form\"": "该变量已被弃用，可以使用“当前表单”替代"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "该变量已被弃用，可以使用“当前表单”替代",
+  "Unknown field type": "未知字段类型",
+  "The following field types are not compatible and do not support output and display": "以下字段类型未适配，不支持输出和显示"
 }
