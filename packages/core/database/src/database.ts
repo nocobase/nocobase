@@ -537,7 +537,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
       options.underscored = true;
     }
 
-    this.logger.debug(`beforeDefineCollection: ${JSON.stringify(options)}`);
+    try {
+      this.logger.debug(`beforeDefineCollection: ${JSON.stringify(options)}`);
+    } catch (e) {
+      this.logger.debug(`beforeDefineCollectionSafe: ${JSON.stringify(lodash.omit(options, ['model', 'repository']))}`);
+    }
 
     this.emit('beforeDefineCollection', options);
 
