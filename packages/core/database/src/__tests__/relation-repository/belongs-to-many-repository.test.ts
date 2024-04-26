@@ -344,6 +344,17 @@ describe('belongs to many', () => {
     await db.close();
   });
 
+  it('should get database instance in repository', async () => {
+    const p1 = await Post.repository.create({
+      values: {
+        title: 'p1',
+      },
+    });
+
+    const postTagsRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+    expect(postTagsRepository.database).toBe(db);
+  });
+
   it('should create associations with associations', async () => {
     const p1 = await Post.repository.create({
       values: {

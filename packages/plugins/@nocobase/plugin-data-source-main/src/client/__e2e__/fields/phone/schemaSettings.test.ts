@@ -53,7 +53,8 @@ test.describe('form item & create form', () => {
             .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
             .hover();
         })(page, 'phone'),
-      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
+      unsupportedVariables: ['Current popup record'],
       constantValue: '17777777777',
       variableValue: ['Current user', 'ID'], // 值为 1
       expectConstantValue: async () => {

@@ -58,7 +58,7 @@ export class PresetNocoBase extends Plugin {
     'theme-editor>=0.11.1-alpha.1',
     'api-doc>=0.13.0-alpha.1',
     'auth-sms>=0.10.0-alpha.2',
-    'field-markdown-vditor>=0.21.0-alpha.11',
+    'field-markdown-vditor>=0.21.0-alpha.15',
   ];
 
   splitNames(name: string) {
