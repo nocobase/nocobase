@@ -239,7 +239,9 @@ export class CollectionManagerPage {
    * @returns
    */
   async configureFields(collectionName: string) {
-    await this.page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
+    await this.page
+      .getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`, { exact: true })
+      .click();
     return new FieldsSettings(this.page);
   }
 
