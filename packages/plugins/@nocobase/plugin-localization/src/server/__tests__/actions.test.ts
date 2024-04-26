@@ -19,7 +19,7 @@ describe('actions', () => {
 
     beforeAll(async () => {
       app = await createMockServer({
-        plugins: ['localization-management'],
+        plugins: ['localization'],
       });
       db = app.db;
       repo = db.getRepository('localizationTexts');

@@ -39,7 +39,7 @@ const collection = {
           },
           {
             value: 'Collections & Fields',
-            label: '{{t("Collections & Fields", {ns:"localization-management"})}}',
+            label: '{{t("Collections & Fields", {ns:"localization"})}}',
           },
         ],
       },
