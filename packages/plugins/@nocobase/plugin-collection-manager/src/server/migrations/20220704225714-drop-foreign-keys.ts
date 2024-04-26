@@ -1,7 +1,10 @@
+/* istanbul ignore file -- @preserve */
+
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   appVersion = '<=0.7.1-alpha.7';
+
   async up() {
     const result = await this.app.version.satisfies('<=0.7.1-alpha.7');
     if (!result) {
@@ -12,9 +15,11 @@ export default class extends Migration {
       if (this.db.isMySQLCompatibleDialect()) {
         const [results]: any = await this.db.sequelize.query(
           `
-            SELECT CONCAT('ALTER TABLE ',TABLE_SCHEMA,'.',TABLE_NAME,' DROP FOREIGN KEY ',CONSTRAINT_NAME,' ;') as q
+            SELECT CONCAT('ALTER TABLE ', TABLE_SCHEMA, '.', TABLE_NAME, ' DROP FOREIGN KEY ', CONSTRAINT_NAME,
+                          ' ;') as q
             FROM information_schema.TABLE_CONSTRAINTS c
-            WHERE c.TABLE_SCHEMA='${this.db.options.database}' AND c.CONSTRAINT_TYPE='FOREIGN KEY';
+            WHERE c.TABLE_SCHEMA = '${this.db.options.database}'
+              AND c.CONSTRAINT_TYPE = 'FOREIGN KEY';
           `,
           { transaction },
         );
@@ -24,13 +29,13 @@ export default class extends Migration {
       } else if (this.db.inDialect('postgres')) {
         const [results]: any = await this.db.sequelize.query(
           `
-            select 'alter table '||quote_ident(tb.relname)||
-                  ' drop constraint '||quote_ident(conname)||';' as q
+            select 'alter table ' || quote_ident(tb.relname) ||
+                   ' drop constraint ' || quote_ident(conname) || ';' as q
             from pg_constraint c
-              join pg_class tb on tb.oid = c.conrelid
-              join pg_namespace ns on ns.oid = tb.relnamespace
+                   join pg_class tb on tb.oid = c.conrelid
+                   join pg_namespace ns on ns.oid = tb.relnamespace
             where ns.nspname in ('public')
-            and c.contype = 'f';
+              and c.contype = 'f';
           `,
           { transaction },
         );

@@ -4,7 +4,7 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
-import db2resource from '../../../server/src/middlewares/db2resource';
+import db2resource from './db2resource';
 
 interface ActionParams {
   fields?: string[];
@@ -30,6 +30,7 @@ interface ActionParams {
    * @deprecated
    */
   associatedIndex?: string;
+
   [key: string]: any;
 }
 
@@ -44,6 +45,7 @@ interface SortActionParams {
   method?: string;
   target?: any;
   sticky?: boolean;
+
   [key: string]: any;
 }
 
@@ -54,6 +56,7 @@ interface Resource {
   update: (params?: ActionParams) => Promise<supertest.Response>;
   destroy: (params?: ActionParams) => Promise<supertest.Response>;
   sort: (params?: SortActionParams) => Promise<supertest.Response>;
+
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 

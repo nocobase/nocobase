@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Collection } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 import { FieldModel } from '../models';
@@ -5,6 +7,7 @@ import _ from 'lodash';
 
 export default class extends Migration {
   appVersion = '<0.10.0-alpha.3';
+
   async up() {
     const transaction = await this.db.sequelize.transaction();
 

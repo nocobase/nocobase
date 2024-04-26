@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Migration } from '../migration';
 import { PluginManager } from '../plugin-manager';
 

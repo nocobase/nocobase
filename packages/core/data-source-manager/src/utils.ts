@@ -12,5 +12,6 @@ export function joinCollectionName(dataSourceName: string, collectionName: strin
   if (!dataSourceName || dataSourceName === 'main') {
     return collectionName;
   }
+
   return `${dataSourceName}:${collectionName}`;
 }
