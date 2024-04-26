@@ -61,4 +61,29 @@ describe('pro plugins detect', () => {
     });
     await expect(migration.up()).rejects.toThrowError();
   });
+
+  it('should rename enabled plugins', async () => {
+    vi.spyOn(PluginManager, 'getPackageName').mockResolvedValue('@nocobase/plugin-saml');
+    const plugin = await repo.create({
+      values: {
+        name: 'saml',
+        packageName: '@nocobase/plugin-saml',
+        version: '0.21.0-alpha.15',
+        enabled: true,
+      },
+    });
+    const migration = new Migration({
+      db: app.db,
+      // @ts-ignore
+      app: app,
+    });
+    await migration.up();
+    const p = await repo.findOne({
+      filter: {
+        id: plugin.id,
+      },
+    });
+    expect(p.name).toBe('auth-saml');
+    expect(p.packageName).toBe('@nocobase/plugin-auth-saml');
+  });
 });
