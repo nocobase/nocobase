@@ -6,7 +6,7 @@ export class PresetNocoBase extends Plugin {
   builtInPlugins = [
     'data-source-manager',
     'error-handler',
-    'collection-manager',
+    'data-source-main',
     'ui-schema-storage',
     // 'ui-routes-storage',
     'file-manager',

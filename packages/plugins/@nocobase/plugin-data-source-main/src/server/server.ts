@@ -20,7 +20,7 @@ import collectionActions from './resourcers/collections';
 import sqlResourcer from './resourcers/sql';
 import viewResourcer from './resourcers/views';
 
-export class PluginCollectionManagerServer extends Plugin {
+export class PluginDataSourceMainServer extends Plugin {
   public schema: string;
 
   private loadFilter: Filter = {};
@@ -44,7 +44,7 @@ export class PluginCollectionManagerServer extends Plugin {
     });
 
     this.db.addMigrations({
-      namespace: 'collection-manager',
+      namespace: 'data-source-main',
       directory: path.resolve(__dirname, './migrations'),
       context: {
         plugin: this,
@@ -399,4 +399,4 @@ export class PluginCollectionManagerServer extends Plugin {
   }
 }
 
-export default PluginCollectionManagerServer;
+export default PluginDataSourceMainServer;
