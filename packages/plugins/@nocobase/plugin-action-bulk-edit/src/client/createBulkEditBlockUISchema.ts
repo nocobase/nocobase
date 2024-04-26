@@ -22,7 +22,7 @@ export function createBulkEditBlockUISchema(options: {
     'x-acl-action-props': {
       skipScopeCheck: true,
     },
-    'x-acl-action': `${resourceName}:create`,
+    'x-acl-action': `${resourceName}:update`,
     'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
       dataSource,

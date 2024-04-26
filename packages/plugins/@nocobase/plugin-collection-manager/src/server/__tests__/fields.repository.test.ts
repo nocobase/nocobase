@@ -163,6 +163,7 @@ describe('collections repository', () => {
         defaultValue: 'abc',
       } as StringFieldOptions,
     });
+
     expect(field.toJSON()).toMatchObject({
       type: 'string',
       name: 'name',

@@ -145,6 +145,7 @@ export const AddCollectionAction = (props) => {
   const { getTemplate, templates: collectionTemplates } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
+  const [currentTemplate, setCurrentTemplate] = useState(null);
   const compile = useCompile();
   const { t } = useTranslation();
   const items = useMemo(() => {
@@ -173,6 +174,7 @@ export const AddCollectionAction = (props) => {
       },
       onClick: (info) => {
         const schema = getSchema(getTemplate(info.key), category, compile);
+        setCurrentTemplate(getTemplate(info.key));
         setSchema(schema);
         setVisible(true);
       },
@@ -199,6 +201,7 @@ export const AddCollectionAction = (props) => {
             useCreateCollection,
             record,
             showReverseFieldConfig: true,
+            presetFieldsDisabled: currentTemplate?.presetFieldsDisabled,
             ...scope,
           }}
         />
