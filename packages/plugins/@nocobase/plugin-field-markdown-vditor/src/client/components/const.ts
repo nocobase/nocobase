@@ -1,4 +1,4 @@
 export const cdn =
-  process.env.APP_ENV !== 'production'
+  process.env.NODE_ENV !== 'production'
     ? '/api/vditor'
     : '/static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client/vditor';

@@ -6,7 +6,7 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {
-    if (process.env.APP_ENV !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       const vditorDependencePrefix = '/api/vditor/dist';
       this.app.use(
         async (ctx, next) => {
