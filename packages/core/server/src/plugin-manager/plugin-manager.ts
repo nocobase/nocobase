@@ -731,7 +731,9 @@ export class PluginManager {
     if (options?.removeDir) {
       await removeDir();
     }
-    await execa('yarn', ['nocobase', 'refresh']);
+    await execa('yarn', ['nocobase', 'refresh'], {
+      env: process.env,
+    });
   }
 
   /**
@@ -868,28 +870,47 @@ export class PluginManager {
     return this.add(name, { packageName }, true);
   }
 
-  async update(options: PluginData) {
-    if (options['url']) {
-      options.compressedFileUrl = options['url'];
+  async update(nameOrPkg: string | string[], options: PluginData, emitStartedEvent = true) {
+    const upgrade = async () => {
+      if (!(await this.app.isStarted())) {
+        this.app.log.debug('app upgrading');
+        await this.app.runCommand('upgrade');
+        await execa('yarn', ['nocobase', 'refresh'], {
+          env: process.env,
+        });
+        return;
+      }
+      const file = resolve(process.cwd(), 'storage/app-upgrading');
+      await fs.promises.writeFile(file, '', 'utf-8');
+      // await this.app.upgrade();
+      if (process.env.IS_DEV_CMD) {
+        await tsxRerunning();
+      } else {
+        await execa('yarn', ['nocobase', 'pm2-restart'], {
+          env: process.env,
+        });
+      }
+    };
+    if (Array.isArray(nameOrPkg)) {
+      for (const name of nameOrPkg) {
+        await this.update(name, { ...options }, false);
+      }
+      return upgrade();
     }
-    if (!options.name) {
-      const model = await this.repository.findOne({ filter: { packageName: options.packageName } });
-      options['name'] = model.name;
+    const opts = { ...options };
+    if (isURL(nameOrPkg)) {
+      opts.compressedFileUrl = nameOrPkg;
+    } else if (await fsExists(nameOrPkg)) {
+      opts.compressedFileUrl = nameOrPkg;
     }
-    if (options.compressedFileUrl) {
-      await this.upgradeByCompressedFileUrl(options);
+    if (opts.compressedFileUrl) {
+      await this.upgradeByCompressedFileUrl(opts);
     } else {
-      await this.upgradeByNpm(options as any);
+      const { name, packageName } = await PluginManager.parseName(nameOrPkg);
+      await this.upgradeByNpm({ ...opts, packageName, name } as any);
     }
-    const file = resolve(process.cwd(), 'storage/app-upgrading');
-    await fs.promises.writeFile(file, '', 'utf-8');
-    // await this.app.upgrade();
-    if (process.env.IS_DEV_CMD) {
-      await tsxRerunning();
-    } else {
-      await execa('yarn', ['nocobase', 'pm2-restart'], {
-        env: process.env,
-      });
+    if (emitStartedEvent) {
+      await upgrade();
     }
   }
 
@@ -898,37 +919,42 @@ export class PluginManager {
    */
   async upgradeByNpm(values: PluginData) {
     const name = values.name;
-    const plugin = this.get(name);
-    if (!this.has(name)) {
+    if (!(await this.repository.has(name))) {
       throw new Error(`plugin name [${name}] not exists`);
     }
-    if (!plugin.options.packageName || !values.registry) {
+    if (!values.registry) {
       throw new Error(`plugin name [${name}] not installed by npm`);
     }
     const version = values.version?.trim();
-    const registry = values.registry?.trim() || plugin.options.registry;
-    const authToken = values.authToken?.trim() || plugin.options.authToken;
+    const registry = values.registry?.trim();
+    const authToken = values.authToken?.trim();
     const { compressedFileUrl } = await getPluginInfoByNpm({
-      packageName: plugin.options.packageName,
+      packageName: values.packageName,
       registry: registry,
       authToken: authToken,
       version,
     });
-    return this.upgradeByCompressedFileUrl({ compressedFileUrl, name, version, registry, authToken });
+    return this.upgradeByCompressedFileUrl({
+      compressedFileUrl,
+      name,
+      version,
+      registry,
+      authToken,
+    });
   }
 
   /**
    * @internal
    */
   async upgradeByCompressedFileUrl(options: PluginData) {
-    const { name, compressedFileUrl, authToken } = options;
-    const data = await this.repository.findOne({ filter: { name } });
-    const { version } = await updatePluginByCompressedFileUrl({
+    const { compressedFileUrl, authToken } = options;
+    const { packageName, version } = await updatePluginByCompressedFileUrl({
       compressedFileUrl,
-      packageName: data.packageName,
       authToken: authToken,
+      repository: this.repository,
     });
-    await this.add(name, { version, packageName: data.packageName }, true, true);
+    const { name } = await PluginManager.parseName(packageName);
+    await this.add(name, { name, version, packageName }, true, true);
   }
 
   /**
