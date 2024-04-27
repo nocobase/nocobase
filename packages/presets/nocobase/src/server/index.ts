@@ -1,5 +1,6 @@
 import { Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
+import { getAutoDeletePluginsWarning, getNotExistsEnabledPluginsError } from './wording';
 
 export class PresetNocoBase extends Plugin {
   builtInPlugins = [
@@ -48,17 +49,14 @@ export class PresetNocoBase extends Plugin {
     'multi-app-manager>=0.7.0-alpha.1',
     // 'audit-logs>=0.7.1-alpha.4',
     'map>=0.8.1-alpha.3',
-    'saml>=0.8.1-alpha.3',
     // 'snapshot-field>=0.8.1-alpha.3',
     'graph-collection-manager>=0.9.0-alpha.1',
     'multi-app-share-collection>=0.9.2-alpha.1',
-    'oidc>=0.9.2-alpha.1',
     'mobile-client>=0.10.0-alpha.2',
     'api-keys>=0.10.1-alpha.1',
     'localization>=0.11.1-alpha.1',
     'theme-editor>=0.11.1-alpha.1',
     'api-doc>=0.13.0-alpha.1',
-    'cas>=0.13.0-alpha.5',
     'auth-sms>=0.10.0-alpha.2',
     'field-markdown-vditor>=0.21.0-alpha.16',
   ];

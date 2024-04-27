@@ -1,6 +1,7 @@
 /* istanbul ignore file -- @preserve */
 
 import _ from 'lodash';
+import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
 
@@ -94,7 +95,21 @@ export default (app: Application) => {
     .arguments('<plugins...>')
     .option('--force')
     .option('--remove-dir')
+    .option('--app [app]')
     .action(async (plugins, options) => {
-      await app.pm.remove(plugins, options);
+      if (options.app) {
+        await app.load();
+        const subApp = await AppSupervisor.getInstance().getApp(options.app, { upgrading: true });
+        const args = [];
+        if (options.force) {
+          args.push('--force');
+        }
+        if (options.removeDir) {
+          args.push('--remove-dir');
+        }
+        await subApp.runCommand('pm', 'remove', ...plugins, ...args);
+      } else {
+        await app.pm.remove(plugins, options);
+      }
     });
 };

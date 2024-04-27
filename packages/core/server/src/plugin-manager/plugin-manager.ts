@@ -655,6 +655,7 @@ export class PluginManager {
           name: pluginNames,
         },
       });
+      this.app.log.warn(`force remove plugins ${pluginNames.join(',')}`);
     } else {
       await this.app.load();
       for (const pluginName of pluginNames) {
