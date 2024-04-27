@@ -18,7 +18,7 @@ const findFilterFieldType = (ctx) => {
   const associationPath = path;
 
   for (const association of associationPath) {
-    if (lodash.isNumber(parseInt(association)) || association.startsWith('$')) {
+    if (lodash.isFinite(parseInt(association)) || association.startsWith('$')) {
       continue;
     }
 
