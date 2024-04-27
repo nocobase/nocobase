@@ -230,6 +230,7 @@ export const TriggerConfig = () => {
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}
           autoSize
+          disabled={workflow.executed}
         />
       </div>
       <TriggerExecution />

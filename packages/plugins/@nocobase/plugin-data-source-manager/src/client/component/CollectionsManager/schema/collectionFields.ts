@@ -142,7 +142,7 @@ export const fieldsTableSchema: ISchema = {
               type: 'string',
               'x-component': 'FieldTitleInput',
               'x-component-props': {
-                handleFieldChange: '{{handleFieldChange}}',
+                handleFieldChange: '{{enqueueChange}}',
               },
             },
           },
@@ -167,7 +167,7 @@ export const fieldsTableSchema: ISchema = {
             type: {
               'x-component': 'FieldType',
               'x-component-props': {
-                handleFieldChange: '{{handleFieldChange}}',
+                handleFieldChange: '{{enqueueChange}}',
               },
             },
           },
@@ -181,7 +181,7 @@ export const fieldsTableSchema: ISchema = {
             interface: {
               'x-component': 'CollectionFieldInterfaceSelect',
               'x-component-props': {
-                handleFieldChange: '{{handleFieldChange}}',
+                handleFieldChange: '{{enqueueChange}}',
               },
             },
           },
