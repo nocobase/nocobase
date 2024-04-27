@@ -12,8 +12,4 @@ export default defineConfig({
       force: true,
     });
   },
-  modifyViteConfig(config) {
-    config.define['process.env.APP_ENV'] = `'production'`;
-    return config;
-  },
 });
