@@ -7,7 +7,7 @@ import { build as viteBuild } from 'vite';
 import { libInjectCss } from 'vite-plugin-lib-inject-css';
 
 import { globExcludeFiles } from './constant';
-import { PkgLog, UserConfig } from './utils';
+import { PkgLog, UserConfig, getEnvDefine } from './utils';
 
 export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
   log('build client');
@@ -33,11 +33,7 @@ function buildClientEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean,
   return viteBuild(
     userConfig.modifyViteConfig({
       mode: process.env.NODE_ENV || 'production',
-      define: {
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-        'process.env.__TEST__': false,
-        'process.env.__E2E__': process.env.__E2E__ ? true : false,
-      },
+      define: getEnvDefine(),
       build: {
         minify: process.env.NODE_ENV === 'production',
         outDir,
