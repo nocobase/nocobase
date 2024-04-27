@@ -1,9 +1,9 @@
-import React, { useRef, useEffect, useLayoutEffect } from 'react';
+import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import Vditor from 'vditor';
-import { useAPIClient, withDynamicSchemaProps, useApp } from '@nocobase/client';
-import useStyle from './style';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
-import { cdn } from './const';
+import { useCDN } from './const';
+import useStyle from './style';
 
 export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange, value, fileCollection, toolbar } = props;
@@ -14,6 +14,7 @@ export const Edit = withDynamicSchemaProps((props) => {
   const containerParentRef = useRef<HTMLDivElement>();
   const app = useApp();
   const apiClient = useAPIClient();
+  const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
 
   useEffect(() => {

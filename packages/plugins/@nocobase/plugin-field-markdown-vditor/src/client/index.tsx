@@ -1,8 +1,7 @@
 import { Plugin } from '@nocobase/client';
+import 'vditor/dist/index.css';
 import { MarkdownVditor } from './components';
 import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
-import 'vditor/dist/index.css';
-import { cdn } from './components/const';
 export class PluginFieldMarkdownVditorClient extends Plugin {
   async afterAdd() {}
 
@@ -14,7 +13,17 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
     this.app.dataSourceManager.addFieldInterfaces([MarkdownVditorFieldInterface]);
   }
 
+  getCDN() {
+    if (process.env.NODE_ENV !== 'production') {
+      // 凡是 /api/xx 的地址，都需要使用 app.getApiUrl 来处理，不能固定编码
+      return this.app.getApiUrl('/vditor');
+    }
+    // 需要支持子目录，比如应用部署在 /xxx/ 目录下
+    return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client/vditor';
+  }
+
   initVditorDependency() {
+    const cdn = this.getCDN();
     try {
       const vditorDepdencePrefix = 'plugin-field-markdown-vditor-dep';
       const vditorDepdence = {

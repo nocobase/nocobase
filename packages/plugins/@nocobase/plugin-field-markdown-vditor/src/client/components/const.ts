@@ -1,4 +1,7 @@
-export const cdn =
-  process.env.NODE_ENV !== 'production'
-    ? '/api/vditor'
-    : '/static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client/vditor';
+import { usePlugin } from '@nocobase/client';
+import { PluginFieldMarkdownVditorClient } from '../';
+
+export const useCDN = () => {
+  const plugin = usePlugin(PluginFieldMarkdownVditorClient);
+  return plugin.getCDN();
+};

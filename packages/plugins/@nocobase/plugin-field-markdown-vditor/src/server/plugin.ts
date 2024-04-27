@@ -20,7 +20,8 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
           await next();
         },
         {
-          before: 'bodyParser',
+          before: 'i18n',
+          after: 'cors',
         },
       );
     }

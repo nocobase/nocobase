@@ -1,11 +1,11 @@
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
-import React, { useRef, useEffect, useMemo, useState, CSSProperties, useCallback } from 'react';
-import Vditor from 'vditor';
-import { Popover } from 'antd';
-import useStyle from './style';
 import { withDynamicSchemaProps } from '@nocobase/client';
-import { cdn } from './const';
+import { Popover } from 'antd';
+import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import Vditor from 'vditor';
+import { useCDN } from './const';
+import useStyle from './style';
 
 function convertToText(markdownText: string) {
   const content = markdownText;
@@ -28,6 +28,7 @@ const getContentWidth = (element) => {
 function DisplayInner(props: { value: string; style?: CSSProperties }) {
   const containerRef = useRef<HTMLDivElement>();
   const { wrapSSR, componentCls, hashId } = useStyle();
+  const cdn = useCDN();
 
   useEffect(() => {
     if (!props.value) return;
@@ -47,6 +48,7 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
 export const Display = withDynamicSchemaProps((props) => {
   const field = useField<Field>();
   const value = props.value ?? field.value;
+  const cdn = useCDN();
 
   const containerRef = useRef<HTMLDivElement>();
 
