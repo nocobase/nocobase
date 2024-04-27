@@ -1,5 +1,6 @@
 import { createBlockInPage, expect, oneEmptyGridCardBlock, test } from '@nocobase/test/e2e';
 import { oneEmptyTableWithUsers } from '../../details-multi/__e2e__/templatesOfBug';
+import { oneGridCardWithInheritFields } from './templatesOfBug';
 
 test.describe('where grid card block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -187,5 +188,26 @@ test.describe('configure fields', () => {
 
     await expect(page.getByLabel('block-item-Markdown.Void-general-grid-card').first()).toBeVisible();
   });
-  test.pgOnly('display inherit fields', async () => {});
+
+  test.pgOnly('display inherit fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneGridCardWithInheritFields).waitForInit();
+    const record = await mockRecord('child');
+    await nocoPage.goto();
+
+    // 选择继承的字段
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-child').hover();
+    await page.getByRole('menuitem', { name: 'parentField1' }).click();
+    await page.getByRole('menuitem', { name: 'parentField2' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-child-grid-card-child.parentField1-parentField1')
+        .getByText(record.parentField1),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-child-grid-card-child.parentField2-parentField2')
+        .getByText(record.parentField2),
+    ).toBeVisible();
+  });
 });

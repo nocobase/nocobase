@@ -7,6 +7,7 @@ import { ResourceActionContext, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
 import { useFieldInterfaceOptions } from '../../Configuration/interfaces';
 import { useCollectionManager_deprecated } from '../../hooks/useCollectionManager_deprecated';
+import { UnSupportFields } from './UnSupportFields';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -29,6 +30,7 @@ const PreviewCom = (props) => {
   const [dataSource, setDataSource] = useState([]);
   const [sourceFields, setSourceFields] = useState([]);
   const [sourceCollections, setSourceCollections] = useState(sources);
+  const [unsupportedFields, setUnsupportedFields] = useState([]);
   const field: any = useField();
   const form = useForm();
   const { getCollection, getInterface, getCollectionFields, getInheritCollections, getParentCollectionFields } =
@@ -101,6 +103,7 @@ const PreviewCom = (props) => {
               setDataSource(fieldsData);
               form.setValuesIn('sources', data.data?.sources);
               setSourceCollections(data.data?.sources);
+              setUnsupportedFields(data?.data?.unsupportedFields);
             });
           }
         }).catch;
@@ -248,6 +251,7 @@ const PreviewCom = (props) => {
           />
         </>
       )}
+      <UnSupportFields dataSource={unsupportedFields} />
     </Spin>
   );
 };

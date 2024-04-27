@@ -88,7 +88,7 @@ export function scientificNotation(number, decimalPlaces, separator = '.') {
 }
 
 export function formatNumber(props) {
-  const { step, formatStyle, value, unitConversion, unitConversionType, separator = '0.00' } = props;
+  const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator = '0.00' } = props;
 
   if (!isValid(value)) {
     return null;
@@ -108,7 +108,7 @@ export function formatNumber(props) {
 }
 
 export interface InputNumberProps extends AntdInputNumberProps {
-  formatStyle?: false | 'scientifix';
+  formatStyle?: 'normal' | 'scientifix';
   unitConversion?: number;
   /**
    * @default '*'

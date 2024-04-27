@@ -843,8 +843,9 @@
   "Allow add new, update and delete actions": "允许增删改操作",
   "Date display format": "日期显示格式",
   "Filter out a single piece or a group of records as a template": "筛选出一条或一组数据，作为模板",
-  "Title field(The title field is used to identify the template record)": "标题字段（用于识别模板数据）",
-  "Template fields(The selected fields will automatically populate the form)": "模板字段（用于自动填充到表单）",
+  "The title field is used to identify the template record": "用于识别模板数据",
+  "Template fields": "模板字段",
+  "The selected fields will automatically populate the form":"用于自动填充到表单",
   "Table selected records": "表格中选中的记录",
   "Tag": "标签",
   "Tag color field": "标签颜色字段",
@@ -931,5 +932,7 @@
   "Automatically generate default values": "随机生成默认值",
   "Refresh data on close": "关闭后刷新数据",
   "Refresh data on action": "执行后刷新数据",
-  "This variable has been deprecated and can be replaced with \"Current form\"": "该变量已被弃用，可以使用“当前表单”替代"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "该变量已被弃用，可以使用“当前表单”替代",
+  "Unknown field type": "未知字段类型",
+  "The following field types are not compatible and do not support output and display": "以下字段类型未适配，不支持输出和显示"
 }

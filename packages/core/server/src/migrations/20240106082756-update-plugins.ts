@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Migration } from '../migration';
 
 export default class extends Migration {

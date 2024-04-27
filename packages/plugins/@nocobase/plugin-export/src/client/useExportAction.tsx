@@ -25,15 +25,7 @@ export const useExportAction = () => {
     async onClick() {
       const confirmed = await modal.confirm({
         title: t('Export'),
-        content: (
-          <>
-            {t('Export warning')}
-            <br />{' '}
-            <a href="https://docs-cn.nocobase.com/handbook/action-export-pro" target="_blank" rel="noreferrer">
-              Action: Export records pro
-            </a>
-          </>
-        ),
+        content: t('Export warning'),
         okText: t('Start export'),
       });
       if (!confirmed) {

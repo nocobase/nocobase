@@ -184,18 +184,6 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
     return;
   }
 
-  extendFindOptions(findOptions) {
-    let joinTableAttributes;
-    if (lodash.get(findOptions, 'fields')) {
-      joinTableAttributes = [];
-    }
-
-    return {
-      ...findOptions,
-      joinTableAttributes,
-    };
-  }
-
   throughName() {
     return this.throughModel().name;
   }

@@ -1,5 +1,5 @@
 import { createBlockInPage, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
-import { T3686, T4005 } from './templatesOfBug';
+import { T3686, T4005, oneTableWithInheritFields } from './templatesOfBug';
 
 test.describe('where table block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -246,7 +246,19 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).not.toBeVisible();
   });
 
-  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {});
+  test.pgOnly('display inherit fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableWithInheritFields).waitForInit();
+    const record = await mockRecord('child');
+    await nocoPage.goto();
+
+    // 选择继承字段
+    await page.getByLabel('schema-initializer-TableV2-').hover();
+    await page.getByRole('menuitem', { name: 'parentField1' }).click();
+    await page.getByRole('menuitem', { name: 'parentField2' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CardItem-child-').getByText(record.parentField1)).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-child-').getByText(record.parentField2)).toBeVisible();
+  });
 });
 
 test.describe('configure actions column', () => {
