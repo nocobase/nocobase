@@ -172,7 +172,10 @@ export const FormDataTemplates = withDynamicSchemaProps(
                     titleField: {
                       type: 'string',
                       'x-decorator': 'FormItem',
-                      title: '{{ t("Title field(The title field is used to identify the template record)") }}',
+                      title: '{{ t("Title field") }}',
+                      'x-decorator-props': {
+                        tooltip: '{{t("The title field is used to identify the template record")}}',
+                      },
                       'x-component': 'Select',
                       required: true,
                       'x-reactions': '{{useTitleFieldDataSource}}',
@@ -189,7 +192,10 @@ export const FormDataTemplates = withDynamicSchemaProps(
                     },
                     fields: {
                       type: 'array',
-                      title: '{{ t("Template fields(The selected fields will automatically populate the form)") }}',
+                      title: '{{ t("Template fields") }}',
+                      'x-decorator-props': {
+                        tooltip: '{{t("The selected fields will automatically populate the form")}}',
+                      },
                       required: true,
                       description: t('Only the selected fields will be used as the initialization data for the form'),
                       'x-decorator': 'FormItem',
