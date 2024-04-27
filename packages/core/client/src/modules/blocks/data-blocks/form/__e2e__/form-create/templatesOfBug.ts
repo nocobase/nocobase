@@ -9173,3 +9173,146 @@ export const oneFormAndOneTableWithUsers: PageConfig = {
     'x-async': true,
   },
 };
+export const oneFormWithInheritFields = {
+  collections: [
+    {
+      name: 'parent',
+      fields: [
+        {
+          name: 'parentField1',
+          interface: 'input',
+        },
+        {
+          name: 'parentField2',
+          interface: 'input',
+        },
+      ],
+    },
+    {
+      name: 'child',
+      fields: [
+        {
+          name: 'childField1',
+          interface: 'input',
+        },
+        {
+          name: 'childField2',
+          interface: 'input',
+        },
+      ],
+      inherits: ['parent'],
+    },
+  ],
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      '79kw0s9hd2t': {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {
+          '736hw3rfbbo': {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            'x-app-version': '0.21.0-alpha.15',
+            properties: {
+              thsaywe90f0: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                'x-app-version': '0.21.0-alpha.15',
+                properties: {
+                  e1wo8fptwxq: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-acl-action-props': {
+                      skipScopeCheck: true,
+                    },
+                    'x-acl-action': 'child:create',
+                    'x-decorator': 'FormBlockProvider',
+                    'x-use-decorator-props': 'useCreateFormBlockDecoratorProps',
+                    'x-decorator-props': {
+                      dataSource: 'main',
+                      collection: 'child',
+                    },
+                    'x-toolbar': 'BlockSchemaToolbar',
+                    'x-settings': 'blockSettings:createForm',
+                    'x-component': 'CardItem',
+                    'x-app-version': '0.21.0-alpha.15',
+                    properties: {
+                      '8f3ol7eyevs': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'FormV2',
+                        'x-use-component-props': 'useCreateFormBlockProps',
+                        'x-app-version': '0.21.0-alpha.15',
+                        properties: {
+                          grid: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'form:configureFields',
+                            'x-app-version': '0.21.0-alpha.15',
+                            'x-uid': 'hpydlgpgdyp',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          lmexf0nzjgb: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-initializer': 'createForm:configureActions',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              layout: 'one-column',
+                              style: {
+                                marginTop: 24,
+                              },
+                            },
+                            'x-app-version': '0.21.0-alpha.15',
+                            'x-uid': 'i818vw5tv0g',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                        },
+                        'x-uid': 'xkj4q44w6ym',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 't6ajhkkuys0',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'm6wz53dmfdu',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': '8x6245ii9nu',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'xtmna5prya7',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'cossd0o2fyh',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
