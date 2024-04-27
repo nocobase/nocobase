@@ -8,7 +8,7 @@ export default (app: Application) => {
   const pm = app.command('pm');
 
   pm.command('create')
-    .arguments('plugin')
+    .argument('plugin')
     .option('--force-recreate')
     .action(async (plugin, options) => {
       await app.pm.create(plugin, options);
@@ -17,12 +17,16 @@ export default (app: Application) => {
   pm.command('add')
     .ipc()
     .preload()
-    .argument('<pkg>')
+    .arguments('<packageNames...>')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
     .option('--version [version]')
-    .action(async (name, options, cli) => {
+    .action(async (packageNames, options, cli) => {
       try {
+        let name = packageNames;
+        if (Array.isArray(packageNames) && packageNames.length === 1) {
+          name = packageNames[0];
+        }
         await app.pm.addViaCLI(name, _.cloneDeep(options));
       } catch (error) {
         throw new PluginCommandError(`Failed to add plugin`, { cause: error });
