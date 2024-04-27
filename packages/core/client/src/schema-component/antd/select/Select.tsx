@@ -24,7 +24,7 @@ export type SelectProps<
    * format options
    * @default { label: 'label', value: 'value', color: 'color', children: 'children' }
    */
-  fieldNames: FieldNames;
+  fieldNames?: any;
 };
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
