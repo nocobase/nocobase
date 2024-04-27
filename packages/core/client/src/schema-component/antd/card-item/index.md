@@ -1,9 +1,3 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # CardItem
 
 卡片装饰器。主要功能为：

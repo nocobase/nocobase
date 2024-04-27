@@ -11,7 +11,7 @@ const App = getAppComponent({
       test: {
         type: 'string',
         default: 'red',
-        title: 'Test title',
+        title: 'Test',
         'x-decorator': 'FormItem',
         'x-component': 'ColorSelect',
       },

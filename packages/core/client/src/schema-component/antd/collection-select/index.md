@@ -5,8 +5,6 @@ group:
 
 # CollectionSelect
 
-表单项组件。
-
 用于选择当前数据源的数据表。
 
 ## Basic Usage

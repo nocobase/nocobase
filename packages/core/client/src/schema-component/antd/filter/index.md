@@ -1,9 +1,3 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Filter
 
 用于筛选数据的组件，常用于区块过滤数据。

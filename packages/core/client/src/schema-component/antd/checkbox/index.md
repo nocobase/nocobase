@@ -1,12 +1,4 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Checkbox
-
-表单项组件。
 
 复选框，其基于 ant-design [Checkbox](https://ant.design/components/checkbox/) 组件封装。
 

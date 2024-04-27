@@ -5,8 +5,6 @@ group:
 
 # Cron
 
-表单项组件。
-
 定时任务表达式组件，其基于 [react-js-cron](https://github.com/xrutayisire/react-js-cron) 封装。
 
 ## Cron

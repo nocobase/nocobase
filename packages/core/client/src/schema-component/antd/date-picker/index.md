@@ -1,12 +1,4 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # DatePicker
-
-表单项组件。
 
 级联选择器，其基于 ant-design [DatePicker](https://ant.design/components/date-picker/) 组件封装。
 

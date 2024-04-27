@@ -1,12 +1,4 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # ColorPicker
-
-表单项组件。
 
 颜色选择器，其基于 ant-design [ColorPicker](https://ant.design/components/color-picker/) 组件进行封装。
 

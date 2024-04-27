@@ -1,9 +1,3 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Action
 
 将按钮和各种操作结合在一起，提供了一种统一的方式来处理操作。

@@ -9,7 +9,7 @@ const App = getAppComponent({
     properties: {
       test: {
         type: 'string',
-        title: 'Test title',
+        title: 'Test',
         default: 'admin',
         'x-decorator': 'FormItem',
         'x-component': 'AssociationSelect',

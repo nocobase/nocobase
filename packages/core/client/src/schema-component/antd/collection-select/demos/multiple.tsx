@@ -9,7 +9,7 @@ const App = getAppComponent({
     properties: {
       test: {
         type: 'array',
-        title: 'Test title',
+        title: 'Test',
         'x-decorator': 'FormItem',
         'x-component': 'CollectionSelect',
         'x-component-props': {

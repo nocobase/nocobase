@@ -24,7 +24,7 @@ const App = getAppComponent({
       test: {
         type: 'array',
         default: [1, 2],
-        title: 'Test title',
+        title: 'Test',
         enum: options,
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox.Group',

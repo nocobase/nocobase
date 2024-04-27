@@ -1,26 +1,47 @@
 import { css, cx } from '@emotion/css';
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { Typography } from 'antd';
-import { InputProps, TextAreaProps } from 'antd/es/input';
+import { InputProps as AntdInputProps, TextAreaProps as AntdTextAreaProps } from 'antd/es/input';
 import cls from 'classnames';
 import React from 'react';
-import { useCompile } from '../..';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 import { HTMLEncode } from './shared';
+import { JSONTextAreaProps } from './Json';
+import { useCompile } from '../../hooks';
+
+export interface InputProps extends AntdInputProps {
+  ellipsis?: boolean;
+}
+
+export interface InputHtml extends AntdInputProps {
+  ellipsis?: boolean;
+  autop?: boolean;
+}
+
+export interface InputTextAreaProps extends AntdTextAreaProps {
+  ellipsis?: boolean;
+  text?: boolean;
+  addonBefore?: any;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  /**
+   * Whether to automatically process text content
+   * @default true
+   */
+  autop?: boolean;
+}
 
 type Composed = {
-  Input: React.FC<InputProps & { ellipsis?: any }>;
+  Input: React.FC<InputProps>;
   URL: React.FC<InputProps>;
-  TextArea: React.FC<
-    TextAreaProps & { ellipsis?: any; text?: any; addonBefore?: any; suffix?: any; addonAfter?: any; autop?: boolean }
-  >;
-  Html: any;
-  JSON: React.FC<TextAreaProps & { space: number }>;
+  TextArea: React.FC<InputTextAreaProps>;
+  Html: React.FC<InputHtml>;
+  JSON: React.FC<JSONTextAreaProps>;
 };
 
 export const ReadPretty: Composed = () => null;
 
-ReadPretty.Input = (props) => {
+ReadPretty.Input = (props: InputProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-input', props);
   // eslint-disable-next-line react-hooks/rules-of-hooks

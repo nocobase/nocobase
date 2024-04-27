@@ -1,31 +1,54 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Input
 
-## Nodes
+文本输入框。其基于 ant-design [Input](https://ant.design/components/input/) 组件进行封装。
 
-- Input
-- Input.TextArea
-- Input.URL
+## Input
 
-## Examples
+```ts
+interface InputProps extends AntdInputProps {
+  ellipsis?: boolean;
+}
+```
 
-### Input
+### Basic Usage
 
-<code src="./demos/input.tsx"></code>
+<code src="./demos/new-demos/input.tsx"></code>
 
-### Textarea
+### ReadPretty and Ellipsis
 
-<code src="./demos/textarea.tsx"></code>
+<code src="./demos/new-demos/input-read-pretty.tsx"></code>
 
-### URL
+## Input.TextArea
+
+```ts
+interface InputTextAreaProps extends AntdTextAreaProps {
+  ellipsis?: boolean;
+  text?: boolean;
+  addonBefore?: any;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  /**
+   * Whether to automatically process text content
+   * @default true
+   */
+  autop?: boolean;
+}
+```
+
+<code src="./demos/new-demos/textarea.tsx"></code>
+
+## Input.URL
+
+```ts
+type InputURL = InputProps;
+```
 
 <code src="./demos/url.tsx"></code>
 
-### JSON
+## Input.JSON
+
+```ts
+type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number }
+```
 
 <code src="./demos/json.tsx"></code>

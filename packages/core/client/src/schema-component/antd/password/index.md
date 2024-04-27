@@ -1,23 +1,17 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Password
 
-## Examples
+密码输入框。更多属性请参考 [antd 文档](https://ant.design/components/input#components-input-demo-password-input)
 
-### Password
+```ts
+interface IPasswordProps extends PasswordProps {
+  checkStrength: boolean;
+}
+```
+
+## Password
 
 <code src="./demos/demo1.tsx"></code>
 
-### Check strength
+## Check strength
 
 <code src="./demos/demo2.tsx"></code>
-
-## API
-
-基于 antd 的 Password，新增的属性：
-
-- `checkStrength` 检测密码强度

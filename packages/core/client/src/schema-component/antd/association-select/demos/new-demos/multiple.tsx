@@ -9,7 +9,7 @@ const App = getAppComponent({
     properties: {
       test: {
         type: 'array', // 数组类型
-        title: 'Test title',
+        title: 'Test',
         'x-decorator': 'FormItem',
         'x-component': 'AssociationSelect',
         'x-component-props': {

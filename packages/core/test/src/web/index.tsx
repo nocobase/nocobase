@@ -24,6 +24,7 @@ import _ from 'lodash';
 
 const defaultApis = {
   'uiSchemas:patch': { data: { result: 'ok' } },
+  'uiSchemas:batchPatch': { data: { result: 'ok' } },
   'uiSchemas:saveAsTemplate': { data: { result: 'ok' } },
   'users:update': { data: { result: 'ok' } },
   'roles:update': { data: { result: 'ok' } },

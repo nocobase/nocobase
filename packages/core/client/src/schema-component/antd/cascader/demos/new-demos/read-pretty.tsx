@@ -45,7 +45,7 @@ const App = getAppComponent({
     properties: {
       test: {
         type: 'string',
-        title: 'Test title',
+        title: 'Test',
         default: ['zhejiang', 'hangzhou', 'xihu'],
         'x-decorator': 'FormItem',
         enum: options,

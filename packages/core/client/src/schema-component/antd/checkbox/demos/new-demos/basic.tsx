@@ -9,7 +9,7 @@ const App = getAppComponent({
     properties: {
       test: {
         type: 'boolean',
-        title: 'Test title',
+        title: 'Test',
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
       },

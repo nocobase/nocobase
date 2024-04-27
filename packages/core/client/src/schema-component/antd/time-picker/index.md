@@ -1,12 +1,6 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # TimePicker
 
-## Examples
+时间选择框。其基于 ant-design [TimePicker](https://ant.design/components/time-picker) 组件封装。
 
 ### TimePicker
 

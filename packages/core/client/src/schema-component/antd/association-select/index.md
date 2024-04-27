@@ -1,12 +1,4 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # AssociationSelect
-
-表单项组件。
 
 通过指定数据表和字段，获取数据表的数据。
 

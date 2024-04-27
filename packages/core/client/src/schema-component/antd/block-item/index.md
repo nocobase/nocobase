@@ -1,9 +1,3 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # BlockItem
 
 普通的装饰器（Decorator）组件，无 UI 效果，一般用在 `x-decorator` 中。

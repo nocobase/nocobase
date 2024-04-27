@@ -11,21 +11,21 @@ const App = getAppComponent({
       test: {
         type: 'boolean',
         default: true,
-        title: 'Test title1',
+        title: 'Test1',
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
       },
       test2: {
         type: 'boolean',
         default: false,
-        title: 'Test title2',
+        title: 'Test2',
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
       },
       test3: {
         type: 'boolean',
         default: false,
-        title: 'Test title3',
+        title: 'Test3',
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
         'x-component-props': {

@@ -1,18 +1,6 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # TableV2
 
 `TableV2` 是一个基于 `antd` 的表格组件的封装。
-
-## Basic Usage
-
-TODO
-
-<!-- <code src="./demos/new-demos/basic.tsx"></code> -->
 
 ## With Collection
 

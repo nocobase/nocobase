@@ -11,7 +11,7 @@ const App = getAppComponent({
       test: {
         type: 'string',
         default: '13 6 11 * *',
-        title: 'Test title',
+        title: 'Test',
         'x-decorator': 'FormItem',
         'x-component': 'Cron',
       },

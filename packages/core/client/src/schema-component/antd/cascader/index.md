@@ -1,12 +1,4 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Cascader
-
-表单项组件。
 
 级联选择器，其基于 ant-design [Cascader](https://ant.design/components/cascader-cn/) 组件封装。
 

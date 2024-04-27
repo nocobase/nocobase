@@ -11,7 +11,7 @@ const App = getAppComponent({
       test: {
         type: 'string',
         default: 'every_week',
-        title: 'Test title',
+        title: 'Test',
         'x-decorator': 'FormItem',
         'x-component': 'CronSet',
         'x-component-props': {

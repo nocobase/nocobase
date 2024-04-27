@@ -11,14 +11,14 @@ const App = getAppComponent({
       test1: {
         type: 'string',
         default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
-        title: 'Test title1',
+        title: 'Test1',
         'x-decorator': 'FormItem',
         'x-component': 'DatePicker.RangePicker',
       },
       test2: {
         type: 'string',
         default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
-        title: 'Test title2',
+        title: 'Test2',
         'x-decorator': 'FormItem',
         'x-component': 'DatePicker.RangePicker',
         'x-component-props': {
@@ -28,7 +28,7 @@ const App = getAppComponent({
       test3: {
         type: 'string',
         default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
-        title: 'Test title3',
+        title: 'Test3',
         'x-decorator': 'FormItem',
         'x-component': 'DatePicker.RangePicker',
         'x-component-props': {

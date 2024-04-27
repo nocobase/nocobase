@@ -8,7 +8,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { SchemaComponent, useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
 import { useFormBlockType } from '../../../block-provider';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
-import { DndContext } from '../../common/dnd-context';
+import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 
@@ -306,8 +306,14 @@ export const useGridRowContext = () => {
   return useContext(GridRowContext);
 };
 
+export interface GridProps {
+  distributed?: boolean;
+  showDivider?: boolean;
+  dndContext?: false | DndContextProps;
+}
+
 export const Grid: any = observer(
-  (props: any) => {
+  (props: GridProps) => {
     const { distributed, showDivider = true } = props;
     const gridRef = useRef(null);
     const field = useField();

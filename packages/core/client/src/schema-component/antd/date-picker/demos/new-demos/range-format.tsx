@@ -9,7 +9,7 @@ const App = getAppComponent({
     properties: {
       test: {
         type: 'string',
-        title: 'Test title',
+        title: 'Test',
         'x-decorator': 'FormItem',
         default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
         'x-component': 'DatePicker.RangePicker',
