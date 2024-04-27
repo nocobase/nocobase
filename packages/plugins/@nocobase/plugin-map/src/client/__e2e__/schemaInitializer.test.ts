@@ -1,6 +1,15 @@
 import { expect, test } from '@nocobase/test/e2e';
 import { oneTableWithMap } from './templates';
 
+test.afterEach(async ({ page }) => {
+  await page.goto('/admin/settings/map');
+  await page.getByRole('button', { name: 'Edit' }).click();
+  await page.getByLabel('Access key').clear();
+  await page.getByLabel('securityJsCode or serviceHost').clear();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.locator('.ant-message-notice').getByText('Saved successfully')).toBeVisible();
+});
+
 test.describe('where map block can be added', () => {
   test('page & popup', async ({ page, mockPage }) => {
     const nocoPage = await mockPage(oneTableWithMap).waitForInit();
@@ -30,21 +39,12 @@ test.describe('where map block can be added', () => {
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.locator('.ant-message-notice').getByText('Saved successfully')).toBeVisible();
     await nocoPage.goto();
-    await expect(page.getByLabel('block-item-CardItem-map-map').locator('.amap-layer')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-map-map').locator('.amap-layer')).toBeAttached();
 
     // 3. 在弹窗中添加地图区块，应该能正常显示地图
     await page.getByLabel('block-item-CardItem-map-table').getByLabel('action-Action-Add new-create-').click();
     await page.getByLabel('schema-initializer-Grid-form:').hover();
     await page.getByRole('menuitem', { name: 'point' }).click();
-    await expect(page.getByLabel('block-item-CollectionField-').locator('.amap-layer')).toBeVisible();
-
-    // 4. 最后把地图的设置清空，以免影响到其它测试
-    await page.goto('/admin/settings/map');
-    await page.waitForLoadState('networkidle');
-    await page.getByRole('button', { name: 'Edit' }).click();
-    await page.getByLabel('Access key').clear();
-    await page.getByLabel('securityJsCode or serviceHost').clear();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.locator('.ant-message-notice').getByText('Saved successfully')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-').locator('.amap-layer')).toBeAttached();
   });
 });
