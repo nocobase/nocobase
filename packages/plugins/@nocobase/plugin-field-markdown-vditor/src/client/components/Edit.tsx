@@ -40,6 +40,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       minHeight: 200,
       after: () => {
         vdRef.current = vditor;
+        vditor.setValue(value ?? '');
         if (disabled) {
           vditor.disabled();
         } else {
