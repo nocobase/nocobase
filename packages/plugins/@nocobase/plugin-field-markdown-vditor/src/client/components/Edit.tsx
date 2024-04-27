@@ -3,6 +3,7 @@ import Vditor from 'vditor';
 import { useAPIClient, withDynamicSchemaProps, useApp } from '@nocobase/client';
 import useStyle from './style';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
+import { cdn } from './const';
 
 export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange, value, fileCollection, toolbar } = props;
@@ -34,6 +35,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       fullscreen: {
         index: 1200,
       },
+      cdn,
       minHeight: 200,
       after: () => {
         vdRef.current = vditor;
@@ -71,7 +73,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [fileCollection, toolbar]);
+  }, [fileCollection, toolbar?.join(',')]);
 
   useEffect(() => {
     if (value === vdRef?.current?.getValue()) {

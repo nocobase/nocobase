@@ -22,6 +22,7 @@
     "@formily/shared": "2.x",
     "antd": "5.x",
     "katex": "^0.16.10",
+    "koa-send": "^5.0.1",
     "vditor": "^3.10.3"
   },
   "keywords": [

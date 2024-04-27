@@ -1,9 +1,11 @@
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
-import { Popover } from 'antd';
-import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import React, { useRef, useEffect, useMemo, useState, CSSProperties, useCallback } from 'react';
 import Vditor from 'vditor';
+import { Popover } from 'antd';
 import useStyle from './style';
+import { withDynamicSchemaProps } from '@nocobase/client';
+import { cdn } from './const';
 
 function convertToText(markdownText: string) {
   const content = markdownText;
@@ -29,7 +31,10 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
 
   useEffect(() => {
     if (!props.value) return;
-    Vditor.preview(containerRef.current, props.value, { mode: 'light' });
+    Vditor.preview(containerRef.current, props.value, {
+      mode: 'light',
+      cdn,
+    });
   }, [props.value]);
 
   return wrapSSR(
@@ -39,7 +44,7 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
   );
 }
 
-export const Display = (props) => {
+export const Display = withDynamicSchemaProps((props) => {
   const field = useField<Field>();
   const value = props.value ?? field.value;
 
@@ -55,7 +60,10 @@ export const Display = (props) => {
   useEffect(() => {
     if (!props.value || !field.value) return;
     if (props.ellipsis) {
-      Vditor.md2html(props.value, { mode: 'light' })
+      Vditor.md2html(props.value, {
+        mode: 'light',
+        cdn,
+      })
         .then((html) => {
           setText(convertToText(html));
         })
@@ -63,6 +71,7 @@ export const Display = (props) => {
     } else {
       Vditor.preview(containerRef.current, props.value ?? field.value, {
         mode: 'light',
+        cdn,
       });
     }
   }, [props.value, props.ellipsis, field.value]);
@@ -107,4 +116,4 @@ export const Display = (props) => {
   }
 
   return <DisplayInner value={value} />;
-};
+});
