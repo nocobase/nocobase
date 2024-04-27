@@ -20,7 +20,7 @@ export const Edit = withDynamicSchemaProps((props) => {
     const uploadFileCollection = fileCollection ?? 'attachments';
     const toolbarConfig = toolbar ?? defaultToolbar;
     const vditor = new Vditor(containerRef.current, {
-      value,
+      value: value ?? '',
       lang: apiClient.auth.locale.replaceAll('-', '_') as any,
       cache: {
         enable: false,
