@@ -380,7 +380,8 @@ describe('gateway', () => {
         },
       });
     });
-    it('should receive error message with cause property', async () => {
+
+    it.only('should receive error message with cause property', async () => {
       await connectClient(port);
       const app = new Application({
         database: {

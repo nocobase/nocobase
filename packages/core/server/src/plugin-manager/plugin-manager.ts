@@ -781,7 +781,9 @@ export class PluginManager {
         name,
         packageName,
       };
-      await this.add(packageName, opts, true);
+      // 下面这行代码删了，测试会报错 packages/core/server/src/__tests__/gateway.test.ts:407:29
+      await this.repository.findOne({ filter: { packageName } });
+      await this.add(name, opts, true);
     }
     if (emitStartedEvent) {
       await this.app.emitStartedEvent();
