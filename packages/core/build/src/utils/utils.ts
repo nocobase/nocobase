@@ -95,3 +95,13 @@ export function readFromCache(key: string) {
   }
   return {};
 }
+
+
+export function getEnvDefine() {
+  return {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    'process.env.__TEST__': false,
+    'process.env.__E2E__': process.env.__E2E__ ? true : false,
+    'process.env.APP_ENV': process.env.APP_ENV,
+  }
+}

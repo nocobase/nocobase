@@ -26,6 +26,7 @@ module.exports = (cli) => {
         if (options.watch) return;
       }
       process.env['VITE_CJS_IGNORE_WARNING'] = 'true';
+      process.env.APP_ENV = 'production';
 
       await run('nocobase-build', [
         ...pkgs,

@@ -9,7 +9,7 @@ import { build as viteBuild } from 'vite';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, UserConfig, getPackageJson } from './utils';
+import { PkgLog, UserConfig, getEnvDefine, getPackageJson } from './utils';
 import {
   buildCheck,
   checkFileSize,
@@ -312,11 +312,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
 
   await viteBuild(userConfig.modifyViteConfig({
     mode: process.env.NODE_ENV || 'production',
-    define: {
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-      'process.env.__TEST__': false,
-      'process.env.__E2E__': process.env.__E2E__ ? true : false,
-    },
+    define: getEnvDefine(),
     logLevel: 'warn',
     build: {
       minify: process.env.NODE_ENV === 'production',
