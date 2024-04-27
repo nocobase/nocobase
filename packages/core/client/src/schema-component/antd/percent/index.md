@@ -11,4 +11,10 @@ group:
 interface PercentProps extends InputNumberProps {}
 ```
 
-<code src="./demos/percent.tsx"></code>
+## Basic Usage
+
+<code src="./demos/new-demos/basic.tsx"></code>
+
+## Read Pretty
+
+<code src="./demos/new-demos/read-pretty.tsx"></code>

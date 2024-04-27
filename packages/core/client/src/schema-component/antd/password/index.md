@@ -4,14 +4,18 @@
 
 ```ts
 interface IPasswordProps extends PasswordProps {
-  checkStrength: boolean;
+  checkStrength?: boolean;
 }
 ```
 
-## Password
+## Basic Usage
 
-<code src="./demos/demo1.tsx"></code>
+<code src="./demos/new-demos/basic.tsx"></code>
 
 ## Check strength
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/new-demos/checkStrength.tsx"></code>
+
+## Read Pretty
+
+<code src="./demos/new-demos/read-pretty.tsx"></code>

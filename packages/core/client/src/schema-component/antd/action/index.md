@@ -123,10 +123,6 @@ interface ActionModal extends ModalProps {}
 
 <code src="./demos/new-demos/action-popover.tsx"></code>
 
-## Action.Page
-
-TODO
-
 ## Action.Container
 
 当根据需要动态渲染内容时，可以使用 `Action.Container` + Action `openMode` 属性动态决定。

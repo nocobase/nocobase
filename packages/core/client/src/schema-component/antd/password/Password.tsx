@@ -5,7 +5,7 @@ import React from 'react';
 import { PasswordStrength } from './PasswordStrength';
 
 export interface IPasswordProps extends PasswordProps {
-  checkStrength: boolean;
+  checkStrength?: boolean;
 }
 
 export const Password = connect(

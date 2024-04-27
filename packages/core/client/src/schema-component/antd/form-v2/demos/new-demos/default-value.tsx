@@ -1,16 +1,18 @@
 import { createForm } from '@formily/core';
 import { getAppComponent } from '@nocobase/test/web';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 const useCustomFormProps = () => {
-  const form = useMemo(() => createForm(), []);
-
-  useEffect(() => {
-    form.setInitialValues({
-      username: 'test',
-      nickname: 'test',
-    });
-  }, [form]);
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: {
+          username: 'test',
+          nickname: 'test',
+        },
+      }),
+    [],
+  );
 
   return {
     form,

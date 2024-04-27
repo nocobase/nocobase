@@ -11,19 +11,6 @@ const lang = process.env.DOC_LANG;
 
 console.log('process.env.DOC_LANG', lang);
 
-const componentsDir = 'src/schema-component/antd';
-
-// function getComponentsMenu() {
-//   const cwd = path.join(__dirname, componentsDir);
-//   const ignores = ['table/index.md', 'form/index.md']; // 老版本，不需要展示
-//   const files = glob.sync('*/index.md', { cwd, ignore: ignores });
-
-//   return files.map((file) => ({
-//     title: _.upperFirst(_.camelCase(file.replace('/index.md', ''))),
-//     link: `/components/${file.replace('/index.md', '')}`,
-//   }));
-// }
-
 export default defineConfig({
   hash: true,
   alias: {
@@ -39,7 +26,7 @@ export default defineConfig({
   resolve: {
     docDirs: [`./docs/${lang}`],
     atomDirs: [
-      { type: 'component', dir: componentsDir },
+      { type: 'component', dir: 'src/schema-component/antd' },
     ],
   },
   locales: [
@@ -245,17 +232,9 @@ export default defineConfig({
           ]
         },
         {
-          title: 'Form',
+          title: 'Field',
           type: 'group',
           children: [
-            {
-              "title": "FormV2",
-              "link": "/components/form-v2"
-            },
-            {
-              "title": "FormItem",
-              "link": "/components/form-item"
-            },
             {
               "title": "Checkbox",
               "link": "/components/checkbox"
@@ -321,10 +300,6 @@ export default defineConfig({
               "link": "/components/upload"
             },
             {
-              "title": "AssociationSelect",
-              "link": "/components/association-select"
-            },
-            {
               "title": "CollectionSelect",
               "link": "/components/collection-select"
             },
@@ -335,10 +310,6 @@ export default defineConfig({
             {
               "title": "Markdown",
               "link": "/components/markdown"
-            },
-            {
-              "title": "RecordPicker",
-              "link": "/components/record-picker"
             },
             {
               "title": "Variable",
@@ -357,6 +328,14 @@ export default defineConfig({
             {
               "title": "CardItem",
               "link": "/components/card-item"
+            },
+            {
+              "title": "FormItem",
+              "link": "/components/form-item"
+            },
+            {
+              "title": "FormV2",
+              "link": "/components/form-v2"
             },
             {
               "title": "TableV2",
