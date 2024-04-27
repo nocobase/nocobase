@@ -16,7 +16,7 @@ export class PasswordFieldInterface extends CollectionFieldInterface {
       'x-component': 'Password',
     },
   };
-  availableTypes = ['password'];
+  availableTypes = ['password', 'string'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
