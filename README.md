@@ -34,7 +34,7 @@ hello@nocobase.com
 
 ## Distinctive features
 
-### 1. Data model-driven, separate "user interface" from "data structure"
+### 1. Data model-driven
 
 Most form-, table-, or process-driven no-code products create data structures directly in the user interface, such as Airtable, where adding a new column to a table is adding a new field. This has the advantage of simplicity of use, but the disadvantage of limited functionality and flexibility to meet the needs of more complex scenarios.
 
