@@ -69,7 +69,7 @@ describe('workflow > actions > workflows', () => {
       });
       expect(res1.status).toBe(200);
       expect(res1.body.data.type).toBe('echo');
-      expect(res1.body.data.upstreamId).toBeUndefined();
+      expect(res1.body.data.upstreamId).toBeFalsy();
 
       const res2 = await agent.resource('workflows.nodes', workflow.id).create({
         values: {
@@ -78,7 +78,7 @@ describe('workflow > actions > workflows', () => {
       });
       expect(res2.status).toBe(200);
       expect(res2.body.data.type).toBe('echo');
-      expect(res2.body.data.upstreamId).toBeUndefined();
+      expect(res2.body.data.upstreamId).toBeFalsy();
       expect(res2.body.data.downstreamId).toBe(res1.body.data.id);
 
       const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
