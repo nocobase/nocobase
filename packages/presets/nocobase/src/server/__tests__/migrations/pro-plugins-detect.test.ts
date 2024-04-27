@@ -46,7 +46,7 @@ describe('pro plugins detect', () => {
 
   it('should throw error when enabled plugin not found', async () => {
     vi.spyOn(PluginManager, 'getPackageName').mockRejectedValue(new Error('not found'));
-    await repo.create({
+    const plugin = await repo.create({
       values: {
         name: 'saml',
         packageName: '@nocobase/plugin-saml',
@@ -60,6 +60,13 @@ describe('pro plugins detect', () => {
       app: app,
     });
     await expect(migration.up()).rejects.toThrowError();
+    const p = await repo.findOne({
+      filter: {
+        id: plugin.id,
+      },
+    });
+    expect(p.name).toBe('saml');
+    expect(p.packageName).toBe('@nocobase/plugin-saml');
   });
 
   it('should rename enabled plugins', async () => {

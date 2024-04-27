@@ -51,36 +51,39 @@ export default class extends Migration {
     if (!enabledPlugins.length) {
       return;
     }
-    for (const plugin of enabledPlugins) {
-      await repository.update({
-        filter: {
-          name: plugin.name,
-        },
-        values: {
-          name: `auth-${plugin.name}`,
-          packageName: `@nocobase/plugin-auth-${plugin.name}`,
-        },
-      });
-    }
-
-    const notExistsEnabledPlugins = new Map();
-    for (const plugin of enabledPlugins) {
-      try {
-        await PluginManager.getPackageName(`auth-${plugin.name}`);
-      } catch (error) {
-        notExistsEnabledPlugins.set(plugin.name, plugin.packageName || plugin.name);
+    await this.sequelize.transaction(async (t) => {
+      for (const plugin of enabledPlugins) {
+        await repository.update({
+          filter: {
+            name: plugin.name,
+          },
+          values: {
+            name: `auth-${plugin.name}`,
+            packageName: `@nocobase/plugin-auth-${plugin.name}`,
+          },
+          transaction: t,
+        });
       }
-    }
-    if (!notExistsEnabledPlugins.size) {
-      return;
-    }
-    const lang = await this.getSystemLang();
-    const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, this.app.name);
-    const error = new Error(errMsg[lang]) as any;
-    error.stack = undefined;
-    error.cause = undefined;
-    error.onlyLogCause = true;
-    throw error;
+
+      const notExistsEnabledPlugins = new Map();
+      for (const plugin of enabledPlugins) {
+        try {
+          await PluginManager.getPackageName(`auth-${plugin.name}`);
+        } catch (error) {
+          notExistsEnabledPlugins.set(plugin.name, plugin.packageName || plugin.name);
+        }
+      }
+      if (!notExistsEnabledPlugins.size) {
+        return;
+      }
+      const lang = await this.getSystemLang();
+      const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, this.app.name);
+      const error = new Error(errMsg[lang]) as any;
+      error.stack = undefined;
+      error.cause = undefined;
+      error.onlyLogCause = true;
+      throw error;
+    });
   }
 
   async up() {
