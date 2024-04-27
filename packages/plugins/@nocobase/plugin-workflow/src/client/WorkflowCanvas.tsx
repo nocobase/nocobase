@@ -64,7 +64,9 @@ export function WorkflowCanvas() {
     if (loading) {
       return <Spin />;
     }
-    return <Result status="404" title="Not found" />;
+    return (
+      <Result status="404" title="Not found" extra={<Button onClick={() => navigate(-1)}>{lang('Go back')}</Button>} />
+    );
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
