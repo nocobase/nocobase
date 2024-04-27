@@ -50,21 +50,7 @@ const initImportSettings = (fields) => {
 
 export const ImportWarning = () => {
   const { t } = useImportTranslation();
-  return (
-    <Alert
-      type="warning"
-      style={{ marginBottom: '10px' }}
-      message={
-        <>
-          {t('Import warning')}
-          <br />
-          <a href="https://docs-cn.nocobase.com/handbook/action-import-pro" target="_blank" rel="noreferrer">
-            Action: Import records pro
-          </a>
-        </>
-      }
-    />
-  );
+  return <Alert type="warning" style={{ marginBottom: '10px' }} message={t('Import warning')} />;
 };
 
 export const ImportActionInitializer = () => {
