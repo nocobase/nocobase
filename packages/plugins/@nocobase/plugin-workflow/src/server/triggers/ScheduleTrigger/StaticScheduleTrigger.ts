@@ -2,6 +2,7 @@ import parser from 'cron-parser';
 
 import type Plugin from '../../Plugin';
 import { SCHEDULE_MODE, parseDateWithoutMs } from './utils';
+import { WorkflowModel } from '../../types';
 
 const MAX_SAFE_INTERVAL = 2147483647;
 
@@ -25,7 +26,7 @@ export default class StaticScheduleTrigger {
     });
   }
 
-  inspect(workflows) {
+  inspect(workflows: WorkflowModel[]) {
     const now = new Date();
 
     workflows.forEach((workflow) => {
@@ -41,7 +42,7 @@ export default class StaticScheduleTrigger {
     });
   }
 
-  getNextTime({ config, allExecuted }, currentDate, nextSecond = false) {
+  getNextTime({ config, allExecuted }: WorkflowModel, currentDate: Date, nextSecond = false) {
     if (config.limit && allExecuted >= config.limit) {
       return null;
     }
@@ -77,7 +78,7 @@ export default class StaticScheduleTrigger {
     }
   }
 
-  schedule(workflow, nextTime, toggle = true) {
+  schedule(workflow: WorkflowModel, nextTime: number, toggle = true) {
     if (toggle) {
       const key = `${workflow.id}@${nextTime}`;
       if (!this.timers.has(key)) {
@@ -104,10 +105,11 @@ export default class StaticScheduleTrigger {
     }
   }
 
-  async trigger(workflow, time) {
-    this.timers.delete(`${workflow.id}@${time}`);
+  async trigger(workflow: WorkflowModel, time: number) {
+    const eventKey = `${workflow.id}@${time}`;
+    this.timers.delete(eventKey);
 
-    this.workflow.trigger(workflow, { date: new Date(time) });
+    this.workflow.trigger(workflow, { date: new Date(time) }, { eventKey });
 
     if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
       return;

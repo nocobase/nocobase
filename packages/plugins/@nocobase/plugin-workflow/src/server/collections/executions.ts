@@ -16,6 +16,11 @@ export default {
       name: 'key',
     },
     {
+      type: 'string',
+      name: 'eventKey',
+      unique: true,
+    },
+    {
       type: 'hasMany',
       name: 'jobs',
       onDelete: 'CASCADE',

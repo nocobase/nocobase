@@ -90,17 +90,19 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
 
   // TODO: `result.toJSON()` throws error
   const json = toJSON(result);
+  const eventKey = `${workflow.id}:${data[filterTargetKey]}`;
 
   if (workflow.sync) {
     await this.workflow.trigger(
       workflow,
       { data: json, stack: context?.stack },
       {
+        eventKey,
         transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
       },
     );
   } else {
-    this.workflow.trigger(workflow, { data: json, stack: context?.stack });
+    this.workflow.trigger(workflow, { data: json, stack: context?.stack }, { eventKey });
   }
 }
 

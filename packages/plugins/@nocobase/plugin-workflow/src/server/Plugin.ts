@@ -29,7 +29,13 @@ type ID = number | string;
 
 type Pending = [ExecutionModel, JobModel?];
 
-type CachedEvent = [WorkflowModel, any, { context?: any } & Transactionable];
+type EventOptions = {
+  eventKey?: string;
+  context?: any;
+  [key: string]: any;
+} & Transactionable;
+
+type CachedEvent = [WorkflowModel, any, EventOptions];
 
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
@@ -307,7 +313,7 @@ export default class PluginWorkflowServer extends Plugin {
   public trigger(
     workflow: WorkflowModel,
     context: object,
-    options: { [key: string]: any } & Transactionable = {},
+    options: EventOptions = {},
   ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
     if (!this.ready) {
@@ -343,7 +349,7 @@ export default class PluginWorkflowServer extends Plugin {
   private async triggerSync(
     workflow: WorkflowModel,
     context: object,
-    options: { [key: string]: any } & Transactionable = {},
+    options: EventOptions = {},
   ): Promise<Processor | null> {
     let execution;
     try {
@@ -379,13 +385,9 @@ export default class PluginWorkflowServer extends Plugin {
   private async createExecution(
     workflow: WorkflowModel,
     context,
-    options?: Transactionable,
+    options: EventOptions,
   ): Promise<ExecutionModel | null> {
-    const {
-      transaction = await this.db.sequelize.transaction({
-        isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
-      }),
-    } = options;
+    const { transaction = await this.db.sequelize.transaction() } = options;
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
@@ -401,6 +403,7 @@ export default class PluginWorkflowServer extends Plugin {
         {
           context,
           key: workflow.key,
+          eventKey: options.eventKey,
           status: EXECUTION_STATUS.QUEUEING,
         },
         { transaction },
