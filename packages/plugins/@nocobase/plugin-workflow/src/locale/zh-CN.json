@@ -35,7 +35,7 @@
   "Will be executed in the background as a queued task.": "将作为队列任务在后台执行。",
   "For user actions that require immediate feedback. Can not use asynchronous nodes in such mode, and it is not recommended to perform time-consuming operations under synchronous mode.":
     "适用于需要即时反馈的用户操作。不能在此模式下使用异步节点，并且不建议在同步模式下执行耗时的操作。",
-
+  "Go back": "返回",
   "Bind workflows": "绑定工作流",
   "Workflow will be triggered before or after submitting succeeded based on workflow type.": "工作流会基于其类型在提交成功之前或之后触发。",
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports \"Post-action event\" for now.": "按钮点击后直接触发工作流，但不会保存数据。目前仅支持“操作后事件”。",
@@ -183,7 +183,7 @@
   "Delete records of a collection. Could use variables in workflow context as filter. All records match the filter will be deleted.":
     "删除一个数据表中的数据。可以使用上游节点里的变量作为过滤条件。所有满足条件的数据都将被删除。",
 
-  "Executed workflow cannot be modified": "已经执行过的工作流不能被修改",
+  "Executed workflow cannot be modified. Could be copied to a new version to modify.": "已经执行过的工作流不能被修改，可通过复制到新版本后再修改。",
   "Can not delete": "无法删除",
   "The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.":
     "该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。",
