@@ -21,8 +21,8 @@ describe('view collection', () => {
 
     db = app.db;
 
-    collectionRepository = app.db.getCollection('collections').repository;
-    fieldsRepository = app.db.getCollection('fields').repository;
+    collectionRepository = app.db.getRepository('collections');
+    fieldsRepository = app.db.getRepository('fields');
 
     agent = app.agent();
     testViewName = `view_${uid(6)}`;
@@ -283,7 +283,7 @@ SELECT * FROM numbers;
   });
 
   it('should list collections fields with source interface', async () => {
-    await app.db.getCollection('collections').repository.create({
+    await app.db.getRepository('collections').create({
       values: {
         name: 'users',
         fields: [

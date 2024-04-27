@@ -22,7 +22,11 @@ const findFilterFieldType = (ctx) => {
       continue;
     }
 
-    model = model.associations[association].target;
+    const modelAssociation = model.associations[association];
+    if (!modelAssociation) {
+      break;
+    }
+    model = modelAssociation.target;
   }
 
   const collection = db.modelCollection.get(model);
