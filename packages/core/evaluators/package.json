@@ -4,7 +4,7 @@
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "dependencies": {
     "@formulajs/formulajs": "4.2.0",
     "@nocobase/utils": "0.21.0-alpha.15",
