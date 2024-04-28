@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "0.21.0-alpha.15",
+  "version": "0.21.0-alpha.16",
   "license": "AGPL-3.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
