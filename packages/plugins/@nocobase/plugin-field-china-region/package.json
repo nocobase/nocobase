@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-china-region",
-  "version": "0.21.0-alpha.16",
+  "version": "1.0.0-alpha.1",
   "displayName": "Administrative divisions of China",
   "displayName.zh-CN": "中国行政区划",
   "description": "Provides data and field type for administrative divisions of China.",
@@ -17,10 +17,10 @@
     "cross-spawn": "^7.0.3"
   },
   "peerDependencies": {
-    "@nocobase/client": "0.x",
-    "@nocobase/database": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
