@@ -16,7 +16,7 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
   getCDN() {
     if (process.env.NODE_ENV !== 'production') {
       // 开发模式下使用远程 cdn
-      return 'https://cdn.jsdelivr.net/npm/vditor@3.10.4';
+      return 'https://unpkg.com/vditor@3.10.4';
     }
     // 生产环境，使用本地链接，支持内网
     // 需要支持子目录，比如应用部署在 /xxx/ 目录下

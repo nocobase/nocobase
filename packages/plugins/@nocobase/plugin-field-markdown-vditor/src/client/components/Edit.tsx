@@ -18,7 +18,7 @@ export const Edit = withDynamicSchemaProps((props) => {
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
 
   useEffect(() => {
-    const uploadFileCollection = fileCollection ?? 'attachments';
+    const uploadFileCollection = fileCollection || 'attachments';
     const toolbarConfig = toolbar ?? defaultToolbar;
     const vditor = new Vditor(containerRef.current, {
       value: value ?? '',
@@ -51,7 +51,7 @@ export const Edit = withDynamicSchemaProps((props) => {
         onChange(value);
       },
       upload: {
-        url: app.getApiUrl(`${uploadFileCollection ?? 'attachments'}:create`),
+        url: app.getApiUrl(`${uploadFileCollection}:create`),
         headers: apiClient.getHeaders(),
         multiple: false,
         fieldName: 'file',
