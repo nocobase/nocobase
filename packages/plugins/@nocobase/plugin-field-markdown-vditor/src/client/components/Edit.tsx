@@ -1,8 +1,9 @@
-import React, { useRef, useEffect, useLayoutEffect } from 'react';
+import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import Vditor from 'vditor';
-import { useAPIClient, withDynamicSchemaProps, useApp } from '@nocobase/client';
-import useStyle from './style';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
+import { useCDN } from './const';
+import useStyle from './style';
 
 export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange, value, fileCollection, toolbar } = props;
@@ -13,13 +14,14 @@ export const Edit = withDynamicSchemaProps((props) => {
   const containerParentRef = useRef<HTMLDivElement>();
   const app = useApp();
   const apiClient = useAPIClient();
+  const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
 
   useEffect(() => {
     const uploadFileCollection = fileCollection ?? 'attachments';
     const toolbarConfig = toolbar ?? defaultToolbar;
     const vditor = new Vditor(containerRef.current, {
-      value,
+      value: value ?? '',
       lang: apiClient.auth.locale.replaceAll('-', '_') as any,
       cache: {
         enable: false,
@@ -34,9 +36,11 @@ export const Edit = withDynamicSchemaProps((props) => {
       fullscreen: {
         index: 1200,
       },
+      cdn,
       minHeight: 200,
       after: () => {
         vdRef.current = vditor;
+        vditor.setValue(value ?? '');
         if (disabled) {
           vditor.disabled();
         } else {
@@ -71,7 +75,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [fileCollection, toolbar]);
+  }, [fileCollection, toolbar?.join(',')]);
 
   useEffect(() => {
     if (value === vdRef?.current?.getValue()) {

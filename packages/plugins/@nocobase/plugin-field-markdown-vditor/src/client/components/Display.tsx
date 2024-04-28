@@ -1,8 +1,10 @@
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
+import { withDynamicSchemaProps } from '@nocobase/client';
 import { Popover } from 'antd';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
+import { useCDN } from './const';
 import useStyle from './style';
 
 function convertToText(markdownText: string) {
@@ -26,10 +28,14 @@ const getContentWidth = (element) => {
 function DisplayInner(props: { value: string; style?: CSSProperties }) {
   const containerRef = useRef<HTMLDivElement>();
   const { wrapSSR, componentCls, hashId } = useStyle();
+  const cdn = useCDN();
 
   useEffect(() => {
     if (!props.value) return;
-    Vditor.preview(containerRef.current, props.value, { mode: 'light' });
+    Vditor.preview(containerRef.current, props.value, {
+      mode: 'light',
+      cdn,
+    });
   }, [props.value]);
 
   return wrapSSR(
@@ -39,9 +45,10 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
   );
 }
 
-export const Display = (props) => {
+export const Display = withDynamicSchemaProps((props) => {
   const field = useField<Field>();
   const value = props.value ?? field.value;
+  const cdn = useCDN();
 
   const containerRef = useRef<HTMLDivElement>();
 
@@ -55,7 +62,10 @@ export const Display = (props) => {
   useEffect(() => {
     if (!props.value || !field.value) return;
     if (props.ellipsis) {
-      Vditor.md2html(props.value, { mode: 'light' })
+      Vditor.md2html(props.value, {
+        mode: 'light',
+        cdn,
+      })
         .then((html) => {
           setText(convertToText(html));
         })
@@ -63,6 +73,7 @@ export const Display = (props) => {
     } else {
       Vditor.preview(containerRef.current, props.value ?? field.value, {
         mode: 'light',
+        cdn,
       });
     }
   }, [props.value, props.ellipsis, field.value]);
@@ -107,4 +118,4 @@ export const Display = (props) => {
   }
 
   return <DisplayInner value={value} />;
-};
+});
