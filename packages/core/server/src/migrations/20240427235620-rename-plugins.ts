@@ -5,7 +5,7 @@ export default class extends Migration {
   appVersion = '<1.0.0-alpha.1';
 
   async up() {
-    const items = await await this.pm.repository.find();
+    const items = await this.pm.repository.find();
     for (const item of items) {
       if (item.name.startsWith('@nocobase/plugin-')) {
         item.set('name', item.name.substring('@nocobase/plugin-'.length));
