@@ -6,7 +6,7 @@ const App = getAppComponent({
     name: 'root',
     'x-decorator': 'FormV2',
     'x-component': 'ShowFormData',
-    'x-read-pretty': true,
+    'x-pattern': 'readPretty',
     properties: {
       test1: {
         type: 'string',
@@ -18,7 +18,7 @@ const App = getAppComponent({
       test2: {
         type: 'string',
         default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
-        title: 'Test2',
+        title: 'Test(format)',
         'x-decorator': 'FormItem',
         'x-component': 'DatePicker.RangePicker',
         'x-component-props': {
@@ -28,11 +28,43 @@ const App = getAppComponent({
       test3: {
         type: 'string',
         default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
-        title: 'Test3',
+        title: 'Test(dateFormat)',
+        'x-decorator': 'FormItem',
+        'x-component': 'DatePicker.RangePicker',
+        'x-component-props': {
+          dateFormat: 'YYYY/MM/DD',
+        },
+      },
+      test4: {
+        type: 'string',
+        default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
+        title: 'Test(showTime)',
         'x-decorator': 'FormItem',
         'x-component': 'DatePicker.RangePicker',
         'x-component-props': {
           showTime: true,
+        },
+      },
+      test5: {
+        type: 'string',
+        default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
+        title: 'Test(GMT)',
+        'x-decorator': 'FormItem',
+        'x-component': 'DatePicker.RangePicker',
+        'x-component-props': {
+          showTime: true,
+          gmt: true,
+        },
+      },
+      test6: {
+        type: 'string',
+        default: ['2024-01-01 10:10:10', '2024-01-04 10:10:10'],
+        title: 'Test(UTC)',
+        'x-decorator': 'FormItem',
+        'x-component': 'DatePicker.RangePicker',
+        'x-component-props': {
+          showTime: true,
+          utc: true,
         },
       },
     },

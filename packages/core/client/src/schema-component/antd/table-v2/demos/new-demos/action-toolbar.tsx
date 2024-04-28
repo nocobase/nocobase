@@ -111,7 +111,7 @@ const App = getAppComponent({
                   name: {
                     type: 'string',
                     'x-component': 'CollectionField',
-                    'x-read-pretty': true,
+                    'x-pattern': 'readPretty',
                   },
                 },
               },
@@ -123,7 +123,7 @@ const App = getAppComponent({
                   title: {
                     type: 'string',
                     'x-component': 'CollectionField',
-                    'x-read-pretty': true,
+                    'x-pattern': 'readPretty',
                   },
                 },
               },

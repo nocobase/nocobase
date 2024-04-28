@@ -20,7 +20,7 @@ const App = getAppComponent({
             type: 'void',
             'x-component': 'FormV2',
             'x-use-component-props': 'useFormBlockProps',
-            'x-read-pretty': true, // 增加 x-read-pretty 属性
+            'x-pattern': 'readPretty', // 增加 x-read-pretty 属性
             properties: {
               username: {
                 type: 'string',

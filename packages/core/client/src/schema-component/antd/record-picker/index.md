@@ -31,7 +31,7 @@
 ```ts
 {
   type: 'array',
-  'x-read-pretty': true,
+  'x-pattern': 'readPretty',
   'x-component': 'RecordPicker',
   properties: {
     item: {

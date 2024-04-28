@@ -47,17 +47,17 @@ interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefaultFormatP
 
 <code src="./demos/new-demos/date-read-pretty.tsx"></code>
 
-### GMT
+<!-- ### GMT
 
-<code src="./demos/new-demos/date-gmt.tsx"></code>
+<code src="./demos/new-demos/date-gmt.tsx"></code> -->
 
-### UTC
+<!-- ### UTC
 
-<code src="./demos/new-demos/date-utc.tsx"></code>
+<code src="./demos/new-demos/date-utc.tsx"></code> -->
 
-### GMT and UTC
+<!-- ### GMT and UTC
 
-<code src="./demos/new-demos/date-gmt-utc.tsx"></code>
+<code src="./demos/new-demos/date-gmt-utc.tsx"></code> -->
 
 ## RangePicker
 
@@ -86,14 +86,14 @@ interface DateRangePickerReadPrettyProps extends Str2momentOptions, GetDefaultFo
 
 <code src="./demos/new-demos/range-read-pretty.tsx"></code>
 
-### GMT
+<!-- ### GMT
 
-<code src="./demos/new-demos/range-gmt.tsx"></code>
+<code src="./demos/new-demos/range-gmt.tsx"></code> -->
 
-### UTC
+<!-- ### UTC
 
-<code src="./demos/new-demos/range-utc.tsx"></code>
+<code src="./demos/new-demos/range-utc.tsx"></code> -->
 
-### GMT and UTC
+<!-- ### GMT and UTC
 
-<code src="./demos/new-demos/range-gmt-utc.tsx"></code>
+<code src="./demos/new-demos/range-gmt-utc.tsx"></code> -->

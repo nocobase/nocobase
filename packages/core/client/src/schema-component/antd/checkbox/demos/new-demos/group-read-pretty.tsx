@@ -24,7 +24,7 @@ const App = getAppComponent({
     name: 'root',
     'x-decorator': 'FormV2',
     'x-component': 'ShowFormData',
-    'x-read-pretty': true,
+    'x-pattern': 'readPretty',
     properties: {
       test1: {
         type: 'array',

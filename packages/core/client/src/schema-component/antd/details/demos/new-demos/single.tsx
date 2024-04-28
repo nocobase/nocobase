@@ -21,7 +21,7 @@ const App = getAppComponent({
     properties: {
       details: {
         type: 'void',
-        'x-read-pretty': true,
+        'x-pattern': 'readPretty',
         'x-component': 'Details',
         'x-use-component-props': 'useDetailsWithPaginationProps',
         properties: {
