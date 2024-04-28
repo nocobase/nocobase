@@ -1,6 +1,5 @@
 /* istanbul ignore file -- @preserve */
 
-import _ from 'lodash';
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
@@ -28,25 +27,23 @@ export default (app: Application) => {
         if (Array.isArray(packageNames) && packageNames.length === 1) {
           name = packageNames[0];
         }
-        await app.pm.addViaCLI(name, _.cloneDeep(options));
+        await app.pm.addViaCLI(name, { ...options });
       } catch (error) {
         throw new PluginCommandError(`Failed to add plugin`, { cause: error });
       }
     });
 
   pm.command('update')
-    .ipc()
-    .argument('<packageName>')
-    .option('--path [path]')
-    .option('--url [url]')
+    .argument('<packageNames...>')
+    // .option('--path [path]')
+    // .option('--url [url]')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
     .option('--version [version]')
-    .action(async (packageName, options) => {
+    .action(async (packageNames, options) => {
       try {
-        await app.pm.update({
+        await app.pm.update(packageNames, {
           ...options,
-          packageName,
         });
       } catch (error) {
         throw new PluginCommandError(`Failed to update plugin`, { cause: error });
