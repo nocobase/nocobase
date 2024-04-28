@@ -1,6 +1,6 @@
 import { Repository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import Migration from '../../migrations/20240426101556-rename';
+import Migration from '../../migrations/20240424131556-rename';
 
 describe('rename', () => {
   let app: MockServer;
