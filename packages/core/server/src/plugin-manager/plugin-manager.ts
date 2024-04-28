@@ -518,9 +518,9 @@ export class PluginManager {
     });
   }
 
-  async enable(name: string | string[]) {
-    let pluginNames = name;
-    if (name === '*') {
+  async enable(nameOrPkg: string | string[]) {
+    let pluginNames = nameOrPkg;
+    if (nameOrPkg === '*') {
       const items = await this.repository.find();
       pluginNames = items.map((item: any) => item.name);
     }
@@ -543,7 +543,7 @@ export class PluginManager {
         plugin.enabled = true;
         toBeUpdated.push(pluginName);
       } catch (error) {
-        if (name === '*') {
+        if (nameOrPkg === '*') {
           this.app.log.error(error.message);
         } else {
           throw error;
