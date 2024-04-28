@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.21.0-alpha.16",
+  "version": "1.0.0-alpha.1",
   "displayName": "File manager",
   "displayName.zh-CN": "文件管理器",
   "description": "Provides files storage services with files collection template and attachment field.",
@@ -32,12 +32,12 @@
     "supertest": "^6.1.6"
   },
   "peerDependencies": {
-    "@nocobase/actions": "0.x",
-    "@nocobase/client": "0.x",
-    "@nocobase/database": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
-    "@nocobase/utils": "0.x"
+    "@nocobase/actions": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x"
   },
   "keywords": [
     "Collections",

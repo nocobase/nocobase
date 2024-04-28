@@ -22,6 +22,7 @@ import {
   requireRegex,
 } from './constants';
 import deps from './deps';
+import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
 
 /**
@@ -356,16 +357,22 @@ export async function getPackageJsonByLocalPath(localPath: string) {
 }
 
 export async function updatePluginByCompressedFileUrl(
-  options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName' | 'authToken'>>,
+  options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName' | 'authToken'>> & {
+    repository: PluginManagerRepository;
+  },
 ) {
   const { packageName, version, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(
     options.compressedFileUrl,
     options.authToken,
   );
 
-  if (options.packageName && options.packageName !== packageName) {
+  const instance = await options.repository.findOne({
+    filter: { packageName },
+  });
+
+  if (!instance) {
     await removeTmpDir(tempFile, tempPackageContentDir);
-    throw new Error(`Plugin name in package.json must be ${options.packageName}, but got ${packageName}`);
+    throw new Error(`plugin ${packageName} does not exist`);
   }
 
   const { packageDir } = await copyTempPackageToStorageAndLinkToNodeModules(

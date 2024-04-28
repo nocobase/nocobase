@@ -3,7 +3,7 @@ import { join } from 'path';
 import { tmpdir } from 'node:os';
 import { IPCSocketServer } from '../../gateway/ipc-socket-server';
 import { IPCSocketClient } from '../../gateway/ipc-socket-client';
-import { AppSupervisor } from '@nocobase/server';
+import { AppSupervisor } from '../../app-supervisor';
 
 describe('ipc test', () => {
   it('should create ipc socket server', async () => {
