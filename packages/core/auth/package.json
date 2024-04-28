@@ -2,7 +2,7 @@
   "name": "@nocobase/auth",
   "version": "0.21.0-alpha.15",
   "description": "",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
