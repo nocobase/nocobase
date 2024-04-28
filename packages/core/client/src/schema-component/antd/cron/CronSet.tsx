@@ -83,7 +83,12 @@ const CronSetInternal = (props: CronSetProps) => {
   );
 };
 
-const ReadPretty = (props: CronSetProps) => {
+export interface CronReadPrettyProps {
+  value?: string;
+  options?: SelectProps['options'];
+}
+
+const ReadPretty = (props: CronReadPrettyProps) => {
   const { value } = props;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();

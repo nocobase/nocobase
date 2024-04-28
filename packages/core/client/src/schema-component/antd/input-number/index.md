@@ -2,9 +2,24 @@
 
 数字输入框。其基于 ant-design [InputNumber](https://ant.design/components/input-number/) 组件进行封装。
 
+
+## Basic Usage
+
 ```ts
-interface InputNumberProps extends AntdInputNumberProps {
-  formatStyle?: false | 'scientifix';
+type InputNumberProps = AntdInputNumberProps;
+```
+
+<code src="./demos/new-demos/basic.tsx"></code>
+
+## addonBefore and addonAfter
+
+<code src="./demos/new-demos/addonBefore-addonAfter.tsx"></code>
+
+## Read Pretty
+
+```ts
+interface InputNumberReadPrettyProps {
+  formatStyle?: 'normal' | 'scientifix';
   unitConversion?: number;
   /**
    * @default '*'
@@ -14,18 +29,12 @@ interface InputNumberProps extends AntdInputNumberProps {
    * @default '0.00'
    */
   separator?: '0,0.00' | '0.0,00' | '0 0,00' | '0.00';
+  step?: number;
+  value?: any;
+  addonBefore?: React.ReactNode;
+  addonAfter?: React.ReactNode;
 }
 ```
-
-## Basic Usage
-
-<code src="./demos/new-demos/basic.tsx"></code>
-
-## addonBefore and addonAfter
-
-<code src="./demos/new-demos/addonBefore-addonAfter.tsx"></code>
-
-## Read Pretty
 
 <code src="./demos/new-demos/read-pretty.tsx"></code>
 

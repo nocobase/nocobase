@@ -10,7 +10,7 @@ const App = getAppComponent({
     properties: {
       test: {
         type: 'string',
-        default: 'every_week',
+        default: '0 0 0 * * ?',
         title: 'Test',
         'x-decorator': 'FormItem',
         'x-component': 'CronSet',
@@ -22,15 +22,7 @@ const App = getAppComponent({
             },
             {
               label: '{{t("Weekly")}}',
-              value: 'every_week',
-            },
-            {
-              label: '{{t("Monthly")}}',
-              value: 'every_month',
-            },
-            {
-              label: '{{t("Yearly")}}',
-              value: 'every_year',
+              value: '* * * * * ?',
             },
           ],
         },

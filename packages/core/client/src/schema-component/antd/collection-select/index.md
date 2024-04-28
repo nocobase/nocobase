@@ -1,11 +1,13 @@
----
-group:
-  title: Schema Components
----
-
 # CollectionSelect
 
 用于选择当前数据源的数据表。
+
+```ts
+type CollectionSelectProps = SelectProps<any, any> & {
+  filter?: (item: any, index: number, array: any[]) => boolean;
+  isTableOid?: boolean;
+};
+```
 
 ## Basic Usage
 

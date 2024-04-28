@@ -7,23 +7,24 @@ import type {
   CheckboxProps as AntdCheckboxProps,
 } from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
-import React, { useMemo } from 'react';
+import React, { FC, useMemo } from 'react';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
 type ComposedCheckbox = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
 > & {
-  Group?: React.FC<CheckboxGroupProps>;
+  Group?: React.FC<AntdCheckboxGroupProps>;
   __ANT_CHECKBOX?: boolean;
-  ReadPretty?: React.FC<CheckboxProps>;
+  ReadPretty?: React.FC<CheckboxReadPrettyProps>;
 };
 
-export interface CheckboxProps extends AntdCheckboxProps {
+export interface CheckboxReadPrettyProps {
   showUnchecked?: boolean;
+  value?: boolean;
 }
 
-const ReadPretty = (props: CheckboxProps) => {
+const ReadPretty: FC<CheckboxReadPrettyProps> = (props) => {
   if (props.value) {
     return <CheckOutlined style={{ color: '#52c41a' }} />;
   }
@@ -31,7 +32,7 @@ const ReadPretty = (props: CheckboxProps) => {
 };
 
 export const Checkbox: ComposedCheckbox = connect(
-  (props: CheckboxProps) => {
+  (props: AntdCheckboxProps) => {
     const changeHandler = (val) => {
       props?.onChange(val);
     };
@@ -50,7 +51,8 @@ Checkbox.ReadPretty.displayName = 'Checkbox.ReadPretty';
 
 Checkbox.__ANT_CHECKBOX = true;
 
-export interface CheckboxGroupProps extends AntdCheckboxGroupProps {
+export interface CheckboxGroupReadPrettyProps {
+  value?: any[];
   ellipsis?: boolean;
 }
 
@@ -59,7 +61,7 @@ Checkbox.Group = connect(
   mapProps({
     dataSource: 'options',
   }),
-  mapReadPretty((props: CheckboxGroupProps) => {
+  mapReadPretty((props: CheckboxGroupReadPrettyProps) => {
     if (!isValid(props.value)) {
       return null;
     }

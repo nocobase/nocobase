@@ -11,6 +11,11 @@ const options = [
     value: 2,
     color: 'blue',
   },
+  {
+    label: '选项3',
+    value: 3,
+    color: 'yellow',
+  },
 ];
 
 const App = getAppComponent({
@@ -21,13 +26,29 @@ const App = getAppComponent({
     'x-component': 'ShowFormData',
     'x-read-pretty': true,
     properties: {
-      test: {
+      test1: {
         type: 'array',
         default: [1, 2],
-        title: 'Test',
+        title: 'Test1',
         enum: options,
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox.Group',
+      },
+      test2: {
+        type: 'array',
+        default: [1, 2, 3],
+        title: 'Test2',
+        enum: options,
+        'x-decorator': 'FormItem',
+        'x-component': 'Checkbox.Group',
+        'x-decorator-props': {
+          style: {
+            width: 100,
+          },
+        },
+        'x-component-props': {
+          ellipsis: true,
+        },
       },
     },
   },

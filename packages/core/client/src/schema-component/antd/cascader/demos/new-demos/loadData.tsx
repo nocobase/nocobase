@@ -1,7 +1,6 @@
-import { getAppComponent } from '@nocobase/test/web';
-import React, { useEffect, useState } from 'react';
 import { useField } from '@formily/react';
-import { Cascader, withDynamicSchemaProps } from '@nocobase/client';
+import { getAppComponent } from '@nocobase/test/web';
+import React, { useState } from 'react';
 
 interface Option {
   value?: string | number | null;
@@ -24,15 +23,8 @@ const optionLists: Option[] = [
 ];
 
 const useCustomCascaderProps = () => {
-  const [options, setOptions] = useState<Option[]>(optionLists);
   const field = useField<any>();
-
-  field.dataSource = options;
-
-  const onChange = (value: (string | number)[], selectedOptions: Option[]) => {
-    console.log(value, selectedOptions);
-  };
-
+  field.dataSource = optionLists;
   const loadData = (selectedOptions: Option[]) => {
     const targetOption = selectedOptions[selectedOptions.length - 1];
 
@@ -48,13 +40,12 @@ const useCustomCascaderProps = () => {
           value: 'dynamic2',
         },
       ];
-      setOptions([...options]);
+      field.dataSource = [...field.dataSource];
     }, 1000);
   };
 
   return {
     changeOnSelect: true,
-    onChange,
     loadData,
   };
 };
@@ -70,15 +61,12 @@ const App = getAppComponent({
         type: 'string',
         title: 'Test',
         'x-decorator': 'FormItem',
-        'x-component': 'Cascader11',
+        'x-component': 'Cascader',
         'x-use-component-props': 'useCustomCascaderProps',
       },
     },
   },
   appOptions: {
-    components: {
-      Cascader11: withDynamicSchemaProps(Cascader, { displayName: 'Cascader' }),
-    },
     scopes: {
       useCustomCascaderProps,
     },

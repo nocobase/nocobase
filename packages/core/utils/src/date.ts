@@ -8,7 +8,17 @@ export interface Str2momentOptions {
   utc?: boolean;
 }
 
-export const getDefaultFormat = (props: any) => {
+export type Str2momentValue = string | string[] | dayjs.Dayjs | dayjs.Dayjs[];
+
+export interface GetDefaultFormatProps {
+  format?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  picker?: 'year' | 'month' | 'week' | 'quarter';
+  showTime?: boolean;
+}
+
+export const getDefaultFormat = (props: GetDefaultFormatProps) => {
   if (props.format) {
     return props.format;
   }

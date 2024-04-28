@@ -1,7 +1,4 @@
----
-group:
-  title: Schema Components
----
+
 
 # Details
 
@@ -12,7 +9,7 @@ group:
 ```ts
 import { FormProps } from '@nocobase/client';
 
-interface DetailsProps extends FormProps { }
+type DetailsProps = FormProps;
 ```
 
 其要和 `DetailsBlockProvider` 配合使用， `DetailsBlockProvider` 是对 `DataBlockProvider` 的二次封装，其属性可以参考 [DataBlockProvider](/core/data-block/data-block-provider#属性详解)。

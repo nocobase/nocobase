@@ -1,11 +1,18 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { toArr } from '@formily/shared';
 import dayjs from 'dayjs';
-import { TimeRangePickerProps } from 'antd/es/time-picker';
 import cls from 'classnames';
 import React from 'react';
 
-export const ReadPretty: React.FC<TimeRangePickerProps> = (props: any) => {
+export interface TimePickerReadPrettyProps {
+  format?: string;
+  style?: React.CSSProperties;
+  value: string | string[];
+  className?: string;
+  prefixCls?: string;
+}
+
+export const ReadPretty: React.FC<TimePickerReadPrettyProps> = (props) => {
   const { value, format = 'HH:mm:ss' } = props;
   const prefixCls = usePrefixCls('description-text', props);
   const values = toArr(value);

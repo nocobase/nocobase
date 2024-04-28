@@ -1,5 +1,3 @@
-import path from 'path';
-import glob from 'glob';
 import _ from 'lodash'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
@@ -353,10 +351,10 @@ export default defineConfig({
               "title": "Grid",
               "link": "/components/grid"
             },
-            {
-              "title": "List",
-              "link": "/components/list"
-            },
+            // {
+            //   "title": "List",
+            //   "link": "/components/list"
+            // },
           ]
         },
         {

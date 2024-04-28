@@ -6,9 +6,23 @@
 
 ### Basic Usage
 
+```ts
+type TimePickerProps = AntdTimePickerProps
+```
+
 <code src="./demos/new-demos/time.tsx"></code>
 
 ### Read Pretty
+
+```ts
+interface TimePickerReadPrettyProps {
+  format?: string;
+  style?: React.CSSProperties;
+  value: string | string[];
+  className?: string;
+  prefixCls?: string;
+}
+```
 
 <code src="./demos/new-demos/time-read-pretty.tsx"></code>
 
@@ -16,8 +30,16 @@
 
 ### Basic Usage
 
+```ts
+type TimeRangePickerProps = AntdTimePickerProps
+```
+
 <code src="./demos/new-demos/time-range.tsx"></code>
 
 ### Read Pretty
+
+```ts
+type TimeRangePickerReadPrettyProps = TimePickerReadPrettyProps;
+```
 
 <code src="./demos/new-demos/time-range-read-pretty.tsx"></code>
