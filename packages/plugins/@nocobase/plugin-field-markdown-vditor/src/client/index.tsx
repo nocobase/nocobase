@@ -37,6 +37,7 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
         [`${vditorDepdencePrefix}.mermaid`]: `${cdn}/dist/js/mermaid/mermaid.min`,
       };
       this.app.requirejs.require.config({
+        waitSeconds: 120,
         paths: vditorDepdence,
       });
       Object.keys(vditorDepdence).forEach((key) => {
