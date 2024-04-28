@@ -1,11 +1,11 @@
-import { Migration, PluginManager } from '@nocobase/server';
+import { Migration, OFFICIAL_PLUGIN_PREFIX, PluginManager } from '@nocobase/server';
 import { getAutoDeletePluginsWarning, getNotExistsEnabledPluginsError } from '../wording';
 
 export default class extends Migration {
   on = 'beforeLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<1.0.0-alpha.1';
 
-  oldNames = ['oidc', 'cas', 'saml'];
+  names = ['oidc', 'auth-oidc', 'cas', 'auth-cas', 'saml', 'auth-saml'];
 
   async getSystemLang() {
     const repo = this.db.getRepository('systemSettings');
@@ -24,7 +24,7 @@ export default class extends Migration {
     const plugins = await repository.find({
       filter: {
         name: {
-          $in: this.oldNames,
+          $in: this.names,
         },
       },
     });
@@ -51,39 +51,43 @@ export default class extends Migration {
     if (!enabledPlugins.length) {
       return;
     }
-    await this.sequelize.transaction(async (t) => {
-      for (const plugin of enabledPlugins) {
-        await repository.update({
-          filter: {
-            name: plugin.name,
-          },
-          values: {
-            name: `auth-${plugin.name}`,
-            packageName: `@nocobase/plugin-auth-${plugin.name}`,
-          },
-          transaction: t,
-        });
+    for (const plugin of enabledPlugins) {
+      if (plugin.name.startsWith('auth-')) {
+        continue;
       }
+      await repository.update({
+        filter: {
+          name: plugin.name,
+        },
+        values: {
+          name: `auth-${plugin.name}`,
+          packageName: `@nocobase/plugin-auth-${plugin.name}`,
+        },
+      });
+    }
 
-      const notExistsEnabledPlugins = new Map();
-      for (const plugin of enabledPlugins) {
-        try {
-          await PluginManager.getPackageName(`auth-${plugin.name}`);
-        } catch (error) {
-          notExistsEnabledPlugins.set(plugin.name, plugin.packageName || plugin.name);
-        }
+    const notExistsEnabledPlugins = new Map();
+    for (const plugin of enabledPlugins) {
+      const pluginName = plugin.name.startsWith('auth-') ? plugin.name : `auth-${plugin.name}`;
+      const packageName = plugin.name.startsWith('auth-')
+        ? `${OFFICIAL_PLUGIN_PREFIX}${plugin.name}`
+        : `${OFFICIAL_PLUGIN_PREFIX}auth-${plugin.name}`;
+      try {
+        await PluginManager.getPackageName(pluginName);
+      } catch (error) {
+        notExistsEnabledPlugins.set(pluginName, packageName);
       }
-      if (!notExistsEnabledPlugins.size) {
-        return;
-      }
-      const lang = await this.getSystemLang();
-      const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, this.app.name);
-      const error = new Error(errMsg[lang]) as any;
-      error.stack = undefined;
-      error.cause = undefined;
-      error.onlyLogCause = true;
-      throw error;
-    });
+    }
+    if (!notExistsEnabledPlugins.size) {
+      return;
+    }
+    const lang = await this.getSystemLang();
+    const errMsg = getNotExistsEnabledPluginsError(notExistsEnabledPlugins, this.app.name);
+    const error = new Error(errMsg[lang]) as any;
+    error.stack = undefined;
+    error.cause = undefined;
+    error.onlyLogCause = true;
+    throw error;
   }
 
   async up() {

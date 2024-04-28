@@ -44,6 +44,30 @@ describe('pro plugins detect', () => {
     expect(exists).toBe(0);
   });
 
+  it('migration again, should delete removed but not enabled plugins', async () => {
+    vi.spyOn(PluginManager, 'getPackageName').mockRejectedValue(new Error('not found'));
+    await repo.create({
+      values: {
+        name: 'auth-saml',
+        packageName: '@nocobase/plugin-auth-saml',
+        version: '0.21.0-alpha.15',
+        enabled: false,
+      },
+    });
+    const migration = new Migration({
+      db: app.db,
+      // @ts-ignore
+      app: app,
+    });
+    await migration.up();
+    const exists = await repo.count({
+      filter: {
+        name: 'auth-saml',
+      },
+    });
+    expect(exists).toBe(0);
+  });
+
   it('should throw error when enabled plugin not found', async () => {
     vi.spyOn(PluginManager, 'getPackageName').mockRejectedValue(new Error('not found'));
     const plugin = await repo.create({
@@ -65,8 +89,33 @@ describe('pro plugins detect', () => {
         id: plugin.id,
       },
     });
-    expect(p.name).toBe('saml');
-    expect(p.packageName).toBe('@nocobase/plugin-saml');
+    expect(p.name).toBe('auth-saml');
+    expect(p.packageName).toBe('@nocobase/plugin-auth-saml');
+  });
+
+  it('migration again, should throw error when enabled plugin not found', async () => {
+    vi.spyOn(PluginManager, 'getPackageName').mockRejectedValue(new Error('not found'));
+    const plugin = await repo.create({
+      values: {
+        name: 'auth-saml',
+        packageName: '@nocobase/plugin-auth-saml',
+        version: '0.21.0-alpha.15',
+        enabled: true,
+      },
+    });
+    const migration = new Migration({
+      db: app.db,
+      // @ts-ignore
+      app: app,
+    });
+    await expect(migration.up()).rejects.toThrowError();
+    const p = await repo.findOne({
+      filter: {
+        id: plugin.id,
+      },
+    });
+    expect(p.name).toBe('auth-saml');
+    expect(p.packageName).toBe('@nocobase/plugin-auth-saml');
   });
 
   it('should rename enabled plugins', async () => {

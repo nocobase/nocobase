@@ -5,12 +5,12 @@ export const getAutoDeletePluginsWarning = (plugins: string[]) => {
 };
 
 export const getNotExistsEnabledPluginsError = (plugins: Map<string, string>, app: string) => {
-  const pluginNames = Array.from(plugins.keys()).map((name) => plugins.get(name) || name);
+  const packageNames = Array.from(plugins.keys()).map((name) => plugins.get(name));
   const appOption = app === 'main' ? '' : ` --app ${app}`;
   const removeCmds = `yarn pm remove ${Array.from(plugins.keys()).join(' ')} --force${appOption}`;
   const enErrMsg = `
 The following plugins you are currently using will become commercial plugins after the upgrade:
-${pluginNames.join(', ')}
+${packageNames.join(', ')}
 
 💎 If you are interested in purchasing, please visit: https://www.nocobase.com/commercial.html for more detail.
 
@@ -18,7 +18,7 @@ If you decide not to use them anymore, please delete them from the "applicationP
 ${removeCmds}`;
   const cnErrMsg = `
 以下您正在使用的插件在升级后将变为商业插件:
-${pluginNames.join(', ')}
+${packageNames.join(', ')}
 
 💎 如果您有购买意向，请访问: https://www.nocobase.com/commercial.html 了解详情。
 
