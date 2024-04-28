@@ -67,9 +67,6 @@ test.describe('grid card block schema settings', () => {
     await page.getByLabel('block-item-Slider-general-grid-card-Desktop device').getByText('2', { exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
-    // 需要刷新页面才会生效
-    await page.reload();
-
     boxSize = await page.getByLabel('grid-card-item').first().boundingBox();
     expect(boxSize.width).toBeGreaterThan(600);
     expect(boxSize.width).toBeLessThan(620);
