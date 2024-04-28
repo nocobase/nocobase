@@ -4,16 +4,18 @@ https://github.com/nocobase/nocobase/assets/1267426/75f9fd9e-27fb-47fb-9879-fdca
 
 ## Recent major updates
 
+- [v1.0：Significant Milestone - 2024/04/08](https://docs.nocobase.com/welcome/release/v1001-changelog)
+- [v0.21：Block performance optimization - 2024/03/29](https://docs.nocobase.com/welcome/release/v0210-changelog)
 - [v0.20：Support for multiple data sources - 2024/03/03](https://docs.nocobase.com/welcome/release/v0200-changelog)
-- [v0.19: Application process optimization - 2024/01/08](https://blog.nocobase.com/posts/release-v019/)
-- [v0.18: Establish a sound testing system - 2023/12/21](https://blog.nocobase.com/posts/release-v018/)
-- [v0.17: New SchemaInitializer and SchemaSettings - 2023/12/11](https://blog.nocobase.com/posts/release-v017/)
-- [v0.16: New cache manager - 2023/11/20](https://blog.nocobase.com/posts/release-v016/)
-- [v0.15: New plugin settings manager - 2023/11/13](https://blog.nocobase.com/posts/release-v015/)
-- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://blog.nocobase.com/posts/release-v014/)
-- [v0.13: New application status flow - 2023/08/24](https://blog.nocobase.com/posts/release-v013/)
-- [v0.12: New plugin build tool - 2023/08/01](https://blog.nocobase.com/posts/release-v012/)
-- [v0.11: New client application, plugin and router - 2023/07/08](https://blog.nocobase.com/posts/release-v011/)
+- [v0.19: Application process optimization - 2024/01/08](https://docs.nocobase.com/welcome/release/v0190-changelog)
+- [v0.18: Establish a sound testing system - 2023/12/21](https://docs.nocobase.com/welcome/release/v0180-changelog)
+- [v0.17: New SchemaInitializer and SchemaSettings - 2023/12/11](https://docs.nocobase.com/welcome/release/v0170-changelog)
+- [v0.16: New cache manager - 2023/11/20](https://docs.nocobase.com/welcome/release/v0160-changelog)
+- [v0.15: New plugin settings manager - 2023/11/13](https://docs.nocobase.com/welcome/release/v0150-changelog)
+- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://docs.nocobase.com/welcome/release/v0140-changelog)
+- [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v0130-changelog)
+- [v0.12: New plugin build tool - 2023/08/01](https://docs.nocobase.com/welcome/release/v0120-changelog)
+- [v0.11: New client application, plugin and router - 2023/07/08](https://docs.nocobase.com/welcome/release/v0110-changelog)
 
 ## What is NocoBase
 
