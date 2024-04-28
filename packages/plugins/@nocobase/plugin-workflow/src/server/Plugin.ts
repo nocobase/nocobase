@@ -1,8 +1,9 @@
 import path from 'path';
+import { randomUUID } from 'crypto';
 
 import LRUCache from 'lru-cache';
 
-import { Op, Transaction, Transactionable } from '@nocobase/database';
+import { Op, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -403,7 +404,7 @@ export default class PluginWorkflowServer extends Plugin {
         {
           context,
           key: workflow.key,
-          eventKey: options.eventKey,
+          eventKey: options.eventKey ?? randomUUID(),
           status: EXECUTION_STATUS.QUEUEING,
         },
         { transaction },

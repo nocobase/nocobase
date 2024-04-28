@@ -125,6 +125,67 @@ describe('workflow > triggers > collection', () => {
     });
   });
 
+  describe('config.mode', () => {
+    it('mode in "update or create" could trigger on each', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 3,
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(1);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      await PostRepo.update({ filterByTk: p1.id, values: { title: 't2' } });
+
+      await sleep(500);
+
+      const e2s = await workflow.getExecutions({ order: [['createdAt', 'ASC']] });
+      expect(e2s.length).toBe(2);
+      expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('destroy', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 4,
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(1);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      await PostRepo.destroy({ filterByTk: p1.id });
+
+      await sleep(500);
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
   describe('config.changed', () => {
     it('no changed config', async () => {
       const workflow = await WorkflowModel.create({
