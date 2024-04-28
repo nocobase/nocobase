@@ -380,7 +380,11 @@ describe('workflow > triggers > schedule > static mode', () => {
         },
       });
 
-      (app.pm.get('workflow') as Plugin).trigger(workflow, { date: start });
+      (app.pm.get('workflow') as Plugin).trigger(
+        workflow,
+        { date: start },
+        { eventKey: `${workflow.id}@${start.getTime()}` },
+      );
 
       await sleep(3000);
 
