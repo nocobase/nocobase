@@ -22,6 +22,7 @@ export interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefault
   value?: Str2momentValue;
   className?: string;
   prefixCls?: string;
+  showTime?: boolean;
 }
 
 ReadPretty.DatePicker = function DatePicker(props) {
