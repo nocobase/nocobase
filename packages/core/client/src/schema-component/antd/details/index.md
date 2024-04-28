@@ -19,7 +19,7 @@ interface DetailsProps extends FormProps { }
 
 关于 Form 更多的配置请参考 [Form](/components/form)。
 
-需要注意 `Details` 组件所在的 Schema 中需要设置 `"x-read-pretty": true`。
+需要注意 `Details` 组件所在的 Schema 中需要设置 `'x-pattern': 'readPretty'`。
 
 ## Single Form Data
 

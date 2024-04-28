@@ -25,7 +25,7 @@ const App = getAppComponent({
                 type: 'string',
                 'x-component': 'Input',
                 title: 'Username',
-                'x-read-pretty': true, // 这里需要设置为 true
+                'x-pattern': 'readPretty', // 这里需要设置为 true
               },
             },
           },
@@ -36,7 +36,7 @@ const App = getAppComponent({
               type: 'string',
               'x-component': 'Input',
               title: 'Nickname',
-              'x-read-pretty': true, // 这里需要设置为 true
+              'x-pattern': 'readPretty', // 这里需要设置为 true
             },
           },
         },

@@ -17,7 +17,7 @@ const bookCollection = {
         type: 'number',
         title: '{{t("ID")}}',
         'x-component': 'InputNumber',
-        'x-read-pretty': true,
+        'x-pattern': 'readPretty',
       },
     },
     {

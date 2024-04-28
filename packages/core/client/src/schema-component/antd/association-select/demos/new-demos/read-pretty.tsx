@@ -13,7 +13,7 @@ const App = getAppComponent({
         default: 'admin',
         'x-decorator': 'FormItem',
         'x-component': 'AssociationSelect',
-        'x-read-pretty': true,
+        'x-pattern': 'readPretty',
         'x-component-props': {
           service: {
             resource: 'roles',

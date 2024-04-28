@@ -95,7 +95,7 @@ const App = getAppComponent({
                   username: {
                     type: 'string',
                     'x-component': 'CollectionField',
-                    'x-read-pretty': true,
+                    'x-pattern': 'readPretty',
                   },
                 },
               },
@@ -107,7 +107,7 @@ const App = getAppComponent({
                   nickname: {
                     type: 'string',
                     'x-component': 'CollectionField',
-                    'x-read-pretty': true,
+                    'x-pattern': 'readPretty',
                   },
                 },
               },
@@ -150,7 +150,7 @@ const App = getAppComponent({
                                   form: {
                                     type: 'void',
                                     'x-component': 'FormV2',
-                                    'x-read-pretty': true,
+                                    'x-pattern': 'readPretty',
                                     'x-use-component-props': 'useFormBlockProps',
                                     properties: {
                                       username: {

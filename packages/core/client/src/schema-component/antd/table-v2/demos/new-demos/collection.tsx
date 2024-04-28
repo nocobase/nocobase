@@ -38,7 +38,7 @@ const App = getAppComponent({
                   name: {
                     type: 'string',
                     'x-component': 'CollectionField',
-                    'x-read-pretty': true, // 这里要设置为 true
+                    'x-pattern': 'readPretty', // 这里要设置为 true
                   },
                 },
               },
@@ -50,7 +50,7 @@ const App = getAppComponent({
                   title: {
                     type: 'string',
                     'x-component': 'CollectionField',
-                    'x-read-pretty': true,
+                    'x-pattern': 'readPretty',
                   },
                 },
               },
