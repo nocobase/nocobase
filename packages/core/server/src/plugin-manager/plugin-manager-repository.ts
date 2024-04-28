@@ -15,6 +15,16 @@ export class PluginManagerRepository extends Repository {
     this.pm = pm;
   }
 
+  async has(nameOrPkg: string) {
+    const { name } = await PluginManager.parseName(nameOrPkg);
+    const instance = await this.findOne({
+      filter: {
+        name,
+      },
+    });
+    return !!instance;
+  }
+
   /**
    * @deprecated
    */

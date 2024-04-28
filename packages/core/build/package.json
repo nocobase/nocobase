@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/build",
-  "version": "0.21.0-alpha.16",
+  "version": "1.0.0-alpha.1",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
@@ -32,7 +32,7 @@
     "vite-plugin-lib-inject-css": "1.2.0",
     "yargs-parser": "13.1.2"
   },
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "scripts": {
     "build": "tsup"
   },

@@ -53,9 +53,9 @@ export default {
       if (values.authToken) {
         args.push('--auth-token=' + values.authToken);
       }
-      if (values.compressedFileUrl) {
-        args.push('--url=' + values.compressedFileUrl);
-      }
+      // if (values.compressedFileUrl) {
+      //   args.push('--url=' + values.compressedFileUrl);
+      // }
       if (ctx.file) {
         values.packageName = ctx.request.body.packageName;
         const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
@@ -66,9 +66,10 @@ export default {
         }
         const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
-        args.push(`--url=${tempFile}`);
+        // args.push(`--url=${tempFile}`);
+        values.compressedFileUrl = tempFile;
       }
-      app.runAsCLI(['pm', 'update', values.packageName, ...args], { from: 'user' });
+      app.runAsCLI(['pm', 'update', values.compressedFileUrl || values.packageName, ...args], { from: 'user' });
       ctx.body = 'ok';
       await next();
     },
