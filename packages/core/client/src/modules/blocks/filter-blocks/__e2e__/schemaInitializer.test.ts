@@ -32,6 +32,7 @@ test.describe('where filter block can be added', () => {
       await page.getByRole('menuitem', { name }).click();
     };
     const connectByCollapse = async (name: string) => {
+      await page.mouse.move(-500, 0);
       await page.getByLabel('block-item-CardItem-users-filter-collapse').hover();
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:filterCollapse-users').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
@@ -96,16 +97,17 @@ test.describe('where filter block can be added', () => {
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 
-    const conenctToAssociationBlock = async (name: string) => {
+    const connectToAssociationBlock = async (name: string) => {
+      await page.mouse.move(-500, 0);
       await page.getByLabel('block-item-CardItem-roles-filter-form').hover();
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:filterForm-roles').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
       await page.getByRole('menuitem', { name }).click();
     };
-    await conenctToAssociationBlock('Roles #as4s');
-    await conenctToAssociationBlock('Roles #vp3q');
-    await conenctToAssociationBlock('Roles #ug18');
-    await conenctToAssociationBlock('Roles #q6hq');
+    await connectToAssociationBlock('Roles #as4s');
+    await connectToAssociationBlock('Roles #vp3q');
+    await connectToAssociationBlock('Roles #ug18');
+    await connectToAssociationBlock('Roles #q6hq');
 
     await page
       .getByLabel('block-item-CardItem-roles-filter-form')
@@ -147,16 +149,17 @@ test.describe('where filter block can be added', () => {
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 
-    const conenctToOtherBlock = async (name: string) => {
+    const connectToOtherBlock = async (name: string) => {
+      await page.mouse.move(-500, 0);
       await page.getByLabel('block-item-CardItem-users-filter-form').hover();
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:filterForm-users').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
       await page.getByRole('menuitem', { name }).click();
     };
-    await conenctToOtherBlock('Users #iwq7');
-    await conenctToOtherBlock('Users #1xi2');
-    await conenctToOtherBlock('Users #11h7');
-    await conenctToOtherBlock('Users #o1nq');
+    await connectToOtherBlock('Users #iwq7');
+    await connectToOtherBlock('Users #1xi2');
+    await connectToOtherBlock('Users #11h7');
+    await connectToOtherBlock('Users #o1nq');
 
     await page.getByLabel('block-item-CardItem-users-filter-form').getByRole('textbox').fill(usersRecords[0].nickname);
     await page.getByLabel('action-Action-Filter-submit-users-filter-form-').click({ position: { x: 10, y: 10 } });
