@@ -485,6 +485,18 @@ describe('workflow > action-trigger', () => {
       expect(e1s.length).toBe(1);
       expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e1s[0].context.data).toMatchObject({ title: 'p1', categoryId: c1.id });
+
+      const res2 = await userAgents[0]
+        .post(`/categories/${c1.id}/posts:create`)
+        .query({ triggerWorkflows: `${workflow.key}` })
+        .send({
+          data: { title: 'p2' },
+        });
+
+      await sleep(500);
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(2);
     });
   });
 
