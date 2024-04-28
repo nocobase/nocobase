@@ -15,7 +15,8 @@ ${pluginNames.join(', ')}
 💎 If you are interested in purchasing, please visit: https://www.nocobase.com/commercial.html for more detail.
 
 If you decide not to use them anymore, please delete them from the "applicationPlugins" table. You can use the command:
-${removeCmds}`;
+${removeCmds}
+`;
   const cnErrMsg = `
 以下您正在使用的插件在升级后将变为商业插件:
 ${pluginNames.join(', ')}
@@ -23,7 +24,8 @@ ${pluginNames.join(', ')}
 💎 如果您有购买意向，请访问: https://www.nocobase.com/commercial.html 了解详情。
 
 如果您决定不再使用它们，请将这些插件记录从 "applicationPlugins" 表中删除。你可以使用命令：
-${removeCmds}`;
+${removeCmds}
+`;
 
   return {
     'en-US': enErrMsg,
