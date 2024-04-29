@@ -1,4 +1,4 @@
-import { SystemLogger, createSystemLogger, getLoggerFilePath } from '@nocobase/logger';
+import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -55,12 +55,11 @@ export class Gateway extends EventEmitter {
 
   public server: http.Server | null = null;
   public ipcSocketServer: IPCSocketServer | null = null;
+  loggers = new Registry<SystemLogger>();
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
   private wsServer: WSServer;
   private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
-
-  loggers = new Registry<SystemLogger>();
 
   private constructor() {
     super();
@@ -76,6 +75,15 @@ export class Gateway extends EventEmitter {
     }
 
     return Gateway.instance;
+  }
+
+  static async getIPCSocketClient() {
+    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
+    try {
+      return await IPCSocketClient.getConnection(socketPath);
+    } catch (error) {
+      return false;
+    }
   }
 
   destroy() {
@@ -284,6 +292,7 @@ export class Gateway extends EventEmitter {
     return this.requestHandler.bind(this);
   }
 
+  /* istanbul ignore next -- @preserve */
   async watch() {
     if (!process.env.IS_DEV_CMD) {
       return;
@@ -295,6 +304,7 @@ export class Gateway extends EventEmitter {
     require(file);
   }
 
+  /* istanbul ignore next -- @preserve */
   async run(options: RunOptions) {
     const isStart = this.isStart();
     let ipcClient: IPCSocketClient | false;
@@ -359,7 +369,6 @@ export class Gateway extends EventEmitter {
   }
 
   getStartOptions() {
-    const argv = process.argv;
     const program = new Command();
 
     program
@@ -369,9 +378,7 @@ export class Gateway extends EventEmitter {
       .option('-h, --host [host]')
       .option('--db-sync')
       .parse(process.argv);
-    const options = program.opts();
-
-    return options;
+    return program.opts();
   }
 
   start(options: StartHttpServerOptions) {
@@ -438,14 +445,5 @@ export class Gateway extends EventEmitter {
   close() {
     this.server?.close();
     this.wsServer?.close();
-  }
-
-  static async getIPCSocketClient() {
-    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
-    try {
-      return await IPCSocketClient.getConnection(socketPath);
-    } catch (error) {
-      return false;
-    }
   }
 }

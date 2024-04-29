@@ -13,9 +13,7 @@ export class Collection implements ICollection {
   ) {
     this.setRepository(options.repository);
     if (options.fields) {
-      for (const field of options.fields) {
-        this.setField(field.name, field);
-      }
+      this.setFields(options.fields);
     }
   }
 
@@ -24,11 +22,18 @@ export class Collection implements ICollection {
     newOptions = merge(this.options, newOptions, mergeOptions);
     this.options = newOptions;
 
+    this.setFields(newOptions.fields || []);
     if (options.repository) {
       this.setRepository(options.repository);
     }
 
     return this;
+  }
+
+  setFields(fields: any[]) {
+    for (const field of fields) {
+      this.setField(field.name, field);
+    }
   }
 
   setField(name: string, options: any) {

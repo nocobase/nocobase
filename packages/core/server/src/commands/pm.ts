@@ -1,4 +1,6 @@
-import _ from 'lodash';
+/* istanbul ignore file -- @preserve */
+
+import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
 
@@ -6,7 +8,7 @@ export default (app: Application) => {
   const pm = app.command('pm');
 
   pm.command('create')
-    .arguments('plugin')
+    .argument('plugin')
     .option('--force-recreate')
     .action(async (plugin, options) => {
       await app.pm.create(plugin, options);
@@ -15,31 +17,33 @@ export default (app: Application) => {
   pm.command('add')
     .ipc()
     .preload()
-    .argument('<pkg>')
+    .arguments('<packageNames...>')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
     .option('--version [version]')
-    .action(async (name, options, cli) => {
+    .action(async (packageNames, options, cli) => {
       try {
-        await app.pm.addViaCLI(name, _.cloneDeep(options));
+        let name = packageNames;
+        if (Array.isArray(packageNames) && packageNames.length === 1) {
+          name = packageNames[0];
+        }
+        await app.pm.addViaCLI(name, { ...options });
       } catch (error) {
         throw new PluginCommandError(`Failed to add plugin`, { cause: error });
       }
     });
 
   pm.command('update')
-    .ipc()
-    .argument('<packageName>')
-    .option('--path [path]')
-    .option('--url [url]')
+    .argument('<packageNames...>')
+    // .option('--path [path]')
+    // .option('--url [url]')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
     .option('--version [version]')
-    .action(async (packageName, options) => {
+    .action(async (packageNames, options) => {
       try {
-        await app.pm.update({
+        await app.pm.update(packageNames, {
           ...options,
-          packageName,
         });
       } catch (error) {
         throw new PluginCommandError(`Failed to update plugin`, { cause: error });
@@ -88,7 +92,21 @@ export default (app: Application) => {
     .arguments('<plugins...>')
     .option('--force')
     .option('--remove-dir')
+    .option('--app [app]')
     .action(async (plugins, options) => {
-      await app.pm.remove(plugins, options);
+      if (options.app) {
+        await app.load();
+        const subApp = await AppSupervisor.getInstance().getApp(options.app, { upgrading: true });
+        const args = [];
+        if (options.force) {
+          args.push('--force');
+        }
+        if (options.removeDir) {
+          args.push('--remove-dir');
+        }
+        await subApp.runCommand('pm', 'remove', ...plugins, ...args);
+      } else {
+        await app.pm.remove(plugins, options);
+      }
     });
 };

@@ -1,5 +1,5 @@
 import { mockDatabase } from '../../mock-database';
-import { SqlCollection } from '../sql-collection';
+import { SqlCollection } from '../../sql-collection';
 
 test('sql-collection', async () => {
   const db = mockDatabase({ tablePrefix: '' });

@@ -1,5 +1,5 @@
 import { assign } from '@nocobase/utils';
-import { getRepositoryFromParams, pageArgsToLimitArgs } from './utils';
+import { pageArgsToLimitArgs } from './utils';
 import { Context } from '@nocobase/actions';
 
 function totalPage(total, pageSize): number {
@@ -27,7 +27,7 @@ function findArgs(ctx: Context) {
 async function listWithPagination(ctx: Context) {
   const { page = 1, pageSize = 50 } = ctx.action.params;
 
-  const repository = getRepositoryFromParams(ctx);
+  const repository = ctx.getCurrentRepository();
 
   const options = {
     context: ctx,
@@ -53,7 +53,7 @@ async function listWithPagination(ctx: Context) {
 }
 
 async function listWithNonPaged(ctx: Context) {
-  const repository = getRepositoryFromParams(ctx);
+  const repository = ctx.getCurrentRepository();
 
   const rows = await repository.find({ context: ctx, ...findArgs(ctx) });
 

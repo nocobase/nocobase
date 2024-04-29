@@ -1,6 +1,7 @@
 import { createMockServer, mockDatabase, supertest } from '@nocobase/test';
 import { SequelizeDataSource } from '../sequelize-data-source';
 import { vi } from 'vitest';
+import { DataSourceManager } from '@nocobase/data-source-manager';
 
 describe('example', () => {
   test.skip('case1', async () => {
@@ -197,5 +198,26 @@ describe('example', () => {
     expect(hook).toBeCalledTimes(2);
 
     await app.destroy();
+  });
+
+  it('should throw error when request datasource not exists', async () => {
+    const dataSourceManager = new DataSourceManager();
+    const middleware = dataSourceManager.middleware();
+
+    const ctx = {
+      get: () => 'main',
+      throw: (message) => {
+        throw new Error(message);
+      },
+    };
+
+    let err;
+    try {
+      await middleware(ctx, () => {});
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err.message).toBe('data source main does not exist');
   });
 });

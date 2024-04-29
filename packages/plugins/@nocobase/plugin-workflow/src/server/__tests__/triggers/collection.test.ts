@@ -1,6 +1,6 @@
 import { MockDatabase } from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { MockServer } from '@nocobase/test';
 
 import { EXECUTION_STATUS } from '../../constants';
 
@@ -15,7 +15,7 @@ describe('workflow > triggers > collection', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['error-handler', 'collection-manager', 'users', 'auth'],
+      plugins: ['error-handler', 'data-source-main', 'users', 'auth'],
     });
 
     db = app.db;

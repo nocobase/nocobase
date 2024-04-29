@@ -1,5 +1,5 @@
-import winston, { Logger, format } from 'winston';
-import { LoggerOptions, createLogger } from './logger';
+import winston, { format, Logger } from 'winston';
+import { createLogger, LoggerOptions } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
 import { getFormat } from './format';
@@ -49,20 +49,23 @@ class SystemLoggerTransport extends Transport {
   }
 
   log(info: any, callback: any) {
-    const { level, message, reqId, app, stack, cause, [SPLAT]: args } = info;
+    const { level, message, reqId, app, dataSourceKey, stack, cause, [SPLAT]: args } = info;
     const logger = level === 'error' && this.errorLogger ? this.errorLogger : this.logger;
     const { module, submodule, method, ...meta } = args?.[0] || {};
-    logger.log({
-      level,
-      message,
-      stack,
-      meta,
-      module: module || info['module'] || '',
-      submodule: submodule || info['submodule'] || '',
-      method: method || '',
-      app,
-      reqId,
-    });
+    if (!cause?.onlyLogCause) {
+      logger.log({
+        level,
+        message,
+        stack,
+        meta,
+        module: module || info['module'] || '',
+        submodule: submodule || info['submodule'] || '',
+        method: method || '',
+        app,
+        reqId,
+        dataSourceKey: dataSourceKey || 'main',
+      });
+    }
     if (cause) {
       logger.log({
         level,

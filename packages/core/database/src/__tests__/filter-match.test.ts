@@ -32,6 +32,8 @@ describe('filterMatch', () => {
       }),
     ).toBeTruthy();
 
+    expect(filterMatch(post, { 'title.$not': 't1' })).toBeFalsy();
+
     expect(
       filterMatch(post, {
         $or: [{ title: 't1' }, { title: 't2' }],

@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Database, IDatabaseOptions } from './database';
 import fs from 'fs';
 import semver from 'semver';

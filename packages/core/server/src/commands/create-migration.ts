@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import dayjs from 'dayjs';
 import fs from 'fs';
 import { dirname, resolve } from 'path';

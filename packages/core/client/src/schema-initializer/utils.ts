@@ -110,6 +110,8 @@ export const useTableColumnInitializerFields = () => {
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+      const isPreviewComponent = field?.uiSchema?.['x-component'] === 'Preview';
+
       const schema = {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
@@ -121,7 +123,9 @@ export const useTableColumnInitializerFields = () => {
                 value: 'id',
               },
             }
-          : {},
+          : isPreviewComponent
+            ? { size: 'small' }
+            : {},
         'x-read-pretty': isReadPretty || field.uiSchema?.['x-read-pretty'],
         'x-decorator': isSubTable
           ? quickEditField.includes(field.interface) || isFileCollection
