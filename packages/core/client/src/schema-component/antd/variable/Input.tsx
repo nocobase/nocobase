@@ -130,7 +130,7 @@ function getTypedConstantOption(type: string, types: true | string[], fieldNames
 
 export type VariableInputProps = {
   value?: string;
-  scope?: DefaultOptionType[] | (() => DefaultOptionType[]);
+  scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
   onChange: (value: string, optionPath?: any[]) => void;
   children?: any;
   button?: React.ReactElement;
