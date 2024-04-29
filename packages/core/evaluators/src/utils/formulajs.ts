@@ -1,4 +1,5 @@
 import * as functions from '@formulajs/formulajs';
+import { round } from 'mathjs';
 
 import { evaluate } from '.';
 
@@ -12,7 +13,7 @@ export default evaluate.bind(function (expression: string, scope = {}) {
     if (Number.isNaN(result) || !Number.isFinite(result)) {
       return null;
     }
-    return functions.ROUND(result, 9);
+    return round(result, 9);
   }
   return result;
 }, {});

@@ -27,6 +27,7 @@ export const dateFormatFn = (sequelize: any, dialect: string, field: string, for
   }
 };
 
+/* istanbul ignore next -- @preserve */
 export const formatFn = (sequelize: any, dialect: string, field: string, format: string) => {
   switch (dialect) {
     case 'sqlite':

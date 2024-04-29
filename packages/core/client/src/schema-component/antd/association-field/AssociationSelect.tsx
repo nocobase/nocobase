@@ -6,13 +6,14 @@ import { Space, message } from 'antd';
 import { isFunction } from 'mathjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RecordProvider, useAPIClient, useCollectionRecordData } from '../../../';
+import { ClearCollectionFieldContext, RecordProvider, useAPIClient, useCollectionRecordData } from '../../../';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
+  addMode?: 'quickAdd' | 'modalAdd';
   action?: string;
   multiple?: boolean;
 };
@@ -42,7 +43,7 @@ export const filterAnalyses = (filters): any[] => {
 
 const InternalAssociationSelect = observer(
   (props: AssociationSelectProps) => {
-    const { objectValue = true } = props;
+    const { objectValue = true, addMode: propsAddMode, ...rest } = props;
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const service = useServiceOptions(props);
@@ -52,7 +53,6 @@ const InternalAssociationSelect = observer(
     // 因为通过 Schema 的形式书写的组件，在值变更的时候 `value` 的值没有改变，所以需要维护一个 `innerValue` 来变更值
     const [innerValue, setInnerValue] = useState(value);
     const addMode = fieldSchema['x-component-props']?.addMode;
-    const isAllowAddNew = fieldSchema['x-add-new'];
     const { t } = useTranslation();
     const { multiple } = props;
     const form = useForm();
@@ -121,7 +121,7 @@ const InternalAssociationSelect = observer(
         <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
           <RemoteSelect
             style={{ width: '100%' }}
-            {...props}
+            {...rest}
             size={'middle'}
             objectValue={objectValue}
             value={value || innerValue}
@@ -133,16 +133,19 @@ const InternalAssociationSelect = observer(
             CustomDropdownRender={addMode === 'quickAdd' && QuickAddContent}
           ></RemoteSelect>
 
-          {(addMode === 'modalAdd' || isAllowAddNew) && (
+          {addMode === 'modalAdd' && (
             <RecordProvider isNew={true} record={null} parent={recordData}>
-              <RecursionField
-                onlyRenderProperties
-                basePath={field.address}
-                schema={fieldSchema}
-                filterProperties={(s) => {
-                  return s['x-component'] === 'Action';
-                }}
-              />
+              {/* 快捷添加按钮添加的添加的是一个普通的 form 区块（非关系区块），不应该与任何字段有关联，所以在这里把字段相关的上下文给清除掉 */}
+              <ClearCollectionFieldContext>
+                <RecursionField
+                  onlyRenderProperties
+                  basePath={field.address}
+                  schema={fieldSchema}
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'Action';
+                  }}
+                />
+              </ClearCollectionFieldContext>
             </RecordProvider>
           )}
         </Space.Compact>

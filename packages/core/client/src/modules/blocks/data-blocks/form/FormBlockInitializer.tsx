@@ -11,9 +11,10 @@ export const FormBlockInitializer = ({
   hideSearch,
   createBlockSchema,
   componentType = 'FormItem',
-  templateWrap,
+  templateWrap: customizeTemplateWrap,
   showAssociationFields,
   hideChildrenIfSingleCollection,
+  hideOtherRecordsInPopup,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
@@ -33,25 +34,32 @@ export const FormBlockInitializer = ({
   ) => any;
   showAssociationFields?: boolean;
   hideChildrenIfSingleCollection?: boolean;
+  /**
+   * 隐藏弹窗中的 Other records 选项
+   */
+  hideOtherRecordsInPopup?: boolean;
 }) => {
-  const { insert } = useSchemaInitializer();
   const itemConfig = useSchemaInitializerItem();
-  const { isCusomeizeCreate } = itemConfig;
+  const { createFormBlock, templateWrap } = useCreateFormBlock();
   const onCreateFormBlockSchema = useCallback(
-    ({ item }) => {
+    (options) => {
       if (createBlockSchema) {
-        return createBlockSchema({ item });
+        return createBlockSchema(options);
       }
 
-      insert(
-        createCreateFormBlockUISchema({
-          collectionName: item.collectionName || item.name,
-          dataSource: item.dataSource,
-          isCusomeizeCreate,
-        }),
-      );
+      createFormBlock(options);
     },
-    [createBlockSchema, insert, isCusomeizeCreate],
+    [createBlockSchema, createFormBlock],
+  );
+  const doTemplateWrap = useCallback(
+    (templateSchema, options) => {
+      if (customizeTemplateWrap) {
+        return customizeTemplateWrap(templateSchema, options);
+      }
+
+      return templateWrap(templateSchema, options);
+    },
+    [customizeTemplateWrap, templateWrap],
   );
 
   return (
@@ -59,28 +67,54 @@ export const FormBlockInitializer = ({
       {...itemConfig}
       icon={<FormOutlined />}
       componentType={componentType}
-      templateWrap={(templateSchema, { item }) => {
-        if (templateWrap) {
-          return templateWrap(templateSchema, { item });
-        }
-
-        const schema = createCreateFormBlockUISchema({
-          isCusomeizeCreate,
-          dataSource: item.dataSource,
-          templateSchema: templateSchema,
-          collectionName: item.name,
-        });
-        if (item.template && item.mode === 'reference') {
-          schema['x-template-key'] = item.template.key;
-        }
-        return schema;
-      }}
+      templateWrap={doTemplateWrap}
       onCreateBlockSchema={onCreateFormBlockSchema}
       filter={filterCollections}
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       showAssociationFields={showAssociationFields}
       hideChildrenIfSingleCollection={hideChildrenIfSingleCollection}
+      hideOtherRecordsInPopup={hideOtherRecordsInPopup}
     />
   );
+};
+
+export const useCreateFormBlock = () => {
+  const { insert } = useSchemaInitializer();
+  const itemConfig = useSchemaInitializerItem();
+  const { isCusomeizeCreate: isCustomizeCreate } = itemConfig;
+
+  const createFormBlock = useCallback(
+    ({ item }) => {
+      insert(
+        createCreateFormBlockUISchema({
+          collectionName: item.collectionName || item.name,
+          dataSource: item.dataSource,
+          isCusomeizeCreate: isCustomizeCreate,
+        }),
+      );
+    },
+    [insert, isCustomizeCreate],
+  );
+
+  const templateWrap = useCallback(
+    (templateSchema, { item }) => {
+      const schema = createCreateFormBlockUISchema({
+        isCusomeizeCreate: isCustomizeCreate,
+        dataSource: item.dataSource,
+        templateSchema: templateSchema,
+        collectionName: item.name,
+      });
+      if (item.template && item.mode === 'reference') {
+        schema['x-template-key'] = item.template.key;
+      }
+      return schema;
+    },
+    [isCustomizeCreate],
+  );
+
+  return {
+    createFormBlock,
+    templateWrap,
+  };
 };

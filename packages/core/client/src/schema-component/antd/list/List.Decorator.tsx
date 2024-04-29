@@ -4,8 +4,9 @@ import { createForm } from '@formily/core';
 import { FormContext, useField } from '@formily/react';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
+import { BlockProvider, useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useParsedFilter } from '../../../block-provider/hooks/useParsedFilter';
 
 export const ListBlockContext = createContext<any>({});
 ListBlockContext.displayName = 'ListBlockContext';

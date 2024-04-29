@@ -76,7 +76,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.marginSM}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.margin}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM]);
@@ -124,15 +124,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
-    [
-      hasChangedColumns,
-      schema,
-      field,
-      parentRecordData,
-      schemaInWhitelist,
-      token.paddingContentVerticalLG,
-      token.marginSM,
-    ],
+    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
   );
 
   const tableColumns = useMemo(() => {
@@ -516,7 +508,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Button active />}
+            {inView || isIndex ? props.children : <Skeleton.Button />}
           </td>
         );
       },
@@ -535,7 +527,7 @@ export const Table: any = withDynamicSchemaProps(
           cell: BodyCellComponent,
         },
       };
-    }, [bodyWrapperComponent]);
+    }, [BodyCellComponent, bodyWrapperComponent]);
 
     const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
 

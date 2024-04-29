@@ -1,5 +1,5 @@
 import { ACL } from '@nocobase/acl';
-import { ResourceManager, getNameByParams, parseRequest } from '@nocobase/resourcer';
+import { getNameByParams, parseRequest, ResourceManager } from '@nocobase/resourcer';
 import EventEmitter from 'events';
 import compose from 'koa-compose';
 import { loadDefaultActions } from './load-default-actions';
@@ -34,14 +34,49 @@ export abstract class DataSource extends EventEmitter {
     });
 
     this.collectionManager = this.createCollectionManager(options);
-    this.resourceManager.registerActionHandlers(loadDefaultActions(this));
+    this.resourceManager.registerActionHandlers(loadDefaultActions());
 
     if (options.acl !== false) {
       this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
   }
 
-  collectionToResourceMiddleware() {
+  middleware(middlewares: any = []) {
+    const dataSource = this;
+
+    if (!this['_used']) {
+      for (const [fn, options] of middlewares) {
+        this.resourceManager.use(fn, options);
+      }
+      this['_used'] = true;
+    }
+
+    return async (ctx, next) => {
+      ctx.dataSource = dataSource;
+
+      ctx.getCurrentRepository = () => {
+        const { resourceName, resourceOf } = ctx.action;
+
+        return this.collectionManager.getRepository(resourceName, resourceOf);
+      };
+
+      return compose([this.collectionToResourceMiddleware(), this.resourceManager.middleware()])(ctx, next);
+    };
+  }
+
+  createACL() {
+    return new ACL();
+  }
+
+  createResourceManager(options) {
+    return new ResourceManager(options);
+  }
+
+  async load(options: any = {}) {}
+
+  abstract createCollectionManager(options?: any): ICollectionManager;
+
+  protected collectionToResourceMiddleware() {
     return async (ctx, next) => {
       const params = parseRequest(
         {
@@ -77,33 +112,4 @@ export abstract class DataSource extends EventEmitter {
       return next();
     };
   }
-
-  middleware(middlewares: any = []) {
-    if (!this['_used']) {
-      for (const [fn, options] of middlewares) {
-        this.resourceManager.use(fn, options);
-      }
-      this['_used'] = true;
-    }
-    return async (ctx, next) => {
-      ctx.getCurrentRepository = () => {
-        const { resourceName, resourceOf } = ctx.action;
-        return this.collectionManager.getRepository(resourceName, resourceOf);
-      };
-
-      return compose([this.collectionToResourceMiddleware(), this.resourceManager.middleware()])(ctx, next);
-    };
-  }
-
-  createACL() {
-    return new ACL();
-  }
-
-  createResourceManager(options) {
-    return new ResourceManager(options);
-  }
-
-  async load(options: any = {}) {}
-
-  abstract createCollectionManager(options?: any): ICollectionManager;
 }

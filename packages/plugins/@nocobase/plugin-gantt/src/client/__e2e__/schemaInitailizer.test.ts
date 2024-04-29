@@ -40,7 +40,7 @@ test.describe('configure fields', () => {
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'Single line text2' }).getByRole('switch')).not.toBeChecked();
   });
-  test('add assciation field should appends association', async ({ page, mockPage, mockRecord }) => {
+  test('add association field should appends association', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', { singleLineText: 'singleLineText', manyToOne: { id: 1 } });
     await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();

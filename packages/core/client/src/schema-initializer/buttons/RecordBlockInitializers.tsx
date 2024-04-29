@@ -11,9 +11,14 @@ import {
   useCreateAssociationListBlock,
   useCreateAssociationTableBlock,
   useCreateEditFormBlock,
+  useCreateFormBlock,
+  useCreateTableBlock,
 } from '../..';
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
+import { useCreateDetailsBlock } from '../../modules/blocks/data-blocks/details-multi/DetailsBlockInitializer';
 import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
+import { useCreateGridCardBlock } from '../../modules/blocks/data-blocks/grid-card/GridCardBlockInitializer';
+import { useCreateListBlock } from '../../modules/blocks/data-blocks/list/ListBlockInitializer';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -52,9 +57,13 @@ function useRecordBlocks() {
           createAssociationDetailsWithoutPagination,
           templateWrap: templateWrapOfAssociationDetailsWithoutPagination,
         } = useCreateAssociationDetailsWithoutPagination();
+        const { createDetailsBlock } = useCreateDetailsBlock();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
         const createBlockSchema = useCallback(
-          ({ item }) => {
+          ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createDetailsBlock({ item });
+            }
             if (item.associationField) {
               if (['hasOne', 'belongsTo'].includes(item.associationField.type)) {
                 return createAssociationDetailsWithoutPagination({ item });
@@ -63,7 +72,12 @@ function useRecordBlocks() {
             }
             return createSingleDetailsSchema({ item });
           },
-          [createAssociationDetailsBlock, createAssociationDetailsWithoutPagination, createSingleDetailsSchema],
+          [
+            createAssociationDetailsBlock,
+            createAssociationDetailsWithoutPagination,
+            createDetailsBlock,
+            createSingleDetailsSchema,
+          ],
         );
         return {
           filterCollections({ collection, associationField }) {
@@ -103,7 +117,7 @@ function useRecordBlocks() {
       dataSource: collection.dataSource,
       useComponentProps() {
         const currentCollection = useCollection_deprecated();
-        const { createEditFormBlock, templateWrap } = useCreateEditFormBlock();
+        const { createEditFormBlock, templateWrap: templateWrapEdit } = useCreateEditFormBlock();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
         return {
@@ -115,9 +129,10 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
+          hideOtherRecordsInPopup: true,
           componentType: 'FormItem',
           createBlockSchema: createEditFormBlock,
-          templateWrap: templateWrap,
+          templateWrap: templateWrapEdit,
           showAssociationFields: true,
         };
       },
@@ -133,6 +148,7 @@ function useRecordBlocks() {
       dataSource: collection.dataSource,
       useComponentProps() {
         const { createAssociationFormBlock, templateWrap } = useCreateAssociationFormBlock();
+        const { createFormBlock, templateWrap: templateWrapCollection } = useCreateFormBlock();
         return {
           filterCollections({ collection, associationField }) {
             if (associationField) {
@@ -143,38 +159,29 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           hideSearch: true,
           componentType: 'FormItem',
-          createBlockSchema: createAssociationFormBlock,
-          templateWrap: templateWrap,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createFormBlock({ item });
+            }
+            createAssociationFormBlock({ item });
+          },
+          templateWrap: (templateSchema, { item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return templateWrapCollection(templateSchema, { item });
+            }
+            templateWrap(templateSchema, { item });
+          },
           showAssociationFields: true,
         };
-      },
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
       },
     },
     {
       name: 'table',
       title: '{{t("Table")}}',
       Component: 'TableBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       useComponentProps() {
         const { createAssociationTableBlock } = useCreateAssociationTableBlock();
+        const { createTableBlock } = useCreateTableBlock();
 
         return {
           hideSearch: true,
@@ -185,7 +192,12 @@ function useRecordBlocks() {
             }
             return false;
           },
-          createBlockSchema: createAssociationTableBlock,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createTableBlock({ item });
+            }
+            createAssociationTableBlock({ item });
+          },
           showAssociationFields: true,
         };
       },
@@ -194,18 +206,9 @@ function useRecordBlocks() {
       name: 'list',
       title: '{{t("List")}}',
       Component: 'ListBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       useComponentProps() {
         const { createAssociationListBlock } = useCreateAssociationListBlock();
+        const { createListBlock } = useCreateListBlock();
 
         return {
           hideSearch: true,
@@ -216,7 +219,12 @@ function useRecordBlocks() {
             }
             return false;
           },
-          createBlockSchema: createAssociationListBlock,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createListBlock({ item });
+            }
+            createAssociationListBlock({ item });
+          },
           showAssociationFields: true,
         };
       },
@@ -225,18 +233,9 @@ function useRecordBlocks() {
       name: 'gridCard',
       title: '{{t("Grid Card")}}',
       Component: 'GridCardBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       useComponentProps() {
         const { createAssociationGridCardBlock } = useCreateAssociationGridCardBlock();
+        const { createGridCardBlock } = useCreateGridCardBlock();
 
         return {
           hideSearch: true,
@@ -247,7 +246,12 @@ function useRecordBlocks() {
             }
             return false;
           },
-          createBlockSchema: createAssociationGridCardBlock,
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createGridCardBlock({ item });
+            }
+            createAssociationGridCardBlock({ item });
+          },
           showAssociationFields: true,
         };
       },
@@ -257,12 +261,7 @@ function useRecordBlocks() {
   return res;
 }
 
-/**
- * @deprecated
- * use `recordBlockInitializers` instead
- */
-export const recordBlockInitializers_deprecated = new CompatibleSchemaInitializer({
-  name: 'RecordBlockInitializers',
+const commonOptions = {
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
@@ -293,19 +292,10 @@ export const recordBlockInitializers_deprecated = new CompatibleSchemaInitialize
           title: '{{t("Form")}}',
           Component: 'FilterFormBlockInitializer',
           useComponentProps() {
-            const collection = useCollection_deprecated();
-            const toManyField = useMemo(
-              () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
-              [collection.fields],
-            );
-
             return {
               filterCollections({ collection }) {
-                if (collection) {
-                  return toManyField.some((field) => field.target === collection.name);
-                }
+                return true;
               },
-              onlyCurrentDataSource: true,
             };
           },
         },
@@ -314,34 +304,15 @@ export const recordBlockInitializers_deprecated = new CompatibleSchemaInitialize
           title: '{{t("Collapse")}}',
           Component: 'FilterCollapseBlockInitializer',
           useComponentProps() {
-            const collection = useCollection();
-            const toManyField = useMemo(
-              () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
-              [collection.fields],
-            );
-
             return {
               filterCollections({ collection }) {
-                if (collection) {
-                  return toManyField.some((field) => field.target === collection.name);
-                }
+                return true;
               },
-              onlyCurrentDataSource: true,
             };
           },
         },
       ],
     },
-    // {
-    //   type: 'itemGroup',
-    //   name: 'relationshipBlocks',
-    //   title: '{{t("Relationship blocks")}}',
-    //   useChildren: useRelationFields,
-    //   useVisible() {
-    //     const res = useRelationFields();
-    //     return res.length > 0;
-    //   },
-    // },
     {
       type: 'itemGroup',
       name: 'otherBlocks',
@@ -355,103 +326,21 @@ export const recordBlockInitializers_deprecated = new CompatibleSchemaInitialize
       ],
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `recordBlockInitializers` instead
+ */
+export const recordBlockInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'RecordBlockInitializers',
+  ...commonOptions,
 });
 
 export const recordBlockInitializers = new CompatibleSchemaInitializer(
   {
     name: 'popup:common:addBlock',
-    wrap: gridRowColWrap,
-    title: '{{t("Add block")}}',
-    icon: 'PlusOutlined',
-    items: [
-      {
-        type: 'itemGroup',
-        name: 'dataBlocks',
-        title: '{{t("Data blocks")}}',
-        useChildren: useRecordBlocks,
-      },
-      {
-        name: 'filterBlocks',
-        title: '{{t("Filter blocks")}}',
-        type: 'itemGroup',
-        useVisible() {
-          const collection = useCollection();
-          return useMemo(
-            () =>
-              collection.fields.some(
-                (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-              ),
-            [collection.fields],
-          );
-        },
-        children: [
-          {
-            name: 'filterForm',
-            title: '{{t("Form")}}',
-            Component: 'FilterFormBlockInitializer',
-            useComponentProps() {
-              const collection = useCollection_deprecated();
-              const toManyField = useMemo(
-                () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
-                [collection.fields],
-              );
-
-              return {
-                filterCollections({ collection }) {
-                  if (collection) {
-                    return toManyField.some((field) => field.target === collection.name);
-                  }
-                },
-                onlyCurrentDataSource: true,
-              };
-            },
-          },
-          {
-            name: 'filterCollapse',
-            title: '{{t("Collapse")}}',
-            Component: 'FilterCollapseBlockInitializer',
-            useComponentProps() {
-              const collection = useCollection();
-              const toManyField = useMemo(
-                () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
-                [collection.fields],
-              );
-
-              return {
-                filterCollections({ collection }) {
-                  if (collection) {
-                    return toManyField.some((field) => field.target === collection.name);
-                  }
-                },
-                onlyCurrentDataSource: true,
-              };
-            },
-          },
-        ],
-      },
-      // {
-      //   type: 'itemGroup',
-      //   name: 'relationshipBlocks',
-      //   title: '{{t("Relationship blocks")}}',
-      //   useChildren: useRelationFields,
-      //   useVisible() {
-      //     const res = useRelationFields();
-      //     return res.length > 0;
-      //   },
-      // },
-      {
-        type: 'itemGroup',
-        name: 'otherBlocks',
-        title: '{{t("Other blocks")}}',
-        children: [
-          {
-            name: 'markdown',
-            title: '{{t("Markdown")}}',
-            Component: 'MarkdownBlockInitializer',
-          },
-        ],
-      },
-    ],
+    ...commonOptions,
   },
   recordBlockInitializers_deprecated,
 );

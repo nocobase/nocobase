@@ -89,6 +89,15 @@ describe('ReadPretty:formatNumberWithSeparator', () => {
     const formatted = formatNumberWithSeparator(1234567.89, '0,0.00', 1);
     expect(formatted).toBe('1,234,567.9');
   });
+
+  test('Format number with custom 0 0,00 separator', () => {
+    const formatted = formatNumberWithSeparator(1234567.89, '0 0,00', 1);
+    expect(formatted).toBe('1 234 567.9');
+  });
+  test('Format number with custom 0.00 separator', () => {
+    const formatted = formatNumberWithSeparator(1234567.89, '0.00', 1);
+    expect(formatted).toBe('1234567.9');
+  });
 });
 describe('ReadPretty:formatUnitConversion', () => {
   // Test case 1: Multiply a value by 2

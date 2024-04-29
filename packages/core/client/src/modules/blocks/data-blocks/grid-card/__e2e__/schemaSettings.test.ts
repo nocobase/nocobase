@@ -37,7 +37,7 @@ test.describe('grid card block schema settings', () => {
     await page.getByLabel('block-item-BlockItem-general-grid-card').hover();
     await page.getByLabel('designer-schema-settings-BlockItem-GridCard.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'Set the count of columns displayed in a row' }).click();
-    await page.getByLabel('block-item-Slider-general-Desktop device').getByText('2', { exact: true }).click();
+    await page.getByLabel('block-item-Slider-general-grid-card-Desktop device').getByText('2', { exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 需要刷新页面才会生效
@@ -49,7 +49,7 @@ test.describe('grid card block schema settings', () => {
   });
 
   // https://nocobase.height.app/T-3813
-  test.skip('set the count of columns displayed in a row of new version', async ({ page, mockPage, mockRecords }) => {
+  test('set the count of columns displayed in a row of new version', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(T3813).waitForInit();
     await mockRecords('general', 10);
     await nocoPage.goto();
@@ -64,7 +64,7 @@ test.describe('grid card block schema settings', () => {
     await page.getByLabel('block-item-BlockItem-general-').hover();
     await page.getByLabel('designer-schema-settings-BlockItem-blockSettings:gridCard-general').hover();
     await page.getByRole('menuitem', { name: 'Set the count of columns displayed in a row' }).click();
-    await page.getByLabel('block-item-Slider-general-Desktop device').getByText('2', { exact: true }).click();
+    await page.getByLabel('block-item-Slider-general-grid-card-Desktop device').getByText('2', { exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 需要刷新页面才会生效

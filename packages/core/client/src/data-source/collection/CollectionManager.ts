@@ -131,7 +131,7 @@ export class CollectionManager {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
-  getSourceKeyByAssocation(associationName: string) {
+  getSourceKeyByAssociation(associationName: string) {
     if (!associationName) {
       return;
     }

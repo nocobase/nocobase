@@ -78,7 +78,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
     type,
     Component,
     children,
-    hideIfNoChildren = true,
+    hideIfNoChildren,
     componentProps,
   } = props as any;
   const useChildrenRes = useChildren();
@@ -100,7 +100,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
   if (!C) {
     return null;
   }
-  if (hideIfNoChildren && Array.isArray(componentChildren) && componentChildren.length === 0) {
+  if (hideIfNoChildren && !componentChildren) {
     return null;
   }
 

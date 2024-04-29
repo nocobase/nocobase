@@ -8,6 +8,7 @@ import App5 from '../demos/demo5';
 import App6 from '../demos/demo6';
 import App7 from '../demos/demo7';
 import App8 from '../demos/demo8';
+import { renderDemo9 } from '../demos/demo9';
 
 describe('Form', () => {
   it('basic', async () => {
@@ -150,5 +151,26 @@ describe('Form', () => {
     expect(input).toHaveValue('hello nocobase');
     expect(closeBtn).toBeInTheDocument();
     expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+  });
+
+  it('linkage', async () => {
+    await renderDemo9();
+
+    await waitFor(() => {
+      expect(document.querySelector('.ant-input')).toBeInTheDocument();
+      expect(document.querySelectorAll('.ant-input')).toHaveLength(2);
+    });
+
+    await userEvent.type(document.querySelector('.ant-input'), 'test');
+
+    await waitFor(() => {
+      expect(document.querySelectorAll('.ant-input')).toHaveLength(1);
+    });
+
+    await userEvent.clear(document.querySelector('.ant-input'));
+
+    await waitFor(() => {
+      expect(document.querySelectorAll('.ant-input')).toHaveLength(2);
+    });
   });
 });

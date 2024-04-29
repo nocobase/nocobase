@@ -2,13 +2,15 @@ import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
+  DeclareVariable,
   RecordProvider,
   css,
+  useCollection,
   useCollectionManager_deprecated,
+  useCollectionParentRecordData,
   useCollection_deprecated,
   useCompile,
   useFilterAPI,
-  useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -361,6 +363,8 @@ export const GoogleMapsBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
+  const { t } = useMapTranslation();
+  const collection = useCollection();
   const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const schema: Schema = useMemo(
@@ -378,7 +382,14 @@ const MapBlockDrawer = (props) => {
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
         <RecordProvider record={record} parent={parentRecordData}>
-          <RecursionField schema={schema} name={schema.name} />
+          <DeclareVariable
+            name="$nPopupRecord"
+            title={t('Current popup record')}
+            value={record}
+            collection={collection}
+          >
+            <RecursionField schema={schema} name={schema.name} />
+          </DeclareVariable>
         </RecordProvider>
       </ActionContextProvider>
     )

@@ -430,9 +430,11 @@
   "edit title": "editar título",
   "Turn pages": "Virar páginas",
   "Others": "Outros",
+  "Other records": "Outros registros",
   "Save as template": "Salvar como modelo",
   "Save as block template": "Salvar como modelo de bloco",
   "Block templates": "Modelos de bloco",
+  "Block template": "Modelo de bloco",
   "Convert reference to duplicate": "Converter referência em duplicado",
   "Template name": "Nome do modelo",
   "Block type": "Tipo de bloco",
@@ -725,10 +727,12 @@
   "loading": "carregando",
   "name is required": "nome é obrigatório",
   "data source": "fonte de dados",
-  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "O {{type}} \"{{name}}\" pode ter sido excluído. Por favor, remova este {{blockType}}.",
+  "Data source": "fonte de dados",
   "DataSource": "Fonte de dados",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "O {{type}} \"{{name}}\" pode ter sido excluído. Por favor, remova este {{blockType}}.",
   "Allow selection of existing records":"Permitir a selecção dos registos existentes",
   "Home page": "Página inicial",
   "Handbook": "Manual do usuário",
-  "License": "Licença"
+  "License": "Licença",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "A variável foi descontinuada; \"Formulário atual\" pode ser usada como substituto"
 }

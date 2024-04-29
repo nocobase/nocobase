@@ -119,7 +119,7 @@ export const ActionBar = withDynamicSchemaProps(
                 return <RecursionField key={key} name={key} schema={schema} />;
               })}
             </Space>
-            <Space {...spaceProps}>
+            <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
               {fieldSchema.mapProperties((schema, key) => {
                 if (schema['x-align'] === 'left') {
                   return null;

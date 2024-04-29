@@ -1,7 +1,12 @@
 import { observer, useForm, useField } from '@formily/react';
 import { Select, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useCompile, useCollectionManager_deprecated, useRecord, useFieldInterfaceOptions } from '@nocobase/client';
+import {
+  useCompile,
+  useCollectionManager_deprecated,
+  useFieldInterfaceOptions,
+  useCollectionRecord,
+} from '@nocobase/client';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -20,21 +25,20 @@ const getInterfaceOptions = (data, type) => {
     return v.children.length > 0;
   });
 };
-
+const isValueInOptions = (value, options) => {
+  return options?.some((option) => option.children?.some?.((child) => child.name === value));
+};
 export const CollectionFieldInterfaceSelect = observer(
   (props: any) => {
     const { value, handleFieldChange } = props;
-    const record = useRecord();
+    const { data: record } = useCollectionRecord() as any;
     const { getInterface } = useCollectionManager_deprecated();
     const compile = useCompile();
     const initOptions = useFieldInterfaceOptions();
     const data = getInterfaceOptions(initOptions, record.type);
-    const form = useForm();
-    const field = useField();
     const [selectValue, setSelectValue] = useState(value);
     const [options, setOptions] = useState(data);
-    const targetRecord = Object.values(form.values)?.[0]?.[field.index];
-    const targetType = targetRecord?.type || record.type;
+    const targetType = record.type;
     useEffect(() => {
       //只有一个选项的时候选中该选项
       if (options.length === 1 && options[0]?.children?.length === 1) {
@@ -51,13 +55,24 @@ export const CollectionFieldInterfaceSelect = observer(
           );
           setSelectValue(targetValue);
         }
+        //选中的值不在选项中切换为第一个
+      } else if (selectValue && !isValueInOptions(selectValue, options)) {
+        const targetValue = options[0]?.children?.[0]?.name;
+        const interfaceConfig = getInterface(targetValue);
+        handleFieldChange(
+          {
+            interface: targetValue,
+            uiSchema: { title: record?.uiSchema?.title, ...interfaceConfig?.default?.uiSchema },
+          },
+          record.name,
+          false,
+        );
+        setSelectValue(targetValue);
       }
     }, [options]);
 
     useEffect(() => {
       if (record?.possibleTypes) {
-        const targetRecord = Object.values(form.values)?.[0]?.[field.index];
-        const targetType = targetRecord?.type || record.type;
         const newOptions = getInterfaceOptions(initOptions, targetType);
         setOptions(newOptions);
       }

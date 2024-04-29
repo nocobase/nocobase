@@ -12,6 +12,8 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../../../collection-manager';
+import { useCollectionManager } from '../../../data-source';
+import { useFlag } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
@@ -36,10 +38,11 @@ export const allowAddNew: SchemaSettingsItemType = {
   name: 'allowAddNew',
   type: 'switch',
   useVisible() {
+    const flag = useFlag();
     const readPretty = useIsFieldReadPretty();
     const isAssociationField = useIsAssociationField();
     const fieldMode = useFieldMode();
-    return !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
+    return !flag?.isInSubTable && !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
   },
   useComponentProps() {
     const { t } = useTranslation();
@@ -960,8 +963,11 @@ function useFormItemCollectionField() {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getField } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const { collectionField: columnCollectionField } = useColumnSchema();
+  const collectionField = fieldSchema
+    ? getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field'])
+    : null;
+  if (!fieldSchema) return null;
   return collectionField || columnCollectionField;
 }
 
@@ -974,9 +980,9 @@ export function useIsAssociationField() {
 }
 
 export function useIsFileField() {
-  const { getCollection } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const collectionField = useFormItemCollectionField();
-  const targetCollection = getCollection(collectionField?.target);
+  const targetCollection = cm.getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection as any);
   return isFileField;
 }

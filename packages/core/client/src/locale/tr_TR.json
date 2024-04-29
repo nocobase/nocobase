@@ -333,9 +333,11 @@
   "edit title": "başlığı düzenle",
   "Turn pages": "Sayfaları çevir",
   "Others": "Diğerleri",
+  "Other records": "Diğer kayıtlar",
   "Save as template": "Şablon olarak kaydet",
   "Save as block template": "Blok şablonu olarak kaydet",
   "Block templates": "Blok şablonları",
+  "Block template": "Blok şablonu",
   "Convert reference to duplicate": "Referansı kopyaya dönüştür",
   "Template name": "Şablon adı",
   "Block type": "Blok türü",
@@ -450,6 +452,7 @@
   "Current user": "Seçili kullanıcı",
   "Current role": "Seçili rol",
   "Current record": "Seçili kayıt",
+  "Current popup record": "Açılır pencere kaydı",
   "Associated records": "İlişkili kayıtlar",
   "Parent record": "Üst kayıt",
   "Popup close method": "Açılır pencere kapatma metodu",
@@ -559,9 +562,11 @@
   "loading": "yükleniyor",
   "name is required": "ad gereklidir",
   "data source": "veri kaynağı",
-  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" silinmiş olabilir. Lütfen bu {{blockType}}'yi kaldırın.",
+  "Data source": "veri kaynağı",
   "DataSource": "Veri Kaynağı",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" silinmiş olabilir. Lütfen bu {{blockType}}'yi kaldırın.",
   "Home page": "Anasayfa",
   "Handbook": "Kullanıcı kılavuzu",
-  "License": "Lisans"
+  "License": "Lisans",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Değişken kullanımdan kaldırıldı; \"Geçerli form\" yerine kullanılabilir"
 }

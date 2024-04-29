@@ -4,7 +4,7 @@
   "displayName.zh-CN": "UI schema 存储服务",
   "description": "Provides centralized UI schema storage service.",
   "description.zh-CN": "提供中心化的 UI schema 存储服务。",
-  "version": "0.21.0-alpha.6",
+  "version": "1.0.0-alpha.2",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/ui-schema-storage",
@@ -13,16 +13,16 @@
     "@formily/json-schema": "2.x"
   },
   "peerDependencies": {
-    "@nocobase/actions": "0.x",
-    "@nocobase/cache": "0.x",
-    "@nocobase/client": "0.x",
-    "@nocobase/database": "0.x",
-    "@nocobase/plugin-error-handler": "0.x",
-    "@nocobase/plugin-users": "0.x",
-    "@nocobase/resourcer": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
-    "@nocobase/utils": "0.x"
+    "@nocobase/actions": "1.x",
+    "@nocobase/cache": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/plugin-error-handler": "1.x",
+    "@nocobase/plugin-users": "1.x",
+    "@nocobase/resourcer": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

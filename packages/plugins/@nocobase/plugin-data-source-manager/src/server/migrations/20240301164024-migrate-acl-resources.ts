@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { Migration } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 
@@ -15,6 +17,7 @@ export default class extends Migration {
       throw e;
     }
   }
+
   async doUp(transaction) {
     const scopeMap = {};
 

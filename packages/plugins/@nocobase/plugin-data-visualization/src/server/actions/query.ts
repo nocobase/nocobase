@@ -316,7 +316,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
 };
 
-const checkPermission = (ctx: Context, next: Next) => {
+export const checkPermission = (ctx: Context, next: Next) => {
   const { collection } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
   const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });

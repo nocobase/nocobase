@@ -1,9 +1,11 @@
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
-import { useBaseVariable } from './useBaseVariable';
+import { useBlockContext } from '../../../block-provider/BlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { useCollection, useCollectionRecordData } from '../../../data-source';
+import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
   collectionField?: CollectionFieldOptions_deprecated;
@@ -45,25 +47,31 @@ export const useRecordVariable = (props: Props) => {
  */
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
+  const { name: blockType } = useBlockContext() || {};
+  const collection = useCollection();
+  const recordData = useCollectionRecordData();
   const { formRecord, collectionName } = useFormBlockContext();
+  const realCollectionName = formRecord?.data ? collectionName : collection?.name;
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
-    collectionName: collectionName,
+    collectionName: realCollectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
+    deprecated: blockType === 'form',
+    tooltip: blockType === 'form' ? t('This variable has been deprecated and can be replaced with "Current form"') : '',
   });
 
   return {
     /** 变量配置 */
     currentRecordSettings,
     /** 变量值 */
-    currentRecordCtx: formRecord?.data,
+    currentRecordCtx: formRecord?.data || recordData,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord: !formRecord?.isNew && !_.isEmpty(formRecord?.data),
+    shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
     /** 当前记录对应的 collection name */
-    collectionName,
+    collectionName: realCollectionName,
   };
 };

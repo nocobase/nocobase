@@ -1,3 +1,0 @@
-{
-  "Export warning": "Only a small amount of data can be exported (preferably within 1000 rows), and a large amount of data will cause the system to freeze. Please use the Action: Export records pro plugin for large data exports."
-}

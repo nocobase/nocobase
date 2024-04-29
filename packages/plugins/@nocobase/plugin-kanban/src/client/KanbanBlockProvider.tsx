@@ -144,11 +144,11 @@ export const useKanbanBlockProps = () => {
 
   useEffect(() => {
     const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
-    if (isEqual(field.value, data)) {
+    if (isEqual(field.value, data) && dataSource === field.value) {
       return;
     }
     field.value = data;
-    setDataSource(data);
+    setDataSource(field.value);
   }, [ctx?.service?.loading]);
 
   const disableCardDrag = useDisableCardDrag();

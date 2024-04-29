@@ -467,9 +467,11 @@
   "edit title": "Editar título",
   "Turn pages": "Pasar páginas",
   "Others": "Otros",
+  "Other records": "Otros registros",
   "Save as template": "Guardar como plantilla",
   "Save as block template": "Guardar como plantilla de bloque",
   "Block templates": "Bloquear plantillas",
+  "Block template": "Plantilla de bloque",
   "Convert reference to duplicate": "Convertir referencia a duplicado",
   "Template name": "Nombre de plantilla",
   "Block type": "Tipo de bloque",
@@ -615,6 +617,7 @@
   "Current user": "Usuario actual",
   "Current role": "Rol actual",
   "Current record": "Registro actual",
+  "Current popup record": "Registro actual del popup",
   "Associated records": "Registros asociados",
   "Parent record": "Registro padre",
   "Current time": "Hora actual",
@@ -748,8 +751,10 @@
   "name is required": "el nombre es obligatorio",
   "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "El {{type}} \"{{name}}\" puede haber sido eliminado. Por favor, elimine este {{blockType}}.",
   "data source": "fuente de datos",
+  "Data source": "fuente de datos",
   "DataSource": "Fuente de datos",
   "Home page": "Página de inicio",
   "Handbook": "Manual de usuario",
-  "License": "Licencia"
+  "License": "Licencia",
+  "This variable has been deprecated and can be replaced with \"Current form\"": "La variable ha sido obsoleta; \"Formulario actual\" puede ser utilizada como sustituto"
 }

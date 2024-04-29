@@ -106,6 +106,9 @@ export abstract class SingleRelationRepository extends RelationRepository {
     return target;
   }
 
+  /**
+   * @internal
+   */
   accessors() {
     return <SingleAssociationAccessors>super.accessors();
   }

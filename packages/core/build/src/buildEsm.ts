@@ -1,18 +1,24 @@
 
 import path from 'path';
-import { PkgLog, UserConfig } from './utils';
+import { PkgLog, UserConfig, getEnvDefine } from './utils';
 import { build as viteBuild } from 'vite';
 import fg from 'fast-glob';
+
+const clientExt = '.{ts,tsx,js,jsx}';
+
+function getSingleEntry(file: string, cwd: string) {
+  return fg.sync([`${file}${clientExt}`], { cwd, absolute: true, onlyFiles: true })?.[0]?.replaceAll(/\\/g, '/');
+}
 
 export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
   log('build esm');
 
-  const indexEntry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
+  const indexEntry = getSingleEntry('src/index', cwd);
   const outDir = path.resolve(cwd, 'es');
 
   await build(cwd, indexEntry, outDir, userConfig, sourcemap, log);
 
-  const clientEntry = fg.sync(['src/client/index.ts', 'src/client.ts'], { cwd, absolute: true, onlyFiles: true })?.[0]?.replaceAll(/\\/g, '/');
+  const clientEntry = getSingleEntry('src/client/index', cwd) || getSingleEntry('src/client', cwd);
   const clientOutDir = path.resolve(cwd, 'es/client');
   if (clientEntry) {
     await build(cwd, clientEntry, clientOutDir, userConfig, sourcemap, log);
@@ -20,9 +26,13 @@ export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: b
 
   const pkg = require(path.join(cwd, 'package.json'));
   if (pkg.name === '@nocobase/test') {
-    const e2eEntry = path.join(cwd, 'src/e2e/index.ts').replaceAll(/\\/g, '/');
+    const e2eEntry = getSingleEntry('src/e2e/index', cwd);
     const e2eOutDir = path.resolve(cwd, 'es/e2e');
     await build(cwd, e2eEntry, e2eOutDir, userConfig, sourcemap, log);
+
+    const webEntry = getSingleEntry('src/web/index', cwd);
+    const webOutDir = path.resolve(cwd, 'es/web');
+    await build(cwd, webEntry, webOutDir, userConfig, sourcemap, log);
   }
 }
 
@@ -38,11 +48,7 @@ function build(cwd: string, entry: string, outDir: string, userConfig: UserConfi
   return viteBuild(
     userConfig.modifyViteConfig({
       mode: process.env.NODE_ENV || 'production',
-      define: {
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-        'process.env.__TEST__': false,
-        'process.env.__E2E__': process.env.__E2E__ ? true : false,
-      },
+      define: getEnvDefine(),
       build: {
         minify: false,
         outDir,

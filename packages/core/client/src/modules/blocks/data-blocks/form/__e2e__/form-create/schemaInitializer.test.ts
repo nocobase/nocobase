@@ -1,6 +1,7 @@
-import { createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
-import { T3106, T3469 } from './templatesOfBug';
 import { uid } from '@formily/shared';
+import { createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
+import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
+import { T3106, T3469, oneFormWithInheritFields } from './templatesOfBug';
 
 test.describe('where creation form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -8,6 +9,27 @@ test.describe('where creation form block can be added', () => {
 
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Form');
+    await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
+  });
+
+  test('popup', async ({ page, mockPage }) => {
+    await mockPage(oneEmptyTableWithUsers).goto();
+
+    // 1. 打开弹窗，通过 Associated records 创建一个创建表单区块
+    await page.getByLabel('action-Action.Link-View').click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Roles' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CardItem-roles-form')).toBeVisible();
+
+    // 2. 通过 Other records 创建一个创建表单区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
   });
 });
@@ -55,7 +77,21 @@ test.describe('configure fields', () => {
     await expect(page.getByLabel('block-item-Markdown.Void-general-form')).toBeVisible();
   });
 
-  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {});
+  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {
+    await mockPage(oneFormWithInheritFields).goto();
+
+    // 在表单中选择继承的字段
+    await page.getByLabel('schema-initializer-Grid-form:').hover();
+    await page.getByRole('menuitem', { name: 'parentField1' }).click();
+    await page.getByRole('menuitem', { name: 'parentField2' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page.getByLabel('block-item-CollectionField-child-form-child.parentField1-parentField1').getByRole('textbox'),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-child-form-child.parentField2-parentField2').getByRole('textbox'),
+    ).toBeVisible();
+  });
 });
 
 test.describe('configure actions', () => {

@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/utils",
-  "version": "0.21.0-alpha.6",
+  "version": "1.0.0-alpha.2",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "dependencies": {
     "@hapi/topo": "^6.0.0",
     "@rc-component/mini-decimal": "^1.1.0",

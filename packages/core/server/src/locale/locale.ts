@@ -2,6 +2,7 @@ import { Cache } from '@nocobase/cache';
 import { lodash } from '@nocobase/utils';
 import Application from '../application';
 import { getResource } from './resource';
+import { OFFICIAL_PLUGIN_PREFIX } from '..';
 
 export class Locale {
   app: Application;
@@ -75,7 +76,7 @@ export class Locale {
 
   getResources(lang: string) {
     const resources = {};
-    const names = this.app.pm.getAliases();
+    const names = this.app.pm.getPlugins().keys();
     for (const name of names) {
       try {
         const p = this.app.pm.get(name);
@@ -91,8 +92,8 @@ export class Locale {
         const res = getResource(packageName, lang);
         if (res) {
           resources[packageName] = { ...res };
-          if (packageName.includes('@nocobase/plugin-')) {
-            resources[packageName.substring('@nocobase/plugin-'.length)] = { ...res };
+          if (packageName.includes(OFFICIAL_PLUGIN_PREFIX)) {
+            resources[packageName.substring(OFFICIAL_PLUGIN_PREFIX.length)] = { ...res };
           }
         }
       } catch (err) {

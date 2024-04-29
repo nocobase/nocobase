@@ -18,11 +18,15 @@ const findFilterFieldType = (ctx) => {
   const associationPath = path;
 
   for (const association of associationPath) {
-    if (lodash.isNumber(parseInt(association)) || association.startsWith('$')) {
+    if (lodash.isFinite(parseInt(association)) || association.startsWith('$')) {
       continue;
     }
 
-    model = model.associations[association].target;
+    const modelAssociation = model.associations[association];
+    if (!modelAssociation) {
+      break;
+    }
+    model = modelAssociation.target;
   }
 
   const collection = db.modelCollection.get(model);

@@ -9,9 +9,12 @@ export function changeAlgorithmFromFunctionToString(themeConfig: any) {
     return themeConfig;
   }
   if (Array.isArray(themeConfig.algorithm)) {
-    themeConfig.algorithm = themeConfig.algorithm.map((algorithm) => parseAlgorithm(algorithm));
+    themeConfig.algorithm = themeConfig.algorithm.map((algorithm) => parseAlgorithm(algorithm)).filter(Boolean);
   } else {
     themeConfig.algorithm = parseAlgorithm(themeConfig.algorithm);
+  }
+  if (_.isEmpty(themeConfig.algorithm)) {
+    delete themeConfig.algorithm;
   }
   return themeConfig;
 }
@@ -26,5 +29,4 @@ function parseAlgorithm(algorithm: ThemeConfig['algorithm']): string {
   if (algorithm.toString() === antdTheme.compactAlgorithm.toString()) {
     return 'compactAlgorithm';
   }
-  return algorithm.toString();
 }

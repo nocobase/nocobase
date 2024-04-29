@@ -2,6 +2,8 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  expectSupportedVariables,
+  mockUserRecordsWithoutDepartments,
   oneEmptyTableBlockWithActions,
   oneEmptyTableWithTreeCollection,
   oneTableBlockWithActionsAndFormBlocks,
@@ -10,7 +12,13 @@ import {
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
-import { T3843, oneTableWithRoles } from './templatesOfBug';
+import {
+  T3843,
+  T4032,
+  oneTableWithRoles,
+  oneTableWithUpdateRecord,
+  twoTableWithAuthorAndBooks,
+} from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -183,6 +191,7 @@ test.describe('table block schema settings', () => {
       await page.getByTestId('select-filter-field').click();
       await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
       await page.getByLabel('variable-button').click();
+      await expectSupportedVariables(page, ['Constant', 'Current user', 'Current role', 'Date variables']);
       await page.getByRole('menuitemcheckbox', { name: 'Current user' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -190,6 +199,24 @@ test.describe('table block schema settings', () => {
       // 被筛选之后数据只有一条（有一行是空的）
       await expect(page.getByRole('row')).toHaveCount(2);
       await expect(page.getByRole('cell', { name: 'Super Admin', exact: true })).toBeVisible();
+    });
+
+    // https://nocobase.height.app/T-4032
+    test('parent record variable', async ({ page, mockPage }) => {
+      await mockPage(T4032).goto();
+
+      // 1. 打开弹窗，弹窗中的表格设置了数据范围：roles.name 包含当前用户的 roles.name
+      await page.getByLabel('action-Action.Link-View').click();
+      await page.waitForTimeout(1000);
+
+      // 2. 断言
+      // 不应该弹出错误提示
+      await expect(page.locator('.ant-notification-notice')).not.toBeVisible();
+
+      // 应该显示出三条数据：root，admin，member
+      await expect(page.getByLabel('block-item-CardItem-roles-').getByText('root')).toBeVisible();
+      await expect(page.getByLabel('block-item-CardItem-roles-').getByText('admin')).toBeVisible();
+      await expect(page.getByLabel('block-item-CardItem-roles-').getByText('member')).toBeVisible();
     });
   });
 
@@ -232,7 +259,7 @@ test.describe('table block schema settings', () => {
   test.describe('connect data blocks', () => {
     test('connecting two blocks of the same collection', async ({ page, mockPage, mockRecords }) => {
       const nocoPage = await mockPage(twoTableWithSameCollection).waitForInit();
-      const records = await mockRecords('users', 3);
+      const records = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       // 将左边的 Table 连接到右边的 Table
@@ -257,7 +284,7 @@ test.describe('table block schema settings', () => {
 
     test('connecting two blocks connected by a relationship field', async ({ page, mockPage, mockRecords }) => {
       const nocoPage = await mockPage(twoTableWithAssociationFields).waitForInit();
-      await mockRecords('users', 3);
+      await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
 
       // 将左边的 Table 连接到右边的 Table
@@ -286,7 +313,29 @@ test.describe('table block schema settings', () => {
       await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
     });
 
-    test('connecting two blocks connected by a foreign key', async ({ page, mockPage, mockRecords }) => {});
+    test('connecting two blocks connected by a foreign key', async ({ page, mockPage, mockRecords }) => {
+      const nocoPage = await mockPage(twoTableWithAuthorAndBooks).waitForInit();
+      const authors = await mockRecords('author', 3);
+      await nocoPage.goto();
+
+      // 1. 将 author 表通过外键连接到 books 表
+      await page.getByLabel('block-item-CardItem-author-').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-author').hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
+      await page.getByRole('menuitem', { name: 'books ' }).click();
+      await page.getByRole('option', { name: 'authorId [Foreign key]' }).click();
+
+      // 2. 点击 author 表的某一行，books 表的数据会被筛选为当前点中行的数据
+      await page.getByLabel('block-item-CardItem-author-').getByText(authors[0].name).click();
+
+      for (const book of authors[0].books) {
+        await expect(page.getByLabel('block-item-CardItem-books-').getByText(book.name)).toBeVisible();
+      }
+
+      for (const book of authors[1].books) {
+        await expect(page.getByLabel('block-item-CardItem-books-').getByText(book.name)).not.toBeVisible();
+      }
+    });
 
     test('should immediately show in the drop-down menu of Connect data blocks when adding a block for the first time', async ({
       page,
@@ -397,8 +446,8 @@ test.describe('actions schema settings', () => {
 
       await showMenu(page);
       await page.getByRole('menuitem', { name: 'Edit button' }).click();
-      await page.getByLabel('block-item-Input-general-Button title').getByRole('textbox').click();
-      await page.getByLabel('block-item-Input-general-Button title').getByRole('textbox').fill('1234');
+      await page.getByLabel('block-item-Input-general-').getByRole('textbox').click();
+      await page.getByLabel('block-item-Input-general-').getByRole('textbox').fill('1234');
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       await expect(page.getByRole('button', { name: '1234' })).toBeVisible();
@@ -528,8 +577,8 @@ test.describe('actions schema settings', () => {
 
       await showMenu(page);
       await page.getByRole('menuitem', { name: 'Edit button' }).click();
-      await page.getByLabel('block-item-Input-general-Button title').getByRole('textbox').click();
-      await page.getByLabel('block-item-Input-general-Button title').getByRole('textbox').fill('Delete record');
+      await page.getByLabel('block-item-Input-general-').getByRole('textbox').click();
+      await page.getByLabel('block-item-Input-general-').getByRole('textbox').fill('Delete record');
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       await expect(page.getByLabel('action-Action.Link-Delete record-destroy-general-table-0')).toBeVisible();
@@ -748,6 +797,67 @@ test.describe('actions schema settings', () => {
           'Delete',
         ],
       });
+    });
+
+    test('Assign field values', async ({ page, mockPage, mockRecord }) => {
+      const nocoPage = await mockPage(oneTableWithUpdateRecord).waitForInit();
+      await mockRecord('users2');
+      await nocoPage.goto();
+
+      const openPopup = async () => {
+        if (!(await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').isVisible())) {
+          await page.getByRole('button', { name: 'Actions', exact: true }).hover();
+          await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users2').hover();
+          await page.getByRole('menuitem', { name: 'Customize right' }).hover();
+          await page.getByRole('menuitem', { name: 'Update record' }).click();
+        }
+
+        await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').hover();
+        await page
+          .getByLabel('designer-schema-settings-Action.Link-actionSettings:updateRecord-users2')
+          .first()
+          .hover();
+        await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+
+        if (!(await page.getByLabel('block-item-AssignedField-').getByRole('textbox').isVisible())) {
+          await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-users').hover();
+          await page.getByRole('menuitem', { name: 'Nickname' }).click();
+        }
+      };
+
+      const expectNewValue = async (value: string) => {
+        await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').click();
+        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await page.getByLabel('action-Action-Refresh-refresh').click();
+        await expect(page.getByLabel('block-item-CardItem-users2-').getByText(value)).toBeVisible();
+      };
+
+      // 1. 打开 Assign field values 配置弹窗
+      await openPopup();
+
+      // 2. 将 Nickname 字段的值设置为 `123456`
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').click();
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').fill('123456');
+      await page.getByRole('button', { name: 'Submit' }).click();
+
+      // 3. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “123456” 的记录
+      await expectNewValue('123456');
+
+      // 4. 再次打开 Assign field values 配置弹窗，这次为 Nickname 设置一个变量值（Current role）
+      await openPopup();
+      await page.getByLabel('variable-button').click();
+      await expectSupportedVariables(page, [
+        'Constant',
+        'Current user',
+        'Current role',
+        'Date variables',
+        'Current record',
+      ]);
+      await page.getByRole('menuitemcheckbox', { name: 'Current role' }).click();
+      await page.getByRole('button', { name: 'Submit' }).click();
+
+      // 5. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “root” 的记录
+      await expectNewValue('root');
     });
   });
 

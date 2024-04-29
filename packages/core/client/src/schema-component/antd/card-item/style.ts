@@ -5,9 +5,7 @@ const useStyles = genStyleHook('nb-card-item', (token) => {
 
   return {
     [componentCls]: {
-      '.card': {
-        marginBottom: token.marginLG,
-      },
+      marginBottom: token.marginBlock,
     },
   };
 });

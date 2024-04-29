@@ -1,3 +1,5 @@
+/* istanbul ignore file -- @preserve */
+
 import { DataTypes } from '@nocobase/database';
 import { Migration } from '../migration';
 

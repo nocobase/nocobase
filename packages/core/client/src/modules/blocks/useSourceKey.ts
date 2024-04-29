@@ -7,5 +7,5 @@ import { useCollectionManager } from '../../data-source/collection/CollectionMan
  */
 export const useSourceKey = (association: string) => {
   const cm = useCollectionManager();
-  return cm.getSourceKeyByAssocation(association);
+  return cm.getSourceKeyByAssociation(association);
 };

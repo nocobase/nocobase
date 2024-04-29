@@ -17,6 +17,7 @@ import { Model } from './model';
 import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import safeJsonStringify from 'safe-json-stringify';
 
 export type RepositoryType = typeof Repository;
 
@@ -200,7 +201,7 @@ export class Collection<
   }
 
   /**
-   * TODO
+   * @internal
    */
   modelInit() {
     if (this.model) {
@@ -275,6 +276,7 @@ export class Collection<
   getFields() {
     return [...this.fields.values()];
   }
+
   addField(name: string, options: FieldOptions): Field {
     return this.setField(name, options);
   }
@@ -305,6 +307,9 @@ export class Collection<
     }
   }
 
+  /**
+   * @internal
+   */
   correctOptions(options) {
     if (options.primaryKey && options.autoIncrement) {
       delete options.defaultValue;
@@ -317,6 +322,12 @@ export class Collection<
     this.checkFieldType(name, options);
 
     const { database } = this.context;
+
+    database.logger.debug(`beforeSetField: ${safeJsonStringify(options)}`, {
+      databaseInstanceId: database.instanceId,
+      collectionName: this.name,
+      fieldName: name,
+    });
 
     if (options.source) {
       const [sourceCollectionName, sourceFieldName] = options.source.split('.');
@@ -547,9 +558,6 @@ export class Collection<
     return field as Field;
   }
 
-  /**
-   * TODO
-   */
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
@@ -586,12 +594,6 @@ export class Collection<
     }
   }
 
-  /**
-   * TODO
-   *
-   * @param name
-   * @param options
-   */
   updateField(name: string, options: FieldOptions) {
     if (!this.hasField(name)) {
       throw new Error(`field ${name} not exists`);
@@ -693,6 +695,9 @@ export class Collection<
     this.refreshIndexes();
   }
 
+  /**
+   * @internal
+   */
   refreshIndexes() {
     // @ts-ignore
     const indexes: any[] = this.model._indexes;

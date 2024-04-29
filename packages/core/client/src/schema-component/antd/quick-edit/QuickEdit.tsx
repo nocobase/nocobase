@@ -1,10 +1,11 @@
 import { css } from '@emotion/css';
-import { FormItem } from '@formily/antd-v5';
+// import { FormItem } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useMemo, useRef } from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { StablePopover } from '../popover';
+import { FormItem } from '../form-item';
 
 export const Editable = observer(
   (props) => {

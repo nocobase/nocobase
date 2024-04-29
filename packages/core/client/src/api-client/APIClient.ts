@@ -9,8 +9,12 @@ function notify(type, messages, instance) {
     return;
   }
   instance[type]({
-    message: messages.map?.((item: any) => {
-      return React.createElement('div', {}, typeof item === 'string' ? item : item.message);
+    message: messages.map?.((item: any, index) => {
+      return React.createElement(
+        'div',
+        { key: `${index}_${item.message}` },
+        typeof item === 'string' ? item : item.message,
+      );
     }),
   });
 }
@@ -24,6 +28,22 @@ const handleErrorMessage = (error, notification) => {
   };
 };
 
+function offsetToTimeZone(offset) {
+  const hours = Math.floor(Math.abs(offset));
+  const minutes = Math.abs((offset % 1) * 60);
+
+  const formattedHours = (hours < 10 ? '0' : '') + hours;
+  const formattedMinutes = (minutes < 10 ? '0' : '') + minutes;
+
+  const sign = offset >= 0 ? '+' : '-';
+  return sign + formattedHours + ':' + formattedMinutes;
+}
+
+const getCurrentTimezone = () => {
+  const timezoneOffset = new Date().getTimezoneOffset() / -60;
+  return offsetToTimeZone(timezoneOffset);
+};
+
 const errorCache = new Map();
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
@@ -31,6 +51,17 @@ export class APIClient extends APIClientSDK {
   app: Application;
   /** 该值会在 AntdAppProvider 中被重新赋值 */
   notification: any = notification;
+
+  getHeaders() {
+    const headers = super.getHeaders();
+    const appName = this.app.getName();
+    if (appName) {
+      headers['X-App'] = appName;
+    }
+    headers['X-Timezone'] = getCurrentTimezone();
+    headers['X-Hostname'] = window?.location?.hostname;
+    return headers;
+  }
 
   service(uid: string) {
     return this.services[uid];

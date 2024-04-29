@@ -132,9 +132,8 @@ export const useBlockRequestContext = () => {
 };
 
 /**
- * @internal
- * @param props
- * @returns
+ * @deprecated
+ * 废弃组件，不建议使用
  */
 export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   const fieldSchema = useFieldSchema();
@@ -195,7 +194,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 /**
  * @internal
  */
-const BlockContext = createContext<{
+export const BlockContext = createContext<{
   /** 用以区分区块的标识 */
   name: string;
 }>(null);

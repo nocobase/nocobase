@@ -23,6 +23,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
   targetField?: any;
   service: ResourceActionOptions<P>;
+  dataSource?: string;
   CustomDropdownRender?: (v: any) => any;
   optionFilter?: (option: any) => boolean;
 };
@@ -41,10 +42,11 @@ const InternalRemoteSelect = connect(
       targetField: _targetField,
       CustomDropdownRender,
       optionFilter,
+      dataSource: propsDataSource,
       ...others
     } = props;
     const dataSource = useDataSourceKey();
-    const headers = useDataSourceHeaders(dataSource);
+    const headers = useDataSourceHeaders(propsDataSource || dataSource);
     const [open, setOpen] = useState(false);
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();

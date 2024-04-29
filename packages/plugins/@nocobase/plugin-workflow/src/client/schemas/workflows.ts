@@ -210,9 +210,11 @@ export const workflowSchema: ISchema = {
                 useAction() {
                   const { t } = useTranslation();
                   const { resource } = useResourceContext();
+                  const service = useResourceActionContext();
                   return {
                     async run() {
                       await resource.sync();
+                      await service?.refresh();
                       message.success(t('Operation succeeded'));
                     },
                   };

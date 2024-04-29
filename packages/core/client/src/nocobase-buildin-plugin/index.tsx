@@ -213,7 +213,7 @@ const AppMaintaining: FC<{ app: Application; error: Error }> = observer(
           icon={icon}
           status={status}
           title={app.i18n.t(title)}
-          subTitle={app.i18n.t(subTitle)}
+          subTitle={<div style={{ whiteSpace: 'pre-wrap' }}>{app.i18n.t(subTitle)}</div>}
           // extra={[
           //   <Button type="primary" key="try" onClick={() => window.location.reload()}>
           //     {app.i18n.t('Try again')}

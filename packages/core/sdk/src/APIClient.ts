@@ -266,6 +266,23 @@ export class APIClient {
   auth: Auth;
   storage: Storage;
 
+  getHeaders() {
+    const headers = {};
+    if (this.auth.locale) {
+      headers['X-Locale'] = this.auth.locale;
+    }
+    if (this.auth.role) {
+      headers['X-Role'] = this.auth.role;
+    }
+    if (this.auth.authenticator) {
+      headers['X-Authenticator'] = this.auth.authenticator;
+    }
+    if (this.auth.token) {
+      headers['Authorization'] = `Bearer ${this.auth.token}`;
+    }
+    return headers;
+  }
+
   constructor(instance?: APIClientOptions) {
     if (typeof instance === 'function') {
       this.axios = instance;
@@ -320,7 +337,7 @@ export class APIClient {
     const target = {};
     const handler = {
       get: (_: any, actionName: string) => {
-        let url = name.split('.').join(`/${of || '_'}/`);
+        let url = name.split('.').join(`/${encodeURIComponent(of) || '_'}/`);
         url += `:${actionName}`;
         const config: AxiosRequestConfig = { url };
         if (['get', 'list'].includes(actionName)) {

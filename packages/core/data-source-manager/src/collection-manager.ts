@@ -8,9 +8,13 @@ export class CollectionManager implements ICollectionManager {
 
   constructor(options = {}) {}
 
+  /* istanbul ignore next -- @preserve */
   getRegisteredFieldType(type) {}
+
+  /* istanbul ignore next -- @preserve */
   getRegisteredFieldInterface(key: string) {}
 
+  /* istanbul ignore next -- @preserve */
   getRegisteredModel(key: string) {
     return this.models.get(key);
   }
@@ -22,8 +26,13 @@ export class CollectionManager implements ICollectionManager {
     return this.repositories.get(key);
   }
 
+  /* istanbul ignore next -- @preserve */
   registerFieldTypes() {}
+
+  /* istanbul ignore next -- @preserve */
   registerFieldInterfaces() {}
+
+  /* istanbul ignore next -- @preserve */
   registerCollectionTemplates() {}
 
   registerModels(models: Record<string, any>) {
@@ -46,6 +55,7 @@ export class CollectionManager implements ICollectionManager {
 
   extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ICollection {
     const collection = this.getCollection(collectionOptions.name);
+    collection.updateOptions(collectionOptions, mergeOptions);
     return collection;
   }
 
