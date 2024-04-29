@@ -9,9 +9,9 @@ export const WaitApp = async () => {
     expectNoTsError(screen.queryByText('Loading...')).not.toBeInTheDocument();
   });
 
-  const loadError = screen.queryByText('Load Plugin Error');
+  const loadError = screen.queryByText('App Error');
   if (loadError) {
-    expectNoTsError(screen.queryByText('Load Plugin Error')).not.toBeInTheDocument();
+    expectNoTsError(screen.queryByText('App Error')).not.toBeInTheDocument();
   }
 
   const renderError = screen.queryByText('Render Failed');

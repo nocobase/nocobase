@@ -1,13 +1,20 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Grid
 
-<code src="./demos/demo1.tsx"></code>
+Grid 布局组件。
 
-<code src="./demos/demo2.tsx"></code>
+```ts
+interface GridProps {
+  showDivider?: boolean;
+  dndContext?: false | DndContextProps;
+}
+```
 
-<code src="./demos/demo3.tsx"></code>
+`Grid` 组件需要配合 `Grid.Row`、`Grid.Col` 使用。
+
+## Basic Usage
+
+<code src="./demos/new-demos/basic.tsx"></code>
+
+## With Form
+
+Demo [GridLayout](/components/form-v2#grid-layout)

@@ -33,11 +33,11 @@ import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
-import { ComposedAction } from './types';
+import { ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 
 export const Action: ComposedAction = withDynamicSchemaProps(
-  observer((props: any) => {
+  observer((props: ActionProps) => {
     const {
       popover,
       confirm,
@@ -50,6 +50,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       title,
       onClick,
       style,
+      loading,
       openSize: os,
       disabled: propsDisabled,
       actionCallback,
@@ -171,14 +172,14 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           aria-label={getAriaLabel()}
           {...others}
           onMouseEnter={handleMouseEnter}
-          loading={field?.data?.loading}
+          loading={field?.data?.loading || loading}
           icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
           style={buttonStyle}
           onClick={handleButtonClick}
           component={tarComponent || Button}
           className={classnames(componentCls, hashId, className, 'nb-action')}
-          type={props.type === 'danger' ? undefined : props.type}
+          type={(props as any).type === 'danger' ? undefined : props.type}
         >
           {actionTitle}
           <Designer {...designerProps} />

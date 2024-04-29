@@ -1,6 +1,5 @@
 import { isValid } from '@formily/shared';
 import { toFixedByStep } from '@nocobase/utils/client';
-import type { InputNumberProps as AntdInputNumberProps } from 'antd/es/input-number';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
@@ -107,7 +106,7 @@ export function formatNumber(props) {
   return result;
 }
 
-export interface InputNumberProps extends AntdInputNumberProps {
+export interface InputNumberReadPrettyProps {
   formatStyle?: 'normal' | 'scientifix';
   unitConversion?: number;
   /**
@@ -118,9 +117,13 @@ export interface InputNumberProps extends AntdInputNumberProps {
    * @default '0.00'
    */
   separator?: '0,0.00' | '0.0,00' | '0 0,00' | '0.00';
+  step?: number;
+  value?: any;
+  addonBefore?: React.ReactNode;
+  addonAfter?: React.ReactNode;
 }
 
-export const ReadPretty: React.FC<InputNumberProps> = (props) => {
+export const ReadPretty: React.FC<InputNumberReadPrettyProps> = (props) => {
   const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
