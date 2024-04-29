@@ -99,11 +99,21 @@ export class OptionsParser {
    */
   protected parseSort(filterParams) {
     let sort = this.options?.sort || [];
+
     if (typeof sort === 'string') {
       sort = sort.split(',');
     }
 
+    const primaryKeyField = this.model.primaryKeyAttribute;
+
+    if (primaryKeyField) {
+      if (!sort.includes(primaryKeyField)) {
+        sort.push(primaryKeyField);
+      }
+    }
+
     const orderParams = [];
+
     for (const sortKey of sort) {
       let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
       const sortField: Array<any> = sortKey.replace('-', '').split('.');
