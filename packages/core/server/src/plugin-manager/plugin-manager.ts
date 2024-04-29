@@ -530,6 +530,7 @@ export class PluginManager {
     const toBeUpdated = [];
     for (const name of pluginNames) {
       const { name: pluginName } = await PluginManager.parseName(name);
+      console.log('pluginName', pluginName);
       const plugin = this.get(pluginName);
       if (!plugin) {
         throw new Error(`${pluginName} plugin does not exist`);
@@ -822,7 +823,7 @@ export class PluginManager {
 
     const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(file, authToken);
 
-    const name = options.name || packageName;
+    const { name } = await PluginManager.parseName(packageName);
 
     if (this.has(name)) {
       await removeTmpDir(tempFile, tempPackageContentDir);
@@ -857,7 +858,7 @@ export class PluginManager {
       authToken,
     );
 
-    const name = options.name || packageName;
+    const { name } = await PluginManager.parseName(packageName);
 
     if (this.has(name)) {
       await removeTmpDir(tempFile, tempPackageContentDir);

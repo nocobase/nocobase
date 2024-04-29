@@ -2,7 +2,7 @@ import { Migration } from '../migration';
 
 export default class extends Migration {
   on = 'afterSync'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<1.0.0-alpha.1';
+  appVersion = '<1.0.0-alpha.3';
 
   async up() {
     const items = await this.pm.repository.find();
