@@ -5,7 +5,7 @@ const Loading: FC = () => <div>Loading...</div>;
 const AppError: FC<{ error: Error }> = ({ error }) => {
   return (
     <div>
-      <div>App Error</div>
+      <div>Load Plugin Error</div>
       {error?.message}
       {process.env.__TEST__ && error?.stack}
     </div>

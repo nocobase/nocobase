@@ -166,3 +166,8 @@ useResource 用法：
 const resource = useResource('posts');
 const resource = useResource('posts.comments', 1);
 ```
+
+resource 的实际场景用例参见：
+
+- [useCollection()](collection-manager#usecollection)
+- [useCollectionField()](collection-manager#usecollectionfield)

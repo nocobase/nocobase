@@ -9,10 +9,7 @@ interface WithSchemaHookOptions {
   displayName?: string;
 }
 
-export function withDynamicSchemaProps<T = any>(
-  Component: React.ComponentType<T>,
-  options: WithSchemaHookOptions = {},
-) {
+export function withDynamicSchemaProps<T = any>(Component: any, options: WithSchemaHookOptions = {}) {
   const displayName = options.displayName || Component.displayName || Component.name;
   const ComponentWithProps: ComponentType<T> = (props) => {
     const { dn, findComponent } = useDesignable();

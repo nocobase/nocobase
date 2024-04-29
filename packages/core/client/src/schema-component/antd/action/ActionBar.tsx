@@ -1,6 +1,6 @@
 import { cx } from '@emotion/css';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
-import { Space, SpaceProps } from 'antd';
+import { Space } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { DndContext } from '../../common';
@@ -8,11 +8,10 @@ import { useDesignable, useProps } from '../../hooks';
 import { useSchemaInitializerRender } from '../../../application';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
-export interface ActionBarProps {
-  layout?: 'one-column' | 'two-columns';
+interface ActionBarContextForceProps {
+  layout?: 'one-column' | 'tow-columns';
   style?: CSSProperties;
   className?: string;
-  spaceProps?: SpaceProps;
 }
 
 export interface ActionBarContextValue {
@@ -20,7 +19,7 @@ export interface ActionBarContextValue {
   /**
    * override props
    */
-  forceProps?: ActionBarProps;
+  forceProps?: ActionBarContextForceProps;
   parentComponents?: string[];
 }
 
@@ -53,7 +52,7 @@ export const ActionBar = withDynamicSchemaProps(
     const { forceProps = {} } = useActionBarContext();
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { layout = 'two-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
+    const { layout = 'tow-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
 
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);

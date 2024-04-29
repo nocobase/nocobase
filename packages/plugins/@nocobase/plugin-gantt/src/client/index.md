@@ -1,4 +1,7 @@
-
+---
+group:
+  title: Schema Components
+---
 
 # Gantt
 

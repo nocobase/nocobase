@@ -3,10 +3,10 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { OpenSize, useActionContext } from '.';
 import { useToken } from '../../../style';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
-import { ComposedActionDrawer, OpenSize } from './types';
-import { useActionContext } from './hooks';
+import { ComposedActionDrawer } from './types';
 
 const openSizeWidthMap = new Map<OpenSize, string>([
   ['small', '40%'],

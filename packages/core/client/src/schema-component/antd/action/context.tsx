@@ -1,7 +1,8 @@
+import { Schema } from '@formily/react';
+import { DrawerProps, ModalProps } from 'antd';
 import React, { createContext, useEffect, useRef, useState } from 'react';
 import { useActionContext } from './hooks';
 import { useDataBlockRequest } from '../../../data-source';
-import { ActionContextProps } from './types';
 
 export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
@@ -36,3 +37,21 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
     </ActionContext.Provider>
   );
 };
+
+export type OpenSize = 'small' | 'middle' | 'large';
+export interface ActionContextProps {
+  button?: any;
+  visible?: boolean;
+  setVisible?: (v: boolean) => void;
+  openMode?: 'drawer' | 'modal' | 'page';
+  snapshot?: boolean;
+  openSize?: OpenSize;
+  containerRefKey?: string;
+  formValueChanged?: boolean;
+  setFormValueChanged?: (v: boolean) => void;
+  fieldSchema?: Schema;
+  drawerProps?: DrawerProps;
+  modalProps?: ModalProps;
+  submitted?: boolean;
+  setSubmitted?: (v: boolean) => void;
+}

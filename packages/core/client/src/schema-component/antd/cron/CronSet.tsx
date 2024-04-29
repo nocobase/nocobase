@@ -6,7 +6,7 @@ import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from '../input';
 import Cron from './Cron';
 
-export interface CronSetProps extends SelectProps {
+interface CronSetProps extends SelectProps {
   onChange: (v: string) => void;
 }
 
@@ -83,12 +83,7 @@ const CronSetInternal = (props: CronSetProps) => {
   );
 };
 
-export interface CronReadPrettyProps {
-  value?: string;
-  options?: SelectProps['options'];
-}
-
-const ReadPretty = (props: CronReadPrettyProps) => {
+const ReadPretty = (props: CronSetProps) => {
   const { value } = props;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();

@@ -1,17 +1,18 @@
+---
+group:
+  title: Schema Components
+  order: 3
+---
+
 # ColorPicker
 
-颜色选择器，其基于 ant-design [ColorPicker](https://ant.design/components/color-picker/) 组件进行封装。
+## Examples
 
-```ts
-interface ColorPickerProps extends Omit<AntdColorPickerProps, 'onChange'> {
-  onChange?: (color: string) => void;
-}
-```
+### Basic
 
-## Basic Usage
+<code src="./demos/demo1.tsx"></code>
 
-<code src="./demos/new-demos/basic.tsx"></code>
 
-## Read Pretty
 
-<code src="./demos/new-demos/read-pretty.tsx"></code>
+
+

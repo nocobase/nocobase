@@ -1,31 +1,22 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { isArr } from '@formily/shared';
-import {
-  GetDefaultFormatProps,
-  Str2momentOptions,
-  Str2momentValue,
-  getDefaultFormat,
-  str2moment,
-} from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
+import type {
+  DatePickerProps as AntdDatePickerProps,
+  RangePickerProps as AntdRangePickerProps,
+} from 'antd/es/date-picker';
 import cls from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
 
-export type ReadPrettyComposed = {
-  DatePicker: React.FC<ReadPrettyDatePickerProps>;
-  DateRangePicker: React.FC<DateRangePickerReadPrettyProps>;
+type Composed = {
+  DatePicker: React.FC<AntdDatePickerProps>;
+  DateRangePicker: React.FC<AntdRangePickerProps>;
 };
 
-export const ReadPretty: ReadPrettyComposed = () => null;
+export const ReadPretty: Composed = () => null;
 
-export interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefaultFormatProps {
-  value?: Str2momentValue;
-  className?: string;
-  prefixCls?: string;
-  showTime?: boolean;
-}
-
-ReadPretty.DatePicker = function DatePicker(props) {
+ReadPretty.DatePicker = function DatePicker(props: any) {
   const prefixCls = usePrefixCls('description-date-picker', props);
 
   if (!props.value) {
@@ -41,14 +32,7 @@ ReadPretty.DatePicker = function DatePicker(props) {
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;
 };
 
-export interface DateRangePickerReadPrettyProps extends Str2momentOptions, GetDefaultFormatProps {
-  value?: Str2momentValue;
-  className?: string;
-  prefixCls?: string;
-  style?: React.CSSProperties;
-}
-
-ReadPretty.DateRangePicker = function DateRangePicker(props: DateRangePickerReadPrettyProps) {
+ReadPretty.DateRangePicker = function DateRangePicker(props: any) {
   const prefixCls = usePrefixCls('description-text', props);
   const format = getDefaultFormat(props);
   const getLabels = () => {

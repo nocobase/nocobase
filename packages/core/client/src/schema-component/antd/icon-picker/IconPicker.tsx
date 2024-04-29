@@ -8,18 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../icon';
 import { StablePopover } from '../popover';
 
-export interface IconPickerProps {
-  value?: string;
-  onChange?: (value: string) => void;
-  disabled?: boolean;
-  suffix?: React.ReactNode;
-}
-
-interface IconPickerReadPrettyProps {
-  value?: string;
-}
-
-function IconField(props: IconPickerProps) {
+function IconField(props: any) {
   const layout = useFormLayout();
   const { value, onChange, disabled } = props;
   const [visible, setVisible] = useState(false);
@@ -75,13 +64,13 @@ function IconField(props: IconPickerProps) {
 
 export const IconPicker = connect(
   IconField,
-  mapProps((props: IconPickerProps, field) => {
+  mapProps((props, field) => {
     return {
       ...props,
       suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
   }),
-  mapReadPretty((props: IconPickerReadPrettyProps) => {
+  mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return <div></div>;
     }

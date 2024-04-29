@@ -1,15 +1,15 @@
 import { connect, mapReadPretty } from '@formily/react';
 import { Input } from 'antd';
-import { PasswordProps as AntdPasswordProps } from 'antd/es/input';
+import { PasswordProps } from 'antd/es/input';
 import React from 'react';
 import { PasswordStrength } from './PasswordStrength';
 
-export interface PasswordProps extends AntdPasswordProps {
-  checkStrength?: boolean;
+export interface IPasswordProps extends PasswordProps {
+  checkStrength: boolean;
 }
 
 export const Password = connect(
-  (props: PasswordProps) => {
+  (props: IPasswordProps) => {
     const { value, className, checkStrength, ...others } = props;
     const blockStyle: React.CSSProperties = {
       position: 'absolute',

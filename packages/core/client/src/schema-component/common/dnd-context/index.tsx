@@ -66,8 +66,6 @@ const useDragEnd = (onDragEnd) => {
   );
 };
 
-export type DndContextProps = Props;
-
 export const DndContext = observer(
   (props: Props) => {
     const { t } = useTranslation();

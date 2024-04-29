@@ -2,7 +2,7 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { Drawer } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { OpenSize } from './types';
+import { OpenSize } from './';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';

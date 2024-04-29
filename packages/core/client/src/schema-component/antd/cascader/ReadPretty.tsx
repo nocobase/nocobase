@@ -4,18 +4,7 @@ import { toArr } from '@formily/shared';
 import React from 'react';
 import { defaultFieldNames } from './defaultFieldNames';
 
-interface FieldNames {
-  label: string;
-  value: string;
-  children: string;
-}
-
-export interface CascaderReadPrettyProps {
-  fieldNames?: FieldNames;
-  value?: any;
-}
-
-export const ReadPretty: React.FC<CascaderReadPrettyProps> = (props) => {
+export const ReadPretty: React.FC<unknown> = (props: any) => {
   const { fieldNames = defaultFieldNames } = props;
   const values = toArr(props.value);
   const len = values.length;

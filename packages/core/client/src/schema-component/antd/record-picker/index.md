@@ -1,6 +1,10 @@
-# RecordPicker
+---
+group:
+  title: Schema Components
+  order: 3
+---
 
-用于关联字段的选择。
+# RecordPicker
 
 ## JSON Schema
 
@@ -31,7 +35,7 @@
 ```ts
 {
   type: 'array',
-  'x-pattern': 'readPretty',
+  'x-read-pretty': true,
   'x-component': 'RecordPicker',
   properties: {
     item: {

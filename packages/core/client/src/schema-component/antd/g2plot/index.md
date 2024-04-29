@@ -1,5 +1,9 @@
-# G2Plot
+---
+group:
+  title: Schema Components
+  order: 3
+---
 
-G2 图表。
+# G2Plot
 
 <code src="./demos/demo1.tsx"></code>

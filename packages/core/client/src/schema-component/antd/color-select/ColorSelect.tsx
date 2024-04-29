@@ -1,6 +1,6 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { Select, SelectProps, Tag } from 'antd';
+import { Select, Tag } from 'antd';
 import React from 'react';
 import { useCompile } from '../../hooks/useCompile';
 
@@ -19,12 +19,8 @@ const colors = {
   default: '{{t("Default")}}',
 };
 
-export interface ColorSelectProps extends SelectProps {
-  suffix?: React.ReactNode;
-}
-
 export const ColorSelect = connect(
-  (props: ColorSelectProps) => {
+  (props) => {
     const compile = useCompile();
     return (
       <Select {...props}>

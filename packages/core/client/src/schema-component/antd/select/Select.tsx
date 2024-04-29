@@ -2,34 +2,23 @@ import { CloseCircleFilled, CloseOutlined, LoadingOutlined } from '@ant-design/i
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
-import type { SelectProps as AntdSelectProps } from 'antd';
+import type { SelectProps } from 'antd';
 import { Select as AntdSelect, Empty, Spin, Tag } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
-import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
 
-export type SelectProps<
-  ValueType = any,
-  OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
-> = AntdSelectProps<ValueType, OptionType> & {
-  /**
-   * Whether it is an object value
-   */
+type Props = SelectProps<any, any> & {
   objectValue?: boolean;
   onChange?: (v: any) => void;
   multiple: boolean;
   rawOptions: any[];
-  /**
-   * format options
-   * @default { label: 'label', value: 'value', color: 'color', children: 'children' }
-   */
-  fieldNames?: any;
+  fieldNames: FieldNames;
 };
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
-const ObjectSelect = (props: SelectProps) => {
+const ObjectSelect = (props: Props) => {
   const { value, options, onChange, fieldNames, mode, loading, rawOptions, defaultValue, ...others } = props;
   const toValue = (v: any) => {
     if (isEmptyObject(v)) {
@@ -108,7 +97,7 @@ const ObjectSelect = (props: SelectProps) => {
 const filterOption = (input, option) => (option?.label ?? '').toLowerCase().includes((input || '').toLowerCase());
 
 const InternalSelect = connect(
-  (props: SelectProps) => {
+  (props: Props) => {
     const { objectValue, loading, value, rawOptions, defaultValue, ...others } = props;
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {

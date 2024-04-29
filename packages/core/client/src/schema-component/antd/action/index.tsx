@@ -7,4 +7,3 @@ export * from './hooks/useGetAriaLabelOfDrawer';
 export * from './hooks/useGetAriaLabelOfModal';
 export * from './hooks/useGetAriaLabelOfPopover';
 export * from './Action.Designer';
-export * from './types';

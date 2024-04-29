@@ -1,13 +1,13 @@
 import { connect, mapReadPretty } from '@formily/react';
-import { InputNumber as AntdNumber, InputNumberProps as AntdInputNumberProps } from 'antd';
+import { InputNumber as AntdNumber, InputNumberProps } from 'antd';
 import React from 'react';
-import { InputNumberReadPrettyProps, ReadPretty } from './ReadPretty';
+import { ReadPretty } from './ReadPretty';
 import BigNumber from 'bignumber.js';
 
 type ComposedInputNumber = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
 > & {
-  ReadPretty?: React.FC<InputNumberReadPrettyProps>;
+  ReadPretty?: React.FC<InputNumberProps>;
 };
 function toSafeNumber(value) {
   if (!value) {
@@ -19,7 +19,7 @@ function toSafeNumber(value) {
     return Number(value);
   }
 }
-export const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) => {
+export const InputNumber: ComposedInputNumber = connect((props) => {
   const { onChange, ...others } = props;
   const handleChange = (v) => {
     if (Number.isNaN(v)) {

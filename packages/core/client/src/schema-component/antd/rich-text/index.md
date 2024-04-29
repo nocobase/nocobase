@@ -1,6 +1,10 @@
-# Rich Text
+---
+group:
+  title: Schema Components
+  order: 3
+---
 
-富文本编辑器。其基于 [react-quill](https://github.com/zenoamaro/react-quill) 封装。
+# Rich Text
 
 ## Examples
 

@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
@@ -21,9 +21,8 @@ import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 
-export interface FormProps extends IFormLayoutProps {
-  form?: FormilyForm;
-  disabled?: boolean;
+export interface FormProps {
+  [key: string]: any;
 }
 function hasInitialValues(obj, rule) {
   const type = Object.keys(rule.condition)[0] || '$and';

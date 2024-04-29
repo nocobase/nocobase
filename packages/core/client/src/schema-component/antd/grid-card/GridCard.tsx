@@ -56,19 +56,7 @@ const designerCss = css`
   }
 `;
 
-export interface GridCardProps {
-  columnCount?: {
-    xs?: number;
-    sm?: number;
-    md?: number;
-    lg?: number;
-    xl?: number;
-    xxl?: number;
-  };
-  pagination?: PaginationProps;
-}
-
-const InternalGridCard = (props: GridCardProps) => {
+const InternalGridCard = (props) => {
   // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { columnCount: columnCountProp, pagination } = useProps(props);
 

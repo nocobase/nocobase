@@ -1,6 +1,6 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
-import { Divider, Tag } from 'antd';
+import { Divider, SelectProps, Tag } from 'antd';
 import dayjs from 'dayjs';
 import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -8,29 +8,21 @@ import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useCompile } from '../../hooks';
-import { FieldNames, Select, SelectProps, defaultFieldNames } from '../select';
+import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { useDataSourceHeaders } from '../../../data-source/utils';
 import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
+  objectValue?: boolean;
   onChange?: (v: any) => void;
-  /**
-   * useRequest() 的 debounceWait 参数
-   */
-  wait?: number;
-  /**
-   * useRequest() 的 manual 参数
-   */
-  manual?: boolean;
-  targetField?: any;
-  /**
-   * useRequest() 的 service 参数
-   */
-  service: ResourceActionOptions<P>;
   target: string;
-  mapOptions?: (data: any) => SelectProps['fieldNames'];
+  wait?: number;
+  manual?: boolean;
+  mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
+  targetField?: any;
+  service: ResourceActionOptions<P>;
   dataSource?: string;
   CustomDropdownRender?: (v: any) => any;
   optionFilter?: (option: any) => boolean;
@@ -39,7 +31,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
     const {
-      fieldNames = {} as FieldNames,
+      fieldNames = {},
       service = {},
       wait = 300,
       value,

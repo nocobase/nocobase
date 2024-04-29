@@ -1,14 +1,13 @@
+---
+group:
+  title: Schema Components
+  order: 3
+---
+
 # Preview
 
-用于预览上传的文件。
+## Examples
 
-```ts
-type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
-  onChange?: (fileList: UploadFile[]) => void;
-  serviceErrorMessage?: string;
-  value?: any;
-  size?: string;
-}
-```
+### Preview
 
 <code src="./demos/demo1.tsx"></code>
