@@ -53,7 +53,8 @@ export async function build(pkgs: string[]) {
   if (clientCore) {
     await buildPackage(clientCore, 'es', buildClient);
   }
-  const esmPackages = cjsPackages.filter(pkg => ESM_PACKAGES.includes(pkg.name));
+  const esmPackages = packages.filter(pkg => ESM_PACKAGES.includes(pkg.name));
+  await buildPackages(esmPackages, 'lib', buildCjs);
   await buildPackages(esmPackages, 'es', buildEsm);
 
   // plugins/*、samples/*
