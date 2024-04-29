@@ -12,7 +12,7 @@
     "@ant-design/cssinjs": "^1.11.1",
     "@ant-design/icons": "5.x",
     "@arvinxu/layout-kit": "^1",
-    "@ctrl/tinycolor": "^3.6.0",
+    "@ctrl/tinycolor": "^4.1.0",
     "@emotion/css": "^11.11.2",
     "antd": "5.x",
     "classnames": "^2.3.1",
