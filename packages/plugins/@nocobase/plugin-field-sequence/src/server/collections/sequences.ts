@@ -10,7 +10,10 @@ export default defineCollection({
       const sequenceFields = importedCollections
         .map((collection) => {
           const collectionInstance = app.db.getCollection(collection);
-          if (!collectionInstance) throw new Error(`Collection ${collection} not found`);
+          if (!collectionInstance) {
+            app.logger.warn(`Collection ${collection} not found`);
+            return [];
+          }
           return [...collectionInstance.fields.values()].filter((field) => field.type === 'sequence');
         })
         .flat()
