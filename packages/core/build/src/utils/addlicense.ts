@@ -47,7 +47,7 @@ function addLicenseToFile(filePath: string | Buffer, licenseText: string) {
 }
 
 export async function addLicense(cwd: string, log: PkgLog) {
-  const stream = fg.globStream('**/*.{js,jsx,ts,tsx,d.ts}', { cwd, ignore: ['node_modules'], absolute: true, onlyFiles: true });
+  const stream = fg.globStream('**/*.{js,jsx,ts,tsx}', { cwd, ignore: ['node_modules', '*.d.ts'], absolute: true, onlyFiles: true });
 
   const licenseText = getLicenseText(cwd);
   for await (const filePath of stream) {
