@@ -26,6 +26,25 @@ type RemoteSelectProps<P = any> = SelectProps<P, any> & {
 };
 ```
 
-## Examples
+## Basic usage
 
-<code src="./demos/demo1.tsx"></code>
+<code src="./demos/new-demos/basic.tsx"></code>
+
+## Manual false
+
+<code src="./demos/new-demos/manual.tsx"></code>
+
+## Multiple
+
+<code src="./demos/new-demos/multiple.tsx"></code>
+
+## Read Pretty
+
+```ts
+interface RemoteSelectReadPrettyProps extends SelectReadPrettyProps {
+  fieldNames?: SelectProps['fieldNames'];
+  service: ResourceActionOptions;
+}
+```
+
+<code src="./demos/new-demos/read-pretty.tsx"></code>

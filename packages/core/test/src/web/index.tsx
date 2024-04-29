@@ -45,8 +45,8 @@ function getProcessMockData(apis: Record<string, any>, key: string) {
     if (config?.params?.pageSize || config?.params?.page) {
       const { data, meta } = apis[key];
 
-      const pageSize = config.params.pageSize || meta?.pageSize;
-      const page = config.params.page || meta?.page;
+      const pageSize = config.params.pageSize || meta?.pageSize || 20;
+      const page = config.params.page || meta?.page || 1;
       return [
         200,
         {

@@ -11,7 +11,7 @@ const App = () => {
   }
 
   return (
-    <Button type="primary" onClick={() => setShowError(true)}>
+    <Button danger onClick={() => setShowError(true)}>
       show error
     </Button>
   );

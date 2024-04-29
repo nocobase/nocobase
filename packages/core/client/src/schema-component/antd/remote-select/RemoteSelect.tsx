@@ -17,16 +17,17 @@ const EMPTY = 'N/A';
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   onChange?: (v: any) => void;
   /**
-   * useRequest() 的 debounceWait 参数
+   * useRequest() `debounceWait` parameter
    */
   wait?: number;
   /**
-   * useRequest() 的 manual 参数
+   * useRequest() `manual` parameter
+   * @default true
    */
   manual?: boolean;
   targetField?: any;
   /**
-   * useRequest() 的 service 参数
+   * useRequest() `service` parameter
    */
   service: ResourceActionOptions<P>;
   target: string;

@@ -373,10 +373,10 @@ export default defineConfig({
               "title": "G2Plot",
               "link": "/components/g2plot"
             },
-            {
-              "title": "Preview",
-              "link": "/components/preview"
-            },
+            // {
+            //   "title": "Preview",
+            //   "link": "/components/preview"
+            // },
           ]
         },
       ]

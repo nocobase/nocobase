@@ -2,6 +2,14 @@
 
 树选择。其基于 ant-design [TreeSelect](https://ant.design/components/tree-select) 组件封装。
 
-## Examples
+```ts
+type TreeSelectProps = AntdTreeSelectProps
+```
 
-<code src="./demos/demo1.tsx"></code>
+## Basic
+
+<code src="./demos/new-demos/basic.tsx"></code>
+
+## Read Pretty
+
+<code src="./demos/new-demos/read-pretty.tsx"></code>
