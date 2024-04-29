@@ -75,7 +75,7 @@ export const useTableBlockProps = () => {
               : [`-${sorter.field}`]
             : globalSort || ctx.dragSortBy
           : ctx.dragSortBy;
-        const currentPageSize = pageSize || fieldSchema.parent?.['x-decorator-props']?.['params'].pageSize;
+        const currentPageSize = pageSize || fieldSchema.parent?.['x-decorator-props']?.['params']?.pageSize;
         ctx.service.run({ ...params?.[0], page: current || 1, pageSize: currentPageSize, sort });
       },
       [globalSort, params],
