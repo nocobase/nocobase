@@ -30,6 +30,10 @@ function getLicenseText(packageDir) {
 function addLicenseToFile(filePath, licenseText) {
   const data = fs.readFileSync(filePath, 'utf8');
 
+  if (data.includes(licenseText)) {
+    return;
+  }
+
   // 添加授权信息到文件内容的顶部
   const newData = licenseText + '\n\n' + data;
 
@@ -50,6 +54,8 @@ async function addToPackageSource(packageDir) {
     onlyFiles: true,
   });
 
+  console.log('package', path.basename(packageDir));
+
   const licenseText = getLicenseText(packageDir);
   for await (const filePath of stream) {
     addLicenseToFile(filePath, licenseText);
@@ -68,7 +74,9 @@ function getPackages() {
 
 function run() {
   const packages = getPackages();
-  addToPackageSource(packages.pop());
+  for (const package of packages) {
+    addToPackageSource(package);
+  }
 }
 
 run();
