@@ -1,7 +1,7 @@
 import { Database } from '@nocobase/database';
+import { CollectionRepository } from '@nocobase/plugin-data-source-main';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
-import { CollectionRepository } from '@nocobase/plugin-collection-manager';
 
 describe('role check action', () => {
   let app: MockServer;

@@ -44,6 +44,7 @@ function migrateSchema(schema) {
 }
 
 export default class extends Migration {
+  appVersion = '<0.21.0-alpha.15';
   async up() {
     const { db } = this.context;
     const NodeRepo = db.getRepository('flow_nodes');
