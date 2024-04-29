@@ -18,6 +18,9 @@ type RestoreOptions = {
 
 const renamePlugins = async (app) => {
   const names = {
+    oidc: '@nocobase/plugin-auth-oidc',
+    cas: '@nocobase/plugin-auth-cas',
+    saml: '@nocobase/plugin-auth-saml',
     'collection-manager': '@nocobase/plugin-data-source-main',
     'china-region': '@nocobase/plugin-field-china-region',
     'custom-request': '@nocobase/plugin-action-custom-request',
