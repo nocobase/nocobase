@@ -20,7 +20,7 @@ const colors = {
 };
 
 export interface ColorSelectProps extends SelectProps {
-  suffix: React.ReactNode;
+  suffix?: React.ReactNode;
 }
 
 export const ColorSelect = connect(

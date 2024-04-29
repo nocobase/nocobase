@@ -21,8 +21,6 @@ type CascaderProps<DataNodeType extends BaseOptionType = any> = AntdCascaderProp
 
 ## Asynchronous Data Source
 
-注意需要将 `options` 同步到 `field.dataSource` 中。
-
 <code src="./demos/new-demos/loadData.tsx"></code>
 
 ## labelInValue
@@ -38,5 +36,18 @@ type CascaderProps<DataNodeType extends BaseOptionType = any> = AntdCascaderProp
 <code src="./demos/new-demos/changeOnSelectLast.tsx"></code>
 
 ## Read Pretty
+
+```ts
+interface FieldNames {
+  label: string;
+  value: string;
+  children: string;
+}
+
+export interface CascaderReadPrettyProps {
+  fieldNames?: FieldNames;
+  value?: any;
+}
+```
 
 <code src="./demos/new-demos/read-pretty.tsx"></code>

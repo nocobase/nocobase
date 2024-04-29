@@ -4,22 +4,28 @@
 
 ## Radio
 
-```ts
-interface RadioProps extends AntdRadioProps {}
-```
-
 ### Basic Usage
+
+```ts
+type RadioProps = AntdRadioProps;
+```
 
 <code src="./demos/new-demos/radio-basic.tsx"></code>
 
 ### Read Pretty
+
+```ts
+interface RadioReadPrettyProps  {
+  value?: boolean;
+}
+```
 
 <code src="./demos/new-demos/radio-read-pretty.tsx"></code>
 
 ## Radio Group
 
 ```ts
-interface RadioGroupProps extends AntdRadioGroupProps {}
+type RadioGroupProps = AntdRadioGroupProps;
 ```
 
 ### Basic Usage

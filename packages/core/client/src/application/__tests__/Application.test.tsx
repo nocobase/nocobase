@@ -377,7 +377,7 @@ describe('Application', () => {
       render(<Root />);
 
       await sleep(10);
-      expect(screen.getByText('Load Plugin Error')).toBeInTheDocument();
+      expect(screen.getByText('App Error')).toBeInTheDocument();
     });
 
     it('replace Component', async () => {

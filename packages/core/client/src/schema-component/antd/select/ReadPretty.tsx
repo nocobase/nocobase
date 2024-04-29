@@ -4,11 +4,22 @@ import { isValid } from '@formily/shared';
 import { Tag } from 'antd';
 import React from 'react';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
-import { defaultFieldNames, getCurrentOptions } from './utils';
+import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 
+export interface SelectReadPrettyProps {
+  value: any;
+  options?: any[];
+  ellipsis?: boolean;
+  /**
+   * format options
+   * @default { label: 'label', value: 'value', color: 'color', children: 'children' }
+   */
+  fieldNames?: FieldNames;
+}
+
 export const ReadPretty = observer(
-  (props: any) => {
+  (props: SelectReadPrettyProps) => {
     const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const field = useField<any>();
 

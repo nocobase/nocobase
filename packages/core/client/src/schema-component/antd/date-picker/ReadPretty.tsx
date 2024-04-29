@@ -1,24 +1,31 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { isArr } from '@formily/shared';
-import { Str2momentOptions, getDefaultFormat, str2moment } from '@nocobase/utils/client';
-import type {
-  DatePickerProps as AntdDatePickerProps,
-  RangePickerProps as AntdRangePickerProps,
-} from 'antd/es/date-picker';
+import {
+  GetDefaultFormatProps,
+  Str2momentOptions,
+  Str2momentValue,
+  getDefaultFormat,
+  str2moment,
+} from '@nocobase/utils/client';
 import cls from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
 
-type Composed = {
-  DatePicker: React.FC<AntdDatePickerProps>;
-  DateRangePicker: React.FC<AntdRangePickerProps>;
+export type ReadPrettyComposed = {
+  DatePicker: React.FC<ReadPrettyDatePickerProps>;
+  DateRangePicker: React.FC<DateRangePickerReadPrettyProps>;
 };
 
-export const ReadPretty: Composed = () => null;
+export const ReadPretty: ReadPrettyComposed = () => null;
 
-export type ReadPrettyDatePickerProps = AntdDatePickerProps & Str2momentOptions;
+export interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefaultFormatProps {
+  value?: Str2momentValue;
+  className?: string;
+  prefixCls?: string;
+  showTime?: boolean;
+}
 
-ReadPretty.DatePicker = function DatePicker(props: ReadPrettyDatePickerProps) {
+ReadPretty.DatePicker = function DatePicker(props) {
   const prefixCls = usePrefixCls('description-date-picker', props);
 
   if (!props.value) {
@@ -34,9 +41,14 @@ ReadPretty.DatePicker = function DatePicker(props: ReadPrettyDatePickerProps) {
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;
 };
 
-export type ReadPrettyDateRangePickerProps = AntdRangePickerProps & Str2momentOptions;
+export interface DateRangePickerReadPrettyProps extends Str2momentOptions, GetDefaultFormatProps {
+  value?: Str2momentValue;
+  className?: string;
+  prefixCls?: string;
+  style?: React.CSSProperties;
+}
 
-ReadPretty.DateRangePicker = function DateRangePicker(props: ReadPrettyDateRangePickerProps) {
+ReadPretty.DateRangePicker = function DateRangePicker(props: DateRangePickerReadPrettyProps) {
   const prefixCls = usePrefixCls('description-text', props);
   const format = getDefaultFormat(props);
   const getLabels = () => {

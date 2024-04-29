@@ -7,11 +7,11 @@ const App = getAppComponent({
     'x-decorator': 'FormV2',
     'x-component': 'ShowFormData',
     properties: {
-      test1: {
+      test: {
         type: 'string',
-        title: 'Test1',
+        title: 'Test',
         'x-decorator': 'FormItem',
-        'x-component': 'Input.TextArea',
+        'x-component': 'Input.URL',
       },
     },
   },

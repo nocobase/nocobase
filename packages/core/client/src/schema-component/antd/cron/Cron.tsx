@@ -40,7 +40,11 @@ const Input = (props: CronProps) => {
   );
 };
 
-const ReadPretty = (props: CronProps) => {
+interface CronReadPrettyProps {
+  value?: string;
+}
+
+const ReadPretty = (props: CronReadPrettyProps) => {
   const api = useAPIClient();
   const locale = api.auth.getLocale();
   const value = useMemo(() => {

@@ -5,14 +5,7 @@
 ## DatePicker
 
 ```ts
-export interface Str2momentOptions {
-  picker?: 'year' | 'month' | 'week' | 'quarter';
-  utcOffset?: number;
-  gmt?: boolean;
-  utc?: boolean;
-}
-
-type DatePickerProps = AntdDatePickerProps & Str2momentOptions
+type DatePickerProps = AntdDatePickerProps
 ```
 
 ### Basic Usage
@@ -28,6 +21,29 @@ type DatePickerProps = AntdDatePickerProps & Str2momentOptions
 <code src="./demos/new-demos/date-show-time.tsx"></code>
 
 ### Read Pretty
+
+```ts
+interface GetDefaultFormatProps {
+  format?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  picker?: 'year' | 'month' | 'week' | 'quarter';
+  showTime?: boolean;
+}
+
+interface Str2momentOptions {
+  gmt?: boolean;
+  picker?: 'year' | 'month' | 'week' | 'quarter';
+  utcOffset?: number;
+  utc?: boolean;
+}
+
+interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefaultFormatProps {
+  value?: Str2momentValue;
+  className?: string;
+  prefixCls?: string;
+}
+```
 
 <code src="./demos/new-demos/date-read-pretty.tsx"></code>
 
@@ -46,14 +62,7 @@ type DatePickerProps = AntdDatePickerProps & Str2momentOptions
 ## RangePicker
 
 ```ts
-export interface Str2momentOptions {
-  gmt?: boolean;
-  picker?: 'year' | 'month' | 'week' | 'quarter';
-  utcOffset?: any;
-  utc?: boolean;
-}
-
-type DatePickerProps = AntdRangePickerProps & Str2momentOptions
+type DatePickerProps = AntdRangePickerProps
 ```
 
 ### Basic Usage
@@ -65,6 +74,15 @@ type DatePickerProps = AntdRangePickerProps & Str2momentOptions
 <code src="./demos/new-demos/range-format.tsx"></code>
 
 ### Read Pretty
+
+```ts
+interface DateRangePickerReadPrettyProps extends Str2momentOptions, GetDefaultFormatProps {
+  value?: Str2momentValue;
+  className?: string;
+  prefixCls?: string;
+  style?: React.CSSProperties;
+}
+```
 
 <code src="./demos/new-demos/range-read-pretty.tsx"></code>
 

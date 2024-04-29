@@ -4,51 +4,109 @@
 
 ## Input
 
-```ts
-interface InputProps extends AntdInputProps {
-  ellipsis?: boolean;
-}
-```
-
 ### Basic Usage
+
+```ts
+type InputProps = AntdInputProps;
+```
 
 <code src="./demos/new-demos/input.tsx"></code>
 
-### ReadPretty and Ellipsis
+### ReadPretty
+
+```ts
+interface InputReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  addonBefore?: React.ReactNode;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  ellipsis?: boolean;
+  prefixCls?: string;
+}
+```
 
 <code src="./demos/new-demos/input-read-pretty.tsx"></code>
 
 ## Input.TextArea
 
+### Basic Usage
+
 ```ts
-interface InputTextAreaProps extends AntdTextAreaProps {
-  ellipsis?: boolean;
-  text?: boolean;
-  addonBefore?: any;
-  suffix?: React.ReactNode;
-  addonAfter?: React.ReactNode;
-  /**
-   * Whether to automatically process text content
-   * @default true
-   */
-  autop?: boolean;
-}
+type InputTextAreaProps = AntdTextAreaProps;
 ```
 
 <code src="./demos/new-demos/textarea.tsx"></code>
 
-## Input.URL
+### ReadPretty
 
 ```ts
-type InputURL = InputProps;
+interface InputTextAreaReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  addonBefore?: React.ReactNode;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  ellipsis?: boolean;
+  text?: boolean;
+  autop?: boolean;
+  prefixCls?: string;
+}
 ```
 
-<code src="./demos/url.tsx"></code>
+<code src="./demos/new-demos/textarea-read-pretty.tsx"></code>
+
+## Input.URL
+
+### Basic Usage
+
+```ts
+type InputURLProps = InputProps;
+```
+
+<code src="./demos/new-demos/url.tsx"></code>
+
+### ReadPretty
+
+```ts
+interface URLReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  addonBefore?: React.ReactNode;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  prefixCls?: string;
+}
+```
+
+<code src="./demos/new-demos/url-read-pretty.tsx"></code>
 
 ## Input.JSON
 
+### Basic Usage
+
 ```ts
-type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number }
+type JSONTextAreaProps = AntdTextAreaProps & { value?: string; space?: number }
 ```
 
-<code src="./demos/json.tsx"></code>
+<code src="./demos/new-demos/json.tsx"></code>
+
+### ReadPretty
+
+```ts
+interface JSONTextAreaReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  space?: number;
+  prefixCls?: string;
+}
+```
+
+<code src="./demos/new-demos/json-read-pretty.tsx"></code>

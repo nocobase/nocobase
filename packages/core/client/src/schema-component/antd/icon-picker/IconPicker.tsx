@@ -15,6 +15,10 @@ export interface IconPickerProps {
   suffix?: React.ReactNode;
 }
 
+interface IconPickerReadPrettyProps {
+  value?: string;
+}
+
 function IconField(props: IconPickerProps) {
   const layout = useFormLayout();
   const { value, onChange, disabled } = props;
@@ -77,7 +81,7 @@ export const IconPicker = connect(
       suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
   }),
-  mapReadPretty((props) => {
+  mapReadPretty((props: IconPickerReadPrettyProps) => {
     if (!isValid(props.value)) {
       return <div></div>;
     }

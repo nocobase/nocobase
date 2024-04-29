@@ -6,12 +6,14 @@ const App = getAppComponent({
     name: 'root',
     'x-decorator': 'FormV2',
     'x-component': 'ShowFormData',
+    'x-read-pretty': true,
     properties: {
-      test1: {
+      test: {
         type: 'string',
-        title: 'Test1',
+        title: 'Test',
+        default: 'https://www.nocobase.com',
         'x-decorator': 'FormItem',
-        'x-component': 'Input.TextArea',
+        'x-component': 'Input.URL',
       },
     },
   },

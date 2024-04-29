@@ -16,14 +16,35 @@ type SelectProps = AntdSelectProps<any, any> & {
 };
 ```
 
-### Single
+## Basic Usage
 
-<code src="./demos/demo1.tsx"></code>
+<code src="./demos/new-demos/basic.tsx"></code>
 
-### Multiple
+## Multiple
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/new-demos/multiple.tsx"></code>
 
-### Value is object
+## ObjectValue
 
-<code src="./demos/demo3.tsx"></code>
+<code src="./demos/new-demos/object-value.tsx"></code>
+
+## fieldNames
+
+<code src="./demos/new-demos/fieldNames.tsx"></code>
+
+## Read Pretty
+
+```ts
+interface SelectReadPrettyProps {
+  value: any;
+  options?: any[];
+  ellipsis?: boolean;
+  /**
+   * format options
+   * @default { label: 'label', value: 'value', color: 'color', children: 'children' }
+   */
+  fieldNames?: FieldNames;
+}
+```
+
+<code src="./demos/new-demos/read-pretty.tsx"></code>
