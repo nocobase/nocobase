@@ -48,6 +48,11 @@ const resourceActionProps = {
     },
   },
 };
+
+const CollectionFieldsProvider = (props) => {
+  return <ResourceActionProvider {...resourceActionProps}>{props.children}</ResourceActionProvider>;
+};
+
 const indentStyle = css`
   .ant-table {
     margin-left: -16px !important;
@@ -77,8 +82,6 @@ const tableContainer = css`
 `;
 
 const titlePrompt = 'Default title for each record';
-const RefreshContext = createContext(null);
-
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager_deprecated();
@@ -92,7 +95,7 @@ const CurrentFields = (props) => {
   const targetTemplate = getTemplate(template);
   const columns: TableColumnProps<any>[] = [
     {
-      dataIndex: ['uiSchema', 'rawTitle'],
+      dataIndex: ['uiSchema', 'title'],
       title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 7 }}>{compile(value)}</div>,
     },
@@ -256,11 +259,9 @@ const InheritFields = (props) => {
       dataIndex: 'actions',
       title: t('Actions'),
       render: function Render(_, record) {
-        const { handleRefresh } = useContext(RefreshContext);
         const overrideProps = {
           type: 'primary',
           currentCollection: name,
-          handleRefresh,
         };
         const viewCollectionProps = {
           type: 'primary',
@@ -288,20 +289,19 @@ const InheritFields = (props) => {
   );
 };
 
-export const CollectionFields = () => {
+const CollectionFieldsInternal = () => {
   const compile = useCompile();
   const field = useField<Field>();
   const { name, template } = useRecord();
   const {
     data: { database },
   } = useCurrentAppInfo();
-  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getTemplate } =
-    useCollectionManager_deprecated();
+  const { getInterface, getInheritCollections, getCollection, getTemplate } = useCollectionManager_deprecated();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
   const collectionResource = useResourceContext();
-  const { refreshAsync } = useContext(ResourceActionContext);
+  const { refreshAsync, data } = useContext(ResourceActionContext);
   const targetTemplate = getTemplate(template);
   const inherits = getInheritCollections(name);
 
@@ -340,8 +340,7 @@ export const CollectionFields = () => {
       title: t('Actions'),
     },
   ];
-
-  const fields = getCurrentCollectionFields(name);
+  const fields = data?.data || [];
   const groups = {
     pf: [],
     association: [],
@@ -418,65 +417,64 @@ export const CollectionFields = () => {
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
-  const [refresh, setRefresh] = useState(false);
-
-  const handleRefresh = () => {
-    setRefresh(!refresh);
-  };
   return (
-    <RefreshContext.Provider value={{ refresh, handleRefresh }}>
-      <ResourceActionProvider {...resourceActionProps}>
-        <FormContext.Provider value={form}>
-          <FieldContext.Provider value={f}>
-            <Space
-              align={'end'}
-              className={css`
-                justify-content: flex-end;
-                display: flex;
-                margin-bottom: 16px;
-              `}
-            >
-              <Action {...deleteProps} />
-              <SyncFieldsAction {...syncProps} />
-              <SyncSQLFieldsAction refreshCMList={refreshAsync} />
-              <SchemaComponent
-                schema={{
-                  type: 'object',
-                  properties: {
-                    ...targetTemplate.configureActions,
-                  },
-                }}
-              />
-              <AddCollectionField {...addProps} />
-            </Space>
-            <Table
-              rowKey={'key'}
-              columns={columns}
-              dataSource={dataSource.filter((d) => d.fields.length)}
-              pagination={false}
-              className={tableContainer}
-              expandable={{
-                defaultExpandAllRows: true,
-                defaultExpandedRowKeys: dataSource.map((d) => d.key),
-                expandedRowRender: (record) =>
-                  record.inherit ? (
-                    <InheritFields
-                      fields={record.fields}
-                      collectionResource={collectionResource}
-                      refreshAsync={refreshAsync}
-                    />
-                  ) : (
-                    <CurrentFields
-                      fields={record.fields}
-                      collectionResource={collectionResource}
-                      refreshAsync={refreshAsync}
-                    />
-                  ),
-              }}
-            />
-          </FieldContext.Provider>
-        </FormContext.Provider>
-      </ResourceActionProvider>
-    </RefreshContext.Provider>
+    <FormContext.Provider value={form}>
+      <FieldContext.Provider value={f}>
+        <Space
+          align={'end'}
+          className={css`
+            justify-content: flex-end;
+            display: flex;
+            margin-bottom: 16px;
+          `}
+        >
+          <Action {...deleteProps} />
+          <SyncFieldsAction {...syncProps} />
+          <SyncSQLFieldsAction refreshCMList={refreshAsync} />
+          <SchemaComponent
+            schema={{
+              type: 'object',
+              properties: {
+                ...targetTemplate.configureActions,
+              },
+            }}
+          />
+          <AddCollectionField {...addProps} />
+        </Space>
+        <Table
+          rowKey={'key'}
+          columns={columns}
+          dataSource={dataSource.filter((d) => d.fields.length)}
+          pagination={false}
+          className={tableContainer}
+          expandable={{
+            defaultExpandAllRows: true,
+            defaultExpandedRowKeys: dataSource.map((d) => d.key),
+            expandedRowRender: (record) =>
+              record.inherit ? (
+                <InheritFields
+                  fields={record.fields}
+                  collectionResource={collectionResource}
+                  refreshAsync={refreshAsync}
+                />
+              ) : (
+                <CurrentFields
+                  fields={record.fields}
+                  collectionResource={collectionResource}
+                  refreshAsync={refreshAsync}
+                />
+              ),
+          }}
+        />
+      </FieldContext.Provider>
+    </FormContext.Provider>
+  );
+};
+
+export const CollectionFields = () => {
+  return (
+    <CollectionFieldsProvider>
+      <CollectionFieldsInternal />
+    </CollectionFieldsProvider>
   );
 };
