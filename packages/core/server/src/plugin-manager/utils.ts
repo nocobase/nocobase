@@ -522,8 +522,7 @@ export async function getCompatible(packageName: string) {
   if (hasSrc) {
     try {
       externalVersion = await getExternalVersionFromSource(packageName);
-    } catch (error) {
-      console.log('getExternalVersionFromSource error:', error);
+    } catch {
       hasError = true;
     }
   }
