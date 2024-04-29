@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-kanban",
-  "version": "0.21.0-alpha.15",
+  "version": "1.0.0-alpha.1",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-kanban",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-kanban",
@@ -10,9 +10,9 @@
   "description": "Provides kanban block.",
   "description.zh-CN": "提供看板区块。",
   "peerDependencies": {
-    "@nocobase/client": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
   },
   "dependencies": {
     "react-intersection-observer": "^9.8.1"
