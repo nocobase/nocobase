@@ -22,7 +22,7 @@ export type SelectProps<
   rawOptions: any[];
   /**
    * format options
-   * @default { label: 'label', value: 'value', color: 'color', children: 'children' }
+   * @default { label: 'label', value: 'value', color: 'color', options: 'children' }
    */
   fieldNames?: FieldNames;
 };

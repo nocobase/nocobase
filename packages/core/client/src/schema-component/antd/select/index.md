@@ -3,6 +3,13 @@
 选择器。其基于 Ant Design 的 [Select](https://ant.design/components/select-cn/) 组件进行封装。
 
 ```ts
+interface FieldNames {
+  label?: string;
+  value?: string;
+  color?: string;
+  options?: string;
+}
+
 type SelectProps = AntdSelectProps<any, any> & {
   /**
    * Whether it is an object value
@@ -10,7 +17,7 @@ type SelectProps = AntdSelectProps<any, any> & {
   objectValue?: boolean;
   /**
    * format options
-   * @default { label: 'label', value: 'value', color: 'color', children: 'children' }
+   * @default { label: 'label', value: 'value', color: 'color', options: 'children' }
    */
   fieldNames: FieldNames;
 };
@@ -41,7 +48,7 @@ interface SelectReadPrettyProps {
   ellipsis?: boolean;
   /**
    * format options
-   * @default { label: 'label', value: 'value', color: 'color', children: 'children' }
+   * @default { label: 'label', value: 'value', color: 'color', options: 'children' }
    */
   fieldNames?: FieldNames;
 }
