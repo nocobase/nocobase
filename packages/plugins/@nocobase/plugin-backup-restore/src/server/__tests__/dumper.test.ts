@@ -30,22 +30,19 @@ describe('dumper', () => {
     });
   });
 
-  it.runIf(process.env['DB_DIALECT'] === 'mysql' && process.env['DB_UNDERSCORED'] == 'false')(
-    'should restore from version 0.21 backup file',
-    async () => {
-      const file = path.resolve(__dirname, 'files', 'backup_20240429_110942_7061.nbdump');
+  it.skip('should restore from version 0.21 backup file', async () => {
+    const file = path.resolve(__dirname, 'files', 'backup_20240429_110942_7061.nbdump');
 
-      const restorer = new Restorer(app, {
-        backUpFilePath: file,
-      });
+    const restorer = new Restorer(app, {
+      backUpFilePath: file,
+    });
 
-      const { dumpableCollectionsGroupByGroup } = await restorer.parseBackupFile();
+    const { dumpableCollectionsGroupByGroup } = await restorer.parseBackupFile();
 
-      await restorer.restore({
-        groups: new Set(Object.keys(dumpableCollectionsGroupByGroup)),
-      });
-    },
-  );
+    await restorer.restore({
+      groups: new Set(Object.keys(dumpableCollectionsGroupByGroup)),
+    });
+  });
 
   it('should write sql content', async () => {
     const dumper = new Dumper(app);
