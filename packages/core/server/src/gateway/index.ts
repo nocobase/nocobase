@@ -150,6 +150,7 @@ export class Gateway extends EventEmitter {
         module: 'gateway',
       },
     });
+    this.loggers.register(appName, logger);
     return logger.child({ reqId });
   }
 
