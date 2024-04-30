@@ -1,51 +1,99 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # DatePicker
 
-## Examples
+级联选择器，其基于 ant-design [DatePicker](https://ant.design/components/date-picker/) 组件封装。
 
-### Basic
+## DatePicker
 
-<code src="./demos/demo1.tsx"></code>
+```ts
+type DatePickerProps = AntdDatePickerProps
+```
 
-### DatePicker (GMT)
+### Basic Usage
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/new-demos/date-basic.tsx"></code>
 
-### DatePicker (showTime=false,gmt=true,utc=true)
+### Format
 
-<code src="./demos/demo7.tsx"></code>
+<code src="./demos/new-demos/date-format.tsx"></code>
 
+### Show Time Picker
 
-### DatePicker (showTime=false,gmt=false,utc=true)
+<code src="./demos/new-demos/date-show-time.tsx"></code>
 
-<code src="./demos/demo8.tsx"></code>
+### Read Pretty
 
+```ts
+interface GetDefaultFormatProps {
+  format?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  picker?: 'year' | 'month' | 'week' | 'quarter';
+  showTime?: boolean;
+}
 
-### DatePicker (non-UTC)
+interface Str2momentOptions {
+  gmt?: boolean;
+  picker?: 'year' | 'month' | 'week' | 'quarter';
+  utcOffset?: number;
+  utc?: boolean;
+}
 
-<code src="./demos/demo3.tsx"></code>
+interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefaultFormatProps {
+  value?: Str2momentValue;
+  className?: string;
+  prefixCls?: string;
+}
+```
 
-### RangePicker (GMT)
+<code src="./demos/new-demos/date-read-pretty.tsx"></code>
 
-<code src="./demos/demo4.tsx"></code>
+<!-- ### GMT
 
-### RangePicker (non-GMT)
+<code src="./demos/new-demos/date-gmt.tsx"></code> -->
 
-<code src="./demos/demo5.tsx"></code>
+<!-- ### UTC
 
-### RangePicker (non-UTC)
+<code src="./demos/new-demos/date-utc.tsx"></code> -->
 
-<code src="./demos/demo6.tsx"></code>
+<!-- ### GMT and UTC
 
+<code src="./demos/new-demos/date-gmt-utc.tsx"></code> -->
 
-## API
+## RangePicker
 
-基于 antd 的 [DatePicker](https://ant.design/components/date-picker/#API)，新增了以下扩展属性，用于支持 NocoBase 的日期字段设置。
+```ts
+type DatePickerProps = AntdRangePickerProps
+```
 
-- `dateFormat` 设置日期格式
-- `timeFormat` 设置时间格式
+### Basic Usage
+
+<code src="./demos/new-demos/range-basic.tsx"></code>
+
+### Format
+
+<code src="./demos/new-demos/range-format.tsx"></code>
+
+### Read Pretty
+
+```ts
+interface DateRangePickerReadPrettyProps extends Str2momentOptions, GetDefaultFormatProps {
+  value?: Str2momentValue;
+  className?: string;
+  prefixCls?: string;
+  style?: React.CSSProperties;
+}
+```
+
+<code src="./demos/new-demos/range-read-pretty.tsx"></code>
+
+<!-- ### GMT
+
+<code src="./demos/new-demos/range-gmt.tsx"></code> -->
+
+<!-- ### UTC
+
+<code src="./demos/new-demos/range-utc.tsx"></code> -->
+
+<!-- ### GMT and UTC
+
+<code src="./demos/new-demos/range-gmt-utc.tsx"></code> -->

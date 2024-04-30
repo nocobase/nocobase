@@ -10,19 +10,27 @@
 import { ObjectField as ObjectFieldModel } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
-import { useRequest } from '../../../api-client';
+import { UseRequestOptions, useRequest } from '../../../api-client';
 import { useProps } from '../../hooks/useProps';
 import { FilterActionDesigner } from './Filter.Action.Designer';
 import { FilterAction } from './FilterAction';
 import { FilterGroup } from './FilterGroup';
 import { SaveDefaultValue } from './SaveDefaultValue';
-import { FilterContext } from './context';
+import { FilterContext, FilterContextProps } from './context';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
-const useDef = (options) => {
+const useDef = (options: UseRequestOptions) => {
   const field = useField<ObjectFieldModel>();
   return useRequest(() => Promise.resolve({ data: field.dataSource }), options);
 };
+
+export interface FilterProps extends Omit<FilterContextProps, 'field' | 'fieldSchema'> {
+  /**
+   * @deprecated use `x-use-component-props` instead
+   */
+  useDataSource?: typeof useDef;
+  className?: string;
+}
 
 export const Filter: any = withDynamicSchemaProps(
   observer((props: any) => {

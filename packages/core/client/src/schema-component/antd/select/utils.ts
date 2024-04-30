@@ -11,10 +11,10 @@ import { isPlainObject } from '@nocobase/utils/client';
 import { castArray } from 'lodash';
 
 export interface FieldNames {
-  label: string;
-  value: string;
-  color: string;
-  options: string;
+  label?: string;
+  value?: string;
+  color?: string;
+  options?: string;
 }
 
 export const defaultFieldNames: FieldNames = {

@@ -1,27 +1,24 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # AssociationSelect
 
-## Examples
-
-<code src="./demos/demo1.tsx"></code>
-
-## API
-
-基于 Ant Design 的 [Select](https://ant.design/components/select/#API)，相关扩展属性有：
-
-- `objectValue` 值为 object 类型
-- `fieldNames` 默认值有区别
+通过指定数据表和字段，获取数据表的数据。
 
 ```ts
-export const defaultFieldNames = {
-  label: 'label',
-  value: 'value',
-  color: 'color',
-  options: 'children',
+type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
+  action?: string;
+  multiple?: boolean;
 };
 ```
+
+## Basic Usage
+
+<code src="./demos/new-demos/basic.tsx"></code>
+
+## Multiple Selection
+
+`type` 需要改为 `array`，并且属性需要增加 `multiple: true`。
+
+<code src="./demos/new-demos/multiple.tsx"></code>
+
+## Read Pretty
+
+<code src="./demos/new-demos/read-pretty.tsx"></code>

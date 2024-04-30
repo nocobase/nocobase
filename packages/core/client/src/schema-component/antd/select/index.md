@@ -1,37 +1,57 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Select
 
-## Examples
-
-### 单选
-
-<code src="./demos/demo1.tsx"></code>
-
-### 多选
-
-<code src="./demos/demo2.tsx"></code>
-
-### 值为 Object 类型的 Select
-
-<code src="./demos/demo3.tsx"></code>
-
-## API
-
-基于 Ant Design 的 [Select](https://ant.design/components/select/#API)，相关扩展属性有：
-
-- `objectValue` 值为 object 类型
-- `fieldNames` 默认值有区别
+选择器。其基于 Ant Design 的 [Select](https://ant.design/components/select-cn/) 组件进行封装。
 
 ```ts
-export const defaultFieldNames = {
-  label: 'label',
-  value: 'value',
-  color: 'color',
-  options: 'children',
+interface FieldNames {
+  label?: string;
+  value?: string;
+  color?: string;
+  options?: string;
+}
+
+type SelectProps = AntdSelectProps<any, any> & {
+  /**
+   * Whether it is an object value
+   */
+  objectValue?: boolean;
+  /**
+   * format options
+   * @default { label: 'label', value: 'value', color: 'color', options: 'children' }
+   */
+  fieldNames: FieldNames;
 };
 ```
+
+## Basic Usage
+
+<code src="./demos/new-demos/basic.tsx"></code>
+
+## Multiple
+
+<code src="./demos/new-demos/multiple.tsx"></code>
+
+## ObjectValue
+
+<code src="./demos/new-demos/object-value.tsx"></code>
+
+## fieldNames
+
+<code src="./demos/new-demos/fieldNames.tsx"></code>
+
+## Read Pretty
+
+```ts
+interface SelectReadPrettyProps {
+  value: any;
+  options?: any[];
+  ellipsis?: boolean;
+  /**
+   * format options
+   * @default { label: 'label', value: 'value', color: 'color', options: 'children' }
+   */
+  fieldNames?: FieldNames;
+}
+```
+
+<code src="./demos/new-demos/read-pretty.tsx"></code>

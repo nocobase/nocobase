@@ -1,29 +1,36 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Filter
 
-## Examples
+用于筛选数据的组件，常用于区块过滤数据。
 
-### Filter Action
+```ts
+type FilterActionProps<T = {}> = ActionProps & {
+  options?: any[];
+  form?: Form;
+  onSubmit?: (values: T) => void;
+  onReset?: (values: T) => void;
+}
+```
 
-<code src="./demos/demo3.tsx"></code>
+### Basic Usage
 
-### Filter Default Value
+我们可以结合 `useRequest()` 发起请求。
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/new-demos/basic.tsx"></code>
 
-### Custom Dynamic Component
+### Default Value
 
-<code src="./demos/demo4.tsx"></code>
+可以通过 `schema.default` 设置默认值。
 
-### FilterAction
+<code src="./demos/new-demos/default-value.tsx"></code>
 
-<code src="./demos/demo5.tsx"></code>
+### With Data Block
 
-### Dynamic options
+如果是在 [DataBlock](/core/data-block/data-block-provider) 区块中使用，我们可以使用 [useDataBlockResource()](/core/data-block/data-block-request-provider) 发起请求。
 
-<code src="./demos/demo6.tsx"></code>
+<code src="./demos/new-demos/with-data-block.tsx"></code>
+
+### with Collection fields
+
+可以使用 `useFilterFieldOptions(collection.fields)` 获取集合字段的选项。
+
+<code src="./demos/new-demos/collection-fields.tsx"></code>

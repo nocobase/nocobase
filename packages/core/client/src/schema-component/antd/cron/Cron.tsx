@@ -12,11 +12,15 @@ import { connect, mapReadPretty } from '@formily/react';
 import { error } from '@nocobase/utils/client';
 import cronstrue from 'cronstrue';
 import React, { useMemo } from 'react';
-import { CronProps, Cron as ReactCron } from 'react-js-cron';
+import { CronProps as ReactJsCronProps, Cron as ReactCron } from 'react-js-cron';
 import 'react-js-cron/dist/styles.css';
 import { useAPIClient } from '../../../api-client';
 
-const Input = (props: Omit<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
+export interface CronProps extends Omit<ReactJsCronProps, 'setValue'> {
+  onChange: (value: string) => void;
+}
+
+const Input = (props: CronProps) => {
   const { onChange, ...rest } = props;
   return (
     <fieldset
@@ -45,7 +49,11 @@ const Input = (props: Omit<CronProps, 'setValue'> & { onChange: (value: string) 
   );
 };
 
-const ReadPretty = (props) => {
+interface CronReadPrettyProps {
+  value?: string;
+}
+
+const ReadPretty = (props: CronReadPrettyProps) => {
   const api = useAPIClient();
   const locale = api.auth.getLocale();
   const value = useMemo(() => {

@@ -63,10 +63,10 @@ export * from './variables';
 export { withDynamicSchemaProps } from './application/hoc/withDynamicSchemaProps';
 
 export * from './modules/blocks/BlockSchemaToolbar';
-export * from './modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 export * from './modules/blocks/data-blocks/form';
 export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/useParentRecordCommon';
+export * from './modules/blocks/index';
 
 export { DeclareVariable } from './modules/variable/DeclareVariable';

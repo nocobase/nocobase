@@ -11,21 +11,29 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Checkbox as AntdCheckbox, Tag } from 'antd';
-import type { CheckboxGroupProps, CheckboxProps } from 'antd/es/checkbox';
+import type {
+  CheckboxGroupProps as AntdCheckboxGroupProps,
+  CheckboxProps as AntdCheckboxProps,
+} from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
-import React, { useMemo } from 'react';
+import React, { FC, useMemo } from 'react';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
 type ComposedCheckbox = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
 > & {
-  Group?: React.FC<CheckboxGroupProps>;
+  Group?: React.FC<AntdCheckboxGroupProps>;
   __ANT_CHECKBOX?: boolean;
-  ReadPretty?: React.FC<CheckboxProps>;
+  ReadPretty?: React.FC<CheckboxReadPrettyProps>;
 };
 
-const ReadPretty = (props) => {
+export interface CheckboxReadPrettyProps {
+  showUnchecked?: boolean;
+  value?: boolean;
+}
+
+const ReadPretty: FC<CheckboxReadPrettyProps> = (props) => {
   if (props.value) {
     return <CheckOutlined style={{ color: '#52c41a' }} />;
   }
@@ -33,7 +41,7 @@ const ReadPretty = (props) => {
 };
 
 export const Checkbox: ComposedCheckbox = connect(
-  (props: any) => {
+  (props: AntdCheckboxProps) => {
     const changeHandler = (val) => {
       props?.onChange(val);
     };
@@ -52,12 +60,17 @@ Checkbox.ReadPretty.displayName = 'Checkbox.ReadPretty';
 
 Checkbox.__ANT_CHECKBOX = true;
 
+export interface CheckboxGroupReadPrettyProps {
+  value?: any[];
+  ellipsis?: boolean;
+}
+
 Checkbox.Group = connect(
   AntdCheckbox.Group,
   mapProps({
     dataSource: 'options',
   }),
-  mapReadPretty((props) => {
+  mapReadPretty((props: CheckboxGroupReadPrettyProps) => {
     if (!isValid(props.value)) {
       return null;
     }
