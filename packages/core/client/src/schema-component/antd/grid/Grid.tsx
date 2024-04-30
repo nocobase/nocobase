@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
@@ -8,7 +17,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { SchemaComponent, useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
 import { useFormBlockType } from '../../../block-provider';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
-import { DndContext } from '../../common/dnd-context';
+import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 
@@ -306,8 +315,14 @@ export const useGridRowContext = () => {
   return useContext(GridRowContext);
 };
 
+export interface GridProps {
+  distributed?: boolean;
+  showDivider?: boolean;
+  dndContext?: false | DndContextProps;
+}
+
 export const Grid: any = observer(
-  (props: any) => {
+  (props: GridProps) => {
     const { distributed, showDivider = true } = props;
     const gridRef = useRef(null);
     const field = useField();

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useGetSchemaInitializerMenuItems, useSchemaInitializerMenuItems } from '@nocobase/client'; // Adjust the import according to the file structure
 import React from 'react';

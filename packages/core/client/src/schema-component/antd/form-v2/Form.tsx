@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
-import { FormLayout } from '@formily/antd-v5';
+import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
 import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
@@ -21,8 +30,9 @@ import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 
-export interface FormProps {
-  [key: string]: any;
+export interface FormProps extends IFormLayoutProps {
+  form?: FormilyForm;
+  disabled?: boolean;
 }
 function hasInitialValues(obj, rule) {
   const type = Object.keys(rule.condition)[0] || '$and';

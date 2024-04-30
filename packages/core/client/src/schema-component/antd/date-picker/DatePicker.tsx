@@ -1,21 +1,31 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { DatePicker as AntdDatePicker } from 'antd';
-import type {
-  DatePickerProps as AntdDatePickerProps,
-  RangePickerProps as AntdRangePickerProps,
-} from 'antd/es/date-picker';
-import React from 'react';
+import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps } from 'antd';
+import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ReadPretty } from './ReadPretty';
+import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker } from './util';
+import { RangePickerProps } from 'antd/es/date-picker';
 
 interface IDatePickerProps {
   utc?: boolean;
 }
 
 type ComposedDatePicker = React.FC<AntdDatePickerProps> & {
-  ReadPretty?: React.FC<AntdDatePickerProps>;
-  RangePicker?: React.FC<AntdRangePickerProps>;
+  ReadPretty?: ReadPrettyComposed['DatePicker'];
+  RangePicker?: ComposedRangePicker;
+};
+
+type ComposedRangePicker = React.FC<RangePickerProps> & {
+  ReadPretty?: ReadPrettyComposed['DateRangePicker'];
 };
 
 const DatePickerContext = React.createContext<IDatePickerProps>({ utc: true });
@@ -35,11 +45,11 @@ const InternalRangePicker = connect(
   mapReadPretty(ReadPretty.DateRangePicker),
 );
 
-export const DatePicker = (props) => {
+export const DatePicker: ComposedDatePicker = (props) => {
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
-  props = { utc, ...props };
-  return <InternalDatePicker {...props} value={value} />;
+  const newProps = { utc, ...props };
+  return <InternalDatePicker {...newProps} value={value} />;
 };
 
 DatePicker.ReadPretty = ReadPretty.DatePicker;
@@ -69,8 +79,8 @@ DatePicker.RangePicker = function RangePicker(props) {
     { label: t('Last 90 days'), value: rangesValue.last90Days },
     { label: t('Next 90 days'), value: rangesValue.next90Days },
   ];
-  props = { utc, presets, ...props };
-  return <InternalRangePicker {...props} />;
+  const newProps: any = { utc, presets, ...props };
+  return <InternalRangePicker {...newProps} />;
 };
 
 export default DatePicker;

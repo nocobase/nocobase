@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { isEqual } from 'lodash';
@@ -16,6 +25,7 @@ export const useTableBlockProps = () => {
   const { getDataBlocks } = useFilterBlock();
   const isLoading = ctx?.service?.loading;
   const params = useMemo(() => ctx?.service?.params, [JSON.stringify(ctx?.service?.params)]);
+
   useEffect(() => {
     if (!isLoading) {
       const serviceResponse = ctx?.service?.data;
@@ -74,7 +84,8 @@ export const useTableBlockProps = () => {
               : [`-${sorter.field}`]
             : globalSort || ctx.dragSortBy
           : ctx.dragSortBy;
-        ctx.service.run({ ...params?.[0], page: current, pageSize, sort });
+        const currentPageSize = pageSize || fieldSchema.parent?.['x-decorator-props']?.['params']?.pageSize;
+        ctx.service.run({ ...params?.[0], page: current || 1, pageSize: currentPageSize, sort });
       },
       [globalSort, params],
     ),

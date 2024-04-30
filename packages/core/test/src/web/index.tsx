@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { ComponentType } from 'react';
 import MockAdapter from 'axios-mock-adapter';
 import { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { set, get, pick } from 'lodash';
-import { useFieldSchema, observer } from '@formily/react';
+import { useFieldSchema, observer, useForm } from '@formily/react';
 
 import {
   AntdSchemaComponentPlugin,
@@ -24,7 +33,10 @@ import _ from 'lodash';
 
 const defaultApis = {
   'uiSchemas:patch': { data: { result: 'ok' } },
+  'uiSchemas:batchPatch': { data: { result: 'ok' } },
   'uiSchemas:saveAsTemplate': { data: { result: 'ok' } },
+  'users:update': { data: { result: 'ok' } },
+  'roles:update': { data: { result: 'ok' } },
   ...dataSourceMainData,
 };
 
@@ -42,16 +54,28 @@ function getProcessMockData(apis: Record<string, any>, key: string) {
     if (config?.params?.pageSize || config?.params?.page) {
       const { data, meta } = apis[key];
 
-      const pageSize = config.params.pageSize || meta?.pageSize;
-      const page = config.params.page || meta?.page;
-      return [200, { data: data.slice(pageSize * (page - 1), pageSize), meta: { ...meta, page, pageSize } }];
+      const pageSize = config.params.pageSize || meta?.pageSize || 20;
+      const page = config.params.page || meta?.page || 1;
+      return [
+        200,
+        {
+          data: data.slice(pageSize * (page - 1), pageSize * page),
+          meta: {
+            ...meta,
+            page,
+            pageSize,
+            count: data.length,
+            totalPage: Math.ceil(data.length / pageSize),
+          },
+        },
+      ];
     }
     return [200, apis[key]];
   };
 }
 
-export const mockApi = (axiosInstance: AxiosInstance, apis: MockApis = {}) => {
-  const mock = new MockAdapter(axiosInstance);
+export const mockApi = (axiosInstance: AxiosInstance, apis: MockApis = {}, delayResponse?: number) => {
+  const mock = new MockAdapter(axiosInstance, { delayResponse });
   Object.keys(apis).forEach((key) => {
     mock.onAny(key).reply(getProcessMockData(apis, key));
   });
@@ -63,15 +87,30 @@ export const mockApi = (axiosInstance: AxiosInstance, apis: MockApis = {}) => {
   };
 };
 
-export const mockAppApi = (app: Application, apis: MockApis = {}) => {
-  const mock = mockApi(app.apiClient.axios, apis);
+export const mockAppApi = (app: Application, apis: MockApis = {}, delayResponse?: number) => {
+  const mock = mockApi(app.apiClient.axios, apis, delayResponse);
   return mock;
 };
+
+const ShowFormData = observer(({ children }) => {
+  const form = useForm();
+  return (
+    <>
+      {
+        <pre style={{ marginBottom: 20 }} data-testid="form-data">
+          {JSON.stringify(form.values, null, 2)}
+        </pre>
+      }
+      {children}
+    </>
+  );
+});
 
 export interface GetAppOptions {
   appOptions?: AppOrOptions;
   providers?: (ComponentType | [ComponentType, any])[];
   apis?: MockApis;
+  delayResponse?: number;
   designable?: boolean;
   schemaSettings?: SchemaSettings;
   disableAcl?: boolean;
@@ -87,6 +126,7 @@ export const getApp = (options: GetAppOptions) => {
     apis: optionsApis = {},
     enableMultipleDataSource,
     designable,
+    delayResponse,
   } = options;
   const app =
     appOptions instanceof Application
@@ -104,7 +144,7 @@ export const getApp = (options: GetAppOptions) => {
     app.schemaSettingsManager.add(schemaSettings);
   }
 
-  app.addComponents({ CommonSchemaComponent });
+  app.addComponents({ CommonSchemaComponent, ShowFormData });
 
   app.pluginManager.add(AntdSchemaComponentPlugin);
   app.pluginManager.add(SchemaSettingsPlugin);
@@ -118,7 +158,7 @@ export const getApp = (options: GetAppOptions) => {
     app.dataSourceManager.addDataSource(LocalDataSource, dataSource2 as any);
   }
 
-  mockAppApi(app, apis);
+  mockAppApi(app, apis, delayResponse);
 
   const App = app.getRootComponent();
 

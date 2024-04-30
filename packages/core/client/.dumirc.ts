@@ -1,5 +1,3 @@
-import path from 'path';
-import glob from 'glob';
 import _ from 'lodash'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
@@ -10,19 +8,6 @@ process.env.DOC_LANG = process.env.DOC_LANG || 'zh-CN';
 const lang = process.env.DOC_LANG;
 
 console.log('process.env.DOC_LANG', lang);
-
-const componentsDir = 'src/schema-component/antd';
-
-function getComponentsMenu() {
-  const cwd = path.join(__dirname, componentsDir);
-  const ignores = ['table/index.md', 'form/index.md']; // 老版本，不需要展示
-  const files = glob.sync('*/index.md', { cwd, ignore: ignores });
-
-  return files.map((file) => ({
-    title: _.upperFirst(_.camelCase(file.replace('/index.md', ''))),
-    link: `/components/${file.replace('/index.md', '')}`,
-  }));
-}
 
 export default defineConfig({
   hash: true,
@@ -39,7 +24,7 @@ export default defineConfig({
   resolve: {
     docDirs: [`./docs/${lang}`],
     atomDirs: [
-      { type: 'component', dir: componentsDir },
+      { type: 'component', dir: 'src/schema-component/antd' },
     ],
   },
   locales: [
@@ -91,6 +76,10 @@ export default defineConfig({
             {
               title: 'PluginSettingsManager',
               link: '/core/application/plugin-settings-manager',
+            },
+            {
+              title: 'Request',
+              link: '/core/request',
             },
           ],
         },
@@ -225,7 +214,196 @@ export default defineConfig({
           ]
         }
       ],
-      '/components': getComponentsMenu(),
+      '/components': [
+        {
+          title: 'Action',
+          type: 'group',
+          children: [
+            {
+              "title": "Action",
+              "link": "/components/action"
+            },
+            {
+              "title": "Filter",
+              "link": "/components/filter"
+            },
+          ]
+        },
+        {
+          title: 'Field',
+          type: 'group',
+          children: [
+            {
+              "title": "Checkbox",
+              "link": "/components/checkbox"
+            },
+            {
+              "title": "Cascader",
+              "link": "/components/cascader"
+            },
+            {
+              "title": "ColorPicker",
+              "link": "/components/color-picker"
+            },
+            {
+              "title": "ColorSelect",
+              "link": "/components/color-select"
+            },
+            {
+              "title": "DatePicker",
+              "link": "/components/date-picker"
+            },
+            {
+              "title": "TimePicker",
+              "link": "/components/time-picker"
+            },
+            {
+              "title": "IconPicker",
+              "link": "/components/icon-picker"
+            },
+            {
+              "title": "InputNumber",
+              "link": "/components/input-number"
+            },
+            {
+              "title": "Input",
+              "link": "/components/input"
+            },
+            {
+              "title": "AutoComplete",
+              "link": "/components/auto-complete"
+            },
+            {
+              "title": "NanoIDInput",
+              "link": "/components/nanoid-input"
+            },
+            {
+              "title": "Password",
+              "link": "/components/password"
+            },
+            {
+              "title": "Percent",
+              "link": "/components/percent"
+            },
+            {
+              "title": "Radio",
+              "link": "/components/radio"
+            },
+            {
+              "title": "Select",
+              "link": "/components/select"
+            },
+            {
+              "title": "RemoteSelect",
+              "link": "/components/remote-select"
+            },
+            {
+              "title": "TreeSelect",
+              "link": "/components/tree-select"
+            },
+            {
+              "title": "Upload",
+              "link": "/components/upload"
+            },
+            {
+              "title": "CollectionSelect",
+              "link": "/components/collection-select"
+            },
+            {
+              "title": "Cron",
+              "link": "/components/cron"
+            },
+            {
+              "title": "Markdown",
+              "link": "/components/markdown"
+            },
+            {
+              "title": "Variable",
+              "link": "/components/variable"
+            },
+            {
+              "title": "QuickEdit",
+              "link": "/components/quick-edit"
+            },
+            {
+              "title": "RichText",
+              "link": "/components/rich-text"
+            }
+          ]
+        },
+        {
+          title: 'Block',
+          type: 'group',
+          children: [
+            {
+              "title": "BlockItem",
+              "link": "/components/block-item"
+            },
+            {
+              "title": "CardItem",
+              "link": "/components/card-item"
+            },
+            {
+              "title": "FormItem",
+              "link": "/components/form-item"
+            },
+            {
+              "title": "FormV2",
+              "link": "/components/form-v2"
+            },
+            {
+              "title": "TableV2",
+              "link": "/components/table-v2"
+            },
+            {
+              "title": "Details",
+              "link": "/components/details"
+            },
+            {
+              "title": "GridCard",
+              "link": "/components/grid-card"
+            },
+            {
+              "title": "Grid",
+              "link": "/components/grid"
+            },
+            {
+              "title": "List",
+              "link": "/components/list"
+            },
+          ]
+        },
+        {
+          title: 'Others',
+          type: 'group',
+          children: [
+            {
+              "title": "Tabs",
+              "link": "/components/tabs"
+            },
+            {
+              "title": "ErrorFallback",
+              "link": "/components/error-fallback"
+            },
+            {
+              "title": "G2Plot",
+              "link": "/components/g2plot"
+            },
+            {
+              "title": "Menu",
+              "link": "/components/menu"
+            },
+            {
+              "title": "Pagination",
+              "link": "/components/pagination"
+            },
+            {
+              "title": "Preview",
+              "link": "/components/preview"
+            },
+          ]
+        },
+      ]
       // '/ui-schema': [
       //   {
       //     title: 'Overview',

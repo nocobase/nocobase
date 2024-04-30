@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { Input as AntdInput, Button, Space, Spin } from 'antd';
 import cls from 'classnames';
@@ -8,15 +17,22 @@ import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useStyles } from './style';
 import { useParseMarkdown } from './util';
+import { TextAreaProps } from 'antd/es/input';
 
-const MarkdownEditor = (props: any) => {
+export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
+  defaultValue?: string;
+  onSubmit?: (value: string) => void;
+  onCancel?: (e: React.MouseEvent) => void;
+}
+
+const MarkdownEditor = (props: MarkdownEditorProps) => {
   const { t } = useTranslation();
   const [value, setValue] = useState(props.defaultValue);
   return (
     <div className={'mb-markdown'} style={{ position: 'relative' }}>
       <AntdInput.TextArea
         autoSize={{ minRows: 3 }}
-        {...props}
+        {...(props as any)}
         value={value}
         onChange={(e) => {
           setValue(e.target.value);

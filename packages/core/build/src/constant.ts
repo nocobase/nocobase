@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Package } from '@lerna/package';
 import path from 'path';
 
@@ -49,6 +58,7 @@ export const getCjsPackages = (packages: Package[]) =>
   packages
     .filter((item) => !PLUGINS_DIR.some((dir) => item.location.startsWith(dir)))
     .filter((item) => !item.location.startsWith(PRESETS_DIR))
+    .filter((item) => !ESM_PACKAGES.includes(item.name))
     .filter((item) => !CJS_EXCLUDE_PACKAGES.includes(item.location));
 
 // tar

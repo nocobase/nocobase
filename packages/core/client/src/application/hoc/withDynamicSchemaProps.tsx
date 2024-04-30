@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useExpressionScope } from '@formily/react';
 import React, { ComponentType, useMemo } from 'react';
 import { useDesignable } from '../../schema-component';
@@ -9,7 +18,10 @@ interface WithSchemaHookOptions {
   displayName?: string;
 }
 
-export function withDynamicSchemaProps<T = any>(Component: any, options: WithSchemaHookOptions = {}) {
+export function withDynamicSchemaProps<T = any>(
+  Component: React.ComponentType<T>,
+  options: WithSchemaHookOptions = {},
+) {
   const displayName = options.displayName || Component.displayName || Component.name;
   const ComponentWithProps: ComponentType<T> = (props) => {
     const { dn, findComponent } = useDesignable();

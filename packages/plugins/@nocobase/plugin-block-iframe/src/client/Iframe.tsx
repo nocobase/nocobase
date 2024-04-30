@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, useField } from '@formily/react';
-import { useAPIClient, useApp } from '@nocobase/client';
-import { Card } from 'antd';
+import { useRequest } from '@nocobase/client';
+import { Card, Spin } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import RIframe from 'react-iframe';
@@ -18,21 +27,42 @@ function isNumeric(str: string | undefined) {
 export const Iframe: any = observer(
   (props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
     const { url, htmlId, mode = 'url', height, html, ...others } = props;
-
-    const { t } = useTranslation();
-    const api = useAPIClient();
     const field = useField();
-    const app = useApp();
-
+    const { t } = useTranslation();
+    const { loading, data: htmlContent } = useRequest<string>(
+      {
+        url: `iframeHtml:getHtml/${htmlId}`,
+      },
+      {
+        refreshDeps: [htmlId, field.data],
+        ready: mode === 'html' && !!htmlId,
+      },
+    );
     const src = React.useMemo(() => {
       if (mode === 'html') {
-        return app.getApiUrl(`iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`);
+        const encodedHtml = encodeURIComponent(htmlContent);
+        const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
+        return dataUrl;
       }
       return url;
-    }, [app, url, mode, htmlId, field.data?.v]);
+    }, [htmlContent, mode, url]);
 
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
       return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
+    }
+
+    if (loading) {
+      return (
+        <div
+          style={{
+            height: isNumeric(height) ? `${height}px` : height,
+            marginBottom: '24px',
+            border: 0,
+          }}
+        >
+          <Spin />
+        </div>
+      );
     }
 
     return (

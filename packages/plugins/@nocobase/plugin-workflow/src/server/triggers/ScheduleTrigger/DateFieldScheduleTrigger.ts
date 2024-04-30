@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { fn, literal, Op, Transactionable, where } from '@nocobase/database';
 import parser from 'cron-parser';
 import type Plugin from '../../Plugin';
@@ -320,12 +329,18 @@ export default class ScheduleTrigger {
       appends: workflow.config.appends,
       transaction,
     });
-    const key = `${workflow.id}:${recordPk}@${nextTime}`;
-    this.cache.delete(key);
-    this.workflow.trigger(workflow, {
-      data: data.toJSON(),
-      date: new Date(nextTime),
-    });
+    const eventKey = `${workflow.id}:${recordPk}@${nextTime}`;
+    this.cache.delete(eventKey);
+    this.workflow.trigger(
+      workflow,
+      {
+        data: data.toJSON(),
+        date: new Date(nextTime),
+      },
+      {
+        eventKey,
+      },
+    );
 
     if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
       return;

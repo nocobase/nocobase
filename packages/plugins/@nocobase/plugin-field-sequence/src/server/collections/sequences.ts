@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
@@ -10,7 +19,10 @@ export default defineCollection({
       const sequenceFields = importedCollections
         .map((collection) => {
           const collectionInstance = app.db.getCollection(collection);
-          if (!collectionInstance) throw new Error(`Collection ${collection} not found`);
+          if (!collectionInstance) {
+            app.logger.warn(`Collection ${collection} not found`);
+            return [];
+          }
           return [...collectionInstance.fields.values()].filter((field) => field.type === 'sequence');
         })
         .flat()
