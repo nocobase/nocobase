@@ -1,4 +1,4 @@
-import type { Transactionable } from '@nocobase/database';
+import { Transactionable } from '@nocobase/database';
 import type Plugin from '../Plugin';
 import type { WorkflowModel } from '../types';
 
