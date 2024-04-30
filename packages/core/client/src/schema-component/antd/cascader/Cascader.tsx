@@ -9,7 +9,7 @@ import { UseRequestResult, useRequest } from '../../../api-client';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames } from './defaultFieldNames';
 import { BaseOptionType } from 'antd/es/select';
-import { withDynamicSchemaProps } from '../../../application';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const useDefDataSource = (options, props: any) => {
   const field = useField<ArrayField>();
