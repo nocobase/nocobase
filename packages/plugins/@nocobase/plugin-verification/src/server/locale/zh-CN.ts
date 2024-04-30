@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export default {
   'Verification send failed, please try later or contact to administrator': '验证码发送失败，请稍后重试或联系管理员',
   'Not a valid cellphone number, please re-enter': '不是有效的手机号，请重新输入',
