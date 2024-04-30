@@ -54,8 +54,9 @@ export class APIClient extends APIClientSDK {
 
   getHeaders() {
     const headers = super.getHeaders();
-    if (this.app) {
-      headers['X-App'] = this.app.getName();
+    const appName = this.app.getName();
+    if (appName) {
+      headers['X-App'] = appName;
     }
     headers['X-Timezone'] = getCurrentTimezone();
     headers['X-Hostname'] = window?.location?.hostname;

@@ -13,6 +13,8 @@ describe.runIf(isPg())('enable plugin', () => {
       plugins: ['nocobase'],
     });
 
+    await app.runCommand('pm', 'add', 'multi-app-share-collection');
+
     mainApp = app;
 
     mainDb = mainApp.db;
@@ -47,6 +49,7 @@ describe.runIf(isPg())('collection sync after main', () => {
         await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
       },
     });
+    await app.runCommand('pm', 'add', 'multi-app-share-collection');
     mainApp = app;
   });
 
@@ -109,6 +112,7 @@ describe.runIf(isPg())('collection sync', () => {
         await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
       },
     });
+    await app.runCommand('pm', 'add', 'multi-app-share-collection');
 
     await app.pm.enable('multi-app-manager');
     await app.pm.enable('multi-app-share-collection');

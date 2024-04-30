@@ -49,6 +49,7 @@ export const getCjsPackages = (packages: Package[]) =>
   packages
     .filter((item) => !PLUGINS_DIR.some((dir) => item.location.startsWith(dir)))
     .filter((item) => !item.location.startsWith(PRESETS_DIR))
+    .filter((item) => !ESM_PACKAGES.includes(item.name))
     .filter((item) => !CJS_EXCLUDE_PACKAGES.includes(item.location));
 
 // tar
