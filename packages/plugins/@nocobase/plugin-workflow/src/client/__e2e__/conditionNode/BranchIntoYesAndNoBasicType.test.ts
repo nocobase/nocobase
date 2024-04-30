@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import {
-  ClculationNode,
+  CalculationNode,
   CollectionTriggerNode,
   ConditionBranchNode,
   QueryRecordNode,
@@ -83,7 +83,7 @@ test('Collection event add data trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -96,7 +96,7 @@ test('Collection event add data trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -197,7 +197,7 @@ test('Collection event add data trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -210,7 +210,7 @@ test('Collection event add data trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -313,7 +313,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -326,7 +326,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -429,7 +429,7 @@ test('Collection event add data trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -442,7 +442,7 @@ test('Collection event add data trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -574,7 +574,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -587,7 +587,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -722,7 +722,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -735,7 +735,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -868,7 +868,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -881,7 +881,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -1014,7 +1014,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -1027,7 +1027,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');

@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import {
   AggregateNode,
-  ClculationNode,
+  CalculationNode,
   CollectionTriggerNode,
   CreateRecordNode,
   QueryRecordNode,
@@ -63,7 +63,7 @@ test('Collection event add data trigger, get trigger node single line text varia
   await page.getByRole('button', { name: 'calculation', exact: true }).click();
   const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
-  const calculationNode = new ClculationNode(page, calculationNodeName);
+  const calculationNode = new CalculationNode(page, calculationNodeName);
   await calculationNode.nodeConfigure.click();
   await page.getByLabel('variable-button').click();
   await page.getByText('Trigger variables').click();
@@ -149,12 +149,12 @@ test('Collection event add data triggers, get predecessor Math engine arithmetic
   //配置计算节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
   await page.waitForLoadState('networkidle');
-  const preCalculationNodePom = new ClculationNode(page, preCalculationNodeTitle);
+  const preCalculationNodePom = new CalculationNode(page, preCalculationNodeTitle);
   await preCalculationNodePom.addNodeButton.click();
   await page.getByRole('button', { name: 'calculation', exact: true }).click();
   const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
-  const calculationNode = new ClculationNode(page, calculationNodeName);
+  const calculationNode = new CalculationNode(page, calculationNodeName);
   const conditionNodeId = await calculationNode.node.locator('.workflow-node-id').innerText();
   await calculationNode.nodeConfigure.click();
   await page.getByLabel('variable-button').click();
@@ -255,7 +255,7 @@ test('Collection events add data triggers, get single line of text data for fron
   await page.getByRole('button', { name: 'calculation', exact: true }).click();
   const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
-  const calculationNode = new ClculationNode(page, calculationNodeName);
+  const calculationNode = new CalculationNode(page, calculationNodeName);
   const conditionNodeId = await calculationNode.node.locator('.workflow-node-id').innerText();
   await calculationNode.nodeConfigure.click();
   await page.getByLabel('variable-button').click();
@@ -359,7 +359,7 @@ test('Collection event add data trigger, get front added data node single line t
   await page.getByRole('button', { name: 'calculation', exact: true }).click();
   const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
-  const calculationNode = new ClculationNode(page, calculationNodeName);
+  const calculationNode = new CalculationNode(page, calculationNodeName);
   const conditionNodeId = await calculationNode.node.locator('.workflow-node-id').innerText();
   await calculationNode.nodeConfigure.click();
   await page.getByLabel('variable-button').click();
@@ -455,7 +455,7 @@ test('Collection event adds data triggers, fetches data from front-end aggregati
   await page.getByRole('button', { name: 'calculation', exact: true }).click();
   const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
-  const calculationNode = new ClculationNode(page, calculationNodeName);
+  const calculationNode = new CalculationNode(page, calculationNodeName);
   const conditionNodeId = await calculationNode.node.locator('.workflow-node-id').innerText();
   await calculationNode.nodeConfigure.click();
   await page.getByLabel('variable-button').click();
@@ -716,7 +716,7 @@ test.skip('Collection event add data trigger, get front manual node add form sin
   await page.getByRole('button', { name: 'calculation', exact: true }).click();
   const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
-  const calculationNode = new ClculationNode(page, calculationNodeName);
+  const calculationNode = new CalculationNode(page, calculationNodeName);
   const conditionNodeId = await calculationNode.node.locator('.workflow-node-id').innerText();
   await calculationNode.nodeConfigure.click();
   await page.getByLabel('variable-button').click();
