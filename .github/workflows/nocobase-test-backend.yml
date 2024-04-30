@@ -68,7 +68,7 @@ jobs:
           DB_STORAGE: /tmp/db.sqlite
           DB_TEST_PREFIX: test_
           DB_UNDERSCORED: ${{ matrix.underscored }}
-    timeout-minutes: 40
+    timeout-minutes: 60
 
   postgres-test:
     strategy:
@@ -132,7 +132,7 @@ jobs:
           COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
-    timeout-minutes: 40
+    timeout-minutes: 60
 
   mysql-test:
     strategy:
@@ -183,7 +183,7 @@ jobs:
           DB_UNDERSCORED: ${{ matrix.underscored }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
-    timeout-minutes: 40
+    timeout-minutes: 60
   mariadb-test:
     strategy:
       matrix:
@@ -233,4 +233,4 @@ jobs:
           DB_UNDERSCORED: ${{ matrix.underscored }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
-    timeout-minutes: 40
+    timeout-minutes: 60

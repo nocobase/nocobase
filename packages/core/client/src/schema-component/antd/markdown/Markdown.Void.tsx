@@ -17,15 +17,22 @@ import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useStyles } from './style';
 import { useParseMarkdown } from './util';
+import { TextAreaProps } from 'antd/es/input';
 
-const MarkdownEditor = (props: any) => {
+export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
+  defaultValue?: string;
+  onSubmit?: (value: string) => void;
+  onCancel?: (e: React.MouseEvent) => void;
+}
+
+const MarkdownEditor = (props: MarkdownEditorProps) => {
   const { t } = useTranslation();
   const [value, setValue] = useState(props.defaultValue);
   return (
     <div className={'mb-markdown'} style={{ position: 'relative' }}>
       <AntdInput.TextArea
         autoSize={{ minRows: 3 }}
-        {...props}
+        {...(props as any)}
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
