@@ -47,6 +47,8 @@ export const useFieldModeOptions = (props?) => {
         ? [
             { label: t('Title'), value: 'Select' },
             { label: t('Tag'), value: 'Tag' },
+            !isTableField && { label: t('Sub-details'), value: 'Nester' },
+            !isTableField && { label: t('Sub-table'), value: 'SubTable' },
           ]
         : [
             { label: t('Select'), value: 'Select' },
