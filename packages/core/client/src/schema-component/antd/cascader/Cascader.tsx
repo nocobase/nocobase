@@ -9,11 +9,14 @@ import { UseRequestResult, useRequest } from '../../../api-client';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames } from './defaultFieldNames';
 import { BaseOptionType } from 'antd/es/select';
-// import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { withDynamicSchemaProps } from '../../../application';
 
-const useDefDataSource = (options) => {
+const useDefDataSource = (options, props: any) => {
   const field = useField<ArrayField>();
-  return useRequest(() => Promise.resolve({ data: field.dataSource || [] }), options);
+  return useRequest(() => Promise.resolve({ data: field.dataSource || props.options || [] }), {
+    ...options,
+    refreshDeps: [field.dataSource, props.options],
+  });
 };
 
 const useDefLoadData = (props: any) => {
@@ -41,91 +44,98 @@ export type CascaderProps<DataNodeType extends BaseOptionType = any> = AntdCasca
   maxLevel?: number;
 };
 
-export const Cascader = connect(
-  (props: CascaderProps) => {
-    const field = useField<ArrayField>();
-    const {
-      value,
-      onChange,
-      labelInValue,
-      // fieldNames = defaultFieldNames,
-      useDataSource = useDefDataSource,
-      useLoadData = useDefLoadData,
-      changeOnSelectLast,
-      changeOnSelect,
-      maxLevel,
-      ...others
-    } = props;
-    const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
-    const loadData = useLoadData(props);
-    const { loading, run } = useDataSource({
-      onSuccess(data) {
-        field.dataSource = data?.data || [];
-      },
-    });
-    // 兼容值为 object[] 的情况
-    const toValue = () => {
-      return toArr(value).map((item) => {
-        if (typeof item === 'object') {
-          return item[fieldNames.value];
-        }
-        return item;
-      });
-    };
-    const displayRender = (labels: string[], selectedOptions: any[]) => {
-      return (
-        <Space split={'/'}>
-          {labels.map((label, index) => {
-            if (selectedOptions[index]) {
-              return <span key={index}>{label}</span>;
-            }
-            const item = toArr(value)
-              .filter(Boolean)
-              .find((item) => item[fieldNames.value] === label);
-            return <span key={index}>{item?.[fieldNames.label] || label}</span>;
-          })}
-        </Space>
+export const Cascader = withDynamicSchemaProps(
+  connect(
+    (props: CascaderProps) => {
+      const field = useField<ArrayField>();
+      const {
+        value,
+        onChange,
+        labelInValue,
+        options,
+        // fieldNames = defaultFieldNames,
+        useDataSource = useDefDataSource,
+        useLoadData = useDefLoadData,
+        changeOnSelectLast,
+        changeOnSelect,
+        maxLevel,
+        ...others
+      } = props;
+      const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
+      const loadData = useLoadData(props);
+      const { loading, run } = useDataSource(
+        {
+          onSuccess(data) {
+            field.dataSource = data?.data || [];
+          },
+        },
+        props,
       );
-    };
-    const handelDropDownVisible = (value) => {
-      if (value && !field.dataSource?.length) {
-        run();
-      }
-    };
-
-    return (
-      <AntdCascader
-        loading={loading}
-        {...others}
-        options={field.dataSource}
-        loadData={loadData}
-        changeOnSelect={isBoolean(changeOnSelectLast) ? !changeOnSelectLast : changeOnSelect}
-        value={toValue()}
-        fieldNames={fieldNames}
-        displayRender={displayRender}
-        onDropdownVisibleChange={handelDropDownVisible}
-        onChange={(value, selectedOptions: any) => {
-          if (value && labelInValue) {
-            onChange(selectedOptions.map((option) => omit(option, [fieldNames.children])));
-          } else {
-            onChange(value);
+      // 兼容值为 object[] 的情况
+      const toValue = () => {
+        return toArr(value).map((item) => {
+          if (typeof item === 'object') {
+            return item[fieldNames.value];
           }
-        }}
-      />
-    );
-  },
-  mapProps(
-    {
-      dataSource: 'options',
-    },
-    (props, field) => {
-      return {
-        ...props,
-        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
+          return item;
+        });
       };
+      const displayRender = (labels: string[], selectedOptions: any[]) => {
+        return (
+          <Space split={'/'}>
+            {labels.map((label, index) => {
+              if (selectedOptions[index]) {
+                return <span key={index}>{label}</span>;
+              }
+              const item = toArr(value)
+                .filter(Boolean)
+                .find((item) => item[fieldNames.value] === label);
+              return <span key={index}>{item?.[fieldNames.label] || label}</span>;
+            })}
+          </Space>
+        );
+      };
+      const handelDropDownVisible = (value) => {
+        if (value && !field.dataSource?.length) {
+          run();
+        }
+      };
+
+      return (
+        <AntdCascader
+          loading={loading}
+          {...others}
+          options={field.dataSource}
+          loadData={loadData}
+          changeOnSelect={isBoolean(changeOnSelectLast) ? !changeOnSelectLast : changeOnSelect}
+          value={toValue()}
+          fieldNames={fieldNames}
+          displayRender={displayRender}
+          onDropdownVisibleChange={handelDropDownVisible}
+          onChange={(value, selectedOptions: any) => {
+            if (value && labelInValue) {
+              onChange(selectedOptions.map((option) => omit(option, [fieldNames.children])));
+            } else {
+              onChange(value);
+            }
+          }}
+        />
+      );
     },
+    mapProps(
+      {
+        dataSource: 'options',
+      },
+      (props, field) => {
+        return {
+          ...props,
+          suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
+        };
+      },
+    ),
+    mapReadPretty(ReadPretty),
   ),
-  mapReadPretty(ReadPretty),
+  { displayName: 'Cascader' },
 );
 
 export default Cascader;
