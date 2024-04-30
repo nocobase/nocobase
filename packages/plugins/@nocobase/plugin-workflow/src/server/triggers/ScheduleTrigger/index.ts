@@ -47,16 +47,17 @@ export default class ScheduleTrigger extends Trigger {
     }
   }
 
-  async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {
-    if (!context.date) {
-      return false;
-    }
-    const existed = await workflow.countExecutions({
-      where: {
-        'context.date': context.date instanceof Date ? context.date.toISOString() : context.date,
-      },
-      transaction: options.transaction,
-    });
-    return !existed;
-  }
+  // async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {
+  //   if (!context.date) {
+  //     return false;
+  //   }
+  //   const existed = await workflow.getExecutions({
+  //     attributes: ['id'],
+  //     where: {
+  //       'context.date': context.date instanceof Date ? context.date.toISOString() : context.date,
+  //     },
+  //     transaction: options.transaction,
+  //   });
+  //   return !existed.length;
+  // }
 }
