@@ -216,7 +216,7 @@ export function TextArea(props) {
       .then((preloaded) => {
         setOptions(preloaded);
       })
-      .catch((err) => console.error);
+      .catch(console.error);
   }, [scope, value]);
 
   useEffect(() => {
