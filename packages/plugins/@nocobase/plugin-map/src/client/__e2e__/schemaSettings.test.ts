@@ -28,6 +28,7 @@ test.afterEach(async ({ page }) => {
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000);
   await page.getByRole('button', { name: 'Edit' }).first().click();
+  await page.waitForTimeout(100);
   await page.getByLabel('Access key').clear();
   await page.getByLabel('securityJsCode or serviceHost').clear();
   await page.getByRole('button', { name: 'Save' }).first().click();
