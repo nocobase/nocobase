@@ -25,8 +25,14 @@ function getTimestamp(date, accuracy = 'millisecond') {
   }
 }
 
+interface UnixTimestampProps {
+  value?: number;
+  accuracy?: 'millisecond' | 'second';
+  onChange?: (value: number) => void;
+}
+
 export const UnixTimestamp = connect(
-  (props) => {
+  (props: UnixTimestampProps) => {
     const { value, onChange, accuracy } = props;
     const v = useMemo(() => toValue(value, accuracy), [value]);
     return (

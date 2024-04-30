@@ -270,6 +270,14 @@ export default defineConfig({
               "link": "/components/input"
             },
             {
+              "title": "AutoComplete",
+              "link": "/components/auto-complete"
+            },
+            {
+              "title": "NanoIDInput",
+              "link": "/components/nanoid-input"
+            },
+            {
               "title": "Password",
               "link": "/components/password"
             },
@@ -312,6 +320,14 @@ export default defineConfig({
             {
               "title": "Variable",
               "link": "/components/variable"
+            },
+            {
+              "title": "QuickEdit",
+              "link": "/components/quick-edit"
+            },
+            {
+              "title": "RichText",
+              "link": "/components/rich-text"
             }
           ]
         },
@@ -351,10 +367,10 @@ export default defineConfig({
               "title": "Grid",
               "link": "/components/grid"
             },
-            // {
-            //   "title": "List",
-            //   "link": "/components/list"
-            // },
+            {
+              "title": "List",
+              "link": "/components/list"
+            },
           ]
         },
         {
@@ -373,10 +389,18 @@ export default defineConfig({
               "title": "G2Plot",
               "link": "/components/g2plot"
             },
-            // {
-            //   "title": "Preview",
-            //   "link": "/components/preview"
-            // },
+            {
+              "title": "Menu",
+              "link": "/components/menu"
+            },
+            {
+              "title": "Pagination",
+              "link": "/components/pagination"
+            },
+            {
+              "title": "Preview",
+              "link": "/components/preview"
+            },
           ]
         },
       ]

@@ -1,5 +1,5 @@
 import { BlockSchemaComponentPlugin } from '@nocobase/client';
-import { screen, renderApp, sleep, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
+import { screen, renderApp, sleep, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('QuickEdit', () => {
   function getRenderOptions(readPretty = false) {

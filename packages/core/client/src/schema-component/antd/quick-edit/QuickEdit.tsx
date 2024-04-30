@@ -6,9 +6,15 @@ import React, { useMemo, useRef } from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { StablePopover } from '../popover';
 import { FormItem } from '../form-item';
+import { IFormItemProps } from '@formily/antd-v5';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
+
+export interface QuickEditProps extends IFormItemProps {
+  children?: React.ReactNode;
+}
 
 export const Editable = observer(
-  (props) => {
+  (props: QuickEditProps) => {
     const field: any = useField();
     const containerRef = useRef(null);
     const fieldSchema = useFieldSchema();
@@ -72,11 +78,13 @@ export const Editable = observer(
 );
 
 export const QuickEdit = observer(
-  (props) => {
+  (props: QuickEditProps) => {
     const field = useField<Field>();
     const { getCollectionJoinField } = useCollectionManager_deprecated();
+    const collection = useCollection();
     const fieldSchema = useFieldSchema();
-    const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
+    const collectionField =
+      getCollectionJoinField(fieldSchema['x-collection-field']) || collection?.getField(fieldSchema.name);
     if (!collectionField) {
       return null;
     }
