@@ -9,7 +9,7 @@
 
 import { faker } from '@faker-js/faker';
 import {
-  ClculationNode,
+  CalculationNode,
   CollectionTriggerNode,
   ConditionBranchNode,
   ConditionYesNode,
