@@ -84,15 +84,20 @@ export default class extends Instruction {
           status: JOB_STATUS.RESOLVED,
           result: response.data,
         });
+        processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
       })
       .catch((error) => {
         job.set({
           status: JOB_STATUS.FAILED,
           result: error.isAxiosError ? error.toJSON() : error.message,
         });
+        if (error.response) {
+          processor.logger.info(`request (#${node.id}) response failed, status: ${error.response.status}`);
+        } else {
+          processor.logger.error(`request (#${node.id}) response failed: ${error.message}`);
+        }
       })
       .finally(() => {
-        processor.logger.info(`request (#${node.id}) response received, status: ${job.get('status')}`);
         this.workflow.resume(job);
       });
 
