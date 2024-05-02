@@ -21,6 +21,9 @@ import {
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 
+/**
+ * @deprecated
+ */
 export function useTriggerWorkflowsActionProps() {
   const api = useAPIClient();
   const form = useForm();
@@ -84,6 +87,9 @@ export function useTriggerWorkflowsActionProps() {
   };
 }
 
+/**
+ * @deprecated
+ */
 export function useRecordTriggerWorkflowsActionProps() {
   const compile = useCompile();
   const api = useAPIClient();
