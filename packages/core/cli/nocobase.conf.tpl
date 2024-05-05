@@ -30,6 +30,26 @@ server {
         autoindex off;
     }
 
+    location {{publicPath}}static/plugins/ {
+        alias {{cwd}}/node_modules/;
+        expires 365d;
+        add_header Cache-Control "public";
+        access_log off;
+        autoindex off;
+
+        location ~ ^/static/plugins/@([^/]+)/([^/]+)/dist/client/(.*)$ {
+            allow all;
+        }
+
+        location ~ ^/static/plugins/([^/]+)/dist/client/(.*)$ {
+            allow all;
+        }
+
+        location ~ ^/static/plugins/(.*)$ {
+            deny all;
+        }
+    }
+
     location {{publicPath}} {
         alias {{cwd}}/node_modules/@nocobase/app/dist/client/;
         try_files $uri $uri/ /index.html;
@@ -51,19 +71,6 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         add_header Cache-Control 'no-cache, no-store';
-        proxy_cache_bypass $http_upgrade;
-        proxy_connect_timeout 600;
-        proxy_send_timeout 600;
-        proxy_read_timeout 600;
-        send_timeout 600;
-    }
-
-    location ^~ {{publicPath}}static/plugins/ {
-        proxy_pass http://127.0.0.1:{{apiPort}}{{publicPath}}static/plugins/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
         proxy_connect_timeout 600;
         proxy_send_timeout 600;

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Locator, Page } from '@nocobase/test/e2e';
 export class CreateWorkFlow {
   readonly page: Page;
@@ -267,7 +276,7 @@ export class FormEventTriggerNode {
   }
 }
 
-export class ClculationNode {
+export class CalculationNode {
   readonly page: Page;
   node: Locator;
   nodeTitle: Locator;
@@ -632,7 +641,7 @@ export default module.exports = {
   ScheduleTriggerNode,
   CollectionTriggerNode,
   FormEventTriggerNode,
-  ClculationNode,
+  CalculationNode,
   QueryRecordNode,
   CreateRecordNode,
   UpdateRecordNode,

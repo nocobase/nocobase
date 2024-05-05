@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { faker } from '@faker-js/faker';
 import {
   AggregateNode,
-  ClculationNode,
+  CalculationNode,
   CollectionTriggerNode,
   CreateRecordNode,
   ManualNode,
@@ -182,7 +191,7 @@ test.describe('field data', () => {
     //配置Manual节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
     await page.waitForLoadState('networkidle');
-    const preCalculationNodePom = new ClculationNode(page, preCalculationNodeTitle);
+    const preCalculationNodePom = new CalculationNode(page, preCalculationNodeTitle);
     await preCalculationNodePom.addNodeButton.click();
     await page.getByRole('button', { name: 'manual', exact: true }).click();
     const manualNodeName = 'Manual' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();

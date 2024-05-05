@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { faker } from '@faker-js/faker';
 import {
   CollectionTriggerNode,
@@ -9,7 +18,7 @@ import {
   generalWithNoRelationalFields,
   ParallelBranchNode,
   ConditionYesNode,
-  ClculationNode,
+  CalculationNode,
   apiGetWorkflowNodeExecutions,
 } from '@nocobase/plugin-workflow-test/e2e';
 import { expect, test } from '@nocobase/test/e2e';
@@ -108,7 +117,7 @@ test.describe('All succeeded', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();
@@ -243,7 +252,7 @@ test.describe('All succeeded', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();
@@ -377,7 +386,7 @@ test.describe('All succeeded', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();
@@ -510,7 +519,7 @@ test.describe('All succeeded', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();
@@ -647,7 +656,7 @@ test.describe('Any succeeded', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();
@@ -783,7 +792,7 @@ test.describe('Any succeeded', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();
@@ -920,7 +929,7 @@ test.describe('Any succeeded', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();
@@ -1046,7 +1055,7 @@ test.describe('Any succeeded or failed', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();
@@ -1167,7 +1176,7 @@ test.describe('Any succeeded or failed', () => {
       .getByLabel('Calculation-Calculation', { exact: true })
       .getByRole('textbox')
       .fill(afterCalCulationNodeName);
-    const afterCalCulationNode = new ClculationNode(page, afterCalCulationNodeName);
+    const afterCalCulationNode = new CalculationNode(page, afterCalCulationNodeName);
     const afterCalCulationNodeId = await afterCalCulationNode.node.locator('.workflow-node-id').innerText();
     await afterCalCulationNode.nodeConfigure.click();
     await afterCalCulationNode.formulaCalculationEngine.click();

@@ -1,15 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { connect, mapReadPretty } from '@formily/react';
 import { Input } from 'antd';
-import { PasswordProps } from 'antd/es/input';
+import { PasswordProps as AntdPasswordProps } from 'antd/es/input';
 import React from 'react';
 import { PasswordStrength } from './PasswordStrength';
 
-export interface IPasswordProps extends PasswordProps {
-  checkStrength: boolean;
+export interface PasswordProps extends AntdPasswordProps {
+  checkStrength?: boolean;
 }
 
 export const Password = connect(
-  (props: IPasswordProps) => {
+  (props: PasswordProps) => {
     const { value, className, checkStrength, ...others } = props;
     const blockStyle: React.CSSProperties = {
       position: 'absolute',
