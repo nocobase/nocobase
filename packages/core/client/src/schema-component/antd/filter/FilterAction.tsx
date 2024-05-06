@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
@@ -8,15 +17,22 @@ import { useTranslation } from 'react-i18next';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
-import { Action } from '../action';
+import { Action, ActionProps } from '../action';
 import { StablePopover } from '../popover';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export const FilterActionContext = createContext<any>(null);
 FilterActionContext.displayName = 'FilterActionContext';
 
+export type FilterActionProps<T = {}> = ActionProps & {
+  options?: any[];
+  form?: Form;
+  onSubmit?: (values: T) => void;
+  onReset?: (values: T) => void;
+};
+
 export const FilterAction = withDynamicSchemaProps(
-  observer((props: any) => {
+  observer((props: FilterActionProps) => {
     const { t } = useTranslation();
     const field = useField<Field>();
     const [visible, setVisible] = useState(false);

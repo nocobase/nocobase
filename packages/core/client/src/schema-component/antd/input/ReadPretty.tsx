@@ -1,26 +1,44 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { Typography } from 'antd';
-import { InputProps, TextAreaProps } from 'antd/es/input';
 import cls from 'classnames';
 import React from 'react';
-import { useCompile } from '../..';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 import { HTMLEncode } from './shared';
+import { useCompile } from '../../hooks';
 
-type Composed = {
-  Input: React.FC<InputProps & { ellipsis?: any }>;
-  URL: React.FC<InputProps>;
-  TextArea: React.FC<
-    TextAreaProps & { ellipsis?: any; text?: any; addonBefore?: any; suffix?: any; addonAfter?: any; autop?: boolean }
-  >;
-  Html: any;
-  JSON: React.FC<TextAreaProps & { space: number }>;
+export type InputReadPrettyComposed = {
+  Input: React.FC<InputReadPrettyProps>;
+  URL: React.FC<URLReadPrettyProps>;
+  TextArea: React.FC<TextAreaReadPrettyProps>;
+  Html: React.FC<HtmlReadPrettyProps>;
+  JSON: React.FC<JSONTextAreaReadPrettyProps>;
 };
 
-export const ReadPretty: Composed = () => null;
+export const ReadPretty: InputReadPrettyComposed = () => null;
 
-ReadPretty.Input = (props) => {
+export interface InputReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  addonBefore?: React.ReactNode;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  ellipsis?: boolean;
+  prefixCls?: string;
+}
+
+ReadPretty.Input = (props: InputReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-input', props);
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -35,6 +53,20 @@ ReadPretty.Input = (props) => {
     </div>
   );
 };
+
+export interface TextAreaReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  addonBefore?: React.ReactNode;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  ellipsis?: boolean;
+  text?: boolean;
+  autop?: boolean;
+  prefixCls?: string;
+}
 
 ReadPretty.TextArea = (props) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -79,6 +111,19 @@ function convertToText(html: string) {
   return text?.replace(/[\n\r]/g, '') || '';
 }
 
+export interface HtmlReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  addonBefore?: React.ReactNode;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  ellipsis?: boolean;
+  autop?: boolean;
+  prefixCls?: string;
+}
+
 ReadPretty.Html = (props) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-textarea', props);
@@ -111,6 +156,17 @@ ReadPretty.Html = (props) => {
   );
 };
 
+export interface URLReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  addonBefore?: React.ReactNode;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+  prefixCls?: string;
+}
+
 ReadPretty.URL = (props) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-url', props);
@@ -129,6 +185,14 @@ ReadPretty.URL = (props) => {
     </div>
   );
 };
+
+export interface JSONTextAreaReadPrettyProps {
+  value?: any;
+  className?: string;
+  style?: React.CSSProperties;
+  space?: number;
+  prefixCls?: string;
+}
 
 ReadPretty.JSON = (props) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks

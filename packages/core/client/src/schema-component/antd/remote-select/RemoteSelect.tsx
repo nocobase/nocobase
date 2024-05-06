@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
-import { Divider, SelectProps, Tag } from 'antd';
+import { Divider, Tag } from 'antd';
 import dayjs from 'dayjs';
 import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -8,21 +17,30 @@ import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useCompile } from '../../hooks';
-import { Select, defaultFieldNames } from '../select';
+import { FieldNames, Select, SelectProps, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { useDataSourceHeaders } from '../../../data-source/utils';
 import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
-  objectValue?: boolean;
   onChange?: (v: any) => void;
-  target: string;
+  /**
+   * useRequest() `debounceWait` parameter
+   */
   wait?: number;
+  /**
+   * useRequest() `manual` parameter
+   * @default true
+   */
   manual?: boolean;
-  mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
   targetField?: any;
+  /**
+   * useRequest() `service` parameter
+   */
   service: ResourceActionOptions<P>;
+  target: string;
+  mapOptions?: (data: any) => SelectProps['fieldNames'];
   dataSource?: string;
   CustomDropdownRender?: (v: any) => any;
   optionFilter?: (option: any) => boolean;
@@ -31,7 +49,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
     const {
-      fieldNames = {},
+      fieldNames = {} as FieldNames,
       service = {},
       wait = 300,
       value,

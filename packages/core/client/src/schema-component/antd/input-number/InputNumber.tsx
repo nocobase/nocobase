@@ -1,13 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { connect, mapReadPretty } from '@formily/react';
-import { InputNumber as AntdNumber, InputNumberProps } from 'antd';
+import { InputNumber as AntdNumber, InputNumberProps as AntdInputNumberProps } from 'antd';
 import React from 'react';
-import { ReadPretty } from './ReadPretty';
+import { InputNumberReadPrettyProps, ReadPretty } from './ReadPretty';
 import BigNumber from 'bignumber.js';
 
 type ComposedInputNumber = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
 > & {
-  ReadPretty?: React.FC<InputNumberProps>;
+  ReadPretty?: React.FC<InputNumberReadPrettyProps>;
 };
 function toSafeNumber(value) {
   if (!value) {
@@ -19,7 +28,7 @@ function toSafeNumber(value) {
     return Number(value);
   }
 }
-export const InputNumber: ComposedInputNumber = connect((props) => {
+export const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) => {
   const { onChange, ...others } = props;
   const handleChange = (v) => {
     if (Number.isNaN(v)) {

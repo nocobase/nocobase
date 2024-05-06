@@ -1,9 +1,3 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Table
 
 表格有三个使用场景

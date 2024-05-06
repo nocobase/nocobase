@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -102,15 +111,7 @@ const getIsOverriding = (currentFields, record) => {
   return flag;
 };
 export const OverridingFieldAction = (props) => {
-  const {
-    scope,
-    getContainer,
-    item: record,
-    parentItem: parentRecord,
-    children,
-    currentCollection,
-    handleRefresh,
-  } = props;
+  const { scope, getContainer, item: record, parentItem: parentRecord, children, currentCollection } = props;
   const { target, through } = record;
   const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } =
     useCollectionManager_deprecated();
@@ -166,7 +167,6 @@ export const OverridingFieldAction = (props) => {
         await form.reset();
         await refreshCM();
         await refresh();
-        handleRefresh?.();
         ctx.setVisible(false);
       },
     };

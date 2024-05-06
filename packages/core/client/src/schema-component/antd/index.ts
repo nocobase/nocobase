@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export * from './AntdSchemaComponentProvider';
 export { genStyleHook } from './__builtins__';
 export * from './action';
@@ -50,7 +59,8 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
-export * from './unixTimestamp';
-export * from './nanoIDInput';
+export * from './unix-timestamp';
+export * from './nanoid-input';
+export * from './error-fallback';
 
 import './index.less';

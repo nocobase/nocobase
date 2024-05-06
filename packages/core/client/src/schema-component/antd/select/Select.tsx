@@ -1,24 +1,44 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CloseCircleFilled, CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
-import type { SelectProps } from 'antd';
+import type { SelectProps as AntdSelectProps } from 'antd';
 import { Select as AntdSelect, Empty, Spin, Tag } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
+import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
 
-type Props = SelectProps<any, any> & {
+export type SelectProps<
+  ValueType = any,
+  OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
+> = AntdSelectProps<ValueType, OptionType> & {
+  /**
+   * Whether it is an object value
+   */
   objectValue?: boolean;
   onChange?: (v: any) => void;
   multiple: boolean;
   rawOptions: any[];
-  fieldNames: FieldNames;
+  /**
+   * format options
+   * @default { label: 'label', value: 'value', color: 'color', options: 'children' }
+   */
+  fieldNames?: FieldNames;
 };
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
-const ObjectSelect = (props: Props) => {
+const ObjectSelect = (props: SelectProps) => {
   const { value, options, onChange, fieldNames, mode, loading, rawOptions, defaultValue, ...others } = props;
   const toValue = (v: any) => {
     if (isEmptyObject(v)) {
@@ -97,7 +117,7 @@ const ObjectSelect = (props: Props) => {
 const filterOption = (input, option) => (option?.label ?? '').toLowerCase().includes((input || '').toLowerCase());
 
 const InternalSelect = connect(
-  (props: Props) => {
+  (props: SelectProps) => {
     const { objectValue, loading, value, rawOptions, defaultValue, ...others } = props;
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
