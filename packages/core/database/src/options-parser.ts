@@ -115,7 +115,7 @@ export class OptionsParser {
 
     const primaryKeyField = this.model.primaryKeyAttribute;
 
-    if (primaryKeyField && !this.options.group) {
+    if (primaryKeyField && !this.options?.group) {
       if (!sort.includes(primaryKeyField)) {
         sort.push(primaryKeyField);
       }
