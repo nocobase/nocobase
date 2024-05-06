@@ -111,15 +111,7 @@ const getIsOverriding = (currentFields, record) => {
   return flag;
 };
 export const OverridingFieldAction = (props) => {
-  const {
-    scope,
-    getContainer,
-    item: record,
-    parentItem: parentRecord,
-    children,
-    currentCollection,
-    handleRefresh,
-  } = props;
+  const { scope, getContainer, item: record, parentItem: parentRecord, children, currentCollection } = props;
   const { target, through } = record;
   const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } =
     useCollectionManager_deprecated();
@@ -175,7 +167,6 @@ export const OverridingFieldAction = (props) => {
         await form.reset();
         await refreshCM();
         await refresh();
-        handleRefresh?.();
         ctx.setVisible(false);
       },
     };

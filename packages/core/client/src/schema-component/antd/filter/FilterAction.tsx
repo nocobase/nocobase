@@ -17,15 +17,22 @@ import { useTranslation } from 'react-i18next';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
-import { Action } from '../action';
+import { Action, ActionProps } from '../action';
 import { StablePopover } from '../popover';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export const FilterActionContext = createContext<any>(null);
 FilterActionContext.displayName = 'FilterActionContext';
 
+export type FilterActionProps<T = {}> = ActionProps & {
+  options?: any[];
+  form?: Form;
+  onSubmit?: (values: T) => void;
+  onReset?: (values: T) => void;
+};
+
 export const FilterAction = withDynamicSchemaProps(
-  observer((props: any) => {
+  observer((props: FilterActionProps) => {
     const { t } = useTranslation();
     const field = useField<Field>();
     const [visible, setVisible] = useState(false);
