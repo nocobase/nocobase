@@ -20,6 +20,7 @@ const commonItems: SchemaSettingsItemType[] = [
       const { name } = useCollection_deprecated();
       return {
         collectionName: name,
+        readPretty: true,
       };
     },
   },

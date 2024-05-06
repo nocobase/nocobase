@@ -1244,7 +1244,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
 };
 
 export const SchemaSettingsLinkageRules = function LinkageRules(props) {
-  const { collectionName } = props;
+  const { collectionName, readPretty } = props;
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { dn } = useDesignable();
@@ -1271,7 +1271,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
               defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
               type,
               // eslint-disable-next-line react-hooks/rules-of-hooks
-              linkageOptions: useLinkageCollectionFieldOptions(collectionName),
+              linkageOptions: useLinkageCollectionFieldOptions(collectionName, readPretty),
               collectionName,
               form,
               variables,
