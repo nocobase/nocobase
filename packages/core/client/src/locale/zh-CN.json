@@ -937,5 +937,6 @@
   "The following field types are not compatible and do not support output and display": "以下字段类型未适配，不支持输出和显示",
   "Not fixed":"不固定",
   "Left fixed":"左固定",
-  "Right fixed":"右固定"
+  "Right fixed":"右固定",
+  "Fixed":"固定列"
 }
