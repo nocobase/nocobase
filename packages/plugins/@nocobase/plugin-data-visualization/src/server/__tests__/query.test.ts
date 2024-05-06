@@ -134,6 +134,12 @@ describe('query', () => {
       });
     });
     it('should parse measures', async () => {
+      const sequelize = {
+        fn: vi.fn().mockImplementation((fn: string, field: string) => [fn, field]),
+        col: vi.fn().mockImplementation((field: string) => field),
+      };
+      ctx.db.sequelize = sequelize;
+
       const measures1 = [
         {
           field: ['price'],
