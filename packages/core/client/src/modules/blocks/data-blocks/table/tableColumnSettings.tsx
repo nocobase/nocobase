@@ -292,6 +292,39 @@ export const tableColumnSettings = new SchemaSettings({
             };
           },
         },
+        {
+          name: 'fixed',
+          type: 'select',
+          useComponentProps() {
+            const { t } = useTranslation();
+            const field = useField();
+            const fieldSchema = useFieldSchema();
+            const { dn } = useDesignable();
+            return {
+              title: t('Fixed'),
+              options: [
+                { label: t('Not fixed'), value: 'none' },
+                { label: t('Left fixed'), value: 'left' },
+                { label: t('Right fixed'), value: 'right' },
+              ],
+              value: field.componentProps?.fixed || 'none',
+              onChange(fixed) {
+                const schema = {
+                  ['x-uid']: fieldSchema['x-uid'],
+                };
+                fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+                fieldSchema['x-component-props']['fixed'] = fixed;
+                schema['x-component-props'] = fieldSchema['x-component-props'];
+                field.componentProps = field.componentProps || {};
+                field.componentProps.fixed = fixed;
+                void dn.emit('patch', {
+                  schema,
+                });
+                dn.refresh();
+              },
+            };
+          },
+        },
       ],
     },
     {
