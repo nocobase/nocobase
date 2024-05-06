@@ -24,7 +24,46 @@ describe('find with associations', () => {
     await db.close();
   });
 
-  // 关系数据分页测试
+  it('should append primary key to sort option', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'age',
+          type: 'integer',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'user1',
+          age: '10',
+        },
+        {
+          name: 'user2',
+          age: '10',
+        },
+        {
+          name: 'user3',
+          age: '10',
+        },
+      ],
+    });
+
+    const records = await User.repository.find({
+      sort: ['age'],
+    });
+
+    expect(records[0].get('name')).toBe('user1');
+    expect(records[1].get('name')).toBe('user2');
+    expect(records[2].get('name')).toBe('user3');
+  });
+
   it('should filter with associations by pagination', async () => {
     const Org = db.collection({
       name: 'organizations',
