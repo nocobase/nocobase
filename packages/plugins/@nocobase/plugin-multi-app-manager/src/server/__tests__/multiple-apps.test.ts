@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Database } from '@nocobase/database';
 import { AppSupervisor, Gateway } from '@nocobase/server';
 import { createMockServer, MockServer } from '@nocobase/test';
@@ -13,7 +22,7 @@ describe('multiple apps', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['multi-app-manager'],
+      plugins: ['nocobase', 'multi-app-manager'],
     });
     db = app.db;
   });
@@ -92,6 +101,43 @@ describe('multiple apps', () => {
 
     const subAppStatus = AppSupervisor.getInstance().getAppStatus(name);
     expect(subAppStatus).toEqual('running');
+  });
+
+  it('should upgrade sub app', async () => {
+    await db.getRepository('applications').create({
+      values: {
+        name: 'test1',
+        options: {
+          plugins: ['nocobase'],
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    await db.getRepository('applications').create({
+      values: {
+        name: 'test2',
+        options: {
+          plugins: ['nocobase'],
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    await app.runCommand('restart');
+    await app.runCommand('upgrade');
+    // const subAppStatus = AppSupervisor.getInstance().getAppStatus(name);
+    // expect(subAppStatus).toEqual('running');
+    //
+    // const subApp = await AppSupervisor.getInstance().getApp(name);
+    // await subApp.runCommand('upgrade');
+    //
+    // await AppSupervisor.getInstance().removeApp(name);
+    // expect(await db.getRepository('applications').count()).toBe(1);
   });
 
   it('should list application with status', async () => {

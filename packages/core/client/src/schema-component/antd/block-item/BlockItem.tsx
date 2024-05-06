@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React, { useMemo } from 'react';
@@ -58,7 +67,13 @@ const useStyles = createStyles(({ css, token }: CustomCreateStylesUtils) => {
   `;
 });
 
-export const BlockItem: React.FC<any> = withDynamicSchemaProps(
+export interface BlockItemProps {
+  name?: string;
+  className?: string;
+  children?: React.ReactNode;
+}
+
+export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
   (props) => {
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { className, children } = useProps(props);

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { importModule, isURL } from '@nocobase/utils';
@@ -530,6 +539,7 @@ export class PluginManager {
     const toBeUpdated = [];
     for (const name of pluginNames) {
       const { name: pluginName } = await PluginManager.parseName(name);
+      console.log('pluginName', pluginName);
       const plugin = this.get(pluginName);
       if (!plugin) {
         throw new Error(`${pluginName} plugin does not exist`);
@@ -822,7 +832,7 @@ export class PluginManager {
 
     const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(file, authToken);
 
-    const name = options.name || packageName;
+    const { name } = await PluginManager.parseName(packageName);
 
     if (this.has(name)) {
       await removeTmpDir(tempFile, tempPackageContentDir);
@@ -857,7 +867,7 @@ export class PluginManager {
       authToken,
     );
 
-    const name = options.name || packageName;
+    const { name } = await PluginManager.parseName(packageName);
 
     if (this.has(name)) {
       await removeTmpDir(tempFile, tempPackageContentDir);

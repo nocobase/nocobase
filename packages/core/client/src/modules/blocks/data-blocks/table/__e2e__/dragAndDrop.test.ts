@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, oneEmptyTableBlockBasedOnUsers, test } from '@nocobase/test/e2e';
 
 // 该测试总是在 CI 环境失败，但是本地运行是正常的，原因未知，现 skip 处理

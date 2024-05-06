@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import decompress from 'decompress';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
@@ -14,6 +23,35 @@ import semver from 'semver';
 
 type RestoreOptions = {
   groups: Set<DumpRulesGroupType>;
+};
+
+const renamePlugins = async (app) => {
+  const names = {
+    oidc: '@nocobase/plugin-auth-oidc',
+    cas: '@nocobase/plugin-auth-cas',
+    saml: '@nocobase/plugin-auth-saml',
+    'collection-manager': '@nocobase/plugin-data-source-main',
+    'china-region': '@nocobase/plugin-field-china-region',
+    'custom-request': '@nocobase/plugin-action-custom-request',
+    export: '@nocobase/plugin-action-export',
+    import: '@nocobase/plugin-action-import',
+    'formula-field': '@nocobase/plugin-field-formula',
+    'iframe-block': '@nocobase/plugin-block-iframe',
+    'localization-management': '@nocobase/plugin-localization',
+    'sequence-field': '@nocobase/plugin-field-sequence',
+    'sms-auth': '@nocobase/plugin-auth-sms',
+  };
+  for (const original of Object.keys(names)) {
+    await app.pm.repository.update({
+      filter: {
+        name: original,
+      },
+      values: {
+        name: names[original].replace('@nocobase/plugin-', ''),
+        packageName: names[original],
+      },
+    });
+  }
 };
 
 export class Restorer extends AppMigrator {
@@ -120,17 +158,22 @@ export class Restorer extends AppMigrator {
       });
     };
 
+    const preImportCollections = ['applicationPlugins'];
     const { dumpableCollectionsGroupByGroup, delayCollections } = await this.parseBackupFile();
 
-    // import plugins
-    await importCollection('applicationPlugins');
+    // import pre import collections
+    for (const collectionName of preImportCollections) {
+      await importCollection(collectionName);
+    }
+
+    await renamePlugins(this.app);
     await this.app.reload();
 
     // import required collections
     const metaCollections = dumpableCollectionsGroupByGroup.required;
 
     for (const collection of metaCollections) {
-      if (collection.name === 'applicationPlugins') {
+      if (preImportCollections.includes(collection.name)) {
         continue;
       }
 

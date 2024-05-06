@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import fs from 'fs';
@@ -27,6 +36,20 @@ describe('dumper', () => {
 
     await restorer.restore({
       groups: new Set(['meta', 'business']),
+    });
+  });
+
+  it.skip('should restore from version 0.21 backup file', async () => {
+    const file = path.resolve(__dirname, 'files', 'backup_20240429_110942_7061.nbdump');
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: file,
+    });
+
+    const { dumpableCollectionsGroupByGroup } = await restorer.parseBackupFile();
+
+    await restorer.restore({
+      groups: new Set(Object.keys(dumpableCollectionsGroupByGroup)),
     });
   });
 
@@ -422,7 +445,8 @@ describe('dumper', () => {
     await db.getRepository('collections').create({
       values: {
         name: 'tests',
-        sql: `select count(*) as count from ${userCollection.getTableNameWithSchemaAsString()}`,
+        sql: `select count(*) as count
+              from ${userCollection.getTableNameWithSchemaAsString()}`,
         fields: [
           {
             type: 'integer',

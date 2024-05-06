@@ -1,10 +1,25 @@
 /**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/**
  * title: Tabs
  */
 import { ISchema } from '@formily/react';
-import { Action, Application, SchemaComponent, SchemaComponentProvider, Tabs } from '@nocobase/client';
+import {
+  Action,
+  Application,
+  SchemaComponent,
+  SchemaComponentProvider,
+  Tabs,
+  AntdSchemaComponentProvider,
+} from '@nocobase/client';
 import React from 'react';
-import { AntdSchemaComponentProvider } from '../../AntdSchemaComponentProvider';
 
 const schema: ISchema = {
   type: 'object',

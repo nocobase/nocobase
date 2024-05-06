@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Input, Select } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -69,13 +78,12 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
       value: fieldValue?.value,
     });
   }, [compatOldVariables, fieldValue?.value, scope]);
-
   const modeMap = {
     // 常量
     constant: (
       <div role="button" aria-label="dynamic-component-linkage-rules" style={constantStyle}>
         {React.createElement(DynamicComponent, {
-          value: fieldValue?.value || fieldValue,
+          value: fieldValue?.value,
           schema,
           onChange: handleChangeOfConstant,
         })}
@@ -112,6 +120,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         value={mode}
         style={{ width: 150 }}
         onChange={(value) => {
+          console.log(value);
           setMode(value);
           setValue({
             mode: value,

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { Space } from 'antd';
@@ -216,7 +225,7 @@ export function TextArea(props) {
       .then((preloaded) => {
         setOptions(preloaded);
       })
-      .catch((err) => console.error);
+      .catch(console.error);
   }, [scope, value]);
 
   useEffect(() => {

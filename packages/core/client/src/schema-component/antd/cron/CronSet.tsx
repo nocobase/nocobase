@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Select, SelectProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -6,7 +15,7 @@ import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from '../input';
 import Cron from './Cron';
 
-interface CronSetProps extends SelectProps {
+export interface CronSetProps extends SelectProps {
   onChange: (v: string) => void;
 }
 
@@ -83,7 +92,12 @@ const CronSetInternal = (props: CronSetProps) => {
   );
 };
 
-const ReadPretty = (props: CronSetProps) => {
+export interface CronReadPrettyProps {
+  value?: string;
+  options?: SelectProps['options'];
+}
+
+const ReadPretty = (props: CronReadPrettyProps) => {
   const { value } = props;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();

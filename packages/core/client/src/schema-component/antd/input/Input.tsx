@@ -1,18 +1,27 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Input as AntdInput } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/es/input';
 import React from 'react';
 import { JSONTextAreaProps, Json } from './Json';
-import { ReadPretty } from './ReadPretty';
+import { ReadPretty, InputReadPrettyComposed } from './ReadPretty';
 
 export { ReadPretty as InputReadPretty } from './ReadPretty';
 
 type ComposedInput = React.FC<InputProps> & {
-  ReadPretty: React.FC<InputProps | { ellipsis?: boolean }>;
-  TextArea: React.FC<TextAreaProps>;
-  URL: React.FC<InputProps>;
-  JSON: React.FC<JSONTextAreaProps>;
+  ReadPretty: InputReadPrettyComposed['Input'];
+  TextArea: React.FC<TextAreaProps> & { ReadPretty: InputReadPrettyComposed['TextArea'] };
+  URL: React.FC<InputProps> & { ReadPretty: InputReadPrettyComposed['URL'] };
+  JSON: React.FC<JSONTextAreaProps> & { ReadPretty: InputReadPrettyComposed['JSON'] };
 };
 
 export const Input: ComposedInput = Object.assign(
@@ -43,7 +52,7 @@ export const Input: ComposedInput = Object.assign(
     URL: connect(AntdInput, mapReadPretty(ReadPretty.URL)),
     JSON: connect(Json, mapReadPretty(ReadPretty.JSON)),
     ReadPretty: ReadPretty.Input,
-  },
+  } as unknown as ComposedInput,
 );
 
 Input.displayName = 'Input';
