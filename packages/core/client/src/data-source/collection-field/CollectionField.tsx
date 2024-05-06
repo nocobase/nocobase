@@ -16,6 +16,7 @@ import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
+import { useDynamicComponentProps } from '../../application/hoc';
 
 type Props = {
   component: any;
@@ -48,6 +49,8 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     }
   }, [fieldSchema, uiSchema]);
   const ctx = useFormBlockContext();
+
+  const dynamicProps = useDynamicComponentProps(uiSchema?.['x-use-component-props'], props);
 
   useEffect(() => {
     if (ctx?.field) {
@@ -82,7 +85,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
-    field.componentProps = merge(originalProps, field.componentProps || {});
+    field.componentProps = merge(originalProps, dynamicProps || {}, field.componentProps || {});
   }, [uiSchema]);
 
   if (!uiSchema) return null;
