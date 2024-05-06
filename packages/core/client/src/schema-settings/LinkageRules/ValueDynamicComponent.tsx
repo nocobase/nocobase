@@ -78,13 +78,12 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
       value: fieldValue?.value,
     });
   }, [compatOldVariables, fieldValue?.value, scope]);
-
   const modeMap = {
     // 常量
     constant: (
       <div role="button" aria-label="dynamic-component-linkage-rules" style={constantStyle}>
         {React.createElement(DynamicComponent, {
-          value: fieldValue?.value || fieldValue,
+          value: fieldValue?.value,
           schema,
           onChange: handleChangeOfConstant,
         })}
@@ -121,6 +120,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         value={mode}
         style={{ width: 150 }}
         onChange={(value) => {
+          console.log(value);
           setMode(value);
           setValue({
             mode: value,
