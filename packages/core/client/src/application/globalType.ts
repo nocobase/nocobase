@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './dnd-context';
-export * from './sortable-item';
-export * from './show-form-data';
+import { ISchema as FormilySchema } from '@formily/json-schema';
+
+export interface ISchema extends FormilySchema {
+  'x-use-component-props'?: string | Function;
+  'x-use-decorator-props'?: string;
+}
