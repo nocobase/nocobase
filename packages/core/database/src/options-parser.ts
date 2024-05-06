@@ -130,6 +130,7 @@ export class OptionsParser {
       if (this.database.inDialect('postgres', 'sqlite')) {
         direction = `${direction} NULLS LAST`;
       }
+
       // handle sort by association
       if (sortField.length > 1) {
         let associationModel = this.model;
