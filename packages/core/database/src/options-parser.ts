@@ -108,18 +108,29 @@ export class OptionsParser {
    */
   protected parseSort(filterParams) {
     let sort = this.options?.sort || [];
+
     if (typeof sort === 'string') {
       sort = sort.split(',');
     }
 
+    const primaryKeyField = this.model.primaryKeyAttribute;
+
+    if (primaryKeyField && !this.options?.group) {
+      if (!sort.includes(primaryKeyField)) {
+        sort.push(primaryKeyField);
+      }
+    }
+
     const orderParams = [];
+
     for (const sortKey of sort) {
       let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
-      const sortField: Array<any> = sortKey.replace('-', '').split('.');
+      const sortField: Array<any> = sortKey.startsWith('-') ? sortKey.replace('-', '').split('.') : sortKey.split('.');
 
       if (this.database.inDialect('postgres', 'sqlite')) {
         direction = `${direction} NULLS LAST`;
       }
+
       // handle sort by association
       if (sortField.length > 1) {
         let associationModel = this.model;

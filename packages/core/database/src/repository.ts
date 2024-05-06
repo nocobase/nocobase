@@ -339,7 +339,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     options.optionsTransformer?.(queryOptions);
-    const hasAssociationFilter = () => {
+
+    delete queryOptions.order;
+
+    const hasAssociationFilter = (() => {
       if (queryOptions.include && queryOptions.include.length > 0) {
         const filterInclude = queryOptions.include.filter((include) => {
           return (
@@ -350,9 +353,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return filterInclude.length > 0;
       }
       return false;
-    };
+    })();
 
-    if (hasAssociationFilter()) {
+    if (hasAssociationFilter) {
       const primaryKeyField = this.model.primaryKeyAttribute;
       const queryInterface = this.database.sequelize.getQueryInterface();
 
