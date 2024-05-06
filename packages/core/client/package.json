@@ -42,7 +42,7 @@
     "i18next-http-backend": "^2.1.1",
     "lodash": "4.17.21",
     "markdown-it": "13.0.1",
-    "markdown-it-highlightjs": "3.3.1",
+    "markdown-it-highlightjs": "4.0.1",
     "mathjs": "^10.6.0",
     "mermaid": "9.4.3",
     "react-beautiful-dnd": "^13.1.0",
