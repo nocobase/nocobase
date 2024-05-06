@@ -7,25 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { vi } from 'vitest';
 import {
   cacheMiddleware,
+  checkPermission,
   parseBuilder,
   parseFieldAndAssociations,
-  checkPermission,
-  postProcess,
   parseVariables,
+  postProcess,
 } from '../actions/query';
+
 const formatter = await import('../actions/formatter');
 
 describe('query', () => {
   describe('parseBuilder', () => {
-    const sequelize = {
-      fn: vi.fn().mockImplementation((fn: string, field: string) => [fn, field]),
-      col: vi.fn().mockImplementation((field: string) => field),
-    };
     let ctx: any;
     let app: MockServer;
     beforeAll(async () => {
@@ -61,7 +58,6 @@ describe('query', () => {
         app,
         db: app.db,
       };
-      ctx.db.sequelize = sequelize;
     });
 
     it('should check permissions', async () => {
@@ -307,15 +303,19 @@ describe('query', () => {
       ctx.body = value;
       await next();
     });
+
     class MockCache {
       map: Map<string, any> = new Map();
+
       get(key: string) {
         return this.map.get(key);
       }
+
       set(key: string, value: any) {
         this.map.set(key, value);
       }
     }
+
     let ctx: any;
     beforeEach(() => {
       const cache = new MockCache();
