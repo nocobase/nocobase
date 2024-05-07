@@ -9,11 +9,11 @@
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps } from 'antd';
-import React, { FC } from 'react';
+import { RangePickerProps } from 'antd/es/date-picker';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker } from './util';
-import { RangePickerProps } from 'antd/es/date-picker';
 
 interface IDatePickerProps {
   utc?: boolean;
@@ -33,11 +33,7 @@ const DatePickerContext = React.createContext<IDatePickerProps>({ utc: true });
 export const useDatePickerContext = () => React.useContext(DatePickerContext);
 export const DatePickerProvider = DatePickerContext.Provider;
 
-const InternalDatePicker: ComposedDatePicker = connect(
-  AntdDatePicker,
-  mapProps(mapDatePicker()),
-  mapReadPretty(ReadPretty.DatePicker),
-);
+const InternalDatePicker = connect(AntdDatePicker, mapProps(mapDatePicker()), mapReadPretty(ReadPretty.DatePicker));
 
 const InternalRangePicker = connect(
   AntdDatePicker.RangePicker,

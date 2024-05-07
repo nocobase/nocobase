@@ -29,7 +29,7 @@ const Demo = () => {
         setTargetKeys(nextTargetKeys);
       }}
       onSelectChange={(sourceSelectedKeys, targetSelectedKeys) => {
-        setSelectedKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
+        setSelectedKeys([...sourceSelectedKeys.map(String), ...targetSelectedKeys.map(String)]);
       }}
       onScroll={onScroll}
       render={(item) => item.title}
