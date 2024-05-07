@@ -11,19 +11,21 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export const createGanttBlockUISchema = (options: {
-  collectionName: string;
   fieldNames: object;
   dataSource: string;
+  association?: string;
+  collectionName?: string;
 }): ISchema => {
-  const { collectionName, fieldNames, dataSource } = options;
+  const { collectionName, fieldNames, dataSource, association } = options;
 
   return {
     type: 'void',
-    'x-acl-action': `${collectionName}:list`,
+    'x-acl-action': `${association || collectionName}:list`,
     'x-decorator': 'GanttBlockProvider',
     'x-decorator-props': {
       collection: collectionName,
       dataSource,
+      association,
       action: 'list',
       fieldNames,
       params: {
