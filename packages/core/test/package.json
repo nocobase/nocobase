@@ -54,7 +54,7 @@
     "@nocobase/server": "1.0.0-alpha.6",
     "@playwright/test": "^1.42.1",
     "@testing-library/jest-dom": "^6.4.2",
-    "@testing-library/react": "^14.0.0",
+    "@testing-library/react": "^15.0.6",
     "@testing-library/react-hooks": "^8.0.1",
     "@testing-library/user-event": "^14.4.3",
     "@types/supertest": "^2.0.11",
