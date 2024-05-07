@@ -163,7 +163,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
-        render: () => <div style={{ minWidth: 300 }} />,
+        render: () => <div style={{ minWidth: 180 }} />,
         fixed: 'right',
       });
     }
