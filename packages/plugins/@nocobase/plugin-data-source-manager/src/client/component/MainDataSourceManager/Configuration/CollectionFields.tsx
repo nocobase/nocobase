@@ -413,7 +413,7 @@ const CollectionFieldsInternal = () => {
 
   const deleteProps = useMemo(
     () => ({
-      useAction: useBulkDestroyActionAndRefreshCM,
+      useAction: () => useBulkDestroyActionAndRefreshCM(true),
       title: t('Delete'),
       icon: 'DeleteOutlined',
       disabled: targetTemplate?.forbidDeletion,
