@@ -18,7 +18,7 @@ import {
   CollectionPlugin,
   LocalDataSource,
   SchemaSettingsPlugin,
-} from '@nocobase/client';
+} from '../index';
 
 import dataSourceMainCollections from './dataSourceMainCollections.json';
 import dataSource2 from './dataSource2.json';
@@ -102,13 +102,13 @@ export const mockApp = (options: MockAppOptions) => {
   const app = new Application({
     disableAcl: true,
     ...appOptions,
-    router
-  })
+    router,
+  });
 
   app.pluginManager.add(AntdSchemaComponentPlugin);
   app.pluginManager.add(SchemaSettingsPlugin);
   app.pluginManager.add(CollectionPlugin, { config: { enableRemoteDataSource: false } });
-  app.addComponents({ ActionInitializer })
+  app.addComponents({ ActionInitializer });
 
   const apis = Object.assign({}, defaultApis, optionsApis);
 
