@@ -580,7 +580,7 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
           onScroll={handleScrollY}
           rtl={rtl}
         />
-        <Spin spinning={loading}>
+        <Spin spinning={loading} style={{ visibility: 'hidden' }}>
           <HorizontalScroll
             svgWidth={svgWidth}
             taskListWidth={taskListWidth}
