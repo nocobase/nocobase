@@ -193,6 +193,7 @@ interface CreatePageOptions {
 }
 
 interface ExtendUtils {
+  page?: Page;
   /**
    * 根据配置，生成一个 NocoBase 的页面
    * @param pageConfig 页面配置
@@ -351,7 +352,14 @@ export class NocoPage {
   }
 }
 
+let _page: Page;
 const _test = base.extend<ExtendUtils>({
+  page: async ({ browser }, use) => {
+    if (!_page) {
+      _page = await browser.newPage();
+    }
+    await use(_page);
+  },
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     // faker.seed(1);
