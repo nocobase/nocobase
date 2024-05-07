@@ -1,8 +1,5 @@
-
-
 import React from 'react';
 import { App as AntdApp } from 'antd';
-
 import { useForm } from '@formily/react';
 import {
   ActionProps,
@@ -32,7 +29,6 @@ function useSubmitActionProps(): ActionProps {
     },
   };
 }
-
 const schema: ISchema = {
   type: 'void',
   name: 'root',

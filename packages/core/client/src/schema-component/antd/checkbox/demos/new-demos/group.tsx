@@ -1,6 +1,7 @@
 
 
-import { Plugin, Checkbox, FormItem, FormV2, SchemaComponent, ShowFormData, ISchema } from '@nocobase/client';
+
+import { Plugin, SchemaComponent, ISchema } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 

@@ -1,3 +1,4 @@
+
 import { SchemaComponent, Plugin, ISchema } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import { Button } from 'antd';

@@ -16,7 +16,6 @@ function useActionProps() {
     },
   };
 }
-
 const schema: ISchema = {
   name: 'test',
   'x-component': 'Action.Drawer',

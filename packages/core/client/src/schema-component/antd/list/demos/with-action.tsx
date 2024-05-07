@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
 import {

@@ -1,3 +1,5 @@
+
+
 import { useForm } from '@formily/react';
 import {
   BlockSchemaComponentPlugin,
@@ -57,7 +59,6 @@ const useFormBlockProviderProps: UseDataBlockProps<'CollectionGet'> = () => {
     filterByTk: record.data.id,
   };
 };
-
 
 const schema = {
   type: 'void',

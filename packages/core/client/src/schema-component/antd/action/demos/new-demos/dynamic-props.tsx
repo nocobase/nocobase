@@ -1,3 +1,4 @@
+
 import { App as AntdApp } from 'antd';
 import { ISchema, useAPIClient } from '@nocobase/client';
 import { SchemaComponent, Plugin, ActionProps } from '@nocobase/client';

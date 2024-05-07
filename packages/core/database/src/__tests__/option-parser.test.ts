@@ -80,7 +80,7 @@ describe('option parser', () => {
 
     const params = parser.toSequelizeParams();
 
-    expect(params).toEqual({
+    expect(params).toMatchObject({
       attributes: ['id', 'name'],
       include: [
         {

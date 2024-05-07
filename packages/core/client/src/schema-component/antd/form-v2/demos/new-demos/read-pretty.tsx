@@ -1,3 +1,4 @@
+
 import { Plugin, ISchema, SchemaComponent, useFormBlockProps, FormBlockProvider } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';

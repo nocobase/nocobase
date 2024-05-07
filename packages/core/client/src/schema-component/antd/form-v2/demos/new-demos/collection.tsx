@@ -34,7 +34,6 @@ function useSubmitActionProps(): ActionProps {
     },
   };
 }
-
 const schema: ISchema = {
   type: 'void',
   name: 'root',

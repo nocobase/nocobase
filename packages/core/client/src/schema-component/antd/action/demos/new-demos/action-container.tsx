@@ -11,7 +11,6 @@ function useCloseActionProps() {
     },
   };
 }
-
 const schema: ISchema = {
   name: 'test',
   type: 'void',

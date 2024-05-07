@@ -1,3 +1,4 @@
+
 import { App as AntdApp } from 'antd';
 import { ActionProps, ISchema, SchemaComponent, Plugin } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
@@ -18,7 +19,6 @@ function useActionProps(): ActionProps {
     },
   };
 }
-
 const schema: ISchema = {
   type: 'void',
   name: 'test',

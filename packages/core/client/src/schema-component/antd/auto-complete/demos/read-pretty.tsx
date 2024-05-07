@@ -1,3 +1,4 @@
+
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 import { SchemaComponent, Plugin } from '@nocobase/client';

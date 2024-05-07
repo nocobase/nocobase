@@ -1,3 +1,4 @@
+
 import { ISchema, useActionContext } from '@nocobase/client';
 import { SchemaComponent, Plugin } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
