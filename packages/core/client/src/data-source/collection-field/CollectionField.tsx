@@ -90,7 +90,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
 
   if (!uiSchema) return null;
 
-  return <Component {...props} />;
+  return <Component {...props} {...dynamicProps} />;
 };
 
 export const CollectionField = connect((props) => {
