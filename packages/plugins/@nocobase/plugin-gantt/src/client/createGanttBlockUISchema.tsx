@@ -18,14 +18,13 @@ export const createGanttBlockUISchema = (options: {
 }): ISchema => {
   const { collectionName, fieldNames, dataSource, association } = options;
 
-  return {
+  const schema = {
     type: 'void',
     'x-acl-action': `${association || collectionName}:list`,
     'x-decorator': 'GanttBlockProvider',
     'x-decorator-props': {
       collection: collectionName,
       dataSource,
-      association,
       action: 'list',
       fieldNames,
       params: {
@@ -137,4 +136,9 @@ export const createGanttBlockUISchema = (options: {
       },
     },
   };
+
+  if (association) {
+    schema['x-decorator-props']['association'] = association;
+  }
+  return schema;
 };

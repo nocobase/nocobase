@@ -20,14 +20,13 @@ export const createKanbanBlockUISchema = (options: {
 }): ISchema => {
   const { collectionName, groupField, sortField, dataSource, params, association } = options;
 
-  return {
+  const schema = {
     type: 'void',
     'x-acl-action': `${association || collectionName}:list`,
     'x-decorator': 'KanbanBlockProvider',
     'x-decorator-props': {
       collection: collectionName,
       dataSource,
-      association,
       action: 'list',
       groupField,
       sortField,
@@ -124,4 +123,8 @@ export const createKanbanBlockUISchema = (options: {
       },
     },
   };
+  if (association) {
+    schema['x-decorator-props']['association'] = association;
+  }
+  return schema;
 };
