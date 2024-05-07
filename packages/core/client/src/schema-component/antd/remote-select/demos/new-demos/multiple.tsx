@@ -1,31 +1,44 @@
-import { getAppComponent } from '@nocobase/test/web';
+import React from 'react';
+import { mockApp } from '@nocobase/client/demo-utils';
+import { SchemaComponent, Plugin, ISchema } from '@nocobase/client';
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    'x-decorator': 'FormV2',
-    'x-component': 'ShowFormData',
-    properties: {
-      test: {
-        type: 'boolean',
-        title: 'Test',
-        'x-decorator': 'FormItem',
-        'x-component': 'RemoteSelect',
-        'x-component-props': {
-          fieldNames: {
-            label: 'title',
-            value: 'id',
-          },
-          service: {
-            resource: 'posts',
-            action: 'list',
-          },
-          multiple: true,
+const schema: ISchema = {
+  type: 'void',
+  name: 'root',
+  'x-decorator': 'FormV2',
+  'x-component': 'ShowFormData',
+  properties: {
+    test: {
+      type: 'boolean',
+      title: 'Test',
+      'x-decorator': 'FormItem',
+      'x-component': 'RemoteSelect',
+      'x-component-props': {
+        fieldNames: {
+          label: 'title',
+          value: 'id',
         },
+        service: {
+          resource: 'posts',
+          action: 'list',
+        },
+        multiple: true,
       },
     },
   },
+}
+const Demo = () => {
+  return <SchemaComponent schema={schema} />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
   apis: {
     'posts:list': {
       data: [
@@ -43,4 +56,4 @@ const App = getAppComponent({
   delayResponse: 300,
 });
 
-export default App;
+export default app.getRootComponent();

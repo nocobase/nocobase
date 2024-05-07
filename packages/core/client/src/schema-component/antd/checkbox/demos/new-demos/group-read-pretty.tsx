@@ -1,13 +1,7 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
 
-import { Application, Checkbox, FormItem, FormV2, SchemaComponent, ShowFormData, ISchema } from '@nocobase/client';
+
+import { Plugin, SchemaComponent, ISchema } from '@nocobase/client';
+import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 
 const options = [
@@ -63,9 +57,15 @@ const schema: ISchema = {
 };
 
 const Demo = () => {
-  return <SchemaComponent schema={schema} components={{ FormV2, ShowFormData, FormItem, Checkbox }} />;
+  return <SchemaComponent schema={schema} />;
 };
 
-const app = new Application({ providers: [Demo] });
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({ plugins: [DemoPlugin] });
 
 export default app.getRootComponent();

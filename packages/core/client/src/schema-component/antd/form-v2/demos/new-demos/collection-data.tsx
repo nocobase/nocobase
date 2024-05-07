@@ -1,30 +1,18 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+
 
 import { useForm } from '@formily/react';
+import React from 'react';
+import { App as AntdApp } from 'antd';
 import {
   ActionProps,
-  Application,
-  CollectionField,
-  FormBlockProvider,
-  FormItem,
-  FormV2,
-  ISchema,
-  Input,
   SchemaComponent,
+  ISchema,
+  Plugin,
   useDataBlockResource,
-  useFormBlockProps,
+  FormBlockProvider,
+  useFormBlockProps
 } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-
-import { App as AntdApp } from 'antd';
-import React from 'react';
 
 function useSubmitActionProps(): ActionProps {
   const form = useForm();
@@ -93,16 +81,24 @@ const Demo = () => {
   return (
     <SchemaComponent
       schema={schema}
-      components={{ FormV2, FormItem, CollectionField, FormBlockProvider, Input }}
-      scope={{ useFormBlockProps, useSubmitActionProps }}
+      scope={{ useSubmitActionProps }}
     />
   );
 };
 
-const app = new Application({
-  providers: [Demo],
-});
 
-mockApp({ app });
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
+  components: {
+    FormBlockProvider
+  },
+  scopes: { useFormBlockProps }
+});
 
 export default app.getRootComponent();

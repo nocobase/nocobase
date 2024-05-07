@@ -1,14 +1,8 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+
 
 import { createForm } from '@formily/core';
-import { Application, FormItem, FormV2, ISchema, Input, SchemaComponent } from '@nocobase/client';
+import { Plugin, ISchema, SchemaComponent } from '@nocobase/client';
+import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 import { useMemo } from 'react';
 
@@ -57,11 +51,17 @@ const schema: ISchema = {
 };
 
 const Demo = () => {
-  return <SchemaComponent schema={schema} components={{ FormV2, FormItem, Input }} scope={{ useCustomFormProps }} />;
+  return <SchemaComponent schema={schema} scope={{ useCustomFormProps }} />;
 };
 
-const app = new Application({
-  providers: [Demo],
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
 });
 
 export default app.getRootComponent();

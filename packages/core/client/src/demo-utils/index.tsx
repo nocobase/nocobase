@@ -10,7 +10,15 @@
 import MockAdapter from 'axios-mock-adapter';
 import { AxiosInstance, AxiosRequestConfig } from 'axios';
 
-import { Application, CollectionPlugin, LocalDataSource } from '@nocobase/client';
+import {
+  ActionInitializer,
+  AntdSchemaComponentPlugin,
+  Application,
+  ApplicationOptions,
+  CollectionPlugin,
+  LocalDataSource,
+  SchemaSettingsPlugin,
+} from '@nocobase/client';
 
 import dataSourceMainCollections from './dataSourceMainCollections.json';
 import dataSource2 from './dataSource2.json';
@@ -77,20 +85,30 @@ export const mockAppApi = (app: Application, apis: MockApis = {}, delayResponse?
   return mock;
 };
 
-export interface GetAppOptions {
+export interface MockAppOptions extends ApplicationOptions {
   apis?: MockApis;
-  /**
-   * @default true
-   */
-  enableMultipleDataSource?: boolean;
   delayResponse?: number;
-  app: Application;
+  enableMultipleDataSource?: boolean;
 }
 
-export const mockApp = (options: GetAppOptions) => {
-  const { app, enableMultipleDataSource, apis: optionsApis = {}, delayResponse } = options;
+export const mockApp = (options: MockAppOptions) => {
+  const {
+    apis: optionsApis = {},
+    enableMultipleDataSource,
+    delayResponse,
+    router = { type: 'memory', initialEntries: ['/'] },
+    ...appOptions
+  } = options;
+  const app = new Application({
+    disableAcl: true,
+    ...appOptions,
+    router
+  })
 
+  app.pluginManager.add(AntdSchemaComponentPlugin);
+  app.pluginManager.add(SchemaSettingsPlugin);
   app.pluginManager.add(CollectionPlugin, { config: { enableRemoteDataSource: false } });
+  app.addComponents({ ActionInitializer })
 
   const apis = Object.assign({}, defaultApis, optionsApis);
 
@@ -102,7 +120,5 @@ export const mockApp = (options: GetAppOptions) => {
 
   mockAppApi(app, apis, delayResponse);
 
-  const App = app.getRootComponent();
-
-  return App;
+  return app;
 };
