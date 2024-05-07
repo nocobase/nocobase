@@ -12,7 +12,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
   useCollection_deprecated,
-  BlockProvider,
   useBlockRequestContext,
   TableBlockProvider,
   useTableBlockContext,
@@ -95,11 +94,9 @@ export const GanttBlockProvider = (props) => {
 
   return (
     <div aria-label="block-item-gantt" role="button">
-      <BlockProvider name="gantt" {...props} params={params}>
-        <TableBlockProvider {...props} params={params}>
-          <InternalGanttBlockProvider {...props} />
-        </TableBlockProvider>
-      </BlockProvider>
+      <TableBlockProvider {...props} params={params}>
+        <InternalGanttBlockProvider {...props} />
+      </TableBlockProvider>
     </div>
   );
 };

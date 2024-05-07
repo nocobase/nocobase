@@ -40,7 +40,6 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
         ref.current.scrollLeft = scrollX;
       }
     }, [scrollX]);
-
     return (
       <div className={styles.ganttverticalcontainer} ref={ref} dir="ltr">
         <svg
@@ -60,7 +59,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width={gridProps.svgWidth}
-            height={barProps.rowHeight * (barProps.tasks.length || 3)}
+            height={barProps.rowHeight * barProps.tasks.length || 166}
             fontFamily={barProps.fontFamily}
             ref={ganttSVGRef}
             className="ganttBody"
