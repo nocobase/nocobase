@@ -10,13 +10,28 @@
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../../collection-manager';
-import { SchemaSettingsBlockTitleItem, SchemaSettingsFormItemTemplate } from '../../../../schema-settings';
+import {
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsFormItemTemplate,
+  SchemaSettingsLinkageRules,
+} from '../../../../schema-settings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
     name: 'title',
     Component: SchemaSettingsBlockTitleItem,
+  },
+  {
+    name: 'linkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection_deprecated();
+      return {
+        collectionName: name,
+        readPretty: true,
+      };
+    },
   },
   {
     name: 'formItemTemplate',

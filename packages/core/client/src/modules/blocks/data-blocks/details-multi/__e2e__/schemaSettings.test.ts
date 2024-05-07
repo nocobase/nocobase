@@ -28,6 +28,7 @@ test.describe('multi data details block schema settings', () => {
       },
       supportedOptions: [
         'Edit block title',
+        'Linkage rules',
         'Set the data scope',
         'Set default sorting rules',
         'Save as template',
