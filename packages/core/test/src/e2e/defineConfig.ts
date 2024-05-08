@@ -29,7 +29,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
     // Fail the build on CI if you accidentally left test.only in the source code.
     forbidOnly: !!process.env.CI,
 
-    retries: 2,
+    retries: 1,
 
     // Opt out of parallel tests on CI.
     // workers: process.env.CI ? 1 : undefined,
@@ -48,8 +48,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
       // Base URL to use in actions like `await page.goto('/')`.
       baseURL: process.env.APP_BASE_URL || `http://localhost:${process.env.APP_PORT || 20000}`,
 
-      // Collect trace when retrying the failed test.
-      trace: 'on-first-retry',
+      trace: 'off',
     },
     // Configure projects for major browsers.
     projects: [
