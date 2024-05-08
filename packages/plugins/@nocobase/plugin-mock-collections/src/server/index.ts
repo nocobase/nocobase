@@ -304,10 +304,9 @@ export class PluginMockCollectionsServer extends Plugin {
         });
         await collectionsRepository.load();
 
-        const repositories = collections.map((collection) => {
-          return db.getRepository(collection.name).collection.sync();
-        });
-        await Promise.all(repositories);
+        for (const collection of collections) {
+          await db.getRepository(collection.name).collection.sync();
+        }
 
         const records = await collectionsRepository.find({
           filter: {
