@@ -4,7 +4,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       pr_number:
@@ -14,20 +14,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - run: gh pr checkout ${{ inputs.pr_number }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Commit files
-      run: |
-        yarn install
-        yarn version:alpha -y
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git commit -a -m "Add changes"
-    - name: Push changes
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.head_ref }}
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: Run release.sh
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions Bot"
+          bash release.sh
+      - name: push pro plugins
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
+          directory: packages/pro-plugins
+      - name: push
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
