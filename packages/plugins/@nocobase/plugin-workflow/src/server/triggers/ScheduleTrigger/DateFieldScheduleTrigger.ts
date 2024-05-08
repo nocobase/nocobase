@@ -329,12 +329,18 @@ export default class ScheduleTrigger {
       appends: workflow.config.appends,
       transaction,
     });
-    const key = `${workflow.id}:${recordPk}@${nextTime}`;
-    this.cache.delete(key);
-    this.workflow.trigger(workflow, {
-      data: data.toJSON(),
-      date: new Date(nextTime),
-    });
+    const eventKey = `${workflow.id}:${recordPk}@${nextTime}`;
+    this.cache.delete(eventKey);
+    this.workflow.trigger(
+      workflow,
+      {
+        data: data.toJSON(),
+        date: new Date(nextTime),
+      },
+      {
+        eventKey,
+      },
+    );
 
     if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
       return;

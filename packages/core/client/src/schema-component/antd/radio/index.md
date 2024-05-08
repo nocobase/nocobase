@@ -1,21 +1,41 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Radio
 
-## Examples
+单选框。其基于 `antd` 的 [Radio](https://ant.design/components/radio/) 组件进行封装。
 
-### Basic
+## Radio
 
-<code src="./demos/demo1.tsx"></code>
+### Basic Usage
 
-### Radio Group
+```ts
+type RadioProps = AntdRadioProps;
+```
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/new-demos/radio-basic.tsx"></code>
 
-### Radio Group with color
+### Read Pretty
 
-<code src="./demos/demo3.tsx"></code>
+```ts
+interface RadioReadPrettyProps  {
+  value?: boolean;
+}
+```
+
+<code src="./demos/new-demos/radio-read-pretty.tsx"></code>
+
+## Radio Group
+
+```ts
+type RadioGroupProps = AntdRadioGroupProps;
+```
+
+### Basic Usage
+
+<code src="./demos/new-demos/group-basic.tsx"></code>
+
+### Read Pretty
+
+<code src="./demos/new-demos/group-read-pretty.tsx"></code>
+
+### Read Pretty with color
+
+<code src="./demos/new-demos/group-read-pretty-color.tsx"></code>

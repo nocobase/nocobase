@@ -190,7 +190,7 @@ export const EditFieldAction = (props) => {
     return (
       record?.fields ||
       getCollection(record.collectionName)
-        .options.fields.filter((v) => {
+        ?.options.fields.filter((v) => {
           return ['string', 'bigInt', 'integer'].includes(v.type);
         })
         .map((k) => {
