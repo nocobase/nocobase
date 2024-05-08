@@ -39,6 +39,7 @@ jobs:
       - name: push pro plugins
         uses: ad-m/github-push-action@master
         with:
+          repository: nocobase/pro-plugins
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.head_ref }}
           directory: packages/pro-plugins
