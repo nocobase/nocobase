@@ -39,7 +39,7 @@
     "clean": "nocobase clean",
     "changelog": "auto-changelog -p -t keepachangelog",
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
-    "release:force": "lerna publish from-package --yes",
+    "release:force": "lerna publish from-package --yes --no-git-tag-version",
     "release": "lerna publish",
     "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
   },
