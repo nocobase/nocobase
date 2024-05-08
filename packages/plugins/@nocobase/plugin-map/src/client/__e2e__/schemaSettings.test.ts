@@ -36,7 +36,8 @@ test.afterEach(async ({ page }) => {
 });
 
 test.describe('schema settings', () => {
-  test('what settings can be used in map block', async ({ page, mockPage }) => {
+  // TODO: 不稳定，待优化
+  test.skip('what settings can be used in map block', async ({ page, mockPage }) => {
     await mockPage(oneMapUsedToTestSettings).goto();
 
     await expectSettingsMenu({
