@@ -9,6 +9,7 @@
 
 import { SchemaSettings } from '@nocobase/client';
 import { getAppComponent } from '@nocobase/test/web';
+import React from 'react';
 
 const myActionSettings = new SchemaSettings({
   name: 'myActionSettings',
@@ -19,6 +20,8 @@ const myActionSettings = new SchemaSettings({
     },
   ],
 });
+
+const MyToolbar = (props) => <span>{props.title}</span>;
 
 const App = getAppComponent({
   schema: {
@@ -60,12 +63,23 @@ const App = getAppComponent({
             'x-align': 'left',
             'x-settings': 'myActionSettings',
           },
+          a5: {
+            title: '',
+            'x-component': 'Action',
+            'x-action': 'a5',
+            'x-align': 'left',
+            'x-toolbar': 'MyToolbar',
+            'x-toolbar-props': {
+              title: 'MyTitle',
+            },
+          },
         },
       },
     },
   },
   appOptions: {
     schemaSettings: [myActionSettings],
+    components: { MyToolbar },
   },
   designable: true,
 });
