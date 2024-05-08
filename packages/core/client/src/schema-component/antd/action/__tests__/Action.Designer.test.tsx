@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { screen, checkSettings, renderSingleSettings, checkModalSetting } from '@nocobase/test/client';
+import { checkModalSetting, renderSingleSettings } from '@nocobase/test/client';
 import { ButtonEditor } from '../Action.Designer';
 
 describe('Action.Designer', () => {
