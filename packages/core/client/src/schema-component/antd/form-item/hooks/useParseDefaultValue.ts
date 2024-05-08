@@ -13,6 +13,7 @@ import { reaction } from '@formily/reactive';
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
+import { evaluators } from '@nocobase/evaluators/client';
 import { useRecordIndex } from '../../../../../src/record-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useCollectionRecord } from '../../../../data-source/collection-record/CollectionRecordProvider';
@@ -24,6 +25,7 @@ import { isVariable } from '../../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { isSubMode } from '../../association-field/util';
 import { useSpecialCase } from './useSpecialCase';
+import { replaceVariables } from '../../form-v2/utils';
 
 /**
  * 用于解析并设置 FormItem 的默认值
@@ -34,6 +36,8 @@ const useParseDefaultValue = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const record = useCollectionRecord();
+  const { evaluate } = evaluators.get('formula.js');
+
   const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable, isInSubForm } =
     useFlag() || {};
   const { getField } = useCollection_deprecated();
@@ -85,26 +89,34 @@ const useParseDefaultValue = () => {
             console.error(`useParseDefaultValue: can not find field ${fieldSchema.name}`);
           }
         }
-
-        const value = transformVariableValue(await variables.parseVariable(fieldSchema.default, localVariables), {
-          targetCollectionField: collectionField,
+        const { exp, scope: expScope } = await replaceVariables(fieldSchema.default, {
+          variables,
+          localVariables,
         });
 
-        if (value == null || value === '') {
-          // fix https://nocobase.height.app/T-2805
-          field.setInitialValue(null);
-          await field.reset({ forceClear: true });
-        } else if (isSpecialCase()) {
-          // 只需要设置一次就可以了
-          if (index === 0) {
-            setDefaultValue(value);
+        try {
+          const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+          const value = transformVariableValue(result, {
+            targetCollectionField: collectionField,
+          });
+
+          if (value == null || value === '') {
+            // fix https://nocobase.height.app/T-2805
+            field.setInitialValue(null);
+            await field.reset({ forceClear: true });
+          } else if (isSpecialCase()) {
+            // 只需要设置一次就可以了
+            if (index === 0) {
+              setDefaultValue(value);
+            }
+          } else {
+            field.setInitialValue(value);
           }
-        } else {
-          field.setInitialValue(value);
+
+          field.loading = false;
+        } catch (error) {
+          console.error(error);
         }
-
-        field.loading = false;
-
         // 如果不是一个有效的变量字符串（如：`{{ $user.name }}`）却依然包含 `{{` 和 `}}`，
         // 则可以断定是一个需要 compile（`useCompile` 返回的函数） 的字符串，这样的字符串会由 formily 自动解析，无需在这里赋值
       } else if (!/\{\{.+\}\}/g.test(fieldSchema.default) && field.setInitialValue) {
