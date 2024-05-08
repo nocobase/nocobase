@@ -19,7 +19,7 @@ test.describe('bulk-destroy', () => {
     await expect(page.getByLabel('block-item-CardItem-general-').getByText('No data')).not.toBeVisible();
 
     // 1. 创建一个批量删除按钮
-    await page.getByLabel('schema-initializer-ActionBar-').click();
+    await page.getByLabel('schema-initializer-ActionBar-').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
     // 2. 选中所有行
@@ -39,7 +39,7 @@ test.describe('bulk-destroy', () => {
     await expect(page.getByLabel('block-item-CardItem-general-').getByText('No data')).not.toBeVisible();
 
     // 1. 创建一个批量删除按钮，并关闭二次确认
-    await page.getByLabel('schema-initializer-ActionBar-').click();
+    await page.getByLabel('schema-initializer-ActionBar-').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByLabel('action-Action-Delete-destroy-').hover();
     await page.getByLabel('designer-schema-settings-Action-actionSettings:bulkDelete-general').hover();
