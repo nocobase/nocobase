@@ -38,6 +38,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
       'x-disabled': '{{ !createOnly }}',
+      'x-visible': '{{!createMainOnly}}',
     },
     name: {
       type: 'string',
@@ -106,6 +107,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       default: false,
+      'x-visible': '{{!createMainOnly}}',
     },
     sources: {
       type: 'array',
@@ -117,6 +119,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-disabled': true,
+      'x-visible': '{{!createMainOnly}}',
     },
     fields: {
       type: 'array',
