@@ -13,7 +13,6 @@ import { SchemaToolbar } from '../../schema-settings/GeneralSchemaDesigner';
 
 export const ActionSchemaToolbar = (props) => {
   const fieldSchema = useFieldSchema();
-  console.log(props);
   return (
     <SchemaToolbar
       initializer={false}
