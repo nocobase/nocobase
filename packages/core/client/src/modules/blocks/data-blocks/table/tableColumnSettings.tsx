@@ -12,7 +12,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
+import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
@@ -123,7 +123,7 @@ export const tableColumnSettings = new SchemaSettings({
           name: 'sortable',
           type: 'switch',
           useVisible() {
-            const collection = useCollection_deprecated();
+            const collection = useCollection();
             const { collectionField } = useColumnSchema();
             const { getInterface } = useCollectionManager_deprecated();
             const interfaceCfg = getInterface(collectionField?.interface);
