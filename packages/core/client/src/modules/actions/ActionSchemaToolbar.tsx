@@ -7,9 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { SchemaToolbar } from '../../schema-settings/GeneralSchemaDesigner';
 
 export const ActionSchemaToolbar = (props) => {
-  return <SchemaToolbar initializer={false} showBorder={false} showBackground {...props} />;
+  const fieldSchema = useFieldSchema();
+  return (
+    <SchemaToolbar
+      initializer={false}
+      showBorder={false}
+      showBackground
+      {...props}
+      {...fieldSchema['x-toolbar-props']}
+    />
+  );
 };
