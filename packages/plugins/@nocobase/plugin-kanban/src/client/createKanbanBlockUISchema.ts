@@ -11,20 +11,22 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export const createKanbanBlockUISchema = (options: {
-  collectionName: string;
   groupField: string;
   sortField: string;
   dataSource: string;
   params?: Record<string, any>;
+  collectionName?: string;
+  association?: string;
 }): ISchema => {
-  const { collectionName, groupField, sortField, dataSource, params } = options;
+  const { collectionName, groupField, sortField, dataSource, params, association } = options;
 
-  return {
+  const schema = {
     type: 'void',
-    'x-acl-action': `${collectionName}:list`,
+    'x-acl-action': `${association || collectionName}:list`,
     'x-decorator': 'KanbanBlockProvider',
     'x-decorator-props': {
       collection: collectionName,
+      dataSource,
       action: 'list',
       groupField,
       sortField,
@@ -32,7 +34,6 @@ export const createKanbanBlockUISchema = (options: {
         paginate: false,
         ...params,
       },
-      dataSource,
     },
     // 'x-designer': 'Kanban.Designer',
     'x-toolbar': 'BlockSchemaToolbar',
@@ -122,4 +123,8 @@ export const createKanbanBlockUISchema = (options: {
       },
     },
   };
+  if (association) {
+    schema['x-decorator-props']['association'] = association;
+  }
+  return schema;
 };

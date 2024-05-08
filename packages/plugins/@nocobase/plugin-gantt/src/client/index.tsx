@@ -17,6 +17,7 @@ import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
 import { Event } from './components/gantt/Event';
 import { Gantt } from './components/gantt/gantt';
 import { ViewMode } from './types/public-types';
+import { useCreateAssociationGanttBlock, useCreateGanttBlock } from './GanttBlockInitializer';
 
 Gantt.ActionBar = ActionBar;
 Gantt.ViewMode = ViewMode;
@@ -48,7 +49,32 @@ export class PluginGanttClient extends Plugin {
       title: "{{t('Gantt')}}",
       Component: 'GanttBlockInitializer',
     });
+    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.gantt', {
+      title: "{{t('Gantt')}}",
+      Component: 'GanttBlockInitializer',
+      useComponentProps() {
+        const { createAssociationGanttBlock } = useCreateAssociationGanttBlock();
+        const { createGanttBlock } = useCreateGanttBlock();
 
+        return {
+          onlyCurrentDataSource: true,
+          filterCollections({ associationField }) {
+            if (associationField) {
+              return ['hasMany', 'belongsToMany'].includes(associationField.type);
+            }
+            return false;
+          },
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createGanttBlock({ item });
+            }
+            createAssociationGanttBlock({ item });
+          },
+          showAssociationFields: true,
+          hideSearch: true,
+        };
+      },
+    });
     this.app.addScopes({
       useGanttBlockProps,
     });
