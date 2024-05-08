@@ -1,12 +1,12 @@
 # SchemaSettingsManager
 
-## 实例方法
+## Methods
 
 ### schemaSettingsManager.add()
 
-添加 SchemaSettings 实例。
+Used to add a SchemaSettings instance.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettingsManager {
@@ -14,7 +14,7 @@ class SchemaSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const mySchemaSettings = new SchemaSetting({
@@ -40,9 +40,9 @@ class MyPlugin extends Plugin {
 
 ### schemaSettingsManager.get()
 
-获取一个 SchemaSettings 实例。
+Get a SchemaSettings instance.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettingsManager {
@@ -50,7 +50,7 @@ class SchemaSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -62,9 +62,9 @@ class MyPlugin extends Plugin {
 
 ### schemaSettingsManager.getAll()
 
-获取所有的 SchemaSettings 实例。
+Get all SchemaSettings instances.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettingsManager {
@@ -72,7 +72,7 @@ class SchemaSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -84,9 +84,9 @@ class MyPlugin extends Plugin {
 
 ### app.schemaSettingsManager.has()
 
-判断是否有存在某个 SchemaSettings 实例。
+Check if a specific SchemaSettings instance exists.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettingsManager {
@@ -94,7 +94,7 @@ class SchemaSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -106,9 +106,9 @@ class MyPlugin extends Plugin {
 
 ### schemaSettingsManager.remove()
 
-移除 SchemaSettings 实例。
+Remove SchemaSettings instance.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettingsManager {
@@ -116,7 +116,7 @@ class SchemaSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -128,9 +128,9 @@ class MyPlugin extends Plugin {
 
 ### schemaSettingsManager.addItem()
 
-添加 SchemaSettings 实例的 Item 项，其和直接 schemaInitializer.add() 方法的区别是，可以确保在实例存在时才会添加。
+Add an Item to the SchemaSettings instance, the difference between this method and directly calling schemaInitializer.add() is that it can ensure that the item is added only when the instance exists.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettingsManager {
@@ -138,18 +138,18 @@ class SchemaSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
     async load() {
-        // 方式1：先获取，再添加子项，需要确保已注册
+        // Method 1: Get first, then add sub-items, make sure it is registered
         const mySchemaSettings = this.app.schemaSettingsManager.get('MySchemaSettings');
         if (mySchemaSettings) {
             mySchemaSettings.add('b', { type: 'item', componentProps:{ title: 'B' } })
         }
 
-        // 方式2：通过 addItem，内部确保在 mySchemaSettings 注册时才会添加
+        // Method 2: Use addItem, ensure that it is added only when MySchemaSettings is registered
         this.app.schemaSettingsManager.addItem('MySchemaSettings', 'b', {
             type: 'item',
             componentProps:{ title: 'B' }
@@ -160,9 +160,9 @@ class MyPlugin extends Plugin {
 
 ### schemaSettingsManager.removeItem()
 
-移除 实例的 Item 项，其和直接 schemaInitializer.remove() 方法的区别是，可以确保在实例存在时才会移除。
+Remove an Item from the SchemaSettings instance, the difference between this method and directly calling schemaInitializer.remove() is that it can ensure that the item is removed only when the instance exists.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettingsManager {
@@ -170,18 +170,18 @@ class SchemaSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
     async load() {
-        // 方式1：先获取，再删除子项，需要确保已注册
+        // Method 1: Get first, then remove sub-items, make sure it is registered
         const mySchemaSettings = this.app.schemaSettingsManager.get('MySchemaSettings');
         if (mySchemaSettings) {
             mySchemaSettings.remove('a')
         }
 
-        // 方式2：通过 addItem，内部确保在 mySchemaSettings 注册时才会移除
+        // Method 2: Use addItem, ensure that it is removed only when MySchemaSettings is registered
         this.app.schemaSettingsManager.remove('MySchemaSettings', 'a')
     }
 }

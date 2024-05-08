@@ -1,12 +1,12 @@
 # CollectionProvider
 
-用于提供 [Collection](/core/data-source/collction) 实例。
+Used to provide an instance of [Collection](/core/data-source/collection).
 
-## 组件
+## Component
 
 ### CollectionProvider
 
-- 类型
+- Type
 
 ```tsx | pure
 interface CollectionProviderProps {
@@ -16,13 +16,13 @@ interface CollectionProviderProps {
 }
 ```
 
-- 详解
+- Details
 
-组件会根据 `name` 去 [CollectionManager](/core/data-source/collection-manager) 中查询数据表信息，如果查询不到，则会不进行渲染。
+The component will query the table information from the [CollectionManager](/core/data-source/collection-manager) based on the `name`. If the query fails, it will not be rendered.
 
-`dataSource` 用于指定数据表所在的[命名空间](/core/data-source/collection-manager#datasource)，如果不指定，则默认命名空间。
+The `dataSource` is used to specify the namespace of the table in the [CollectionManager](/core/data-source/collection-manager#datasource). If not specified, the default namespace will be used.
 
-- 示例
+- Example
 
 ```tsx | pure
 import { CollectionProvider } from '@nocobase/client';
@@ -36,12 +36,11 @@ const MyComponent = () => {
 }
 ```
 
-
 ## Hooks
 
 ### useCollection()
 
-用于获取 `CollectionProvider` 传递的 `Collection` 实例。
+Used to retrieve the `Collection` instance passed by `CollectionProvider`.
 
 ```tsx | pure
 const collection = useCollection()
@@ -50,14 +49,14 @@ console.log(collection instanceof Collection) // true
 console.log(collection);
 ```
 
-结合 Mixin 使用：
+Using Mixins:
 
 ```tsx | pure
 const collection = useCollection<TestMixin>()
 const collection = useCollection<TestMixin & TestMixin2>()
 ```
 
-## 示例
+## Example
 
 <code src="./demos/collection/demo1.tsx"></code>
 
