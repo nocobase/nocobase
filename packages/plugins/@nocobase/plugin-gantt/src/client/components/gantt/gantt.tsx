@@ -24,7 +24,7 @@ import {
   withDynamicSchemaProps,
   useDesignable,
 } from '@nocobase/client';
-import { message } from 'antd';
+import { message, Spin } from 'antd';
 import { debounce } from 'lodash';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -143,10 +143,11 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     tasks,
     expandAndCollapseAll,
     fieldNames,
+    loading,
   } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { designable } = useDesignable();
-  const headerHeight = currentTheme.includes('compact') ? 45 : designable ? 65 : 55;
-  const rowHeight = currentTheme.includes('compact') ? 45 : 65;
+  const headerHeight = currentTheme?.includes('compact') ? 45 : designable ? 65 : 55;
+  const rowHeight = currentTheme?.includes('compact') ? 45 : 65;
   const ctx = useGanttBlockContext();
   const appInfo = useCurrentAppInfo();
   const { t } = useTranslation();
@@ -158,6 +159,7 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
   const verticalGanttContainerRef = useRef<HTMLDivElement>(null);
+  const ganttRef = useRef<HTMLDivElement>(null);
   const [dateSetup, setDateSetup] = useState<DateSetup>(() => {
     const [startDate, endDate] = ganttDateRange(tasks, viewMode, preStepsCount);
     return { viewMode, dates: seedDates(startDate, endDate, viewMode) };
@@ -521,6 +523,7 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     onDoubleClick,
     onClick: handleBarClick,
     onDelete,
+    loading,
   };
 
   return (
@@ -536,6 +539,7 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
           height: ${headerHeight}px;
         }
       `)}
+      ref={ganttRef}
     >
       <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
       <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
@@ -576,13 +580,15 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
           onScroll={handleScrollY}
           rtl={rtl}
         />
-        <HorizontalScroll
-          svgWidth={svgWidth}
-          taskListWidth={taskListWidth}
-          scroll={scrollX}
-          rtl={rtl}
-          onScroll={handleScrollX}
-        />
+        <Spin spinning={loading} style={{ visibility: 'hidden' }}>
+          <HorizontalScroll
+            svgWidth={svgWidth}
+            taskListWidth={taskListWidth}
+            scroll={scrollX}
+            rtl={rtl}
+            onScroll={handleScrollX}
+          />
+        </Spin>
       </div>
     </div>
   );
