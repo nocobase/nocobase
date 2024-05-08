@@ -11,7 +11,7 @@ on:
         description: 'Please enter a pull request number'
         required: true
 jobs:
-  build:
+  push-commit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
