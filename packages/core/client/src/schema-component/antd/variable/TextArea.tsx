@@ -385,17 +385,15 @@ export function TextArea(props) {
         componentCls,
         hashId,
         css`
-          &.ant-input-group.ant-input-group-compact {
-            display: flex;
-            .ant-input {
-              flex-grow: 1;
-              min-width: 200px;
-            }
-            .ant-input-disabled {
-              .ant-tag {
-                color: #bfbfbf;
-                border-color: #d9d9d9;
-              }
+          display: flex;
+          .ant-input {
+            flex-grow: 1;
+            min-width: 200px;
+          }
+          .ant-input-disabled {
+            .ant-tag {
+              color: #bfbfbf;
+              border-color: #d9d9d9;
             }
           }
 
