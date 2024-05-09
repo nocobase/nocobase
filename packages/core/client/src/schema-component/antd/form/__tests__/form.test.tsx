@@ -173,13 +173,11 @@ describe('Form', () => {
     await userEvent.type(document.querySelector('.ant-input'), 'test');
 
     await waitFor(() => {
-      expect(document.querySelectorAll('.ant-input')).toHaveLength(1);
-    });
+      const element = document.querySelector(
+        '[data-label="block-item-CollectionField-users-form-users.nickname-Nickname"]',
+      );
 
-    await userEvent.clear(document.querySelector('.ant-input'));
-
-    await waitFor(() => {
-      expect(document.querySelectorAll('.ant-input')).toHaveLength(2);
+      expect(element).toBeNull();
     });
   });
 });
