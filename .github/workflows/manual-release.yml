@@ -49,7 +49,7 @@ jobs:
       - name: push nocobase
         uses: ad-m/github-push-action@master
         with:
-          branch: ${{ github.head_ref }}
+          branch: main
           ssh: true
           repository: nocobase/nocobase
           tags: true
