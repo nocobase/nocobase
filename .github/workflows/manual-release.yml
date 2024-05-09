@@ -37,13 +37,15 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           ssh: true
-          branch: ${{ github.head_ref }}
+          branch: main
           directory: packages/pro-plugins
           repository: nocobase/pro-plugins
           tags: true
+          atomic: true
       - name: push
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.head_ref }}
           tags: true
+          atomic: true
