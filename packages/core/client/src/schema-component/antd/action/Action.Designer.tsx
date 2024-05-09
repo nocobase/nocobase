@@ -461,7 +461,7 @@ export function WorkflowConfig() {
     }),
     'customize:triggerWorkflows': t(
       'Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".',
-      { ns: 'workflow' },
+      { ns: '@nocobase/plugin-workflow-custom-action-trigger' },
     ),
     'customize:triggerWorkflows_deprecated': t(
       '"Submit to workflow" to "Post-action event" is deprecated, please use "Custom action event" instead.',
