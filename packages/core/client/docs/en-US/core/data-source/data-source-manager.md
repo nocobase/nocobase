@@ -1,6 +1,6 @@
 # DataSourceManager
 
-Nocobase 数据源前端体系包含如下内容：
+The Nocobase front-end data source system includes the following:
 
 - [DataSourceManager](./data-source-manager.md)
   - [DataSource](./data-source)
@@ -14,11 +14,11 @@ Nocobase 数据源前端体系包含如下内容：
   - [CollectionMixins](./collection-mixins)
 
 
-## 实例属性
+## Instance Properties
 
 - collectionTemplateManager
 
-用于管理 `CollectionTemplate` 实例。
+Used to manage instances of `CollectionTemplate`.
 
 ```tsx | pure
 import { Plugin, CollectionTemplate } from '@nocobase/client';
@@ -34,11 +34,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-详细请参考：[CollectionTemplateManager](./collection-template-manager)
+Please refer to: [CollectionTemplateManager](./collection-template-manager)
 
 - collectionFieldInterfaceManager
 
-用于管理 `CollectionFieldInterface` 实例。
+Used to manage instances of `CollectionFieldInterface`.
 
 ```tsx | pure
 import { Plugin, CollectionFieldInterface } from '@nocobase/client';
@@ -54,15 +54,15 @@ class MyPlugin extends Plugin {
 }
 ```
 
-详细请参考：[CollectionTemplateManager](./collection-template-manager)
+Please refer to: [CollectionTemplateManager](./collection-template-manager)
 
-## 实例方法
+## Instance Methods
 
 ### addCollectionTemplates()
 
-是 `CollectionTemplateManager` 的快捷方法，用于添加 `CollectionTemplate`。
+It is a shortcut method of `CollectionTemplateManager` used to add `CollectionTemplate`.
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSourceManager {
@@ -70,7 +70,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 import { Plugin, CollectionTemplate } from '@nocobase/client';
@@ -86,13 +86,12 @@ class MyPlugin extends Plugin {
 }
 ```
 
-更多详细请参考：[CollectionTemplateManager](./collection-template-manager)
+Please refer to: [CollectionTemplateManager](./collection-template-manager)
 
 ### addFieldInterfaces()
 
-是 `CollectionFieldInterfaceManager` 的快捷方法，用于添加 `CollectionFieldInterface`。
-
-- 类型
+It is a shortcut method of `CollectionFieldInterfaceManager` used to add `CollectionFieldInterface`.
+- Type
 
 ```tsx | pure
 class DataSourceManager {
@@ -100,7 +99,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 import { Plugin, CollectionFieldInterface } from '@nocobase/client';
@@ -116,13 +115,13 @@ class MyPlugin extends Plugin {
 }
 ```
 
-更多详细请参考：[CollectionFieldInterfaceManager](./collection-field-interface-manager)
+Please refer to: [CollectionFieldInterfaceManager](./collection-field-interface-manager)
 
 ### addCollectionMixins()
 
-用于添加 `Collection` 的 Mixins。
+Used to add mixins to `Collection`.
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSourceManager {
@@ -130,7 +129,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 import { Plugin, Collection } from '@nocobase/client';
@@ -153,13 +152,13 @@ const MyComponent = () => {
 }
 ```
 
-更多详细请参考：[CollectionMixins](./collection-mixins)
+Please refer to: [CollectionMixins](./collection-mixins)
 
 ### addDataSource()
 
-用于添加 `DataSource`。
+Used to add `DataSource`.
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSourceManager {
@@ -167,7 +166,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 import { Plugin, DataSource, DataSourceOptions } from '@nocobase/client';
@@ -191,13 +190,13 @@ class MyPlugin extends Plugin {
 }
 ```
 
-更多详细请参考：[DataSource](./data-source)
+Please refer to: [DataSource](./data-source)
 
 ### removeDataSources()
 
-移除 `DataSource`。
+Remove `DataSource`。
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSourceManager {
@@ -205,7 +204,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 
@@ -217,9 +216,9 @@ const MyComponent = () => {
 
 ### getDataSources()
 
-获取全部 `DataSource` 实例列表。
+Get a list of all `DataSource` instances.
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSourceManager {
@@ -227,7 +226,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
@@ -246,9 +245,9 @@ const MyComponent = () => {
 
 ### getDataSource()
 
-获取 `DataSource` 实例。
+Get the `DataSource` instance.
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSourceManager {
@@ -256,7 +255,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
@@ -273,9 +272,9 @@ const MyComponent = () => {
 
 ### getAllCollections()
 
-获取所有 DataSource 的所有 Collection 实例。
+Get all Collection instances of all DataSources.
 
-- 类型
+- Type
 
 ```tsx | pure
 
@@ -287,7 +286,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
@@ -313,9 +312,9 @@ const MyComponent = () => {
 
 ### reload()
 
-重载所有 `DataSource`。
+Reload all `DataSource` instances.
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSourceManager {
@@ -323,7 +322,7 @@ class DataSourceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
