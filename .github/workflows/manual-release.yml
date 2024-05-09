@@ -38,6 +38,7 @@ jobs:
           ssh: true
           branch: ${{ github.head_ref }}
           directory: packages/pro-plugins
+          repository: nocobase/pro-plugins
           tags: true
       - name: push
         uses: ad-m/github-push-action@master
