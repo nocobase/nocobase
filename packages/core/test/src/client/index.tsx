@@ -1,9 +1,17 @@
-import { expect } from 'vitest';
-import React, { FC, Fragment } from 'react';
-import { render, waitFor, screen } from '@testing-library/react';
-import { renderHook } from '@testing-library/react-hooks';
-import { GetAppComponentOptions, GetAppOptions, getApp, getAppComponent } from '../web';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
 
+import React from 'react';
+import { render } from '@testing-library/react';
+import { sleep } from '../web';
+
+export * from './utils';
 export { renderHook } from '@testing-library/react-hooks';
 
 function customRender(ui: React.ReactElement, options = {}) {
@@ -17,53 +25,11 @@ function customRender(ui: React.ReactElement, options = {}) {
 export * from '@testing-library/react';
 export { default as userEvent } from '@testing-library/user-event';
 // override render export
-export { customRender as render };
+export { customRender as render, sleep };
 
-export const sleep = async (timeout = 0) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, timeout);
-  });
-};
-
-export const WaitApp = async () => {
-  await waitFor(() => {
-    // @ts-ignore
-    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-  });
-};
-
-interface RenderHookOptions extends Omit<GetAppOptions, 'value' | 'onChange'> {
-  hook: () => any;
-  props?: any;
-  Wrapper?: FC<{ children: React.ReactNode }>;
-}
-
-export const renderHookWithApp = async (options: RenderHookOptions) => {
-  const { hook: useHook, props, Wrapper = Fragment, ...otherOptions } = options;
-  const { App } = getApp(otherOptions);
-  const WrapperValue: FC<{ children: React.ReactNode }> = ({ children }) => (
-    <App>
-      <Wrapper>{children}</Wrapper>
-    </App>
-  );
-
-  const res = renderHook(() => useHook(), { wrapper: WrapperValue, initialProps: props });
-
-  await WaitApp();
-
-  return res;
-};
-
-export const renderApp = async (options: GetAppComponentOptions) => {
-  const App = getAppComponent(options);
-
-  const res = render(<App />);
-
-  await WaitApp();
-
-  return res;
-};
-
-export const renderReadPrettyApp = (options: GetAppComponentOptions) => {
-  return renderApp({ ...options, schema: { ...(options.schema || {}), 'x-read-pretty': true } });
-};
+export * from './renderApp';
+export * from './renderHookWithApp';
+export * from './renderSettings';
+export * from './renderSingleSettings';
+export * from './settingsChecker';
+export * from './commonSettingsChecker';

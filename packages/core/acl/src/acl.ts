@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Action } from '@nocobase/resourcer';
 import { assign, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
@@ -77,11 +86,6 @@ export class ACL extends EventEmitter {
    */
   actionAlias = new Map<string, string>();
 
-  /**
-   * @internal
-   */
-  configResources: string[] = [];
-
   protected availableActions = new Map<string, ACLAvailableAction>();
 
   protected fixedParamsManager = new FixedParamsManager();
@@ -145,27 +149,6 @@ export class ACL extends EventEmitter {
 
   removeRole(name: string) {
     return this.roles.delete(name);
-  }
-
-  /**
-   * @internal
-   */
-  registerConfigResources(names: string[]) {
-    names.forEach((name) => this.registerConfigResource(name));
-  }
-
-  /**
-   * @internal
-   */
-  registerConfigResource(name: string) {
-    this.configResources.push(name);
-  }
-
-  /**
-   * @internal
-   */
-  isConfigResource(name: string) {
-    return this.configResources.includes(name);
   }
 
   setAvailableAction(name: string, options: AvailableActionOptions = {}) {
@@ -425,7 +408,7 @@ export class ACL extends EventEmitter {
 
         const permission = ctx.permission;
 
-        ctx.log?.info && ctx.log.info('ctx permission', permission);
+        ctx.log?.debug && ctx.log.debug('ctx permission', permission);
 
         if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
           ctx.throw(403, 'No permissions');
@@ -434,14 +417,14 @@ export class ACL extends EventEmitter {
 
         const params = permission.can?.params || acl.fixedParamsManager.getParams(resourceName, actionName);
 
-        ctx.log?.info && ctx.log.info('acl params', params);
+        ctx.log?.debug && ctx.log.debug('acl params', params);
 
         if (params && resourcerAction.mergeParams) {
           const filteredParams = acl.filterParams(ctx, resourceName, params);
           const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
 
           ctx.permission.parsedParams = parsedParams;
-          ctx.log?.info && ctx.log.info('acl parsedParams', parsedParams);
+          ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
           ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
           resourcerAction.mergeParams(parsedParams, {
             appends: (x, y) => {

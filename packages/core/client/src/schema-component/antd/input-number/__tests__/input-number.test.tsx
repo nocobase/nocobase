@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { fireEvent, render, screen } from '@nocobase/test/client';
 import React from 'react';
 import { formatNumberWithSeparator, formatUnitConversion, scientificNotation } from '../ReadPretty';
@@ -88,6 +97,15 @@ describe('ReadPretty:formatNumberWithSeparator', () => {
   test('Format number with custom separator', () => {
     const formatted = formatNumberWithSeparator(1234567.89, '0,0.00', 1);
     expect(formatted).toBe('1,234,567.9');
+  });
+
+  test('Format number with custom 0 0,00 separator', () => {
+    const formatted = formatNumberWithSeparator(1234567.89, '0 0,00', 1);
+    expect(formatted).toBe('1 234 567.9');
+  });
+  test('Format number with custom 0.00 separator', () => {
+    const formatted = formatNumberWithSeparator(1234567.89, '0.00', 1);
+    expect(formatted).toBe('1234567.9');
   });
 });
 describe('ReadPretty:formatUnitConversion', () => {

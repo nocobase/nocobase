@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import deepmerge from 'deepmerge';
 import lodash from 'lodash';
 import { isPlainObject } from './common';
@@ -13,7 +22,7 @@ export interface MergeStrategies {
 
 function getEnumerableOwnPropertySymbols(target: any): any[] {
   return Object.getOwnPropertySymbols
-    ? Object.getOwnPropertySymbols(target).filter((symbol) => target.propertyIsEnumerable(symbol))
+    ? Object.getOwnPropertySymbols(target).filter((symbol) => ({}).propertyIsEnumerable.call(target, symbol))
     : [];
 }
 

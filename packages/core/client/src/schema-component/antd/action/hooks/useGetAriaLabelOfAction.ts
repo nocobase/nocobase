@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
 import { useBlockContext } from '../../../../block-provider/BlockProvider';
@@ -16,6 +25,7 @@ export const useGetAriaLabelOfAction = (title: string) => {
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const component = fieldSchema['x-component'];
+  const componentName = typeof component === 'string' ? component : component?.displayName || component?.name;
   let recordName = record?.name || record?.title || (recordIndex != null ? String(recordIndex) : '');
   let action = fieldSchema['x-action'];
   let { name: collectionName } = useCollection_deprecated();
@@ -29,9 +39,9 @@ export const useGetAriaLabelOfAction = (title: string) => {
   const getAriaLabel = useCallback(
     (postfix?: string) => {
       postfix = postfix ? `-${postfix}` : '';
-      return `action-${component}-${actionTitle}${action}${collectionName}${blockName}${recordName}${postfix}`;
+      return `action-${componentName}-${actionTitle}${action}${collectionName}${blockName}${recordName}${postfix}`;
     },
-    [action, actionTitle, blockName, collectionName, component, recordName],
+    [action, actionTitle, blockName, collectionName, componentName, recordName],
   );
 
   return {

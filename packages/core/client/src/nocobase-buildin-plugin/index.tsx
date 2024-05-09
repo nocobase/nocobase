@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
@@ -213,7 +222,7 @@ const AppMaintaining: FC<{ app: Application; error: Error }> = observer(
           icon={icon}
           status={status}
           title={app.i18n.t(title)}
-          subTitle={app.i18n.t(subTitle)}
+          subTitle={<div style={{ whiteSpace: 'pre-wrap' }}>{app.i18n.t(subTitle)}</div>}
           // extra={[
           //   <Button type="primary" key="try" onClick={() => window.location.reload()}>
           //     {app.i18n.t('Try again')}

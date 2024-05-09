@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { ISchema } from '@formily/react';
 import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
@@ -44,4 +53,5 @@ export abstract class CollectionFieldInterface {
   validateSchema?(fieldSchema: ISchema): Record<string, ISchema>;
   usePathOptions?(field: CollectionFieldOptions): any;
   schemaInitialize?(schema: ISchema, data: any): void;
+  hidden?: boolean;
 }

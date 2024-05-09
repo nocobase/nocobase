@@ -1,0 +1,4 @@
+{
+  "Export warning": "每次最多导出 200 行数据，超出的将被忽略。",
+  "Start export": "开始导出"
+}

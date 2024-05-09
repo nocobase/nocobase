@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse } from 'axios';
 import qs from 'qs';
 import getSubAppName from './getSubAppName';
@@ -265,6 +274,23 @@ export class APIClient {
   axios: AxiosInstance;
   auth: Auth;
   storage: Storage;
+
+  getHeaders() {
+    const headers = {};
+    if (this.auth.locale) {
+      headers['X-Locale'] = this.auth.locale;
+    }
+    if (this.auth.role) {
+      headers['X-Role'] = this.auth.role;
+    }
+    if (this.auth.authenticator) {
+      headers['X-Authenticator'] = this.auth.authenticator;
+    }
+    if (this.auth.token) {
+      headers['Authorization'] = `Bearer ${this.auth.token}`;
+    }
+    return headers;
+  }
 
   constructor(instance?: APIClientOptions) {
     if (typeof instance === 'function') {

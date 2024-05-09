@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -110,6 +119,8 @@ export const useTableColumnInitializerFields = () => {
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+      const isPreviewComponent = field?.uiSchema?.['x-component'] === 'Preview';
+
       const schema = {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
@@ -121,7 +132,9 @@ export const useTableColumnInitializerFields = () => {
                 value: 'id',
               },
             }
-          : {},
+          : isPreviewComponent
+            ? { size: 'small' }
+            : {},
         'x-read-pretty': isReadPretty || field.uiSchema?.['x-read-pretty'],
         'x-decorator': isSubTable
           ? quickEditField.includes(field.interface) || isFileCollection
@@ -1356,9 +1369,7 @@ export const createTableBlockSchema = (options) => {
                 type: 'void',
                 'x-decorator': 'DndContext',
                 'x-component': 'Space',
-                'x-component-props': {
-                  split: '|',
-                },
+                'x-component-props': {},
                 properties: {},
               },
             },

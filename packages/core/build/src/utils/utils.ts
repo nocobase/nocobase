@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import chalk from 'chalk';
 import path from 'path';
 import fg from 'fast-glob';
@@ -94,4 +103,14 @@ export function readFromCache(key: string) {
     return fs.readJsonSync(cachePath);
   }
   return {};
+}
+
+
+export function getEnvDefine() {
+  return {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    'process.env.__TEST__': false,
+    'process.env.__E2E__': process.env.__E2E__ ? true : false,
+    'process.env.APP_ENV': process.env.APP_ENV,
+  }
 }

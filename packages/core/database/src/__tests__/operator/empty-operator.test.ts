@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '../../database';
 import { Collection } from '../../collection';
 
@@ -7,7 +16,7 @@ describe('empty operator', () => {
   let db: Database;
 
   let User: Collection;
-
+  let Profile: Collection;
   afterEach(async () => {
     await db.close();
   });
@@ -16,7 +25,23 @@ describe('empty operator', () => {
     db = mockDatabase({});
     User = db.collection({
       name: 'users',
-      fields: [{ type: 'string', name: 'name' }],
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasOne',
+          name: 'profile',
+        },
+      ],
+    });
+
+    Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        {
+          type: 'string',
+          name: 'address',
+        },
+      ],
     });
 
     await db.sync({
@@ -73,5 +98,57 @@ describe('empty operator', () => {
     });
 
     expect(result.length).toEqual(2);
+  });
+
+  test('string not empty', async () => {
+    const u1 = await User.repository.create({
+      values: {
+        name: 'u1',
+      },
+    });
+
+    const u2 = await User.repository.create({
+      values: {
+        name: '',
+      },
+    });
+
+    const result = await User.repository.find({
+      filter: {
+        'name.$notEmpty': true,
+      },
+    });
+
+    expect(result.length).toEqual(1);
+    expect(result[0].get('id')).toEqual(u1.get('id'));
+  });
+
+  test('string not empty with association', async () => {
+    const u1 = await User.repository.create({
+      values: {
+        name: 'u1',
+        profile: {
+          address: 'a1',
+        },
+      },
+    });
+
+    const u2 = await User.repository.create({
+      values: {
+        name: 'u2',
+        profile: {
+          address: '',
+        },
+      },
+    });
+
+    const result = await User.repository.find({
+      filter: {
+        'profile.address.$notEmpty': true,
+      },
+    });
+
+    expect(result.length).toEqual(1);
+    expect(result[0].get('id')).toEqual(u1.get('id'));
   });
 });

@@ -1,13 +1,15 @@
+
+
 import {
   APIClient,
   APIClientProvider,
   CardItem,
   G2Plot,
   SchemaComponent,
+  mockAPIClient,
   SchemaComponentProvider,
 } from '@nocobase/client';
 import React from 'react';
-import { mockAPIClient } from '../../../../testUtils';
 
 const { apiClient, mockRequest } = mockAPIClient();
 

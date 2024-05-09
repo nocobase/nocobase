@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { vi } from 'vitest';
 import supertest from 'supertest';
 import { Application } from '../application';
@@ -106,40 +115,6 @@ describe('application', () => {
         },
       ],
     });
-    const response = await agent.get('/api/foos/1/bars');
-    expect(response.body).toEqual([1, 2]);
-  });
-
-  it.skip('db.middleware', async () => {
-    const index = app.middleware.findIndex((m) => m.name === 'db2resource');
-    app.middleware.splice(index, 0, async (ctx, next) => {
-      app.collection({
-        name: 'tests',
-      });
-      await next();
-    });
-    const response = await agent.get('/api/tests');
-    expect(response.body).toEqual([1, 2]);
-  });
-
-  it.skip('db.middleware', async () => {
-    const index = app.middleware.findIndex((m) => m.name === 'db2resource');
-    app.middleware.splice(index, 0, async (ctx, next) => {
-      app.collection({
-        name: 'bars',
-      });
-      app.collection({
-        name: 'foos',
-        fields: [
-          {
-            type: 'hasMany',
-            name: 'bars',
-          },
-        ],
-      });
-      await next();
-    });
-
     const response = await agent.get('/api/foos/1/bars');
     expect(response.body).toEqual([1, 2]);
   });

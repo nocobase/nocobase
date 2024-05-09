@@ -1,7 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { isValid } from '@formily/shared';
 import { toFixedByStep } from '@nocobase/utils/client';
-import type { InputProps } from 'antd/es/input';
-import type { InputNumberProps } from 'antd/es/input-number';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
@@ -46,7 +53,7 @@ export function formatNumberWithSeparator(value, format = '0.00', step = 1, form
 }
 
 //单位换算
-export function formatUnitConversion(value, operator = '*', multiplier) {
+export function formatUnitConversion(value, operator = '*', multiplier?: number) {
   if (!multiplier) {
     return value;
   }
@@ -89,7 +96,7 @@ export function scientificNotation(number, decimalPlaces, separator = '.') {
 }
 
 export function formatNumber(props) {
-  const { step, formatStyle, value, unitConversion, unitConversionType, separator = '0.00' } = props;
+  const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator = '0.00' } = props;
 
   if (!isValid(value)) {
     return null;
@@ -108,7 +115,24 @@ export function formatNumber(props) {
   return result;
 }
 
-export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) => {
+export interface InputNumberReadPrettyProps {
+  formatStyle?: 'normal' | 'scientifix';
+  unitConversion?: number;
+  /**
+   * @default '*'
+   */
+  unitConversionType?: '*' | '/';
+  /**
+   * @default '0.00'
+   */
+  separator?: '0,0.00' | '0.0,00' | '0 0,00' | '0.00';
+  step?: number;
+  value?: any;
+  addonBefore?: React.ReactNode;
+  addonAfter?: React.ReactNode;
+}
+
+export const ReadPretty: React.FC<InputNumberReadPrettyProps> = (props) => {
   const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });

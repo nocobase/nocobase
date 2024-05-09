@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export type CollectionOptions = {
   name: string;
   repository?: string;
@@ -25,27 +34,44 @@ export type FieldOptions = {
 export interface IField {
   options: FieldOptions;
 }
+
 export interface ICollection {
-  repository: any;
-  updateOptions(options: any): void;
+  repository: IRepository;
+
+  updateOptions(options: CollectionOptions, mergeOptions?: MergeOptions): void;
+
   setField(name: string, options: any): IField;
+
   removeField(name: string): void;
+
   getFields(): Array<IField>;
+
   getField(name: string): IField;
+
   [key: string]: any;
 }
+
 export interface IModel {
+  toJSON: () => any;
+
   [key: string]: any;
 }
 
 export interface IRepository {
   find(options?: any): Promise<IModel[]>;
+
   findOne(options?: any): Promise<IModel>;
+
   count(options?: any): Promise<Number>;
+
   findAndCount(options?: any): Promise<[IModel[], Number]>;
-  create(options: any): void;
-  update(options: any): void;
-  destroy(options: any): void;
+
+  create(options: any): any;
+
+  update(options: any): any;
+
+  destroy(options: any): any;
+
   [key: string]: any;
 }
 
@@ -55,9 +81,13 @@ export type MergeOptions = {
 
 export interface ICollectionManager {
   registerFieldTypes(types: Record<string, any>): void;
+
   registerFieldInterfaces(interfaces: Record<string, any>): void;
+
   registerCollectionTemplates(templates: Record<string, any>): void;
+
   registerModels(models: Record<string, any>): void;
+
   registerRepositories(repositories: Record<string, any>): void;
 
   getRegisteredRepository(key: string): IRepository;
@@ -67,9 +97,12 @@ export interface ICollectionManager {
   extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ICollection;
 
   hasCollection(name: string): boolean;
+
   getCollection(name: string): ICollection;
 
   getCollections(): Array<ICollection>;
+
   getRepository(name: string, sourceId?: string | number): IRepository;
+
   sync(): Promise<void>;
 }

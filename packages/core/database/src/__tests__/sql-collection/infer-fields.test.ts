@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '../../database';
 import { mockDatabase } from '../../mock-database';
 import { SQLModel } from '../../sql-collection/sql-model';
@@ -11,7 +20,7 @@ describe('infer fields', () => {
 
     db.collection({
       name: 'users',
-      schema: db.inDialect('postgres') ? 'public' : undefined,
+      schema: db.inDialect('postgres') ? process.env.DB_SCHEMA : undefined,
       fields: [
         { name: 'id', type: 'bigInt', interface: 'id' },
         { name: 'nickname', type: 'string', interface: 'input' },
@@ -19,7 +28,7 @@ describe('infer fields', () => {
     });
     db.collection({
       name: 'roles',
-      schema: db.inDialect('postgres') ? 'public' : undefined,
+      schema: db.inDialect('postgres') ? process.env.DB_SCHEMA : undefined,
       fields: [
         { name: 'id', type: 'bigInt', interface: 'id' },
         { name: 'title', type: 'string', interface: 'input' },
@@ -28,7 +37,7 @@ describe('infer fields', () => {
     });
     db.collection({
       name: 'roles_users',
-      schema: db.inDialect('postgres') ? 'public' : undefined,
+      schema: db.inDialect('postgres') ? process.env.DB_SCHEMA : undefined,
       fields: [
         { name: 'id', type: 'bigInt', interface: 'id' },
         { name: 'userId', type: 'bigInt', interface: 'id' },

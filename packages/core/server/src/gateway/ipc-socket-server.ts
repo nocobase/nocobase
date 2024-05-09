@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import net from 'net';
@@ -99,7 +108,6 @@ export class IPCSocketServer {
 
       const mainApp = await AppSupervisor.getInstance().getApp('main');
       if (!mainApp.cli.hasCommand(argv[2])) {
-        // console.log('passCliArgv', argv[2]);
         await mainApp.pm.loadCommands();
       }
       const cli = mainApp.cli;

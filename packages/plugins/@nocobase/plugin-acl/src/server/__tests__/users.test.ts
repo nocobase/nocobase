@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
@@ -163,17 +172,6 @@ describe('actions', () => {
     expect(listResp.status).toBe(200);
     const data = listResp.body.data;
     expect(data.length).toBe(1);
-  });
-
-  it('update profile with roles', async () => {
-    const res2 = await adminAgent.resource('users').updateProfile({
-      filterByTk: adminUser.id,
-      values: {
-        nickname: 'a',
-        roles: adminUser.roles,
-      },
-    });
-    expect(res2.status).toBe(200);
   });
 
   it('can destroy users role', async () => {

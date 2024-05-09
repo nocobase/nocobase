@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { isArray } from 'mathjs';
 import Database from '../database';
 import FieldTypeMap from './field-type-map';
@@ -43,7 +52,7 @@ export class ViewFieldInference {
     const rawFields = [];
 
     for (const [name, column] of Object.entries(columns)) {
-      const inferResult: any = { name };
+      const inferResult: any = { name, rawType: column.type };
 
       const usage = columnUsage[name];
 

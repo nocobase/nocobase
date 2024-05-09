@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { vi } from 'vitest';
 import { Context } from '@nocobase/actions';
 import { ACL } from '..';
@@ -39,6 +48,28 @@ describe('acl', () => {
         },
       },
     });
+  });
+
+  it('should getRole', () => {
+    const role = acl.define({
+      role: 'admin',
+      actions: {
+        'posts:edit': {
+          own: true,
+        },
+      },
+    });
+
+    expect(acl.getRole('admin')).toBe(role);
+  });
+
+  it('should set available action', () => {
+    acl.setAvailableAction('edit', {
+      displayName: 'Edit',
+    });
+
+    const action = acl.getAvailableAction('edit');
+    expect(action.name).toBe('edit');
   });
 
   it('should define role with predicate', () => {

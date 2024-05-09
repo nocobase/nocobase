@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database, { Collection as DBCollection } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 
@@ -9,7 +18,7 @@ describe('createdBy/updatedBy', () => {
 
   beforeEach(async () => {
     api = await createMockServer({
-      plugins: ['acl', 'users', 'collection-manager', 'error-handler', 'data-source-manager'],
+      plugins: ['acl', 'users', 'data-source-main', 'error-handler', 'data-source-manager'],
     });
     db = api.db;
 

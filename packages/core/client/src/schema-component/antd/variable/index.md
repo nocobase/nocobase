@@ -1,14 +1,25 @@
----
-group:
-  title: Schema Components
-  order: 3
----
-
 # Variable
 
-## Examples
+变量选择器。
 
-### `Variable.Input`
+## `Variable.Input`
+
+```ts
+import type { DefaultOptionType } from 'antd/lib/cascader';
+ type VariableInputProps = {
+  value?: string;
+  scope?: DefaultOptionType[] | (() => DefaultOptionType[]);
+  onChange: (value: string, optionPath?: any[]) => void;
+  children?: any;
+  button?: React.ReactElement;
+  useTypedConstant?: true | string[];
+  changeOnSelect?: CascaderProps['changeOnSelect'];
+  fieldNames?: CascaderProps['fieldNames'];
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  className?: string;
+}
+```
 
 <code src="./demos/demo1.tsx"></code>
 

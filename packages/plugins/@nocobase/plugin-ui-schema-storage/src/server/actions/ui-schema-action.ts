@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context } from '@nocobase/actions';
 import { ActionParams } from '@nocobase/resourcer';
 import lodash from 'lodash';
@@ -61,21 +70,7 @@ export const uiSchemaActions = {
   batchPatch: callRepositoryMethod('batchPatch', 'values'),
   clearAncestor: callRepositoryMethod('clearAncestor', 'resourceIndex'),
 
-  async insertAdjacent(ctx: Context, next) {
-    const { resourceIndex, position, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
-    const repository = getRepositoryFromCtx(ctx);
-
-    const { schema, wrap } = parseInsertAdjacentValues(values);
-
-    ctx.body = await repository.insertAdjacent(position, resourceIndex, schema, {
-      removeParentsIfNoChildren,
-      breakRemoveOn,
-      wrap,
-    });
-
-    await next();
-  },
-
+  insertAdjacent: insertPositionActionBuilder(),
   insertBeforeBegin: insertPositionActionBuilder('beforeBegin'),
   insertAfterBegin: insertPositionActionBuilder('afterBegin'),
   insertBeforeEnd: insertPositionActionBuilder('beforeEnd'),
@@ -106,17 +101,27 @@ export const uiSchemaActions = {
   },
 };
 
-function insertPositionActionBuilder(position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd') {
+function insertPositionActionBuilder(
+  position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd' | undefined = undefined,
+) {
   return async function (ctx: Context, next) {
-    const { resourceIndex, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
+    const {
+      resourceIndex,
+      values,
+      removeParentsIfNoChildren,
+      breakRemoveOn,
+      position: positionFromUser,
+    } = ctx.action.params;
+
     const repository = getRepositoryFromCtx(ctx);
     const { schema, wrap } = parseInsertAdjacentValues(values);
 
-    ctx.body = await repository.insertAdjacent(position, resourceIndex, schema, {
+    ctx.body = await repository.insertAdjacent(position || positionFromUser, resourceIndex, schema, {
       removeParentsIfNoChildren,
       breakRemoveOn,
       wrap,
     });
+
     await next();
   };
 }

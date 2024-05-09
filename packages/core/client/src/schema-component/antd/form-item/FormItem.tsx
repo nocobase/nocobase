@@ -1,12 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
-import { FormItem as Item } from '@formily/antd-v5';
+import { IFormItemProps, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import React, { useEffect, useMemo } from 'react';
+import React, { FC, useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
 import { useFormActiveFields } from '../../../block-provider/hooks/useFormActiveFields';
 import { Collection_deprecated } from '../../../collection-manager';
+import { CollectionFieldProvider } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { useVariables } from '../../../variables';
 import useContextVariable from '../../../variables/hooks/useContextVariable';
@@ -16,7 +26,6 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-import { CollectionFieldProvider } from '../../../data-source/collection-field/CollectionFieldProvider';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -33,7 +42,7 @@ const formItemLabelCss = css`
 `;
 
 export const FormItem: any = observer(
-  (props: any) => {
+  (props: IFormItemProps) => {
     useEnsureOperatorsValid();
     const field = useField<Field>();
     const schema = useFieldSchema();

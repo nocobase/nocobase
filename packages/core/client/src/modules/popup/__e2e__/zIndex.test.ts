@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, test } from '@nocobase/test/e2e';
 import { T2797, T2838 } from './templatesOfBug';
 
@@ -12,7 +21,7 @@ test.describe('z-index of dialog', () => {
     await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
 
-    await expect(page.getByLabel('block-item-Input-users-Block')).toBeVisible();
+    await expect(page.getByLabel('block-item-Input-users-form-')).toBeVisible();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('block-item-Input-users-Block')).not.toBeVisible();
   });

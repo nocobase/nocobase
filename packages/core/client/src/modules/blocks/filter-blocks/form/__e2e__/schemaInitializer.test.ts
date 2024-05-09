@@ -1,4 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/e2e';
+import { oneFilterFormWithInherit } from './templatesOfBug';
 
 test.describe('where filter form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -65,7 +75,25 @@ test.describe('configure fields', () => {
     await expect(page.getByLabel('block-item-Markdown.Void-general-filter-form')).toBeVisible();
   });
 
-  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {});
+  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {
+    await mockPage(oneFilterFormWithInherit).goto();
+
+    // 选择继承的字段
+    await page.getByLabel('schema-initializer-Grid-filterForm:configureFields-child').hover();
+    await page.getByRole('menuitem', { name: 'parentField1' }).click();
+    await page.getByRole('menuitem', { name: 'parentField2' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-child-filter-form-child.parentField1-parentField1')
+        .getByRole('textbox'),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-child-filter-form-child.parentField2-parentField2')
+        .getByRole('textbox'),
+    ).toBeVisible();
+  });
 });
 
 test.describe('configure actions', () => {

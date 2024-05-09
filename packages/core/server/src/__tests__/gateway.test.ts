@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
 import { vi } from 'vitest';
 import ws from 'ws';
@@ -5,6 +14,7 @@ import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { Gateway } from '../gateway';
 import { errors } from '../gateway/errors';
+
 describe('gateway', () => {
   let gateway: Gateway;
   beforeEach(() => {
@@ -14,6 +24,7 @@ describe('gateway', () => {
     await gateway.destroy();
     await AppSupervisor.getInstance().destroy();
   });
+
   describe('app selector', () => {
     it('should get app as default main app', async () => {
       expect(
@@ -45,6 +56,7 @@ describe('gateway', () => {
       expect(gateway.getAppSelectorMiddlewares().nodes.length).toBe(2);
     });
   });
+
   describe('http api', () => {
     it('should return error when app not found', async () => {
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
@@ -377,6 +389,7 @@ describe('gateway', () => {
         },
       });
     });
+
     it('should receive error message with cause property', async () => {
       await connectClient(port);
       const app = new Application({

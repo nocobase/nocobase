@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
+import { BlockProvider, useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import useStyles from './GridCard.Decorator.style';
 import { useGridCardBlockParams } from '../../../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockParams';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';

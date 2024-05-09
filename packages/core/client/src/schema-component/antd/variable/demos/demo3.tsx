@@ -1,6 +1,5 @@
-/**
- * title: Variable.Input
- */
+
+
 import { FormItem } from '@formily/antd-v5';
 import { SchemaComponent, SchemaComponentProvider, Variable } from '@nocobase/client';
 import React from 'react';
@@ -21,14 +20,6 @@ const schema = {
       'x-component-props': {
         scope,
       },
-      // 'x-reactions': {
-      //   target: 'read',
-      //   fulfill: {
-      //     state: {
-      //       value: '{{$self.value}}',
-      //     },
-      //   },
-      // },
     },
   },
 };

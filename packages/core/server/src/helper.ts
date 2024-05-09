@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import cors from '@koa/cors';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
@@ -10,10 +19,8 @@ import bodyParser from 'koa-bodyparser';
 import { resolve } from 'path';
 import { createHistogram, RecordableHistogram } from 'perf_hooks';
 import Application, { ApplicationOptions } from './application';
-import { parseVariables } from './middlewares';
-import { dateTemplate } from './middlewares/data-template';
 import { dataWrapping } from './middlewares/data-wrapping';
-import { db2resource } from './middlewares/db2resource';
+
 import { i18n } from './middlewares/i18n';
 
 export function createI18n(options: ApplicationOptions) {
@@ -112,11 +119,13 @@ export const getCommandFullName = (command: Command) => {
   return names.join('.');
 };
 
+/* istanbul ignore next -- @preserve */
 export const tsxRerunning = async () => {
   const file = resolve(process.cwd(), 'storage/app.watch.ts');
   await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
 };
 
+/* istanbul ignore next -- @preserve */
 export const enablePerfHooks = (app: Application) => {
   app.context.getPerfHistogram = (name: string) => {
     if (!app.perfHistograms.has(name)) {

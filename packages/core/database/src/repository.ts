@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { flatten } from 'flat';
 import lodash from 'lodash';
 import {
@@ -330,7 +339,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     options.optionsTransformer?.(queryOptions);
-    const hasAssociationFilter = () => {
+
+    delete queryOptions.order;
+
+    const hasAssociationFilter = (() => {
       if (queryOptions.include && queryOptions.include.length > 0) {
         const filterInclude = queryOptions.include.filter((include) => {
           return (
@@ -341,9 +353,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return filterInclude.length > 0;
       }
       return false;
-    };
+    })();
 
-    if (hasAssociationFilter()) {
+    if (hasAssociationFilter) {
       const primaryKeyField = this.model.primaryKeyAttribute;
       const queryInterface = this.database.sequelize.getQueryInterface();
 

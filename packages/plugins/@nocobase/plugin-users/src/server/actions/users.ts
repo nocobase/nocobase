@@ -1,7 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context, DEFAULT_PAGE, DEFAULT_PER_PAGE, Next } from '@nocobase/actions';
+import _ from 'lodash';
 
 export async function updateProfile(ctx: Context, next: Next) {
-  const { values } = ctx.action.params;
+  const values = ctx.action.params.values || {};
   const { currentUser } = ctx.state;
   if (!currentUser) {
     ctx.throw(401);
@@ -9,7 +19,7 @@ export async function updateProfile(ctx: Context, next: Next) {
   const UserRepo = ctx.db.getRepository('users');
   const result = await UserRepo.update({
     filterByTk: currentUser.id,
-    values,
+    values: _.pick(values, ['nickname', 'username', 'email', 'phone', 'systemSettings', 'appLang']),
   });
   ctx.body = result;
   await next();

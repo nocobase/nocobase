@@ -1,3 +1,13 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/* istanbul ignore file -- @preserve */
 import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
@@ -43,7 +53,7 @@ export function getConfigByEnv() {
 
 function customLogger(queryString, queryObject) {
   console.log(queryString); // outputs a string
-  if (queryObject.bind) {
+  if (queryObject?.bind) {
     console.log(queryObject.bind); // outputs an array
   }
 }

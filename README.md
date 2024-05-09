@@ -1,23 +1,22 @@
 English | [中文](./README.zh-CN.md)
- 
-![NocoBase](https://nocobase-file.oss-cn-beijing.aliyuncs.com/main-l.png)
 
-**Note:** 📌
+https://github.com/nocobase/nocobase/assets/1267426/82dace12-7879-4fc7-b846-a9684f8b6768
 
-NocoBase is in early stage of development and is subject to frequent changes, please use caution in production environments.
 
 ## Recent major updates
 
-- [v0.20：Support for multiple data sources - 2024/03/03](https://docs-cn.nocobase.com/welcome/release/v0200-changelog)
-- [v0.19: Application process optimization - 2024/01/08](https://blog.nocobase.com/posts/release-v019/)
-- [v0.18: Establish a sound testing system - 2023/12/21](https://blog.nocobase.com/posts/release-v018/)
-- [v0.17: New SchemaInitializer and SchemaSettings - 2023/12/11](https://blog.nocobase.com/posts/release-v017/)
-- [v0.16: New cache manager - 2023/11/20](https://blog.nocobase.com/posts/release-v016/)
-- [v0.15: New plugin settings manager - 2023/11/13](https://blog.nocobase.com/posts/release-v015/)
-- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://blog.nocobase.com/posts/release-v014/)
-- [v0.13: New application status flow - 2023/08/24](https://blog.nocobase.com/posts/release-v013/)
-- [v0.12: New plugin build tool - 2023/08/01](https://blog.nocobase.com/posts/release-v012/)
-- [v0.11: New client application, plugin and router - 2023/07/08](https://blog.nocobase.com/posts/release-v011/)
+- [v1.0：Significant Milestone - 2024/04/08](https://docs.nocobase.com/welcome/release/v1001-changelog)
+- [v0.21：Block performance optimization - 2024/03/29](https://docs.nocobase.com/welcome/release/v0210-changelog)
+- [v0.20：Support for multiple data sources - 2024/03/03](https://docs.nocobase.com/welcome/release/v0200-changelog)
+- [v0.19: Application process optimization - 2024/01/08](https://docs.nocobase.com/welcome/release/v0190-changelog)
+- [v0.18: Establish a sound testing system - 2023/12/21](https://docs.nocobase.com/welcome/release/v0180-changelog)
+- [v0.17: New SchemaInitializer and SchemaSettings - 2023/12/11](https://docs.nocobase.com/welcome/release/v0170-changelog)
+- [v0.16: New cache manager - 2023/11/20](https://docs.nocobase.com/welcome/release/v0160-changelog)
+- [v0.15: New plugin settings manager - 2023/11/13](https://docs.nocobase.com/welcome/release/v0150-changelog)
+- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://docs.nocobase.com/welcome/release/v0140-changelog)
+- [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v0130-changelog)
+- [v0.12: New plugin build tool - 2023/08/01](https://docs.nocobase.com/welcome/release/v0120-changelog)
+- [v0.11: New client application, plugin and router - 2023/07/08](https://docs.nocobase.com/welcome/release/v0110-changelog)
 
 ## What is NocoBase
 
@@ -38,25 +37,25 @@ hello@nocobase.com
 
 ## Distinctive features
 
-### 1. Model-driven, separate "user interface" from "data structure"
+### 1. Data model-driven
 
 Most form-, table-, or process-driven no-code products create data structures directly in the user interface, such as Airtable, where adding a new column to a table is adding a new field. This has the advantage of simplicity of use, but the disadvantage of limited functionality and flexibility to meet the needs of more complex scenarios.
 
 NocoBase adopts the design idea of separating the data structure from the user interface, allowing you to create any number of blocks (data views) for the data collections, with different type, styles, content, and actions in each block. This balances the simplicity of no-code operation with the flexibility of native development.
 
-![model](https://nocobase-file.oss-cn-beijing.aliyuncs.com/model-l.png)
+![model](https://static-docs.nocobase.com/model.png)
 
 ### 2. What you see is what you get
 
 NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options are displayed on the usage interface, and administrators with system configuration privileges can directly configure the user interface in a WYSIWYG manner.
 
-![wysiwyg](https://nocobase-file.oss-cn-beijing.aliyuncs.com/wysiwyg.gif)
+![wysiwyg](https://static-docs.nocobase.com/wysiwyg.gif)
 
-### 3. Functions as plugins
+### 3. Everything is implemented as plugins
 
 NocoBase adopts plugin architecture, all new functions can be realized by developing and installing plugins, and expanding the functions is as easy as installing an APP on your phone.
 
-![plugins](https://nocobase-file.oss-cn-beijing.aliyuncs.com/plugins-l.png)
+![plugins](https://static-docs.nocobase.com/plugins.png)
 
 ## Installation
 

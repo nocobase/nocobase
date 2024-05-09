@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ColorPicker } from '@nocobase/client';
 import { renderApp, screen, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
 
@@ -17,7 +26,7 @@ describe('ColorPicker', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1mw46su ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         >
           <div
@@ -26,7 +35,7 @@ describe('ColorPicker', () => {
             style="display: inline-block;"
           >
             <div
-              class="ant-color-picker-trigger css-dev-only-do-not-override-1mw46su"
+              class="ant-color-picker-trigger css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-color-picker-color-block"
@@ -81,7 +90,7 @@ describe('ColorPicker', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1mw46su ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         >
           <div
@@ -90,7 +99,7 @@ describe('ColorPicker', () => {
             role="button"
           >
             <div
-              class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-1mw46su ant-color-picker-trigger-disabled"
+              class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-wwtqkl ant-color-picker-trigger-disabled"
             >
               <div
                 class="ant-color-picker-color-block"

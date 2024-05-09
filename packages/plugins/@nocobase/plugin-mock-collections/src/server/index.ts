@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database, { Collection, Repository } from '@nocobase/database';
-import { CollectionRepository } from '@nocobase/plugin-collection-manager';
+import { CollectionRepository } from '@nocobase/plugin-data-source-main';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { merge, uid } from '@nocobase/utils';
 import { promises as fs } from 'fs';

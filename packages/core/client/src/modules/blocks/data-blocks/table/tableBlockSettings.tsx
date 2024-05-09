@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useAPIClient } from '../../../../api-client';
@@ -7,7 +16,7 @@ import {
   useCollection_deprecated,
   useSortFields,
 } from '../../../../collection-manager';
-import { FilterBlockType } from '../../../../filter-provider';
+import { FilterBlockType } from '../../../../filter-provider/utils';
 import { useDesignable, removeNullCondition } from '../../../../schema-component';
 import {
   SchemaSettingsBlockTitleItem,

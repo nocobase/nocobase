@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
@@ -33,6 +42,47 @@ describe('Application', () => {
     expect(Object.keys(app.components).length).toBeGreaterThan(1);
   });
 
+  describe('getApiUrl', () => {
+    it('api path', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: '/api/',
+        },
+      });
+      const { protocol, host } = window.location;
+      const baseURL = `${protocol}//${host}/api/`;
+      expect(app.getApiUrl()).toBe(baseURL);
+    });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'http://localhost:13000/foo/api/',
+        },
+      });
+      expect(app.getApiUrl()).toBe('http://localhost:13000/foo/api/');
+    });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'https://123.1.2.3:13000/foo/api/',
+        },
+      });
+      expect(app.getApiUrl()).toBe('https://123.1.2.3:13000/foo/api/');
+    });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'https://123.1.2.3:13000/foo/api',
+        },
+      });
+      expect(app.getApiUrl('/test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
+      expect(app.getApiUrl('test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
+    });
+  });
+
   describe('publicPath', () => {
     it('default', () => {
       const app = new Application({});
@@ -42,14 +92,16 @@ describe('Application', () => {
 
     it('custom', () => {
       const app = new Application({ publicPath: '/admin' });
-      expect(app.getPublicPath()).toBe('/admin');
+      expect(app.getPublicPath()).toBe('/admin/');
       expect(app.getRouteUrl('/test')).toBe('/admin/test');
+      expect(app.getRouteUrl('test')).toBe('/admin/test');
     });
 
     it('custom end with /', () => {
       const app = new Application({ publicPath: '/admin/' });
       expect(app.getPublicPath()).toBe('/admin/');
-      expect(app.getRouteUrl('/test')).toBe('/admin/test');
+      expect(app.getRouteUrl('/test/foo')).toBe('/admin/test/foo');
+      expect(app.getRouteUrl('test/foo/')).toBe('/admin/test/foo/');
     });
   });
 
@@ -334,7 +386,7 @@ describe('Application', () => {
       render(<Root />);
 
       await sleep(10);
-      expect(screen.getByText('Load Plugin Error')).toBeInTheDocument();
+      expect(screen.getByText('App Error')).toBeInTheDocument();
     });
 
     it('replace Component', async () => {

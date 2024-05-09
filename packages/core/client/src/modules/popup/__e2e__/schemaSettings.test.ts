@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { NocoPage, Page, expect, oneEmptyTableBlockWithActions, test } from '@nocobase/test/e2e';
 
 test.describe('tabs schema settings', () => {
@@ -25,8 +34,8 @@ test.describe('tabs schema settings', () => {
     await showSettings(page);
     await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('block-item-Input-general-Tab name').getByRole('textbox').click();
-    await page.getByLabel('block-item-Input-general-Tab name').getByRole('textbox').fill('Add new with new name');
+    await page.getByLabel('block-item-Input-general-').getByRole('textbox').click();
+    await page.getByLabel('block-item-Input-general-').getByRole('textbox').fill('Add new with new name');
     await page.getByRole('button', { name: 'Select icon' }).click();
     await page.getByLabel('account-book').locator('svg').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();

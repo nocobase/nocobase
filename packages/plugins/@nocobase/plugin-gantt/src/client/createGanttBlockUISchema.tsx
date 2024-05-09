@@ -1,16 +1,26 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
 export const createGanttBlockUISchema = (options: {
-  collectionName: string;
   fieldNames: object;
   dataSource: string;
+  association?: string;
+  collectionName?: string;
 }): ISchema => {
-  const { collectionName, fieldNames, dataSource } = options;
+  const { collectionName, fieldNames, dataSource, association } = options;
 
-  return {
+  const schema = {
     type: 'void',
-    'x-acl-action': `${collectionName}:list`,
+    'x-acl-action': `${association || collectionName}:list`,
     'x-decorator': 'GanttBlockProvider',
     'x-decorator-props': {
       collection: collectionName,
@@ -126,4 +136,9 @@ export const createGanttBlockUISchema = (options: {
       },
     },
   };
+
+  if (association) {
+    schema['x-decorator-props']['association'] = association;
+  }
+  return schema;
 };

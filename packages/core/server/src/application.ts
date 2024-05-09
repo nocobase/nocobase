@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
@@ -144,6 +153,7 @@ interface LoadOptions {
   reload?: boolean;
   hooks?: boolean;
   sync?: boolean;
+
   [key: string]: any;
 }
 
@@ -201,7 +211,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
-  protected _logger: SystemLogger;
   private _authenticated = false;
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
@@ -215,6 +224,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.init();
 
     this._appSupervisor.addApp(this);
+  }
+
+  protected _logger: SystemLogger;
+
+  get logger() {
+    return this._logger;
   }
 
   protected _loaded: boolean;
@@ -252,10 +267,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // @ts-ignore
     return this.mainDataSource.collectionManager.db;
-  }
-
-  get logger() {
-    return this._logger;
   }
 
   get resourceManager() {
@@ -587,15 +598,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.pm.get(name) as P;
   }
 
-  /**
-   * This method is deprecated and should not be used.
-   * Use {@link this.runAsCLI()} instead.
-   * @deprecated
-   */
-  async parse(argv = process.argv) {
-    return this.runAsCLI(argv);
-  }
-
   async authenticate() {
     if (this._authenticated) {
       return;
@@ -612,46 +614,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async runCommandThrowError(command: string, ...args: any[]) {
     return await this.runAsCLI([command, ...args], { from: 'user', throwError: true });
-  }
-
-  protected createCLI() {
-    const command = new AppCommand('nocobase')
-      .usage('[command] [options]')
-      .hook('preAction', async (_, actionCommand) => {
-        this._actionCommand = actionCommand;
-        this.activatedCommand = {
-          name: getCommandFullName(actionCommand),
-        };
-
-        this.setMaintaining({
-          status: 'command_begin',
-          command: this.activatedCommand,
-        });
-
-        this.setMaintaining({
-          status: 'command_running',
-          command: this.activatedCommand,
-        });
-
-        if (actionCommand['_authenticate']) {
-          await this.authenticate();
-        }
-
-        if (actionCommand['_preload']) {
-          await this.load();
-        }
-      })
-      .hook('postAction', async (_, actionCommand) => {
-        if (this._maintainingStatusBeforeCommand?.error && this._started) {
-          await this.restart();
-        }
-      });
-
-    command.exitOverride((err) => {
-      throw err;
-    });
-
-    return command;
   }
 
   /**
@@ -714,14 +676,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         },
       },
     };
-  }
-
-  /**
-   * @internal
-   */
-  async loadPluginCommands() {
-    this.log.debug('load plugin commands');
-    await this.pm.loadCommands();
   }
 
   /**
@@ -1047,6 +1001,46 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       ...options,
       dirname: getLoggerFilePath(this.name || 'main', dirname || ''),
     });
+  }
+
+  protected createCLI() {
+    const command = new AppCommand('nocobase')
+      .usage('[command] [options]')
+      .hook('preAction', async (_, actionCommand) => {
+        this._actionCommand = actionCommand;
+        this.activatedCommand = {
+          name: getCommandFullName(actionCommand),
+        };
+
+        this.setMaintaining({
+          status: 'command_begin',
+          command: this.activatedCommand,
+        });
+
+        this.setMaintaining({
+          status: 'command_running',
+          command: this.activatedCommand,
+        });
+
+        if (actionCommand['_authenticate']) {
+          await this.authenticate();
+        }
+
+        if (actionCommand['_preload']) {
+          await this.load();
+        }
+      })
+      .hook('postAction', async (_, actionCommand) => {
+        if (this._maintainingStatusBeforeCommand?.error && this._started) {
+          await this.restart();
+        }
+      });
+
+    command.exitOverride((err) => {
+      throw err;
+    });
+
+    return command;
   }
 
   protected init() {

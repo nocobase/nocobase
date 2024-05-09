@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
@@ -1043,7 +1052,7 @@ export const useBulkDestroyActionProps = () => {
       field.data.selectedRowKeys = [];
       const currentPage = service.params[0]?.page;
       const totalPage = service.data?.meta?.totalPage;
-      if (currentPage === totalPage) {
+      if (currentPage === totalPage && service.params[0]) {
         service.params[0].page = currentPage - 1;
       }
       if (callBack) {

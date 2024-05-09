@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Modal, Progress, Space, UploadFile } from 'antd';
@@ -306,7 +315,7 @@ Upload.DraggerV2 = withDynamicSchemaProps(
     (props: DraggerV2Props) => {
       const { t } = useTranslation();
       const defaultTitle = t('Click or drag file to this area to upload');
-      const defaultSubTitle = t('Support for a single or bulk upload, file size should not exceed') + ` 10MB`;
+      const defaultSubTitle = t('Support for a single or bulk upload');
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { title = defaultTitle, subTitle = defaultSubTitle, ...extraProps } = useProps(props);

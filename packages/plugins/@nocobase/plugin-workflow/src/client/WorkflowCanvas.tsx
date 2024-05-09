@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, message } from 'antd';
+import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tooltip, message } from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
@@ -64,7 +73,9 @@ export function WorkflowCanvas() {
     if (loading) {
       return <Spin />;
     }
-    return <Result status="404" title="Not found" />;
+    return (
+      <Result status="404" title="Not found" extra={<Button onClick={() => navigate(-1)}>{lang('Go back')}</Button>} />
+    );
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
@@ -155,7 +166,13 @@ export function WorkflowCanvas() {
           <Breadcrumb
             items={[
               { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
-              { title: <strong>{workflow.title}</strong> },
+              {
+                title: (
+                  <Tooltip title={`Key: ${workflow.key}`}>
+                    <strong>{workflow.title}</strong>
+                  </Tooltip>
+                ),
+              },
             ]}
           />
         </header>

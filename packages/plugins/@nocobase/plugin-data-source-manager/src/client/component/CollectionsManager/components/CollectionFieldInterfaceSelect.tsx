@@ -1,7 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, useForm, useField } from '@formily/react';
 import { Select, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useCompile, useCollectionManager_deprecated, useRecord, useFieldInterfaceOptions } from '@nocobase/client';
+import {
+  useCompile,
+  useCollectionManager_deprecated,
+  useFieldInterfaceOptions,
+  useCollectionRecord,
+} from '@nocobase/client';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -26,17 +40,14 @@ const isValueInOptions = (value, options) => {
 export const CollectionFieldInterfaceSelect = observer(
   (props: any) => {
     const { value, handleFieldChange } = props;
-    const record = useRecord();
+    const { data: record } = useCollectionRecord() as any;
     const { getInterface } = useCollectionManager_deprecated();
     const compile = useCompile();
     const initOptions = useFieldInterfaceOptions();
     const data = getInterfaceOptions(initOptions, record.type);
-    const form = useForm();
-    const field = useField();
     const [selectValue, setSelectValue] = useState(value);
     const [options, setOptions] = useState(data);
-    const targetRecord = Object.values(form.values)?.[0]?.[field.index];
-    const targetType = targetRecord?.type || record.type;
+    const targetType = record.type;
     useEffect(() => {
       //只有一个选项的时候选中该选项
       if (options.length === 1 && options[0]?.children?.length === 1) {
@@ -71,8 +82,6 @@ export const CollectionFieldInterfaceSelect = observer(
 
     useEffect(() => {
       if (record?.possibleTypes) {
-        const targetRecord = Object.values(form.values)?.[0]?.[field.index];
-        const targetType = targetRecord?.type || record.type;
         const newOptions = getInterfaceOptions(initOptions, targetType);
         setOptions(newOptions);
       }

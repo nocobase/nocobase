@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { MenuOutlined } from '@ant-design/icons';
-import { ISchema, useFieldSchema } from '@formily/react';
+import { ISchema, useFieldSchema, useField } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +21,7 @@ import { useCollection_deprecated } from '../../../../collection-manager';
 import { useDataBlockProps } from '../../../../data-source';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { SelectWithTitle } from '../../../../common/SelectWithTitle';
 
 export const Resizable = () => {
   const { t } = useTranslation();
@@ -66,6 +76,42 @@ export const Resizable = () => {
   );
 };
 
+export const SchemaSettingsFixed = () => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
+
+  const options = [
+    { label: t('Not fixed'), value: 'none' },
+    { label: t('Left fixed'), value: 'left' },
+    { label: t('Right fixed'), value: 'right' },
+  ];
+  return (
+    <SchemaInitializerItem>
+      <SelectWithTitle
+        key="fixed"
+        title={t('Fixed')}
+        options={options}
+        defaultValue={field.componentProps?.fixed || 'none'}
+        onChange={(fixed) => {
+          const schema = {
+            ['x-uid']: fieldSchema['x-uid'],
+          };
+          fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+          fieldSchema['x-component-props']['fixed'] = fixed;
+          schema['x-component-props'] = fieldSchema['x-component-props'];
+          field.componentProps = field.componentProps || {};
+          field.componentProps.fixed = fixed;
+          void dn.emit('patch', {
+            schema,
+          });
+          dn.refresh();
+        }}
+      />
+    </SchemaInitializerItem>
+  );
+};
 const commonOptions = {
   insertPosition: 'beforeEnd',
   useInsert: function useInsert() {
@@ -235,6 +281,12 @@ const commonOptions = {
     {
       name: 'divider2',
       type: 'divider',
+    },
+    {
+      name: 'fixed',
+      title: 't("Fixed")',
+      type: 'item',
+      Component: SchemaSettingsFixed,
     },
     {
       type: 'item',

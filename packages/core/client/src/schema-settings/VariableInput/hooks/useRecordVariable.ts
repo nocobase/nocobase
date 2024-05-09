@@ -1,6 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { useBlockContext } from '../../../block-provider/BlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useCollection, useCollectionRecordData } from '../../../data-source';
@@ -46,6 +56,7 @@ export const useRecordVariable = (props: Props) => {
  */
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
+  const { name: blockType } = useBlockContext() || {};
   const collection = useCollection();
   const recordData = useCollectionRecordData();
   const { formRecord, collectionName } = useFormBlockContext();
@@ -58,6 +69,8 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     collectionName: realCollectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
+    deprecated: blockType === 'form',
+    tooltip: blockType === 'form' ? t('This variable has been deprecated and can be replaced with "Current form"') : '',
   });
 
   return {

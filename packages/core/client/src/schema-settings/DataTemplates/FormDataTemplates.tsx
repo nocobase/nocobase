@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { connect, mapProps, observer } from '@formily/react';
 import { observable } from '@formily/reactive';
@@ -143,7 +152,7 @@ export const FormDataTemplates = withDynamicSchemaProps(
                     },
                     dataScope: {
                       type: 'object',
-                      title: '{{ t("Assign  data scope for the template") }}',
+                      title: '{{ t("Filter out a single piece or a group of records as a template") }}',
                       'x-decorator': 'FormItem',
                       'x-component': 'Filter',
                       'x-component-props': {
@@ -173,6 +182,9 @@ export const FormDataTemplates = withDynamicSchemaProps(
                       type: 'string',
                       'x-decorator': 'FormItem',
                       title: '{{ t("Title field") }}',
+                      'x-decorator-props': {
+                        tooltip: '{{t("The title field is used to identify the template record")}}',
+                      },
                       'x-component': 'Select',
                       required: true,
                       'x-reactions': '{{useTitleFieldDataSource}}',
@@ -189,7 +201,10 @@ export const FormDataTemplates = withDynamicSchemaProps(
                     },
                     fields: {
                       type: 'array',
-                      title: '{{ t("Data fields") }}',
+                      title: '{{ t("Template fields") }}',
+                      'x-decorator-props': {
+                        tooltip: '{{t("The selected fields will automatically populate the form")}}',
+                      },
                       required: true,
                       description: t('Only the selected fields will be used as the initialization data for the form'),
                       'x-decorator': 'FormItem',
@@ -250,7 +265,7 @@ export const FormDataTemplates = withDynamicSchemaProps(
           },
           display: {
             type: 'boolean',
-            'x-content': '{{ t("Display data template selector") }}',
+            'x-content': '{{ t("Enable form data template") }}',
             default: activeData?.display !== false,
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',

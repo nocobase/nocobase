@@ -1,19 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ACL, ACLRole } from '@nocobase/acl';
-import { Database, Model } from '@nocobase/database';
-import { AssociationFieldAction, AssociationFieldsActions, GrantHelper } from '../server';
+import { Model } from '@nocobase/database';
 
 export class RoleResourceActionModel extends Model {
-  async writeToACL(options: {
-    acl: ACL;
-    role: ACLRole;
-    resourceName: string;
-    associationFieldsActions: AssociationFieldsActions;
-    grantHelper: GrantHelper;
-  }) {
-    // @ts-ignore
-    const db: Database = this.constructor.database;
-
-    const { resourceName, role, acl, associationFieldsActions, grantHelper } = options;
+  async writeToACL(options: { acl: ACL; role: ACLRole; resourceName: string }) {
+    const { resourceName, role } = options;
 
     const actionName = this.get('name') as string;
 
@@ -33,63 +32,5 @@ export class RoleResourceActionModel extends Model {
     }
 
     role.grantAction(actionPath, actionParams);
-
-    const collection = db.getCollection(resourceName);
-
-    if (!collection) {
-      return;
-    }
-
-    const availableAction = acl.resolveActionAlias(actionName);
-
-    for (const field of fields) {
-      const collectionField = collection.getField(field);
-
-      if (!collectionField) {
-        console.log(`field ${field} does not exist at ${collection.name}`);
-        continue;
-      }
-
-      const fieldType = collectionField.get('type') as string;
-
-      const fieldActions: AssociationFieldAction = associationFieldsActions?.[fieldType]?.[availableAction];
-
-      const fieldTarget = collectionField.get('target');
-
-      if (fieldActions) {
-        // grant association actions to role
-        const associationActions = fieldActions.associationActions || [];
-
-        associationActions.forEach((associationAction) => {
-          const actionName = `${resourceName}.${collectionField.get('name')}:${associationAction}`;
-          role.grantAction(actionName);
-        });
-
-        const targetActions = fieldActions.targetActions || [];
-
-        targetActions.forEach((targetAction) => {
-          const targetActionPath = `${fieldTarget}:${targetAction}`;
-
-          const existsAction = role.getActionParams(targetActionPath);
-
-          if (existsAction) {
-            return;
-          }
-
-          // set resource target action with current resourceName
-          grantHelper.resourceTargetActionMap.set(`${role.name}.${resourceName}`, [
-            ...(grantHelper.resourceTargetActionMap.get(resourceName) || []),
-            targetActionPath,
-          ]);
-
-          grantHelper.targetActionResourceMap.set(targetActionPath, [
-            ...(grantHelper.targetActionResourceMap.get(targetActionPath) || []),
-            `${role.name}.${resourceName}`,
-          ]);
-
-          role.grantAction(targetActionPath);
-        });
-      }
-    }
   }
 }

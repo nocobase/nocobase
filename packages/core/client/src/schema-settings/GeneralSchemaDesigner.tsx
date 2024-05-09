@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DragOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
@@ -63,6 +72,7 @@ export interface GeneralSchemaDesignerProps {
  * @deprecated use `SchemaToolbar` instead
  */
 export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any) => {
+  const fieldSchema = useFieldSchema();
   const {
     disableInitializer,
     title,
@@ -71,11 +81,10 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
     contextValue,
     draggable = true,
     showDataSource = true,
-  } = props;
+  } = { ...props, ...(fieldSchema['x-toolbar-props'] || {}) } as GeneralSchemaDesignerProps;
   const { dn, designable } = useDesignable();
   const field = useField();
   const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const schemaSettingsProps = {
@@ -182,9 +191,16 @@ export interface SchemaToolbarProps {
 }
 
 const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
-  const { title, initializer, settings, showBackground, showBorder = true, draggable = true } = props;
-  const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
+  const {
+    title,
+    initializer,
+    settings,
+    showBackground,
+    showBorder = true,
+    draggable = true,
+  } = { ...props, ...(fieldSchema['x-toolbar-props'] || {}) } as SchemaToolbarProps;
+  const { designable } = useDesignable();
   const compile = useCompile();
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();

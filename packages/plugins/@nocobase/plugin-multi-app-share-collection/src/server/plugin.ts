@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '@nocobase/database';
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
-const unSyncPlugins = ['localization-management'];
+const unSyncPlugins = ['localization'];
 
 class SubAppPlugin extends Plugin {
   beforeLoad() {
@@ -20,7 +29,7 @@ class SubAppPlugin extends Plugin {
     }
 
     subApp.on('beforeLoadPlugin', (plugin) => {
-      if (plugin.name === 'collection-manager') {
+      if (plugin.name === 'data-source-main') {
         plugin.setLoadFilter({
           'name.$ne': 'roles',
         });

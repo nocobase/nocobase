@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { renderReadPrettyApp, renderApp, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { FormItem, CollectionSelect } from '@nocobase/client';
 
@@ -36,16 +45,16 @@ describe('CollectionSelect', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1mw46su ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item css-1hvilub"
+            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
             role="button"
           >
             <div
-              class="css-1nrq807 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1mw46su"
+              class="css-1nrq807 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-formily-item-label"
@@ -75,7 +84,7 @@ describe('CollectionSelect', () => {
                     class="ant-formily-item-control-content-component"
                   >
                     <div
-                      class="ant-select css-dev-only-do-not-override-1mw46su ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
+                      class="ant-select css-dev-only-do-not-override-wwtqkl ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
                       data-testid="select-collection"
                       role="button"
                     >
@@ -173,16 +182,16 @@ describe('CollectionSelect', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1mw46su ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item css-1hvilub"
+            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
             role="button"
           >
             <div
-              class="css-1nrq807 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1mw46su"
+              class="css-1nrq807 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-formily-item-label"
@@ -213,7 +222,7 @@ describe('CollectionSelect', () => {
                   >
                     <div>
                       <span
-                        class="ant-tag css-dev-only-do-not-override-1mw46su"
+                        class="ant-tag css-dev-only-do-not-override-wwtqkl"
                       >
                         Users
                       </span>

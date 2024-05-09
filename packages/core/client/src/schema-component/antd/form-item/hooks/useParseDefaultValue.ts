@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
@@ -24,7 +33,7 @@ const useParseDefaultValue = () => {
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const recordV2 = useCollectionRecord();
+  const record = useCollectionRecord();
   const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable, isInSubForm } =
     useFlag() || {};
   const { getField } = useCollection_deprecated();
@@ -51,7 +60,7 @@ const useParseDefaultValue = () => {
       isInSetDefaultValueDialog ||
       isInFormDataTemplate ||
       isSubMode(fieldSchema) ||
-      (!recordV2?.isNew && !isInAssignFieldValues)
+      (!record?.isNew && !isInAssignFieldValues)
     ) {
       return;
     }

@@ -1,8 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { omit } from 'lodash';
 import { HasMany, Op } from 'sequelize';
-import { AggregateOptions, DestroyOptions, FindOptions, TK, TargetKey } from '../repository';
+import { AggregateOptions, DestroyOptions, FindOptions, TargetKey, TK } from '../repository';
 import { AssociatedOptions, MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
+
 export class HasManyRepository extends MultipleRelationRepository {
   async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
@@ -120,6 +130,9 @@ export class HasManyRepository extends MultipleRelationRepository {
     });
   }
 
+  /**
+   * @internal
+   */
   accessors() {
     return (<HasMany>this.association).accessors;
   }

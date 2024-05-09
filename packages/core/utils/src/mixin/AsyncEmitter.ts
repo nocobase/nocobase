@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export class AsyncEmitter {
   async emitAsync(event: string | symbol, ...args: any[]): Promise<boolean> {
     // @ts-ignore
@@ -40,7 +49,7 @@ export class AsyncEmitter {
       callbacks = callbacks.slice().filter(Boolean);
       await callbacks.reduce((prev, next) => {
         return prev.then((res) => {
-          return run(next).then((result) => Promise.resolve(res.concat(result)));
+          return run(next).then((result) => res.concat(result));
         });
       }, Promise.resolve([]));
     }

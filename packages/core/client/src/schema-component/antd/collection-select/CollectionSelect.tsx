@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { connect, mapReadPretty, observer, useField } from '@formily/react';
 import { Cascader, Select, SelectProps, Tag } from 'antd';
 import React, { useCallback, useContext, useMemo } from 'react';
@@ -105,16 +114,11 @@ function useDataSourceOptions({ filter }: DataSourceSelectProps) {
   const dataSourceManager = useDataSourceManager();
   const dataSources = dataSourceManager.getDataSources();
   return useMemo(
-    () => [
-      {
-        label: compile('Main'),
-        value: 'main',
-      },
-      ...(typeof filter === 'function' ? dataSources.filter(filter) : dataSources).map((item) => ({
-        label: item.displayName,
+    () =>
+      (typeof filter === 'function' ? dataSources.filter(filter) : dataSources).map((item) => ({
+        label: compile(item.displayName),
         value: item.key,
       })),
-    ],
     [dataSources, filter],
   );
 }

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection } from '@nocobase/database';
 import Database from '../../database';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
@@ -342,6 +351,17 @@ describe('belongs to many', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should get database instance in repository', async () => {
+    const p1 = await Post.repository.create({
+      values: {
+        title: 'p1',
+      },
+    });
+
+    const postTagsRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+    expect(postTagsRepository.database).toBe(db);
   });
 
   it('should create associations with associations', async () => {

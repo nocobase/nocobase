@@ -1,0 +1,139 @@
+{
+  "key": "data-source2",
+  "displayName": "Data Source 2",
+  "status": "loaded",
+  "type": "postgres",
+  "isDBInstance": true,
+  "collections": [
+    {
+      "name": "test",
+      "title": "test",
+      "tableName": "test",
+      "timestamps": false,
+      "autoGenId": false,
+      "filterTargetKey": "id",
+      "fields": [
+        {
+          "name": "id",
+          "type": "integer",
+          "allowNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "autoIncrement": true,
+          "possibleTypes": ["integer", "sort"],
+          "rawType": "INTEGER",
+          "interface": "integer",
+          "uiSchema": {
+            "type": "number",
+            "x-component": "InputNumber",
+            "x-component-props": {
+              "stringMode": true,
+              "step": "1"
+            },
+            "x-validator": "integer",
+            "title": "id"
+          }
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "allowNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "possibleTypes": ["string", "uuid", "nanoid"],
+          "rawType": "CHARACTER VARYING(255)",
+          "interface": "input",
+          "uiSchema": {
+            "x-component": "Input",
+            "x-component-props": {
+              "style": {
+                "width": "100%"
+              }
+            },
+            "title": "title"
+          }
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "allowNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "rawType": "TEXT",
+          "interface": "textarea",
+          "uiSchema": {
+            "type": "string",
+            "x-component": "Input.TextArea",
+            "title": "content"
+          }
+        }
+      ],
+      "introspected": true
+    },
+    {
+      "name": "test2",
+      "title": "test2",
+      "tableName": "test2",
+      "timestamps": false,
+      "autoGenId": false,
+      "filterTargetKey": "id",
+      "fields": [
+        {
+          "name": "id",
+          "type": "integer",
+          "allowNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "autoIncrement": true,
+          "possibleTypes": ["integer", "sort"],
+          "rawType": "INTEGER",
+          "interface": "integer",
+          "uiSchema": {
+            "type": "number",
+            "x-component": "InputNumber",
+            "x-component-props": {
+              "stringMode": true,
+              "step": "1"
+            },
+            "x-validator": "integer",
+            "title": "id"
+          }
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "allowNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "possibleTypes": ["string", "uuid", "nanoid"],
+          "rawType": "CHARACTER VARYING(255)",
+          "interface": "input",
+          "uiSchema": {
+            "x-component": "Input",
+            "x-component-props": {
+              "style": {
+                "width": "100%"
+              }
+            },
+            "title": "title"
+          }
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "allowNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "rawType": "TEXT",
+          "interface": "textarea",
+          "uiSchema": {
+            "type": "string",
+            "x-component": "Input.TextArea",
+            "title": "content"
+          }
+        }
+      ],
+      "introspected": true
+    }
+  ]
+}

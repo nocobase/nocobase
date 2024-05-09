@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { get, set } from 'lodash';
 import React, { ComponentType } from 'react';
 import {
@@ -24,6 +33,7 @@ export interface MemoryRouterOptions extends Omit<MemoryRouterProps, 'children'>
 }
 export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRouterOptions) & {
   renderComponent?: RenderComponentType;
+  routes?: Record<string, RouteType>;
 };
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
@@ -39,6 +49,7 @@ export class RouterManager {
   constructor(options: RouterOptions = {}, app: Application) {
     this.options = options;
     this.app = app;
+    this.routes = options.routes || {};
   }
 
   /**

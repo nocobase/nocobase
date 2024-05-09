@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useField, useForm } from '@formily/react';
 import { Cascader, Input, Select, Spin, Table, Tag } from 'antd';
 import { last, omit } from 'lodash';
@@ -7,6 +16,7 @@ import { ResourceActionContext, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
 import { useFieldInterfaceOptions } from '../../Configuration/interfaces';
 import { useCollectionManager_deprecated } from '../../hooks/useCollectionManager_deprecated';
+import { UnSupportFields } from './UnSupportFields';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -29,6 +39,7 @@ const PreviewCom = (props) => {
   const [dataSource, setDataSource] = useState([]);
   const [sourceFields, setSourceFields] = useState([]);
   const [sourceCollections, setSourceCollections] = useState(sources);
+  const [unsupportedFields, setUnsupportedFields] = useState([]);
   const field: any = useField();
   const form = useForm();
   const { getCollection, getInterface, getCollectionFields, getInheritCollections, getParentCollectionFields } =
@@ -101,6 +112,7 @@ const PreviewCom = (props) => {
               setDataSource(fieldsData);
               form.setValuesIn('sources', data.data?.sources);
               setSourceCollections(data.data?.sources);
+              setUnsupportedFields(data?.data?.unsupportedFields);
             });
           }
         }).catch;
@@ -248,6 +260,7 @@ const PreviewCom = (props) => {
           />
         </>
       )}
+      <UnSupportFields dataSource={unsupportedFields} />
     </Spin>
   );
 };

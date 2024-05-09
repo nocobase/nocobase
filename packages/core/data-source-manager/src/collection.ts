@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CollectionOptions, ICollection, ICollectionManager, IField, IRepository } from './types';
 import { default as lodash } from 'lodash';
 import merge from 'deepmerge';
@@ -13,9 +22,7 @@ export class Collection implements ICollection {
   ) {
     this.setRepository(options.repository);
     if (options.fields) {
-      for (const field of options.fields) {
-        this.setField(field.name, field);
-      }
+      this.setFields(options.fields);
     }
   }
 
@@ -24,11 +31,18 @@ export class Collection implements ICollection {
     newOptions = merge(this.options, newOptions, mergeOptions);
     this.options = newOptions;
 
+    this.setFields(newOptions.fields || []);
     if (options.repository) {
       this.setRepository(options.repository);
     }
 
     return this;
+  }
+
+  setFields(fields: any[]) {
+    for (const field of fields) {
+      this.setField(field.name, field);
+    }
   }
 
   setField(name: string, options: any) {

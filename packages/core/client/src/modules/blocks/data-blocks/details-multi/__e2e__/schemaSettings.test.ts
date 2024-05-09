@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   expectSettingsMenu,
   oneDetailBlockWithM2oFieldToGeneral,
@@ -19,6 +28,7 @@ test.describe('multi data details block schema settings', () => {
       },
       supportedOptions: [
         'Edit block title',
+        'Linkage rules',
         'Set the data scope',
         'Set default sorting rules',
         'Save as template',

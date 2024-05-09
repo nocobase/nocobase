@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import react from '@vitejs/plugin-react';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
@@ -7,7 +16,7 @@ import { build as viteBuild } from 'vite';
 import { libInjectCss } from 'vite-plugin-lib-inject-css';
 
 import { globExcludeFiles } from './constant';
-import { PkgLog, UserConfig } from './utils';
+import { PkgLog, UserConfig, getEnvDefine } from './utils';
 
 export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
   log('build client');
@@ -33,11 +42,7 @@ function buildClientEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean,
   return viteBuild(
     userConfig.modifyViteConfig({
       mode: process.env.NODE_ENV || 'production',
-      define: {
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-        'process.env.__TEST__': false,
-        'process.env.__E2E__': process.env.__E2E__ ? true : false,
-      },
+      define: getEnvDefine(),
       build: {
         minify: process.env.NODE_ENV === 'production',
         outDir,

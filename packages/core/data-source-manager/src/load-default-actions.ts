@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { list } from './default-actions/list';
-import { move } from './default-actions/move';
+import { createMoveAction } from './default-actions/move';
 import { proxyToRepository } from './default-actions/proxy-to-repository';
-import { DataSource } from './data-source';
+import globalActions from '@nocobase/actions';
 
 type Actions = { [key: string]: { params: Array<string> | ((ctx: any) => Array<string>); method: string } };
 
@@ -65,13 +74,13 @@ const actions: Actions = {
   },
 };
 
-export function loadDefaultActions(dataSource: DataSource) {
+export function loadDefaultActions() {
   return {
     ...Object.keys(actions).reduce((carry, key) => {
       carry[key] = proxyToRepository(actions[key].params, actions[key].method);
       return carry;
     }, {}),
     list,
-    move,
+    move: createMoveAction(globalActions.move),
   };
 }

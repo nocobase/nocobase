@@ -1,25 +1,24 @@
 # DataBlockResourceProvider
 
-根据 `DataBlockProvider` 中的 `collection`、`association`、`sourceId` 等属性，构建好 [resource](https://docs.nocobase.com/api/sdk#resource-action) 对象，方便子组件对区块数据的增删改查操作，其内置在 [DataBlockProvider](/core/data-block/data-block-provider) 中
-
+Builds the `resource` object based on the `collection`, `association`, `sourceId`, and other attributes in the `DataBlockProvider`, facilitating the CRUD operations on block data for child components. It is built-in within the [DataBlockProvider](/core/data-block/data-block-provider).
 
 ## useDataBlockResource
 
-用于获取当前数据块的 resource 对象。
+Used to retrieve the `resource` object for the current data block.
 
-- 类型
+- Type
 
 ```ts | pure
 function useDataBlockResource(): IResource
 ```
 
-- 示例
+- Example
 
 ```ts | pure
 const  resource = useDataBlockResource();
 
 const onSubmit = async (values) => {
-  // 创建
+  // create
   await resource.create({ values });
 }
 ```
@@ -28,9 +27,7 @@ const onSubmit = async (values) => {
 const  resource = useDataBlockResource();
 
 const onDelete = async () => {
-  // 删除
+  // delete
   await resource.destroy();
 }
 ```
-
-可运行示例

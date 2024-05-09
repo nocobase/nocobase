@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
@@ -275,7 +284,13 @@ export function ExecutionCanvas() {
           <Breadcrumb
             items={[
               { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
-              { title: <Link to={getWorkflowDetailPath(workflow.id)}>{workflow.title}</Link> },
+              {
+                title: (
+                  <Tooltip title={`Key: ${workflow.key}`}>
+                    <Link to={getWorkflowDetailPath(workflow.id)}>{workflow.title}</Link>
+                  </Tooltip>
+                ),
+              },
               { title: <ExecutionsDropdown /> },
             ]}
           />

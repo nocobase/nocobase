@@ -1,3 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import Database from '../database';
+
 export type ReferencePriority = 'default' | 'user';
 
 export interface Reference {
@@ -40,6 +51,8 @@ const PRIORITY_MAP = {
 class ReferencesMap {
   protected map: Map<string, Reference[]> = new Map();
 
+  constructor(private db: Database) {}
+
   addReference(reference: Reference) {
     const existReference = this.existReference(reference);
 
@@ -55,11 +68,12 @@ class ReferencesMap {
         if (existReference.onDelete === 'SET NULL' && reference.onDelete === 'CASCADE') {
           existReference.onDelete = reference.onDelete;
         } else {
-          throw new Error(
+          this.db.logger.warn(
             `On Delete Conflict, exist reference ${JSON.stringify(existReference)}, new reference ${JSON.stringify(
               reference,
             )}`,
           );
+          return;
         }
       }
     }

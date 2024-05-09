@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, observer } from '@formily/react';
 import { ConfigProvider, Popover, theme } from 'antd';
 import React, { ComponentType, useCallback, useMemo, useState } from 'react';
@@ -64,6 +73,9 @@ export function withInitializer<T>(C: ComponentType<T>) {
             padding: ${`${token.paddingXXS}px 0`};
             .ant-menu-submenu-title {
               margin-block: 0;
+            }
+            .ant-popover-inner-content {
+              padding: 0;
             }
           }
         `;

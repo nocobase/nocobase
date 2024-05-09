@@ -1,11 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { isPlainObject } from '@nocobase/utils/client';
 import { castArray } from 'lodash';
 
 export interface FieldNames {
-  label: string;
-  value: string;
-  color: string;
-  options: string;
+  label?: string;
+  value?: string;
+  color?: string;
+  options?: string;
 }
 
 export const defaultFieldNames: FieldNames = {

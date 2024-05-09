@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context, utils } from '@nocobase/actions';
 import WorkflowPlugin, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 
@@ -50,7 +59,10 @@ export async function submit(context: Context, next) {
   await processor.prepare();
 
   // NOTE: validate assignee
-  const assignees = processor.getParsedValue(userJob.node.config.assignees ?? [], userJob.nodeId);
+  const assignees = processor
+    .getParsedValue(userJob.node.config.assignees ?? [], userJob.nodeId)
+    .flat()
+    .filter(Boolean);
   if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
     return context.throw(403);
   }

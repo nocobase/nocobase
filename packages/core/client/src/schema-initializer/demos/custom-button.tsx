@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { Application, Plugin, SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
 import { PlusOutlined } from '@ant-design/icons';

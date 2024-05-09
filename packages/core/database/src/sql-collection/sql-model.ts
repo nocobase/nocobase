@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Model } from '../model';
 import sqlParser from '../sql-parser';
 import { selectQuery } from './query-generator';
@@ -27,6 +36,60 @@ export class SQLModel extends Model {
   }
 
   static async sync(): Promise<any> {}
+
+  static inferFields(): {
+    [field: string]: {
+      type: string;
+      source: string;
+      collection: string;
+      interface: string;
+    };
+  } {
+    const tables = this.parseTablesAndColumns();
+    return tables.reduce((fields, { table, columns }) => {
+      const tableName = this.getTableNameWithSchema(table);
+      const collection = this.database.tableNameCollectionMap.get(tableName);
+      if (!collection) {
+        return fields;
+      }
+      const attributes = collection.model.getAttributes();
+      const sourceFields = {};
+      if (columns === '*') {
+        Object.values(attributes).forEach((attribute) => {
+          const field = collection.getField((attribute as any).fieldName);
+          if (!field?.options.interface) {
+            return;
+          }
+          sourceFields[field.name] = {
+            collection: field.collection.name,
+            type: field.type,
+            source: `${field.collection.name}.${field.name}`,
+            interface: field.options.interface,
+            uiSchema: field.options.uiSchema,
+          };
+        });
+      } else {
+        (columns as { name: string; as: string }[]).forEach((column) => {
+          const modelField = Object.values(attributes).find((attribute) => attribute.field === column.name);
+          if (!modelField) {
+            return;
+          }
+          const field = collection.getField((modelField as any).fieldName);
+          if (!field?.options.interface) {
+            return;
+          }
+          sourceFields[column.as || column.name] = {
+            collection: field.collection.name,
+            type: field.type,
+            source: `${field.collection.name}.${field.name}`,
+            interface: field.options.interface,
+            uiSchema: field.options.uiSchema,
+          };
+        });
+      }
+      return { ...fields, ...sourceFields };
+    }, {});
+  }
 
   private static parseTablesAndColumns(): {
     table: string;
@@ -102,63 +165,9 @@ export class SQLModel extends Model {
 
   private static getTableNameWithSchema(table: string) {
     if (this.database.inDialect('postgres') && !table.includes('.')) {
-      return `public.${table}`;
+      const schema = process.env.DB_SCHEMA || 'public';
+      return `${schema}.${table}`;
     }
     return table;
-  }
-
-  static inferFields(): {
-    [field: string]: {
-      type: string;
-      source: string;
-      collection: string;
-      interface: string;
-    };
-  } {
-    const tables = this.parseTablesAndColumns();
-    const fields = tables.reduce((fields, { table, columns }) => {
-      const tableName = this.getTableNameWithSchema(table);
-      const collection = this.database.tableNameCollectionMap.get(tableName);
-      if (!collection) {
-        return fields;
-      }
-      const attributes = collection.model.getAttributes();
-      const sourceFields = {};
-      if (columns === '*') {
-        Object.values(attributes).forEach((attribute) => {
-          const field = collection.getField((attribute as any).fieldName);
-          if (!field?.options.interface) {
-            return;
-          }
-          sourceFields[field.name] = {
-            collection: field.collection.name,
-            type: field.type,
-            source: `${field.collection.name}.${field.name}`,
-            interface: field.options.interface,
-            uiSchema: field.options.uiSchema,
-          };
-        });
-      } else {
-        (columns as { name: string; as: string }[]).forEach((column) => {
-          const modelField = Object.values(attributes).find((attribute) => attribute.field === column.name);
-          if (!modelField) {
-            return;
-          }
-          const field = collection.getField((modelField as any).fieldName);
-          if (!field?.options.interface) {
-            return;
-          }
-          sourceFields[column.as || column.name] = {
-            collection: field.collection.name,
-            type: field.type,
-            source: `${field.collection.name}.${field.name}`,
-            interface: field.options.interface,
-            uiSchema: field.options.uiSchema,
-          };
-        });
-      }
-      return { ...fields, ...sourceFields };
-    }, {});
-    return fields;
   }
 }

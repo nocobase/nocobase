@@ -4,7 +4,7 @@
   "displayName.zh-CN": "应用的备份与还原",
   "description": "Backup and restore applications for scenarios such as application replication, migration, and upgrades.",
   "description.zh-CN": "备份和还原应用，可用于应用的复制、迁移、升级等场景。",
-  "version": "0.21.0-alpha.14",
+  "version": "1.0.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/backup-restore",
@@ -31,12 +31,12 @@
     "tar": "^6.1.13"
   },
   "peerDependencies": {
-    "@nocobase/actions": "0.x",
-    "@nocobase/client": "0.x",
-    "@nocobase/database": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
-    "@nocobase/utils": "0.x"
+    "@nocobase/actions": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x"
   },
   "keywords": [
     "System management"

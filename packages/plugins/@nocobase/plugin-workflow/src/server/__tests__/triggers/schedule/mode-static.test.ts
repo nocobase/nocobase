@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { scryptSync } from 'crypto';
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
@@ -380,7 +389,11 @@ describe('workflow > triggers > schedule > static mode', () => {
         },
       });
 
-      (app.pm.get('workflow') as Plugin).trigger(workflow, { date: start });
+      (app.pm.get('workflow') as Plugin).trigger(
+        workflow,
+        { date: start },
+        { eventKey: `${workflow.id}@${start.getTime()}` },
+      );
 
       await sleep(3000);
 

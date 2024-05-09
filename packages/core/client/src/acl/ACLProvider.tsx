@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { omit } from 'lodash';
@@ -198,8 +207,9 @@ export function useACLRoleContext() {
 
 export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
+  const app = useApp();
   const schema = useFieldSchema();
-  if (allowAll) {
+  if (allowAll || app.disableAcl) {
     return props.children;
   }
   let actionPath = schema?.['x-acl-action'] || props.actionPath;

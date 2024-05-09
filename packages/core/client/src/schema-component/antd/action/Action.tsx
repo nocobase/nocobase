@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
@@ -33,11 +42,11 @@ import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
-import { ComposedAction } from './types';
+import { ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 
 export const Action: ComposedAction = withDynamicSchemaProps(
-  observer((props: any) => {
+  observer((props: ActionProps) => {
     const {
       popover,
       confirm,
@@ -50,6 +59,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       title,
       onClick,
       style,
+      loading,
       openSize: os,
       disabled: propsDisabled,
       actionCallback,
@@ -72,7 +82,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const recordData = useCollectionRecordData();
     const parentRecordData = useCollectionParentRecordData();
     const collection = useCollection();
-    const designerProps = fieldSchema['x-designer-props'];
+    const designerProps = fieldSchema['x-toolbar-props'] || fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
@@ -171,14 +181,14 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           aria-label={getAriaLabel()}
           {...others}
           onMouseEnter={handleMouseEnter}
-          loading={field?.data?.loading}
+          loading={field?.data?.loading || loading}
           icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
           style={buttonStyle}
           onClick={handleButtonClick}
           component={tarComponent || Button}
           className={classnames(componentCls, hashId, className, 'nb-action')}
-          type={props.type === 'danger' ? undefined : props.type}
+          type={(props as any).type === 'danger' ? undefined : props.type}
         >
           {actionTitle}
           <Designer {...designerProps} />

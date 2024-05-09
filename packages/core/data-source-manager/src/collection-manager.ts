@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection } from './collection';
 import { CollectionOptions, ICollection, ICollectionManager, IRepository, MergeOptions } from './types';
 
@@ -8,9 +17,13 @@ export class CollectionManager implements ICollectionManager {
 
   constructor(options = {}) {}
 
+  /* istanbul ignore next -- @preserve */
   getRegisteredFieldType(type) {}
+
+  /* istanbul ignore next -- @preserve */
   getRegisteredFieldInterface(key: string) {}
 
+  /* istanbul ignore next -- @preserve */
   getRegisteredModel(key: string) {
     return this.models.get(key);
   }
@@ -22,8 +35,13 @@ export class CollectionManager implements ICollectionManager {
     return this.repositories.get(key);
   }
 
+  /* istanbul ignore next -- @preserve */
   registerFieldTypes() {}
+
+  /* istanbul ignore next -- @preserve */
   registerFieldInterfaces() {}
+
+  /* istanbul ignore next -- @preserve */
   registerCollectionTemplates() {}
 
   registerModels(models: Record<string, any>) {
@@ -46,6 +64,7 @@ export class CollectionManager implements ICollectionManager {
 
   extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ICollection {
     const collection = this.getCollection(collectionOptions.name);
+    collection.updateOptions(collectionOptions, mergeOptions);
     return collection;
   }
 

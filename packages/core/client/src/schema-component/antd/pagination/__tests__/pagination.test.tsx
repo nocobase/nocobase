@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { renderApp } from '@nocobase/test/client';
 import { Pagination } from '@nocobase/client';
 
@@ -12,12 +21,12 @@ describe('Pagination', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1mw46su ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         >
           <div>
             <ul
-              class="ant-pagination css-dev-only-do-not-override-1mw46su"
+              class="ant-pagination css-dev-only-do-not-override-wwtqkl"
             >
               <li
                 aria-disabled="true"
@@ -122,7 +131,7 @@ describe('Pagination', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1mw46su ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         />
       </div>

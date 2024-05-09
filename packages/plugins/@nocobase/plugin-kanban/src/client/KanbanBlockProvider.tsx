@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
@@ -111,7 +120,8 @@ const useAssociationNames = (collection) => {
 
 export const KanbanBlockProvider = (props) => {
   const params = { ...props.params };
-  const appends = useAssociationNames(props.collection);
+  console.log(props);
+  const appends = useAssociationNames(props.association || props.collection);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayTable } from '@formily/antd-v5';
 import { Field, onFieldValueChange } from '@formily/core';
 import { ISchema, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
@@ -326,7 +335,7 @@ export function RemoveButton(
   );
 }
 
-function WorkflowSelect({ actionType, direct = false, ...props }) {
+function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
   const { t } = useTranslation();
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
@@ -367,17 +376,28 @@ function WorkflowSelect({ actionType, direct = false, ...props }) {
   });
 
   const optionFilter = useCallback(
-    ({ type, config }) => {
+    ({ key, type, config }) => {
+      if (key === props.value) {
+        return true;
+      }
       const trigger = workflowPlugin.triggers.get(type);
       if (trigger.isActionTriggerable === true) {
         return true;
       }
       if (typeof trigger.isActionTriggerable === 'function') {
-        return trigger.isActionTriggerable(config, { action: actionType, direct });
+        return trigger.isActionTriggerable(config, {
+          action: actionType,
+          formAction,
+          buttonAction,
+          /**
+           * @deprecated
+           */
+          direct: buttonAction === 'customize:triggerWorkflows',
+        });
       }
       return false;
     },
-    [workflowPlugin.triggers, actionType, direct],
+    [props.value, workflowPlugin.triggers, formAction, buttonAction, actionType],
   );
 
   return (
@@ -425,7 +445,12 @@ export function WorkflowConfig() {
   const collection = useCollection_deprecated();
   // TODO(refactor): should refactor for getting certain action type, better from 'x-action'.
   const formBlock = useFormBlockContext();
+  /**
+   * @deprecated
+   */
   const actionType = formBlock?.type || fieldSchema['x-action'];
+  const formAction = formBlock?.type;
+  const buttonAction = fieldSchema['x-action'];
 
   const description = {
     submit: t('Workflow will be triggered before or after submitting succeeded based on workflow type.', {
@@ -435,7 +460,11 @@ export function WorkflowConfig() {
       ns: 'workflow',
     }),
     'customize:triggerWorkflows': t(
-      'Workflow will be triggered directly once the button clicked, without data saving. Only supports "Post-action event" for now.',
+      'Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".',
+      { ns: '@nocobase/plugin-workflow-custom-action-trigger' },
+    ),
+    'customize:triggerWorkflows_deprecated': t(
+      '"Submit to workflow" to "Post-action event" is deprecated, please use "Custom action event" instead.',
       { ns: 'workflow' },
     ),
     destroy: t('Workflow will be triggered before deleting succeeded.', { ns: 'workflow' }),
@@ -500,7 +529,7 @@ export function WorkflowConfig() {
                             value: '',
                           },
                           allowClear: false,
-                          loadData: actionType === 'destroy' ? null : undefined,
+                          loadData: buttonAction === 'destroy' ? null : undefined,
                         },
                         default: '',
                       },
@@ -520,7 +549,8 @@ export function WorkflowConfig() {
                         'x-component-props': {
                           placeholder: t('Select workflow', { ns: 'workflow' }),
                           actionType,
-                          direct: fieldSchema['x-action'] === 'customize:triggerWorkflows',
+                          formAction,
+                          buttonAction,
                         },
                         required: true,
                       },

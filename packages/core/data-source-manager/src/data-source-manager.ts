@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
@@ -6,11 +15,12 @@ type DataSourceHook = (dataSource: DataSource) => void;
 
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;
+  /**
+   * @internal
+   */
   factory: DataSourceFactory = new DataSourceFactory();
-
-  onceHooks: Array<DataSourceHook> = [];
-
   protected middlewares = [];
+  private onceHooks: Array<DataSourceHook> = [];
 
   constructor(public options = {}) {
     this.dataSources = new Map();
@@ -47,6 +57,18 @@ export class DataSourceManager {
 
       return ds.middleware(this.middlewares)(ctx, next);
     };
+  }
+
+  registerDataSourceType(type: string, DataSourceClass: typeof DataSource) {
+    this.factory.register(type, DataSourceClass);
+  }
+
+  getDataSourceType(type: string): typeof DataSource | undefined {
+    return this.factory.getClass(type);
+  }
+
+  buildDataSourceByType(type: string, options: any = {}): DataSource {
+    return this.factory.create(type, options);
   }
 
   afterAddDataSource(hook: DataSourceHook) {

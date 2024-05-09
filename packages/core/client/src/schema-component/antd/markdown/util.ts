@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useEffect, useState } from 'react';
 
 export async function parseMarkdown(text: string) {
@@ -13,6 +22,7 @@ export function useParseMarkdown(text: string) {
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setLoading(true);
+    // eslint-disable-next-line promise/catch-or-return
     parseMarkdown(text).then((r) => {
       setHtml(r);
       setLoading(false);

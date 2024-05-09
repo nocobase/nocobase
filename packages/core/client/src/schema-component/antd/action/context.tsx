@@ -1,8 +1,16 @@
-import { Schema } from '@formily/react';
-import { DrawerProps, ModalProps } from 'antd';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { createContext, useEffect, useRef, useState } from 'react';
 import { useActionContext } from './hooks';
 import { useDataBlockRequest } from '../../../data-source';
+import { ActionContextProps } from './types';
 
 export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
@@ -14,13 +22,12 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
   const isFirstRender = useRef(true); // 使用ref跟踪是否为首次渲染
   const service = useDataBlockRequest();
   const { setSubmitted: setParentSubmitted } = { ...props, ...props.value, ...contextProps };
-
   useEffect(() => {
     if (visible !== undefined) {
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
-        if (visible === false && submitted) {
+        if (visible === false && submitted && service) {
           service.refresh();
           setParentSubmitted?.(true); //传递给上一层
         }
@@ -37,21 +44,3 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
     </ActionContext.Provider>
   );
 };
-
-export type OpenSize = 'small' | 'middle' | 'large';
-export interface ActionContextProps {
-  button?: any;
-  visible?: boolean;
-  setVisible?: (v: boolean) => void;
-  openMode?: 'drawer' | 'modal' | 'page';
-  snapshot?: boolean;
-  openSize?: OpenSize;
-  containerRefKey?: string;
-  formValueChanged?: boolean;
-  setFormValueChanged?: (v: boolean) => void;
-  fieldSchema?: Schema;
-  drawerProps?: DrawerProps;
-  modalProps?: ModalProps;
-  submitted?: boolean;
-  setSubmitted?: (v: boolean) => void;
-}

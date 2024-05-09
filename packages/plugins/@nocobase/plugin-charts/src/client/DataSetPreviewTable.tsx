@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { FormItem, Input, SchemaComponent, SchemaComponentProvider, TableV2 } from '@nocobase/client';
 import { Empty, Spin } from 'antd';
@@ -44,7 +53,7 @@ export default ({ queryId, fields }: { queryId: number; fields }) => {
   if (error) {
     return (
       <>
-        <Empty description={<span>May be this chart block's query data has been deleted,please check!</span>} />
+        <Empty description={<span>May be this chart block&apos;s query data has been deleted,please check!</span>} />
       </>
     );
   }

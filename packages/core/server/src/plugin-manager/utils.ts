@@ -1,3 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/* istanbul ignore next -- @preserve */
+
 import { importModule, isURL } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
@@ -20,6 +31,7 @@ import {
   requireRegex,
 } from './constants';
 import deps from './deps';
+import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
 
 /**
@@ -70,11 +82,11 @@ export function getNodeModulesPluginDir(packageName: string) {
 export function getAuthorizationHeaders(registry?: string, authToken?: string) {
   const headers = {};
   if (registry && !authToken) {
-    const npmrcPath = path.join(process.cwd(), '.npmrc');
+    const npmrcPath = path.join(os.homedir(), '.npmrc');
     const url = new URL(registry);
     let envConfig: Record<string, string> = process.env;
     if (fs.existsSync(npmrcPath)) {
-      const content = fs.readFileSync(path.join(process.cwd(), '.npmrc'), 'utf-8');
+      const content = fs.readFileSync(npmrcPath, 'utf-8');
       envConfig = {
         ...envConfig,
         ...ini.parse(content),
@@ -277,6 +289,7 @@ export function getServerPackages(packageDir: string) {
     const exts = ['.js', '.ts', '.jsx', '.tsx'];
     const importRegex = /import\s+.*?\s+from\s+['"]([^'"\s.].+?)['"];?/g;
     const requireRegex = /require\s*\(\s*[`'"]([^`'"\s.].+?)[`'"]\s*\)/g;
+
     function setPluginsFromContent(reg: RegExp, content: string) {
       let match: RegExpExecArray | null;
       while ((match = reg.exec(content))) {
@@ -353,16 +366,22 @@ export async function getPackageJsonByLocalPath(localPath: string) {
 }
 
 export async function updatePluginByCompressedFileUrl(
-  options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName' | 'authToken'>>,
+  options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName' | 'authToken'>> & {
+    repository: PluginManagerRepository;
+  },
 ) {
   const { packageName, version, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(
     options.compressedFileUrl,
     options.authToken,
   );
 
-  if (options.packageName && options.packageName !== packageName) {
+  const instance = await options.repository.findOne({
+    filter: { packageName },
+  });
+
+  if (!instance) {
     await removeTmpDir(tempFile, tempPackageContentDir);
-    throw new Error(`Plugin name in package.json must be ${options.packageName}, but got ${packageName}`);
+    throw new Error(`plugin ${packageName} does not exist`);
   }
 
   const { packageDir } = await copyTempPackageToStorageAndLinkToNodeModules(
@@ -428,6 +447,7 @@ async function getExternalVersionFromDistFile(packageName: string): Promise<fals
     return false;
   }
 }
+
 export function isNotBuiltinModule(packageName: string) {
   return !builtinModules.includes(packageName);
 }
@@ -503,6 +523,7 @@ export interface DepCompatible {
   versionRange: string;
   packageVersion: string;
 }
+
 export async function getCompatible(packageName: string) {
   let externalVersion: Record<string, string>;
   const hasSrc = fs.existsSync(path.join(getPackageDir(packageName), 'src'));
@@ -510,8 +531,7 @@ export async function getCompatible(packageName: string) {
   if (hasSrc) {
     try {
       externalVersion = await getExternalVersionFromSource(packageName);
-    } catch (error) {
-      console.log('getExternalVersionFromSource error:', error);
+    } catch {
       hasError = true;
     }
   }

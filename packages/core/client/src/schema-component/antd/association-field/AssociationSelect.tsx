@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
-import { onFieldChange } from '@formily/core';
+import { onFieldInputValueChange } from '@formily/core';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
@@ -13,6 +22,7 @@ import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
+  addMode?: 'quickAdd' | 'modalAdd';
   action?: string;
   multiple?: boolean;
 };
@@ -42,7 +52,7 @@ export const filterAnalyses = (filters): any[] => {
 
 const InternalAssociationSelect = observer(
   (props: AssociationSelectProps) => {
-    const { objectValue = true } = props;
+    const { objectValue = true, addMode: propsAddMode, ...rest } = props;
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const service = useServiceOptions(props);
@@ -67,7 +77,7 @@ const InternalAssociationSelect = observer(
       const id = uid();
       form.addEffects(id, () => {
         //支持深层次子表单
-        onFieldChange('*', (fieldPath: any) => {
+        onFieldInputValueChange('*', (fieldPath: any) => {
           const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter) || [];
           if (linkageFields.includes(fieldPath?.props?.name) && field.value) {
             field.setValue(field.initialValue);
@@ -120,7 +130,7 @@ const InternalAssociationSelect = observer(
         <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
           <RemoteSelect
             style={{ width: '100%' }}
-            {...props}
+            {...rest}
             size={'middle'}
             objectValue={objectValue}
             value={value || innerValue}

@@ -1,11 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormContext, useField } from '@formily/react';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
+import { BlockProvider, useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useParsedFilter } from '../../../block-provider/hooks/useParsedFilter';
 
 export const ListBlockContext = createContext<any>({});
 ListBlockContext.displayName = 'ListBlockContext';

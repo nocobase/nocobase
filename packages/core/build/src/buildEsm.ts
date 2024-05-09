@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 
 import path from 'path';
-import { PkgLog, UserConfig } from './utils';
+import { PkgLog, UserConfig, getEnvDefine } from './utils';
 import { build as viteBuild } from 'vite';
 import fg from 'fast-glob';
 
@@ -48,11 +57,7 @@ function build(cwd: string, entry: string, outDir: string, userConfig: UserConfi
   return viteBuild(
     userConfig.modifyViteConfig({
       mode: process.env.NODE_ENV || 'production',
-      define: {
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-        'process.env.__TEST__': false,
-        'process.env.__E2E__': process.env.__E2E__ ? true : false,
-      },
+      define: getEnvDefine(),
       build: {
         minify: false,
         outDir,

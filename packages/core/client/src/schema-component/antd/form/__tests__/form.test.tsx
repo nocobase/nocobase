@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/demo1';
@@ -8,6 +17,7 @@ import App5 from '../demos/demo5';
 import App6 from '../demos/demo6';
 import App7 from '../demos/demo7';
 import App8 from '../demos/demo8';
+import { renderDemo9 } from '../demos/demo9';
 
 describe('Form', () => {
   it('basic', async () => {
@@ -150,5 +160,26 @@ describe('Form', () => {
     expect(input).toHaveValue('hello nocobase');
     expect(closeBtn).toBeInTheDocument();
     expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+  });
+
+  it('linkage', async () => {
+    await renderDemo9();
+
+    await waitFor(() => {
+      expect(document.querySelector('.ant-input')).toBeInTheDocument();
+      expect(document.querySelectorAll('.ant-input')).toHaveLength(2);
+    });
+
+    await userEvent.type(document.querySelector('.ant-input'), 'test');
+
+    await waitFor(() => {
+      expect(document.querySelectorAll('.ant-input')).toHaveLength(1);
+    });
+
+    await userEvent.clear(document.querySelector('.ant-input'));
+
+    await waitFor(() => {
+      expect(document.querySelectorAll('.ant-input')).toHaveLength(2);
+    });
   });
 });

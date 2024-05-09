@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import lodash from 'lodash';
 
 export function transactionWrapperBuilder(transactionGenerator) {
@@ -5,12 +14,12 @@ export function transactionWrapperBuilder(transactionGenerator) {
     return (target, name, descriptor) => {
       const oldValue = descriptor.value;
 
-      descriptor.value = async function () {
+      descriptor.value = async function (...rest) {
         let transaction;
         let newTransaction = false;
 
-        if (arguments.length > 0 && typeof arguments[0] === 'object') {
-          transaction = arguments[0]['transaction'];
+        if (rest.length > 0 && typeof rest[0] === 'object') {
+          transaction = rest[0]['transaction'];
         }
 
         if (!transaction) {
@@ -22,14 +31,14 @@ export function transactionWrapperBuilder(transactionGenerator) {
         if (newTransaction) {
           try {
             let callArguments;
-            if (lodash.isPlainObject(arguments[0])) {
+            if (lodash.isPlainObject(rest[0])) {
               callArguments = {
-                ...arguments[0],
+                ...rest[0],
                 transaction,
               };
             } else if (transactionInjector) {
-              callArguments = transactionInjector(arguments, transaction);
-            } else if (lodash.isNull(arguments[0]) || lodash.isUndefined(arguments[0])) {
+              callArguments = transactionInjector(rest, transaction);
+            } else if (lodash.isNull(rest[0]) || lodash.isUndefined(rest[0])) {
               callArguments = {
                 transaction,
               };
@@ -48,7 +57,7 @@ export function transactionWrapperBuilder(transactionGenerator) {
             throw err;
           }
         } else {
-          return oldValue.apply(this, arguments);
+          return oldValue.apply(this, rest);
         }
       };
 

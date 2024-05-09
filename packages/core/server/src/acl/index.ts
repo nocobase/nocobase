@@ -1,17 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ACL } from '@nocobase/acl';
 import { availableActions } from './available-action';
-
-const configureResources = [
-  'roles',
-  'users',
-  'collections',
-  'fields',
-  'collections.fields',
-  'roles.collections',
-  'roles.resources',
-  'rolesResourcesScopes',
-  'availableActions',
-];
 
 export function createACL() {
   const acl = new ACL();
@@ -19,8 +16,6 @@ export function createACL() {
   for (const [actionName, actionParams] of Object.entries(availableActions)) {
     acl.setAvailableAction(actionName, actionParams);
   }
-
-  acl.registerConfigResources(configureResources);
 
   return acl;
 }

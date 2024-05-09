@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { uid } from '@formily/shared';
 import { createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
 import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
-import { T3106, T3469 } from './templatesOfBug';
+import { T3106, T3469, oneFormWithInheritFields } from './templatesOfBug';
 
 test.describe('where creation form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -77,7 +86,21 @@ test.describe('configure fields', () => {
     await expect(page.getByLabel('block-item-Markdown.Void-general-form')).toBeVisible();
   });
 
-  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {});
+  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {
+    await mockPage(oneFormWithInheritFields).goto();
+
+    // 在表单中选择继承的字段
+    await page.getByLabel('schema-initializer-Grid-form:').hover();
+    await page.getByRole('menuitem', { name: 'parentField1' }).click();
+    await page.getByRole('menuitem', { name: 'parentField2' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page.getByLabel('block-item-CollectionField-child-form-child.parentField1-parentField1').getByRole('textbox'),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-child-form-child.parentField2-parentField2').getByRole('textbox'),
+    ).toBeVisible();
+  });
 });
 
 test.describe('configure actions', () => {

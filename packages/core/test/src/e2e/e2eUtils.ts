@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
 import { Page, test as base, expect, request } from '@playwright/test';
@@ -216,12 +225,12 @@ interface ExtendUtils {
     /**
      * @param collectionName 数据表名称
      * @param data 自定义的数据，缺失时会生成随机数据
-     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     * @param maxDepth - 生成的数据的最大深度，默认为 1，当想生成多层级数据时可以设置一个较高的值
      */
     <T = any>(collectionName: string, data?: any, maxDepth?: number): Promise<T>;
     /**
      * @param collectionName 数据表名称
-     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     * @param maxDepth - 生成的数据的最大深度，默认为 1，当想生成多层级数据时可以设置一个较高的值
      */
     <T = any>(collectionName: string, maxDepth?: number): Promise<T>;
   };
@@ -232,13 +241,13 @@ interface ExtendUtils {
     /**
      * @param collectionName - 数据表名称
      * @param count - 生成的数据条数
-     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     * @param maxDepth - 生成的数据的最大深度，默认为 1，当想生成多层级数据时可以设置一个较高的值
      */
     <T = any>(collectionName: string, count?: number, maxDepth?: number): Promise<T[]>;
     /**
      * @param collectionName - 数据表名称
      * @param data - 指定生成的数据
-     * @param maxDepth - 生成的数据的最大深度，默认为 4，当不想生成太多数据时可以设置一个较低的值
+     * @param maxDepth - 生成的数据的最大深度，默认为 1，当想生成多层级数据时可以设置一个较高的值
      */
     <T = any>(collectionName: string, data?: any[], maxDepth?: number): Promise<T[]>;
   };
@@ -1047,3 +1056,14 @@ export const mockUserRecordsWithoutDepartments = (mockRecords: ExtendUtils['mock
     })),
   );
 };
+
+/**
+ * 用来辅助断言是否支持某些变量
+ * @param page
+ * @param variables
+ */
+export async function expectSupportedVariables(page: Page, variables: string[]) {
+  for (const name of variables) {
+    await expect(page.getByRole('menuitemcheckbox', { name })).toBeVisible();
+  }
+}

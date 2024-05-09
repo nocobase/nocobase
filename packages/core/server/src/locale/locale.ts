@@ -1,7 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Cache } from '@nocobase/cache';
 import { lodash } from '@nocobase/utils';
 import Application from '../application';
 import { getResource } from './resource';
+import { OFFICIAL_PLUGIN_PREFIX } from '..';
 
 export class Locale {
   app: Application;
@@ -91,8 +101,8 @@ export class Locale {
         const res = getResource(packageName, lang);
         if (res) {
           resources[packageName] = { ...res };
-          if (packageName.includes('@nocobase/plugin-')) {
-            resources[packageName.substring('@nocobase/plugin-'.length)] = { ...res };
+          if (packageName.includes(OFFICIAL_PLUGIN_PREFIX)) {
+            resources[packageName.substring(OFFICIAL_PLUGIN_PREFIX.length)] = { ...res };
           }
         }
       } catch (err) {

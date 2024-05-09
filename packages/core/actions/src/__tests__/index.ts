@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database, { CollectionOptions, mockDatabase } from '@nocobase/database';
 import { Handlers, ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
-import db2resource from '../../../server/src/middlewares/db2resource';
+import db2resource from './db2resource';
 
 interface ActionParams {
   fields?: string[];
@@ -30,6 +39,7 @@ interface ActionParams {
    * @deprecated
    */
   associatedIndex?: string;
+
   [key: string]: any;
 }
 
@@ -44,6 +54,7 @@ interface SortActionParams {
   method?: string;
   target?: any;
   sticky?: boolean;
+
   [key: string]: any;
 }
 
@@ -54,6 +65,7 @@ interface Resource {
   update: (params?: ActionParams) => Promise<supertest.Response>;
   destroy: (params?: ActionParams) => Promise<supertest.Response>;
   sort: (params?: SortActionParams) => Promise<supertest.Response>;
+
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 

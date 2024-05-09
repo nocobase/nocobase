@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField, RecursionField } from '@formily/react';
 import { message } from 'antd';
@@ -84,6 +93,32 @@ export const CollectionFields = () => {
   };
 
   const dm = useDataSourceManager();
+
+  let isProcessing = false;
+  const queue = [];
+
+  const processQueue = async () => {
+    if (isProcessing) return;
+    if (queue.length === 0) return;
+
+    isProcessing = true;
+    const { value, filterByTk, flag } = queue.shift();
+
+    try {
+      await handleFieldChange(value, filterByTk, flag);
+    } catch (error) {
+      console.error('Error processing handleFieldChange:', error);
+    } finally {
+      isProcessing = false;
+      processQueue();
+    }
+  };
+
+  const enqueueChange = (value, filterByTk, flag) => {
+    queue.push({ value, filterByTk, flag });
+    processQueue();
+  };
+
   const handleFieldChange = async (value, filterByTk, flag = true) => {
     await api.request({
       url: `dataSourcesCollections/${dataSourceKey}.${name}/fields:update?filterByTk=${filterByTk}`,
@@ -173,7 +208,7 @@ export const CollectionFields = () => {
               scope={{
                 useDataSource,
                 useTitleFieldProps,
-                handleFieldChange,
+                enqueueChange,
                 useDestroyActionAndRefreshCM,
                 useBulkDestroyActionAndRefreshCM,
                 loadCollections,

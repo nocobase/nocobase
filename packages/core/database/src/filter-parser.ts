@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { flatten, unflatten } from 'flat';
 import { default as lodash, default as _ } from 'lodash';
 import { ModelStatic } from 'sequelize';
@@ -84,7 +93,10 @@ export default class FilterParser {
 
     debug('associations %O', associations);
 
-    for (let [key, value] of Object.entries(flattenedFilter)) {
+    for (const entry of Object.entries(flattenedFilter)) {
+      const key = entry[0];
+      let value = entry[1];
+
       // 处理 filter 条件
       if (skipPrefix && key.startsWith(skipPrefix)) {
         continue;

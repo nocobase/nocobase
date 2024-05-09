@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useForm } from '@formily/react';
 
 import {
@@ -25,7 +34,7 @@ const COLLECTION_TRIGGER_ACTION = {
 
 export default class extends Trigger {
   title = `{{t("Post-action event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t('Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.', { ns: "${NAMESPACE}" })}}`;
+  description = `{{t('Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, or deleting data. Suitable for data processing, sending notifications, etc., after actions are completed.', { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       type: 'string',
@@ -115,7 +124,6 @@ export default class extends Trigger {
       'x-decorator': 'FormItem',
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
-        title: 'Preload associations',
         multiple: true,
         useCollection() {
           const { values } = useForm();
@@ -144,8 +152,9 @@ export default class extends Trigger {
   };
   isActionTriggerable = (config, context) => {
     return (
-      context.action === 'customize:triggerWorkflows' ||
-      (['create', 'update', 'customize:update'].includes(context.action) && !config.global)
+      ['create', 'update'].includes(context.formAction) &&
+      ['submit', 'customize:save'].includes(context.buttonAction) &&
+      !config.global
     );
   };
   useVariables(config, options) {

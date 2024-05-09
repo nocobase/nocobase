@@ -90,4 +90,4 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
-    timeout-minutes: 240
+    timeout-minutes: 180

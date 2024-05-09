@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
@@ -12,6 +21,7 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../../../collection-manager';
+import { useCollectionManager } from '../../../data-source';
 import { useFlag } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
@@ -979,9 +989,9 @@ export function useIsAssociationField() {
 }
 
 export function useIsFileField() {
-  const { getCollection } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const collectionField = useFormItemCollectionField();
-  const targetCollection = getCollection(collectionField?.target);
+  const targetCollection = cm.getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection as any);
   return isFileField;
 }
