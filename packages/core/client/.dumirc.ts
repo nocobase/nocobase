@@ -27,10 +27,7 @@ export default defineConfig({
       { type: 'component', dir: 'src/schema-component/antd' },
     ],
   },
-  locales: [
-    { id: 'en-US', name: 'English' },
-    { id: 'zh-CN', name: '中文' },
-  ],
+  locales: lang === 'zh-CN' ? [{ id: 'zh-CN', name: '中文' },] : [{ id: 'en-US', name: 'English' }],
   themeConfig: defineThemeConfig({
     title: 'NocoBase',
     logo: 'https://www.nocobase.com/images/logo.png',
@@ -48,7 +45,7 @@ export default defineConfig({
       },
       {
         title: 'Home site',
-        link: 'https://docs.nocobase.com/welcome/introduction/',
+        link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
       }
       // {
       //   title: 'UI Schema',
@@ -672,7 +669,7 @@ export default defineConfig({
       // ],
     },
     localesEnhance: [
-      { id: 'zh-CN', switchPrefix: '中', hostname: 'client-cn.docs.nocobase.com' },
+      { id: 'zh-CN', switchPrefix: '中', hostname: 'client.docs-cn.nocobase.com' },
       { id: 'en-US', switchPrefix: 'en', hostname: 'client.docs.nocobase.com' }
     ],
   }),

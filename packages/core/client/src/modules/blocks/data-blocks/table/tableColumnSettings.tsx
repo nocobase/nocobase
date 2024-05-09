@@ -19,6 +19,7 @@ import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Tabl
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { useFieldComponentName } from './utils';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
+import { useCollection } from '../../../../data-source';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
@@ -122,12 +123,15 @@ export const tableColumnSettings = new SchemaSettings({
           name: 'sortable',
           type: 'switch',
           useVisible() {
+            const collection = useCollection();
             const { collectionField } = useColumnSchema();
             const { getInterface } = useCollectionManager_deprecated();
             const interfaceCfg = getInterface(collectionField?.interface);
             const { currentMode } = useAssociationFieldContext();
 
-            return interfaceCfg?.sortable === true && !currentMode;
+            return (
+              interfaceCfg?.sortable === true && !currentMode && collection?.name === collectionField?.collectionName
+            );
           },
           useComponentProps() {
             const field: any = useField();
