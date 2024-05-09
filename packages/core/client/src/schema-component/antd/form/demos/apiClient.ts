@@ -1,5 +1,3 @@
-
-
 import { APIClient } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 

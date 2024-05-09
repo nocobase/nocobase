@@ -1,13 +1,7 @@
 import React from 'react';
 import { App as AntdApp } from 'antd';
 import { useForm } from '@formily/react';
-import {
-  ActionProps,
-  useAPIClient,
-  SchemaComponent,
-  ISchema,
-  Plugin
-} from '@nocobase/client';
+import { ActionProps, useAPIClient, SchemaComponent, ISchema, Plugin } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 function useSubmitActionProps(): ActionProps {
@@ -73,7 +67,7 @@ const Demo = () => {
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

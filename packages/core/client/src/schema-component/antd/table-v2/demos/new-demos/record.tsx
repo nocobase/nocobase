@@ -1,5 +1,3 @@
-
-
 import {
   FormBlockProvider,
   TableBlockProvider,
@@ -259,12 +257,14 @@ const schema: ISchema = {
 };
 
 const Demo = () => {
-  return <SchemaComponent schema={schema} scope={{ useSubmitActionProps, useFormBlockProviderProps, useCloseActionProps }} />
+  return (
+    <SchemaComponent schema={schema} scope={{ useSubmitActionProps, useFormBlockProviderProps, useCloseActionProps }} />
+  );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

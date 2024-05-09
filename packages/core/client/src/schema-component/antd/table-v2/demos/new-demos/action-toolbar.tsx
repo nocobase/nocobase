@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   TableBlockProvider,
@@ -8,7 +7,7 @@ import {
   useTableBlockProps,
   SchemaComponent,
   Plugin,
-  ISchema
+  ISchema,
 } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
@@ -134,14 +133,14 @@ const schema: ISchema = {
       },
     },
   },
-}
+};
 const Demo = () => {
   return <SchemaComponent schema={schema} />;
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

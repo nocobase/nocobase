@@ -1,5 +1,3 @@
-
-
 import { Pagination } from '@nocobase/client';
 import React from 'react';
 

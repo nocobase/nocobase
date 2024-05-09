@@ -1,5 +1,3 @@
-
-
 /**
  * title: Insert Adjacent
  */

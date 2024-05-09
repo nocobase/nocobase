@@ -1,5 +1,3 @@
-
-
 import { useForm } from '@formily/react';
 import {
   BlockSchemaComponentPlugin,
@@ -8,7 +6,8 @@ import {
   useCollectionRecord,
   useDataBlockRequest,
   useDataBlockResource,
-  SchemaComponent, Plugin,
+  SchemaComponent,
+  Plugin,
 } from '@nocobase/client';
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
@@ -232,19 +231,24 @@ const schema = {
       },
     },
   },
-}
+};
 
 const Demo = () => {
-  return <SchemaComponent schema={schema} scope={{
-    useSubmitActionProps,
-    useCloseActionProps,
-    useFormBlockProviderProps,
-  }} />;
+  return (
+    <SchemaComponent
+      schema={schema}
+      scope={{
+        useSubmitActionProps,
+        useCloseActionProps,
+        useFormBlockProviderProps,
+      }}
+    />
+  );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

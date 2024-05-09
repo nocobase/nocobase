@@ -1,5 +1,3 @@
-
-
 import { useForm } from '@formily/react';
 import React from 'react';
 import { App as AntdApp } from 'antd';
@@ -10,7 +8,7 @@ import {
   Plugin,
   useDataBlockResource,
   FormBlockProvider,
-  useFormBlockProps
+  useFormBlockProps,
 } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
@@ -77,27 +75,21 @@ const schema: ISchema = {
 };
 
 const Demo = () => {
-  return (
-    <SchemaComponent
-      schema={schema}
-      scope={{ useSubmitActionProps }}
-    />
-  );
+  return <SchemaComponent schema={schema} scope={{ useSubmitActionProps }} />;
 };
-
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 
 const app = mockApp({
   plugins: [DemoPlugin],
   components: {
-    FormBlockProvider
+    FormBlockProvider,
   },
-  scopes: { useFormBlockProps }
+  scopes: { useFormBlockProps },
 });
 
 export default app.getRootComponent();

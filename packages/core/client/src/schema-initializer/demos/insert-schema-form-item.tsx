@@ -1,5 +1,3 @@
-
-
 import {
   Application,
   CollectionFieldInitializer,

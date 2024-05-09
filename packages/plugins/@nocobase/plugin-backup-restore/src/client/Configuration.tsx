@@ -95,12 +95,12 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       key: 'collection',
       render: (_, data) => {
         const title = compile(data.title);
-        const name = data.name
-        return name === title ? title : (
+        const name = data.name;
+        return name === title ? (
+          title
+        ) : (
           <div>
-            {data.name}
-            {' '}
-            <span style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>({compile(data.title)})</span>
+            {data.name} <span style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>({compile(data.title)})</span>
           </div>
         );
       },

@@ -1,5 +1,3 @@
-
-
 import { FormItem } from '@formily/antd-v5';
 import { RichText, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';

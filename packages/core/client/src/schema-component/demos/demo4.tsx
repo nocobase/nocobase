@@ -1,5 +1,3 @@
-
-
 import { SchemaComponentProvider, useSchemaComponentContext } from '@nocobase/client';
 import { Button } from 'antd';
 import React from 'react';

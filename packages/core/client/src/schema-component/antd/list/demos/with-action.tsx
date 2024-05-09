@@ -1,9 +1,6 @@
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import {
-  BlockSchemaComponentPlugin,
-  SchemaComponent, Plugin,
-} from '@nocobase/client';
+import { BlockSchemaComponentPlugin, SchemaComponent, Plugin } from '@nocobase/client';
 
 const schema = {
   type: 'void',
@@ -107,7 +104,7 @@ const Demo = () => {
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

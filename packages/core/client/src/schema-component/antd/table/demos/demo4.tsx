@@ -1,5 +1,3 @@
-
-
 import { ISchema, observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import {

@@ -1,5 +1,3 @@
-
-
 import { observer, useFieldSchema } from '@formily/react';
 import {
   Application,

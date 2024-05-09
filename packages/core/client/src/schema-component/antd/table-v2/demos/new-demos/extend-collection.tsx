@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   TableBlockProvider,
@@ -6,7 +5,7 @@ import {
   SchemaComponent,
   Plugin,
   ExtendCollectionsProvider,
-  ISchema
+  ISchema,
 } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
@@ -129,16 +128,18 @@ const schema: ISchema = {
       },
     },
   },
-}
+};
 const Demo = () => {
-  return <ExtendCollectionsProvider collections={[bookCollection]}>
-    <SchemaComponent schema={schema} />
-  </ExtendCollectionsProvider>;
+  return (
+    <ExtendCollectionsProvider collections={[bookCollection]}>
+      <SchemaComponent schema={schema} />
+    </ExtendCollectionsProvider>
+  );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 
@@ -170,7 +171,7 @@ const app = mockApp({
         totalPage: 1,
       },
     },
-  }
+  },
 });
 
 export default app.getRootComponent();

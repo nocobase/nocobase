@@ -1,5 +1,3 @@
-
-
 import { APIClientProvider, FormProvider, RemoteSelect, SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { mockAPIClient } from '../../../../testUtils';
