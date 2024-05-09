@@ -13,17 +13,17 @@ import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions_deprecated } from '../../collection-manager';
-import { Variable, useVariableScope } from '../../schema-component';
-import { useValues } from '../../schema-component/antd/filter/useValues';
-import { VariableOption, VariablesContextType } from '../../variables/types';
-import { isVariable } from '../../variables/utils/isVariable';
-import { useBlockCollection } from './hooks/useBlockCollection';
-import { useContextAssociationFields } from './hooks/useContextAssociationFields';
-import { useCurrentRecordVariable } from './hooks/useRecordVariable';
-import { useCurrentUserVariable } from './hooks/useUserVariable';
-import { useVariableOptions } from './hooks/useVariableOptions';
-import { Option } from './type';
+import { CollectionFieldOptions_deprecated } from '../../../../collection-manager';
+import { Variable, useVariableScope } from '../../../../schema-component';
+import { useValues } from '../../../../schema-component/antd/filter/useValues';
+import { VariableOption, VariablesContextType } from '../../../../variables/types';
+import { isVariable } from '../../../../variables/utils/isVariable';
+import { useBlockCollection } from '../../../../schema-settings/VariableInput/hooks/useBlockCollection';
+import { useContextAssociationFields } from '../../../../schema-settings/VariableInput/hooks/useContextAssociationFields';
+import { useCurrentRecordVariable } from '../../../../schema-settings/VariableInput/hooks/useRecordVariable';
+import { useCurrentUserVariable } from '../../../../schema-settings/VariableInput/hooks/useUserVariable';
+import { useVariableOptions } from '../../../../schema-settings/VariableInput/hooks/useVariableOptions';
+import { Option } from '../../../../schema-settings/VariableInput/type';
 
 interface GetShouldChangeProps {
   collectionField: CollectionFieldOptions_deprecated;
@@ -121,7 +121,6 @@ export const VariableInput = (props: Props) => {
       if (!shouldChange) {
         return onChange(value);
       }
-
       // `shouldChange` 这个函数的运算量比较大，会导致展开变量列表时有明显的卡顿感，在这里加个延迟能有效解决这个问题
       setTimeout(async () => {
         if (await shouldChange(value, optionPath)) {
@@ -132,7 +131,7 @@ export const VariableInput = (props: Props) => {
     [onChange, shouldChange],
   );
   return (
-    <Variable.Input
+    <Variable.TextArea
       className={className}
       value={value}
       onChange={handleChange}
@@ -142,10 +141,10 @@ export const VariableInput = (props: Props) => {
         }),
       )}
       style={style}
-      changeOnSelect
+      // changeOnSelect
     >
       <RenderSchemaComponent value={value} onChange={onChange} />
-    </Variable.Input>
+    </Variable.TextArea>
   );
 };
 
@@ -161,6 +160,9 @@ export const getShouldChange = ({
   const collectionsInheritChain = collectionField ? getAllCollectionsInheritChain(collectionField.target) : [];
 
   return async (value: any, optionPath: any[]) => {
+    if (!optionPath) {
+      return true;
+    }
     if (_.isString(value) && value.includes('$nRole')) {
       return true;
     }

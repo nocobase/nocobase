@@ -33,7 +33,7 @@ import {
   findParentFieldSchema,
   getFieldDefaultValue,
 } from './SchemaSettings';
-import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
+import { VariableInput, getShouldChange } from '../schema-component/antd/form-item/VariableInput';
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
 
