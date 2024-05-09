@@ -22,6 +22,7 @@ on:
 jobs:
   e2e-test-postgres:
     runs-on: ubuntu-latest
+    container: node:18
     services:
       # Label used to access the service container
       postgres:
