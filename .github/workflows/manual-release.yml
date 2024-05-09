@@ -4,30 +4,48 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-on: 
+on:
   workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'Please enter a pull request number'
-        required: true
 jobs:
-  build:
+  push-commit:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - run: gh pr checkout ${{ inputs.pr_number }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Commit files
-      run: |
-        yarn install
-        yarn version:alpha -y
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git commit -a -m "Add changes"
-    - name: Push changes
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.head_ref }}
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
+          persist-credentials: true
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Run install
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install
+      - name: Run release.sh
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions Bot"
+          echo "packages/pro-plugins/" >> .git/info/exclude
+          bash release.sh
+      - name: push pro plugins
+        uses: ad-m/github-push-action@master
+        with:
+          ssh: true
+          branch: main
+          directory: packages/pro-plugins
+          repository: nocobase/pro-plugins
+          tags: true
+          atomic: true
+      - name: push
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
+          tags: true
+          atomic: true
