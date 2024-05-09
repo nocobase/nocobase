@@ -27,10 +27,7 @@ export default defineConfig({
       { type: 'component', dir: 'src/schema-component/antd' },
     ],
   },
-  locales: [
-    { id: 'en-US', name: 'English' },
-    { id: 'zh-CN', name: '中文' },
-  ],
+  locales: lang === 'zh-CN' ? [{ id: 'zh-CN', name: '中文' },] : [{ id: 'en-US', name: 'English' }],
   themeConfig: defineThemeConfig({
     title: 'NocoBase',
     logo: 'https://www.nocobase.com/images/logo.png',
