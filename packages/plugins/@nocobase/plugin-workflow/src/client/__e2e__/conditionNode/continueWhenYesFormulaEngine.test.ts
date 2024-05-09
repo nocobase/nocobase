@@ -431,8 +431,6 @@ test('Collection event add data trigger, Formula engine, determine the trigger n
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await conditionNode.conditionExpressionEditBox.click({ clickCount: 3 });
-  await page.keyboard.press('ArrowRight');
   await page.keyboard.type('==', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
@@ -543,8 +541,6 @@ test('Collection event add data trigger, Formula engine, determine trigger node 
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await conditionNode.conditionExpressionEditBox.click({ clickCount: 3 });
-  await page.keyboard.press('ArrowRight');
   await page.keyboard.type('==', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
@@ -653,8 +649,6 @@ test('Collection event add data trigger, Formula engine, determine trigger node 
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await conditionNode.conditionExpressionEditBox.click({ clickCount: 3 });
-  await page.keyboard.press('ArrowRight');
   await page.keyboard.type('!=', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
@@ -765,8 +759,6 @@ test('Collection event add data trigger, Formula engine, determine the trigger n
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await conditionNode.conditionExpressionEditBox.click({ clickCount: 3 });
-  await page.keyboard.press('ArrowRight');
   await page.keyboard.type('!=', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
