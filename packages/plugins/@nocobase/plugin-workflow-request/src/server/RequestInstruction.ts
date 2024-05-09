@@ -58,8 +58,12 @@ async function request(config) {
     method,
     headers,
     params,
-    data: ContentTypeTransformers[contentType](data),
     timeout,
+    ...(method.toLowerCase() !== 'get' && data != null
+      ? {
+          data: ContentTypeTransformers[contentType](data),
+        }
+      : {}),
   });
 }
 
