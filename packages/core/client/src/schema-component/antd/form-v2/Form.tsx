@@ -34,11 +34,7 @@ export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
   disabled?: boolean;
 }
-function hasInitialValues(obj, rule) {
-  const type = Object.keys(rule.condition)[0] || '$and';
-  const conditions = rule.condition[type];
-  return Object.values(obj).some((value) => value !== null) || !conditions.length;
-}
+
 const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
@@ -163,11 +159,10 @@ const WithForm = (props: WithFormProps) => {
                     const result = [fieldValuesInCondition, variableValuesInCondition, variableValuesInExpression]
                       .map((item) => JSON.stringify(item))
                       .join(',');
-
                     return result;
                   },
                   getSubscriber(action, field, rule, variables, localVariables),
-                  { fireImmediately: hasInitialValues(form.initialValues, rule) },
+                  { fireImmediately: true },
                 ),
               );
             });
