@@ -16,12 +16,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Checkout pro-plugins
-        uses: actions/checkout@v3
-        with:
-          repository: nocobase/pro-plugins
-          path: packages/pro-plugins
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: yarn install and build
         run: |
           yarn config set registry https://registry.npmjs.org/
@@ -43,6 +37,17 @@ jobs:
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           npm whoami
           yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: Build Pro plugins
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build
       - name: publish pkg.nocobase.com
         run: |
           yarn config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
