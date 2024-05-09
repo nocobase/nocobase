@@ -34,7 +34,7 @@ const COLLECTION_TRIGGER_ACTION = {
 
 export default class extends Trigger {
   title = `{{t("Post-action event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t('Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.', { ns: "${NAMESPACE}" })}}`;
+  description = `{{t('Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, or deleting data. Suitable for data processing, sending notifications, etc., after actions are completed.', { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       type: 'string',
@@ -153,8 +153,9 @@ export default class extends Trigger {
   };
   isActionTriggerable = (config, context) => {
     return (
-      context.action === 'customize:triggerWorkflows' ||
-      (['create', 'update', 'customize:update'].includes(context.action) && !config.global)
+      ['create', 'update'].includes(context.formAction) &&
+      ['submit', 'customize:save'].includes(context.buttonAction) &&
+      !config.global
     );
   };
   useVariables(config, options) {
