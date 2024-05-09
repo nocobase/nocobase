@@ -48,7 +48,7 @@ export default defineConfig({
       },
       {
         title: 'Home site',
-        link: 'https://docs.nocobase.com/welcome/introduction/',
+        link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
       }
       // {
       //   title: 'UI Schema',
@@ -672,7 +672,7 @@ export default defineConfig({
       // ],
     },
     localesEnhance: [
-      { id: 'zh-CN', switchPrefix: '中', hostname: 'client-cn.docs.nocobase.com' },
+      { id: 'zh-CN', switchPrefix: '中', hostname: 'client.docs-cn.nocobase.com' },
       { id: 'en-US', switchPrefix: 'en', hostname: 'client.docs.nocobase.com' }
     ],
   }),
