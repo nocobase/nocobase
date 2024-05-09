@@ -2,13 +2,13 @@ name: NocoBase E2E Test
 
 on:
   workflow_run:
-    workflows: ["Nocobase Build Test"]
-    types:
-      - completed
+    workflows: [Nocobase Build Test]
+    types: [completed]
 
 jobs:
   e2e-test-postgres:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     services:
       # Label used to access the service container
       postgres:

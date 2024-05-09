@@ -1,4 +1,4 @@
-name: "Nocobase Build Test"
+name: Nocobase Build Test
 
 on:
   push:
