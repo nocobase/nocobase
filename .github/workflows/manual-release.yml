@@ -27,10 +27,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - name: Run install
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: install
+      - name: Install Lerna
+        run: npm install -g lerna@4
       - name: Run release.sh
         run: |
           git config --global user.email "actions@github.com"
