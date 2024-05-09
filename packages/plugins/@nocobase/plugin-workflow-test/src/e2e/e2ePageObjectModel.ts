@@ -276,7 +276,7 @@ export class FormEventTriggerNode {
   }
 }
 
-export class ClculationNode {
+export class CalculationNode {
   readonly page: Page;
   node: Locator;
   nodeTitle: Locator;
@@ -641,7 +641,7 @@ export default module.exports = {
   ScheduleTriggerNode,
   CollectionTriggerNode,
   FormEventTriggerNode,
-  ClculationNode,
+  CalculationNode,
   QueryRecordNode,
   CreateRecordNode,
   UpdateRecordNode,

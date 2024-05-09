@@ -16,7 +16,11 @@ import { useFormBlockContext } from '../../../../block-provider';
 import { useDetailsBlockContext } from '../../../../block-provider/DetailsBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import { SchemaSettingsBlockTitleItem, SchemaSettingsTemplate } from '../../../../schema-settings';
+import {
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsTemplate,
+  SchemaSettingsLinkageRules,
+} from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
 
@@ -24,6 +28,17 @@ const commonItems: SchemaSettingsItemType[] = [
   {
     name: 'title',
     Component: SchemaSettingsBlockTitleItem,
+  },
+  {
+    name: 'linkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection_deprecated();
+      return {
+        collectionName: name,
+        readPretty: true,
+      };
+    },
   },
   {
     name: 'dataScope',

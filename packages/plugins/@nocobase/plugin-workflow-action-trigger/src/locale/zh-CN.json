@@ -1,13 +1,12 @@
 {
   "Post-action event": "操作后事件",
-  "Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or \"submit to workflow\". Suitable for data processing, sending notifications, etc., after actions are completed.":
-    "通过操作按钮或 API 发起请求并在执行完成后触发，比如新增、更新、删除数据或者“提交至工作流”之后。适用于在操作完成后进行数据处理、发送通知等。",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, or deleting data. Suitable for data processing, sending notifications, etc., after actions are completed.":
+    "通过操作按钮或 API 发起请求时，在请求执行成功后触发该事件，比如新增、更新、删除操作之后。适用于在操作完成后进行数据处理、发送通知等。",
   "Collection": "数据表",
   "The collection to which the triggered data belongs.": "触发数据所属的数据表。",
   "Trigger mode": "触发模式",
   "Local mode, triggered after the completion of actions bound to this workflow": "局部模式，绑定该工作流的操作执行完成后触发",
   "Global mode, triggered after the completion of the following actions": "全局模式，以下操作执行完成后都触发",
-  "Action to submit to workflow directly is only supported on bound buttons, and will not be affected under global mode.": "直接提交至工作流的操作仅支持使用按钮绑定，不受全局模式的影响。",
   "Select actions": "选择操作",
   "Create record action": "创建记录操作",
   "Update record action": "更新记录操作",

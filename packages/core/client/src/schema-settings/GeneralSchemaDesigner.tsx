@@ -72,6 +72,7 @@ export interface GeneralSchemaDesignerProps {
  * @deprecated use `SchemaToolbar` instead
  */
 export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any) => {
+  const fieldSchema = useFieldSchema();
   const {
     disableInitializer,
     title,
@@ -80,11 +81,10 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
     contextValue,
     draggable = true,
     showDataSource = true,
-  } = props;
+  } = { ...props, ...(fieldSchema['x-toolbar-props'] || {}) } as GeneralSchemaDesignerProps;
   const { dn, designable } = useDesignable();
   const field = useField();
   const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const schemaSettingsProps = {
@@ -191,9 +191,16 @@ export interface SchemaToolbarProps {
 }
 
 const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
-  const { title, initializer, settings, showBackground, showBorder = true, draggable = true } = props;
-  const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
+  const {
+    title,
+    initializer,
+    settings,
+    showBackground,
+    showBorder = true,
+    draggable = true,
+  } = { ...props, ...(fieldSchema['x-toolbar-props'] || {}) } as SchemaToolbarProps;
+  const { designable } = useDesignable();
   const compile = useCompile();
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
