@@ -1,23 +1,23 @@
 # CollectionFieldInterfaceManager
 
-主要是用来管理 [CollectionFieldInterface](./collection-field-interface.md) 和 [CollectionFieldInterfaceGroups](#collectionfieldinterfacegroups)，其被 [DataSourceManager](./data-source-manager) 管理。
+It is mainly used to manage [CollectionFieldInterface](./collection-field-interface.md) and [CollectionFieldInterfaceGroups](#collectionfieldinterfacegroups), which are managed by [DataSourceManager](./data-source-manager).
 
 
 ## CollectionFieldInterfaceGroups
 
-CollectionFieldInterfaceGroups 是用来对数据表字段进行分组的。
+CollectionFieldInterfaceGroups are used to group data table fields.
 
 ![Field Groups](./images/field-groups.png)
 
-## 实例方法
+## Instance Methods
 
 ### field interface
 
 #### addFieldInterfaces()
 
-添加 field interface。
+Add field interface。
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionFieldInterfaceManager {
@@ -25,7 +25,7 @@ class CollectionFieldInterfaceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class CheckboxFieldInterface extends CollectionFieldInterface {
@@ -47,9 +47,9 @@ class MyPlugin extends Plugin {
 
 #### getFieldInterface()
 
-获取 field interface。
+Get field interface。
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionFieldInterfaceManager {
@@ -57,7 +57,7 @@ class CollectionFieldInterfaceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -69,9 +69,9 @@ class MyPlugin extends Plugin {
 
 #### getFieldInterfaces()
 
-获取所有的 field interface。
+Get all field interface。
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionFieldInterfaceManager {
@@ -79,7 +79,7 @@ class CollectionFieldInterfaceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -93,9 +93,9 @@ class MyPlugin extends Plugin {
 
 #### addFieldInterfaceGroups()
 
-添加 field interface group。
+Add field interface group。
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionFieldInterfaceManager {
@@ -103,7 +103,7 @@ class CollectionFieldInterfaceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -128,9 +128,9 @@ class MyPlugin extends Plugin {
 
 #### getFieldInterfaceGroups()
 
-获取所有的 field interface group。
+Get all field interface group。
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionFieldInterfaceManager {
@@ -138,7 +138,7 @@ class CollectionFieldInterfaceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -150,9 +150,9 @@ class MyPlugin extends Plugin {
 
 #### getFieldInterfaceGroup()
 
-获取 field interface group。
+Get field interface group。
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionFieldInterfaceManager {
@@ -160,7 +160,7 @@ class CollectionFieldInterfaceManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {

@@ -6,18 +6,109 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import React, { useState } from 'react';
+import { onFieldValueChange } from '@formily/core';
+import { uid } from '@formily/shared';
+import { useForm, useField, useFormEffects } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
 
 import {
   Instruction,
-  WorkflowVariableInput,
   WorkflowVariableJSON,
   WorkflowVariableTextArea,
   defaultFieldNames,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
+import { SchemaComponent } from '@nocobase/client';
+
+const BodySchema = {
+  'application/json': {
+    type: 'void',
+    properties: {
+      data: {
+        type: 'object',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {},
+        'x-component': 'WorkflowVariableJSON',
+        'x-component-props': {
+          changeOnSelect: true,
+          autoSize: {
+            minRows: 10,
+          },
+          placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
+        },
+      },
+    },
+  },
+  'application/x-www-form-urlencoded': {
+    type: 'void',
+    properties: {
+      data: {
+        type: 'array',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {},
+        'x-component': 'ArrayItems',
+        items: {
+          type: 'object',
+          properties: {
+            space: {
+              type: 'void',
+              'x-component': 'Space',
+              properties: {
+                name: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                  'x-component-props': {
+                    placeholder: `{{t("Name")}}`,
+                  },
+                },
+                value: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'WorkflowVariableTextArea',
+                  'x-component-props': {
+                    useTypedConstant: true,
+                  },
+                },
+                remove: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.Remove',
+                },
+              },
+            },
+          },
+        },
+        properties: {
+          add: {
+            type: 'void',
+            title: `{{t("Add key-value pairs", { ns: "${NAMESPACE}" })}}`,
+            'x-component': 'ArrayItems.Addition',
+          },
+        },
+      },
+    },
+  },
+};
+
+function BodyComponent(props) {
+  const f = useField();
+  const { values, setValuesIn, clearFormGraph } = useForm();
+  const { contentType } = values;
+  const [schema, setSchema] = useState(BodySchema[contentType]);
+
+  useFormEffects(() => {
+    onFieldValueChange('contentType', (field) => {
+      clearFormGraph(`${f.address}.*`);
+      setSchema({ ...BodySchema[field.value], name: uid() });
+      setValuesIn('data', null);
+    });
+  });
+
+  return <SchemaComponent basePath={f.address} schema={schema} onlyRenderProperties />;
+}
 
 export default class extends Instruction {
   title = `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`;
@@ -56,12 +147,26 @@ export default class extends Instruction {
         placeholder: 'https://www.nocobase.com',
       },
     },
+    contentType: {
+      type: 'string',
+      title: `{{t("Content-Type", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-component-props': {
+        allowClear: false,
+      },
+      enum: [
+        { label: 'application/json', value: 'application/json' },
+        { label: 'application/x-www-form-urlencoded', value: 'application/x-www-form-urlencoded' },
+      ],
+      default: 'application/json',
+    },
     headers: {
       type: 'array',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
       title: `{{t("Headers", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t('"Content-Type" only support "application/json", and no need to specify', { ns: "${NAMESPACE}" })}}`,
+      description: `{{t('"Content-Type" will be ignored from headers.', { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
         properties: {
@@ -80,7 +185,7 @@ export default class extends Instruction {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'WorkflowVariableInput',
+                'x-component': 'WorkflowVariableTextArea',
                 'x-component-props': {
                   useTypedConstant: true,
                 },
@@ -125,7 +230,7 @@ export default class extends Instruction {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'WorkflowVariableInput',
+                'x-component': 'WorkflowVariableTextArea',
                 'x-component-props': {
                   useTypedConstant: true,
                 },
@@ -148,19 +253,19 @@ export default class extends Instruction {
       },
     },
     data: {
-      type: 'string',
+      type: 'void',
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'WorkflowVariableJSON',
-      'x-component-props': {
-        changeOnSelect: true,
-        autoSize: {
-          minRows: 10,
-        },
-        placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-      },
-      description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
+      'x-component': 'BodyComponent',
+      // 'x-component-props': {
+      //   changeOnSelect: true,
+      //   autoSize: {
+      //     minRows: 10,
+      //   },
+      //   placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
+      // },
+      // description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },
     timeout: {
       type: 'number',
@@ -184,7 +289,7 @@ export default class extends Instruction {
   };
   components = {
     ArrayItems,
-    WorkflowVariableInput,
+    BodyComponent,
     WorkflowVariableTextArea,
     WorkflowVariableJSON,
   };

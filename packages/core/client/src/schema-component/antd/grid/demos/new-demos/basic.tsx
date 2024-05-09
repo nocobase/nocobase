@@ -1,17 +1,16 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+
 
 import { useFieldSchema } from '@formily/react';
 import { observer } from '@formily/reactive-react';
-import { getAppComponent } from '@nocobase/test/web';
+import {
+  SchemaComponent,
+  ISchema,
+  Plugin,
+  DragHandler
+} from '@nocobase/client';
+import { mockApp } from '@nocobase/client/demo-utils';
+
 import React from 'react';
-import { DragHandler } from '@nocobase/client';
 
 const MyBlock = observer(
   () => {
@@ -29,86 +28,93 @@ const MyBlock = observer(
   { displayName: 'MyBlock' },
 );
 
-const App = getAppComponent({
+const schema: ISchema = {
+  type: 'void',
+  name: 'grid1',
+  'x-component': 'Grid',
+  properties: {
+    row1: {
+      type: 'void',
+      'x-component': 'Grid.Row',
+      properties: {
+        col1: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            block1: {
+              type: 'void',
+              title: 'row1 - col1 - block1',
+              'x-decorator': 'BlockItem',
+              'x-component': 'MyBlock',
+            },
+            block2: {
+              type: 'void',
+              title: 'row1 - col1 - block2',
+              'x-decorator': 'BlockItem',
+              'x-component': 'MyBlock',
+            },
+          },
+        },
+        col2: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            block1: {
+              type: 'void',
+              title: 'row1 - col2 - block1',
+              'x-decorator': 'BlockItem',
+              'x-component': 'MyBlock',
+            },
+          },
+        },
+      },
+    },
+    row2: {
+      type: 'void',
+      'x-component': 'Grid.Row',
+      properties: {
+        col1: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            block4: {
+              type: 'void',
+              title: 'row2 - col1 - block1',
+              'x-decorator': 'BlockItem',
+              'x-component': 'MyBlock',
+            },
+          },
+        },
+        col2: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            block1: {
+              type: 'void',
+              title: 'row2 - col2 - block1',
+              'x-decorator': 'BlockItem',
+              'x-component': 'MyBlock',
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+const Demo = () => {
+  return <SchemaComponent schema={schema} components={{ MyBlock }} />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
   designable: true,
-  schema: {
-    type: 'void',
-    name: 'grid1',
-    'x-component': 'Grid',
-    properties: {
-      row1: {
-        type: 'void',
-        'x-component': 'Grid.Row',
-        properties: {
-          col1: {
-            type: 'void',
-            'x-component': 'Grid.Col',
-            properties: {
-              block1: {
-                type: 'void',
-                title: 'row1 - col1 - block1',
-                'x-decorator': 'BlockItem',
-                'x-component': 'MyBlock',
-              },
-              block2: {
-                type: 'void',
-                title: 'row1 - col1 - block2',
-                'x-decorator': 'BlockItem',
-                'x-component': 'MyBlock',
-              },
-            },
-          },
-          col2: {
-            type: 'void',
-            'x-component': 'Grid.Col',
-            properties: {
-              block1: {
-                type: 'void',
-                title: 'row1 - col2 - block1',
-                'x-decorator': 'BlockItem',
-                'x-component': 'MyBlock',
-              },
-            },
-          },
-        },
-      },
-      row2: {
-        type: 'void',
-        'x-component': 'Grid.Row',
-        properties: {
-          col1: {
-            type: 'void',
-            'x-component': 'Grid.Col',
-            properties: {
-              block4: {
-                type: 'void',
-                title: 'row2 - col1 - block1',
-                'x-decorator': 'BlockItem',
-                'x-component': 'MyBlock',
-              },
-            },
-          },
-          col2: {
-            type: 'void',
-            'x-component': 'Grid.Col',
-            properties: {
-              block1: {
-                type: 'void',
-                title: 'row2 - col2 - block1',
-                'x-decorator': 'BlockItem',
-                'x-component': 'MyBlock',
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-  appOptions: {
-    components: {
-      MyBlock,
-    },
-  },
+  plugins: [DemoPlugin],
 });
 
-export default App;
+export default app.getRootComponent();

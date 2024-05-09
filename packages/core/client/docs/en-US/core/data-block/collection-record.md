@@ -1,6 +1,6 @@
 # CollectionRecord
 
-数据表中的一条记录。
+A record in a data table.
 
 ## 类型
 
@@ -10,7 +10,7 @@ interface CollectionRecordOptions<DataType = {}, ParentDataType = {}> {
   data?: DataType;
   parentRecord?: CollectionRecord<ParentDataType>;
   /**
-   * 当前记录所属的 collection name
+  * The collection name to which the current record belongs
    */
   collectionName?: string;
 }
@@ -32,11 +32,11 @@ class CollectionRecord<DataType = {}, ParentDataType = {}> {
 }
 ```
 
-## 详解
+## Details
 
-### CollectionRecord 基本概念
+### Basic Concepts of CollectionRecord
 
-CollectionRecord 类用于提供数据记录，通常情况下对应着后端数据表中的一条记录。以用户表为例，其一条数据对应的 CollectionRecord 类如下：
+The CollectionRecord class is used to provide data records, which typically correspond to a single record in a backend database table. Taking the user table as an example, the CollectionRecord class for a single data record is as follows:
 
 ```tsx | pure
 const useCollectionRecord = new CollectionRecord({
@@ -57,9 +57,9 @@ const useCollectionRecord = new CollectionRecord({
 });
 ```
 
-### CollectionRecord 和 Collection 的关系
+### Relationship between CollectionRecord and Collection
 
-CollectionRecord 是指的数据，而 Collection 则是表结构。对于上面的用户表，其对应的 Collection 如下：
+CollectionRecord refers to the data, while Collection represents the table structure. For the user table mentioned above, its corresponding Collection is as follows:
 
 ```tsx | pure
 const usersCollection = new Collection({
@@ -86,15 +86,15 @@ const usersCollection = new Collection({
 });
 ```
 
-### 父子关系和关系字段
+### Parent-Child Relationship and Relationship Fields
 
-对于[关系字段](https://docs.nocobase.com/development/server/collections/association-fields)，例如用户和角色的关系，在用户表中会有一个 `roleId` 字段，其值为角色表中的 `id`，当我们通过 `users.roleId` 字段查询用户的角色时：
+For [relationship fields](https://docs.nocobase.com/development/server/collections/association-fields), such as the relationship between users and roles, there will be a `roleId` field in the users table, with its value being the `id` in the roles table. When we query the role of a user using the `users.roleId` field:
 
 ```bash | pure
 GET /api/users/1/roles:get/10
 ```
 
-其中 `1` 为用户的 `id`，`10` 为角色的 `id`，我们可以得到用户的角色数据：
+Where `1` is the user's `id` and `10` is the role's `id`, we can obtain the user's role data:
 
 ```tsx | pure
 const roleRecord = new CollectionRecord({
@@ -116,15 +116,15 @@ const roleRecord = new CollectionRecord({
 })
 ```
 
-其中 `users` id 为 1 的记录我们称之为父记录：
+The record with `users` id 1 is referred to as the parent record:
 
 ```tsx | pure
 roleRecord.setParentRecord(userRecord);
 ```
 
-### 新记录
+### New Record
 
-对于新表单，我们可以通过 `isNew` 属性来标识：
+For new forms, we can identify them using the `isNew` property:
 
 ```tsx | pure
 const record = new CollectionRecord({
@@ -132,9 +132,9 @@ const record = new CollectionRecord({
 });
 ```
 
-## 示例
+## Example
 
-### 基本使用
+### Basic Usage
 
 ```tsx | pure
 import { CollectionRecord } from '@nocobase/client';
@@ -146,7 +146,7 @@ const record = new CollectionRecord({
 });
 ```
 
-### 创建空记录
+### Creating an Empty Record
 
 ```tsx | pure
 import { CollectionRecord } from '@nocobase/client';
@@ -156,9 +156,9 @@ const record = new CollectionRecord({
 });
 ```
 
-### 设置 parentRecord
+### Set parentRecord
 
-方式1: 通过构造函数设置
+Method 1: Setting through the constructor
 
 ```tsx | pure
 const parentRecord = new CollectionRecord({
@@ -175,7 +175,7 @@ const record = new CollectionRecord({
 });
 ```
 
-方式2: 通过 `setParentRecord` 方法设置
+Method 2: Setting via the `setParentRecord` method
 
 ```tsx | pure
 const parentRecord = new CollectionRecord({

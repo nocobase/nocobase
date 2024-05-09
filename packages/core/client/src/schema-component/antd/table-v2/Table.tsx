@@ -52,6 +52,23 @@ const useArrayField = (props) => {
 function getSchemaArrJSON(schemaArr: Schema[]) {
   return schemaArr.map((item) => (item.name === 'actions' ? omit(item.toJSON(), 'properties') : item.toJSON()));
 }
+function adjustColumnOrder(columns) {
+  const leftFixedColumns = [];
+  const normalColumns = [];
+  const rightFixedColumns = [];
+
+  columns.forEach((column) => {
+    if (column.fixed === 'left') {
+      leftFixedColumns.push(column);
+    } else if (column.fixed === 'right') {
+      rightFixedColumns.push(column);
+    } else {
+      normalColumns.push(column);
+    }
+  });
+
+  return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
+}
 
 export const useColumnsDeepMemoized = (columns: any[]) => {
   const columnsJSON = getSchemaArrJSON(columns);
@@ -140,15 +157,16 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     if (!exists) {
       return columns;
     }
-    const res = [
-      ...columns,
-      {
+    const res = [...columns];
+    if (designable) {
+      res.push({
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
-        render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
-      },
-    ];
+        render: () => <div style={{ minWidth: 180 }} />,
+        fixed: 'right',
+      });
+    }
     if (props.showDel) {
       res.push({
         title: '',
@@ -177,7 +195,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
       });
     }
 
-    return res;
+    return adjustColumnOrder(res);
   }, [columns, exists, field, render, props.showDel, designable]);
 
   return tableColumns;
@@ -436,7 +454,7 @@ export const Table: any = withDynamicSchemaProps(
       if (!_.isEqual(newExpandesKeys, expandedKeys)) {
         setExpandesKeys(newExpandesKeys);
       }
-    }, [expandFlag, allIncludesChildren]);
+    }, [expandFlag]);
 
     /**
      * 为没有设置 key 属性的表格行生成一个唯一的 key
@@ -517,7 +535,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Button />}
+            {inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
           </td>
         );
       },

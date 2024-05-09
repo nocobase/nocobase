@@ -19,3 +19,4 @@ export * from './schema-toolbar';
 export * from './PluginSettingsManager';
 export * from './hoc';
 export { ApplicationContext } from './context';
+export * from './globalType';

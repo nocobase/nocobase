@@ -39,6 +39,11 @@ export class PluginBlockIframeClient extends Plugin {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',
     });
+
+    this.app.schemaInitializerManager.addItem('mobilePage:addBlock', 'otherBlocks.iframe', {
+      title: '{{t("Iframe")}}',
+      Component: 'IframeBlockInitializer',
+    });
   }
 }
 

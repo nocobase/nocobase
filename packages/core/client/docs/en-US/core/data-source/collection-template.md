@@ -1,6 +1,6 @@
 # CollectionTemplate
 
-用于创建数据表的模板。
+Template used for creating data tables.
 
 ![](./images/collection-template.png)
 
@@ -15,27 +15,27 @@ interface AvailableFieldInterfacesExclude {
 
 interface CollectionTemplateDefaultOptions {
   /**
-   * 自动生成 id
+   * Auto-generate id
    * @default true
    * */
   autoGenId?: boolean;
-  /** 创建人 */
+  /** Created by */
   createdBy?: boolean;
-  /** 最后更新人 */
+  /** Updated by */
   updatedBy?: boolean;
-  /** 创建日期 */
+  /** Created at */
   createdAt?: boolean;
-  /** 更新日期 */
+  /** Updated at */
   updatedAt?: boolean;
-  /** 可排序 */
+  /** Sortable */
   sortable?: boolean;
-  /* 树结构 */
+  /* Tree structure */
   tree?: string;
-  /* 日志 */
+  /* Logging */
   logging?: boolean;
-  /** 继承 */
+  /** Inherits */
   inherits?: string | string[];
-  /* 字段列表 */
+  /* Field list */
   fields?: CollectionOptions['fields'];
 }
 
@@ -48,27 +48,27 @@ class CollectionTemplate {
   transform?: (collection: CollectionOptions, app: Application) => CollectionOptions;
   title?: string;
   color?: string;
-  /** 排序 */
+  /** Order */
   order?: number;
-  /** 默认配置 */
+  /** Default configuration */
   default?: CollectionTemplateDefaultOptions;
   events?: any;
-  /** UI 可配置的 CollectionOptions 参数（添加或编辑的 Collection 表单的字段） */
+  /** UI configurable CollectionOptions parameters (fields in the form for adding or editing Collection) */
   configurableProperties?: Record<string, ISchema>;
-  /** 当前模板可用的字段类型 */
+  /** Available field interfaces for the current template */
   availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
-  /** 是否分割线 */
+  /** Divider */
   divider?: boolean;
-  /** 模板描述 */
+  /** Template description */
   description?: string;
-  /**配置字段中的操作按钮 */
+  /** Configure actions in the configuration fields */
   configureActions?: Record<string, ISchema>;
-  //是否禁止删除字段
+  // Whether to forbid field deletion
   forbidDeletion?: boolean;
 }
 ```
 
-其需要结合 [CollectionManager](./collection-template-manager.md) 使用。
+It needs to be used in conjunction with [CollectionManager](./collection-template-manager.md).
 
 ```ts
 import { Plugin, Collection, CollectionTemplate } from '@nocobase/client';
@@ -103,24 +103,24 @@ class MyPlugin extends Plugin {
 }
 ```
 
-## 实例属性
+## Instance Properties
 
 ### name
 
-模板的唯一标识符。
+The unique identifier of the template.
 
 
 ### Collection
 
-模板对应的数据表类。
+The data table class corresponding to the template.
 
-在创建数据表后，Collection 会有 [template 字段](/core/data-source/collection#collectionoptions)，用于标识该数据表是由哪个模板创建的。
+After creating a data table, the Collection will have a [template field](/core/data-source/collection#collectionoptions) to identify which template the data table was created from.
 
-当通过 `collectionManager.addCollections()` 添加数据表对象时，会先读取 `collection.template` 字段，然后通过 `collectionManager.getCollectionTemplate(collection.template)` 获取到 `collectionTemplate`。
+When adding data table objects through `collectionManager.addCollections()`, it first reads the `collection.template` field, and then retrieves the `collectionTemplate` through `collectionManager.getCollectionTemplate(collection.template)`.
 
-读取 `collectionTemplate.Collection` 字段，并通过 `new collectionTemplate.Collection(collection)` 创建对应的实例。
+It reads the `collectionTemplate.Collection` field and creates the corresponding instance through `new collectionTemplate.Collection(collection)`.
 
-如果不传递 `Collection`，则会通过 `new Collection(collection)` 创建对应的实例。
+If `Collection` is not passed, it creates the corresponding instance through `new Collection(collection)`.
 
 ```ts
 class SqlCollection extends Collection {
@@ -146,24 +146,23 @@ const userCollection = {
 
 ### title
 
-模板的标题。
+The title of the template.
 
 ### color
 
-模板的颜色。
+The color of the template.
 
 ### order
 
-模板的排序。
+The order of the template.
 
 ### events
 
-- `beforeSubmit`：提交前触发
-
+- `beforeSubmit`: Triggered before submission.
 
 ### configurableProperties
 
-表单配置项。
+Form configuration items.
 
 ![](./images//collection-template-form.png)
 
@@ -197,23 +196,21 @@ class SqlCollectionTemplate extends CollectionTemplate {
 
 ### default
 
-表单默认值。
+Default form values.
 
-
-
-## 实例方法
+## Instance Methods
 
 ### collectionTemplate.transform(collection)
 
-collection 创建后，会调用该方法，用于对 collection 进行转换。
+After creating a collection, this method is called to transform the collection.
 
 ## Utils
 
 ### getConfigurableProperties()
 
-用于获取内置的配置项字段。
+Used to retrieve built-in configurable property fields.
 
-- 类型
+- Type
 
 ```tsx | pure
 export type DefaultConfigurableKeys =
@@ -233,7 +230,7 @@ export type DefaultConfigurableKeys =
 const getConfigurableProperties: (...keys: DefaultConfigurableKeys[]) => Record<DefaultConfigurableKeys, any>
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 import { getConfigurableProperties } from '@nocobase/client';
