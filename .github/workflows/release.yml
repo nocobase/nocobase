@@ -50,12 +50,12 @@ jobs:
           yarn build
       - name: publish pkg.nocobase.com
         run: |
-          git add .
-          git commit -m "chore(versions): test publish packages xxx"
+          git reset --hard
           yarn config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com
       - name: publish pkg-src.nocobase.com
         run: |
+          git reset --hard
           bash generate-npmignore.sh ignore-src
           yarn config set //pkg-src.nocobase.com/:_authToken=${{ secrets.PKG_SRC_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com
