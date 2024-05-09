@@ -22,13 +22,12 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
   const isFirstRender = useRef(true); // 使用ref跟踪是否为首次渲染
   const service = useDataBlockRequest();
   const { setSubmitted: setParentSubmitted } = { ...props, ...props.value, ...contextProps };
-
   useEffect(() => {
     if (visible !== undefined) {
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
-        if (visible === false && submitted) {
+        if (visible === false && submitted && service) {
           service.refresh();
           setParentSubmitted?.(true); //传递给上一层
         }
