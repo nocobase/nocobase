@@ -3,7 +3,7 @@ name: NocoBase E2E Test
 on:
   workflow_run:
     workflows: [Nocobase Build Test]
-    types: [completed]
+    types: [in_progress]
 
 jobs:
   e2e-test-postgres:
