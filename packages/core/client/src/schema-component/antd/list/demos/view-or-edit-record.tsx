@@ -1,11 +1,4 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+
 
 import { useForm } from '@formily/react';
 import {
@@ -15,8 +8,11 @@ import {
   useCollectionRecord,
   useDataBlockRequest,
   useDataBlockResource,
+  SchemaComponent, Plugin,
 } from '@nocobase/client';
-import { getAppComponent } from '@nocobase/test/web';
+import React from 'react';
+import { mockApp } from '@nocobase/client/demo-utils';
+
 import { App as AntdApp } from 'antd';
 
 const useCloseActionProps = () => {
@@ -64,96 +60,93 @@ const useFormBlockProviderProps: UseDataBlockProps<'CollectionGet'> = () => {
   };
 };
 
-const App = getAppComponent({
-  designable: true,
-  schema: {
-    type: 'void',
-    name: 'root',
-    'x-decorator': 'List.Decorator',
-    'x-use-decorator-props': 'useListBlockDecoratorProps',
-    'x-decorator-props': {
-      collection: 'users',
-      dataSource: 'main',
-      action: 'list',
-      params: {
-        pageSize: 10,
-      },
+const schema = {
+  type: 'void',
+  name: 'root',
+  'x-decorator': 'List.Decorator',
+  'x-use-decorator-props': 'useListBlockDecoratorProps',
+  'x-decorator-props': {
+    collection: 'users',
+    dataSource: 'main',
+    action: 'list',
+    params: {
+      pageSize: 10,
     },
-    'x-component': 'CardItem',
-    properties: {
-      list: {
-        type: 'array',
-        'x-component': 'List',
-        properties: {
-          item: {
-            type: 'object',
-            'x-component': 'List.Item',
-            'x-read-pretty': true,
-            'x-use-component-props': 'useListItemProps',
-            properties: {
-              username: {
-                type: 'string',
-                'x-component': 'CollectionField',
-                'x-decorator': 'FormItem',
-                'x-index': 1,
+  },
+  'x-component': 'CardItem',
+  properties: {
+    list: {
+      type: 'array',
+      'x-component': 'List',
+      properties: {
+        item: {
+          type: 'object',
+          'x-component': 'List.Item',
+          'x-read-pretty': true,
+          'x-use-component-props': 'useListItemProps',
+          properties: {
+            username: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-decorator': 'FormItem',
+              'x-index': 1,
+            },
+            nickname: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-decorator': 'FormItem',
+              'x-index': 2,
+            },
+            actions: {
+              type: 'void',
+              'x-align': 'left',
+              'x-component': 'ActionBar',
+              'x-use-component-props': 'useListActionBarProps',
+              'x-component-props': {
+                layout: 'one-column',
               },
-              nickname: {
-                type: 'string',
-                'x-component': 'CollectionField',
-                'x-decorator': 'FormItem',
-                'x-index': 2,
-              },
-              actions: {
-                type: 'void',
-                'x-align': 'left',
-                'x-component': 'ActionBar',
-                'x-use-component-props': 'useListActionBarProps',
-                'x-component-props': {
-                  layout: 'one-column',
-                },
-                properties: {
-                  view: {
-                    type: 'void',
-                    title: 'View',
-                    'x-action': 'view',
-                    'x-component': 'Action.Link',
-                    'x-component-props': {
-                      openMode: 'drawer',
-                    },
-                    properties: {
-                      drawer: {
-                        type: 'void',
-                        title: 'View record',
-                        'x-component': 'Action.Drawer',
-                        'x-component-props': {
-                          className: 'nb-action-popup',
-                        },
-                        properties: {
-                          formContext: {
-                            type: 'void',
-                            'x-decorator': 'FormBlockProvider',
-                            'x-use-decorator-props': 'useFormBlockProviderProps',
-                            'x-component': 'CardItem',
-                            properties: {
-                              form: {
-                                type: 'void',
-                                'x-component': 'FormV2',
-                                'x-pattern': 'readPretty',
-                                'x-use-component-props': 'useFormBlockProps',
-                                properties: {
-                                  username: {
-                                    type: 'string',
-                                    'x-decorator': 'FormItem',
-                                    'x-component': 'Input',
-                                    title: 'Username',
-                                    required: true,
-                                  },
-                                  nickname: {
-                                    type: 'string',
-                                    'x-decorator': 'FormItem',
-                                    'x-component': 'Input',
-                                    title: 'Nickname',
-                                  },
+              properties: {
+                view: {
+                  type: 'void',
+                  title: 'View',
+                  'x-action': 'view',
+                  'x-component': 'Action.Link',
+                  'x-component-props': {
+                    openMode: 'drawer',
+                  },
+                  properties: {
+                    drawer: {
+                      type: 'void',
+                      title: 'View record',
+                      'x-component': 'Action.Drawer',
+                      'x-component-props': {
+                        className: 'nb-action-popup',
+                      },
+                      properties: {
+                        formContext: {
+                          type: 'void',
+                          'x-decorator': 'FormBlockProvider',
+                          'x-use-decorator-props': 'useFormBlockProviderProps',
+                          'x-component': 'CardItem',
+                          properties: {
+                            form: {
+                              type: 'void',
+                              'x-component': 'FormV2',
+                              'x-pattern': 'readPretty',
+                              'x-use-component-props': 'useFormBlockProps',
+                              properties: {
+                                username: {
+                                  type: 'string',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                  title: 'Username',
+                                  required: true,
+                                },
+                                nickname: {
+                                  type: 'string',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                  title: 'Nickname',
                                 },
                               },
                             },
@@ -162,69 +155,69 @@ const App = getAppComponent({
                       },
                     },
                   },
-                  edit: {
-                    type: 'void',
-                    title: 'Edit',
-                    'x-action': 'update',
-                    'x-component': 'Action.Link',
-                    'x-component-props': {
-                      openMode: 'drawer',
-                      icon: 'EditOutlined',
-                    },
-                    properties: {
-                      drawer: {
-                        type: 'void',
-                        title: 'Edit record',
-                        'x-component': 'Action.Drawer',
-                        'x-component-props': {
-                          className: 'nb-action-popup',
-                        },
-                        properties: {
-                          formContext: {
-                            type: 'void',
-                            'x-decorator': 'FormBlockProvider',
-                            'x-use-decorator-props': 'useFormBlockProviderProps',
-                            'x-component': 'CardItem',
-                            properties: {
-                              form: {
-                                type: 'void',
-                                'x-component': 'FormV2',
-                                'x-use-component-props': 'useFormBlockProps',
-                                properties: {
-                                  username: {
-                                    type: 'string',
-                                    'x-decorator': 'FormItem',
-                                    'x-component': 'Input',
-                                    title: 'Username',
-                                    required: true,
-                                  },
-                                  nickname: {
-                                    type: 'string',
-                                    'x-decorator': 'FormItem',
-                                    'x-component': 'Input',
-                                    title: 'Nickname',
-                                  },
+                },
+                edit: {
+                  type: 'void',
+                  title: 'Edit',
+                  'x-action': 'update',
+                  'x-component': 'Action.Link',
+                  'x-component-props': {
+                    openMode: 'drawer',
+                    icon: 'EditOutlined',
+                  },
+                  properties: {
+                    drawer: {
+                      type: 'void',
+                      title: 'Edit record',
+                      'x-component': 'Action.Drawer',
+                      'x-component-props': {
+                        className: 'nb-action-popup',
+                      },
+                      properties: {
+                        formContext: {
+                          type: 'void',
+                          'x-decorator': 'FormBlockProvider',
+                          'x-use-decorator-props': 'useFormBlockProviderProps',
+                          'x-component': 'CardItem',
+                          properties: {
+                            form: {
+                              type: 'void',
+                              'x-component': 'FormV2',
+                              'x-use-component-props': 'useFormBlockProps',
+                              properties: {
+                                username: {
+                                  type: 'string',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                  title: 'Username',
+                                  required: true,
+                                },
+                                nickname: {
+                                  type: 'string',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                  title: 'Nickname',
                                 },
                               },
                             },
                           },
-                          footer: {
-                            type: 'void',
-                            'x-component': 'Action.Drawer.Footer',
-                            properties: {
-                              close: {
-                                title: 'Close',
-                                'x-component': 'Action',
-                                'x-component-props': {
-                                  type: 'default',
-                                },
-                                'x-use-component-props': 'useCloseActionProps',
+                        },
+                        footer: {
+                          type: 'void',
+                          'x-component': 'Action.Drawer.Footer',
+                          properties: {
+                            close: {
+                              title: 'Close',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'default',
                               },
-                              submit: {
-                                title: 'Submit',
-                                'x-component': 'Action',
-                                'x-use-component-props': 'useSubmitActionProps',
-                              },
+                              'x-use-component-props': 'useCloseActionProps',
+                            },
+                            submit: {
+                              title: 'Submit',
+                              'x-component': 'Action',
+                              'x-use-component-props': 'useSubmitActionProps',
                             },
                           },
                         },
@@ -239,15 +232,25 @@ const App = getAppComponent({
       },
     },
   },
-  appOptions: {
-    plugins: [BlockSchemaComponentPlugin],
-    components: {},
-    scopes: {
-      useSubmitActionProps,
-      useCloseActionProps,
-      useFormBlockProviderProps,
-    },
-  },
+}
+
+const Demo = () => {
+  return <SchemaComponent schema={schema} scope={{
+    useSubmitActionProps,
+    useCloseActionProps,
+    useFormBlockProviderProps,
+  }} />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin, BlockSchemaComponentPlugin],
+  designable: true,
 });
 
-export default App;
+export default app.getRootComponent();

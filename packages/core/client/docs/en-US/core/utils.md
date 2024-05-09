@@ -4,10 +4,10 @@
 
 ### tval
 
-用于输出多语言的字符串。
+Used to output multilingual strings.
 
-- 类型
+- Type
 
 
 
-- 示例
+- Example

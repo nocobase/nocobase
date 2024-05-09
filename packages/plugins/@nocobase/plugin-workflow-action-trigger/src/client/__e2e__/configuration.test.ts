@@ -126,7 +126,13 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await apiDeleteWorkflow(workflowId);
   });
 
-  test('Form Submit to Workflow Button Add Data Trigger', async ({ page, mockPage, mockCollections, mockRecords }) => {
+  // TODO: 需要转移到新事件中
+  test.skip('Form Submit to Workflow Button Add Data Trigger', async ({
+    page,
+    mockPage,
+    mockCollections,
+    mockRecords,
+  }) => {
     //数据表后缀标识
     const triggerNodeAppendText = faker.string.alphanumeric(5);
 

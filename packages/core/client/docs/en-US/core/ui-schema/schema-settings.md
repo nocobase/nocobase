@@ -2,7 +2,7 @@
 
 ## new SchemaSettings(options)
 
-创建一个 SchemaSettings 实例。
+Create a SchemaSettings instance.
 
 ```tsx | pure
 interface SchemaSettingsOptions<T = {}> {
@@ -22,19 +22,18 @@ class SchemaSettings<T = {}>{
 }
 ```
 
-### 详细解释
+### Details
 
 ![](../static/VfPGbhWo9os0qTxcITkcHNfin4g.png)
 
-- name：唯一标识，必填
-- Component 相关
+- name: Unique identifier, required
+- Component related
+  - Component: Trigger component, default is `<MenuOutlined />` component
+  - componentProps: Component properties
+  - style: Component style
+- items: List item configuration
 
-  - Component：触发组件，默认是 `<MenuOutlined />` 组件
-  - componentProps: 组件属性
-  - style：组件的样式
-- items：列表项配置
-
-### 示例
+### Example
 
 #### 基础用法
 
@@ -43,8 +42,8 @@ const mySchemaSettings = new SchemaSettings({
   name: 'MySchemaSettings',
   items: [
     {
-      name: 'demo1', // 唯一标识
-      type: 'item', // 内置类型
+      name: 'demo1',
+      type: 'item',
       componentProps: {
         title: 'DEMO1',
         onClick() {
@@ -54,23 +53,23 @@ const mySchemaSettings = new SchemaSettings({
     },
     {
       name: 'demo2',
-      Component: () => <SchemaSettings.Item title="DEMO2" onClick={() => alert('DEMO2')} />, // 直接使用 Component 组件
+      Component: () => <SchemaSettings.Item title="DEMO2" onClick={() => alert('DEMO2')} />,
     },
   ],
 });
 ```
 
-#### 定制化 `Component`
+#### Custom `Component`
 
 ```tsx | pure
 const mySchemaSettings = new SchemaSettings({
   name: 'MySchemaSettings',
-  Component: Button, // 自定义组件
+  Component: Button,
   componentProps: {
     type: 'primary',
     children: '自定义按钮',
   },
-  // Component: (props) => <Button type='primary' {...props}>自定义按钮</Button>, // 等同于上面效果
+  // Component: (props) => <Button type='primary' {...props}>自定义按钮</Button>,
   items: [
     {
       name: 'demo1',
@@ -83,7 +82,7 @@ const mySchemaSettings = new SchemaSettings({
 });
 ```
 
-## options.items 配置详解
+## options.items
 
 ```tsx | pure
 interface SchemaSettingsItemCommon<T = {}> {
@@ -100,15 +99,14 @@ interface SchemaSettingsItemCommon<T = {}> {
 }
 ```
 
-### 两种定义方式：`Component` 和 `type`
+### `Component` 和 `type`
 
 
-- 通过 `Component` 定义
+- `Component`
 
 ```tsx | pure
 
 const Demo = () => {
-  // 最终渲染 `SchemaSettingsItem`
   return <SchemaSettingsItem title='Demo' />
 }
 
@@ -117,17 +115,17 @@ const mySettings = new SchemaSettings({
   items: [
     {
       name: 'a',
-      Component: Demo, // 通过 Component 定义
+      Component: Demo,
     }
   ],
 });
 ```
 
-- 通过 `type` 定义
+- `type`
 
-NocoBase 内置了一些常用的 `type`，例如 `type: 'item'`，相当于 `Component: SchemaSettingsItem`。
+NocoBase has built-in some common `type`, such as `type: 'item'`, which is equivalent to `Component: SchemaSettingsItem`.
 
-更多内置类型，请参考：[内置组件和类型](/core/ui-schema/schema-settings#%E5%86%85%E7%BD%AE%E7%BB%84%E4%BB%B6%E5%92%8C%E7%B1%BB%E5%9E%8B)
+For more built-in types, please refer to: [Built-in Components and Types](/core/ui-schema/schema-settings#built-in-components-and-types)
 
 ```tsx | pure
 const mySettings = new SchemaSettings({
@@ -146,25 +144,25 @@ const mySettings = new SchemaSettings({
 
 <code src="./demos/schema-settings-options-item-define.tsx"></code>
 
-### `children` 和动态方式 `useChildren`
+### `children` and dynamic `useChildren`
 
-对于某些组件而言是有子列表项的，例如 `type: 'itemGroup'`，那么我们使用 children 属性，同时考虑到某些场景下 children 是动态的，需要从 Hooks 里面获取，那么就可以通过 `useChildren` 来定义。
+For some components that have child items, such as `type: 'itemGroup'`, we use the `children` property. In certain scenarios where the children are dynamic and need to be obtained from hooks, we can define them using `useChildren`.
 
 <code src="./demos/schema-settings-options-item-children.tsx"></code>
 
-### 动态显示隐藏 `useVisible`
+### Dynamic visibility with `useVisible`
 
 <code src="./demos/schema-settings-options-item-visible.tsx"></code>
 
-### 组件属性 `componentProps` 和动态属性 `useComponentProps`
+### Component properties `componentProps` and dynamic properties `useComponentProps`
 
-对于一些通用组件，我们可以通过 `componentProps` 来定义组件属性，同时考虑到某些场景下组件属性是动态的，需要从 Hooks 里面获取，那么就可以通过 `useComponentProps` 来定义。
+For some common components, we can define component properties using `componentProps`. In certain scenarios where the component properties are dynamic and need to be obtained from hooks, we can define them using `useComponentProps`.
 
-当然也可以不使用这两个属性，直接封装成一个组件，然后通过 `Component` 来定义。
+Alternatively, we can encapsulate the properties into a component and define them using `Component`.
 
 <code src="./demos/schema-settings-options-item-props.tsx"></code>
 
-## 实例方法
+## Methods
 
 ```tsx | pure
 const mySchemaSettings = new SchemaSettings({
@@ -189,9 +187,9 @@ const mySchemaSettings = new SchemaSettings({
 
 ### schemaSettings.add()
 
-用于新增 Item。
+Use for adding an item.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettings {
@@ -199,11 +197,11 @@ class SchemaSettings {
 }
 ```
 
-- 参数说明
+- params
 
-第一个参数是 name，作为唯一标识，用于增删改查，并且 `name` 支持 `.` 用于分割层级。
+The first parameter is `name`, which is used as a unique identifier for adding, deleting, modifying, and querying, and `name` supports `.` to separate levels.
 
-- 示例
+- Example
 
 ```tsx | pure
 mySchemaSetting.add('b', {
@@ -219,7 +217,7 @@ mySchemaSetting.add('a.a2', {
 
 ### schemaSettings.get()
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettings {
@@ -227,7 +225,7 @@ class SchemaSettings {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const itemA = mySchemaSetting.get('a')
@@ -237,7 +235,7 @@ const itemA1 = mySchemaSetting.add('a.a1')
 
 ### schemaSettings.remove()
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaSettings {
@@ -245,7 +243,7 @@ class SchemaSettings {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 mySchemaSetting.remove('a.a1')
@@ -257,9 +255,9 @@ mySchemaSetting.remove('a')
 
 ### useSchemaSettingsRender()
 
-用于渲染 SchemaSettings。
+Use to render SchemaSettings.
 
-- 类型
+- Type
 
 ```tsx | pure
 function useSchemaSettingsRender(name: string, options?: SchemaSettingsOptions): {
@@ -268,7 +266,7 @@ function useSchemaSettingsRender(name: string, options?: SchemaSettingsOptions):
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const Demo = () => {
@@ -285,11 +283,11 @@ const Demo = () => {
 
 ### useSchemaSettings()
 
-获取 schemaSetting 上下文数据。
+Get the schemaSetting context data.
 
-上下文数据包含了 `schemaSetting` 实例化时的 `options` 以及调用 `useSchemaSettingsRender()` 时传入的 `options`。
+The context data includes the `options` passed when instantiating the `schemaSetting` and the `options` passed when calling `useSchemaSettingsRender()`.
 
-- 类型
+- Type
 
 ```tsx | pure
 interface UseSchemaSettingsResult<T> extends SchemaSettingsOptions<T> {
@@ -301,7 +299,7 @@ interface UseSchemaSettingsResult<T> extends SchemaSettingsOptions<T> {
 function useSchemaSettings(): UseSchemaSettingsResult;
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const { dn } = useSchemaSettings();
@@ -309,9 +307,9 @@ const { dn } = useSchemaSettings();
 
 ### useSchemaSettingsItem()
 
-用于获取一个 item 的数据。
+Used to retrieve data for an item.
 
-- 类型
+- Type
 
 ```tsx | pure
 export type SchemaSettingsItemType<T = {}> = {
@@ -329,31 +327,29 @@ export type SchemaSettingsItemType<T = {}> = {
 function useSchemaSettingsItem(): SchemaSettingsItemType;
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const { name } = useSchemaSettingsItem();
 ```
 
-## 内置组件和类型
+## Built-in Components and Types
 
-| type        | Component                      | 效果                                      |
+| type        | Component                      |                                     |
 | ----------- | ------------------------------ | ----------------------------------------- |
-| item        | SchemaSettingsItem            | 文本                                      |
-| itemGroup   | SchemaSettingsItemGroup       | 分组，同 Menu 组件的 `type: 'itemGroup'`      |
-| subMenu     | SchemaSettingsSubMenu         | 子菜单，同 Menu 组件的子菜单              |
-| divider     | SchemaSettingsDivider         | 分割线，同 Menu 组件的  `type: 'divider'` |
-| remove      | SchemaSettingsRemove          | 删除，用于删除一个区块                    |
-| select      | SchemaSettingsSelectItem      | 下拉选择                                  |
-| cascader    | SchemaSettingsCascaderItem    | 级联选择                                  |
-| switch      | SchemaSettingsSwitchItem      | 开关                                      |
-| popup       | SchemaSettingsPopupItem       | 弹出层                                    |
-| actionModal | SchemaSettingsActionModalItem | 操作弹窗                                  |
-| modal       | SchemaSettingsModalItem       | 弹窗                                      |
+| item        | SchemaSettingsItem            | Text                                      |
+| itemGroup   | SchemaSettingsItemGroup       | Group, same as `type: 'itemGroup'` in Menu |
+| subMenu     | SchemaSettingsSubMenu         | Submenu, same as submenu in Menu          |
+| divider     | SchemaSettingsDivider         | Divider, same as `type: 'divider'` in Menu |
+| remove      | SchemaSettingsRemove          | Remove, used to delete a block            |
+| select      | SchemaSettingsSelectItem      | Dropdown select                           |
+| cascader    | SchemaSettingsCascaderItem    | Cascading select                          |
+| switch      | SchemaSettingsSwitchItem      | Switch                                    |
+| popup       | SchemaSettingsPopupItem       | Popup                                     |
+| actionModal | SchemaSettingsActionModalItem | Action modal                              |
+| modal       | SchemaSettingsModalItem       | Modal                                     |
 
 ### SchemaSettingsItem
-
-文本，对应的 `type` 为 `item`。
 
 ```tsx | pure
 interface SchemaSettingsItemProps extends Omit<MenuItemProps, 'title'> {
@@ -361,35 +357,27 @@ interface SchemaSettingsItemProps extends Omit<MenuItemProps, 'title'> {
 }
 ```
 
-核心参数为 `title` 和 `onClick`，可以在 `onClick` 中修改 schema。
+The core parameters are `title` and `onClick`, and you can modify the schema in `onClick`.
 
 <code src="./demos/schema-settings-components-item.tsx"></code>
 
 ### SchemaSettingsItemGroup
 
-分组，对应的 `type` 为 `itemGroup`。
-
-核心参数是 `title`。
+The core parameter is `title`.
 
 <code src="./demos/schema-settings-components-group.tsx"></code>
 
 ### SchemaSettingsSubMenu
 
-子菜单，对应的 `type` 为 `subMenu`。
-
-核心参数是 `title`。
+The core parameter is `title`.
 
 <code src="./demos/schema-settings-components-sub-menu.tsx"></code>
 
 ### SchemaSettingsDivider
 
-分割线，对应的 `type` 为 `divider`。
-
 <code src="./demos/schema-settings-components-divider.tsx"></code>
 
 ### SchemaSettingsRemove
-
-删除，对应的 `type` 为 `remove`。
 
 ```tsx | pure
 interface SchemaSettingsRemoveProps {
@@ -399,31 +387,23 @@ interface SchemaSettingsRemoveProps {
 }
 ```
 
-- `confirm`：删除前的确认弹窗
-- `removeParentsIfNoChildren`：如果删除后没有子节点了，是否删除父节点
-- `breakRemoveOn`：如果删除的节点满足条件，是否中断删除
+- `confirm`: Confirmation modal before deletion
+- `removeParentsIfNoChildren`: Whether to delete the parent node if there are no children after deletion
+- `breakRemoveOn`: Whether to interrupt deletion if the deleted node meets certain conditions
 
 <code src="./demos/schema-settings-components-remove.tsx"></code>
 
 ### SchemaSettingsSelectItem
 
-选择器，对应的 `type` 为 `select`。
-
 <code src="./demos/schema-settings-components-select.tsx"></code>
 
 ### SchemaSettingsCascaderItem
 
-级联选择，对应的 `type` 为 `cascader`。
-
 ### SchemaSettingsSwitchItem
-
-开关，对应的 `type` 为 `switch`。
 
 <code src="./demos/schema-settings-components-switch.tsx"></code>
 
 ### SchemaSettingsModalItem
-
-弹窗，对应的 `type` 为 `modal`。
 
 ```tsx | pure
 export interface SchemaSettingsModalItemProps {
@@ -444,15 +424,13 @@ export interface SchemaSettingsModalItemProps {
 }
 ```
 
-我们可以通过 `schema` 参数来定义弹窗的表单，然后在 `onSubmit` 中获取表单的值，然后修改当前 schema 节点。
+We can define the form of the modal using the `schema` parameter, and then retrieve the form values in the `onSubmit` function to modify the current schema node.
 
 <code src="./demos/schema-settings-components-modal.tsx"></code>
 
 ### SchemaSettingsActionModalItem
 
-操作弹窗，对应的 `type` 为 `actionModal`。
-
-其和 `modal` 的区别是，`SchemaSettingsModalItem` 弹窗会丢失上下文，而 `SchemaSettingsActionModalItem` 会保留上下文，简单场景下可以使用 `SchemaSettingsModalItem`，复杂场景下可以使用 `SchemaSettingsActionModalItem`。
+The difference between `SchemaSettingsActionModalItem` and `SchemaSettingsModalItem` is that the `SchemaSettingsModalItem` modal will lose context, while the `SchemaSettingsActionModalItem` will retain context. In simple scenarios, you can use `SchemaSettingsModalItem`, and in complex scenarios, you can use `SchemaSettingsActionModalItem`.
 
 ```tsx | pure
 export interface SchemaSettingsActionModalItemProps extends SchemaSettingsModalItemProps, Omit<SchemaSettingsItemProps, 'onSubmit' | 'onClick'> {

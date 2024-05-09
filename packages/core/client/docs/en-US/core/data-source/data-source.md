@@ -1,12 +1,12 @@
 # DataSource
 
-主要是用于获取数据源和数据源的数据表结构列表，并在获取后交给 [CollectionManager](./collection-manager.md) 进行管理，其被 [DataSourceManager](./data-source-manager.md) 管理。
+It is mainly used to obtain the data source and the list of data table structures, and then hand them over to the [CollectionManager](./collection-manager.md) for management, which is managed by the [DataSourceManager](./data-source-manager.md).
 
-## 数据源定义
+## Data Source Definition
 
-数据源的定义需要继承 `DataSource` 类，并实现 `getDataSource` 方法，当调用 `reload` 方法时，会调用 `getDataSource` 方法获取数据表结构。
+The definition of the data source needs to inherit the `DataSource` class and implement the `getDataSource` method. When the `reload` method is called, the `getDataSource` method will be called to obtain the data table structure.
 
-```tsx | pure
+```ts
 import { DataSource } from '@nocobase/client';
 
 class MyDataSource extends DataSource {
@@ -19,11 +19,11 @@ class MyDataSource extends DataSource {
 }
 ```
 
-### 数据源注册
+### Data Source Registration
 
-数据源需要在插件中注册，通过 `DataSourceManager` 的 `addDataSource` 方法进行注册。
+Data sources need to be registered in plugins using the `addDataSource` method of `DataSourceManager`.
 
-初始化添加的时候 `collections` 可以为空，当调用 `reload` 方法时，会调用 `getDataSource` 方法获取数据表结构。
+When initially adding a data source, the `collections` parameter can be empty. When the `reload` method is called, the `getDataSource` method will be invoked to obtain the data table structure.
 
 ```tsx | pure
 import { Plugin, DataSource, DataSourceOptions } from '@nocobase/client';
@@ -50,23 +50,23 @@ class MyPlugin extends Plugin {
 }
 ```
 
-- `key`：数据源的唯一标识
-- `displayName`：数据源的显示名称
-- `status`：数据源的状态，`loaded` 表示已加载，`loading` 表示正在加载，`loading-failed` 表示加载失败
-- `collections`：数据表结构
-- `errorMessage`：错误信息
+- `key`: The unique identifier of the data source
+- `displayName`: The display name of the data source
+- `status`: The status of the data source, `loaded` indicates loaded, `loading` indicates loading, `loading-failed` indicates loading failed
+- `collections`: The table structure of the data source
+- `errorMessage`: The error message
 
-## 实例方法
+## Instance Methods
 
 ### getDataSource()
 
-用于获取数据源信息，其会被 `reload` 方法内部调用，外部不需要调用。
+Used to retrieve information about the data source, it is called internally by the `reload` method and does not need to be called externally.
 
 ### addReloadCallback()
 
-用于添加数据源加载完成后的回调函数。
+Used to add a callback function that is called after the data source is loaded.
 
-- 类型
+- Type
 
 ```tsx | pure
 type LoadCallback = (collections: CollectionOptions[]) => void;
@@ -78,9 +78,9 @@ class DataSource {
 
 ### removeReloadCallback()
 
-用于移除数据源加载完成后的回调函数。
+Used to remove the callback function after the data source is loaded.
 
-- 类型
+- Type
 
 ```tsx | pure
 type LoadCallback = (collections: CollectionOptions[]) => void;
@@ -89,7 +89,7 @@ class DataSource {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
@@ -109,9 +109,9 @@ const MyComponent = () => {
 
 ### reload()
 
-用于重新加载数据源，会调用 `getDataSource` 方法获取数据表结构，并内部调用 `addReloadCallback` 添加的回调函数。
+Used to reload the data source, it calls the `getDataSource` method to retrieve the table structure and internally calls the callback functions added by `addReloadCallback`.
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSource {
@@ -119,7 +119,7 @@ class DataSource {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
@@ -133,9 +133,9 @@ const MyComponent = () => {
 
 ### getOptions()
 
-获取数据源的配置信息。
+Get the configuration information of the data source.
 
-- 类型
+- Type
 
 ```tsx | pure
 interface DataSourceOptions {
@@ -153,9 +153,9 @@ class DataSource {
 
 ### getOption()
 
-获取数据源的配置信息。
+Get the configuration information of the data source.
 
-- 类型
+- Type
 
 ```tsx | pure
 class DataSource {
@@ -163,7 +163,7 @@ class DataSource {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {

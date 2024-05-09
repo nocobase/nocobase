@@ -1,14 +1,14 @@
 # CollectionManager
 
-用于管理 [Collection](./collection.md)，其被 [DataSource](./data-source.md) 管理。
+Used to manage [Collection](./collection.md), which is managed by [DataSource](./data-source.md).
 
-## 实例方法
+## Instance Methods
 
 ### addCollections(collections)
 
-添加数据表。
+Add collections.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionManager {
@@ -16,7 +16,7 @@ class CollectionManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const userCollectionOptions = {
@@ -32,9 +32,9 @@ collectionManager.addCollections([userCollectionOptions]);
 
 ### setCollections(collections)
 
-重置数据表，会先移除所有数据表，然后再调用 `addCollections()` 添加数据表。
+Reset collections, which will remove all collections first, and then call `addCollections()` to add collections.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionManager {
@@ -46,7 +46,7 @@ class CollectionManager {
 
 由于 [CollectionTemplate](./collection-template.md) 或者 [CollectionMixins](./collection-mixins.md) 的添加会影响 Collection 的实例化，所以提供了重新添加数据表的方法。
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionManager {
@@ -54,7 +54,7 @@ class CollectionManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const userCollectionInstance = collectionManager.getCollection('users');
@@ -63,9 +63,9 @@ collectionManager.reAddCollections([userCollectionInstance]);
 
 ### getCollections(predicate?)
 
-获取数据表。
+Get a collection.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionManager {
@@ -73,7 +73,7 @@ class CollectionManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 collectionManager.getCollections(); // [ userCollection ]
@@ -84,9 +84,9 @@ collectionManager.getCollections(collection => collection.name === 'posts'); // 
 
 ### getCollection(path)
 
-获取数据表。
+Get a collection.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionManager {
@@ -94,12 +94,12 @@ class CollectionManager {
 }
 ```
 
-- 详细解释
-  - `path` 参数可以是数据表名称，也可以是[关系字段](https://docs.nocobase.com/development/server/collections/association-fields)路径。
-    - `path: 'users'`: 获取 `users` 数据表
-    - `path: 'users.posts'`: 获取 `users` 数据表的 `posts` 关联字段对应的数据表，即 `postCollection`
+- Details
+  - The `path` parameter can be either the name of a collection or a path to a [relationship field](https://docs.nocobase.com/development/server/collections/association-fields).
+    - `path: 'users'`: Get the `users` collection.
+    - `path: 'users.posts'`: Get the collection corresponding to the `posts` associated field of the `users` collection, i.e., `postCollection`.
 
-- 示例
+- Example
 
 ```tsx | pure
 collectionManager.getCollection('users'); // userCollection
@@ -108,7 +108,7 @@ collectionManager.getCollection('users.posts'); // postCollection
 collectionManager.getCollection('users.profileId'); // profileCollection
 ```
 
-结合 Mixin 使用：
+Using Mixins:
 
 ```tsx | pure
 const collection = collectionManager.getCollection<TestMixin>('users');
@@ -117,9 +117,9 @@ const collection = collectionManager.getCollection<TestMixin & TestMixin2>('user
 
 ### getCollectionFields(collectionName)
 
-获取数据表字段列表。
+Get the list of fields for a collection.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionManager {
@@ -127,7 +127,7 @@ class CollectionManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 collectionManager.getCollectionFields('users'); // [ { name: 'username', type: 'string', title: 'Username', .. }, { name: 'password', type: 'password', title: 'Password', .. } ]
@@ -135,9 +135,9 @@ collectionManager.getCollectionFields('users'); // [ { name: 'username', type: '
 
 ### getCollectionName(path)
 
-获取数据表名称。
+Get the collection name.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionManager {
@@ -145,7 +145,7 @@ class CollectionManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 collectionManager.getCollectionName('users'); // 'users'
@@ -156,9 +156,9 @@ collectionManager.getCollectionName('users.profiles'); // 'profiles'
 
 ### getCollectionField(path)
 
-获取数据表字段。
+Get collection fields.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionManager {
@@ -166,10 +166,10 @@ class CollectionManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 collectionManager.getCollectionField('users.username'); // { name: 'username', type: 'string', title: 'Username', .. }
 
-collectionManager.getCollectionField('users.roles.name'); // 获取 roles 关联字段对应的 roles 表中的 name 字段
+collectionManager.getCollectionField('users.roles.name'); // Get the 'name' field in the 'roles' table corresponding to the 'roles' associated field
 ```

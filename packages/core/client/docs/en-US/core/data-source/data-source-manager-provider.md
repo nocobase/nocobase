@@ -1,21 +1,20 @@
 # DataSourceManagerProvider
 
-用于提供 `DataSourceManager` 实例。
-
+Used to provide an instance of `DataSourceManager`.
 
 ## Hooks
 
 ### useDataSourceManager()
 
-获取 `DataSourceManager` 实例。
+Get an instance of `DataSourceManager`.
 
-- 类型
+- Type
 
 ```tsx | pure
 function useDataSourceManager(): DataSourceManager;
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
