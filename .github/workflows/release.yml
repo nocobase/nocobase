@@ -22,6 +22,7 @@ jobs:
           yarn install
           yarn build
       - name: publish npmjs.org
+        continue-on-error: true
         run: |
           git config --global user.email "test@mail.com"
           git config --global user.name "test"
@@ -44,16 +45,19 @@ jobs:
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Build Pro plugins
+        continue-on-error: true
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
           yarn build
       - name: publish pkg.nocobase.com
         run: |
+          git reset --hard
           yarn config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com
       - name: publish pkg-src.nocobase.com
         run: |
+          git reset --hard
           bash generate-npmignore.sh ignore-src
           yarn config set //pkg-src.nocobase.com/:_authToken=${{ secrets.PKG_SRC_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com
