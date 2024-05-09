@@ -7,11 +7,13 @@ on:
       - 'develop'
     paths:
       - 'packages/**'
+      - '.github/workflows/nocobase-build-test.yml'
   pull_request:
     branches:
       - '**'
     paths:
       - 'packages/**'
+      - '.github/workflows/nocobase-build-test.yml'
 
 jobs:
   build-test:
