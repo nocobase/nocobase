@@ -38,6 +38,7 @@ jobs:
           echo "packages/pro-plugins/" >> .git/info/exclude
           bash release.sh
       - name: push pro plugins
+        continue-on-error: true
         uses: ad-m/github-push-action@master
         with:
           ssh: true
