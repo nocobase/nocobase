@@ -22,7 +22,6 @@ on:
 jobs:
   e2e-test-postgres:
     runs-on: ubuntu-latest
-    # if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
     services:
       # Label used to access the service container
       postgres:
