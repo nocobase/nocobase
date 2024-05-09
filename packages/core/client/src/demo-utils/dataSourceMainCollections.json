@@ -1,0 +1,819 @@
+[
+  {
+    "key": "yzowed2vee0",
+    "name": "users",
+    "title": "{{t(\"Users\")}}",
+    "inherit": false,
+    "hidden": false,
+    "description": null,
+    "fields": [
+      {
+        "key": "6m3kn2pytkc",
+        "name": "id",
+        "type": "bigInt",
+        "interface": "id",
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "autoIncrement": true,
+        "primaryKey": true,
+        "allowNull": false,
+        "uiSchema": {
+          "type": "number",
+          "title": "{{t(\"ID\")}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true
+        }
+      },
+      {
+        "key": "8douy9r69x5",
+        "name": "nickname",
+        "type": "string",
+        "interface": "input",
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "type": "string",
+          "title": "{{t(\"Nickname\")}}",
+          "x-component": "Input"
+        }
+      },
+      {
+        "key": "vp191ptc0d7",
+        "name": "username",
+        "type": "string",
+        "interface": "input",
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "unique": true,
+        "uiSchema": {
+          "type": "string",
+          "title": "{{t(\"Username\")}}",
+          "x-component": "Input",
+          "x-validator": {
+            "username": true
+          },
+          "required": true
+        }
+      },
+      {
+        "key": "47o82qhkvdm",
+        "name": "email",
+        "type": "string",
+        "interface": "email",
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "unique": true,
+        "uiSchema": {
+          "type": "string",
+          "title": "{{t(\"Email\")}}",
+          "x-component": "Input",
+          "x-validator": "email",
+          "required": true
+        }
+      },
+      {
+        "key": "q5i9ynhq325",
+        "name": "phone",
+        "type": "string",
+        "interface": "phone",
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "unique": true,
+        "uiSchema": {
+          "type": "string",
+          "title": "{{t(\"Phone\")}}",
+          "x-component": "Input",
+          "x-validator": "phone",
+          "required": true
+        }
+      },
+      {
+        "key": "cc4aslvh9dv",
+        "name": "password",
+        "type": "password",
+        "interface": "password",
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "hidden": true,
+        "uiSchema": {
+          "type": "string",
+          "title": "{{t(\"Password\")}}",
+          "x-component": "Password"
+        }
+      },
+      {
+        "key": "e87ndyttazh",
+        "name": "appLang",
+        "type": "string",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null
+      },
+      {
+        "key": "snfbet0pe49",
+        "name": "resetToken",
+        "type": "string",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "unique": true,
+        "hidden": true
+      },
+      {
+        "key": "j78yhz6wifd",
+        "name": "systemSettings",
+        "type": "json",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "defaultValue": {}
+      },
+      {
+        "key": "lkxqml8gchd",
+        "name": "sort",
+        "type": "sort",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "hidden": true
+      },
+      {
+        "key": "lt3pcrjngzc",
+        "name": "createdById",
+        "type": "context",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "dataType": "bigInt",
+        "dataIndex": "state.currentUser.id",
+        "createOnly": true,
+        "visible": true,
+        "index": true
+      },
+      {
+        "key": "lcfaf27uxyz",
+        "name": "createdBy",
+        "type": "belongsTo",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "users",
+        "foreignKey": "createdById",
+        "targetKey": "id"
+      },
+      {
+        "key": "y6lwdb31r5t",
+        "name": "updatedById",
+        "type": "context",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "dataType": "bigInt",
+        "dataIndex": "state.currentUser.id",
+        "visible": true,
+        "index": true
+      },
+      {
+        "key": "exhbmthsin0",
+        "name": "updatedBy",
+        "type": "belongsTo",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "users",
+        "foreignKey": "updatedById",
+        "targetKey": "id"
+      },
+      {
+        "key": "s921nnlzdwi",
+        "name": "roles",
+        "type": "belongsToMany",
+        "interface": "m2m",
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "roles",
+        "foreignKey": "userId",
+        "otherKey": "roleName",
+        "onDelete": "CASCADE",
+        "sourceKey": "id",
+        "targetKey": "name",
+        "through": "rolesUsers",
+        "uiSchema": {
+          "type": "array",
+          "title": "{{t(\"Roles\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "multiple": true,
+            "fieldNames": {
+              "label": "title",
+              "value": "name"
+            }
+          }
+        }
+      },
+      {
+        "key": "qe7b1rsct5h",
+        "name": "jobs",
+        "type": "belongsToMany",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "through": "users_jobs",
+        "foreignKey": "userId",
+        "sourceKey": "id",
+        "otherKey": "jobId",
+        "targetKey": "id",
+        "target": "jobs"
+      },
+      {
+        "key": "vt0n1l1ruyz",
+        "name": "usersJobs",
+        "type": "hasMany",
+        "interface": null,
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "users_jobs",
+        "foreignKey": "userId",
+        "sourceKey": "id",
+        "targetKey": "id"
+      },
+      {
+        "key": "ekol7p60nry",
+        "name": "sortName",
+        "type": "sort",
+        "interface": "sort",
+        "description": null,
+        "collectionName": "users",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "type": "number",
+          "x-component": "InputNumber",
+          "x-component-props": {
+            "stringMode": true,
+            "step": "1"
+          },
+          "x-validator": "integer",
+          "title": "sort"
+        }
+      }
+    ],
+    "category": [],
+    "origin": "@nocobase/plugin-users",
+    "dumpRules": {
+      "group": "user"
+    },
+    "sortable": "sort",
+    "model": "UserModel",
+    "createdBy": true,
+    "updatedBy": true,
+    "logging": true,
+    "shared": true,
+    "from": "db2cm",
+    "filterTargetKey": "id"
+  },
+  {
+    "key": "rmx938ttbue",
+    "name": "roles",
+    "title": "{{t(\"Roles\")}}",
+    "inherit": false,
+    "hidden": false,
+    "description": null,
+    "fields": [
+      {
+        "key": "l6thu4n5u6x",
+        "name": "name",
+        "type": "uid",
+        "interface": "input",
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "prefix": "r_",
+        "primaryKey": true,
+        "uiSchema": {
+          "type": "string",
+          "title": "{{t(\"Role UID\")}}",
+          "x-component": "Input"
+        }
+      },
+      {
+        "key": "yhfq9yv8z0p",
+        "name": "title",
+        "type": "string",
+        "interface": "input",
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "unique": true,
+        "uiSchema": {
+          "type": "string",
+          "title": "{{t(\"Role name\")}}",
+          "x-component": "Input"
+        },
+        "translation": true
+      },
+      {
+        "key": "vnhjlmopfuz",
+        "name": "description",
+        "type": "string",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null
+      },
+      {
+        "key": "s4iqsehgxo6",
+        "name": "strategy",
+        "type": "json",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null
+      },
+      {
+        "key": "75e4wnv873m",
+        "name": "default",
+        "type": "boolean",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "defaultValue": false
+      },
+      {
+        "key": "nofdv0gte68",
+        "name": "hidden",
+        "type": "boolean",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "defaultValue": false
+      },
+      {
+        "key": "bogzo1uvk84",
+        "name": "allowConfigure",
+        "type": "boolean",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null
+      },
+      {
+        "key": "k3fvj8ddpp9",
+        "name": "allowNewMenu",
+        "type": "boolean",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null
+      },
+      {
+        "key": "v1ditqsv1uk",
+        "name": "menuUiSchemas",
+        "type": "belongsToMany",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "uiSchemas",
+        "targetKey": "x-uid",
+        "foreignKey": "roleName",
+        "sourceKey": "name",
+        "otherKey": "uiSchemaXUid",
+        "through": "rolesUischemas"
+      },
+      {
+        "key": "ccqhlcvgnz8",
+        "name": "resources",
+        "type": "hasMany",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "dataSourcesRolesResources",
+        "sourceKey": "name",
+        "foreignKey": "roleName",
+        "targetKey": "id"
+      },
+      {
+        "key": "s4fshtx7oxv",
+        "name": "snippets",
+        "type": "set",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "defaultValue": ["!ui.*", "!pm", "!pm.*"]
+      },
+      {
+        "key": "oyzvbhc60mp",
+        "name": "users",
+        "type": "belongsToMany",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "users",
+        "foreignKey": "roleName",
+        "otherKey": "userId",
+        "onDelete": "CASCADE",
+        "sourceKey": "name",
+        "targetKey": "id",
+        "through": "rolesUsers"
+      },
+      {
+        "key": "89yklh7lm3p",
+        "name": "sort",
+        "type": "sort",
+        "interface": null,
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "hidden": true
+      },
+      {
+        "key": "iz5s22dinui",
+        "name": "color",
+        "type": "string",
+        "interface": "color",
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "defaultValue": "#1677FF",
+        "uiSchema": {
+          "type": "string",
+          "x-component": "ColorPicker",
+          "default": "#1677FF",
+          "title": "color"
+        }
+      },
+      {
+        "key": "o5nyb6isl62",
+        "name": "long-text",
+        "type": "text",
+        "interface": "textarea",
+        "description": null,
+        "collectionName": "roles",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "type": "string",
+          "x-component": "Input.TextArea",
+          "title": "Long text"
+        }
+      }
+    ],
+    "category": [],
+    "origin": "@nocobase/plugin-acl",
+    "dumpRules": "required",
+    "autoGenId": false,
+    "model": "RoleModel",
+    "filterTargetKey": "name",
+    "sortable": true,
+    "from": "db2cm"
+  },
+  {
+    "key": "24gntrrr5a6",
+    "name": "tree",
+    "title": "TreeCollection",
+    "inherit": false,
+    "hidden": false,
+    "description": null,
+    "fields": [
+      {
+        "key": "pcea3h3ivkg",
+        "name": "parentId",
+        "type": "bigInt",
+        "interface": "integer",
+        "description": null,
+        "collectionName": "t_4uamm7v51dj",
+        "parentKey": null,
+        "reverseKey": null,
+        "isForeignKey": true,
+        "uiSchema": {
+          "type": "number",
+          "title": "{{t(\"Parent ID\")}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true
+        },
+        "target": "t_4uamm7v51dj"
+      },
+      {
+        "key": "185j2rf7o68",
+        "name": "parent",
+        "type": "belongsTo",
+        "interface": "m2o",
+        "description": null,
+        "collectionName": "t_4uamm7v51dj",
+        "parentKey": null,
+        "reverseKey": null,
+        "foreignKey": "parentId",
+        "treeParent": true,
+        "onDelete": "CASCADE",
+        "uiSchema": {
+          "title": "{{t(\"Parent\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "multiple": false,
+            "fieldNames": {
+              "label": "id",
+              "value": "id"
+            }
+          }
+        },
+        "target": "t_4uamm7v51dj",
+        "targetKey": "id"
+      },
+      {
+        "key": "gjvso3p9sjn",
+        "name": "children",
+        "type": "hasMany",
+        "interface": "o2m",
+        "description": null,
+        "collectionName": "t_4uamm7v51dj",
+        "parentKey": null,
+        "reverseKey": null,
+        "foreignKey": "parentId",
+        "treeChildren": true,
+        "onDelete": "CASCADE",
+        "uiSchema": {
+          "title": "{{t(\"Children\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "multiple": true,
+            "fieldNames": {
+              "label": "id",
+              "value": "id"
+            }
+          }
+        },
+        "target": "t_4uamm7v51dj",
+        "targetKey": "id",
+        "sourceKey": "id"
+      },
+      {
+        "key": "j50f3am3c88",
+        "name": "id",
+        "type": "bigInt",
+        "interface": "integer",
+        "description": null,
+        "collectionName": "t_4uamm7v51dj",
+        "parentKey": null,
+        "reverseKey": null,
+        "autoIncrement": true,
+        "primaryKey": true,
+        "allowNull": false,
+        "uiSchema": {
+          "type": "number",
+          "title": "{{t(\"ID\")}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true
+        },
+        "target": "t_4uamm7v51dj"
+      },
+      {
+        "key": "9szmn2ecqgs",
+        "name": "f_y99u3pyj0bt",
+        "type": "string",
+        "interface": "input",
+        "description": null,
+        "collectionName": "t_4uamm7v51dj",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "type": "string",
+          "x-component": "Input",
+          "title": "Single line text"
+        }
+      }
+    ],
+    "category": [],
+    "logging": true,
+    "autoGenId": true,
+    "createdAt": false,
+    "createdBy": false,
+    "updatedAt": false,
+    "updatedBy": false,
+    "template": "tree",
+    "view": false,
+    "tree": "adjacencyList",
+    "filterTargetKey": "id"
+  },
+  {
+    "key": "16ocj2rsg3t",
+    "name": "interfaces",
+    "title": "Interfaces",
+    "inherit": false,
+    "hidden": false,
+    "description": null,
+    "fields": [
+      {
+        "key": "k2v39l19inp",
+        "name": "id",
+        "type": "bigInt",
+        "interface": "integer",
+        "description": null,
+        "collectionName": "interfaces",
+        "parentKey": null,
+        "reverseKey": null,
+        "autoIncrement": true,
+        "primaryKey": true,
+        "allowNull": false,
+        "uiSchema": {
+          "type": "number",
+          "title": "{{t(\"ID\")}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true
+        }
+      },
+      {
+        "key": "gfnqdj8sd01",
+        "name": "createdAt",
+        "type": "date",
+        "interface": "createdAt",
+        "description": null,
+        "collectionName": "interfaces",
+        "parentKey": null,
+        "reverseKey": null,
+        "field": "createdAt",
+        "uiSchema": {
+          "type": "datetime",
+          "title": "{{t(\"Created at\")}}",
+          "x-component": "DatePicker",
+          "x-component-props": {},
+          "x-read-pretty": true
+        }
+      },
+      {
+        "key": "3ddqrb1lle5",
+        "name": "createdBy",
+        "type": "belongsTo",
+        "interface": "createdBy",
+        "description": null,
+        "collectionName": "interfaces",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "users",
+        "foreignKey": "createdById",
+        "uiSchema": {
+          "type": "object",
+          "title": "{{t(\"Created by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true
+        },
+        "targetKey": "id"
+      },
+      {
+        "key": "9nc7gqqw0ht",
+        "name": "updatedAt",
+        "type": "date",
+        "interface": "updatedAt",
+        "description": null,
+        "collectionName": "interfaces",
+        "parentKey": null,
+        "reverseKey": null,
+        "field": "updatedAt",
+        "uiSchema": {
+          "type": "string",
+          "title": "{{t(\"Last updated at\")}}",
+          "x-component": "DatePicker",
+          "x-component-props": {},
+          "x-read-pretty": true
+        }
+      },
+      {
+        "key": "06wr4f2qi4w",
+        "name": "updatedBy",
+        "type": "belongsTo",
+        "interface": "updatedBy",
+        "description": null,
+        "collectionName": "interfaces",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "users",
+        "foreignKey": "updatedById",
+        "uiSchema": {
+          "type": "object",
+          "title": "{{t(\"Last updated by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true
+        },
+        "targetKey": "id"
+      },
+      {
+        "key": "g5beggm3aln",
+        "name": "nano-iD",
+        "type": "nanoid",
+        "interface": "nanoid",
+        "description": null,
+        "collectionName": "interfaces",
+        "parentKey": null,
+        "reverseKey": null,
+        "customAlphabet": "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+        "size": 21,
+        "autoFill": true,
+        "uiSchema": {
+          "type": "string",
+          "x-component": "NanoIDInput",
+          "title": "Nano ID"
+        }
+      },
+      {
+        "key": "wchbz23orvg",
+        "name": "attachment",
+        "type": "belongsToMany",
+        "interface": "attachment",
+        "description": null,
+        "collectionName": "interfaces",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "x-component-props": {
+            "accept": "image/*",
+            "multiple": true
+          },
+          "type": "array",
+          "x-component": "Upload.Attachment",
+          "title": "Attachment"
+        },
+        "target": "attachments",
+        "through": "t_zj0zu7maytd",
+        "foreignKey": "f_iek1e32gsq0",
+        "otherKey": "f_dtc6w8dzyoo",
+        "targetKey": "id",
+        "sourceKey": "id"
+      }
+    ],
+    "category": [],
+    "logging": true,
+    "autoGenId": true,
+    "createdAt": true,
+    "createdBy": true,
+    "updatedAt": true,
+    "updatedBy": true,
+    "template": "general",
+    "view": false,
+    "filterTargetKey": "id"
+  }
+]

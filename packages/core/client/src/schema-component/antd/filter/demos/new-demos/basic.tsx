@@ -1,17 +1,11 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+
 
 import React from 'react';
-import { useField, observer } from '@formily/react';
+import { useField, observer, ISchema } from '@formily/react';
 import { FilterActionProps, useRequest } from '@nocobase/client';
 
-import { getAppComponent } from '@nocobase/test/web';
+import { mockApp } from '@nocobase/client/demo-utils';
+import { SchemaComponent, Plugin } from '@nocobase/client';
 
 import { filterOptions } from './options';
 
@@ -45,33 +39,41 @@ const useFilterActionProps = (): FilterActionProps => {
   };
 };
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    properties: {
-      test: {
-        name: 'filter',
-        type: 'object',
-        enum: filterOptions,
-        title: 'Filter',
-        'x-decorator': 'ShowFilterData',
-        'x-component': 'Filter.Action',
-        'x-use-component-props': useFilterActionProps,
-      },
+const schema: ISchema = {
+  type: 'void',
+  name: 'root',
+  properties: {
+    test: {
+      name: 'filter',
+      type: 'object',
+      enum: filterOptions,
+      title: 'Filter',
+      'x-decorator': 'ShowFilterData',
+      'x-component': 'Filter.Action',
+      'x-use-component-props': 'useFilterActionProps',
     },
   },
-  appOptions: {
-    components: {
-      ShowFilterData,
-    },
-    scopes: {
-      useFilterActionProps,
-    },
-  },
+}
+
+const Demo = () => {
+  return <SchemaComponent
+    schema={schema}
+    components={{ ShowFilterData }}
+    scope={{ useFilterActionProps }}
+  />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
   apis: {
     test: { data: { data: 'ok' } },
   },
 });
 
-export default App;
+export default app.getRootComponent();

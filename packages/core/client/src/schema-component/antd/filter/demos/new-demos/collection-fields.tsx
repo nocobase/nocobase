@@ -1,21 +1,16 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+
 
 import {
   FilterActionProps,
+  ISchema,
   useCollection,
   useDataBlockRequest,
   useFilterFieldOptions,
   useFilterFieldProps,
 } from '@nocobase/client';
-
-import { getAppComponent } from '@nocobase/test/web';
+import React from 'react';
+import { mockApp } from '@nocobase/client/demo-utils';
+import { SchemaComponent, Plugin } from '@nocobase/client';
 
 const useFilterActionProps = (): FilterActionProps => {
   const service = useDataBlockRequest();
@@ -28,34 +23,45 @@ const useFilterActionProps = (): FilterActionProps => {
   });
 };
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    'x-decorator': 'DataBlockProvider',
-    'x-decorator-props': {
-      collection: 'users',
-      action: 'list',
-    },
-    properties: {
-      test: {
-        name: 'filter',
-        type: 'object',
-        title: 'Filter',
-        'x-component': 'Filter.Action',
-        'x-use-component-props': useFilterActionProps,
-      },
+const schema: ISchema = {
+  type: 'void',
+  name: 'root',
+  'x-decorator': 'DataBlockProvider',
+  'x-decorator-props': {
+    collection: 'users',
+    action: 'list',
+  },
+  properties: {
+    test: {
+      name: 'filter',
+      type: 'object',
+      title: 'Filter',
+      'x-component': 'Filter.Action',
+      'x-use-component-props': 'useFilterActionProps',
     },
   },
-  appOptions: {
-    components: {},
-    scopes: {
-      useFilterActionProps,
-    },
-  },
+}
+
+const Demo = () => {
+  return <SchemaComponent
+    schema={schema}
+    scope={{
+      useFilterActionProps
+    }}
+  />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
   apis: {
     test: { data: { data: 'ok' } },
   },
 });
 
-export default App;
+export default app.getRootComponent();

@@ -2,9 +2,9 @@
 
 用于提供 `DataSource` 的实例。
 
-## 组件
+## Component
 
-- 类型
+- Type
 
 ```tsx | pure
 interface DataSourceProviderProps {
@@ -13,7 +13,7 @@ interface DataSourceProviderProps {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
@@ -29,15 +29,15 @@ const MyComponent = () => {
 
 ### useDataSource()
 
-获取 `DataSource` 实例。
+Get the `DataSource` instance.
 
-- 类型
+- Type
 
 ```tsx | pure
 function useDataSource(): DataSource;
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {
@@ -48,15 +48,15 @@ const MyComponent = () => {
 
 ### useDataSourceKey()
 
-获取 `DataSource` 的 key。
+Get the key of the `DataSource`.
 
-- 类型
+- Type
 
 ```tsx | pure
 function useDataSourceKey(): string;
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyComponent = () => {

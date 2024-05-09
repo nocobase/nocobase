@@ -1,14 +1,10 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+
 
 import { useField } from '@formily/react';
-import { getAppComponent } from '@nocobase/test/web';
+import { mockApp } from '@nocobase/client/demo-utils';
+import React from 'react';
+import { SchemaComponent, Plugin } from '@nocobase/client';
+
 
 const mockVal = (str: string, repeat = 1) => ({
   value: str.repeat(repeat),
@@ -26,22 +22,34 @@ function useAutoCompleteProps() {
   };
 }
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    'x-decorator': 'FormV2',
-    'x-component': 'ShowFormData',
-    properties: {
-      test: {
-        type: 'boolean',
-        title: 'Test',
-        'x-decorator': 'FormItem',
-        'x-component': 'AutoComplete',
-        'x-use-component-props': useAutoCompleteProps,
-      },
+const schema = {
+  type: 'void',
+  name: 'root',
+  'x-decorator': 'FormV2',
+  'x-component': 'ShowFormData',
+  properties: {
+    test: {
+      type: 'boolean',
+      title: 'Test',
+      'x-decorator': 'FormItem',
+      'x-component': 'AutoComplete',
+      'x-use-component-props': 'useAutoCompleteProps',
     },
   },
+}
+
+const Demo = () => {
+  return <SchemaComponent schema={schema} scope={{ useAutoCompleteProps }} />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
 });
 
-export default App;
+export default app.getRootComponent();
