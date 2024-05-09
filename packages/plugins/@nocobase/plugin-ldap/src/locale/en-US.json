@@ -1,0 +1,9 @@
+{
+  "Enable": "Enable",
+  "LDAP URL, starts from ldap:// or ldaps://": "LDAP URL, starts from ldap:// or ldaps://",
+  "LDAP Username": "LDAP Username",
+  "LDAP Password": "LDAP Password",
+  "Connect Timeout, default value is 5 seconds": "Connect Timeout, default value is 5 seconds",
+  "Sign up automatically when the user does not exist": "Connect Timeout, default value is 5 seconds",
+  "User not found": "User not found"
+}

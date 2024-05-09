@@ -1,0 +1,9 @@
+{
+  "Enable": "启用",
+  "LDAP URL, starts from ldap:// or ldaps://": "LDAP URL, 以 ldap:// 或 ldaps:// 开头",
+  "LDAP Username": "LDAP 用户名",
+  "LDAP Password": "LDAP 密码",
+  "Connect Timeout, default value is 5 seconds": "查询超时时间，默认值为5秒",
+  "Sign up automatically when the user does not exist": "用户不存在时自动注册",
+  "User not found": "用户不存在"
+}
