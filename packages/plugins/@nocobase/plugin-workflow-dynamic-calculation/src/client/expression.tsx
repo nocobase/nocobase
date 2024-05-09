@@ -30,4 +30,5 @@ export class ExpressionFieldInterface extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
   };
+  hidden = true;
 }
