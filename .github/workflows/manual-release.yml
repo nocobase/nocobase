@@ -11,7 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
+          persist-credentials: true
       - name: Checkout pro-plugins
         uses: actions/checkout@v4
         with:
@@ -42,10 +46,11 @@ jobs:
           repository: nocobase/pro-plugins
           tags: true
           atomic: true
-      - name: push
+      - name: push nocobase
         uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.head_ref }}
+          ssh: true
+          repository: nocobase/nocobase
           tags: true
           atomic: true
