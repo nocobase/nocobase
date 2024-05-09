@@ -18,14 +18,29 @@ export interface Header {
 
 export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'params' | 'data' | 'timeout'> & {
   headers: Array<Header>;
+  contentType: string;
   ignoreFail: boolean;
+};
+
+const ContentTypeTransformers = {
+  'application/json'(data) {
+    return data;
+  },
+  'application/x-www-form-urlencoded'(data: { name: string; value: string }[]) {
+    return new URLSearchParams(
+      data.filter(({ name, value }) => name && typeof value !== 'undefined').map(({ name, value }) => [name, value]),
+    ).toString();
+  },
 };
 
 async function request(config) {
   // default headers
-  const { url, method = 'POST', data, timeout = 5000 } = config;
+  const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
   const headers = (config.headers ?? []).reduce((result, header) => {
     if (header.name.toLowerCase() === 'content-type') {
+      // header.value = ['application/json', 'application/x-www-form-urlencoded'].includes(header.value)
+      //   ? header.value
+      //   : 'application/json';
       return result;
     }
     return Object.assign(result, { [header.name]: header.value });
@@ -36,15 +51,19 @@ async function request(config) {
   );
 
   // TODO(feat): only support JSON type for now, should support others in future
-  headers['Content-Type'] = 'application/json';
+  headers['Content-Type'] = contentType;
 
   return axios.request({
     url,
     method,
     headers,
     params,
-    data,
     timeout,
+    ...(method.toLowerCase() !== 'get' && data != null
+      ? {
+          data: ContentTypeTransformers[contentType](data),
+        }
+      : {}),
   });
 }
 
