@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 18
       - name: Install Lerna
-        run: npm install -g lerna@4
+        run: npm install -g lerna@4 auto-changelog@2
       - name: Run release.sh
         run: |
           git config --global user.email "actions@github.com"
