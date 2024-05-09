@@ -1,7 +1,10 @@
 name: NocoBase E2E Test
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
-  push:
   workflow_run:
     workflows: [Nocobase Build Test]
     types: [completed]
