@@ -1,9 +1,10 @@
 name: NocoBase E2E Test
 
 on:
+  push:
   workflow_run:
     workflows: [Nocobase Build Test]
-    types: [in_progress]
+    types: [completed]
 
 jobs:
   e2e-test-postgres:
