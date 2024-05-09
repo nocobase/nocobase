@@ -48,7 +48,7 @@ export default defineConfig({
       },
       {
         title: 'Home site',
-        link: 'https://docs.nocobase.com/welcome/introduction/',
+        link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
       }
       // {
       //   title: 'UI Schema',
