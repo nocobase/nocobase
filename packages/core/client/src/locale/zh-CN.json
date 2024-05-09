@@ -934,5 +934,9 @@
   "Refresh data on action": "执行后刷新数据",
   "This variable has been deprecated and can be replaced with \"Current form\"": "该变量已被弃用，可以使用“当前表单”替代",
   "Unknown field type": "未知字段类型",
-  "The following field types are not compatible and do not support output and display": "以下字段类型未适配，不支持输出和显示"
+  "The following field types are not compatible and do not support output and display": "以下字段类型未适配，不支持输出和显示",
+  "Not fixed":"不固定",
+  "Left fixed":"左固定",
+  "Right fixed":"右固定",
+  "Fixed":"固定列"
 }
