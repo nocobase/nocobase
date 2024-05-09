@@ -1,0 +1,31 @@
+{
+  "name": "@nocobase/plugin-ldap",
+  "displayName": "Auth: LDAP",
+  "displayName.zh-CN": "认证：LDAP",
+  "description": "LDAP authentication.",
+  "description.zh-CN": "LDAP 认证",
+  "version": "0.21.0-alpha.14",
+  "license": "AGPL-3.0",
+  "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/auth-ldap",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/auth-ldap",
+  "devDependencies": {
+    "@formily/react": "2.x",
+    "ahooks": "^3.7.11",
+    "antd": "5.x",
+    "ldapjs": "^3.0.7",
+    "react": "18.x",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/auth": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "keywords": [
+    "Authentication"
+  ]
+}
