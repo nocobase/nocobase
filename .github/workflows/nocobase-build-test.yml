@@ -1,4 +1,4 @@
-name: Nocobase Build Test
+name: "Nocobase Build Test"
 
 on:
   push:
@@ -36,9 +36,12 @@ jobs:
       - run: yarn build
         env:
           __E2E__: true # e2e will be reusing this workflow, so we need to set this flag to true
-      - run: ls -R packages/
       - uses: actions/upload-artifact@v4
         with:
           name: build-artifact
-          path: packages/**/{es,lib,dist}/
+          path: |
+            packages/**/es/
+            packages/**/lib/
+            packages/**/dist/
+            !packages/**/node_modules/**
     timeout-minutes: 30
