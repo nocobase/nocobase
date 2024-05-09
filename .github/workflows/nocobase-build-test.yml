@@ -30,12 +30,13 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 18
           cache: 'yarn'
       - run: yarn --frozen-lockfile
       - run: yarn build
         env:
           __E2E__: true # e2e will be reusing this workflow, so we need to set this flag to true
+      - run: ls -R packages/
       - uses: actions/upload-artifact@v4
         with:
           name: build-artifact
