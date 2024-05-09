@@ -22,6 +22,7 @@ jobs:
           yarn install
           yarn build
       - name: publish npmjs.org
+        continue-on-error: true
         run: |
           git config --global user.email "test@mail.com"
           git config --global user.name "test"
@@ -44,6 +45,7 @@ jobs:
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Build Pro plugins
+        continue-on-error: true
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
