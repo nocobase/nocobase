@@ -390,7 +390,8 @@ const _test = base.extend<ExtendUtils>({
 
     // 测试运行完自动销毁页面
     for (const nocoPage of nocoPages) {
-      waitList.push(nocoPage.destroy());
+      // 这里之所以不加入 waitList 是因为会导致 acl 的测试报错
+      await nocoPage.destroy();
     }
     waitList.push(setDefaultRole('root'));
     // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
