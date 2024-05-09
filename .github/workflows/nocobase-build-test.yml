@@ -1,38 +1,41 @@
 name: Nocobase Build Test
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 on:
   push:
     branches:
       - 'main'
       - 'develop'
     paths:
-      - '.github/workflows/nocobase-build-test.yml'
       - 'packages/**'
   pull_request:
     branches:
       - '**'
     paths:
-      - '.github/workflows/nocobase-build-test.yml'
       - 'packages/**'
 
 jobs:
   build-test:
-    strategy:
-      matrix:
-        node_version: [ '18' ]
     runs-on: ubuntu-latest
-    container: node:${{ matrix.node_version }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v4
         with:
-          node-version: ${{ matrix.node_version }}
+          repository: nocobase/pro-plugins
+          ref: main
+          path: packages/pro-plugins
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
           cache: 'yarn'
-      - run: yarn install
+      - run: yarn --frozen-lockfile
       - run: yarn build
+        env:
+          __E2E__: true # e2e will be reusing this workflow, so we need to set this flag to true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: packages/**/{es,lib,dist}/
     timeout-minutes: 30
