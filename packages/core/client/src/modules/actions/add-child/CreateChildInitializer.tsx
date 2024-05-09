@@ -22,7 +22,7 @@ export const CreateChildInitializer = (props) => {
       openMode: 'drawer',
       type: 'link',
       addChild: true,
-      style: { height: 'auto' },
+      style: { height: 'auto', lineHeight: 'normal' },
       component: 'CreateRecordAction',
     },
     properties: {
