@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// @ts-ignore
 import { name } from '../package.json';
 
 export const authType = 'LDAP';
