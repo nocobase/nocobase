@@ -6,10 +6,6 @@ concurrency:
 
 on:
   workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'Please enter a pull request number'
-        required: true
 jobs:
   push-commit:
     runs-on: ubuntu-latest
@@ -21,7 +17,7 @@ jobs:
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
       - name: Set Node.js 18
         uses: actions/setup-node@v3
         with:
@@ -39,8 +35,7 @@ jobs:
       - name: push pro plugins
         uses: ad-m/github-push-action@master
         with:
-          repository: nocobase/pro-plugins
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ssh: true
           branch: ${{ github.head_ref }}
           directory: packages/pro-plugins
           tags: true
