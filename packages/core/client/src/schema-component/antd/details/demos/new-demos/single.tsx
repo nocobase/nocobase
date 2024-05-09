@@ -1,65 +1,71 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+
 
 import {
   DetailsBlockProvider,
+  ISchema,
   useDetailsPaginationProps,
   useDetailsWithPaginationDecoratorProps,
   useDetailsWithPaginationProps,
 } from '@nocobase/client';
-import { getAppComponent } from '@nocobase/test/web';
+import React from 'react';
+import { mockApp } from '@nocobase/client/demo-utils';
+import { SchemaComponent, Plugin } from '@nocobase/client';
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    'x-decorator': 'DetailsBlockProvider',
-    'x-use-decorator-props': 'useDetailsWithPaginationDecoratorProps',
-    'x-decorator-props': {
-      collection: 'roles',
-      action: 'get',
-      filterByTK: 1,
-    },
-    'x-component': 'CardItem',
-    properties: {
-      details: {
-        type: 'void',
-        'x-pattern': 'readPretty',
-        'x-component': 'Details',
-        'x-use-component-props': 'useDetailsWithPaginationProps',
-        properties: {
-          name: {
-            type: 'string',
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-            'x-index': 1,
-          },
-          title: {
-            type: 'string',
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-            'x-index': 2,
-          },
+const schema: ISchema = {
+  type: 'void',
+  name: 'root',
+  'x-decorator': 'DetailsBlockProvider',
+  'x-use-decorator-props': 'useDetailsWithPaginationDecoratorProps',
+  'x-decorator-props': {
+    collection: 'roles',
+    action: 'get',
+    filterByTK: 1,
+  },
+  'x-component': 'CardItem',
+  properties: {
+    details: {
+      type: 'void',
+      'x-pattern': 'readPretty',
+      'x-component': 'Details',
+      'x-use-component-props': 'useDetailsWithPaginationProps',
+      properties: {
+        name: {
+          type: 'string',
+          'x-component': 'CollectionField',
+          'x-decorator': 'FormItem',
+          'x-index': 1,
+        },
+        title: {
+          type: 'string',
+          'x-component': 'CollectionField',
+          'x-decorator': 'FormItem',
+          'x-index': 2,
         },
       },
     },
   },
-  appOptions: {
-    components: {
-      DetailsBlockProvider,
-    },
-    scopes: {
+};
+
+const Demo = () => {
+  return <SchemaComponent
+    schema={schema}
+    scope={{
       useDetailsWithPaginationDecoratorProps,
       useDetailsWithPaginationProps,
       useDetailsPaginationProps,
-    },
-  },
+    }}
+  />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
+  components: { DetailsBlockProvider }
 });
 
-export default App;
+export default app.getRootComponent();

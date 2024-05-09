@@ -1,6 +1,5 @@
 const { exec } = require('child_process');
 const fs = require('fs');
-const path = require('path');
 
 const commercialLicense = `
 /**
@@ -59,6 +58,7 @@ exec('git diff --cached --name-only --diff-filter=ACM', (error, stdout, stderr) 
     .split('\n')
     .filter(Boolean)
     .filter((file) => file.includes('/src/')) // 只检查 src 目录下的文件
+    .filter((file) => !file.includes('/demos/')) // 忽略 demos 目录
     .filter((file) => file.endsWith('.js') || file.endsWith('.jsx') || file.endsWith('.ts') || file.endsWith('.tsx'));
 
   const validFiles = files.filter((file) => addLicenseToFile(file));
