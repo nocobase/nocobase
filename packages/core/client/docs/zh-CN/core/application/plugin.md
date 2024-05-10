@@ -43,6 +43,8 @@ class Plugin<T = any> {
   async beforeLoad() {}
 
   async load() {}
+
+  async afterLoad() {}
 }
 ```
 
@@ -63,6 +65,7 @@ class Plugin<T = any> {
     - `afterAdd`：插件被添加后立即执行
     - `beforeLoad`：执行渲染时执行，在 `afterAdd` 之后，`load` 之前
     - `load`：最后执行
+    - `afterLoad`：在 `load` 之后执行，主要用于自定义插件覆盖已添加的插件
 - 示例
 
 ```tsx | pure

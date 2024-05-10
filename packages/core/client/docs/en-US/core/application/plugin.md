@@ -43,6 +43,8 @@ class Plugin<T = any> {
   async beforeLoad() {}
 
   async load() {}
+
+  async afterLoad() {}
 }
 ```
 
@@ -62,6 +64,8 @@ class Plugin<T = any> {
     - `afterAdd`: Executed immediately after the plugin is added.
     - `beforeLoad`: Executed during rendering, after `afterAdd` and before `load`.
     - `load`: Executed last.
+    - `afterLoad`: Executed after `load`, mainly used for custom plugins to override already added plugins.
+
 - Example
 
 ```tsx | pure

@@ -17,6 +17,7 @@ describe('Plugin', () => {
     const afterAdd = vitest.fn();
     const beforeLoad = vitest.fn();
     const load = vitest.fn();
+    const afterLoad = vitest.fn();
     class DemoPlugin extends Plugin {
       async afterAdd() {
         afterAdd();
@@ -27,6 +28,10 @@ describe('Plugin', () => {
       async load() {
         load();
       }
+
+      async afterLoad() {
+        afterLoad();
+      }
     }
     const app = new Application({
       plugins: [[DemoPlugin, { name: 'demo1' }]],
@@ -36,6 +41,7 @@ describe('Plugin', () => {
     expect(afterAdd).toBeCalledTimes(1);
     expect(beforeLoad).toBeCalledTimes(1);
     expect(load).toBeCalledTimes(1);
+    expect(afterLoad).toBeCalledTimes(1);
   });
 });
 

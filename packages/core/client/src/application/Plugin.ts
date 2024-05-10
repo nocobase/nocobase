@@ -53,6 +53,8 @@ export class Plugin<T = any> {
 
   async load() {}
 
+  async afterLoad() {}
+
   t(text: TFuncKey | TFuncKey[], options: TOptions = {}) {
     return this.app.i18n.t(text, { ns: this.options?.['packageName'], ...(options as any) });
   }
