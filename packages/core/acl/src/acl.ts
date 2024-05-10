@@ -18,6 +18,7 @@ import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
+import { NoPermissionError } from './errors/no-permission-error';
 
 interface CanResult {
   role: string;
@@ -416,7 +417,7 @@ export class ACL extends EventEmitter {
     if (params?.filter?.createdById) {
       const collection = ctx.db.getCollection(resourceName);
       if (!collection || !collection.getField('createdById')) {
-        return lodash.omit(params, 'filter.createdById');
+        throw new NoPermissionError('createdById field not found');
       }
     }
 
@@ -444,25 +445,34 @@ export class ACL extends EventEmitter {
 
         ctx.log?.debug && ctx.log.debug('acl params', params);
 
-        if (params && resourcerAction.mergeParams) {
-          const filteredParams = acl.filterParams(ctx, resourceName, params);
-          const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
+        try {
+          if (params && resourcerAction.mergeParams) {
+            const filteredParams = acl.filterParams(ctx, resourceName, params);
+            const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
 
-          ctx.permission.parsedParams = parsedParams;
-          ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
-          ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
-          resourcerAction.mergeParams(parsedParams, {
-            appends: (x, y) => {
-              if (!x) {
-                return [];
-              }
-              if (!y) {
-                return x;
-              }
-              return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
-            },
-          });
-          ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
+            ctx.permission.parsedParams = parsedParams;
+            ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
+            ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
+            resourcerAction.mergeParams(parsedParams, {
+              appends: (x, y) => {
+                if (!x) {
+                  return [];
+                }
+                if (!y) {
+                  return x;
+                }
+                return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
+              },
+            });
+            ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
+          }
+        } catch (e) {
+          if (e instanceof NoPermissionError) {
+            ctx.throw(403, 'No permissions');
+            return;
+          }
+
+          throw e;
         }
 
         await next();
