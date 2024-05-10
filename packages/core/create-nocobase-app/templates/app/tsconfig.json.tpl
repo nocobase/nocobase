@@ -16,7 +16,9 @@
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
-    "baseUrl": "."
-  },
-  "include": ["global.d.ts"]
+    "baseUrl": ".",
+    "typeRoots": [
+      "./types"
+    ]
+  }
 }
