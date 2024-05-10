@@ -99,7 +99,7 @@ jobs:
           script: |
             const jobName = '${{ github.job.name }}';
             const fs = require('fs');
-            const prNumber = ${{ github.job.prNumber }};
+            const prNumber = '${{ github.job.prNumber }}';
             if (!prNumber) {
               core.error('No pull request found for commit ' + context.sha + ' and workflow triggered by: ' + context.payload.workflow_run.event);
               return;
@@ -122,7 +122,6 @@ jobs:
                 }
               }
             }
-            const reportDir = 'run-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}-${{ github.sha }}';
             const reportUrl = '${{ steps.artifact-upload-step.outputs.artifact-url }}';
             core.notice('Report url: ' + reportUrl);
             const mergeWorkflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
