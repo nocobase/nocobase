@@ -244,7 +244,8 @@ test.describe('creation form block schema settings', () => {
 
     // https://nocobase.height.app/T-3251
     test('nested conditions', async ({ page, mockPage }) => {
-      await mockPage(T3251).goto();
+      const nocoPage = await mockPage(T3251).waitForInit();
+      await nocoPage.goto();
 
       // 一开始 email 字段是可编辑的
       await expect(

@@ -138,7 +138,7 @@ export const collectFieldStateOfLinkageRules = ({
   }
 };
 
-async function replaceVariables(
+export async function replaceVariables(
   value: string,
   {
     variables,
