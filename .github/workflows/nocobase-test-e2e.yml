@@ -111,7 +111,7 @@ jobs:
                 issue_number: prNumber,
               });
               for (const comment of comments) {
-                if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName) {
+                if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName)） {
                   await github.graphql(`
                     mutation {
                       minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
