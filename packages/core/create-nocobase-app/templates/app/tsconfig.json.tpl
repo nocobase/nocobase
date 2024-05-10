@@ -17,5 +17,6 @@
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "baseUrl": "."
-  }
+  },
+  "include": ["global.d.ts"]
 }
