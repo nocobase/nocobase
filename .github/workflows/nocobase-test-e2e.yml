@@ -99,9 +99,9 @@ jobs:
           script: |
             const jobName = '${{ github.job.name }}';
             const fs = require('fs');
-            const prNumber = '${{ github.job.prNumber }}';
+            const prNumber = '${{ github.event.pull_request.number }}';
             if (!prNumber) {
-              core.error('No pull request found for commit ' + context.sha + ' and workflow triggered by: ' + context.payload.workflow_run.event);
+              core.error('No pull request found for commit ' + context.sha + ' and workflow triggered by: ' + jobName);
               return;
             }
             {
