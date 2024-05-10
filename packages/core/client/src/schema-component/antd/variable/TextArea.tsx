@@ -216,11 +216,10 @@ export function TextArea(props) {
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
   const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
-  const [hasVariable, setHasVariable] = useState(value.includes('$'));
+  const [hasVariable, setHasVariable] = useState(value?.includes('$'));
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
-  console.log(value);
   useEffect(() => {
     if (!value.includes('$')) {
       setHasVariable(false);
@@ -304,7 +303,6 @@ export function TextArea(props) {
       current?.focus?.();
 
       const content = createVariableTagHTML(variable.join('.'), keyLabelMap);
-      console.log(content);
       pasteHTML(current, content, {
         range,
       });
