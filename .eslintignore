@@ -30,3 +30,4 @@ storage
 benchmark
 packages/core/cli/src
 t.js
+packages/**/client.d.ts
