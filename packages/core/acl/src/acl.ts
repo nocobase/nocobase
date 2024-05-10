@@ -92,7 +92,7 @@ export class ACL extends EventEmitter {
 
   protected middlewares: Toposort<any>;
 
-  protected strategyResources: Array<string> | null = null;
+  protected strategyResources: Set<string> | null = null;
 
   constructor() {
     super();
@@ -127,7 +127,22 @@ export class ACL extends EventEmitter {
   }
 
   setStrategyResources(resources: Array<string> | null) {
-    this.strategyResources = resources;
+    this.strategyResources = new Set(resources);
+  }
+
+  getStrategyResources() {
+    return this.strategyResources ? [...this.strategyResources] : null;
+  }
+
+  appendStrategyResource(resource: string) {
+    if (!this.strategyResources) {
+      this.strategyResources = new Set();
+    }
+    this.strategyResources.add(resource);
+  }
+
+  removeStrategyResource(resource: string) {
+    this.strategyResources.delete(resource);
   }
 
   define(options: DefineOptions): ACLRole {
@@ -238,7 +253,7 @@ export class ACL extends EventEmitter {
 
     let roleStrategyParams;
 
-    if (this.strategyResources === null || this.strategyResources.includes(resource)) {
+    if (this.strategyResources === null || this.strategyResources.has(resource)) {
       roleStrategyParams = roleStrategy?.allow(resource, this.resolveActionAlias(action));
     }
 

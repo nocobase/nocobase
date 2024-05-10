@@ -887,4 +887,27 @@ describe('acl', () => {
     expect(destroyResponse.statusCode).toEqual(200);
     expect(await db.getRepository('roles').findOne({ filterByTk: 'testRole' })).toBeNull();
   });
+
+  it('should set acl strategy resources', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    expect(app.acl.getStrategyResources()).toEqual(['posts']);
+
+    await db.getRepository('collections').destroy({
+      filterByTk: 'posts',
+    });
+
+    expect(app.acl.getStrategyResources()).toEqual([]);
+  });
 });

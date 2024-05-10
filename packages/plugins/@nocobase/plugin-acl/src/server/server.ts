@@ -576,6 +576,16 @@ export class PluginACLServer extends Plugin {
       },
       { after: 'dataSource', group: 'with-acl-meta' },
     );
+
+    this.db.on('afterDefineCollection', async (collection) => {
+      if (collection.options.loadedFromCollectionManager) {
+        this.app.acl.appendStrategyResource(collection.name);
+      }
+    });
+
+    this.db.on('afterRemoveCollection', (collection) => {
+      this.app.acl.removeStrategyResource(collection.name);
+    });
   }
 
   async install() {
