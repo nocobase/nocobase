@@ -49,17 +49,17 @@ jobs:
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
-          yarn build
+          yarn build packages/pro-plugins
       - name: publish pkg.nocobase.com
         run: |
           git reset --hard
-          yarn config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
+          npm config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
-          yarn config set //pkg-src.nocobase.com/:_authToken=${{ secrets.PKG_SRC_NOCOBASE_TOKEN }}
+          npm config set //pkg-src.nocobase.com/:_authToken=${{ secrets.PKG_SRC_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com
   push-docker:
     runs-on: ubuntu-latest
