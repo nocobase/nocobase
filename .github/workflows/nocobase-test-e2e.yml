@@ -97,7 +97,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const jobName = '${{ github.job.name }}';
+            const jobName = 'NocoBase E2E Test';
             const fs = require('fs');
             const prNumber = '${{ github.event.pull_request.number }}';
             if (!prNumber) {
@@ -111,7 +111,7 @@ jobs:
                 issue_number: prNumber,
               });
               for (const comment of comments) {
-                if (comment.user.login === 'github-actions[bot]' && /\[Test results\]\(https:\/\/.+?\) for "${{ github.job.name }}"/.test(comment.body)) {
+                if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName) {
                   await github.graphql(`
                     mutation {
                       minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
@@ -136,30 +136,13 @@ jobs:
               ...context.repo,
               issue_number: prNumber,
               body: formatComment([
-                `### [Test results](${reportUrl}) for "${{ github.job.name }}"`,
+                `### [Test results](${reportUrl}) for "${jobName}"`,
                 reportMd,
                 '',
-                `Merge [workflow run](${mergeWorkflowUrl}).`
+                '---',
+                `Full [HTML report](${reportUrl}). Merge [workflow run](${mergeWorkflowUrl}).`
               ]),
             });
             core.info('Posted comment: ' + response.html_url);
-
-            const check = await github.rest.checks.create({
-              ...context.repo,
-              name: 'Merge report (${{ github.job.name }})',
-              head_sha: '${{ github.job.head_sha }}',
-              status: 'completed',
-              conclusion: 'success',
-              details_url: reportUrl,
-              output: {
-                title: 'Test results for "${{ github.job.name }}"',
-                summary: [
-                  reportMd,
-                  '',
-                  '---',
-                  `Full [HTML report](${reportUrl}). Merge [workflow run](${mergeWorkflowUrl}).`
-                ].join('\n'),
-              }
-            });
 
     timeout-minutes: 180
