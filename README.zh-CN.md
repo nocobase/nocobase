@@ -1,6 +1,6 @@
 [English](./README.md) | 简体中文
  
-https://github.com/nocobase/nocobase/assets/1267426/59ee59b3-b8d4-494c-88da-dcf316f49966
+https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd173ade553
 
 ## 最近重要更新
 - [v1.0：新的里程碑 - 2024/04/28](https://docs-cn.nocobase.com/welcome/release/v1001-changelog)
