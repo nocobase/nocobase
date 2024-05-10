@@ -146,7 +146,6 @@ jobs:
                 `### Test results for "${jobName}"`,
                 reportMd,
                 '',
-                '---',
                 `Full [HTML report](${reportUrl}). Merge [workflow run](${mergeWorkflowUrl}).`
               ]),
             });
