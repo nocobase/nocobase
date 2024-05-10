@@ -124,7 +124,6 @@ export default class extends Trigger {
       'x-decorator': 'FormItem',
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
-        title: 'Preload associations',
         multiple: true,
         useCollection() {
           const { values } = useForm();

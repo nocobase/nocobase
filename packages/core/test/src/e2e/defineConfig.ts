@@ -11,7 +11,7 @@ import { devices, defineConfig as playwrightDefineConfig, type PlaywrightTestCon
 
 export const defineConfig = (config?: PlaywrightTestConfig) => {
   return playwrightDefineConfig({
-    timeout: 5 * 60 * 1000,
+    timeout: process.env.CI ? 60 * 1000 : 30 * 1000,
 
     expect: {
       timeout: 10 * 1000,
@@ -29,7 +29,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
     // Fail the build on CI if you accidentally left test.only in the source code.
     forbidOnly: !!process.env.CI,
 
-    retries: 2,
+    retries: process.env.CI ? 2 : 0,
 
     // Opt out of parallel tests on CI.
     // workers: process.env.CI ? 1 : undefined,
@@ -48,7 +48,6 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
       // Base URL to use in actions like `await page.goto('/')`.
       baseURL: process.env.APP_BASE_URL || `http://localhost:${process.env.APP_PORT || 20000}`,
 
-      // Collect trace when retrying the failed test.
       trace: 'on-first-retry',
     },
     // Configure projects for major browsers.
