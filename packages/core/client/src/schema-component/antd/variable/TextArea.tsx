@@ -209,17 +209,23 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
+  const { value = '', scope, onChange, multiline = true, changeOnSelect, children } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
   const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
+  const [hasVariable, setHasVariable] = useState(value.includes('$'));
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
-
+  console.log(value);
+  useEffect(() => {
+    if (!value.includes('$')) {
+      setHasVariable(false);
+    }
+  }, [value]);
   useEffect(() => {
     preloadOptions(scope, value)
       .then((preloaded) => {
@@ -289,14 +295,16 @@ export function TextArea(props) {
   const onInsert = useCallback(
     function (paths: string[]) {
       const variable: string[] = paths.filter((key) => Boolean(key.trim()));
+      setHasVariable(true);
       const { current } = inputRef;
-      if (!current || !variable) {
+      if (!variable) {
         return;
       }
 
-      current.focus();
+      current?.focus?.();
 
       const content = createVariableTagHTML(variable.join('.'), keyLabelMap);
+      console.log(content);
       pasteHTML(current, content, {
         range,
       });
@@ -378,13 +386,15 @@ export function TextArea(props) {
   );
 
   const disabled = props.disabled || form.disabled;
-
   return wrapSSR(
     <Space.Compact
       className={cx(
         componentCls,
         hashId,
         css`
+          .nb-block-item {
+            width: 100%;
+          }
           &.ant-input-group.ant-input-group-compact {
             display: flex;
             .ant-input {
@@ -405,6 +415,7 @@ export function TextArea(props) {
         `,
       )}
     >
+      {children && !hasVariable && children}
       <div
         role="button"
         aria-label="textbox"
@@ -421,7 +432,8 @@ export function TextArea(props) {
           css`
             overflow: auto;
             white-space: ${multiline ? 'normal' : 'nowrap'};
-
+            visibility: ${hasVariable ? 'visible' : 'hidden'};
+            position: ${hasVariable ? 'relative' : 'absolute'};
             .ant-tag {
               display: inline;
               line-height: 19px;
@@ -435,6 +447,7 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
+
       {!disabled ? (
         <VariableSelect
           className=""
