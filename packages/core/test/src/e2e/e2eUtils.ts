@@ -9,7 +9,7 @@
 
 import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
-import { Page, test as base, expect, request } from '@playwright/test';
+import { Browser, Page, test as base, expect, request } from '@playwright/test';
 import _ from 'lodash';
 import { defineConfig } from './defineConfig';
 
@@ -193,6 +193,7 @@ interface CreatePageOptions {
 }
 
 interface ExtendUtils {
+  page?: Page;
   /**
    * 根据配置，生成一个 NocoBase 的页面
    * @param pageConfig 页面配置
@@ -304,20 +305,27 @@ export class NocoPage {
   }
 
   async init() {
+    const waitList = [];
     if (this.options?.collections?.length) {
       const collections: any = omitSomeFields(this.options.collections);
       this.collectionsName = collections.map((item) => item.name);
 
-      await createCollections(collections);
+      waitList.push(createCollections(collections));
     }
 
-    this.uid = await createPage({
-      type: this.options?.type,
-      name: this.options?.name,
-      pageSchema: this.options?.pageSchema,
-      url: this.options?.url,
-      keepUid: this.options?.keepUid,
-    });
+    waitList.push(
+      createPage({
+        type: this.options?.type,
+        name: this.options?.name,
+        pageSchema: this.options?.pageSchema,
+        url: this.options?.url,
+        keepUid: this.options?.keepUid,
+      }),
+    );
+
+    const result = await Promise.all(waitList);
+
+    this.uid = result[result.length - 1];
     this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
   }
 
@@ -340,22 +348,35 @@ export class NocoPage {
   }
 
   async destroy() {
+    const waitList: any[] = [];
     if (this.uid) {
-      await deletePage(this.uid);
+      waitList.push(deletePage(this.uid));
       this.uid = undefined;
     }
     if (this.collectionsName?.length) {
-      await deleteCollections(this.collectionsName);
+      waitList.push(deleteCollections(this.collectionsName));
       this.collectionsName = undefined;
     }
+    await Promise.all(waitList);
   }
 }
 
+let _page: Page;
+const getPage = async (browser: Browser) => {
+  if (!_page) {
+    _page = await browser.newPage();
+  }
+  return _page;
+};
 const _test = base.extend<ExtendUtils>({
-  mockPage: async ({ page }, use) => {
+  page: async ({ browser }, use) => {
+    await use(await getPage(browser));
+  },
+  mockPage: async ({ browser }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     // faker.seed(1);
 
+    const page = await getPage(browser);
     const nocoPages: NocoPage[] = [];
     const mockPage = (config?: PageConfig) => {
       const nocoPage = new NocoPage(config, page);
@@ -365,13 +386,18 @@ const _test = base.extend<ExtendUtils>({
 
     await use(mockPage);
 
+    const waitList = [];
+
     // 测试运行完自动销毁页面
     for (const nocoPage of nocoPages) {
+      // 这里之所以不加入 waitList 是因为会导致 acl 的测试报错
       await nocoPage.destroy();
-      await setDefaultRole('root');
     }
+    waitList.push(setDefaultRole('root'));
     // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
-    await removeRedundantUserAndRoles();
+    waitList.push(removeRedundantUserAndRoles());
+
+    await Promise.all(waitList);
   },
   mockManualDestroyPage: async ({ browser }, use) => {
     const mockManualDestroyPage = (config?: PageConfig) => {
@@ -381,7 +407,7 @@ const _test = base.extend<ExtendUtils>({
 
     await use(mockManualDestroyPage);
   },
-  createCollections: async ({ page }, use) => {
+  createCollections: async ({ browser }, use) => {
     let collectionsName: string[] = [];
 
     const _createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
@@ -398,7 +424,7 @@ const _test = base.extend<ExtendUtils>({
       await deleteCollections(_.uniq(collectionsName));
     }
   },
-  mockCollections: async ({ page }, use) => {
+  mockCollections: async ({ browser }, use) => {
     let collectionsName: string[] = [];
     const destroy = async () => {
       if (collectionsName.length) {
@@ -415,7 +441,7 @@ const _test = base.extend<ExtendUtils>({
     await use(mockCollections);
     await destroy();
   },
-  mockCollection: async ({ page }, use) => {
+  mockCollection: async ({ browser }, use) => {
     let collectionsName: string[] = [];
     const destroy = async () => {
       if (collectionsName.length) {
@@ -432,7 +458,7 @@ const _test = base.extend<ExtendUtils>({
     await use(mockCollection);
     await destroy();
   },
-  mockRecords: async ({ page }, use) => {
+  mockRecords: async ({ browser }, use) => {
     const mockRecords = async (collectionName: string, count: any = 3, data?: any) => {
       let maxDepth: number;
       if (_.isNumber(data)) {
@@ -448,7 +474,7 @@ const _test = base.extend<ExtendUtils>({
 
     await use(mockRecords);
   },
-  mockRecord: async ({ page }, use) => {
+  mockRecord: async ({ browser }, use) => {
     const mockRecord = async (collectionName: string, data?: any, maxDepth?: any) => {
       if (_.isNumber(data)) {
         maxDepth = data;
@@ -461,7 +487,9 @@ const _test = base.extend<ExtendUtils>({
 
     await use(mockRecord);
   },
-  deletePage: async ({ page }, use) => {
+  deletePage: async ({ browser }, use) => {
+    const page = await getPage(browser);
+
     const deletePage = async (pageName: string) => {
       await page.getByText(pageName, { exact: true }).hover();
       await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
@@ -471,18 +499,14 @@ const _test = base.extend<ExtendUtils>({
 
     await use(deletePage);
   },
-  mockRole: async ({ page }, use) => {
+  mockRole: async ({ browser }, use) => {
     const mockRole = async (roleSetting: AclRoleSetting) => {
       return createRole(roleSetting);
     };
 
     await use(mockRole);
   },
-  updateRole: async ({ page }, use) => {
-    async (roleSetting: AclRoleSetting) => {
-      return updateRole(roleSetting);
-    };
-
+  updateRole: async ({ browser }, use) => {
     await use(updateRole);
   },
   mockExternalDataSource: async ({ browser }, use) => {
@@ -499,7 +523,7 @@ const _test = base.extend<ExtendUtils>({
 
     await use(destoryDataSource);
   },
-  clearBlockTemplates: async ({ page }, use) => {
+  clearBlockTemplates: async ({ browser }, use) => {
     const clearBlockTemplates = async () => {
       const api = await request.newContext({
         storageState: process.env.PLAYWRIGHT_AUTH_FILE,
@@ -811,11 +835,16 @@ const setDefaultRole = async (name) => {
   });
   const state = await api.storageState();
   const headers = getHeaders(state);
-  await api.post(`/api/users:setDefaultRole`, {
+  const result = await api.post(`/api/users:setDefaultRole`, {
     headers,
     data: { roleName: name },
   });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
 };
+
 /**
  * 创建外部数据源
  * @paramn
@@ -834,8 +863,7 @@ const createExternalDataSource = async (dataSourceSetting: DataSourceSetting) =>
   if (!result.ok()) {
     throw new Error(await result.text());
   }
-  const dataSourceData = (await result.json()).data;
-  return dataSourceData;
+  return (await result.json()).data;
 };
 
 /**
@@ -855,8 +883,7 @@ const destoryExternalDataSource = async (key) => {
   if (!result.ok()) {
     throw new Error(await result.text());
   }
-  const dataSourceData = (await result.json()).data;
-  return dataSourceData;
+  return (await result.json()).data;
 };
 /**
  * 根据 collection 的配置生成 Faker 数据

@@ -196,7 +196,7 @@ export class PluginMockCollectionsServer extends Plugin {
       return options;
     };
 
-    this.app.resourcer.registerActions({
+    this.app.resourceManager.registerActionHandlers({
       mock: async (ctx, next) => {
         const { resourceName } = ctx.action;
         const { values, count = 10, maxDepth = 4 } = ctx.action.params;
@@ -228,7 +228,7 @@ export class PluginMockCollectionsServer extends Plugin {
           );
           return count == 1 ? items[0] : items;
         };
-        const repository = ctx.db.getRepository(resourceName);
+        const repository = ctx.db.getRepository(resourceName) as CollectionRepository;
         let size = count;
         if (Array.isArray(values)) {
           size = values.length;
@@ -302,9 +302,12 @@ export class PluginMockCollectionsServer extends Plugin {
             }
           }
         });
-
         await collectionsRepository.load();
-        await db.sync();
+
+        for (const collection of collections) {
+          await db.getRepository(collection.name).collection.sync();
+        }
+
         const records = await collectionsRepository.find({
           filter: {
             name: collections.map((c) => c.name),

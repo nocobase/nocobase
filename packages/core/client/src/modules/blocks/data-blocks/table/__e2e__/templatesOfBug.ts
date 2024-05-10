@@ -703,6 +703,16 @@ export const T3686: PageConfig = {
       ],
     },
     {
+      name: 'parentCollection',
+      fields: [
+        {
+          name: 'parentAssociationField',
+          interface: 'm2m',
+          target: 'parentTargetCollection',
+        },
+      ],
+    },
+    {
       name: 'childCollection',
       inherits: ['parentCollection'],
       fields: [
@@ -710,16 +720,6 @@ export const T3686: PageConfig = {
           name: 'childAssociationField',
           interface: 'm2m',
           target: 'childTargetCollection',
-        },
-      ],
-    },
-    {
-      name: 'parentCollection',
-      fields: [
-        {
-          name: 'parentAssociationField',
-          interface: 'm2m',
-          target: 'parentTargetCollection',
         },
       ],
     },

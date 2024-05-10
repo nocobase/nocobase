@@ -1,23 +1,13 @@
-name: NocoBase E2E Test
+name: Workflows E2E
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - 'main'
-      - 'develop'
-    paths:
-      - '.github/workflows/nocobase-test-e2e.yml'
-      - 'packages/**'
-  pull_request:
-    branches:
-      - '**'
-    paths:
-      - '.github/workflows/nocobase-test-e2e.yml'
-      - 'packages/**'
+  workflow_run:
+    workflows: [Nocobase Build Test]
+    types: [completed]
 
 jobs:
   e2e-test-postgres:
@@ -67,13 +57,13 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - run: yarn --frozen-lockfile
-      - name: yarn build
-        run: yarn build
-        env:
-          __E2E__: true
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e p-test
+        run: yarn e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts'
         env:
           __E2E__: true
           APP_ENV: production
@@ -104,9 +94,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const jobName = 'NocoBase E2E Test';
+            const jobName = 'Workflows E2E';
             const fs = require('fs');
-            const prNumber = '${{ github.event.pull_request.number }}';
+            const prNumber = '${{ github.event.workflow_run.pull_requests.number }}';
             if (!prNumber) {
               core.error('No pull request found for commit ' + context.sha + ' and workflow triggered by: ' + jobName);
               return;
