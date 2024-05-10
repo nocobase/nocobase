@@ -41,6 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Checkout pro-plugins
+        if: ${{ github.repository_owner == 'nocobase'}}
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
@@ -48,6 +49,7 @@ jobs:
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Set variables
+        if: ${{ github.repository_owner == 'nocobase'}}
         run: |
           APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT

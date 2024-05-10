@@ -24,7 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Print repository owner
+        run: echo "The repository owner is ${{ github.repository_owner }}"
       - name: Checkout pro-plugins
+        if: ${{ github.repository_owner == 'nocobase'}}
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
