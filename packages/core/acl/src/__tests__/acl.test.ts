@@ -415,4 +415,28 @@ describe('acl', () => {
     ctx1.permission.can.params.fields.push('createdById');
     expect(ctx2.permission.can.params.fields).toEqual([]);
   });
+
+  it('should not allow when strategyResources is set', async () => {
+    acl.setAvailableAction('create', {
+      displayName: 'create',
+      type: 'new-data',
+    });
+
+    const role = acl.define({
+      role: 'admin',
+      strategy: {
+        actions: ['create'],
+      },
+    });
+
+    expect(acl.can({ role: 'admin', resource: 'users', action: 'create' })).toBeTruthy();
+
+    acl.setStrategyResources(['posts']);
+
+    expect(acl.can({ role: 'admin', resource: 'users', action: 'create' })).toBeNull();
+
+    acl.setStrategyResources(['posts', 'users']);
+
+    expect(acl.can({ role: 'admin', resource: 'users', action: 'create' })).toBeTruthy();
+  });
 });
