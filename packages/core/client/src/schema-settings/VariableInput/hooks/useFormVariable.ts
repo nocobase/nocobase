@@ -103,7 +103,9 @@ export const useCurrentFormVariable = ({
     currentFormSettings,
     /** 变量值 */
     currentFormCtx:
-      formInstance?.values && Object.keys(formInstance?.values)?.length ? formInstance?.values : service?.data?.data,
+      formInstance?.values && Object.keys(formInstance?.values)?.length
+        ? formInstance?.values
+        : service?.data?.data || formInstance?.values,
     /** 用来判断是否可以显示`当前表单`变量 */
     shouldDisplayCurrentForm: formInstance && !formInstance.readPretty,
   };
