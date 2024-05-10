@@ -8,14 +8,13 @@
  */
 
 import { css } from '@emotion/css';
-import React from 'react';
+import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useSystemSettings, PoweredBy, useRequest, useAPIClient } from '@nocobase/client';
 import { AuthenticatorsContext } from '../authenticator';
 import { Spin } from 'antd';
 
-export function AuthLayout(props: any) {
-  const { data } = useSystemSettings();
+export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const api = useAPIClient();
   const {
     data: authenticators = [],
@@ -38,6 +37,12 @@ export function AuthLayout(props: any) {
     throw error;
   }
 
+  return <AuthenticatorsContext.Provider value={authenticators as any}>{children}</AuthenticatorsContext.Provider>;
+};
+
+export function AuthLayout() {
+  const { data } = useSystemSettings();
+
   return (
     <div
       style={{
@@ -47,9 +52,9 @@ export function AuthLayout(props: any) {
       }}
     >
       <h1>{data?.data?.title}</h1>
-      <AuthenticatorsContext.Provider value={authenticators as any}>
+      <AuthenticatorsContextProvider>
         <Outlet />
-      </AuthenticatorsContext.Provider>
+      </AuthenticatorsContextProvider>
       <div
         className={css`
           position: absolute;
