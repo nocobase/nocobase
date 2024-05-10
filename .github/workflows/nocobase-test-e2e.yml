@@ -54,11 +54,18 @@ jobs:
           APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - uses: actions/cache@v4
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
-          node-version: 18
-          cache: 'yarn'
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
       - run: yarn --frozen-lockfile
       - name: yarn build
         run: yarn build
@@ -111,7 +118,7 @@ jobs:
                 issue_number: prNumber,
               });
               for (const comment of comments) {
-                if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName)） {
+                if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName)) {
                   await github.graphql(`
                     mutation {
                       minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
