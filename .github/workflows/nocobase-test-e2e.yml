@@ -136,7 +136,7 @@ jobs:
               ...context.repo,
               issue_number: prNumber,
               body: formatComment([
-                `### [Test results](${reportUrl}) for "${jobName}"`,
+                `### Test results for "${jobName}"`,
                 reportMd,
                 '',
                 '---',
