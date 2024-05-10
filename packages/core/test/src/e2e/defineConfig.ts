@@ -38,9 +38,9 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
     maxFailures: 0,
 
     // Reporter to use
-    reporter: process.env.PLAYWRIGHT_SKIP_REPORTER
-      ? undefined
-      : [['html', { outputFolder: './storage/playwright/tests-report' }]],
+    reporter: process.env.CI
+      ? [['blob', { outputDir: `./storage/playwright/tests-report-blob/blob-${process.env.E2E_JOB_ID}` }]]
+      : [['html', { outputFolder: `./storage/playwright/tests-report-html`, open: 'never' }]],
 
     outputDir: './storage/playwright/test-results',
 

@@ -43,7 +43,7 @@ async function runApp(dir, index = 0) {
   await client.query(`DROP DATABASE IF EXISTS "${database}"`);
   await client.query(`CREATE DATABASE "${database}";`);
   await client.end();
-  return execa('yarn', ['nocobase', 'e2e', 'test', dir, '--skip-reporter'], {
+  return execa('yarn', ['nocobase', 'e2e', 'test', dir], {
     shell: true,
     stdio: 'inherit',
     env: {
@@ -58,6 +58,7 @@ async function runApp(dir, index = 0) {
       SOCKET_PATH: `storage/e2e/gateway-e2e-${index}.sock`,
       PM2_HOME: resolve(process.cwd(), `storage/e2e/.pm2-${index}`),
       PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), `storage/playwright/.auth/admin-${index}.json`),
+      E2E_JOB_ID: index,
     },
   });
 }
