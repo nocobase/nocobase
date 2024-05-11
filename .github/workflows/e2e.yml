@@ -305,6 +305,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'npm'
+      - run: npm install -g glob
 
       - name: Download e2e report artifact
         uses: actions/download-artifact@v4
@@ -312,8 +314,6 @@ jobs:
           path: e2e-report
           pattern: e2e-report-*
           merge-multiple: true
-
-      - run: ls -R .
 
       - name: Merge reports
         run: |
