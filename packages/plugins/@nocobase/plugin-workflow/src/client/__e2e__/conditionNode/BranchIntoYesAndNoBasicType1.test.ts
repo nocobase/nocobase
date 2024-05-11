@@ -10,13 +10,11 @@
 import { faker } from '@faker-js/faker';
 import {
   CalculationNode,
+  CollectionTriggerNode,
   ConditionBranchNode,
-  QueryRecordNode,
   apiCreateWorkflow,
-  apiCreateWorkflowNode,
   apiDeleteWorkflow,
   apiGetWorkflow,
-  apiGetWorkflowNode,
   apiGetWorkflowNodeExecutions,
   apiUpdateWorkflowTrigger,
   appendJsonCollectionName,
@@ -25,7 +23,7 @@ import {
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 
-test('Collection event add data trigger, determine trigger node integer variable equal to query node equal integer variable, pass.', async ({
+test('Collection event add data trigger, determines that the trigger node single line text field variable is equal to an equal constant, passes.', async ({
   page,
   mockCollections,
   mockRecords,
@@ -36,8 +34,8 @@ test('Collection event add data trigger, determine trigger node integer variable
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
-  const triggerNodeFieldName = 'staffnum';
-  const triggerNodeFieldDisplayName = '员工人数(整数)';
+  const triggerNodeFieldName = 'orgname';
+  const triggerNodeFieldDisplayName = '公司名称(单行文本)';
   await mockCollections(
     appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), triggerNodeAppendText)
       .collections,
@@ -62,35 +60,11 @@ test('Collection event add data trigger, determine trigger node integer variable
   const triggerNode = await apiUpdateWorkflowTrigger(workflowId, triggerNodeData);
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
 
-  //配置前置查询节点
-  const preQueryRecordNodeTitle = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-  const preQueryRecordNodeData = {
-    type: 'query',
-    upstreamId: null,
-    branchIndex: null,
-    title: preQueryRecordNodeTitle,
-    config: {
-      collection: triggerNodeCollectionName,
-      params: {
-        filter: { $and: [{ id: { $eq: '{{$context.data.id}}' } }] },
-        sort: [],
-        page: 1,
-        pageSize: 20,
-        appends: [],
-      },
-    },
-  };
-  const preQueryRecordNode = await apiCreateWorkflowNode(workflowId, preQueryRecordNodeData);
-  const preQueryRecordNodeObj = JSON.parse(JSON.stringify(preQueryRecordNode));
-  const preQueryRecordNodeId = preQueryRecordNodeObj.id;
-  const getPreQueryRecordNode = await apiGetWorkflowNode(preQueryRecordNodeId);
-  const preQueryRecordNodeKey = getPreQueryRecordNode.key;
-
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
   await page.waitForLoadState('networkidle');
-  const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
-  await preQueryRecordNodePom.addNodeButton.click();
+  const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
+  await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'condition', exact: true }).hover();
   await page.getByLabel('branch').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -102,17 +76,10 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByLabel('variable-button').first().click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
-  await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('variable-tag')).toHaveText(
-    `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`,
-  );
-  await page.getByLabel('variable-button').nth(1).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
-  await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
-  await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('variable-tag').nth(1)).toHaveText(
-    `Node result / ${preQueryRecordNodeTitle} / ${triggerNodeFieldDisplayName}`,
-  );
+  await page.getByText('公司名称(单行文本)').click();
+  await expect(page.getByLabel('variable-tag')).toHaveText('Trigger variables / Trigger data / 公司名称(单行文本)');
+  const conditionalRightConstant = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+  await page.getByLabel('variable-constant').fill(conditionalRightConstant);
   await conditionNode.submitButton.click();
   //添加No分支计算节点
   await conditionNode.addNoBranchNode.click();
@@ -142,13 +109,13 @@ test('Collection event add data trigger, determine trigger node integer variable
   await yesBranchcalCulationNode.submitButton.click();
 
   // 2、测试步骤：添加数据触发工作流
-  const triggerNodeCollectionRecordOne = faker.number.int();
+  const triggerNodeCollectionRecordOne = conditionalRightConstant;
   const triggerNodeCollectionRecords = await mockRecords(triggerNodeCollectionName, [
-    { staffnum: triggerNodeCollectionRecordOne },
+    { orgname: triggerNodeCollectionRecordOne },
   ]);
   await page.waitForTimeout(1000);
 
-  // 3、预期结果：工作流成功触发,判断节点true
+  // 3、预期结果：工作流成功触发,判断节点true通过
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
   const getWorkflowExecuted = getWorkflowObj.executed;
@@ -169,8 +136,7 @@ test('Collection event add data trigger, determine trigger node integer variable
   // 4、后置处理：删除工作流
   await apiDeleteWorkflow(workflowId);
 });
-
-test('Collection event add data trigger, determine trigger node integer variable is equal to query node not equal integer variable, not pass.', async ({
+test('Collection event add data trigger, determines that the trigger node single line text field variable is equal to an unequal constant, fails.', async ({
   page,
   mockCollections,
   mockRecords,
@@ -181,16 +147,13 @@ test('Collection event add data trigger, determine trigger node integer variable
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
-  const triggerNodeFieldName = 'staffnum';
-  const triggerNodeFieldDisplayName = '员工人数(整数)';
+  const triggerNodeFieldName = 'orgname';
+  const triggerNodeFieldDisplayName = '公司名称(单行文本)';
   await mockCollections(
     appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), triggerNodeAppendText)
       .collections,
   );
-  const triggerNodeCollectionRecordOne = faker.number.int();
-  const triggerNodeCollectionRecords = await mockRecords(triggerNodeCollectionName, [
-    { staffnum: triggerNodeCollectionRecordOne },
-  ]);
+
   //添加工作流
   const workFlowName = faker.string.alphanumeric(5) + triggerNodeAppendText;
   const workflowData = {
@@ -210,35 +173,11 @@ test('Collection event add data trigger, determine trigger node integer variable
   const triggerNode = await apiUpdateWorkflowTrigger(workflowId, triggerNodeData);
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
 
-  //配置前置查询节点
-  const preQueryRecordNodeTitle = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-  const preQueryRecordNodeData = {
-    type: 'query',
-    upstreamId: null,
-    branchIndex: null,
-    title: preQueryRecordNodeTitle,
-    config: {
-      collection: triggerNodeCollectionName,
-      params: {
-        filter: { $and: [{ id: { $ne: '{{$context.data.id}}' } }] },
-        sort: [],
-        page: 1,
-        pageSize: 20,
-        appends: [],
-      },
-    },
-  };
-  const preQueryRecordNode = await apiCreateWorkflowNode(workflowId, preQueryRecordNodeData);
-  const preQueryRecordNodeObj = JSON.parse(JSON.stringify(preQueryRecordNode));
-  const preQueryRecordNodeId = preQueryRecordNodeObj.id;
-  const getPreQueryRecordNode = await apiGetWorkflowNode(preQueryRecordNodeId);
-  const preQueryRecordNodeKey = getPreQueryRecordNode.key;
-
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
   await page.waitForLoadState('networkidle');
-  const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
-  await preQueryRecordNodePom.addNodeButton.click();
+  const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
+  await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'condition', exact: true }).hover();
   await page.getByLabel('branch').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -250,17 +189,10 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByLabel('variable-button').first().click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
-  await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('variable-tag')).toHaveText(
-    `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`,
-  );
-  await page.getByLabel('variable-button').nth(1).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
-  await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
-  await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('variable-tag').nth(1)).toHaveText(
-    `Node result / ${preQueryRecordNodeTitle} / ${triggerNodeFieldDisplayName}`,
-  );
+  await page.getByText('公司名称(单行文本)').click();
+  await expect(page.getByLabel('variable-tag')).toHaveText('Trigger variables / Trigger data / 公司名称(单行文本)');
+  const conditionalRightConstant = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+  await page.getByLabel('variable-constant').fill(conditionalRightConstant);
   await conditionNode.submitButton.click();
   //添加No分支计算节点
   await conditionNode.addNoBranchNode.click();
@@ -290,9 +222,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   await yesBranchcalCulationNode.submitButton.click();
 
   // 2、测试步骤：添加数据触发工作流
-  const triggerNodeCollectionRecordTwo = faker.number.int();
-  await mockRecords(triggerNodeCollectionName, [{ staffnum: triggerNodeCollectionRecordTwo }]);
+  const triggerNodeCollectionRecordOne = conditionalRightConstant + '1';
+  const triggerNodeCollectionRecords = await mockRecords(triggerNodeCollectionName, [
+    { orgname: triggerNodeCollectionRecordOne },
+  ]);
   await page.waitForTimeout(1000);
+
   // 3、预期结果：工作流成功触发,判断节点false
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
@@ -314,8 +249,7 @@ test('Collection event add data trigger, determine trigger node integer variable
   // 4、后置处理：删除工作流
   await apiDeleteWorkflow(workflowId);
 });
-
-test('Collection event add data trigger, determine trigger node integer variable is not equal to query node equal integer variable, not pass.', async ({
+test('Collection event Add Data Trigger, determines that the trigger node single line text field variable is not equal to an equal constant, fails.', async ({
   page,
   mockCollections,
   mockRecords,
@@ -326,16 +260,13 @@ test('Collection event add data trigger, determine trigger node integer variable
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
-  const triggerNodeFieldName = 'staffnum';
-  const triggerNodeFieldDisplayName = '员工人数(整数)';
+  const triggerNodeFieldName = 'orgname';
+  const triggerNodeFieldDisplayName = '公司名称(单行文本)';
   await mockCollections(
     appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), triggerNodeAppendText)
       .collections,
   );
-  const triggerNodeCollectionRecordOne = faker.number.int();
-  const triggerNodeCollectionRecords = await mockRecords(triggerNodeCollectionName, [
-    { staffnum: triggerNodeCollectionRecordOne },
-  ]);
+
   //添加工作流
   const workFlowName = faker.string.alphanumeric(5) + triggerNodeAppendText;
   const workflowData = {
@@ -354,35 +285,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   };
   const triggerNode = await apiUpdateWorkflowTrigger(workflowId, triggerNodeData);
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
-  //配置前置查询节点
-  const preQueryRecordNodeTitle = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-  const preQueryRecordNodeData = {
-    type: 'query',
-    upstreamId: null,
-    branchIndex: null,
-    title: preQueryRecordNodeTitle,
-    config: {
-      collection: triggerNodeCollectionName,
-      params: {
-        filter: { $and: [{ id: { $eq: '{{$context.data.id}}' } }] },
-        sort: [],
-        page: 1,
-        pageSize: 20,
-        appends: [],
-      },
-    },
-  };
-  const preQueryRecordNode = await apiCreateWorkflowNode(workflowId, preQueryRecordNodeData);
-  const preQueryRecordNodeObj = JSON.parse(JSON.stringify(preQueryRecordNode));
-  const preQueryRecordNodeId = preQueryRecordNodeObj.id;
-  const getPreQueryRecordNode = await apiGetWorkflowNode(preQueryRecordNodeId);
-  const preQueryRecordNodeKey = getPreQueryRecordNode.key;
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
   await page.waitForLoadState('networkidle');
-  const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
-  await preQueryRecordNodePom.addNodeButton.click();
+  const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
+  await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'condition', exact: true }).hover();
   await page.getByLabel('branch').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -394,19 +302,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByLabel('variable-button').first().click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
-  await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('variable-tag')).toHaveText(
-    `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`,
-  );
+  await page.getByText('公司名称(单行文本)').click();
+  await expect(page.getByLabel('variable-tag')).toHaveText('Trigger variables / Trigger data / 公司名称(单行文本)');
   await page.getByLabel('select-operator-calc').first().click();
   await page.getByRole('option', { name: '≠' }).click();
-  await page.getByLabel('variable-button').nth(1).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
-  await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
-  await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('variable-tag').nth(1)).toHaveText(
-    `Node result / ${preQueryRecordNodeTitle} / ${triggerNodeFieldDisplayName}`,
-  );
+  const conditionalRightConstant = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+  await page.getByLabel('variable-constant').fill(conditionalRightConstant);
   await conditionNode.submitButton.click();
   //添加No分支计算节点
   await conditionNode.addNoBranchNode.click();
@@ -436,9 +337,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   await yesBranchcalCulationNode.submitButton.click();
 
   // 2、测试步骤：添加数据触发工作流
-  const triggerNodeCollectionRecordTwo = faker.number.int();
-  await mockRecords(triggerNodeCollectionName, [{ staffnum: triggerNodeCollectionRecordTwo }]);
+  const triggerNodeCollectionRecordOne = conditionalRightConstant;
+  const triggerNodeCollectionRecords = await mockRecords(triggerNodeCollectionName, [
+    { orgname: triggerNodeCollectionRecordOne },
+  ]);
   await page.waitForTimeout(1000);
+
   // 3、预期结果：工作流成功触发,判断节点false
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
@@ -460,8 +364,7 @@ test('Collection event add data trigger, determine trigger node integer variable
   // 4、后置处理：删除工作流
   await apiDeleteWorkflow(workflowId);
 });
-
-test('Collection event add data trigger, determine trigger node integer variable is not equal to query node not equal integer variable, pass.', async ({
+test('Collection event add data trigger, determines that the trigger node single line text field variable is not equal to an unequal constant, passes.', async ({
   page,
   mockCollections,
   mockRecords,
@@ -472,16 +375,13 @@ test('Collection event add data trigger, determine trigger node integer variable
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
-  const triggerNodeFieldName = 'staffnum';
-  const triggerNodeFieldDisplayName = '员工人数(整数)';
+  const triggerNodeFieldName = 'orgname';
+  const triggerNodeFieldDisplayName = '公司名称(单行文本)';
   await mockCollections(
     appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), triggerNodeAppendText)
       .collections,
   );
-  const triggerNodeCollectionRecordOne = faker.number.int();
-  const triggerNodeCollectionRecords = await mockRecords(triggerNodeCollectionName, [
-    { staffnum: triggerNodeCollectionRecordOne },
-  ]);
+
   //添加工作流
   const workFlowName = faker.string.alphanumeric(5) + triggerNodeAppendText;
   const workflowData = {
@@ -500,35 +400,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   };
   const triggerNode = await apiUpdateWorkflowTrigger(workflowId, triggerNodeData);
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
-  //配置前置查询节点
-  const preQueryRecordNodeTitle = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-  const preQueryRecordNodeData = {
-    type: 'query',
-    upstreamId: null,
-    branchIndex: null,
-    title: preQueryRecordNodeTitle,
-    config: {
-      collection: triggerNodeCollectionName,
-      params: {
-        filter: { $and: [{ id: { $ne: '{{$context.data.id}}' } }] },
-        sort: [],
-        page: 1,
-        pageSize: 20,
-        appends: [],
-      },
-    },
-  };
-  const preQueryRecordNode = await apiCreateWorkflowNode(workflowId, preQueryRecordNodeData);
-  const preQueryRecordNodeObj = JSON.parse(JSON.stringify(preQueryRecordNode));
-  const preQueryRecordNodeId = preQueryRecordNodeObj.id;
-  const getPreQueryRecordNode = await apiGetWorkflowNode(preQueryRecordNodeId);
-  const preQueryRecordNodeKey = getPreQueryRecordNode.key;
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
   await page.waitForLoadState('networkidle');
-  const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
-  await preQueryRecordNodePom.addNodeButton.click();
+  const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
+  await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'condition', exact: true }).hover();
   await page.getByLabel('branch').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -540,19 +417,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByLabel('variable-button').first().click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
-  await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('variable-tag')).toHaveText(
-    `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`,
-  );
+  await page.getByText('公司名称(单行文本)').click();
+  await expect(page.getByLabel('variable-tag')).toHaveText('Trigger variables / Trigger data / 公司名称(单行文本)');
   await page.getByLabel('select-operator-calc').first().click();
   await page.getByRole('option', { name: '≠' }).click();
-  await page.getByLabel('variable-button').nth(1).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
-  await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
-  await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('variable-tag').nth(1)).toHaveText(
-    `Node result / ${preQueryRecordNodeTitle} / ${triggerNodeFieldDisplayName}`,
-  );
+  const conditionalRightConstant = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+  await page.getByLabel('variable-constant').fill(conditionalRightConstant);
   await conditionNode.submitButton.click();
   //添加No分支计算节点
   await conditionNode.addNoBranchNode.click();
@@ -582,9 +452,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   await yesBranchcalCulationNode.submitButton.click();
 
   // 2、测试步骤：添加数据触发工作流
-  const triggerNodeCollectionRecordTwo = faker.number.int();
-  await mockRecords(triggerNodeCollectionName, [{ staffnum: triggerNodeCollectionRecordTwo }]);
+  const triggerNodeCollectionRecordOne = conditionalRightConstant + '1';
+  const triggerNodeCollectionRecords = await mockRecords(triggerNodeCollectionName, [
+    { orgname: triggerNodeCollectionRecordOne },
+  ]);
   await page.waitForTimeout(1000);
+
   // 3、预期结果：工作流成功触发,判断节点true
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));

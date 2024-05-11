@@ -9,12 +9,12 @@
 
 import { faker } from '@faker-js/faker';
 import {
-  CollectionTriggerNode,
   ManualNode,
   apiCreateWorkflow,
+  apiCreateWorkflowNode,
   apiDeleteWorkflow,
   apiGetWorkflow,
-  apiGetWorkflowNodeExecutions,
+  apiGetWorkflowNode,
   apiUpdateWorkflowTrigger,
   appendJsonCollectionName,
   generalWithNoRelationalFields,
@@ -22,12 +22,8 @@ import {
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 
-test.describe('block configuration', () => {});
-
-test.describe('field configuration', () => {});
-
-test.describe('field data entry', () => {
-  test('Collection event to add a data trigger, entering percentage data', async ({
+test.describe('field data', () => {
+  test('Collection event to add a data trigger, get a single line of text data for the trigger node', async ({
     page,
     mockPage,
     mockCollections,
@@ -36,7 +32,6 @@ test.describe('field data entry', () => {
     //数据表后缀标识
     const triggerNodeAppendText = 'a' + faker.string.alphanumeric(4);
     const manualNodeAppendText = 'b' + dayjs().format('HHmmss').toString();
-
     // 创建触发器节点数据表
     const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
     const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
@@ -49,8 +44,8 @@ test.describe('field data entry', () => {
     // 创建Manual节点数据表
     const manualNodeCollectionDisplayName = `自动>组织[普通表]${manualNodeAppendText}`;
     const manualNodeCollectionName = `tt_amt_org${manualNodeAppendText}`;
-    const manualNodeFieldName = 'insuranceratio';
-    const manualNodeFieldDisplayName = '参保占比(百分比)';
+    const manualNodeFieldName = 'orgname';
+    const manualNodeFieldDisplayName = '公司名称(单行文本)';
     await mockCollections(
       appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), manualNodeAppendText)
         .collections,
@@ -88,37 +83,13 @@ test.describe('field data entry', () => {
     await page.getByRole('option', { name: 'Super Admin' }).click();
     await manualNode.configureUserInterfaceButton.click();
     await manualNode.addBlockButton.hover();
-    await manualNode.customFormMenu.click();
+    await manualNode.triggerDataMenu.click();
     await page.mouse.move(300, 0, { steps: 100 });
-    // 获取自定义表单的随机值
-    const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
-    );
-    const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
-    const randomValue = ariaLabel.split('-').pop();
-
-    await page
-      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
-      .hover();
-    await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
-    await page.getByRole('menuitem', { name: 'Edit block title' }).click();
-    const blockTitle = 'Form' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await page
-      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
-      .hover();
-    await page.getByRole('menuitem', { name: 'Percent' }).click();
-    await page
-      .getByLabel(`block-item-Input-${randomValue}-Field display name`)
-      .getByRole('textbox')
-      .fill(manualNodeFieldDisplayName);
-    await page.getByLabel(`block-item-Input-${randomValue}-Field name`).getByRole('textbox').fill(manualNodeFieldName);
-    await page.getByLabel(`action-Action-Submit-${randomValue}`).click();
+    await page.getByText('Configure fields').hover();
+    await page.getByRole('menuitem', { name: triggerNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.mouse.click(300, 0);
     await manualNode.submitButton.click();
-    await page.waitForLoadState('networkidle');
 
     // 2、测试步骤：添加数据触发工作流
     const triggerNodeCollectionRecordOne =
@@ -145,32 +116,12 @@ test.describe('field data entry', () => {
       .locator('xpath=preceding-sibling::td[1]')
       .locator('text=View')
       .click();
-    const manualNodeRecord = faker.number.float({ min: 0, max: 100, precision: 2 });
-    await page.getByRole('spinbutton').fill(manualNodeRecord.toString());
-    await page.getByRole('button', { name: 'Continue the process' }).click();
-
-    await page.waitForTimeout(1000);
-    const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
-    const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
-    getWorkflowNodeExecutionsObj.sort(function (a: { id: number }, b: { id: number }) {
-      return b.id - a.id;
-    });
-    const jobs = getWorkflowNodeExecutionsObj[0].jobs;
-    const manualNodeJob = jobs.find((job) => job.nodeId.toString() === manualNodeId);
-    const manualNodeJobStatus = manualNodeJob.status;
-    expect(manualNodeJobStatus).toBe(1);
-
-    const manualNodeJobResult = manualNodeJob.result;
-    const hasRegcapital = Object.values(manualNodeJobResult).some(
-      (value) => (value as { insuranceratio: number }).insuranceratio === manualNodeRecord / 100,
-    );
-    expect(hasRegcapital).toBe(true);
-
+    await expect(page.getByText(triggerNodeCollectionRecordOne)).toBeAttached();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });
 
-  test('Collection event to add a data trigger, entering checkbox data', async ({
+  test('Collection event to add a data trigger, get calculation node data', async ({
     page,
     mockPage,
     mockCollections,
@@ -179,7 +130,6 @@ test.describe('field data entry', () => {
     //数据表后缀标识
     const triggerNodeAppendText = 'a' + faker.string.alphanumeric(4);
     const manualNodeAppendText = 'b' + dayjs().format('HHmmss').toString();
-
     // 创建触发器节点数据表
     const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
     const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
@@ -192,8 +142,8 @@ test.describe('field data entry', () => {
     // 创建Manual节点数据表
     const manualNodeCollectionDisplayName = `自动>组织[普通表]${manualNodeAppendText}`;
     const manualNodeCollectionName = `tt_amt_org${manualNodeAppendText}`;
-    const manualNodeFieldName = 'isenable';
-    const manualNodeFieldDisplayName = '是否启用(勾选)';
+    const manualNodeFieldName = 'orgname';
+    const manualNodeFieldDisplayName = '公司名称(单行文本)';
     await mockCollections(
       appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), manualNodeAppendText)
         .collections,
@@ -216,11 +166,26 @@ test.describe('field data entry', () => {
     };
     const triggerNode = await apiUpdateWorkflowTrigger(workflowId, triggerNodeData);
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
+    //配置前置计算节点
+    const preCalculationNodeTitle = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    const preCalculationNodeData = {
+      type: 'calculation',
+      upstreamId: null,
+      branchIndex: null,
+      title: preCalculationNodeTitle,
+      config: { engine: 'math.js', expression: '{{$context.data.orgname}}' },
+    };
+    const preCalculationNode = await apiCreateWorkflowNode(workflowId, preCalculationNodeData);
+    const preCalculationNodeObj = JSON.parse(JSON.stringify(preCalculationNode));
+    const preCalculationNodeId = preCalculationNodeObj.id;
+    const getPreCalculationNode = await apiGetWorkflowNode(preCalculationNodeId);
+    const preCalculationNodeKey = getPreCalculationNode.key;
+
     //配置Manual节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
     await page.waitForLoadState('networkidle');
-    const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
-    await collectionTriggerNode.addNodeButton.click();
+    const preCalculationNodePom = new CalculationNode(page, preCalculationNodeTitle);
+    await preCalculationNodePom.addNodeButton.click();
     await page.getByRole('button', { name: 'manual', exact: true }).click();
     const manualNodeName = 'Manual' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Manual-Manual', { exact: true }).getByRole('textbox').fill(manualNodeName);
@@ -231,37 +196,12 @@ test.describe('field data entry', () => {
     await page.getByRole('option', { name: 'Super Admin' }).click();
     await manualNode.configureUserInterfaceButton.click();
     await manualNode.addBlockButton.hover();
-    await manualNode.customFormMenu.click();
+    await manualNode.nodeDataMenu.hover();
+    await page.getByRole('menuitem', { name: preCalculationNodeTitle }).click();
     await page.mouse.move(300, 0, { steps: 100 });
-    // 获取自定义表单的随机值
-    const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
-    );
-    const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
-    const randomValue = ariaLabel.split('-').pop();
-
-    await page
-      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
-      .hover();
-    await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
-    await page.getByRole('menuitem', { name: 'Edit block title' }).click();
-    const blockTitle = 'Form' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await page
-      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
-      .hover();
-    await page.getByRole('menuitem', { name: 'Checkbox', exact: true }).click();
-    await page
-      .getByLabel(`block-item-Input-${randomValue}-Field display name`)
-      .getByRole('textbox')
-      .fill(manualNodeFieldDisplayName);
-    await page.getByLabel(`block-item-Input-${randomValue}-Field name`).getByRole('textbox').fill(manualNodeFieldName);
-    await page.getByLabel(`action-Action-Submit-${randomValue}`).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.mouse.click(300, 0);
     await manualNode.submitButton.click();
-    await page.waitForLoadState('networkidle');
 
     // 2、测试步骤：添加数据触发工作流
     const triggerNodeCollectionRecordOne =
@@ -288,32 +228,12 @@ test.describe('field data entry', () => {
       .locator('xpath=preceding-sibling::td[1]')
       .locator('text=View')
       .click();
-    // const manualNodeRecord = faker.number.float({ min: 0, max: 100, precision: 2 });
-    await page.getByRole('checkbox').check();
-    await page.getByRole('button', { name: 'Continue the process' }).click();
-
-    await page.waitForTimeout(1000);
-    const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
-    const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
-    getWorkflowNodeExecutionsObj.sort(function (a: { id: number }, b: { id: number }) {
-      return b.id - a.id;
-    });
-    const jobs = getWorkflowNodeExecutionsObj[0].jobs;
-    const manualNodeJob = jobs.find((job) => job.nodeId.toString() === manualNodeId);
-    const manualNodeJobStatus = manualNodeJob.status;
-    expect(manualNodeJobStatus).toBe(1);
-
-    const manualNodeJobResult = manualNodeJob.result;
-    const hasIsenable = Object.values(manualNodeJobResult).some(
-      (value) => (value as { isenable: boolean }).isenable === true,
-    );
-    expect(hasIsenable).toBe(true);
-
+    await expect(page.getByText(triggerNodeCollectionRecordOne)).toBeAttached();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });
 
-  test('Collection event to add a data trigger, entering single select data', async ({
+  test('Collection event to add a data trigger, get query record node data', async ({
     page,
     mockPage,
     mockCollections,
@@ -322,7 +242,6 @@ test.describe('field data entry', () => {
     //数据表后缀标识
     const triggerNodeAppendText = 'a' + faker.string.alphanumeric(4);
     const manualNodeAppendText = 'b' + dayjs().format('HHmmss').toString();
-
     // 创建触发器节点数据表
     const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
     const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
@@ -335,8 +254,8 @@ test.describe('field data entry', () => {
     // 创建Manual节点数据表
     const manualNodeCollectionDisplayName = `自动>组织[普通表]${manualNodeAppendText}`;
     const manualNodeCollectionName = `tt_amt_org${manualNodeAppendText}`;
-    const manualNodeFieldName = 'status_singleselect';
-    const manualNodeFieldDisplayName = '公司状态(下拉单选)';
+    const manualNodeFieldName = 'orgname';
+    const manualNodeFieldDisplayName = '公司名称(单行文本)';
     await mockCollections(
       appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), manualNodeAppendText)
         .collections,
@@ -359,11 +278,35 @@ test.describe('field data entry', () => {
     };
     const triggerNode = await apiUpdateWorkflowTrigger(workflowId, triggerNodeData);
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
+    //配置前置查询节点
+    const preQueryRecordNodeTitle = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    const preQueryRecordNodeData = {
+      type: 'query',
+      upstreamId: null,
+      branchIndex: null,
+      title: preQueryRecordNodeTitle,
+      config: {
+        collection: triggerNodeCollectionName,
+        params: {
+          filter: { $and: [{ id: { $eq: '{{$context.data.id}}' } }] },
+          sort: [],
+          page: 1,
+          pageSize: 20,
+          appends: [],
+        },
+      },
+    };
+    const preQueryRecordNode = await apiCreateWorkflowNode(workflowId, preQueryRecordNodeData);
+    const preQueryRecordNodeObj = JSON.parse(JSON.stringify(preQueryRecordNode));
+    const preQueryRecordNodeId = preQueryRecordNodeObj.id;
+    const getPreQueryRecordNode = await apiGetWorkflowNode(preQueryRecordNodeId);
+    const preQueryRecordNodeKey = getPreQueryRecordNode.key;
+
     //配置Manual节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
     await page.waitForLoadState('networkidle');
-    const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
-    await collectionTriggerNode.addNodeButton.click();
+    const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
+    await preQueryRecordNodePom.addNodeButton.click();
     await page.getByRole('button', { name: 'manual', exact: true }).click();
     const manualNodeName = 'Manual' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Manual-Manual', { exact: true }).getByRole('textbox').fill(manualNodeName);
@@ -374,43 +317,14 @@ test.describe('field data entry', () => {
     await page.getByRole('option', { name: 'Super Admin' }).click();
     await manualNode.configureUserInterfaceButton.click();
     await manualNode.addBlockButton.hover();
-    await manualNode.customFormMenu.click();
+    await manualNode.nodeDataMenu.hover();
+    await page.getByRole('menuitem', { name: preQueryRecordNodeTitle }).click();
     await page.mouse.move(300, 0, { steps: 100 });
-    // 获取自定义表单的随机值
-    const configureFieldsButton = page.locator(
-      'button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-"]',
-    );
-    const ariaLabel = await configureFieldsButton.getAttribute('aria-label');
-    const randomValue = ariaLabel.split('-').pop();
-
-    await page
-      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
-      .hover();
-    await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
-    await page.getByRole('menuitem', { name: 'Edit block title' }).click();
-    const blockTitle = 'Form' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await page
-      .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
-      .hover();
-    await page.getByRole('menuitem', { name: 'Single select', exact: true }).click();
-    await page
-      .getByLabel(`block-item-Input-${randomValue}-Field display name`)
-      .getByRole('textbox')
-      .fill(manualNodeFieldDisplayName);
-    await page.getByLabel(`block-item-Input-${randomValue}-Field name`).getByRole('textbox').fill(manualNodeFieldName);
-    await page.getByRole('button', { name: 'Add option' }).click();
-    await page.getByRole('button', { name: 'Add option' }).click();
-    await page.getByLabel('block-item-ArrayTable-').getByRole('textbox').first().fill('1');
-    await page.getByLabel('block-item-ArrayTable-').getByRole('textbox').nth(1).fill('存续');
-    await page.getByLabel('block-item-ArrayTable-').getByRole('textbox').nth(2).fill('2');
-    await page.getByLabel('block-item-ArrayTable-').getByRole('textbox').nth(3).fill('在业');
-    await page.getByLabel(`action-Action-Submit-${randomValue}`).click();
+    await page.getByText('Configure fields').hover();
+    await page.getByRole('menuitem', { name: triggerNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.mouse.click(300, 0);
     await manualNode.submitButton.click();
-    await page.waitForLoadState('networkidle');
 
     // 2、测试步骤：添加数据触发工作流
     const triggerNodeCollectionRecordOne =
@@ -437,28 +351,7 @@ test.describe('field data entry', () => {
       .locator('xpath=preceding-sibling::td[1]')
       .locator('text=View')
       .click();
-    // const manualNodeRecord = faker.number.float({ min: 0, max: 100, precision: 2 });
-    await page.getByTestId('select-single').click();
-    await page.getByRole('option', { name: '存续' }).click();
-    await page.getByRole('button', { name: 'Continue the process' }).click();
-
-    await page.waitForTimeout(1000);
-    const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
-    const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
-    getWorkflowNodeExecutionsObj.sort(function (a: { id: number }, b: { id: number }) {
-      return b.id - a.id;
-    });
-    const jobs = getWorkflowNodeExecutionsObj[0].jobs;
-    const manualNodeJob = jobs.find((job) => job.nodeId.toString() === manualNodeId);
-    const manualNodeJobStatus = manualNodeJob.status;
-    expect(manualNodeJobStatus).toBe(1);
-
-    const manualNodeJobResult = manualNodeJob.result;
-    const hasIsenable = Object.values(manualNodeJobResult).some(
-      (value) => (value as { status_singleselect: string }).status_singleselect === '1',
-    );
-    expect(hasIsenable).toBe(true);
-
+    await expect(page.getByText(triggerNodeCollectionRecordOne)).toBeAttached();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });

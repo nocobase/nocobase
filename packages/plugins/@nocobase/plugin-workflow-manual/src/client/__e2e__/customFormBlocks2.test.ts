@@ -22,12 +22,8 @@ import {
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 
-test.describe('block configuration', () => {});
-
-test.describe('field configuration', () => {});
-
 test.describe('field data entry', () => {
-  test('Collection event to add a data trigger, entering percentage data', async ({
+  test('Collection event to add a data trigger, entering a single line of text data', async ({
     page,
     mockPage,
     mockCollections,
@@ -49,8 +45,8 @@ test.describe('field data entry', () => {
     // 创建Manual节点数据表
     const manualNodeCollectionDisplayName = `自动>组织[普通表]${manualNodeAppendText}`;
     const manualNodeCollectionName = `tt_amt_org${manualNodeAppendText}`;
-    const manualNodeFieldName = 'insuranceratio';
-    const manualNodeFieldDisplayName = '参保占比(百分比)';
+    const manualNodeFieldName = 'orgname';
+    const manualNodeFieldDisplayName = '公司名称(单行文本)';
     await mockCollections(
       appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), manualNodeAppendText)
         .collections,
@@ -108,7 +104,7 @@ test.describe('field data entry', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
-    await page.getByRole('menuitem', { name: 'Percent' }).click();
+    await page.getByRole('menuitem', { name: 'Single line text' }).click();
     await page
       .getByLabel(`block-item-Input-${randomValue}-Field display name`)
       .getByRole('textbox')
@@ -145,8 +141,8 @@ test.describe('field data entry', () => {
       .locator('xpath=preceding-sibling::td[1]')
       .locator('text=View')
       .click();
-    const manualNodeRecord = faker.number.float({ min: 0, max: 100, precision: 2 });
-    await page.getByRole('spinbutton').fill(manualNodeRecord.toString());
+    const manualNodeRecord = manualNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    await page.getByRole('textbox').fill(manualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
 
     await page.waitForTimeout(1000);
@@ -161,16 +157,16 @@ test.describe('field data entry', () => {
     expect(manualNodeJobStatus).toBe(1);
 
     const manualNodeJobResult = manualNodeJob.result;
-    const hasRegcapital = Object.values(manualNodeJobResult).some(
-      (value) => (value as { insuranceratio: number }).insuranceratio === manualNodeRecord / 100,
+    const hasOrgname = Object.values(manualNodeJobResult).some(
+      (value) => (value as { orgname: string }).orgname === manualNodeRecord,
     );
-    expect(hasRegcapital).toBe(true);
+    expect(hasOrgname).toBe(true);
 
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });
 
-  test('Collection event to add a data trigger, entering checkbox data', async ({
+  test('Collection event to add a data trigger, entering multi-line text data', async ({
     page,
     mockPage,
     mockCollections,
@@ -192,8 +188,8 @@ test.describe('field data entry', () => {
     // 创建Manual节点数据表
     const manualNodeCollectionDisplayName = `自动>组织[普通表]${manualNodeAppendText}`;
     const manualNodeCollectionName = `tt_amt_org${manualNodeAppendText}`;
-    const manualNodeFieldName = 'isenable';
-    const manualNodeFieldDisplayName = '是否启用(勾选)';
+    const manualNodeFieldName = 'address';
+    const manualNodeFieldDisplayName = '公司地址(多行文本)';
     await mockCollections(
       appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), manualNodeAppendText)
         .collections,
@@ -251,7 +247,7 @@ test.describe('field data entry', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
-    await page.getByRole('menuitem', { name: 'Checkbox', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Long text' }).click();
     await page
       .getByLabel(`block-item-Input-${randomValue}-Field display name`)
       .getByRole('textbox')
@@ -288,8 +284,8 @@ test.describe('field data entry', () => {
       .locator('xpath=preceding-sibling::td[1]')
       .locator('text=View')
       .click();
-    // const manualNodeRecord = faker.number.float({ min: 0, max: 100, precision: 2 });
-    await page.getByRole('checkbox').check();
+    const manualNodeRecord = manualNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    await page.getByRole('textbox').fill(manualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
 
     await page.waitForTimeout(1000);
@@ -304,16 +300,16 @@ test.describe('field data entry', () => {
     expect(manualNodeJobStatus).toBe(1);
 
     const manualNodeJobResult = manualNodeJob.result;
-    const hasIsenable = Object.values(manualNodeJobResult).some(
-      (value) => (value as { isenable: boolean }).isenable === true,
+    const hasAddress = Object.values(manualNodeJobResult).some(
+      (value) => (value as { address: string }).address === manualNodeRecord,
     );
-    expect(hasIsenable).toBe(true);
+    expect(hasAddress).toBe(true);
 
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });
 
-  test('Collection event to add a data trigger, entering single select data', async ({
+  test('Collection event to add a data trigger, entering mobile phone number data', async ({
     page,
     mockPage,
     mockCollections,
@@ -335,8 +331,8 @@ test.describe('field data entry', () => {
     // 创建Manual节点数据表
     const manualNodeCollectionDisplayName = `自动>组织[普通表]${manualNodeAppendText}`;
     const manualNodeCollectionName = `tt_amt_org${manualNodeAppendText}`;
-    const manualNodeFieldName = 'status_singleselect';
-    const manualNodeFieldDisplayName = '公司状态(下拉单选)';
+    const manualNodeFieldName = 'phone';
+    const manualNodeFieldDisplayName = '负责人电话(手机号码)';
     await mockCollections(
       appendJsonCollectionName(JSON.parse(JSON.stringify(generalWithNoRelationalFields)), manualNodeAppendText)
         .collections,
@@ -394,18 +390,12 @@ test.describe('field data entry', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
-    await page.getByRole('menuitem', { name: 'Single select', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page
       .getByLabel(`block-item-Input-${randomValue}-Field display name`)
       .getByRole('textbox')
       .fill(manualNodeFieldDisplayName);
     await page.getByLabel(`block-item-Input-${randomValue}-Field name`).getByRole('textbox').fill(manualNodeFieldName);
-    await page.getByRole('button', { name: 'Add option' }).click();
-    await page.getByRole('button', { name: 'Add option' }).click();
-    await page.getByLabel('block-item-ArrayTable-').getByRole('textbox').first().fill('1');
-    await page.getByLabel('block-item-ArrayTable-').getByRole('textbox').nth(1).fill('存续');
-    await page.getByLabel('block-item-ArrayTable-').getByRole('textbox').nth(2).fill('2');
-    await page.getByLabel('block-item-ArrayTable-').getByRole('textbox').nth(3).fill('在业');
     await page.getByLabel(`action-Action-Submit-${randomValue}`).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.mouse.click(300, 0);
@@ -437,9 +427,8 @@ test.describe('field data entry', () => {
       .locator('xpath=preceding-sibling::td[1]')
       .locator('text=View')
       .click();
-    // const manualNodeRecord = faker.number.float({ min: 0, max: 100, precision: 2 });
-    await page.getByTestId('select-single').click();
-    await page.getByRole('option', { name: '存续' }).click();
+    const manualNodeRecord = manualNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    await page.getByRole('textbox').fill(manualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
 
     await page.waitForTimeout(1000);
@@ -454,10 +443,10 @@ test.describe('field data entry', () => {
     expect(manualNodeJobStatus).toBe(1);
 
     const manualNodeJobResult = manualNodeJob.result;
-    const hasIsenable = Object.values(manualNodeJobResult).some(
-      (value) => (value as { status_singleselect: string }).status_singleselect === '1',
+    const hasPhone = Object.values(manualNodeJobResult).some(
+      (value) => (value as { phone: string }).phone === manualNodeRecord,
     );
-    expect(hasIsenable).toBe(true);
+    expect(hasPhone).toBe(true);
 
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);

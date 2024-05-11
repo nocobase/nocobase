@@ -21,7 +21,8 @@ import {
 } from '@nocobase/plugin-workflow-test/e2e';
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
-test.describe('filter', () => {
+
+test.describe('no filter', () => {
   test('Collection event add data trigger, normal table integer fields not de-emphasised COUNT', async ({
     page,
     mockCollections,
@@ -93,13 +94,6 @@ test.describe('filter', () => {
     await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -123,7 +117,7 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    expect(aggregateNodeJobResult).toBe(3);
+    expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionData.length);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });
@@ -200,13 +194,6 @@ test.describe('filter', () => {
     await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -230,12 +217,11 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    const aggregateNodeCollectionDataFilter = aggregateNodeCollectionData.filter((item) => item.staffnum > 3);
-    // aggregateNodeCollectionDataFilter中staffnum字段值的总和
-    const aggregateNodeCollectionDataFilterSum = aggregateNodeCollectionDataFilter.reduce((total, currentValue) => {
+    // aggregateNodeCollectionData中staffnum字段值总和
+    const aggregateNodeCollectionDataSum = aggregateNodeCollectionData.reduce((total, currentValue) => {
       return total + currentValue.staffnum;
     }, 0);
-    expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataFilterSum);
+    expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataSum);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });
@@ -311,13 +297,6 @@ test.describe('filter', () => {
     await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -341,15 +320,11 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    // aggregateNodeCollectionData中staffnum字段值大于3的元素个数
-    const aggregateNodeCollectionDataCount = aggregateNodeCollectionData.reduce((total, currentValue) => {
-      return currentValue.staffnum > 3 ? total + 1 : total;
-    }, 0);
-    // aggregateNodeCollectionData中staffnum字段值大于3的平均值
+    // aggregateNodeCollectionData中staffnum字段值平均值
     const aggregateNodeCollectionDataAvg =
       aggregateNodeCollectionData.reduce((total, currentValue) => {
-        return currentValue.staffnum > 3 ? total + currentValue.staffnum : total;
-      }, 0) / aggregateNodeCollectionDataCount;
+        return total + currentValue.staffnum;
+      }, 0) / aggregateNodeCollectionData.length;
     expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataAvg);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -427,13 +402,6 @@ test.describe('filter', () => {
     await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -457,11 +425,10 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    const aggregateNodeCollectionDataFilter = aggregateNodeCollectionData.filter((item) => item.staffnum > 3);
-    // aggregateNodeCollectionDataFilter中staffnum字段值的最小值
-    const aggregateNodeCollectionDataMin = aggregateNodeCollectionDataFilter.reduce((min, currentValue) => {
+    // aggregateNodeCollectionData中staffnum字段值最小值
+    const aggregateNodeCollectionDataMin = aggregateNodeCollectionData.reduce((min, currentValue) => {
       return currentValue.staffnum < min ? currentValue.staffnum : min;
-    }, aggregateNodeCollectionDataFilter[0].staffnum);
+    }, aggregateNodeCollectionData[0].staffnum);
     expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataMin);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -539,13 +506,6 @@ test.describe('filter', () => {
     await page.getByRole('menuitemcheckbox', { name: aggregateNodeCollectionDisplayName }).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -569,11 +529,10 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    const aggregateNodeCollectionDataFilter = aggregateNodeCollectionData.filter((item) => item.staffnum > 3);
-    // aggregateNodeCollectionDataFilter中staffnum最大值
-    const aggregateNodeCollectionDataMax = aggregateNodeCollectionDataFilter.reduce((max, currentValue) => {
+    // aggregateNodeCollectionData中staffnum字段值最大值
+    const aggregateNodeCollectionDataMax = aggregateNodeCollectionData.reduce((max, currentValue) => {
       return currentValue.staffnum > max ? currentValue.staffnum : max;
-    }, aggregateNodeCollectionDataFilter[0].staffnum);
+    }, aggregateNodeCollectionData[0].staffnum);
     expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataMax);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -651,13 +610,6 @@ test.describe('filter', () => {
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -681,7 +633,7 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    expect(aggregateNodeJobResult).toBe(2);
+    expect(aggregateNodeJobResult).toBe(3);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });
@@ -759,13 +711,6 @@ test.describe('filter', () => {
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -789,14 +734,11 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    const aggregateNodeCollectionDataFilter = aggregateNodeCollectionData.filter((item) => item.staffnum > 3);
     // aggregateNodeCollectionData中staffnum字段值去重
-    const aggregateNodeCollectionDataDistinct = [
-      ...new Set(aggregateNodeCollectionDataFilter.map((item) => item.staffnum)),
-    ];
-    // aggregateNodeCollectionDataDistinct中staffnum字段值大于3的总和
+    const aggregateNodeCollectionDataDistinct = [...new Set(aggregateNodeCollectionData.map((item) => item.staffnum))];
+    // aggregateNodeCollectionDataDistinct中staffnum字段值总和
     const aggregateNodeCollectionDataDistinctSum = aggregateNodeCollectionDataDistinct.reduce((total, currentValue) => {
-      return currentValue > 3 ? total + currentValue : total;
+      return total + currentValue;
     }, 0);
     expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataDistinctSum);
     // 4、后置处理：删除工作流
@@ -875,13 +817,6 @@ test.describe('filter', () => {
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -905,23 +840,13 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    const aggregateNodeCollectionDataFilter = aggregateNodeCollectionData.filter((item) => item.staffnum > 3);
     // aggregateNodeCollectionData中staffnum字段值去重
-    const aggregateNodeCollectionDataDistinct = [
-      ...new Set(aggregateNodeCollectionDataFilter.map((item) => item.staffnum)),
-    ];
-    // aggregateNodeCollectionDataDistinct中staffnum字段值大于3的元素个数
-    const aggregateNodeCollectionDataDistinctCount = aggregateNodeCollectionDataDistinct.reduce(
-      (count, currentValue) => {
-        return currentValue > 3 ? count + 1 : count;
-      },
-      0,
-    );
-    // aggregateNodeCollectionDataDistinct中staffnum字段值大于3的平均值
+    const aggregateNodeCollectionDataDistinct = [...new Set(aggregateNodeCollectionData.map((item) => item.staffnum))];
+    // aggregateNodeCollectionDataDistinct中staffnum字段值平均值
     const aggregateNodeCollectionDataDistinctAvg =
       aggregateNodeCollectionDataDistinct.reduce((total, currentValue) => {
-        return currentValue > 3 ? total + currentValue : total;
-      }, 0) / aggregateNodeCollectionDataDistinctCount;
+        return total + currentValue;
+      }, 0) / aggregateNodeCollectionDataDistinct.length;
     expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataDistinctAvg);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -1000,13 +925,6 @@ test.describe('filter', () => {
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -1030,11 +948,10 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    const aggregateNodeCollectionDataFilter = aggregateNodeCollectionData.filter((item) => item.staffnum > 3);
-    // aggregateNodeCollectionDataFilter中staffnum最小值
-    const aggregateNodeCollectionDataMin = aggregateNodeCollectionDataFilter.reduce((min, currentValue) => {
+    // aggregateNodeCollectionData中staffnum字段值最小值
+    const aggregateNodeCollectionDataMin = aggregateNodeCollectionData.reduce((min, currentValue) => {
       return currentValue.staffnum < min ? currentValue.staffnum : min;
-    }, aggregateNodeCollectionDataFilter[0].staffnum);
+    }, aggregateNodeCollectionData[0].staffnum);
     expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataMin);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -1113,13 +1030,6 @@ test.describe('filter', () => {
     await aggregateRecordNode.aggregatedFieldDropDown.click();
     await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.distinctCheckBox.click();
-    // 过滤条件
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: '员工人数(整数)' }).click();
-    await page.getByRole('button', { name: '=' }).click();
-    await page.getByRole('option', { name: '>' }).click();
-    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('spinbutton').fill('3');
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -1143,11 +1053,10 @@ test.describe('filter', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const aggregateNodeJob = jobs.find((job) => job.nodeId.toString() === aggregateRecordNodeId);
     const aggregateNodeJobResult = aggregateNodeJob.result;
-    const aggregateNodeCollectionDataFilter = aggregateNodeCollectionData.filter((item) => item.staffnum > 3);
-    // aggregateNodeCollectionDataFilter中staffnum最大值
-    const aggregateNodeCollectionDataMax = aggregateNodeCollectionDataFilter.reduce((max, currentValue) => {
+    // aggregateNodeCollectionData中staffnum字段值最大值
+    const aggregateNodeCollectionDataMax = aggregateNodeCollectionData.reduce((max, currentValue) => {
       return currentValue.staffnum > max ? currentValue.staffnum : max;
-    }, aggregateNodeCollectionDataFilter[0].staffnum);
+    }, aggregateNodeCollectionData[0].staffnum);
     expect(aggregateNodeJobResult).toBe(aggregateNodeCollectionDataMax);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
