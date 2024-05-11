@@ -299,7 +299,7 @@ jobs:
       - core-and-plugins
       - plugin-workflow
       - plugin-data-source-main
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
