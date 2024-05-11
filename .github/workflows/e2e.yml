@@ -105,6 +105,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
+      - run: ls -R packages/
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
         continue-on-error: true
