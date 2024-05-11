@@ -27,6 +27,7 @@ import {
   oneTableWithRoles,
   oneTableWithUpdateRecord,
   twoTableWithAuthorAndBooks,
+  oneTableWithColumnFixed,
 } from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
@@ -976,6 +977,29 @@ test.describe('table column schema settings', () => {
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByTestId('select-object-multiple').click();
     await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
+  });
+  test('fixed column', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(oneTableWithColumnFixed).waitForInit();
+    await nocoPage.goto();
+    await expect(page.getByRole('button', { name: 'Roles' })).toBeVisible();
+    const element = await page.getByRole('button', { name: 'Roles' });
+    const hasClassName = await element.evaluate((el) =>
+      el.parentElement.parentElement.className.includes('ant-table-cell-fix-left'),
+    );
+
+    await expect(hasClassName).toBe(true);
+    //取消固定
+    await page.getByRole('button', { name: 'Roles' }).hover();
+    await page
+      .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
+      .hover();
+    await page.getByTestId('schema-settings-menu').getByText('FixedLeft fixed').click();
+    await page.getByText('Not fixed').click();
+    const hasClassName1 = await element.evaluate((el) =>
+      el.parentElement.parentElement.className.includes('ant-table-cell-fix-left'),
+    );
+
+    await expect(hasClassName1).toBe(false);
   });
 });
 
