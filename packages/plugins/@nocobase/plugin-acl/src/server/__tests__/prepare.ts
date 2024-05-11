@@ -15,5 +15,6 @@ export async function prepareApp(): Promise<MockServer> {
     acl: true,
     plugins: ['acl', 'error-handler', 'users', 'ui-schema-storage', 'data-source-main', 'auth', 'data-source-manager'],
   });
+
   return app;
 }

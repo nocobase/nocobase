@@ -107,6 +107,7 @@ export class ACLRole {
 
   public effectiveSnippets(): { allowed: Array<string>; rejected: Array<string> } {
     const currentParams = this._serializeSet(this.snippets);
+
     if (this._snippetCache.params === currentParams) {
       return this._snippetCache.result;
     }
