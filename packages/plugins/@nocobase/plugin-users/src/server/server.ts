@@ -200,6 +200,7 @@ export default class PluginUsersServer extends Plugin {
   async install(options) {
     const { rootNickname, rootPassword, rootEmail, rootUsername } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
+
     if (await User.repository.findOne({ filter: { email: rootEmail } })) {
       return;
     }
@@ -214,6 +215,7 @@ export default class PluginUsersServer extends Plugin {
     });
 
     const repo = this.db.getRepository<any>('collections');
+
     if (repo) {
       await repo.db2cm('users');
     }
