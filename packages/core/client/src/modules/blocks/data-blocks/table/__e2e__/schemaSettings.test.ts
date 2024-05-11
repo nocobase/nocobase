@@ -584,8 +584,3 @@ test.describe('table column schema settings', () => {
     await expect(hasClassName1).toBe(false);
   });
 });
-
-export async function showSettingsMenu(page) {
-  await page.getByLabel('block-item-CardItem-general-table').hover();
-  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
-}

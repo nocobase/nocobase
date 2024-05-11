@@ -79,11 +79,6 @@ async function showSettingsInSide(page: Page, pageName: string) {
   await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
 }
 
-export async function showSettings(page: Page, pageName: string) {
-  await page.locator('.ant-layout-header').getByText(pageName, { exact: true }).hover();
-  await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
-}
-
 async function createSubPage({ page, name, type }: { page: Page; name: string; type: PageConfig['type'] }) {
   const typeToOptionName = {
     group: 'Group',

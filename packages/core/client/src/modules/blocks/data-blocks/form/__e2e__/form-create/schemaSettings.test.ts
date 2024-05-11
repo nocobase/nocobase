@@ -8,7 +8,6 @@
  */
 
 import {
-  Page,
   expect,
   expectSettingsMenu,
   expectSupportedVariables,
@@ -19,12 +18,6 @@ import {
 } from '@nocobase/test/e2e';
 import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
 import { T2174, T3871, oneFormAndOneTableWithUsers } from './templatesOfBug';
-
-export const clickOption = async (page: Page, optionName: string) => {
-  await page.getByLabel('block-item-CardItem-general-form').hover();
-  await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
-  await page.getByRole('menuitem', { name: optionName }).click();
-};
 
 test.describe('set default value', () => {
   test('basic fields', async ({ page, mockPage }) => {

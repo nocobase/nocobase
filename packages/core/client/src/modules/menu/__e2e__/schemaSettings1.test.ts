@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { expect, test } from '@nocobase/test/e2e';
-import { showSettings } from './schemaSettings.test';
+import { Page, expect, test } from '@nocobase/test/e2e';
 
 test.describe('group page menus schema settings', () => {
   test('edit', async ({ page, mockPage }) => {
@@ -144,3 +143,8 @@ test.describe('group page menus schema settings', () => {
     await expect(page.getByLabel('group page')).not.toBeVisible();
   });
 });
+
+async function showSettings(page: Page, pageName: string) {
+  await page.locator('.ant-layout-header').getByText(pageName, { exact: true }).hover();
+  await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+}

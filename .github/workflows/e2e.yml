@@ -110,7 +110,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e p-test --ignore 'packages/**/{plugin-workflow,plugin-workflow-*,plugin-data-source-main}/**/__e2e__/**/*.test.ts'
+        run: yarn e2e p-test --ignore 'packages/**/{plugin-data-source-main,plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts'
         env:
           __E2E__: true
           APP_ENV: production
@@ -128,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./storage/playwright/tests-report-blob/**/*.zip
+          path: ./storage/playwright/tests-report-blob/blob-*/*
 
     timeout-minutes: 60
 
@@ -208,7 +208,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./storage/playwright/tests-report-blob/**/*.zip
+          path: ./storage/playwright/tests-report-blob/blob-*/*
 
     timeout-minutes: 60
 
@@ -288,7 +288,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./storage/playwright/tests-report-blob/**/*.zip
+          path: ./storage/playwright/tests-report-blob/blob-*/*
 
     timeout-minutes: 60
 

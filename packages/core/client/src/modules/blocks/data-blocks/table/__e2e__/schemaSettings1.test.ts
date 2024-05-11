@@ -19,7 +19,6 @@ import {
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
-import { showSettingsMenu } from './schemaSettings.test';
 import { T4032, oneTableWithRoles, twoTableWithAuthorAndBooks } from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
@@ -429,3 +428,8 @@ test.describe('table block schema settings', () => {
     });
   });
 });
+
+async function showSettingsMenu(page) {
+  await page.getByLabel('block-item-CardItem-general-table').hover();
+  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
+}

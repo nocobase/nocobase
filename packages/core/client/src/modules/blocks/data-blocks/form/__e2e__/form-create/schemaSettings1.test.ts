@@ -8,13 +8,19 @@
  */
 
 import {
+  Page,
   expect,
   oneEmptyForm,
   oneTableBlockWithActionsAndFormBlocks,
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { clickOption } from './schemaSettings.test';
+
+export const clickOption = async (page: Page, optionName: string) => {
+  await page.getByLabel('block-item-CardItem-general-form').hover();
+  await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
+  await page.getByRole('menuitem', { name: optionName }).click();
+};
 
 test.describe('creation form block schema settings', () => {
   test('edit block title', async ({ page, mockPage }) => {
