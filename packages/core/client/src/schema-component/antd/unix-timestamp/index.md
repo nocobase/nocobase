@@ -1,9 +1,13 @@
 # UnixTimestamp
 
+`UnixTimestamp` 是一个基于 `antd` 的DatePicker组件的封装。
+
+
 ```ts
 interface UnixTimestampProps {
   value?: number;
-  accuracy?: 'millisecond' | 'second';
+   accuracy?: 'millisecond' | 'second';
+  onChange?: (value: number) => void;
 }
 ```
 

@@ -255,6 +255,10 @@ export default defineConfig({
               "link": "/components/date-picker"
             },
             {
+              "title": "UnixTimestamp",
+              "link": "/components/unix-timestamp"
+            },
+            {
               "title": "TimePicker",
               "link": "/components/time-picker"
             },
