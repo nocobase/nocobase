@@ -132,7 +132,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
       const collection = getCollection(collectionName, dataSourceKey);
       const primaryKeyField = collection.fields.find((f) => f.primaryKey);
 
-      setValuesIn('collection', `${dataSourceKey}:${target}`);
+      setValuesIn('collection', joinCollectionName(dataSourceKey, target));
 
       onChange({
         name,
