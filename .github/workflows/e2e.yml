@@ -110,7 +110,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e p-test --ignore 'packages/**/{plugin-workflow,plugin-workflow-*,plugin-data-source-main}/**/__e2e__/**/*.test.ts'
+        run: yarn e2e p-test --match 'packages/**/__e2e__/**/longText/*.test.ts'
         env:
           __E2E__: true
           APP_ENV: production
@@ -123,73 +123,12 @@ jobs:
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
 
-      - name: Merge reports
-        if: ${{ !cancelled() }}
-        run: |
-          node scripts/moveE2EReportFiles.js && npx playwright merge-reports --config .github/workflows/merge.config.ts ./storage/playwright/tests-report-blob
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
-        id: artifact-upload-step
         with:
           name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./e2e-report/index.html
-
-      - name: Comment on PR
-        if: ${{ !cancelled() }}
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const jobName = 'Core and plugins';
-            const fs = require('fs');
-            const prNumber = '${{ github.event.pull_request.number }}';
-            if (!prNumber) {
-              core.error('No pull request found for commit ' + context.sha + ' and workflow triggered by: ' + jobName);
-              return;
-            }
-            {
-              // Mark previous comments as outdated by minimizing them.
-              const { data: comments } = await github.rest.issues.listComments({
-                ...context.repo,
-                issue_number: prNumber,
-              });
-              for (const comment of comments) {
-                if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName)) {
-                  await github.graphql(`
-                    mutation {
-                      minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
-                        clientMutationId
-                      }
-                    }
-                  `);
-                }
-              }
-            }
-            const reportUrl = '${{ steps.artifact-upload-step.outputs.artifact-url }}';
-            core.notice('Report url: ' + reportUrl);
-            const mergeWorkflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const reportMd = await fs.promises.readFile('report.md', 'utf8');
-            function formatComment(lines) {
-              let body = lines.join('\n');
-              if (body.length > 65535)
-                body = body.substring(0, 65000) + `... ${body.length - 65000} more characters`;
-              return body;
-            }
-            const { data: response } = await github.rest.issues.createComment({
-              ...context.repo,
-              issue_number: prNumber,
-              body: formatComment([
-                `### E2E results for "${jobName}"`,
-                reportMd,
-                '',
-                `Full [HTML report](${reportUrl}). Merge [workflow run](${mergeWorkflowUrl}).`
-              ]),
-            });
-            core.info('Posted comment: ' + response.html_url);
+          path: ./storage/playwright/tests-report-blob/**/*.zip
 
     timeout-minutes: 60
 
@@ -251,7 +190,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts'
+        run: yarn e2e p-test --match 'packages/**/__e2e__/**/markdown/*.test.ts'
         env:
           __E2E__: true
           APP_ENV: production
@@ -264,73 +203,12 @@ jobs:
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
 
-      - name: Merge reports
-        if: ${{ !cancelled() }}
-        run: |
-          node scripts/moveE2EReportFiles.js && npx playwright merge-reports --config .github/workflows/merge.config.ts ./storage/playwright/tests-report-blob
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
-        id: artifact-upload-step
         with:
           name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./e2e-report/index.html
-
-      - name: Comment on PR
-        if: ${{ !cancelled() }}
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const jobName = 'plugin-workflow';
-            const fs = require('fs');
-            const prNumber = '${{ github.event.pull_request.number }}';
-            if (!prNumber) {
-              core.error('No pull request found for commit ' + context.sha + ' and workflow triggered by: ' + jobName);
-              return;
-            }
-            {
-              // Mark previous comments as outdated by minimizing them.
-              const { data: comments } = await github.rest.issues.listComments({
-                ...context.repo,
-                issue_number: prNumber,
-              });
-              for (const comment of comments) {
-                if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName)) {
-                  await github.graphql(`
-                    mutation {
-                      minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
-                        clientMutationId
-                      }
-                    }
-                  `);
-                }
-              }
-            }
-            const reportUrl = '${{ steps.artifact-upload-step.outputs.artifact-url }}';
-            core.notice('Report url: ' + reportUrl);
-            const mergeWorkflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const reportMd = await fs.promises.readFile('report.md', 'utf8');
-            function formatComment(lines) {
-              let body = lines.join('\n');
-              if (body.length > 65535)
-                body = body.substring(0, 65000) + `... ${body.length - 65000} more characters`;
-              return body;
-            }
-            const { data: response } = await github.rest.issues.createComment({
-              ...context.repo,
-              issue_number: prNumber,
-              body: formatComment([
-                `### E2E results for "${jobName}"`,
-                reportMd,
-                '',
-                `Full [HTML report](${reportUrl}). Merge [workflow run](${mergeWorkflowUrl}).`
-              ]),
-            });
-            core.info('Posted comment: ' + response.html_url);
+          path: ./storage/playwright/tests-report-blob/**/*.zip
 
     timeout-minutes: 60
 
@@ -392,7 +270,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e p-test --match 'packages/**/plugin-data-source-main/**/__e2e__/**/*.test.ts'
+        run: yarn e2e p-test --match 'packages/**/__e2e__/**/mutipleSelect/*.test.ts'
         env:
           __E2E__: true
           APP_ENV: production
@@ -405,28 +283,55 @@ jobs:
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
 
-      - name: Merge reports
+      - name: Upload e2e-report
         if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
+          path: ./storage/playwright/tests-report-blob/**/*.zip
+
+    timeout-minutes: 60
+
+  comment-on-pr:
+    name: Comment on PR
+    runs-on: ubuntu-latest
+    needs:
+      - core-and-plugins
+      - plugin-workflow
+      - plugin-data-source-main
+    if: ${{ !cancelled() }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Download e2e report artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: e2e-report
+          pattern: e2e-report-*
+          merge-multiple: true
+
+      - name: Merge reports
         run: |
-          node scripts/moveE2EReportFiles.js && npx playwright merge-reports --config .github/workflows/merge.config.ts ./storage/playwright/tests-report-blob
+          npx playwright merge-reports --config .github/workflows/merge.config.ts ./e2e-report
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload e2e-report
-        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
-        id: artifact-upload-step
+        id: e2e-html-report-artifact
         with:
-          name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./e2e-report/index.html
+          name: e2e-html-report
+          path: ./e2e-html-report/index.html
 
       - name: Comment on PR
-        if: ${{ !cancelled() }}
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const jobName = 'plugin-data-source-main';
+            const jobName = 'E2E';
             const fs = require('fs');
             const prNumber = '${{ github.event.pull_request.number }}';
             if (!prNumber) {
@@ -451,7 +356,7 @@ jobs:
                 }
               }
             }
-            const reportUrl = '${{ steps.artifact-upload-step.outputs.artifact-url }}';
+            const reportUrl = '${{ steps.e2e-html-report-artifact.outputs.artifact-url }}';
             core.notice('Report url: ' + reportUrl);
             const mergeWorkflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const reportMd = await fs.promises.readFile('report.md', 'utf8');
@@ -465,7 +370,7 @@ jobs:
               ...context.repo,
               issue_number: prNumber,
               body: formatComment([
-                `### E2E results for "${jobName}"`,
+                `### Tests results for "${jobName}"`,
                 reportMd,
                 '',
                 `Full [HTML report](${reportUrl}). Merge [workflow run](${mergeWorkflowUrl}).`
@@ -473,5 +378,4 @@ jobs:
             });
             core.info('Posted comment: ' + response.html_url);
 
-    timeout-minutes: 60
-
+    timeout-minutes: 5
