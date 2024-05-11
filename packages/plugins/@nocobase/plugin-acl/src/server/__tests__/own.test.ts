@@ -99,6 +99,7 @@ describe('own test', () => {
       })
       .set({ Authorization: 'Bearer ' + adminToken });
 
+    acl.appendStrategyResource('tests');
     const response = await userAgent.get('/tests:list');
     expect(response.statusCode).toEqual(200);
   });
@@ -113,6 +114,7 @@ describe('own test', () => {
       },
     });
 
+    acl.appendStrategyResource('posts');
     let response = await userAgent.resource('posts').create({
       values: {
         title: 't1',

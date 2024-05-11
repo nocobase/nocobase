@@ -48,6 +48,28 @@ describe('role api', () => {
       adminAgent = app.agent().login(admin);
     });
 
+    it('should have permission to users collection with strategy', async () => {
+      await db.getRepository('roles').create({
+        values: {
+          name: 'tests',
+          strategy: {
+            actions: ['view'],
+          },
+        },
+      });
+
+      const user1 = await db.getRepository('users').create({
+        values: {
+          roles: ['tests'],
+        },
+      });
+
+      const userAgent = app.agent().login(user1);
+
+      const response = await userAgent.resource('users').list();
+      expect(response.statusCode).toBe(200);
+    });
+
     it('should list actions', async () => {
       const response = await adminAgent.resource('availableActions').list();
       expect(response.statusCode).toEqual(200);
