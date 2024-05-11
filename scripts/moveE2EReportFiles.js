@@ -3,8 +3,8 @@ const path = require('path');
 const glob = require('glob');
 
 // 源路径和目标路径
-const sourcePattern = './storage/playwright/tests-report-blob/blob-*/*';
-const targetDir = './storage/playwright/tests-report-blob/';
+const sourcePattern = './e2e-report/blob-*/*';
+const targetDir = './e2e-report/';
 
 // 确保目标目录存在
 fs.mkdirSync(targetDir, { recursive: true });

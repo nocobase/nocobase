@@ -317,7 +317,7 @@ jobs:
 
       - name: Merge reports
         run: |
-          npx playwright merge-reports --config .github/workflows/merge.config.ts ./e2e-report
+          node scripts/moveE2EReportFiles.js && npx playwright merge-reports --config .github/workflows/merge.config.ts ./e2e-report
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
