@@ -280,7 +280,7 @@ const MyComponent = () => {
 ```tsx | pure
 
 class DataSourceManager {
-  getAllCollections(options: {
+  getAllCollections(options?: {
     filterCollection?: (collection: Collection) => boolean;
     filterDataSource?: (dataSource: DataSource) => boolean;
   }): (DataSourceOptions & { collections: Collection[] })[];

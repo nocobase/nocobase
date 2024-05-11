@@ -81,7 +81,8 @@ test('Collection event add data trigger, Math engine, determine trigger node int
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  const conditionalRightConstant = faker.number.int();
+  const conditionalRightConstant = faker.number.int({ max: 1000 });
+  await page.waitForTimeout(500);
   await page.keyboard.type(`==${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
@@ -164,7 +165,8 @@ test('Collection event Add Data Trigger, Math engine, determines that the trigge
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  const conditionalRightConstant = faker.number.int();
+  const conditionalRightConstant = faker.number.int({ max: 1000 });
+  await page.waitForTimeout(500);
   await page.keyboard.type(`==${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
@@ -246,7 +248,8 @@ test('Collection event Add Data Trigger, Math engine, determines that the trigge
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  const conditionalRightConstant = faker.number.int();
+  const conditionalRightConstant = faker.number.int({ max: 1000 });
+  await page.waitForTimeout(500);
   await page.keyboard.type(`!=${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
@@ -328,7 +331,8 @@ test('Collection event add data trigger, Math engine, determines that the trigge
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  const conditionalRightConstant = faker.number.int();
+  const conditionalRightConstant = faker.number.int({ max: 1000 });
+  await page.waitForTimeout(500);
   await page.keyboard.type(`!=${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,

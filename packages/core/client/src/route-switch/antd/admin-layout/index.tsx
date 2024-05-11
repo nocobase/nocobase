@@ -22,6 +22,7 @@ import {
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
+  RouteSchemaComponent,
   SchemaComponent,
   findByUid,
   findMenuItem,
@@ -82,9 +83,11 @@ const MenuEditor = (props) => {
   const isMatchAdmin = useMatch('/admin');
   const isMatchAdminName = useMatch('/admin/:name');
   const defaultSelectedUid = params.name;
+  const isDynamicPage = !!defaultSelectedUid;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
+
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
@@ -116,7 +119,7 @@ const MenuEditor = (props) => {
         }
 
         // url 不为 `/admin/xxx` 的情况，不做处理
-        if (!isMatchAdminName) return;
+        if (!isMatchAdminName || !isDynamicPage) return;
 
         // url 为 `admin/xxx` 的情况
         const s = findByUid(schema, defaultSelectedUid);
@@ -301,6 +304,11 @@ const AdminSideBar = ({ sideMenuRef }) => {
       ref={sideMenuRef}
     ></Layout.Sider>
   );
+};
+
+export const AdminDynamicPage = () => {
+  const params = useParams<{ name?: string }>();
+  return <RouteSchemaComponent schema={params.name} />;
 };
 
 export const InternalAdminLayout = () => {
@@ -493,6 +501,6 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
-    this.app.addComponents({ AdminLayout });
+    this.app.addComponents({ AdminLayout, AdminDynamicPage });
   }
 }

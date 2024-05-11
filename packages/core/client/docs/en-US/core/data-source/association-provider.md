@@ -1,6 +1,6 @@
 # AssociationProvider
 
-用于传递关联数据字段以及对应的数据表信息，等同于 `CollectionFieldProvider` + `CollectionProvider`。
+Used for passing associated data fields and their corresponding table information, equivalent to `CollectionFieldProvider` + `CollectionProvider`.
 
 ```tsx | pure
 const AssociationProvider = <CollectionFieldProvider name={fieldName}>
@@ -10,4 +10,4 @@ const AssociationProvider = <CollectionFieldProvider name={fieldName}>
 </CollectionFieldProvider>
 ```
 
-关于关系字段的更多信息，请参考 [关系字段](https://docs.nocobase.com/development/server/collections/association-fields) 以及 [CollectionField](/core/data-source/collection-field)。
+For more information on relational fields, please refer to [Association Fields](https://docs.nocobase.com/development/server/collections/association-fields) and [CollectionField](/core/data-source/collection-field).

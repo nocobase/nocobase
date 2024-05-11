@@ -58,7 +58,7 @@ class MockAPI {
         await sleep(100);
         ctx.body = {
           meta: { title: ctx.query.title },
-          data: { title: ctx.request.body['title'] },
+          data: ctx.request.body,
         };
       }
       await next();
@@ -313,6 +313,54 @@ describe('workflow > instructions > request', () => {
       expect(jobs.length).toBe(3);
       expect(jobs.map((item) => item.status)).toEqual(Array(3).fill(JOB_STATUS.RESOLVED));
       expect(jobs[0].result).toBe(2);
+    });
+  });
+
+  describe('contentType', () => {
+    it('no contentType as "application/json"', async () => {
+      const n1 = await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'POST',
+          data: { a: '{{$context.data.title}}' },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result.data).toEqual({ a: 't1' });
+    });
+
+    it('contentType as "application/x-www-form-urlencoded"', async () => {
+      const n1 = await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'POST',
+          data: [
+            { name: 'a', value: '{{$context.data.title}}' },
+            { name: 'a', value: '&=1' },
+          ],
+          contentType: 'application/x-www-form-urlencoded',
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result.data).toEqual({ a: ['t1', '&=1'] });
     });
   });
 

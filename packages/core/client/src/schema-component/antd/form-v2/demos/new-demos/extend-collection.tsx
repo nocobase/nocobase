@@ -1,14 +1,7 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
 
-import { CollectionField, ExtendCollectionsProvider, FormBlockProvider } from '@nocobase/client';
-import { getAppComponent } from '@nocobase/test/web';
+import { Plugin, SchemaComponent, ExtendCollectionsProvider, FormBlockProvider, ISchema } from '@nocobase/client';
+import { mockApp } from '@nocobase/client/demo-utils';
+import React from 'react';
 
 const bookCollection = {
   key: 'book',
@@ -72,47 +65,52 @@ const bookCollection = {
   filterTargetKey: 'id',
 };
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    properties: {
-      test: {
-        type: 'void',
-        'x-component': 'FormBlockProvider',
-        'x-component-props': {
-          collection: 'book',
-        },
-        properties: {
-          form: {
-            'x-component': 'FormV2',
-            properties: {
-              name: {
-                'x-decorator': 'FormItem',
-                'x-component': 'CollectionField',
-              },
-              price: {
-                'x-decorator': 'FormItem',
-                'x-component': 'CollectionField',
-              },
+const schema: ISchema = {
+  type: 'void',
+  name: 'root',
+  properties: {
+    test: {
+      type: 'void',
+      'x-component': 'FormBlockProvider',
+      'x-component-props': {
+        collection: 'book',
+      },
+      properties: {
+        form: {
+          'x-component': 'FormV2',
+          properties: {
+            name: {
+              'x-decorator': 'FormItem',
+              'x-component': 'CollectionField',
+            },
+            price: {
+              'x-decorator': 'FormItem',
+              'x-component': 'CollectionField',
             },
           },
         },
       },
     },
   },
-  appOptions: {
-    components: {
-      FormBlockProvider,
-      CollectionField,
-    },
-    providers: [
-      [ExtendCollectionsProvider, { collections: [bookCollection] }], // 添加 book 数据表
-    ],
-  },
-  apis: {
-    'users:create': { result: 'ok' },
-  },
+};
+
+const Demo = () => {
+  return <ExtendCollectionsProvider collections={[bookCollection]}>
+    <SchemaComponent schema={schema} />
+  </ExtendCollectionsProvider>;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
+  components: {
+    FormBlockProvider
+  }
 });
 
-export default App;
+export default app.getRootComponent();

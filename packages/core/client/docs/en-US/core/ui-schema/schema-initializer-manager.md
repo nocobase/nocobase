@@ -1,12 +1,12 @@
 # SchemaInitializerManager
 
-## 实例方法
+## Methods
 
 ### schemaInitializerManager.add()
 
-添加 SchemaInitializer 实例。
+Add SchemaInitializer instance.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaInitializerManager {
@@ -14,7 +14,7 @@ class SchemaInitializerManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const myInitializer = new SchemaInitializer({
@@ -38,9 +38,9 @@ class MyPlugin extends Plugin {
 
 ### schemaInitializerManager.get()
 
-获取一个 SchemaInitializer 实例。
+Get SchemaInitializer instance.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaInitializerManager {
@@ -48,7 +48,7 @@ class SchemaInitializerManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -60,9 +60,9 @@ class MyPlugin extends Plugin {
 
 ### schemaInitializerManager.getAll()
 
-获取所有的 SchemaInitializer 实例。
+Get all SchemaInitializer instances.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaInitializerManager {
@@ -70,7 +70,7 @@ class SchemaInitializerManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -82,9 +82,9 @@ class MyPlugin extends Plugin {
 
 ### app.schemaInitializerManager.has()
 
-判断是否有存在某个 SchemaInitializer 实例。
+Check if a specific SchemaInitializer instance exists.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaInitializerManager {
@@ -92,7 +92,7 @@ class SchemaInitializerManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -104,9 +104,9 @@ class MyPlugin extends Plugin {
 
 ### schemaInitializerManager.remove()
 
-移除 SchemaInitializer 实例。
+Remove SchemaInitializer instance.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaInitializerManager {
@@ -114,7 +114,7 @@ class SchemaInitializerManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -126,9 +126,9 @@ class MyPlugin extends Plugin {
 
 ### schemaInitializerManager.addItem()
 
-添加 SchemaInitializer 实例的 Item 项，其和直接 schemaInitializer.add() 方法的区别是，可以确保在实例存在时才会添加。
+Add an Item to the SchemaInitializer instance, the difference between this method and directly calling schemaInitializer.add() is that it can ensure that the item is added only when the instance exists.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaInitializerManager {
@@ -136,18 +136,18 @@ class SchemaInitializerManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
     async load() {
-        // 方式1：先获取，再添加子项，需要确保已注册
+        // Method 1: Get first, then add sub-items, make sure it is registered
         const myInitializer = this.app.schemaInitializerManager.get('MyInitializer');
         if (myInitializer) {
             myInitializer.add('b', { type: 'item', title: 'B' })
         }
 
-        // 方式2：通过 addItem，内部确保在 MyInitializer 注册时才会添加
+        // Method 2: Use addItem, ensure that it is added only when MyInitializer is registered
         this.app.schemaInitializerManager.addItem('MyInitializer', 'b', {
             type: 'item',
             title: 'B'
@@ -158,9 +158,9 @@ class MyPlugin extends Plugin {
 
 ### schemaInitializerManager.removeItem()
 
-移除 实例的 Item 项，其和直接 schemaInitializer.remove() 方法的区别是，可以确保在实例存在时才会移除。
+Remove an Item from the SchemaInitializer instance, the difference between this method and directly calling schemaInitializer.remove() is that it can ensure that the item is removed only when the instance exists.
 
-- 类型
+- Type
 
 ```tsx | pure
 class SchemaInitializerManager {
@@ -168,18 +168,18 @@ class SchemaInitializerManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
     async load() {
-        // 方式1：先获取，再删除子项，需要确保已注册
+        // Method 1: Get first, then remove sub-items, make sure it is registered
         const myInitializer = this.app.schemaInitializerManager.get('MyInitializer');
         if (myInitializer) {
             myInitializer.remove('a')
         }
 
-        // 方式2：通过 addItem，内部确保在 MyInitializer 注册时才会移除
+        // Method 2: Use removeItem, ensure that it is removed only when MyInitializer is registered
         this.app.schemaInitializerManager.remove('MyInitializer', 'a')
     }
 }

@@ -1,10 +1,10 @@
 # CollectionRecordProvider
 
-用于提供 [CollectionRecord](./collection-record) 实例。
+Used to provide instances of [CollectionRecord](./collection-record).
 
-## 组件
+## Component
 
-- 类型
+- Type
 
 ```tsx | pure
 interface CollectionRecordProviderProps<DataType = {}, ParentDataType = {}> {
@@ -12,21 +12,21 @@ interface CollectionRecordProviderProps<DataType = {}, ParentDataType = {}> {
   record?: CollectionRecord<DataType, ParentDataType> | DataType;
   parentRecord?: CollectionRecord<ParentDataType> | DataType;
   /**
-   * 当前记录所属的 collection name
+  * The collection name to which the current record belongs
    */
   collectionName?: string;
 }
 ```
 
-- 详解
+- Details
 
-参数的具体说明参见 [CollectionRecord](./collection-record)。
+The specific description of the parameters can be found in [CollectionRecord](./collection-record).
 
-需要说明的是 `record` 和 `parentRecord` 即可以是普通的对象，也可以是 [CollectionRecord](./collection-record) 实例，但最终会转为 `CollectionRecord` 实例，并通过 context 传递给子组件。
+It should be noted that both `record` and `parentRecord` can be either plain objects or instances of [CollectionRecord](./collection-record). However, they will ultimately be converted to `CollectionRecord` instances and passed to child components through context.
 
-## 示例
+## Example
 
-- record 参数为 CollectionRecord 实例
+- The `record` parameter is an instance of `CollectionRecord`.
 
 ```tsx | pure
 import { CollectionRecord, CollectionRecordProvider } from '@nocobase/client';
@@ -34,7 +34,7 @@ import { CollectionRecord, CollectionRecordProvider } from '@nocobase/client';
 const record = new CollectionRecord({ data: { id: 1, name: 'foo' } });
 
 <CollectionRecordProvider record={record} />
-// 最终向子组件传递的数据为： props.record
+// The data passed to child components is: props.record
 ```
 
 ```tsx
@@ -50,11 +50,11 @@ const Demo = () => {
 export default () => <CollectionRecordProvider record={record}><Demo /></CollectionRecordProvider>
 ```
 
-- record 参数为普通对象
+- The `record` parameter is a plain object.
 
 ```tsx | pure
 <CollectionRecordProvider record={{ id: 1, name: 'foo' }} />
-// 最终向子组件传递的数据为： const record = new CollectionRecord({ data: { id: 1, name: 'foo' } });
+// The data passed to child components is: const record = new CollectionRecord({ data: { id: 1, name: 'foo' } });
 ```
 
 ```tsx
@@ -68,14 +68,14 @@ const Demo = () => {
 export default () => <CollectionRecordProvider record={{ id: 1, name: 'foo' }}><Demo /></CollectionRecordProvider>
 ```
 
-- record 参数为 CollectionRecord 实例且带有父记录
+- The `record` parameter is an instance of `CollectionRecord` with a parent record.
 
 ```tsx | pure
 const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
 const record = new CollectionRecord({ data: { id: 1, name: 'foo' }, parentRecord });
 
 <CollectionRecordProvider record={record} />
-// 最终向子组件传递的数据为： props.record
+// The data passed to child components is: props.record
 ```
 
 ```tsx
@@ -92,7 +92,7 @@ const Demo = () => {
 export default () => <CollectionRecordProvider record={record}><Demo /></CollectionRecordProvider>
 ```
 
-- record 参数为 CollectionRecord 实例，父记录通过 `parentRecord` 参数传递
+- The `record` parameter is an instance of `CollectionRecord`, and the parent record is passed through the `parentRecord` parameter.
 
 ```tsx | pure
 const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
@@ -100,8 +100,8 @@ const record = new CollectionRecord({ data: { id: 1, name: 'foo' } });
 
 <CollectionRecordProvider record={record} parentRecord={parentRecord} />
 
-// 首先设置父记录：record.setParentRecord(parentRecord);
-// 最终向子组件传递的数据为：record（带有父记录）
+// First, set the parent record: record.setParentRecord(parentRecord);
+// The data passed to child components is: record (with parent record)
 ```
 
 ```tsx
@@ -118,15 +118,15 @@ const Demo = () => {
 export default () => <CollectionRecordProvider record={record} parentRecord={parentRecord}><Demo /></CollectionRecordProvider>
 ```
 
-- record 参数为普通对象，父记录也是普通对象
+- The `record` parameter is a plain object, and the parent record is also a plain object.
 
 ```tsx | pure
 <CollectionRecordProvider record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }} />
 
-// 首先实例化父记录：const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
-// 然后实例化记录：const record = new CollectionRecord({ data: { id: 1, name: 'foo' } });
-// 最后设置父记录：record.setParentRecord(parentRecord);
-// 最终向子组件传递的数据为：record（带有父记录）
+// First, instantiate the parent record: const parentRecord = new CollectionRecord({ data: { id: 1, role: 'admin' } });
+// Then, instantiate the record: const record = new CollectionRecord({ data: { id: 1, name: 'foo' } });
+// Finally, set the parent record: record.setParentRecord(parentRecord);
+// The data passed to child components is: record (with parent record)
 ```
 
 
@@ -145,9 +145,9 @@ export default () => <CollectionRecordProvider record={{ id: 1, name: 'foo' }} p
 
 ### useCollectionRecord()
 
-用于获取 `CollectionRecordProvider` 组件传递的数据记录。
+Used to retrieve the data record passed by the `CollectionRecordProvider` component.
 
-- 示例
+- Example
 
 ```tsx | pure
 const record = useCollectionRecord();
@@ -173,9 +173,9 @@ export default () => <CollectionRecordProvider record={{ id: 1, name: 'foo' }} p
 
 ### useCollectionRecordData()
 
-直接获取 CollectionRecord 的 `data` 属性，等同于 `useCollectionRecord().data`。
+Directly accessing the `data` property of CollectionRecord is equivalent to `useCollectionRecord().data`.
 
-- 示例
+- Example
 
 ```tsx | pure
 const data = useCollectionRecordData();
@@ -201,9 +201,9 @@ export default () => <CollectionRecordProvider record={{ id: 1, name: 'foo' }} >
 
 ### useCollectionParentRecord()
 
-直接获取 CollectionRecord 的数据 `parentRecord`，等同于 `useCollectionRecord().parentRecord`。
+Directly accessing the `parentRecord` data of CollectionRecord is equivalent to `useCollectionRecord().parentRecord`.
 
-- 示例
+- Example
 
 ```tsx | pure
 const parentRecord = useCollectionParentRecord();
@@ -230,9 +230,9 @@ export default () => <CollectionRecordProvider record={{ id: 1, name: 'foo' }} p
 
 ### useCollectionParentRecordData()
 
-直接获取 CollectionRecord 的数据 `parentRecord.data`，等同于 `useCollectionRecord().parentRecord.data`。
+Directly accessing the `parentRecord.data` of CollectionRecord is equivalent to `useCollectionRecord().parentRecord.data`.
 
-- 示例
+- Example
 
 ```tsx | pure
 const record = useCollectionRecord();

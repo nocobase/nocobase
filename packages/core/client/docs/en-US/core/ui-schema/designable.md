@@ -2,7 +2,7 @@
 
 ## Designable
 
-对 Schema 节点进行增、删、改操作，并且提供了事件触发机制，用于将数据同步到服务端。
+Perform add, delete, and update operations on Schema nodes, and provide an event triggering mechanism to synchronize data to the server.
 
 ```tsx | pure
 interface Options {
@@ -38,16 +38,16 @@ class Designable {
 }
 ```
 
-### 构造函数
+### Constructor
 
-- 参数讲解
+- Params
+  - `current`: The Schema node to operate on
+  - `api`: An instance of [APIClient](https://docs.nocobase.com/api/sdk) used to make backend requests
+  - `onSuccess`: Callback function to be executed after a successful backend API request
+  - `refresh`: Function to refresh the page after updating the node
+  - `t`: The return value of `useTranslation()`
 
-  - `current`：需要操作的 Schema 节点
-  - `api`：用于发起后端请求的 [APIClient](https://docs.nocobase.com/api/sdk) 实例
-  - `onSuccess`：后端接口请求成功后的回调
-  - `refresh`：用于更新节点后，刷新页面
-  - `t`：`useTranslation()` 的返回值
-- 示例
+- Example
 
 ```tsx | pure
 const schema = new Schema({
@@ -59,7 +59,7 @@ const schema = new Schema({
 const dn = new Designable({ current: schema });
 ```
 
-### Schema 操作方法
+### Schema Operation Methods
 
 ```tsx | pure
 const schema = new Schema({
@@ -117,7 +117,7 @@ export default () => <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre>;
 
 #### remove
 
-移除当前节点
+Remove the current node.
 
 ```tsx | pure
 dn.remove();
@@ -174,7 +174,7 @@ export default () => <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre>;
 
 #### insertBeforeBegin
 
-在当前节点的前面插入，并会触发 `insertAdjacent` 事件。
+Insert before the current node and trigger the `insertAdjacent` event.
 
 ```tsx | pure
 dn.insertBeforeBegin({
@@ -240,7 +240,7 @@ export default () => <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre>;
 
 #### insertAfterBegin
 
-在当前节点的前面插入，并会触发 `insertAdjacent` 事件。
+Insert after the current node and trigger the `insertAdjacent` event.
 
 ```tsx | pure
 dn.insertAfterBegin({
@@ -307,7 +307,7 @@ export default () => <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre>;
 
 #### insertBeforeEnd
 
-在当前节点的前面插入，并会触发 `insertAdjacent` 事件。
+Insert after the current node and trigger the `insertAdjacent` event.
 
 ```tsx | pure
 dn.insertBeforeEnd({
@@ -374,7 +374,7 @@ export default () => <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre>;
 
 #### insertAfterEnd
 
-在当前节点的前面插入，并会触发 `insertAdjacent` 事件。
+Insert after the current node and trigger the `insertAdjacent` event.
 
 ```tsx | pure
 dn.insertAfterEnd({
@@ -441,7 +441,7 @@ export default () => <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre>;
 
 #### insertAdjacent
 
-根据第一个参数决定插入的位置，是前面四个方法的封装。
+Determines the insertion position based on the first parameter, which is a wrapper for the previous four methods.
 
 ```tsx | pure
 class Designable {
@@ -449,19 +449,19 @@ class Designable {
 }
 ```
 
-### 事件监听和 API 请求
+### Event Listeners and API Requests
 
-- `on` ：添加事件监听的基础方法
-- `loadAPIClientEvents`：调用 `on` 方法添加对 `insertAdjacent`、`patch`、`batchPatch`、`remove` 的事件的监听，主要功能是将变更的 Schema 更新到服务端
-- `emit`：是根据事件名称，调用之前注册过的方法，具体是由前面讲过的 *插入操作和删除操作* 触发
+- `on`: The basic method for adding event listeners.
+- `loadAPIClientEvents`: Calls the `on` method to add event listeners for `insertAdjacent`, `patch`, `batchPatch`, and `remove` events. Its main function is to update the changed schema on the server.
+- `emit`: Calls the previously registered methods based on the event name, triggered by *insertion and deletion operations*.
 
-而 `loadAPIClientEvents()` 并非在初始化时调用，需要手动调用，换而言之，如果不调用 `dn.loadAPIClientEvents()`，则不会将更新发送到服务端，主要是简化在单测或者 DEMO 环境对服务端的 Mock。
+`loadAPIClientEvents()` is not called during initialization and needs to be manually called. In other words, if `dn.loadAPIClientEvents()` is not called, the updates will not be sent to the server. This is mainly used to simplify mocking the server in unit tests or demo environments.
 
-## 工具函数
+## Utility Functions
 
 ### createDesignable()
 
-对 `new Designable()` 的简单封装。
+A simple wrapper for `new Designable()`.
 
 ```tsx | pure
 function createDesignable(options: CreateDesignableProps) {
@@ -477,16 +477,16 @@ const dn = createDesignable({ current: schema });
 
 ### useFieldSchema()
 
-用户获取当前节点 Schema JSON 对象，更多信息请参考 [formily useFieldSchema()](https://react.formilyjs.org/api/hooks/use-field-schema)。
+Used to get the current node's Schema JSON object. For more information, please refer to [formily useFieldSchema()](https://react.formilyjs.org/api/hooks/use-field-schema).
 
-- 类型
+- Type
 
 ```tsx | pure
 import { Schema } from '@formily/json-schema';
 const useFieldSchema: () => Schema;
 ```
 
-- 示例
+- Example
 
 ```tsx
 /**
@@ -505,11 +505,11 @@ const Demo = ({ children }) => {
 const schema = {
     type: 'void',
     name: 'hello',
-    'x-component': 'Demo',  // 这里是 Demo 组件
+    'x-component': 'Demo',
     'properties': {
         'world': {
             'type': 'void',
-            'x-component': 'Demo',  // 这里也是 Demo 组件
+            'x-component': 'Demo',
         },
     }
 }
@@ -527,16 +527,16 @@ export default app.getRootComponent();
 
 ### useField()
 
-获取当前节点 Schema 实例，更多信息请参考 [formily useField()](https://react.formilyjs.org/api/hooks/use-field)
+Get the current node's Schema instance. For more information, please refer to [formily useField()](https://react.formilyjs.org/api/hooks/use-field).
 
-- 类型
+- Type
 
 ```tsx | pure
 import { GeneralField } from '@formily/core';
 const useField: <T = GeneralField>() => T;
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const Demo = () => {
@@ -564,9 +564,9 @@ const Root = () => {
 
 ### useDesignable()
 
-对当前 Schema 节点的修改操作。
+Modify the current Schema node.
 
-- 类型
+- Type
 
 ```tsx | pure
 interface InsertAdjacentOptions {
@@ -596,26 +596,26 @@ function useDesignable(): {
 }
 ```
 
-- 详细解释
+- Details
+  - designable, reset, refresh, setDesignable: These values are inherited from [SchemaComponentContext](https://www.baidu.com).
+  - dn: An instance of `Designable`.
+  - findComponent: Used to find the actual component corresponding to a string in the Schema. Returns `null` if the component is not registered.
+  - remove: Internally calls the `dn.remove` method.
+  - on: Internally calls the `dn.on` method.
+  - insertAdjacent: Inserts a new Schema node. Internally calls the `dn.insertAdjacent` method.
+    - position: The position to insert.
+    - schema: The new Schema node.
+    - Options:
+      - wrap: A callback function for secondary processing of the Schema.
+      - removeParentsIfNoChildren: Removes the parent element when there are no child elements.
+      - breakRemoveOn: A callback for determining when to stop removing.
+      - onSuccess: A callback for successful insertion.
+  - insertBeforeBegin: Internally calls the `dn.insertBeforeBegin` method.
+  - insertAfterBegin: Internally calls the `dn.insertAfterBegin` method.
+  - insertBeforeEnd: Internally calls the `dn.insertBeforeEnd` method.
+  - insertAfterEnd: Internally calls the `dn.insertAfterEnd` method.
 
-  - designable、reset、refresh、setDesignable：这些值继承自 [SchemaComponentContext](https://www.baidu.com)
-  - dn：是 `Designable` 的实例
-  - findComponent：用于查找 Schema 中字符串对应真正的组件，如果组件未注册则返回 `null`
-  - remove：内部调用的是 `dn.remove` 方法
-  - on：内部调用的是 `dn.on` 方法
-  - insertAdjacent：插入新的 Schema 节点，内部调用的是 `dn.insertAdjacent` 方法
-    - position：插入位置
-    - schema：新的 Schema 节点
-    - Options
-      - wrap：对 Schema 的二次处理的回调函数
-      - removeParentsIfNoChildren：当没有子元素时，删除父元素
-      - breakRemoveOn：停止删除的判断回调
-      - onSuccess：插入成功的回调
-  - insertBeforeBegin：内部调用的是 `dn.insertBeforeBegin` 方法
-  - insertAfterBegin：内部调用的是 `dn.insertAfterBegin` 方法
-  - insertBeforeEnd：内部调用的是 `dn.insertBeforeEnd` 方法
-  - insertAfterEnd：内部调用的是 `dn.insertAfterEnd` 方法
-- 示例
+- Example
 
 插入节点。
 
@@ -710,7 +710,7 @@ export default () => {
 };
 ```
 
-部分更新。
+Partial update.
 
 ```tsx
 import React from 'react';

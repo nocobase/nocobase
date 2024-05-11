@@ -2,15 +2,15 @@
 
 ![SchemaToolbar](../static/designer.png)
 
-## 组件
+## Component
 
-### SchemaToolbar 组件
+### SchemaToolbar Component
 
-此为默认的 Toolbar 组件，其内部会自动根据 Schema 的 `x-settings`、`x-initializer` 渲染 `SchemaSettings`、`SchemaInitializer` 和 `Drag` 组件。
+This is the default Toolbar component, which automatically renders the `SchemaSettings`, `SchemaInitializer`, and `Drag` components based on the Schema's `x-settings` and `x-initializer`.
 
-Toolbar 具体的渲染规则为：当有 `x-toolbar` 会渲染对应的组件；当无 `x-toolbar` 但是有 `x-settings`、`x-initializer` 会渲染默认的 `SchemaToolbar` 组件。
+The specific rendering rules for the Toolbar are as follows: when `x-toolbar` is present, it renders the corresponding component; when there is no `x-toolbar` but `x-settings` and `x-initializer` are present, it renders the default `SchemaToolbar` component.
 
-- 类型
+- Type
 
 ```tsx | pure
 interface SchemaToolbarProps {
@@ -26,17 +26,17 @@ interface SchemaToolbarProps {
 }
 ```
 
-- 详细解释
-  - `title`：左上角的标题
-  - `draggable`：是否可以拖拽，默认为 `true`
-  - `initializer`：`SchemaInitializer` 的默认值，当 schema 里没有 `x-initializer` 时，会使用此值；当为 `false` 时，不会渲染 `SchemaInitializer`
-  - `settings`：`SchemaSettings` 的默认值，当 schema 里没有 `x-settings` 时，会使用此值；当为 `false` 时，不会渲染 `SchemaSettings`
-  - `showBorder`：边框是否变为橘色
-  - `showBackground`：背景是否变为橘色
+- Details
+  - `title`: The title in the top left corner.
+  - `draggable`: Whether it can be dragged, default is `true`.
+  - `initializer`: The default value of `SchemaInitializer`. When there is no `x-initializer` in the schema, this value will be used. When set to `false`, `SchemaInitializer` will not be rendered.
+  - `settings`: The default value of `SchemaSettings`. When there is no `x-settings` in the schema, this value will be used. When set to `false`, `SchemaSettings` will not be rendered.
+  - `showBorder`: Whether the border becomes orange.
+  - `showBackground`: Whether the background becomes orange.
 
-- 示例
+- Example
 
-未指定 `x-toolbar` 时会渲染默认的 `SchemaToolbar` 这个组件。
+When `x-toolbar` is not specified, the default `SchemaToolbar` component will be rendered.
 
 ```tsx
 import { useFieldSchema } from '@formily/react';
@@ -99,7 +99,7 @@ const Hello = () => {
 
 const hello1 = Grid.wrap({
   type: 'void',
-  // 仅指定了 `x-settings` 但是没有 `x-toolbar`，会使用默认的 `SchemaToolbar` 组件
+  // Only `x-settings` is specified but `x-toolbar` is not, the default `SchemaToolbar` component will be used.
   'x-settings': 'mySettings',
   'x-decorator': 'CardItem',
   'x-component': 'Hello',
@@ -146,8 +146,7 @@ const app = new Application({
 export default app.getRootComponent();
 ```
 
-自定义 Toolbar 组件。
-
+Custom Toolbar component.
 
 ```tsx
 import { useFieldSchema } from '@formily/react';
@@ -193,12 +192,10 @@ const myInitializer = new SchemaInitializer({
       title: 'Demo1',
       Component: () => {
         const itemConfig = useSchemaInitializerItem();
-        // 调用插入功能
         const { insert } = useSchemaInitializer();
         const handleClick = () => {
           insert({
             type: 'void',
-            // 使用自定义的 Toolbar 组件
             'x-toolbar': 'MyToolbar',
             'x-settings': 'mySettings',
             'x-decorator': 'CardItem',
@@ -218,7 +215,6 @@ const Hello = () => {
 
 const hello1 = Grid.wrap({
   type: 'void',
-  // 使用自定义的 Toolbar 组件
   'x-toolbar': 'MyToolbar',
   'x-settings': 'mySettings',
   'x-decorator': 'CardItem',
@@ -270,9 +266,9 @@ export default app.getRootComponent();
 
 ### useSchemaToolbarRender()
 
-用于渲染 `SchemaToolbar`。
+Used to render the `SchemaToolbar`.
 
-- 类型
+- Type
 
 ```tsx | pure
 const useSchemaToolbarRender: (fieldSchema: ISchema) => {
@@ -281,18 +277,18 @@ const useSchemaToolbarRender: (fieldSchema: ISchema) => {
 }
 ```
 
-- 详细解释
+- Details
 
-前面示例中 `'x-decorator': 'CardItem'` 中组件 `CardItem` 里面就调用了 `useSchemaToolbarRender()` 进行渲染。内置的组件还有：`BlockItem`、`CardItem`、`Action`、`FormItem`。
+In the previous example, the component `CardItem` is used in the `'x-decorator': 'CardItem'` property, which calls `useSchemaToolbarRender()` for rendering. Other built-in components include: `BlockItem`, `CardItem`, `Action`, `FormItem`.
 
-`render()` 支持二次覆盖组件属性。
+The `render()` function supports overriding component properties.
 
-- 示例
+- Example
 
 ```tsx | pure
 const MyDecorator = () => {
   const filedSchema = useFieldSchema();
-  const { render } = useSchemaToolbarRender(filedSchema); // 从 Schema 中读取 Toolbar 组件
+  const { render } = useSchemaToolbarRender(filedSchema);
 
   return <Card>{ render() }</Card>
 }
@@ -335,10 +331,8 @@ const MyToolbar = (props) => {
   return <SchemaToolbar showBackground title='Test' {...props} />
 }
 
-// 自定义包装器
 const MyDecorator = ({children}) => {
   const filedSchema = useFieldSchema();
-  // 使用 `useSchemaToolbarRender()` 获取并渲染内容
   const { render } = useSchemaToolbarRender(filedSchema);
   return <Card style={{ marginBottom: 10 }}>{ render({ draggable: false }) }{children}</Card>
 }
@@ -353,12 +347,10 @@ const myInitializer = new SchemaInitializer({
       title: 'Demo1',
       Component: () => {
         const itemConfig = useSchemaInitializerItem();
-        // 调用插入功能
         const { insert } = useSchemaInitializer();
         const handleClick = () => {
           insert({
             type: 'void',
-            // 使用自定义的 Toolbar 组件
             'x-toolbar': 'MyToolbar',
             'x-settings': 'mySettings',
             'x-decorator': 'MyDecorator',
@@ -378,7 +370,6 @@ const Hello = () => {
 
 const hello1 = Grid.wrap({
   type: 'void',
-  // 使用自定义的 Toolbar 组件
   'x-toolbar': 'MyToolbar',
   'x-settings': 'mySettings',
   'x-decorator': 'MyDecorator',

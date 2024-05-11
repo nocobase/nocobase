@@ -1,14 +1,7 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
 
-import { getAppComponent } from '@nocobase/test/web';
-import { SchemaSettings } from '@nocobase/client';
+import React from 'react';
+import { mockApp } from '@nocobase/client/demo-utils';
+import { SchemaComponent, Plugin, SchemaSettings, ISchema } from '@nocobase/client';
 
 const simpleSettings = new SchemaSettings({
   name: 'simpleSettings',
@@ -20,34 +13,46 @@ const simpleSettings = new SchemaSettings({
   ],
 });
 
-const App = getAppComponent({
-  designable: true,
-  schema: {
-    type: 'void',
-    name: 'root',
-    'x-decorator': 'DndContext',
-    'x-component': 'FormV2',
-    properties: {
-      username: {
-        type: 'string',
-        title: 'Username',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-        'x-settings': 'simpleSettings',
-        required: true,
-      },
-      nickname: {
-        type: 'string',
-        title: 'Nickname',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-        'x-settings': 'simpleSettings',
-      },
+const schema: ISchema = {
+  type: 'void',
+  name: 'root',
+  'x-decorator': 'DndContext',
+  'x-component': 'FormV2',
+  properties: {
+    username: {
+      type: 'string',
+      title: 'Username',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      'x-settings': 'simpleSettings',
+      required: true,
+    },
+    nickname: {
+      type: 'string',
+      title: 'Nickname',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      'x-settings': 'simpleSettings',
     },
   },
-  appOptions: {
-    schemaSettings: [simpleSettings],
-  },
+}
+
+const Demo = () => {
+  return <SchemaComponent schema={schema} />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  designable: true,
+  plugins: [DemoPlugin],
+  schemaSettings: [simpleSettings],
 });
 
-export default App;
+export default app.getRootComponent();
+
+

@@ -1,7 +1,7 @@
 
 ## Collection Mixins
 
-Collection Mixins 是为扩展 Collection 类提供的一种机制，可以通过 `dataSourceManager.addCollectionMixins()` 添加 Collection Mixins。
+Collection Mixins are a mechanism for extending the Collection class, and can be added using `dataSourceManager.addCollectionMixins()`.
 
 ### 定义和注册
 
@@ -22,9 +22,9 @@ class MyPlugin extends Plugin {
 }
 ```
 
-### 使用
+### Usage
 
-- 使用方式1：在 `CollectionManager` 实例上调用 `getCollection()` 获取指定 `Collection` 实例。
+- Method 1: Call `getCollection()` on the `CollectionManager` instance to retrieve a specific `Collection` instance.
 
 ```tsx | pure
 const Demo = () => {
@@ -35,7 +35,7 @@ const Demo = () => {
 }
 ```
 
-- 使用方式2：调用 `useCollection()` 获取当前上下文的数据表信息。
+- Usage 2: Call `useCollection()` to get the table information of the current context.
 
 ```tsx | pure
 const Demo = () => {
@@ -44,9 +44,9 @@ const Demo = () => {
 }
 ```
 
-### 多个 Mixins 的使用
+### Usage of Multiple Mixins
 
-如果添加了 Mixins，可通过如下方式获得类型提示：
+If you have added mixins, you can get type hints using the following method:
 
 ```tsx | pure
 const Demo = () => {

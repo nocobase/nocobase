@@ -16,7 +16,11 @@ import { KanbanCardViewer } from './Kanban.CardViewer';
 import { KanbanDesigner } from './Kanban.Designer';
 import { kanbanSettings } from './Kanban.Settings';
 import { kanbanActionInitializers, kanbanActionInitializers_deprecated } from './KanbanActionInitializers';
-import { KanbanBlockInitializer } from './KanbanBlockInitializer';
+import {
+  KanbanBlockInitializer,
+  useCreateAssociationKanbanBlock,
+  useCreateKanbanBlock,
+} from './KanbanBlockInitializer';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 
 Kanban.Card = KanbanCard;
@@ -52,6 +56,32 @@ class PluginKanbanClient extends Plugin {
     blockInitializers?.add('dataBlocks.kanban', {
       title: '{{t("Kanban")}}',
       Component: 'KanbanBlockInitializer',
+    });
+    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.kanban', {
+      title: '{{t("Kanban")}}',
+      Component: 'KanbanBlockInitializer',
+      useComponentProps() {
+        const { createAssociationKanbanBlock } = useCreateAssociationKanbanBlock();
+        const { createKanbanBlock } = useCreateKanbanBlock();
+
+        return {
+          onlyCurrentDataSource: true,
+          filterCollections({ associationField }) {
+            if (associationField) {
+              return ['hasMany', 'belongsToMany'].includes(associationField.type);
+            }
+            return false;
+          },
+          createBlockSchema: ({ item, fromOthersInPopup }) => {
+            if (fromOthersInPopup) {
+              return createKanbanBlock({ item });
+            }
+            createAssociationKanbanBlock({ item });
+          },
+          showAssociationFields: true,
+          hideSearch: true,
+        };
+      },
     });
   }
 }

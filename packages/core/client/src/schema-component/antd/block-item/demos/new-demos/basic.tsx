@@ -1,17 +1,7 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
-import { getAppComponent } from '@nocobase/test/web';
-import { DragHandler, SchemaSettings } from '@nocobase/client';
-import { useFieldSchema } from '@formily/react';
-import { observer } from '@formily/reactive-react';
 import React from 'react';
+import { useFieldSchema, observer, ISchema } from '@formily/react';
+import { mockApp } from '@nocobase/client/demo-utils';
+import { SchemaComponent, Plugin, DragHandler, SchemaSettings } from '@nocobase/client';
 
 const simpleSettings = new SchemaSettings({
   name: 'simpleSettings',
@@ -39,39 +29,47 @@ const MyBlock = observer(
   { displayName: 'MyBlock' },
 );
 
-const App = getAppComponent({
+const schema: ISchema = {
+  type: 'void',
+  name: 'test',
+  'x-component': 'DndContext',
+  properties: {
+    block1: {
+      type: 'void',
+      'x-decorator': 'BlockItem',
+      'x-component': 'MyBlock',
+      'x-settings': 'simpleSettings',
+    },
+    block2: {
+      type: 'void',
+      'x-decorator': 'BlockItem',
+      'x-component': 'MyBlock',
+      'x-settings': 'simpleSettings',
+    },
+    block3: {
+      type: 'void',
+      'x-decorator': 'BlockItem',
+      'x-component': 'MyBlock',
+      'x-settings': 'simpleSettings',
+    },
+  },
+}
+
+const Demo = () => {
+  return <SchemaComponent schema={schema} components={{ MyBlock }} />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.schemaSettingsManager.add(simpleSettings)
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
   designable: true,
-  schema: {
-    type: 'void',
-    name: 'root',
-    'x-component': 'DndContext',
-    properties: {
-      block1: {
-        type: 'void',
-        'x-decorator': 'BlockItem',
-        'x-component': 'MyBlock',
-        'x-settings': 'simpleSettings',
-      },
-      block2: {
-        type: 'void',
-        'x-decorator': 'BlockItem',
-        'x-component': 'MyBlock',
-        'x-settings': 'simpleSettings',
-      },
-      block3: {
-        type: 'void',
-        'x-decorator': 'BlockItem',
-        'x-component': 'MyBlock',
-        'x-settings': 'simpleSettings',
-      },
-    },
-  },
-  appOptions: {
-    schemaSettings: [simpleSettings],
-    components: {
-      MyBlock,
-    },
-  },
+  plugins: [DemoPlugin],
+  delayResponse: 500,
 });
 
-export default App;
+export default app.getRootComponent();

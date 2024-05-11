@@ -148,9 +148,6 @@ const filterArgv = () => {
     if (element.startsWith('--url=')) {
       continue;
     }
-    if (element === '--skip-reporter') {
-      continue;
-    }
     if (element === '--build') {
       continue;
     }
@@ -178,7 +175,6 @@ module.exports = (cli) => {
     .command('test')
     .allowUnknownOption()
     .option('--url [url]')
-    .option('--skip-reporter')
     .option('--build')
     .option('--production')
     .action(async (options) => {
@@ -189,9 +185,6 @@ module.exports = (cli) => {
       if (options.build) {
         process.env.APP_ENV = 'production';
         await run('yarn', ['build']);
-      }
-      if (options.skipReporter) {
-        process.env.PLAYWRIGHT_SKIP_REPORTER = true;
       }
       if (options.url) {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');

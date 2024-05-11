@@ -2,9 +2,9 @@
 
 用于提供 [CollectionManager](/core/data-source/collection-manager) 实例。
 
-## 组件
+## Component
 
-- 类型
+- Type
 
 ```tsx | pure
 interface CollectionManagerProviderProps {
@@ -14,11 +14,11 @@ interface CollectionManagerProviderProps {
 }
 ```
 
-- 参数详解
-  - `dataSource` - 数据源名称，如果为空，则会取默认数据源。
-  - `instance` - CollectionManager 实例，如果没有，则会取 `dataSource` 对应的 collectionManager。
+- Parameter Details
+  - `dataSource` - The name of the data source. If empty, the default data source will be used.
+  - `instance` - The CollectionManager instance. If not provided, the collectionManager corresponding to the `dataSource` will be used.
 
-- 示例
+- Example
 
 ```tsx | pure
 const  collectionManager = new CollectionManager();
@@ -36,9 +36,9 @@ const Demo = () => {
 
 ### useCollectionManager()
 
-用于获取 `CollectionManagerProvider` 传递的实例。
+Used to retrieve the instance passed by `CollectionManagerProvider`.
 
-- 示例
+- Example
 
 ```tsx | pure
 const Demo = () => {
