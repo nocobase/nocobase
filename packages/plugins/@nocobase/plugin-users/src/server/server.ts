@@ -148,7 +148,7 @@ export default class PluginUsersServer extends Plugin {
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.*`,
+      name: `pm.${this.name}`,
       actions: ['users:*'],
     });
   }

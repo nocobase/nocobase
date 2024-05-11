@@ -7,8 +7,56 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MockServer, createMockServer } from '@nocobase/test';
 import { ACL } from '..';
 import SnippetManager from '../snippet-manager';
+describe('nocobase snippet', () => {
+  let app: MockServer;
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      plugins: ['nocobase'],
+    });
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  test('snippet allowed', async () => {
+    const testRole = app.acl.define({
+      role: 'test',
+    });
+
+    testRole.snippets.add('!pm.users');
+    testRole.snippets.add('pm.*');
+
+    expect(
+      app.acl.can({
+        role: 'test',
+        resource: 'users',
+        action: 'list',
+      }),
+    ).toBeNull();
+  });
+
+  it('should allow all snippets', async () => {
+    const testRole = app.acl.define({
+      role: 'test',
+    });
+
+    testRole.snippets.add('!pm.acl.roles');
+    testRole.snippets.add('pm.*');
+
+    expect(
+      app.acl.can({
+        role: 'test',
+        resource: 'users',
+        action: 'list',
+      }),
+    ).toBeTruthy();
+  });
+});
 
 describe('acl snippet', () => {
   let acl: ACL;
@@ -86,6 +134,34 @@ describe('acl snippet', () => {
 
     expect(adminRole.snippetAllowed('other:list')).toBeNull();
   });
+
+  it('should return true when last rule allowd', () => {
+    acl.registerSnippet({
+      name: 'sc.collection-manager.fields',
+      actions: ['fields:list'],
+    });
+
+    acl.registerSnippet({
+      name: 'sc.collection-manager.gi',
+      actions: ['fields:list'],
+    });
+
+    acl.registerSnippet({
+      name: 'sc.users',
+      actions: ['users:*'],
+    });
+
+    const adminRole = acl.define({
+      role: 'admin',
+    });
+
+    adminRole.snippets.add('!sc.collection-manager.gi');
+    adminRole.snippets.add('!sc.users');
+    adminRole.snippets.add('sc.*');
+
+    expect(acl.can({ role: 'admin', resource: 'fields', action: 'list' })).toBeTruthy();
+    expect(acl.can({ role: 'admin', resource: 'users', action: 'list' })).toBeNull();
+  });
 });
 
 describe('snippet manager', () => {
@@ -134,6 +210,23 @@ describe('snippet manager', () => {
       });
 
       expect(snippetManager.allow('fields:list', 'sc.collection-manager.fields')).toBeNull();
+    });
+
+    it('should not register snippet named with *', async () => {
+      const snippetManager = new SnippetManager();
+
+      let error;
+
+      try {
+        snippetManager.register({
+          name: 'sc.collection-manager.*',
+          actions: ['collections:*'],
+        });
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeDefined();
     });
   });
 });
