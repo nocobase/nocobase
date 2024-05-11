@@ -313,6 +313,8 @@ jobs:
           pattern: e2e-report-*
           merge-multiple: true
 
+      - run: ls -R .
+
       - name: Merge reports
         run: |
           npx playwright merge-reports --config .github/workflows/merge.config.ts ./e2e-report
