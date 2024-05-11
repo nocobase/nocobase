@@ -12,7 +12,9 @@ import {
   oneDetailBlockWithM2oFieldToGeneral,
   oneEmptyDetailsBlock,
   test,
+  expect,
 } from '@nocobase/test/e2e';
+import { detailBlockWithLinkageRule } from './templatesOfBug';
 
 test.describe('multi data details block schema settings', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -35,6 +37,19 @@ test.describe('multi data details block schema settings', () => {
         'Delete',
       ],
     });
+  });
+  test('support linkage rule', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(detailBlockWithLinkageRule).waitForInit();
+    await nocoPage.goto();
+    await expect(page.getByLabel('block-item-CollectionField-users-details-users.email-Email')).not.toBeVisible();
+    // 禁用规则，联动规则失效
+    await page.getByLabel('block-item-CardItem-users-').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-users').hover();
+    await page.getByText('Linkage rules').click();
+    await page.getByRole('switch', { name: 'On Off' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
+    await page.reload();
+    await expect(page.getByLabel('block-item-CollectionField-users-details-users.email-Email')).toBeVisible();
   });
 });
 
