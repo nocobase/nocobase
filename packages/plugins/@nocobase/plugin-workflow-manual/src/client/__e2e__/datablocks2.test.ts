@@ -9,7 +9,10 @@
 
 import { faker } from '@faker-js/faker';
 import {
+  CalculationNode,
+  CollectionTriggerNode,
   ManualNode,
+  QueryRecordNode,
   apiCreateWorkflow,
   apiCreateWorkflowNode,
   apiDeleteWorkflow,

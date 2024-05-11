@@ -11,6 +11,7 @@ import { faker } from '@faker-js/faker';
 import {
   apiCreateWorkflow,
   apiDeleteWorkflow,
+  apiGetWorkflow,
   apiUpdateWorkflowTrigger,
   appendJsonCollectionName,
   generalWithNoRelationalFields,
