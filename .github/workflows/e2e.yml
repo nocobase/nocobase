@@ -124,14 +124,14 @@ jobs:
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
 
       - name: Merge reports
-        if: ${{ always() }}
+        if: ${{ !cancelled() }}
         run: |
           node scripts/moveE2EReportFiles.js && npx playwright merge-reports --config .github/workflows/merge.config.ts ./storage/playwright/tests-report-blob
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload e2e-report
-        if: ${{ always() }}
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         id: artifact-upload-step
         with:
@@ -139,7 +139,7 @@ jobs:
           path: ./e2e-report/index.html
 
       - name: Comment on PR
-        if: ${{ always() }}
+        if: ${{ !cancelled() }}
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -265,14 +265,14 @@ jobs:
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
 
       - name: Merge reports
-        if: ${{ always() }}
+        if: ${{ !cancelled() }}
         run: |
           node scripts/moveE2EReportFiles.js && npx playwright merge-reports --config .github/workflows/merge.config.ts ./storage/playwright/tests-report-blob
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload e2e-report
-        if: ${{ always() }}
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         id: artifact-upload-step
         with:
@@ -280,7 +280,7 @@ jobs:
           path: ./e2e-report/index.html
 
       - name: Comment on PR
-        if: ${{ always() }}
+        if: ${{ !cancelled() }}
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
