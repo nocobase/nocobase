@@ -50,7 +50,7 @@ jobs:
             packages/**/lib/
             packages/**/dist/
             !packages/**/node_modules/**
-    timeout-minutes: 30
+    timeout-minutes: 20
 
   e2e-without-workflows:
     name: E2E without workflows
@@ -191,7 +191,7 @@ jobs:
             });
             core.info('Posted comment: ' + response.html_url);
 
-    timeout-minutes: 180
+    timeout-minutes: 60
 
   e2e-with-workflows:
     name: E2E with workflows
@@ -332,4 +332,4 @@ jobs:
             });
             core.info('Posted comment: ' + response.html_url);
 
-    timeout-minutes: 180
+    timeout-minutes: 60
