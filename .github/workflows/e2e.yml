@@ -105,7 +105,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
-          merge-multiple: true
           path: packages
       - run: ls -R packages/
       - run: npx playwright install chromium --with-deps
