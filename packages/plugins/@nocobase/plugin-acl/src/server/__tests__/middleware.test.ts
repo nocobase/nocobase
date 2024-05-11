@@ -78,6 +78,46 @@ describe('middleware', () => {
     await app.destroy();
   });
 
+  it('should no permission when createdById field not exists in collection', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'foos',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+            primaryKey: true,
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles').update({
+      filterByTk: 'admin',
+      values: {
+        strategy: {
+          actions: ['create', 'update:own'],
+        },
+      },
+    });
+
+    const response = await adminAgent.resource('foos').create({
+      values: {
+        name: 'foo-name',
+      },
+    });
+
+    expect(response.statusCode).toEqual(200);
+
+    const updateRes = await adminAgent.resource('foos').update({
+      filterByTk: response.body.data.name,
+    });
+
+    expect(updateRes.statusCode).toEqual(403);
+  });
+
   it('should throw 403 when no permission', async () => {
     const response = await app.agent().resource('posts').create({
       values: {},
