@@ -107,6 +107,7 @@ export class PluginACLServer extends Plugin {
         'roles.dataSourcesCollections:*',
         'roles.dataSourceResources:*',
         'dataSourcesRolesResourcesScopes:*',
+        'rolesResourcesScopes:*',
       ],
     });
 

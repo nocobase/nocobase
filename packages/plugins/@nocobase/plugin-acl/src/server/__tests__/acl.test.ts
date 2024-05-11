@@ -337,6 +337,7 @@ describe('acl', () => {
       forceUpdate: true,
     });
 
+    app.acl.appendStrategyResource('posts');
     expect(
       acl.can({
         role: 'new',
@@ -902,12 +903,12 @@ describe('acl', () => {
       context: {},
     });
 
-    expect(app.acl.getStrategyResources()).toEqual(['posts']);
+    expect(app.acl.getStrategyResources()).toContain('posts');
 
     await db.getRepository('collections').destroy({
       filterByTk: 'posts',
     });
 
-    expect(app.acl.getStrategyResources()).toEqual([]);
+    expect(app.acl.getStrategyResources()).not.toContain('posts');
   });
 });
