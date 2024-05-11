@@ -11,11 +11,9 @@ import {
   Page,
   expect,
   expectSettingsMenu,
-  oneFilterFormBlockWithAllAssociationFields,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   test,
 } from '@nocobase/test/e2e';
-import { createColumnItem, showSettingsMenu } from '../../utils';
 
 test.describe('form item & view form', () => {
   test('supported options', async ({ page, mockPage, mockRecords }) => {
@@ -27,9 +25,9 @@ test.describe('form item & view form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
-        await page.getByLabel(`block-item-CollectionField-general-form-general.oneToOneHasOne-oneToOneHasOne`).hover();
+        await page.getByLabel(`block-item-CollectionField-general-form-general.manyToOne-manyToOne`).hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.oneToOneHasOne`)
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToOne`)
           .hover();
       },
       supportedOptions: [
@@ -61,13 +59,23 @@ test.describe('form item & view form', () => {
       await page
         .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
         .hover();
-    })(page, 'oneToOneHasOne');
+    })(page, 'manyToOne');
     await page.getByRole('menuitem', { name: 'Field component' }).click();
 
     // 断言支持的选项
     await expect(page.getByRole('option', { name: 'Title', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Tag', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Sub-details', exact: true })).toBeVisible();
+
+    // 切换到 Sub-details
+    await page.getByRole('option', { name: 'Sub-details' }).click();
+    await page.mouse.move(300, 0);
+    // 需要显示 Initializer 按钮
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-general-form-general.manyToOne-manyToOne')
+        .getByLabel('schema-initializer-Grid-form:'),
+    ).toBeVisible();
   });
 
   test('title field', async ({ page, mockPage, mockRecords }) => {
@@ -86,7 +94,7 @@ test.describe('form item & view form', () => {
       await page
         .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
         .hover();
-    })(page, 'oneToOneHasOne');
+    })(page, 'manyToOne');
     await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
   });
 
@@ -106,55 +114,8 @@ test.describe('form item & view form', () => {
       await page
         .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
         .hover();
-    })(page, 'oneToOneHasOne');
+    })(page, 'manyToOne');
 
     await expect(page.getByRole('menuitem', { name: 'Enable link' }).getByRole('switch')).toBeChecked();
-  });
-});
-
-test.describe('form item & filter form', () => {
-  test('supported options', async ({ page, mockPage }) => {
-    const nocoPage = await mockPage(oneFilterFormBlockWithAllAssociationFields).waitForInit();
-    await nocoPage.goto();
-
-    await expectSettingsMenu({
-      page,
-      showMenu: async () => {
-        await page.getByLabel('block-item-CollectionField-general-filter-form-general.oneToOneHasOne-').hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-CollectionField' }).hover();
-      },
-      supportedOptions: [
-        'Edit field title',
-        'Edit description',
-        'Set the data scope',
-        'Field component',
-        'Title field',
-        'Delete',
-      ],
-    });
-  });
-});
-
-test.describe('table column & table', () => {
-  test('supported options', async ({ page, mockPage, mockRecord }) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-    await mockRecord('general');
-    await nocoPage.goto();
-
-    await expectSettingsMenu({
-      page,
-      showMenu: async () => {
-        await createColumnItem(page, 'oneToOneHasOne');
-        await showSettingsMenu(page, 'oneToOneHasOne');
-      },
-      supportedOptions: [
-        'Custom column title',
-        'Column width',
-        'Enable link',
-        'Title field',
-        'Field component',
-        'Delete',
-      ],
-    });
   });
 });

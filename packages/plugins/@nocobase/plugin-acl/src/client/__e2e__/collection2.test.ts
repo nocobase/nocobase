@@ -10,7 +10,7 @@
 import { expect, test } from '@nocobase/test/e2e';
 import { oneTableBlock } from './utils';
 
-test.describe('export', () => {
+test.describe('create', () => {
   test('general permission', async ({ page, mockPage, mockRole, updateRole }) => {
     await mockPage(oneTableBlock).goto();
     //新建角色并切换到新角色
@@ -25,18 +25,64 @@ test.describe('export', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await expect(page.getByLabel('action-Action-Export')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       strategy: {
-        actions: ['view', 'export'],
+        actions: ['view', 'create'],
       },
     });
     await page.reload();
-    await expect(page.getByLabel('action-Action-Export')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
   });
-  test('individual collection permission', async ({ page, mockPage, mockRole }) => {
-    await mockPage().goto();
+  test('individual collection permission', async ({ page, mockPage, mockRole, updateRole }) => {
+    await mockPage(oneTableBlock).goto();
+    //新建角色并切换到新角色
+    const roleData = await mockRole({
+      allowNewMenu: true,
+      strategy: {
+        actions: ['create'],
+      },
+      resources: [
+        {
+          usingActionsConfig: true,
+          name: 'general',
+          actions: [
+            {
+              name: 'view',
+            },
+          ],
+        },
+      ],
+    });
+    await page.evaluate((roleData) => {
+      window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
+    }, roleData);
+    await page.reload();
+    await mockPage(oneTableBlock).goto();
+    await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).not.toBeVisible();
+    await updateRole({
+      name: roleData.name,
+      resources: [
+        {
+          usingActionsConfig: true,
+          name: 'general',
+          actions: [
+            {
+              name: 'view',
+            },
+            { name: 'create' },
+          ],
+        },
+      ],
+    });
+    await page.reload();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
+  });
+  test('individual collection permission width fields', async ({ page, mockPage, mockRole }) => {
+    await mockPage(oneTableBlock).goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
       allowNewMenu: true,
@@ -45,9 +91,14 @@ test.describe('export', () => {
           usingActionsConfig: true,
           name: 'general',
           actions: [
-            { name: 'view' },
             {
-              name: 'export',
+              name: 'view',
+              fields: ['id', 'singleLineText'],
+              scope: null,
+            },
+            {
+              name: 'create',
+              fields: ['singleLineText'],
               scope: null,
             },
           ],
@@ -59,59 +110,8 @@ test.describe('export', () => {
     }, roleData);
     await page.reload();
     await mockPage(oneTableBlock).goto();
-    await expect(page.getByLabel('action-Action-Export')).toBeVisible();
-  });
-});
-
-test.describe('import', () => {
-  test('general permission', async ({ page, mockPage, mockRole, updateRole }) => {
-    await mockPage().goto();
-    //新建角色并切换到新角色
-    const roleData = await mockRole({
-      strategy: {
-        actions: ['view'],
-      },
-      allowNewMenu: true,
-    });
-    await mockPage(oneTableBlock).goto();
-    await page.evaluate((roleData) => {
-      window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
-    }, roleData);
-    await page.reload();
-    await expect(page.getByLabel('action-Action-Import')).not.toBeVisible();
-    await updateRole({
-      name: roleData.name,
-      strategy: {
-        actions: ['view', 'importXlsx'],
-      },
-    });
-    await page.reload();
-    await expect(page.getByLabel('action-Action-Import')).toBeVisible();
-  });
-  test('individual collection permission', async ({ page, mockPage, mockRole }) => {
-    await mockPage().goto();
-    //新建角色并切换到新角色
-    const roleData = await mockRole({
-      allowNewMenu: true,
-      resources: [
-        {
-          usingActionsConfig: true,
-          name: 'general',
-          actions: [
-            { name: 'view' },
-            {
-              name: 'importXlsx',
-              scope: null,
-            },
-          ],
-        },
-      ],
-    });
-    await page.evaluate((roleData) => {
-      window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
-    }, roleData);
-    await page.reload();
-    await mockPage(oneTableBlock).goto();
-    await expect(page.getByLabel('action-Action-Import')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
+    await page.getByLabel('action-Action-Add new-create-general-table').click();
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.singleLineText')).toBeVisible();
   });
 });

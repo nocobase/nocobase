@@ -14,7 +14,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { createColumnItem, showSettingsMenu, testPattern, testSetValidationRules } from '../../utils';
+import { testPattern, testSetValidationRules } from '../../utils';
 
 test.describe('form item & edit form', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -26,9 +26,9 @@ test.describe('form item & edit form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        await page.getByLabel(`block-item-CollectionField-general-form-general.longText-longText`).hover();
+        await page.getByLabel(`block-item-CollectionField-general-form-general.password-password`).hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.longText`)
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.password`)
           .hover();
       },
       supportedOptions: [
@@ -56,39 +56,35 @@ test.describe('form item & edit form', () => {
         await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
       },
       showMenu: async () => {
-        await page.getByLabel(`block-item-CollectionField-general-form-general.longText-longText`).hover();
+        await page.getByLabel(`block-item-CollectionField-general-form-general.password-password`).hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.longText`)
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.password`)
           .hover();
       },
       expectEditable: async () => {
-        // 应该显示 record 中的值
-        await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
-        ).toHaveValue(record.longText);
-
         // 默认情况下可以编辑
         await page
-          .getByLabel('block-item-CollectionField-general-form-general.longText-longText')
+          .getByLabel('block-item-CollectionField-general-form-general.password-password')
           .getByRole('textbox')
           .click();
         await page
-          .getByLabel('block-item-CollectionField-general-form-general.longText-longText')
+          .getByLabel('block-item-CollectionField-general-form-general.password-password')
           .getByRole('textbox')
-          .fill('test long text');
+          .fill('test112233password');
       },
       expectReadonly: async () => {
         // 只读模式下，输入框会被禁用
         await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
+          page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
         await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
+          page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
         ).not.toBeVisible();
-        await expect(page.getByLabel('block-item-CollectionField-general-form-general.longText-longText')).toHaveText(
-          `longText:test long text`,
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.password-password')).toHaveText(
+          'password:********',
         );
       },
     });
@@ -115,45 +111,7 @@ test.describe('form item & edit form', () => {
           await page
             .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
             .hover();
-        })(page, 'longText'),
-    });
-  });
-});
-
-test.describe('form item & view form', () => {
-  test('supported options', async ({ page, mockPage, mockRecord }) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await mockRecord('general');
-    await nocoPage.goto();
-
-    await expectSettingsMenu({
-      page,
-      showMenu: async () => {
-        await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
-        await page.getByLabel(`block-item-CollectionField-general-form-general.longText-longText`).hover();
-        await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.longText`)
-          .hover();
-      },
-      supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip'],
-      unsupportedOptions: ['Set default value'],
-    });
-  });
-});
-
-test.describe('table column & table', () => {
-  test('supported options', async ({ page, mockPage, mockRecord }) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await mockRecord('general');
-    await nocoPage.goto();
-
-    await expectSettingsMenu({
-      page,
-      showMenu: async () => {
-        await createColumnItem(page, 'longText');
-        await showSettingsMenu(page, 'longText');
-      },
-      supportedOptions: ['Custom column title', 'Column width', 'Delete'],
+        })(page, 'password'),
     });
   });
 });
