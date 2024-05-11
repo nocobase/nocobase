@@ -9,8 +9,7 @@
 
 import { faker } from '@faker-js/faker';
 import {
-  FormEventTriggerNode,
-  apiCreateRecordTriggerFormEvent,
+  CollectionTriggerNode,
   apiCreateWorkflow,
   apiDeleteWorkflow,
   apiUpdateWorkflowTrigger,
@@ -18,14 +17,13 @@ import {
   generalWithNoRelationalFields,
 } from '@nocobase/plugin-workflow-test/e2e';
 import { expect, test } from '@nocobase/test/e2e';
-import { dayjs } from '@nocobase/utils';
-
-test.describe('Configuration page version switching', () => {});
-
-test.describe('Configuration page execution history', () => {});
 
 test.describe('Configuration page copy to new version', () => {
-  test('Copy the action event of the Configuration Trigger node', async ({ page, mockCollections, mockRecords }) => {
+  test('Copy the Collection event of the Configuration Trigger node', async ({
+    page,
+    mockCollections,
+    mockRecords,
+  }) => {
     //数据表后缀标识
     const triggerNodeAppendText = faker.string.alphanumeric(5);
 
@@ -44,49 +42,42 @@ test.describe('Configuration page copy to new version', () => {
       current: true,
       options: { deleteExecutionOnStatus: [] },
       title: workFlowName,
-      type: 'action',
+      type: 'collection',
       enabled: true,
     };
     const workflow = await apiCreateWorkflow(workflowData);
     const workflowObj = JSON.parse(JSON.stringify(workflow));
     const workflowId = workflowObj.id;
-    const WorkflowKey = workflowObj.key;
-
     //配置工作流触发器
-    const triggerNodeData = { config: { collection: triggerNodeCollectionName, appends: [] } };
+    const triggerNodeData = {
+      config: { appends: [], collection: triggerNodeCollectionName, changed: [], condition: { $and: [] }, mode: 1 },
+    };
     const triggerNode = await apiUpdateWorkflowTrigger(workflowId, triggerNodeData);
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
 
     // 2、测试步骤：添加数据触发工作流
-    const triggerNodeCollectionRecordOne =
-      triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    const triggerWorkflows = WorkflowKey;
-    const triggerNodeCollectionRecords = await apiCreateRecordTriggerFormEvent(
-      triggerNodeCollectionName,
-      triggerWorkflows,
+    const triggerNodeCollectionRecordOne = faker.string.alphanumeric(9);
+    const triggerNodeCollectionRecords = await mockRecords(triggerNodeCollectionName, [
       { orgname: triggerNodeCollectionRecordOne },
-    );
+    ]);
     await page.waitForTimeout(1000);
 
     await page.goto(`admin/workflow/workflows/${workflowId}`);
     await page.waitForLoadState('networkidle');
-    await page.getByLabel('more').click();
+    await page.locator('.workflow-toolbar').getByLabel('more').hover();
     await page.getByLabel('revision').click();
     await page.waitForLoadState('networkidle');
-
     // 3、预期结果：新版本工作流配置内容同旧版本一样
-    const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
-    await formEventTriggerNode.nodeConfigure.click();
+    const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
+    await collectionTriggerNode.nodeConfigure.click();
+    // await expect(page.getByRole('button', { name: `Main / ${triggerNodeCollectionDisplayName}` })).toBeVisible();
     await expect(
       page
         .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
         .getByText(`Main / ${triggerNodeCollectionDisplayName}`),
     ).toBeVisible();
+
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });
 });
-
-test.describe('Configuration page  delete version', () => {});
-
-test.describe('Node Add Modify Delete', () => {});
