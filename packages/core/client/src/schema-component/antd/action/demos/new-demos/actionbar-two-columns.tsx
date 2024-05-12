@@ -1,5 +1,6 @@
-import { ActionInitializer, SchemaInitializer } from '@nocobase/client';
-import { getAppComponent } from '@nocobase/test/web';
+import { ISchema, Plugin, SchemaComponent, SchemaInitializer } from '@nocobase/client';
+import { mockApp } from '@nocobase/client/demo-utils';
+import React from 'react';
 
 const addActionButton = new SchemaInitializer({
   name: 'addActionButton',
@@ -41,41 +42,45 @@ const addActionButton = new SchemaInitializer({
   ],
 });
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    properties: {
-      test: {
-        type: 'void',
-        'x-component': 'ActionBar',
-        'x-initializer': 'addActionButton',
-        'x-component-props': {
-          layout: 'two-columns',
-        },
-        properties: {
-          a1: {
-            title: 'Action 1',
-            'x-component': 'Action',
-            'x-action': 'a1',
-            'x-align': 'left',
-          },
-          a2: {
-            title: 'Action 2',
-            'x-component': 'Action',
-            'x-action': 'a2',
-            'x-align': 'right',
-          },
-        },
-      },
+const schema: ISchema = {
+  type: 'void',
+  name: 'test',
+  'x-component': 'ActionBar',
+  'x-initializer': 'addActionButton',
+  'x-component-props': {
+    layout: 'two-columns',
+  },
+  properties: {
+    a1: {
+      title: 'Action 1',
+      'x-component': 'Action',
+      'x-action': 'a1',
+      'x-align': 'left',
+    },
+    a2: {
+      title: 'Action 2',
+      'x-component': 'Action',
+      'x-action': 'a2',
+      'x-align': 'right',
     },
   },
-  appOptions: {
-    schemaInitializers: [addActionButton],
-    components: {
-      ActionInitializer,
-    },
-  },
+}
+
+const Demo = () => {
+  return <SchemaComponent schema={schema} />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.schemaInitializerManager.add(addActionButton)
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  designable: true,
+  plugins: [DemoPlugin]
 });
 
-export default App;
+export default app.getRootComponent();
+

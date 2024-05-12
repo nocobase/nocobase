@@ -108,6 +108,17 @@ export const readPrettyFormSettings = new SchemaSettings({
       Component: SchemaSettingsBlockTitleItem,
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        return {
+          collectionName: name,
+          readPretty: true,
+        };
+      },
+    },
+    {
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
@@ -149,6 +160,17 @@ export const formDetailsSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        return {
+          collectionName: name,
+          readPretty: true,
+        };
+      },
     },
     {
       name: 'dataScope',

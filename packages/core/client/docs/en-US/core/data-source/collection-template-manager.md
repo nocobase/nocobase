@@ -1,14 +1,14 @@
 # CollectionTemplateManager
 
-用于管理 [CollectionTemplate](./collection-template)，其被 [DataSourceManager](./data-source-manager) 管理。
+Used to manage [CollectionTemplate](./collection-template), which is managed by [DataSourceManager](./data-source-manager).
 
-## 实例方法
+## Instance Methods
 
 ### addCollectionTemplates()
 
-用于添加 collection template。
+Used to add collection templates.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionTemplateManager {
@@ -16,7 +16,7 @@ class CollectionTemplateManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class SqlCollectionTemplate extends CollectionTemplate {
@@ -49,9 +49,9 @@ class MyPlugin extends Plugin {
 
 ### getCollectionTemplate()
 
-用于获取 collection template。
+Used to retrieve collection templates.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionTemplateManager {
@@ -59,7 +59,7 @@ class CollectionTemplateManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 collectionManager.getCollectionTemplate(); // generalCollectionTemplate
@@ -69,9 +69,9 @@ collectionManager.getCollectionTemplate('tree'); // treeCollectionTemplate
 
 ### getCollectionTemplates()
 
-用于获取所有 collection templates。
+Used to retrieve all collection templates.
 
-- 类型
+- Type
 
 ```tsx | pure
 class CollectionTemplateManager {
@@ -79,7 +79,7 @@ class CollectionTemplateManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 collectionManager.getCollectionTemplates(); // [ generalCollectionTemplate, treeCollectionTemplate, sqlCollectionTemplate ]

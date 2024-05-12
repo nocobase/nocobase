@@ -300,7 +300,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
     this.router.add('admin.page', {
       path: '/admin/:name',
-      Component: 'RouteSchemaComponent',
+      Component: 'AdminDynamicPage',
     });
   }
 

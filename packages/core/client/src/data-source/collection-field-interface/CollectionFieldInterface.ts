@@ -53,4 +53,5 @@ export abstract class CollectionFieldInterface {
   validateSchema?(fieldSchema: ISchema): Record<string, ISchema>;
   usePathOptions?(field: CollectionFieldOptions): any;
   schemaInitialize?(schema: ISchema, data: any): void;
+  hidden?: boolean;
 }

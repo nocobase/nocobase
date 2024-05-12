@@ -307,22 +307,17 @@ export class PluginManager {
       return;
     }
     this.app.log.info('attempt to add the plugin to the app');
-    let packageName: string;
-    try {
-      packageName = await PluginManager.getPackageName(pluginName);
-    } catch (error) {
-      packageName = pluginName;
-    }
+    const { name, packageName } = await PluginManager.parseName(pluginName);
     const json = await PluginManager.getPackageJson(packageName);
     this.app.log.info(`add plugin [${packageName}]`, {
-      name: pluginName,
-      packageName: packageName,
+      name,
+      packageName,
       version: json.version,
     });
     await this.repository.updateOrCreate({
       values: {
-        name: pluginName,
-        packageName: packageName,
+        name,
+        packageName,
         version: json.version,
       },
       filterKeys: ['name'],

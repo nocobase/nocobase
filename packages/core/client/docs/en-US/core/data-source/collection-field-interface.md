@@ -1,6 +1,6 @@
 # CollectionFieldInterface
 
-用于创建数据字段。
+Used to create data fields.
 
 ![](./images/collection-field-interface.png)
 
@@ -41,7 +41,7 @@ class CollectionFieldInterface {
 }
 ```
 
-其需要结合 [CollectionManager](./collection-field-interface-manager.md) 使用。
+It needs to be used in conjunction with [CollectionManager](./collection-field-interface-manager.md).
 
 ```ts
 class EmailFieldInterface extends CollectionFieldInterface {
@@ -61,28 +61,28 @@ class MyPlugin extends Plugin {
 }
 ```
 
-## 实例属性
+## Instance Properties
 
 ### name
 
-唯一标识符。
+Unique identifier.
 
 ### group
 
-分组。
+Group.
 
 ### title
 
-标题。
+Title.
 
 ### default
 
-配置表单默认值字段 schema。
+Configure the default value field schema for the form.
 
 ![](./images/collection-field-interface-form.png)
 
 
-## 实例方法
+## Instance Methods
 
 ### collectionFieldInterface.validateSchema(fieldSchema)
 

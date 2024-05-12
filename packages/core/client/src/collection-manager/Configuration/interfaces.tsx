@@ -22,6 +22,7 @@ export const getOptions = (
         ...group,
         key: groupName,
         children: Object.keys(fieldInterfaces[groupName] || {})
+          .filter((type) => !fieldInterfaces[groupName][type].hidden)
           .map((type) => {
             const field = fieldInterfaces[groupName][type];
             return {

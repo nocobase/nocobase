@@ -1,7 +1,6 @@
 English | [中文](./README.zh-CN.md)
 
-https://github.com/nocobase/nocobase/assets/1267426/82dace12-7879-4fc7-b846-a9684f8b6768
-
+https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90c3f82eeb
 
 ## Recent major updates
 

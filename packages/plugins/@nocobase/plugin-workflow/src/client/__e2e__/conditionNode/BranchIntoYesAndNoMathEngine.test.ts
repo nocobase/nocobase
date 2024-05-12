@@ -9,7 +9,7 @@
 
 import { faker } from '@faker-js/faker';
 import {
-  ClculationNode,
+  CalculationNode,
   CollectionTriggerNode,
   ConditionBranchNode,
   ConditionYesNode,
@@ -81,7 +81,8 @@ test('Collection event add data trigger, determine trigger node integer field va
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  const conditionalRightConstant = faker.number.int();
+  const conditionalRightConstant = faker.number.int({ max: 1000 });
+  await page.waitForTimeout(500);
   await page.keyboard.type(`==${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
@@ -95,7 +96,7 @@ test('Collection event add data trigger, determine trigger node integer field va
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -108,7 +109,7 @@ test('Collection event add data trigger, determine trigger node integer field va
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -197,7 +198,8 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  const conditionalRightConstant = faker.number.int();
+  const conditionalRightConstant = faker.number.int({ max: 1000 });
+  await page.waitForTimeout(500);
   await page.keyboard.type(`==${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
@@ -211,7 +213,7 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -224,7 +226,7 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -310,7 +312,8 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  const conditionalRightConstant = faker.number.int();
+  const conditionalRightConstant = faker.number.int({ max: 1000 });
+  await page.waitForTimeout(500);
   await page.keyboard.type(`!=${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
@@ -324,7 +327,7 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -337,7 +340,7 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -423,7 +426,8 @@ test('Collection event add data trigger, determines that the trigger node intege
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  const conditionalRightConstant = faker.number.int();
+  const conditionalRightConstant = faker.number.int({ max: 1000 });
+  await page.waitForTimeout(500);
   await page.keyboard.type(`!=${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
@@ -437,7 +441,7 @@ test('Collection event add data trigger, determines that the trigger node intege
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -450,7 +454,7 @@ test('Collection event add data trigger, determines that the trigger node intege
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');

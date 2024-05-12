@@ -1,7 +1,8 @@
-import { getAppComponent } from '@nocobase/test/web';
-import { Space, App as AntdApp } from 'antd';
-import { useAPIClient, useActionContext } from '@nocobase/client';
-import { useForm } from '@formily/react';
+import { App as AntdApp } from 'antd';
+import { useAPIClient, useActionContext, Plugin, SchemaComponent } from '@nocobase/client';
+import { ISchema, useForm } from '@formily/react';
+import { mockApp } from '@nocobase/client/demo-utils';
+import React from 'react';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
@@ -37,67 +38,68 @@ const useSubmitActionProps = () => {
   };
 };
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    'x-component': Space,
-    properties: {
-      test: {
-        type: 'void',
-        'x-component': 'Action',
-        title: 'Open Modal',
-        'x-component-props': {
-          openSize: 'small',
+const schema: ISchema = {
+  name: 'test',
+  type: 'void',
+  'x-component': 'Action',
+  title: 'Open Modal',
+  'x-component-props': {
+    openSize: 'small',
+  },
+  properties: {
+    drawer: {
+      type: 'void',
+      'x-component': 'Action.Modal',
+      title: 'Modal Title',
+      'x-decorator': 'FormV2',
+      properties: {
+        username: {
+          type: 'string',
+          title: `Username`,
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
         },
-        properties: {
-          drawer: {
-            type: 'void',
-            'x-component': 'Action.Modal',
-            title: 'Modal Title',
-            'x-decorator': 'FormV2',
-            properties: {
-              username: {
-                type: 'string',
-                title: `Username`,
-                required: true,
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
+        footer: {
+          type: 'void',
+          'x-component': 'Action.Modal.Footer',
+          properties: {
+            close: {
+              title: 'Close',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'default',
               },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Modal.Footer',
-                properties: {
-                  close: {
-                    title: 'Close',
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      type: 'default',
-                    },
-                    'x-use-component-props': 'useCloseActionProps',
-                  },
-                  submit: {
-                    title: 'Submit',
-                    'x-component': 'Action',
-                    'x-use-component-props': 'useSubmitActionProps',
-                  },
-                },
-              },
+              'x-use-component-props': 'useCloseActionProps',
+            },
+            submit: {
+              title: 'Submit',
+              'x-component': 'Action',
+              'x-use-component-props': 'useSubmitActionProps',
             },
           },
         },
       },
     },
   },
-  appOptions: {
-    scopes: {
-      useSubmitActionProps,
-      useCloseActionProps,
-    },
-  },
+}
+
+const Demo = () => {
+  return <SchemaComponent schema={schema} scope={{ useSubmitActionProps, useCloseActionProps }} />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
   apis: {
     test: { data: 'ok' },
   },
 });
 
-export default App;
+export default app.getRootComponent();
+

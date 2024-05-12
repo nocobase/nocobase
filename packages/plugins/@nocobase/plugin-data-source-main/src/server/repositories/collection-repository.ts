@@ -173,6 +173,7 @@ export class CollectionRepository extends Repository {
 
     const options = collection.options;
     const fields = [];
+
     for (const [name, field] of collection.fields) {
       fields.push({
         name,

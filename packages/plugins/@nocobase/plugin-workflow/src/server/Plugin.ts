@@ -229,7 +229,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.acl.registerSnippet({
-      name: 'ui.*',
+      name: 'ui.workflows',
       actions: ['workflows:list'],
     });
 

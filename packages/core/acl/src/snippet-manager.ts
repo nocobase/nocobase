@@ -30,6 +30,12 @@ class SnippetManager {
   public snippets: Map<string, Snippet> = new Map();
 
   register(snippet: SnippetOptions) {
+    const name = snippet.name;
+    // throw error if name include * or end with dot
+    if (name.includes('*') || name.endsWith('.')) {
+      throw new Error(`Invalid snippet name: ${name}, name should not include * or end with dot.`);
+    }
+
     this.snippets.set(snippet.name, snippet);
   }
 

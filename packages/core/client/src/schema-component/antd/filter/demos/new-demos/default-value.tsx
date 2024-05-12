@@ -1,8 +1,11 @@
+
+
 import React from 'react';
 import { useField, observer } from '@formily/react';
-import { FilterActionProps, useRequest } from '@nocobase/client';
+import { FilterActionProps, ISchema, useRequest } from '@nocobase/client';
 
-import { getAppComponent } from '@nocobase/test/web';
+import { mockApp } from '@nocobase/client/demo-utils';
+import { SchemaComponent, Plugin } from '@nocobase/client';
 
 import { filterOptions } from './options';
 
@@ -51,34 +54,44 @@ const defaultValue = {
   ],
 };
 
-const App = getAppComponent({
-  schema: {
-    type: 'void',
-    name: 'root',
-    properties: {
-      test: {
-        name: 'filter',
-        type: 'object',
-        enum: filterOptions,
-        title: 'Filter',
-        'x-decorator': 'ShowFilterData',
-        'x-component': 'Filter.Action',
-        default: defaultValue,
-        'x-use-component-props': useFilterActionProps,
-      },
+const schema: ISchema = {
+  type: 'void',
+  name: 'root',
+  properties: {
+    test: {
+      name: 'filter',
+      type: 'object',
+      enum: filterOptions,
+      title: 'Filter',
+      'x-decorator': 'ShowFilterData',
+      'x-component': 'Filter.Action',
+      default: defaultValue,
+      'x-use-component-props': 'useFilterActionProps',
     },
   },
-  appOptions: {
-    components: {
-      ShowFilterData,
-    },
-    scopes: {
-      useFilterActionProps,
-    },
-  },
+}
+
+const Demo = () => {
+  return <SchemaComponent
+    schema={schema}
+    components={{ ShowFilterData }}
+    scope={{
+      useFilterActionProps
+    }}
+  />;
+};
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo })
+  }
+}
+
+const app = mockApp({
+  plugins: [DemoPlugin],
   apis: {
     test: { data: { data: 'ok' } },
   },
 });
 
-export default App;
+export default app.getRootComponent();

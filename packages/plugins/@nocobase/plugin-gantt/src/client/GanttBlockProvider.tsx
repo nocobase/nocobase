@@ -12,7 +12,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
   useCollection_deprecated,
-  BlockProvider,
   useBlockRequestContext,
   TableBlockProvider,
   useTableBlockContext,
@@ -95,11 +94,9 @@ export const GanttBlockProvider = (props) => {
 
   return (
     <div aria-label="block-item-gantt" role="button">
-      <BlockProvider name="gantt" {...props} params={params}>
-        <TableBlockProvider {...props} params={params}>
-          <InternalGanttBlockProvider {...props} />
-        </TableBlockProvider>
-      </BlockProvider>
+      <TableBlockProvider {...props} params={params}>
+        <InternalGanttBlockProvider {...props} />
+      </TableBlockProvider>
     </div>
   );
 };
@@ -114,7 +111,7 @@ export const useGanttBlockProps = () => {
   const { getPrimaryKey, name, template, writableView } = useCollection_deprecated();
   const { parseAction } = useACLRoleContext();
   const ctxBlock = useTableBlockContext();
-
+  const [loading, setLoading] = useState(false);
   const primaryKey = getPrimaryKey();
   const checkPermission = (record) => {
     const actionPath = `${name}:update`;
@@ -136,6 +133,7 @@ export const useGanttBlockProps = () => {
     ctx.field.data = data;
   };
   useEffect(() => {
+    setLoading(true);
     if (!ctx?.service?.loading) {
       const data = formatData(
         ctx.service.data?.data,
@@ -147,6 +145,7 @@ export const useGanttBlockProps = () => {
         primaryKey,
       );
       setTasks(data);
+      setLoading(false);
       ctx.field.data = data;
       if (tasks.length > 0) {
         ctxBlock.setExpandFlag(true);
@@ -159,5 +158,6 @@ export const useGanttBlockProps = () => {
     onExpanderClick,
     expandAndCollapseAll,
     tasks,
+    loading,
   };
 };
