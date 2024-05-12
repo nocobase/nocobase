@@ -76,7 +76,7 @@ export class TreeCollectionTemplate extends CollectionTemplate {
     beforeSubmit(values) {
       if (Array.isArray(values?.fields)) {
         values?.fields.map((f) => {
-          if (!f.target) {
+          if (!f.target && ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(f.type)) {
             f.target = values.name;
           }
         });
