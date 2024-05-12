@@ -103,9 +103,9 @@ const schema: ISchema = {
           'x-component-props': {
             action: 'attachments:create',
             multiple: false,
-            useRules: '{{useCollectionFieldStorageRules}}',
             // accept: 'jpg,png'
           },
+          'x-use-component-props': 'useCollectionFieldStorageRules',
         },
         enabledLanguages: {
           type: 'array',

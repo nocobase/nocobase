@@ -19,7 +19,6 @@ export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   value?: any;
   size?: string;
   rules?: PropsRules;
-  useRules?(rules: PropsRules): PropsRules;
 };
 
 export type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {
@@ -34,7 +33,6 @@ export type DraggerV2Props = Omit<AntdDraggerProps, 'onChange'> & {
   serviceErrorMessage?: string;
   title?: string;
   rules?: PropsRules;
-  useRules?(rules: PropsRules): PropsRules;
   children?: React.ReactNode;
   /** @deprecated */
   useProps?: () => any;

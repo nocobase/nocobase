@@ -26,9 +26,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
       type: 'array',
       // title,
       'x-component': 'Upload.Attachment',
-      'x-component-props': {
-        useRules: '{{useCollectionFieldStorageRules}}',
-      },
+      'x-use-component-props': 'useCollectionFieldStorageRules',
     },
   };
   availableTypes = ['belongsToMany'];
@@ -45,7 +43,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
       field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
     }`;
 
-    schema['x-component-props'].useRules = '{{useCollectionFieldStorageRules}}';
+    schema['x-use-component-props'] = 'useCollectionFieldStorageRules';
   }
   initialize(values: any) {
     if (!values.through) {

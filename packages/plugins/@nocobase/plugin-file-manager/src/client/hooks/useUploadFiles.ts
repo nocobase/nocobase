@@ -23,6 +23,7 @@ export const useUploadFiles = () => {
   const { props: blockProps } = useBlockRequestContext();
   const collection = useCollection();
   const sourceId = useSourceIdFromParentRecord();
+  const rules = useFileCollectionStorageRules();
   const action = useMemo(() => {
     let action = `${collection.name}:create`;
     if (blockProps?.association) {
@@ -60,6 +61,6 @@ export const useUploadFiles = () => {
         setVisible(false);
       }
     },
-    useRules: useFileCollectionStorageRules,
+    rules,
   };
 };

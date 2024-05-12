@@ -93,10 +93,11 @@ export const Upload: ComposedUpload = connect(
 
 Upload.ReadPretty = ReadPretty;
 
-function useSizeHint(size: number = DEFAULT_MAX_FILE_SIZE) {
+function useSizeHint(size: number) {
+  const s = size ?? DEFAULT_MAX_FILE_SIZE;
   const { t, i18n } = useTranslation();
-  const sizeString = filesize(size, { base: 2, standard: 'jedec', locale: i18n.language });
-  return size !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
+  const sizeString = filesize(s, { base: 2, standard: 'jedec', locale: i18n.language });
+  return s !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
 }
 
 function AttachmentListItem(props) {
@@ -342,11 +343,7 @@ export function AttachmentList(props) {
   );
 }
 
-function useDefaultRules(props) {
-  return props.rules;
-}
-
-export function Uploader({ useRules = useDefaultRules, rules: propsRules, ...props }: UploadProps) {
+export function Uploader({ rules, ...props }: UploadProps) {
   const { disabled, multiple, value, onChange } = props;
   const [pendingList, setPendingList] = useState<any[]>([]);
   const { t } = useTranslation();
@@ -355,7 +352,6 @@ export function Uploader({ useRules = useDefaultRules, rules: propsRules, ...pro
 
   const uploadProps = useUploadProps(props);
 
-  const rules = useRules({ rules: propsRules, ...props });
   const beforeUpload = useBeforeUpload(rules);
 
   useEffect(() => {
@@ -446,18 +442,21 @@ export function Uploader({ useRules = useDefaultRules, rules: propsRules, ...pro
   );
 }
 
-Upload.Attachment = connect((props: UploadProps) => {
-  const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+Upload.Attachment = withDynamicSchemaProps(
+  connect((props: UploadProps) => {
+    const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
-  return wrapSSR(
-    <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
-      <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList {...props} />
-        <Uploader {...props} />
-      </div>
-    </div>,
-  );
-}, mapReadPretty(ReadPretty.File));
+    return wrapSSR(
+      <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
+        <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
+          <AttachmentList {...props} />
+          <Uploader {...props} />
+        </div>
+      </div>,
+    );
+  }, mapReadPretty(ReadPretty.File)),
+  { displayName: 'Upload.Attachment' },
+);
 
 Upload.Dragger = connect(
   (props: DraggerProps) => {
@@ -485,7 +484,7 @@ Upload.Dragger = connect(
 
 Upload.DraggerV2 = withDynamicSchemaProps(
   connect(
-    ({ rules: propsRules, useRules = useDefaultRules, ...props }: DraggerV2Props) => {
+    ({ rules, ...props }: DraggerV2Props) => {
       const { t } = useTranslation();
       const defaultTitle = t('Click or drag file to this area to upload');
 
@@ -495,7 +494,6 @@ Upload.DraggerV2 = withDynamicSchemaProps(
       const [loading, setLoading] = useState(false);
       const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
-      const rules = useRules({ rules: propsRules });
       const beforeUpload = useBeforeUpload(rules);
       const { size, mimetype: accept } = rules ?? {};
       const sizeHint = useSizeHint(size);

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, connect, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, connect, useExpressionScope, useField, useFieldSchema } from '@formily/react';
 import { differenceBy, unionBy } from 'lodash';
 import cls from 'classnames';
 import React, { useContext, useEffect, useState } from 'react';
@@ -84,8 +84,9 @@ const useTableSelectorProps = () => {
 function FileSelector(props) {
   const { disabled, multiple, value, onChange, onSelect, quickUpload, selectFile } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
-  const { scope } = useSchemaOptionsContext();
+  const { useFileCollectionStorageRules } = useExpressionScope();
   const { t } = useTranslation();
+  const rules = useFileCollectionStorageRules();
   // 兼容旧版本
   const showSelectButton = selectFile === undefined && quickUpload === undefined;
 
@@ -119,7 +120,7 @@ function FileSelector(props) {
             multiple={multiple}
             // onRemove={handleRemove}
             onChange={onChange}
-            useRules={scope.useFileCollectionStorageRules}
+            rules={rules}
           />
         ) : null}
         {selectFile && (multiple || !value) ? (

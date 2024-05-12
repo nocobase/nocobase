@@ -222,11 +222,12 @@ export const toValue = (fileList: any) => {
 };
 
 const Rules: Record<string, RuleFunction> = {
-  size(file, options: number = DEFAULT_MAX_FILE_SIZE): null | string {
-    if (options === 0) {
+  size(file, options: number): null | string {
+    const size = options ?? DEFAULT_MAX_FILE_SIZE;
+    if (size === 0) {
       return null;
     }
-    return file.size <= options ? null : 'File size exceeds the limit';
+    return file.size <= size ? null : 'File size exceeds the limit';
   },
   mimetype(file, options: string | string[] = '*'): null | string {
     const pattern = options.toString().trim();
