@@ -216,7 +216,7 @@ export function Input(props: VariableInputProps) {
     });
 
     setOptions(options);
-  }, [scope, variable]);
+  }, [scope, variable]); // 这里补全依赖会导致死循环
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
@@ -276,7 +276,7 @@ export function Input(props: VariableInputProps) {
           error(err);
         }
       }
-      setOptions([...options]);
+
       setVariableText([...labels]);
     };
 
@@ -368,7 +368,7 @@ export function Input(props: VariableInputProps) {
       )}
       <Cascader
         options={options}
-        value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
+        value={variable ?? [null, ...(children || !constantOption.children?.length ? [] : [type])]}
         onChange={onSwitch}
         loadData={loadData as any}
         changeOnSelect={changeOnSelect}
