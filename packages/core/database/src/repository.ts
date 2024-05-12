@@ -242,7 +242,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     this.model = collection.model;
   }
 
-  public static valuesToFilter(values: Values, filterKeys: Array<string>) {
+  public static valuesToFilter(values: Values = {}, filterKeys: Array<string>) {
     const filterAnd = [];
     const flattedValues = flatten(values);
 
@@ -277,6 +277,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       if (filterValue) {
         filterAnd.push({
           [filterKey]: filterValue,
+        });
+      } else {
+        filterAnd.push({
+          [`${filterKey}.$empty`]: true,
         });
       }
     }
