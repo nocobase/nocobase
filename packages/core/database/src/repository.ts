@@ -280,7 +280,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         });
       } else {
         filterAnd.push({
-          [`${filterKey}.$empty`]: true,
+          [filterKey]: null,
         });
       }
     }
