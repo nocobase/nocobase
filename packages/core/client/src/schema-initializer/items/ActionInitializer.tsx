@@ -7,12 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { merge } from '@formily/shared';
 import React from 'react';
 
-import { InitializerWithSwitch } from './InitializerWithSwitch';
-import { useSchemaInitializerItem } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const ActionInitializer = (props) => {
   const itemConfig = useSchemaInitializerItem();
-  return <InitializerWithSwitch {...itemConfig} {...props} item={itemConfig} type={'x-action'} />;
+  const { insert } = useSchemaInitializer();
+
+  return (
+    <SchemaInitializerItem
+      title={itemConfig.title}
+      onClick={() => {
+        const s = merge(props.schema || {}, itemConfig.schema || {});
+        itemConfig?.schemaInitialize?.(s);
+        insert(s);
+      }}
+    />
+  );
 };
