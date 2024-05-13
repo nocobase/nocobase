@@ -12,8 +12,8 @@ import { FC } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { BlockItemCard } from './BlockItemCard';
 import { ErrorFallback } from '../error-fallback';
-import { SchemaSettings } from '../../../application';
-import { SchemaToolbar } from '../../../schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { SchemaToolbar } from '../../../schema-settings/GeneralSchemaDesigner';
 
 const blockDeleteSettings = new SchemaSettings({
   name: 'blockDeleteSettings',
