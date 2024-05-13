@@ -23,10 +23,30 @@ import type { DefaultOptionType } from 'antd/lib/cascader';
 
 <code src="./demos/demo1.tsx"></code>
 
-### `Variable.TextArea`
+### 自定义编辑组件
+
+自定义传入children
+
+<code src="./demos/demo4.tsx"></code>
+
+## `Variable.TextArea`
+```ts
+export type VariableTextAreaProps = {
+  value?: string;
+  scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
+  onChange: (value: string, optionPath?: any[]) => void;
+  children?: any;
+  changeOnSelect?: boolean;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  className?: string;
+  multiline?: boolean;
+};
+
+```
 
 <code src="./demos/demo2.tsx"></code>
 
-### `Variable.JSON`
+## `Variable.JSON`
 
 <code src="./demos/demo3.tsx"></code>

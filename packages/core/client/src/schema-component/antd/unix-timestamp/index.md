@@ -1,6 +1,6 @@
 # UnixTimestamp
 
-`UnixTimestamp` 是一个基于 `antd` 的DatePicker组件的封装。
+`UnixTimestamp` 是一个基于 `antd` 的DatePicker组件的封装，将时间戳换算为日期格式。
 
 
 ```ts

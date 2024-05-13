@@ -13,6 +13,7 @@ import { Space } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
+import type { DefaultOptionType } from 'antd/lib/cascader';
 
 import { error } from '@nocobase/utils/client';
 
@@ -207,7 +208,19 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
   return result;
 }
 
-export function TextArea(props) {
+export type VariableTextAreaProps = {
+  value?: string;
+  scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
+  onChange: (value: string, optionPath?: any[]) => void;
+  children?: any;
+  changeOnSelect?: boolean;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  className?: string;
+  multiline?: boolean;
+};
+
+export function TextArea(props: VariableTextAreaProps) {
   const { wrapSSR, hashId, componentCls } = useStyles();
   const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
   const inputRef = useRef<HTMLDivElement>(null);
