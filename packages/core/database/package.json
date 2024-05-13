@@ -16,7 +16,7 @@
     "excel-date-to-js": "^1.1.5",
     "exponential-backoff": "^3.1.1",
     "flat": "^5.0.2",
-    "glob": "^7.1.6",
+    "glob": "^10.3.15",
     "graphlib": "^2.1.8",
     "lodash": "^4.17.21",
     "mathjs": "^10.6.1",
